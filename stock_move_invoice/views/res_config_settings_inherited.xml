@@ -31,12 +31,21 @@
                                     <field name="customer_journal_id"
                                            domain="[('type', '=', 'sale')]"/>
                                 </div>
+                                <br/>
                                 <div class="row">
                                     <label string="Purchase Journal"
                                            for="vendor_journal_id"
                                            class="col-lg-3 o_light_label"/>
                                     <field name="vendor_journal_id"
                                            domain="[('type', '=', 'purchase')]"/>
+                                </div>
+                                <br/>
+                                <div class="row">
+                                    <label string="Internal Transfer Journal"
+                                           for="internal_journal_id"
+                                           class="col-lg-3 o_light_label"/>
+                                    <field name="internal_journal_id" 
+                                           domain="[('type', '=', 'general')]"/>
                                 </div>
                             </div>
                         </div>

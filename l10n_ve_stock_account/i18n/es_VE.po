@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-11 12:28+0000\n"
-"PO-Revision-Date: 2025-03-11 12:28+0000\n"
+"POT-Creation-Date: 2025-03-14 04:57+0000\n"
+"PO-Revision-Date: 2025-03-14 04:57+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -48,43 +48,89 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid ""
 "<br/>\n"
-"                    <strong>Ciudad:</strong>"
+"                            <span class=\"fw-bold\">Dirección Fiscal:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid ""
 "<br/>\n"
-"                    <strong>Dirección fiscal:</strong>"
+"                            <span class=\"fw-bold\">RIF:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid ""
-"<br/>\n"
-"                    <strong>Estado:</strong>"
+msgid "<span class=\"fw-bold\">Ciudad:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid ""
-"<br/>\n"
-"                    <strong>RIF:</strong>"
+msgid "<span class=\"fw-bold\">Cliente:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid ""
-"<br/>\n"
-"                    <strong>Teléfono:</strong>"
+msgid "<span class=\"fw-bold\">Dirección de entrega:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account
-msgid ""
-"<strong>\n"
-"                Número de Guía: \n"
-"                </strong>"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Dirección fiscal:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Estado:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Fecha de emisión:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Fecha programada de entrega:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Número de documento:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Número de pedido:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Número de secuencia:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">RIF:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Razón Social:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Razón de traslado:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Tasa:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Teléfono:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -98,28 +144,8 @@ msgid "<strong>CONTRIBUYENTE FORMAL</strong>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>Cliente:</strong>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>Dirección de entrega:</strong>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "<strong>Exento:</strong>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>Fecha de emisión:</strong>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>Fecha programada de entrega:</strong>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -151,47 +177,13 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
-msgid ""
-"<strong>Nombre:</strong> <br/> C.I: <br/> Fecha: <br/>\n"
-"        <br/>\n"
-"        <strong>Firma\n"
-"                                    y sello:</strong> ________________________"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
-msgid ""
-"<strong>Nombre:</strong> <br/> C.I: <br/> Marca vehículo: <br/>\n"
-"                                    Placa batea: <br/> Placa chasis: <br/>\n"
-"        <br/>\n"
-"        <strong>Firma:</strong>\n"
-"                                    ________________________"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>Número de documento:</strong>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>Número de pedido:</strong>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>Razón de traslado/transferencia:</strong>"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account
+msgid "<strong>Número de Guía: </strong>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "<strong>Subtotal:</strong>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>Tasa:</strong>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -276,6 +268,12 @@ msgstr "Crear nota de crédito"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_picking_form_inherited_l10n_ve_stock_account
+msgid "Create Internal Invoice"
+msgstr "Crear Factura"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Create Invoice"
 msgstr "Crear factura"
 
@@ -306,6 +304,13 @@ msgstr "Creado en"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__invoice_cron_type
 msgid "Date Cron Invoice"
 msgstr "Fecha del Cron de Facturación"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#, python-format
+msgid "Debe configurar un diario para facturas internas en la configuración."
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_partner__default_document
@@ -366,12 +371,14 @@ msgstr "Tipo de documento para el pedido de venta."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
-msgid "Dscto"
-msgstr ""
+msgid "Dscto."
+msgstr "Dscto"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "El cliente no existe"
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#, python-format
+msgid "Este proceso solo aplica para transferencias internas."
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -505,6 +512,11 @@ msgid "Last Updated on"
 msgstr "Última actualización en"
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "Los datos del cliente no existen"
+msgstr ""
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Peso"
 msgstr ""
@@ -547,6 +559,11 @@ msgid "Recibido por"
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#: model:ir.model,name:l10n_ve_stock_account.model_ir_actions_report
+msgid "Report Action"
+msgstr "Acción de informe"
+
+#. module: l10n_ve_stock_account
 #: model:ir.actions.act_window,name:l10n_ve_stock_account.action_picking_guide_dispatch
 msgid "Report Guide Dispatch"
 msgstr "Reporte de guía de despacho"
@@ -560,6 +577,11 @@ msgstr "Pedido de venta"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 msgid "Search"
 msgstr "Buscar"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
+msgid "Select the type of invoice"
+msgstr "Seleccione el tipo de factura"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
@@ -590,6 +612,11 @@ msgstr "Show Crear crédito al cliente"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_invoice
 msgid "Show Create Invoice"
 msgstr "Mostrar creación de factura"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_invoice_internal
+msgid "Show Create Invoice Internal"
+msgstr "Mostrar creación de factura interna"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_vendor_credit
@@ -657,6 +684,11 @@ msgstr ""
 "Esta guía tiene al menos una factura publicada, consulte sus facturas."
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_alert
+msgid "Tienes"
+msgstr ""
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__to_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 msgid "To Invoice"
@@ -679,11 +711,6 @@ msgid "Transporte (Conductor)"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
-msgid "Transporte (Conductor)"
-msgstr ""
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Unidad"
 msgstr ""
@@ -693,7 +720,10 @@ msgstr ""
 msgid ""
 "Validating this operation with the reason <b>SELF CONSUMPTION</b> will "
 "reflect it in the inventory book under the self consumption column."
-msgstr "Al validar esta operación con el motivo <b> AUTOCONSUMO </b>, esta se refleja en el libro de inventario dentro de la columna destinada a autoconsumo."
+msgstr ""
+"Al validar esta operación con el motivo <b> AUTOCONSUMO </b>, esta se "
+"refleja en el libro de inventario dentro de la columna destinada a "
+"autoconsumo."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -707,4 +737,11 @@ msgstr "No puede crear una factura de estos picking por el estado."
 #: code:addons/l10n_ve_stock_account/models/ir_actions_report.py:0
 #, python-format
 msgid "You cannot download a freeform from a vendor bill."
-msgstr "No puede descargar una factura de forma libre desde una factura de proveedor."
+msgstr ""
+"No puede descargar una factura de forma libre desde una factura de "
+"proveedor."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_alert
+msgid "guías de despacho por facturar"
+msgstr ""

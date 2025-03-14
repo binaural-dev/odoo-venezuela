@@ -38,7 +38,6 @@
                         'invisible': [('operation_code', '!=', 'internal')],
                         'required': [('operation_code', '=', 'internal')]
                     }" />
-
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="is_donation" invisible="1" />
                 <field name="transfer_reason_id"
@@ -64,6 +63,39 @@
         <field name="arch" type="xml">
            <xpath expr="//field[@name='origin']" position="after">
                 <field name="guide_number" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_picking_form_inherited_l10n_ve_stock_account" model="ir.ui.view">
+        <field name="name">stock.picking.form.view.inherited.l10n.ve.stock.account</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock_move_invoice.stock_picking_form_view_inherited"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_return']" position="after">
+                <field name="show_create_invoice" invisible="1"/>
+                <field name="show_create_bill" invisible="1"/>
+                <field name="show_create_customer_credit" invisible="1"/>
+                <field name="show_create_vendor_credit" invisible="1"/>
+                <field name="show_create_invoice_internal" invisible="1"/>
+            </xpath>
+            <xpath expr="//button[@name='create_invoice']" position="attributes">
+                <attribute name="attrs">{'invisible': [('show_create_invoice', '=', False)]}</attribute>
+            </xpath>
+            <xpath expr="//button[@name='create_bill']" position="attributes">
+                <attribute name="attrs">{'invisible': [('show_create_bill', '=', False)]}</attribute>
+            </xpath>
+            <xpath expr="//button[@name='create_customer_credit']" position="attributes">
+                <attribute name="attrs">{'invisible': [('show_create_customer_credit', '=', False)]}</attribute>
+            </xpath>
+            <xpath expr="//button[@name='create_vendor_credit']" position="attributes">
+                <attribute name="attrs">{'invisible': [('show_create_vendor_credit', '=', False)]}</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_toggle_is_locked']" position="after">
+                <button 
+                    name="create_internal_invoice" class="oe_highlight"
+                    string="Create Internal Invoice" type="object"
+                    invisible="1"
+                />
             </xpath>
         </field>
     </record>
