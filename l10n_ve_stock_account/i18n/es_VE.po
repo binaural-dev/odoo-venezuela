@@ -701,3 +701,10 @@ msgstr "Al validar esta operación con el motivo <b> AUTOCONSUMO </b>, esta s
 #, python-format
 msgid "You cannot create an invoice from this picking for this state."
 msgstr "No puede crear una factura de estos picking por el estado."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/ir_actions_report.py:0
+#, python-format
+msgid "You cannot download a freeform from a vendor bill."
+msgstr "No puede descargar una factura de forma libre desde una factura de proveedor."
