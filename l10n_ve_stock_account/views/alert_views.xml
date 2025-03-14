@@ -5,7 +5,7 @@
     <xpath expr="//body" position="inside">
       <t t-set="env" t-value="request.env(context=ctx)" />
       <t t-set="pickings"
-        t-value="env['stock.picking'].sudo().search([('type_delivery_step','=','out'),('transfer_reason_id.code','not in', ['consignment','transfer', False])])" />
+        t-value="env['stock.picking'].sudo().search([('type_delivery_step','=','out'),('transfer_reason_id.code','not in', ['consignment','transfer']),('state_guide_dispatch', '=', 'to_invoice')])" />
       <div>
         <span id="oe_neutralize_banner"
           t-if="pickings"
@@ -16,7 +16,7 @@
                 position: relative;
                 display: block;
                 font-size: 16px;">
-          Tienes <t t-out="len(pickings)" /> traslados por facturar </span>
+          Tienes <t t-out="len(pickings)" /> guías de despacho por facturar </span>
       </div>
     </xpath>
     <xpath expr="//head">

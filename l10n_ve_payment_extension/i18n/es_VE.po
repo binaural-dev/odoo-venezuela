@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20250102\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-11 13:02+0000\n"
-"PO-Revision-Date: 2025-03-11 13:02+0000\n"
+"POT-Creation-Date: 2025-03-13 18:35+0000\n"
+"PO-Revision-Date: 2025-03-13 18:35+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -325,6 +325,12 @@ msgid "<span>Totales</span>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "ANULADA"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_report_l10n_ve_payment_extension_report_template_arcv
 msgid "AR-CV Report"
 msgstr "Reporte AR-CV"
@@ -435,6 +441,8 @@ msgid ""
 "Are you sure you want to cancel this voucher? The associated accounting "
 "entries will be reversed"
 msgstr ""
+"¿Esta seguro que quiere anular este comprobante? Se revertiran los asientos "
+"contables asociados"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__payment_concept_id
@@ -457,7 +465,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__base_currency_is_vef
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__base_currency_is_vef
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__base_currency_is_vef
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__base_currency_is_vef
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__base_currency_is_vef
 msgid "Base Currency Is Vef"
 msgstr "La moneda base es Bs"
@@ -1816,6 +1823,11 @@ msgid "Remember to use comma (,) as decimal separator."
 msgstr "Recordar usar (,) como separador decimal"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_ir_actions_report
+msgid "Report Action"
+msgstr "Acción de informe"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__report
 msgid "Report type"
 msgstr "Tipo de reporte"
@@ -2587,6 +2599,13 @@ msgid ""
 msgstr ""
 "No puede eliminar una retención vinculada a un asiento publicado. Es "
 "necesario anular la retención antes de ser eliminada."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/ir_actions_report.py:0
+#, python-format
+msgid "You cannot download a withholding slip in draft status. "
+msgstr "No puede descargar un comprobante de retención en estatus borrador. "
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
