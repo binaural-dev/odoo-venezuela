@@ -38,9 +38,13 @@
                 <span>IGTF:</span>
                 <span t-esc="igtfAmount"/>
                 <br/>
-                <span>Foreign IGTF:</span>
-                <span t-esc="igtfForeignAmount"/>
             </t>
+        </xpath>
+        <xpath expr="//div[hasclass('payment-status-change')]" position="inside"> 
+            <div class="payment-status-total-due">
+                <span class="label">Foreign IGTF:</span>
+                <span t-esc="igtfForeignAmount"/>
+            </div>
         </xpath>
     </t>
 </templates>
