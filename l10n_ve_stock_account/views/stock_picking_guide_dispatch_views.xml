@@ -104,7 +104,6 @@
             ('state', '=', 'done'),
             ('type_delivery_step', 'in', ['out', 'int']),
             ('transfer_reason_id.code', '!=', 'self_consumption'),
-            ('state_guide_dispatch', '=', 'to_invoice'),
             '|',
             ('type_delivery_step', '=', 'out'),
             '&amp;',
