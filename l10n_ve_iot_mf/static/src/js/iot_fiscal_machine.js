@@ -525,7 +525,7 @@ export class IoTFiscalMachineComponent extends Widget {
             kwargs: {},
           }).then(data => {
             
-            setTimeout(function(){}, 3000);
+            setTimeout(function(){}, 5000);
             
             if (data){
               window.location.reload();   
