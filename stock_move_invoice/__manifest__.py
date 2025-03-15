@@ -22,7 +22,7 @@
 
 {
     'name': "Factura Desde Recogida de Stock",
-    'version': '16.0.1.0.1',
+    'version': '16.0.1.0.0',
     'summary': """En este módulo se crea factura de cliente, factura de proveedor, 
     nota de crédito de cliente y reembolso desde la recogida de stock""",
     'description': """En este módulo se crea factura de cliente, factura de proveedor, 
