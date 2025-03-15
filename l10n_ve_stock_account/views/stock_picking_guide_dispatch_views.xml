@@ -14,6 +14,7 @@
                 <field name="show_create_bill" invisible="1"/>
                 <field name="show_create_customer_credit" invisible="1"/>
                 <field name="show_create_vendor_credit" invisible="1"/>
+                <field name="show_create_invoice_internal" invisible="1"/> 
                 <field 
                     name="state_guide_dispatch" 
                     string="State Guide Dispatch" 
@@ -52,6 +53,14 @@
                     string="Create Vendor Credit" 
                     type="object"
                     attrs="{'invisible': [('show_create_vendor_credit', '=', False)]}"
+                />
+                <button 
+                    name="create_internal_invoice" 
+                    class="btn btn-link text-info" 
+                    icon="fa-file-text" 
+                    string="Create Internal Invoice" 
+                    type="object"
+                    invisible="1"
                 />
             </tree>
         </field>
