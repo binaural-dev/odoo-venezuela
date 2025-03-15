@@ -99,6 +99,7 @@ msgstr "Generar factura para múltiples selecciones"
 #: model:ir.model.fields,field_description:stock_move_invoice.field_picking_invoice_wizard__id
 msgid "ID"
 msgstr "ID"
+
 #. module: stock_move_invoice
 #: model_terms:ir.ui.view,arch_db:stock_move_invoice.res_config_settings_invoice_modification
 msgid "Invoice From Stock Picking"
