@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="binaural_pos_mf.ReceiptScreen" t-inherit="point_of_sale.ReceiptScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[@class='actions']/h1[1]" position="before">
+            <p t-if="currentOrder.mf_invoice_number">Nro Factura: <t t-out="currentOrder.mf_invoice_number"/></p>
+            <p t-if="currentOrder.fiscal_machine">Serial de la Máquina fiscal: <t t-out="currentOrder.fiscal_machine"/></p>
+            <p t-if="currentOrder.mf_reportz">Pertenece al siguiente Z: <t t-out="currentOrder.mf_reportz"/></p>
+        </xpath>
+    </t>
+</templates>
