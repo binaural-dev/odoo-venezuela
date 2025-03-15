@@ -37,10 +37,3 @@ class Settings(models.TransientModel):
                                         config_parameter=
                                         'stock_move_invoice.vendor_journal_id',
                                         help='To add vendor journal')
-
-    internal_journal_id = fields.Many2one(
-        "account.journal",
-        string="Internal Journal",
-        config_parameter="stock_move_invoice.internal_journal_id",
-        help="To add internal journal",
-    )
