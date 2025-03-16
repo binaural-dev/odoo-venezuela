@@ -7,6 +7,8 @@ from . import (
     stock_move,
     stock_picking,
     account_move,
+    stock_warehouse,
+    stock_location,
     stock_return_picking,
     ir_actions_report,
 )
