@@ -96,8 +96,8 @@ export class IoTFiscalMachineComponent extends Widget {
           window.location.reload()
         })
     });
-    
-    
+
+
     this.iotDevice.action({
       action: "get_last_invoice_number",
       data: { "me": "you" },
@@ -411,7 +411,7 @@ export class IoTFiscalMachineComponent extends Widget {
 
     const move_id = this.props.record.__bm_load_params__.res_id
 
-    try{
+    try {
       const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_print_out_invoice", {
         model: 'account.move',
         method: 'check_print_out_invoice',
@@ -427,7 +427,7 @@ export class IoTFiscalMachineComponent extends Widget {
         kwargs: {},
       })
 
-      if (!request2){
+      if (request2) {
         throw new Error("La configuración de impuestos no es válida.");
       }
 
@@ -440,25 +440,25 @@ export class IoTFiscalMachineComponent extends Widget {
 
       const printResponse = await new Promise((resolve, reject) => {
         try {
-            const result = this.iotDevice.action({
-                action: "print_out_invoice",
-                data: request,
-            });
-            resolve(result); 
+          const result = this.iotDevice.action({
+            action: "print_out_invoice",
+            data: request,
+          });
+          resolve(result);
         } catch (error) {
-            reject(error); 
+          reject(error);
         }
       });
-      
-      if(printResponse.result) {
+
+      if (printResponse.result) {
 
         onIoTActionResult(printResponse, this.env);
-        
+
         await this.iotDevice.action({
           action: "get_last_invoice_number",
           data: { me: "you" },
         });
-        
+
         this.listener = async ({ value }) => {
           await this.env.services.rpc("web/dataset/call_kw/account.move/print_out_invoice", {
             model: "account.move",
@@ -467,19 +467,19 @@ export class IoTFiscalMachineComponent extends Widget {
             kwargs: {},
           }).then(data => {
 
-            setTimeout(function(){}, 2000);
-            
-            if (data){
-              window.location.reload();   
+            setTimeout(function() { }, 2000);
+
+            if (data) {
+              window.location.reload();
             }
 
           });
         };
-        
+
         this.iotDevice.addListener(this.listener);
       }
 
-    }catch (error) {
+    } catch (error) {
       let errorMessage = error.data?.message || error.message || "Ocurrió un error desconocido.";
       console.error("Error en print_out_refund:", errorMessage);
       onIoTActionResult({ result: false, message: errorMessage }, this.env);
@@ -491,9 +491,9 @@ export class IoTFiscalMachineComponent extends Widget {
       this.showFailedConnection();
       return;
     }
-  
+
     const move_id = this.props.record.__bm_load_params__.res_id;
-  
+
     try {
       const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_print_out_refund", {
         model: 'account.move',
@@ -501,14 +501,14 @@ export class IoTFiscalMachineComponent extends Widget {
         args: [move_id],
         kwargs: {},
       });
-  
+
       if (!this.device || this.device.iotIp !== request.iot_ip) {
         this.device = new DeviceController(this.env.services.iot_longpolling, {
           iot_ip: request.iot_ip,
           identifier: request.identifier,
         });
       }
-  
+
       const printResponse = await new Promise((resolve, reject) => {
         try {
           const result = this.iotDevice.action({
@@ -520,15 +520,15 @@ export class IoTFiscalMachineComponent extends Widget {
           reject(error);
         }
       });
-  
+
       if (printResponse.result) {
         onIoTActionResult(printResponse, this.env);
-  
+
         await this.iotDevice.action({
           action: "get_last_out_refund_number",
           data: { me: "you" },
         });
-  
+
         this.listener = async ({ value }) => {
           await this.env.services.rpc("web/dataset/call_kw/account.move/print_out_refund", {
             model: "account.move",
@@ -536,18 +536,18 @@ export class IoTFiscalMachineComponent extends Widget {
             args: [this.props.record.data.id, value],
             kwargs: {},
           }).then(data => {
-            
-            setTimeout(function(){}, 5000);
-            
-            if (data){
-              window.location.reload();   
+
+            setTimeout(function() { }, 5000);
+
+            if (data) {
+              window.location.reload();
             }
 
           });
         };
         this.iotDevice.addListener(this.listener);
       }
-  
+
     } catch (error) {
       let errorMessage = error.data?.message || error.message || "Ocurrió un error desconocido.";
       console.error("Error en print_out_refund:", errorMessage);
@@ -560,9 +560,9 @@ export class IoTFiscalMachineComponent extends Widget {
       this.showFailedConnection()
       return
     }
-    
+
     const move_id = this.props.record.__bm_load_params__.res_id;
-    
+
 
     const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_reprint", {
       model: 'account.move',
