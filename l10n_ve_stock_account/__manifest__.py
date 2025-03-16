@@ -14,10 +14,9 @@
         "l10n_ve_sale",
     ],
     "data": [
-        "security/ir.model.access.csv",
+        "data/dispatch_guide_paperformat.xml",
         "data/ir_cron.xml",
         "data/ir_sequence.xml",
-        "data/dispatch_guide_paperformat.xml",
         "data/transfer_reason.xml",
         "views/account_move_views.xml",
         "views/stock_picking_guide_dispatch_views.xml",
