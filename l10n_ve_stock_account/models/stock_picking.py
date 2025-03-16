@@ -72,8 +72,16 @@ class StockPicking(models.Model):
 
     # This field controls the visibility of the button, determines when to generate
     # the dispatch guide sequence, and controls the visibility of the 'guide_number' field.
-    dispatch_guide_controls = fields.Boolean(
-        compute="_compute_dispatch_guide_controls", store=True
+    dispatch_guide_controls = fields.Boolean(compute="_compute_dispatch_guide_controls", store=True)
+
+    invoice_state = fields.Selection(
+        selection=[
+            ("draft", "Draft"),
+            ("posted", "Posted"),
+            ("cancel", "Canceled"),
+        ],
+        string="Invoice State",
+        compute="_compute_invoice_state",
     )
 
     def _set_guide_number(self):
@@ -105,14 +113,10 @@ class StockPicking(models.Model):
     # === MAIN FUNCTIONS ===#
 
     def create_invoice_lots(self):
-        valid_picking = self.filtered(
-            lambda picking: picking.state_guide_dispatch == "invoiced"
-        )
+        valid_picking = self.filtered(lambda picking: picking.state_guide_dispatch == "invoiced")
 
         if valid_picking:
-            raise UserError(
-                _("You cannot create an invoice from this picking for this state.")
-            )
+            raise UserError(_("You cannot create an invoice from this picking for this state."))
 
         for picking in self:
             if picking.show_create_invoice:
@@ -313,7 +317,6 @@ class StockPicking(models.Model):
             current_user = self.env.uid
             company = self.env.company
 
-
             internal_consigned_journal_id = company.internal_consigned_journal_id
             if not internal_consigned_journal_id:
                 raise UserError(_("Please configure the internal consigned journal from settings."))
@@ -402,9 +405,7 @@ class StockPicking(models.Model):
         }
 
         for line in self.move_ids_without_package:
-            line_values = line._get_line_values(
-                use_foreign_currency=use_foreign_currency
-            )
+            line_values = line._get_line_values(use_foreign_currency=use_foreign_currency)
 
             totals["subtotal"] += line_values["subtotal_after_discount"]
 
@@ -440,9 +441,7 @@ class StockPicking(models.Model):
             )
             if invoice_ids:
                 raise UserError(
-                    _(
-                        "This guide has at least one posted invoice, please check your invoice."
-                    )
+                    _("This guide has at least one posted invoice, please check your invoice.")
                 )
 
     def _get_origin_name(self, picking):
@@ -640,6 +639,16 @@ class StockPicking(models.Model):
             else:
                 self.invoice_count = 0
 
+    def _compute_invoice_state(self):
+        for picking_id in self:
+            move_ids = picking_id.env["account.move"].search(
+                [("transfer_ids", "in", picking_id.id)]
+            )
+            if move_ids:
+                picking_id.invoice_state = move_ids[0].state
+            else:
+                picking_id.invoice_state = False
+
     @api.depends("sale_id.document")
     def _compute_has_document(self):
         for picking in self:
@@ -680,9 +689,7 @@ class StockPicking(models.Model):
         )
         for picking in self:
             if consignment_reason:
-                picking.is_consignment = (
-                    picking.transfer_reason_id.id == consignment_reason.id
-                )
+                picking.is_consignment = picking.transfer_reason_id.id == consignment_reason.id
             else:
                 picking.is_consignment = False
 
@@ -718,10 +725,8 @@ class StockPicking(models.Model):
             }
 
             reasons = {
-                key: self.env.ref(ref, raise_if_not_found=False)
-                for key, ref in reason_refs.items()
+                key: self.env.ref(ref, raise_if_not_found=False) for key, ref in reason_refs.items()
             }
-
 
             # Outgoing with sale
             if picking.operation_code == "outgoing" and picking.sale_id:
@@ -754,22 +759,19 @@ class StockPicking(models.Model):
                 if reasons["transfer_between_warehouses"]:
                     allowed_reason_ids.append(reasons["transfer_between_warehouses"].id)
 
-
             # Force update of transfer_reason_id field to avoid inconsistencies
             if allowed_reason_ids:
-                if picking.transfer_reason_id.id not in allowed_reason_ids:  
-                    picking.transfer_reason_id = allowed_reason_ids[0] 
+                if picking.transfer_reason_id.id not in allowed_reason_ids:
+                    picking.transfer_reason_id = allowed_reason_ids[0]
 
             # if not allowed_reason_ids, then return all options
             picking.allowed_reason_ids = (
                 self.env["transfer.reason"].search([])
                 if not allowed_reason_ids
-                else self.env["transfer.reason"].search(
-                    [("id", "in", allowed_reason_ids)]
-                )
+                else self.env["transfer.reason"].search([("id", "in", allowed_reason_ids)])
             )
 
-            # if not allowed_reason_ids, then no option is returned 
+            # if not allowed_reason_ids, then no option is returned
             # picking.allowed_reason_ids = (
             #     self.env["transfer.reason"].search([("id", "in", allowed_reason_ids)])
             #     if allowed_reason_ids
