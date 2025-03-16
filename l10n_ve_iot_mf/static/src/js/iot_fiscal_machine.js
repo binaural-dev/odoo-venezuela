@@ -419,6 +419,18 @@ export class IoTFiscalMachineComponent extends Widget {
         kwargs: {},
       })
 
+
+      const request2 = await this.env.services.rpc("web/dataset/call_kw/account.move/check_config_tax", {
+        model: 'account.move',
+        method: 'check_config_tax',
+        args: [move_id],
+        kwargs: {},
+      })
+
+      if (!request2){
+        throw new Error("La configuración de impuestos no es válida.");
+      }
+
       if (!this.device || this.device.iotIp !== request.iot_ip) {
         this.device = new DeviceController(this.env.services.iot_longpolling, {
           iot_ip: request.iot_ip,

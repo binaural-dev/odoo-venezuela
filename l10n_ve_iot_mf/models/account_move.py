@@ -125,7 +125,16 @@ class AccountMoveInh(models.Model):
         
         return _data
 
+    def check_config_tax(self):
+        for line in self.invoice_line_ids:
+                    
+            fiscal_code = line.tax_ids[0].fiscal_code
 
+            if fiscal_code not in ["1", "2", "3", "4"]:
+                return False  # Retorna False si el código no es válido
+
+        return True 
+    
     def check_print_out_invoice(self):
 
         if self.mf_invoice_number:
