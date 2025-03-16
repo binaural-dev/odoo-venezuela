@@ -203,10 +203,10 @@ class IotDeviceInherit(models.Model):
         --------
         Exceptions if fiscal machine is not connected
         """
-
+        _logger.info("set_serial_machine %s", res)
         self.write(
             {
-                "serial_machine": res['data']["serial_machine"],
-                "name": f"{res['data']['serial_machine']} - Fiscal Printer HKA",
+                "serial_machine": res["data"]["_registeredMachineNumber"],
+                "name": f"{res['data']['_registeredMachineNumber']} - Fiscal Printer HKA",
             }
         )
