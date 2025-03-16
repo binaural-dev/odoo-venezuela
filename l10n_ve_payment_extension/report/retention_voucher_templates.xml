@@ -14,7 +14,7 @@
                         Nro 1.436 del 17 de Noviembre del 2014"
                         Articulo 11: La Administracion Tributaria podra Designar como Responsable del Pago del
                         Impuesto, en calidad de Agentes de Retencion a quienes por sus
-                        Funciones Publicas o por Razon de sus Actividades Privadas intervengan en operaciones
+                        Funciones Publicas o por Razón de sus Actividades Privadas intervengan en operaciones
                         Gravadas con el Impuesto Establecido en este Decreto con Rango,
                         Valor y Fuerza de Ley.
                     </p>
@@ -38,7 +38,7 @@
             <div class="row" style="margin-top:10px">
                 <div class="col-4">
                     <div class="col-12">
-                        <span>Nombre o Razon Social del Agente de Retención</span>
+                        <span>Nombre o Razón Social del Agente de Retención</span>
                         <div style="width:100%">
                             <span t-esc="res_company.name"/>
                         </div>
@@ -87,7 +87,7 @@
         <div class="container" style="font-size:12px !important;">
             <div class="row">
                 <div class="col-6">
-                    <span>Nombre o Razon Social del Sujeto Retenido</span>
+                    <span>Nombre o Razón Social del Sujeto Retenido</span>
                     <div>
                         <span t-esc="retention.partner_id.name"/>
                     </div>
