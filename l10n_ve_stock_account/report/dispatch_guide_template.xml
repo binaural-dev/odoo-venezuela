@@ -61,7 +61,7 @@
                 <tbody>
                     <tr>
                         <td class="w-50 pb-0 my-0 pt-1">
-                            <span class="fw-bold">Número de secuencia:</span>
+                            <span class="fw-bold">Número de guía:</span>
                             <span t-out="o.guide_number or ''" />
                         </td>
                         <td class="w-50 pb-0 my-0 pt-1">
