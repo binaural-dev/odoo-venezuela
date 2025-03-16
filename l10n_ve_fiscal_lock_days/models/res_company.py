@@ -9,12 +9,12 @@ class ResCompany(models.Model):
 
     tax_period = fields.Selection(
         [
-            ("biweekly", "Quincenal"),
-            ("monthly", "Mensual"),
+            ("fortnightly", "Fortnightly"),
+            ("monthly", "Monthly"),
         ],
-        string="Periodo de Impuestos Venezuela",
+        string="Tax Period",
     )
 
     lock_date_tax_validation = fields.Boolean(
-        string="Validación para Bloquear creación de facturas"
+        string="Validation to Block Invoice Creation",
     )

@@ -1,5 +1,5 @@
 from odoo import models, fields, _
-from odoo.exceptions import UserError
+from odoo.exceptions import ValidationError 
 
 from datetime import timedelta
 
@@ -22,9 +22,9 @@ class AccountChangeLockDate(models.TransientModel):
                 ]
             )
             if sale_orders:
-                raise UserError(
+                raise ValidationError(
                     _(
-                        "No puedes establecer la fecha de bloqueo en %s porque existen pedidos de venta en estado 'Por facturar' con una fecha de orden anterior."
+                        "You cannot set the lock date to %s because there are sales orders in 'To Invoice' status with an order date prior to this."
                     )
                     % self.tax_lock_date
                 )
