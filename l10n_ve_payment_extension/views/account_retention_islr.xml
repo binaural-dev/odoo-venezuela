@@ -13,7 +13,7 @@
                     <header>
                         <button name="action_draft" type="object"
                             string="Convert to draft"
-                            attrs="{'invisible': ['|', ('type', '=', 'in_invoice'), ('state', '=', 'cancel')]}" />
+                            attrs="{'invisible': ['|', ('type', '!=', 'out_invoice'), ('state', '!=', 'cancel')]}" />
                         <button name="action_post" type="object" states="draft" string="Approve"
                             class="oe_highlight" />
                         <button name="action_cancel" type="object" states="emitted" string="Cancel"
