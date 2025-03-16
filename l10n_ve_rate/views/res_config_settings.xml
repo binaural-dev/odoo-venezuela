@@ -4,25 +4,29 @@
         <record id="res_config_settings_l10n_ve_rate" model="ir.ui.view">
             <field name="name">res.config.settings.l10n.ve.rate</field>
             <field name="model">res.config.settings</field>
-            <field name="priority" eval="100"/>
-            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="priority" eval="100" />
+            <field name="inherit_id" ref="base.res_config_settings_view_form" />
             <field name="arch" type="xml">
                 <xpath expr="//div[hasclass('settings')]" position="inside">
                     <div class="app_settings_block mt-6" data-key="l10n_ve_rate">
                         <h2>Rates Configuration</h2>
                         <div class="row mt16 o_settings_container" name="l10n_ve_rate_settings">
-                            <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <field name="currency_foreign_id" />
-                                    <span>Select alternate currency</span>
-                                </group>
-                                <div class="text-muted">
-                                Select the alternate currency that the system will use to make an
-                                accounting copy in the selected currency
+                            <div class="col-12 col-lg-6 o_setting_box" id="">
+                                <div class="o_setting_right_pane">
+                                    <group colspan="2" col="4">
+                                        <field name="currency_foreign_id" />
+                                        <span>Select alternate currency</span>
+                                    </group>
+                                    <div class="text-muted">
+                                        Select the alternate currency that the system will use to
+                                        make
+                                        an
+                                        accounting copy in the selected currency
 
 
+                                    </div>
+                                </div>
                             </div>
-                            </div>    
                         </div>
                     </div>
                 </xpath>
