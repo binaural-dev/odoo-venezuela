@@ -18,7 +18,7 @@
         <template id="report_freeform_document">
             <div class="row">
                 <div class="col-12">
-                <h3 t-if="o.state == 'draft' and o.move_type in ['out_invoice']" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">BORRADOR</h3>
+                <h3 t-if="o.state == 'draft'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">BORRADOR</h3>
                     <div class="text-center">
                         <span>
                             <t t-if="o.move_type in ['out_refund', 'in_refund']">
