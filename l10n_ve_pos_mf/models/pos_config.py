@@ -1,6 +1,9 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class PosConfigInherit(models.Model):
     _inherit = "pos.config"
@@ -24,3 +27,8 @@ class PosConfigInherit(models.Model):
         for config in self:
             if config.is_posbox:
                 config.iot_device_ids += config.iface_fiscal_data_module
+
+    def open_ui(self):
+        if not self.is_posbox or not self.iface_fiscal_data_module:
+            raise UserError(_("Need activate iot in the Box and use Fiscal Machine"))
+        return super().open_ui()
