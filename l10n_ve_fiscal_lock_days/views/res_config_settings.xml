@@ -18,7 +18,7 @@
                                     <field name="tax_period" />
                                 </group>
                                 <div class="text-muted">
-                                    Periocidad de los impuestos
+                                    Tax Periodicity
                                 </div>
                             </div>
                         </div>
@@ -32,7 +32,7 @@
                                     <label for="lock_date_tax_validation" />
                                 </group>
                                 <div class="text-muted">
-                                    Validación período fiscal
+                                    Validate Fiscal Period
                                 </div>
                             </div>
                         </div>
