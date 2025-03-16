@@ -1,9 +1,9 @@
 {
-    "name": "Binaural POS with IoT MF",
+    "name": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
     "version": "16.0.1.1.8",
     "category": "Accounting",
-    "summary": "Binaural POS with IoT MF",
-    "description": "Binaural POS with IoT MF",
+    "summary": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
+    "description": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
     "sequence": "1",
     "license": "LGPL-3",
     "author": "binaural-dev",
@@ -17,7 +17,7 @@
         "views/account_move.xml",
         "views/pos_payment_method.xml",
         "wizard/wizard_sales_book.xml",
-        "views/res_config_settings.xml"
+        "views/res_config_settings.xml",
     ],
     "assets": {
         "point_of_sale.assets": [
