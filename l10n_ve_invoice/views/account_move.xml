@@ -51,6 +51,9 @@
             <xpath expr="//field[@name='journal_id']" position="after">
                 <field name="is_debit_journal" readonly="True" invisible="1"/>
             </xpath>
+            <xpath expr="//page[@name='other_info']//field[@name='ref']" position="attributes">
+                <attribute name="attrs">{'readonly': [('move_type', 'in', ['out_refund', 'out_invoice']), ('is_debit_journal', '=', True)]}</attribute>
+            </xpath>
             <button name="button_draft" position="attributes">
                 <attribute name="attrs">
                     {
