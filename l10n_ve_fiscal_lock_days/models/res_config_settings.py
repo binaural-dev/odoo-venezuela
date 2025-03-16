@@ -6,15 +6,15 @@ class ResConfigSettingsInherit(models.TransientModel):
 
     tax_period = fields.Selection(
         [
-            ("biweekly", "Quincenal"),
-            ("monthly", "Mensual"),
+            ("fortnightly", "Fortnightly"),
+            ("monthly", "Monthly"),
         ],
-        string="Periodo de Impuestos Venezuela",
+        string="Tax Period",
         related="company_id.tax_period",
         readonly=False,
     )
     lock_date_tax_validation = fields.Boolean(
-        string="Validación para Bloquear creación de facturas",
+        string="Validation to Block Invoice Creation",
         related="company_id.lock_date_tax_validation",
         readonly=False,
     )
