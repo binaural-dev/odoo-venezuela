@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-16 02:24+0000\n"
-"PO-Revision-Date: 2025-03-16 02:24+0000\n"
+"POT-Creation-Date: 2025-03-16 21:41+0000\n"
+"PO-Revision-Date: 2025-03-16 21:41+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -95,17 +95,22 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<span class=\"fw-bold\">Motivo de traslado:</span>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Número de documento:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<span class=\"fw-bold\">Número de pedido:</span>"
+msgid "<span class=\"fw-bold\">Número de guía:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<span class=\"fw-bold\">Número de secuencia:</span>"
+msgid "<span class=\"fw-bold\">Número de pedido:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -116,11 +121,6 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Razón Social:</span>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<span class=\"fw-bold\">Motivo de traslado:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -231,6 +231,11 @@ msgid "Allowed Reasons"
 msgstr "Razones Permitidas"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_location__partner_id
+msgid "Assigned Customer"
+msgstr "Cliente:"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid "Autorizado por"
 msgstr ""
@@ -245,6 +250,13 @@ msgstr "Cancelar"
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__invoice_state__cancel
 msgid "Canceled"
 msgstr "Cancelada"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
+#, python-format
+msgid "Cannot sell more than the available consignation stock."
+msgstr "No se puede vender más de lo disponible en el stock de consignación."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -270,6 +282,12 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_stock_account.model_res_config_settings
 msgid "Config Settings"
 msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_location__is_consignation_warehouse
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__is_consignation_warehouse
+msgid "Consignation Warehouse"
+msgstr "Almacén de Consignación"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_res_partner
@@ -482,6 +500,16 @@ msgid "Impuesto"
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_sale_order__is_consignation
+msgid "Indicates if this sale order is a consignation sale."
+msgstr "Indica si este pedido de venta es una venta en consignación."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_warehouse__is_consignation_warehouse
+msgid "Indicates if this warehouse is used for consignation purposes."
+msgstr "Indica si este almacén se utiliza para fines de consignación."
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__active
 msgid "Indicates whether the transfer reason is active or archived."
 msgstr "Indica si el motivo de traslado está activa o archivada."
@@ -496,6 +524,11 @@ msgstr "Diario Consignado Interno"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__internal_consigned_journal_id
 msgid "Internal Journal"
 msgstr "Diario Interno"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model,name:l10n_ve_stock_account.model_stock_location
+msgid "Inventory Locations"
+msgstr "Ubicaciones de inventario"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_partner__default_document__invoice
@@ -530,9 +563,15 @@ msgstr "Facturada"
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_count
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_ids
 #, python-format
 msgid "Invoices"
 msgstr "Facturas"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__is_consignation
+msgid "Is Consignation"
+msgstr "Es Consignación"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_consignment
@@ -617,6 +656,20 @@ msgid "Los datos del cliente no existen"
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_location.py:0
+#, python-format
+msgid ""
+"Only 'Internal' locations can be created inside a consignation warehouse."
+msgstr "Solo se pueden crear ubicaciones 'Internas' dentro de un almacén de consignación."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced_partial
+msgid "Partially Invoiced"
+msgstr "Parcialmente Facturada"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_view_stock_location_form
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Partner"
 msgstr "Cliente"
@@ -695,6 +748,11 @@ msgstr "Facturas Programadas"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
 msgid "Purchase Journal"
 msgstr "Diario de Compras"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__readonly_is_consignation_warehouse
+msgid "Readonly Consignation Warehouse"
+msgstr "Almacén de Consignación (Solo Lectura)"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__name
@@ -812,8 +870,8 @@ msgid ""
 "The 'Transfer Reason' field is mandatory when 'Operation Code' is "
 "'internal'."
 msgstr ""
-"El campo 'Motivo de Traslado' es obligatorio cuando el 'Código de "
-"Operación' es 'interno'."
+"El campo 'Motivo de Traslado' es obligatorio cuando el 'Código de Operación'"
+" es 'interno'."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -830,8 +888,21 @@ msgstr ""
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__name
 msgid "The name of the transfer reason (e.g., Sale, Donation, Return)."
 msgstr ""
-"El nombre del motivo de traslado (por ejemplo, Venta, Donación, "
-"Devolución)."
+"El nombre del motivo de traslado (por ejemplo, Venta, Donación, Devolución)."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
+#, python-format
+msgid "The product is not available in the customer's consignation location."
+msgstr "El producto no está disponible en la ubicación de consignación del cliente."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_warehouse.py:0
+#, python-format
+msgid "There can only be one consignation warehouse."
+msgstr "Solo puede haber un almacén de consignación."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
@@ -845,6 +916,11 @@ msgstr "Estos impuestos se establecen en cualquier producto nuevo creado."
 msgid "This guide has at least one posted invoice, please check your invoice."
 msgstr ""
 "Esta guía tiene al menos una factura publicada, consulte sus facturas."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_location__partner_id
+msgid "This location is assigned to a specific customer for consignation."
+msgstr "Esta ubicación está asignada a un cliente específico para consignación."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_alert
@@ -884,7 +960,7 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_picking
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__picking_id
 msgid "Transfer"
-msgstr "Albarán"
+msgstr "Traslado"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__transfer_ids
@@ -923,6 +999,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__vendor_journal_id
 msgid "Vendor Journal"
 msgstr "Diario de proveedores"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model,name:l10n_ve_stock_account.model_stock_warehouse
+msgid "Warehouse"
+msgstr "Almacén"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
