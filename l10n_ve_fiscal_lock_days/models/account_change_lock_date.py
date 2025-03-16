@@ -1,5 +1,5 @@
 from odoo import models, fields, _
-from odoo.exceptions import ValidationError 
+from odoo.exceptions import ValidationError
 
 from datetime import timedelta
 
@@ -21,11 +21,13 @@ class AccountChangeLockDate(models.TransientModel):
                     ("date_order", "<", adjusted_lock_date),
                 ]
             )
+
             if sale_orders:
+                formatted_date = self.tax_lock_date.strftime("%d/%m/%Y")
                 raise ValidationError(
                     _(
                         "You cannot set the lock date to %s because there are sales orders in 'To Invoice' status with an order date prior to this."
                     )
-                    % self.tax_lock_date
+                    % formatted_date 
                 )
         return res
