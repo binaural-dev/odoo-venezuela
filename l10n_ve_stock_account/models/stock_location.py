@@ -1,5 +1,5 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError, UserError
+from odoo.exceptions import ValidationError
 
 import logging
 
@@ -13,15 +13,41 @@ class StockLocation(models.Model):
         "res.partner",
         string="Assigned Customer",
         help="This location is assigned to a specific customer for consignation.",
-        required=True,
     )
 
-    @api.constrains("partner_id", "location_id")
-    def _check_consignation_location(self):
+    is_consignation_warehouse = fields.Boolean(
+        string="Consignation Warehouse",
+        compute="_compute_is_consignation_warehouse",
+        store=True,
+    )
+
+    @api.constrains("usage", "location_id")
+    def _check_internal_location_only(self):
         for record in self:
-            if (
-                record.location_id
-                and record.location_id.is_consignation_warehouse
-                and not record.partner_id
-            ):
-                raise ValidationError(_("Consignation locations must be linked to a customer."))
+            warehouse = record.get_warehouse()
+            if warehouse and warehouse.is_consignation_warehouse and record.usage != "internal":
+                raise ValidationError(
+                    _("Only 'Internal' locations can be created inside a consignation warehouse.")
+                )
+
+    @api.depends("location_id")
+    def _compute_is_consignation_warehouse(self):
+        for record in self:
+            warehouse = record.get_warehouse()
+            record.is_consignation_warehouse = bool(
+                warehouse and warehouse.is_consignation_warehouse
+            )
+
+    def get_warehouse(self):
+        if not self.id:
+            return False
+
+        warehouse = self.env["stock.warehouse"].search(
+            [
+                "|",
+                ("lot_stock_id", "=", self.id),
+                ("view_location_id", "parent_of", self.id),
+            ],
+            limit=1,
+        )
+        return warehouse

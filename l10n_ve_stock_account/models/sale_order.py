@@ -23,12 +23,22 @@ class SaleOrder(models.Model):
 
     is_donation = fields.Boolean(string="Is Donation", default=False, tracking=True)
 
+    is_consignation = fields.Boolean(
+        string="Is Consignation",
+        compute="_compute_is_consignation",
+        store=True,
+        help="Indicates if this sale order is a consignation sale.",
+    )
+
+    @api.depends("warehouse_id")
+    def _compute_is_consignation(self):
+        for order in self:
+            order.is_consignation = order.warehouse_id and order.warehouse_id.is_consignation_warehouse
+
     @api.model
     def _default_document(self):
         """Get the default value for the document field from the partner's default_document."""
-        partner = self.env["res.partner"].browse(
-            self._context.get("default_partner_id")
-        )
+        partner = self.env["res.partner"].browse(self._context.get("default_partner_id"))
         return partner.default_document if partner else "invoice"
 
     @api.onchange("partner_id")
@@ -39,9 +49,13 @@ class SaleOrder(models.Model):
         else:
             self.document = "invoice"
 
-    @api.constrains('is_donation', 'state')
+    @api.constrains("is_donation", "state")
     def _check_is_donation(self):
         for order in self:
-            if (order.state in ['sale', 'done']) and order._origin:
+            if (order.state in ["sale", "done"]) and order._origin:
                 if order.is_donation != order._origin.is_donation:
-                    raise ValidationError(_("The field 'Is Donation' cannot be modified on a confirmed or completed order."))
+                    raise ValidationError(
+                        _(
+                            "The field 'Is Donation' cannot be modified on a confirmed or completed order."
+                        )
+                    )

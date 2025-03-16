@@ -14,6 +14,7 @@
         "l10n_ve_sale",
     ],
     "data": [
+        "security/ir.model.access.csv",
         "data/dispatch_guide_paperformat.xml",
         "data/ir_cron.xml",
         "data/ir_sequence.xml",
@@ -24,6 +25,8 @@
         "views/sale_order_views.xml",
         "views/res_partner_view.xml",
         "views/res_config_setting_views.xml",
+        "views/stock_warehouse_views.xml",
+        "views/stock_location_views.xml",
         "views/menuitem_views.xml",
         "views/alert_views.xml",
         "report/dispatch_guide.xml",
