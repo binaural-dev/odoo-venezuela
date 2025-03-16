@@ -3,6 +3,7 @@ from . import (
     res_company,
     res_config_settings,
     sale_order,
+    sale_order_line,
     res_partner,
     stock_move,
     stock_picking,
