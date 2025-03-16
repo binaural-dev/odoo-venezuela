@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-15 19:03+0000\n"
-"PO-Revision-Date: 2025-03-15 19:03+0000\n"
+"POT-Creation-Date: 2025-03-16 02:24+0000\n"
+"PO-Revision-Date: 2025-03-16 02:24+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -120,7 +120,7 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<span class=\"fw-bold\">Razón de traslado:</span>"
+msgid "<span class=\"fw-bold\">Motivo de traslado:</span>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -208,7 +208,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__code
 msgid "A unique code to identify the transfer reason."
-msgstr "Un código único para identificar la razón de la transferencia."
+msgstr "Un código único para identificar la motivo de traslado."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
@@ -240,6 +240,11 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
 msgid "Cancel"
 msgstr "Cancelar"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__invoice_state__cancel
+msgid "Canceled"
+msgstr "Cancelada"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -402,6 +407,11 @@ msgid "Document type for the sale order."
 msgstr "Tipo de documento para el pedido de venta."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__invoice_state__draft
+msgid "Draft"
+msgstr "Borrador"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Dscto."
 msgstr "Dscto"
@@ -474,7 +484,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__active
 msgid "Indicates whether the transfer reason is active or archived."
-msgstr "Indica si la razón de la transferencia está activa o archivada."
+msgstr "Indica si el motivo de traslado está activa o archivada."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
@@ -503,6 +513,12 @@ msgstr "Hora de ejecución (24h)"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
 msgid "Invoice From Stock Picking"
 msgstr "Factura desde el picking de stock"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_state
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
+msgid "Invoice State"
+msgstr "Estado de la factura"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced
@@ -601,6 +617,11 @@ msgid "Los datos del cliente no existen"
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
+msgid "Partner"
+msgstr "Cliente"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Peso"
 msgstr ""
@@ -627,7 +648,8 @@ msgstr "Lista de traslados"
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "Please configure the internal consigned journal from settings."
-msgstr "Por favor configure el diario consignado interno desde la configuración."
+msgstr ""
+"Por favor configure el diario consignado interno desde la configuración."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -655,6 +677,11 @@ msgid "Please select single type transfer"
 msgstr "Por favor seleccione un solo tipo de transferencia."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__invoice_state__posted
+msgid "Posted"
+msgstr "Confirmada"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Precio"
 msgstr ""
@@ -677,7 +704,7 @@ msgstr "Razón"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transfer_reason_id
 msgid "Reason for Transfer"
-msgstr "Razón para la Transferencia"
+msgstr "Motivo de traslado"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
@@ -758,12 +785,12 @@ msgstr "Show Crear crédito de proveedor"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__state_guide_dispatch
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "State Guide Dispatch"
-msgstr "Estatus"
+msgstr "Estado de Guía"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 msgid "State guide dispatch"
-msgstr "Estatus"
+msgstr "Estado de Guía"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_move
@@ -785,7 +812,7 @@ msgid ""
 "The 'Transfer Reason' field is mandatory when 'Operation Code' is "
 "'internal'."
 msgstr ""
-"El campo 'Razón de Transferencia' es obligatorio cuando el 'Código de "
+"El campo 'Motivo de Traslado' es obligatorio cuando el 'Código de "
 "Operación' es 'interno'."
 
 #. module: l10n_ve_stock_account
@@ -803,7 +830,7 @@ msgstr ""
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__name
 msgid "The name of the transfer reason (e.g., Sale, Donation, Return)."
 msgstr ""
-"El nombre de la razón de la transferencia (por ejemplo, Venta, Donación, "
+"El nombre del motivo de traslado (por ejemplo, Venta, Donación, "
 "Devolución)."
 
 #. module: l10n_ve_stock_account
