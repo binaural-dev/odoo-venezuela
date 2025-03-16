@@ -65,7 +65,7 @@
                             <span t-out="o.guide_number or ''" />
                         </td>
                         <td class="w-50 pb-0 my-0 pt-1">
-                            <span class="fw-bold">Razón de traslado:</span>
+                            <span class="fw-bold">Motivo de traslado:</span>
                             <span t-out="o.transfer_reason_id.name or ''" />
                         </td>
                     </tr>
