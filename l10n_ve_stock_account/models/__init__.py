@@ -1,11 +1,12 @@
 from . import (
+    transfer_reason,
     res_company,
     res_config_settings,
-    stock_picking,
-    account_move,
+    sale_order,
     res_partner,
     stock_move,
-    sale_order,
-    transfer_reason,
-    ir_actions_report
+    stock_picking,
+    account_move,
+    stock_return_picking,
+    ir_actions_report,
 )

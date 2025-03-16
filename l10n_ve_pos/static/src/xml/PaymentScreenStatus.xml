@@ -12,12 +12,6 @@
             </div>
         </xpath>
         <xpath expr="//div[hasclass('payment-status-total-due')]/span[2]" position="inside">
-            <div>
-                <span class="label">Foreign Total Due</span>
-                <span>
-                    <t t-esc="foreignTotalDueText" />
-                </span>
-            </div>
         </xpath>
         <xpath expr="//div[hasclass('payment-status-remaining')]/span[2]" position="after">
             <div>
@@ -34,6 +28,12 @@
                 <span class="amount"
                       t-att-class="{ highlight: props.order.get_change() > 0 }">
                     <t t-esc="foreignChangeText" />
+                </span>
+            </div>
+            <div class="payment-status-total-due">
+                <span class="label">Foreign Total Due</span>
+                <span>
+                    <t t-esc="foreignTotalDueText" />
                 </span>
             </div>
         </xpath>

@@ -6,8 +6,10 @@
             <t t-if="props.line.isExempt()"> (E)</t>
             <t t-else=""> (G)</t>
         </xpath>
-        <xpath expr="//span[hasclass('price')]" position="after">
+        <xpath expr="//span[hasclass('price')]" position="replace">
+            <!-- TODO Override price base-->
             <span class="price">
+                <t t-esc="env.pos.format_currency(props.line.get_display_price())"/>/
                 <t t-esc="env.pos.format_foreign_currency(props.line.get_display_foreign_price())"/>
             </span>
         </xpath>
