@@ -14,6 +14,13 @@ class StockPicking(models.Model):
     _inherit = "stock.picking"
 
     invoice_count = fields.Integer(string="Invoices", compute="_compute_invoice_count")
+    invoice_ids = fields.Many2many(
+        comodel_name="account.move",
+        string="Invoices",
+        compute="_compute_invoice_ids",
+        search="_search_invoice_ids",
+        copy=False,
+    )
     operation_code = fields.Selection(related="picking_type_id.code")
     is_return = fields.Boolean()
 
@@ -26,6 +33,7 @@ class StockPicking(models.Model):
         [
             ("to_invoice", "To Invoice"),
             ("invoiced", "Invoiced"),
+            ("invoiced_partial", "Partially Invoiced"),
         ],
         default="to_invoice",
     )
@@ -631,13 +639,20 @@ class StockPicking(models.Model):
 
     def _compute_invoice_count(self):
         for picking_id in self:
-            move_ids = picking_id.env["account.move"].search(
-                [("transfer_ids", "in", picking_id.id)]
+            move_ids = self.env["account.move"].search([("transfer_ids", "in", picking_id.id)])
+            picking_id.invoice_count = len(move_ids)
+
+    # @api.depends()
+    def _compute_invoice_ids(self):
+        for picking in self:
+            invoices = self.env["account.move"].search(
+                [("transfer_ids", "in", picking.ids)]
             )
-            if move_ids:
-                self.invoice_count = len(move_ids)
-            else:
-                self.invoice_count = 0
+            picking.invoice_ids = invoices
+
+    def _search_invoice_ids(self, operator, value):
+        invoices = self.env["account.move"].search([("id", operator, value)])
+        return [("id", "in", invoices.mapped("transfer_ids").ids)]
 
     def _compute_invoice_state(self):
         for picking_id in self:
