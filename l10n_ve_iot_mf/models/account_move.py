@@ -14,23 +14,21 @@ class AccountMoveInh(models.Model):
         Return unique fiscal machine on IoT Box
         """
         return self.env["iot.device"].search([("type", "=", "fiscal_data_module")], limit=1).id
-    
+
+    is_credit = fields.Boolean(default=False)
     iot_mf = fields.Many2one(
         "iot.device",
         string="Fiscal Machine",
         default=default_fiscal_machine,
         copy=False,
+        domain=[("serial_machine", "!=", False)],
     )
-    
-    is_credit = fields.Boolean(default=False)
-    
     iot_box = fields.Many2one(
         "iot.box", string="IoT Box", related="iot_mf.iot_id", default=False, copy=False
     )
     mf_serial = fields.Char(
         string="Fiscal machine serial", default=False, copy=False, tracking=True
     )
-    
     mf_invoice_number = fields.Char(
         string="Sequence number", default=False, copy=False, tracking=True
     )
@@ -103,10 +101,8 @@ class AccountMoveInh(models.Model):
                     )
 
     def check_reprint(self):
-        
         if not self.mf_invoice_number:
             raise ValidationError(_("The invoice has not already been printed"))
-                
         if not self.iot_mf:
             raise ValidationError(_("The invoice has no fiscal machine assigned"))
         data = self
@@ -122,12 +118,9 @@ class AccountMoveInh(models.Model):
             "type": data.move_type,
             "mf_number": data.mf_invoice_number,
         }
-        
         return _data
 
-
     def check_print_out_invoice(self):
-
         if self.mf_invoice_number:
             raise ValidationError(_("The invoice has already been printed"))
         if not self.iot_mf:
@@ -136,8 +129,6 @@ class AccountMoveInh(models.Model):
             raise ValidationError(_("Cannot print an invoice without validation"))
         if self.invoice_date != fields.Date.today():
             raise ValidationError(_("Cannot print an invoice with a future date"))
-        if self.is_credit and self.amount_residual != self.amount_total:
-            raise ValidationError(_("You cannot print a credit invoice with associated payments"))
 
         data = self
 
@@ -198,34 +189,38 @@ class AccountMoveInh(models.Model):
             "invoice_lines": _invoice_lines,
             "payment_lines": payment_lines,
         }
-        
         return _data
-    
+
     def print_out_invoice(self, values):
-        
-        if 'data' in values:
-                        
-            update_data = {}
-            
-            if "number" in values['data']:
-                update_data["mf_invoice_number"] = values['data']["number"]
-            
-            if "report_z" in values['data']:
-                update_data["mf_reportz"] = values['data']["report_z"]
-            
-            if "serial_machine" in values['data']:
-                update_data["mf_serial"] = values['data']["serial_machine"]
-            
-            if update_data:
-                self.write(update_data)
-                
-        return True 
+        self.write(
+            {
+                "mf_invoice_number": values["sequence"],
+                "mf_serial": values["serial_machine"],
+            }
+        )
+
+        if self.has_printed(values["sequence"]):
+            context = dict(self._context or {})
+            context[
+                "message"
+            ] = f"""
+            An invoice with the same sequence number {values["sequence"]}
+            Please review previous invoices
+            """
+
+            return {
+                "name": f"Warning",
+                "type": "ir.actions.act_window",
+                "view_mode": "form",
+                "res_model": "sh.message.wizard",
+                "target": "new",
+                "context": context,
+            }
 
     def check_print_out_refund(self):
         """
         Print out refund in fiscal machine
         """
-        
         if not self.iot_mf:
             raise ValidationError(_("The invoice has no fiscal machine assigned"))
         if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
@@ -264,7 +259,6 @@ class AccountMoveInh(models.Model):
                 payment_lines.append(new_payment)
 
         _invoice_lines = []
-        
         for line in data.invoice_line_ids:
             price_vef = line.price_unit
             if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
@@ -296,7 +290,6 @@ class AccountMoveInh(models.Model):
                 "number": data.reversed_entry_id.mf_invoice_number,
                 "serial_machine": data.reversed_entry_id.mf_serial,
                 "date": data.reversed_entry_id.invoice_date.strftime("%d/%m/%Y"),
-                "reportz": data.reversed_entry_id.mf_reportz
             },
             "invoice_lines": _invoice_lines,
             "payment_lines": payment_lines,
@@ -304,25 +297,9 @@ class AccountMoveInh(models.Model):
 
         return _data
 
-    def print_out_refund(self, values): 
-        if 'data' in values:
-            
-            update_data = {}
-            
-            if "number" in values['data']:
-                update_data["mf_invoice_number"] = values['data']["number"]
-            
-            if "report_z" in values['data']:
-                update_data["mf_reportz"] = values['data']["report_z"]
-            
-            if "serial_machine" in values['data']:
-                update_data["mf_serial"] = values['data']["serial_machine"]
-            
-            if update_data:
-                self.write(update_data)
-        
-        return True 
-    
+    def print_out_refund(self, values):
+        self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
+
     def _get_reconciled_info_JSON_values(self):
         res = super()._get_reconciled_info_JSON_values()
         reconciled_vals = []

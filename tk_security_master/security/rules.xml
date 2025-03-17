@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <data noupdate="0">
+        <!-- Sign In-->
+        <record id="user_own_sign_in_details_k_t" model="ir.rule">
+            <field name="name">TK Security Master: Own Sign In Details</field>
+            <field name="model_id" ref="tk_security_master.model_user_sign_in_details"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+			<field name="groups" eval="[(4, ref('base.group_user')),(4, ref('base.group_portal'))]"/>
+        </record>
+        <record id="t_k_user_all_sign_in_details" model="ir.rule">
+            <field name="name">TK Security Master: All Sign In Details</field>
+            <field name="model_id" ref="tk_security_master.model_user_sign_in_details"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('tk_security_master.t_k_security_master_admin'))]"/>
+        </record>
+        <!-- Audit-->
+        <record id="user_own_audit_k_t" model="ir.rule">
+            <field name="name">TK Security Master: Own User Audit</field>
+            <field name="model_id" ref="tk_security_master.model_user_audit"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+			<field name="groups" eval="[(4, ref('base.group_user')),(4, ref('base.group_portal'))]"/>
+        </record>
+        <record id="t_k_user_all_audit" model="ir.rule">
+            <field name="name">TK Security Master: All User Audit</field>
+            <field name="model_id" ref="tk_security_master.model_user_audit"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('tk_security_master.t_k_security_master_admin'))]"/>
+        </record>
+    </data>
+</odoo>

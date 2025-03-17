@@ -195,10 +195,7 @@ class SerialBaseFiscalDriver(SerialDriver):
             valid = False
 
         invoice_affected = invoice["invoice_affected"].keys()
-        if (
-            not "number" in invoice_affected
-            or invoice["invoice_affected"]["number"] == ""
-        ):
+        if not "number" in invoice_affected or invoice["invoice_affected"]["number"] == "":
             msg.append("No se recibio una factura afectada")
             valid = False
         if (
@@ -261,10 +258,10 @@ class SerialBaseFiscalDriver(SerialDriver):
     def _print_invoice(self, invoice, move_type):
         return {"valid": False, "message": "No se ha implementado"}
 
-    def _print_report_x(self):
+    def _print_report_x(self) :
         return {"valid": False, "message": "No se ha implementado"}
 
-    def _print_report_z(self):
+    def _print_report_z(self) :
         return {"valid": False, "message": "No se ha implementado"}
 
     def _get_serial_machine(self, data):
