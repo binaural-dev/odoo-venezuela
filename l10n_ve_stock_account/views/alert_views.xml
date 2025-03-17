@@ -9,7 +9,6 @@
             ('type_delivery_step', '!=', 'int'),
             ('transfer_reason_id.code', '!=', 'self_consumption'),
             ('state_guide_dispatch', '=', 'to_invoice')])"/>
-      <t t-out="pickings_combined" />
       <div>
         <span id="oe_neutralize_banner"
           t-if="pickings_combined"
