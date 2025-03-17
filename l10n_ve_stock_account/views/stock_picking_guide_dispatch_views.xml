@@ -9,18 +9,31 @@
                 </header>
                 <field name="name" decoration-bf="1"/>
                 <field name="guide_number" string="Guide Number"/>
+                <field name="partner_id" string="Partner" optional="hide"/>
                 <field name="date_done" string="Guide Date"/>
+                <field name="operation_code" optional="hide"/>
+                <field name="transfer_reason_id" optional="hide"/>
+                <field name="company_id" invisible="1"/>
+                <field name="allowed_reason_ids" invisible="1"/>
                 <field name="show_create_invoice" invisible="1"/>
                 <field name="show_create_bill" invisible="1"/>
                 <field name="show_create_customer_credit" invisible="1"/>
                 <field name="show_create_vendor_credit" invisible="1"/>
+                <field name="show_create_invoice_internal" invisible="1"/>
                 <field 
                     name="state_guide_dispatch" 
-                    string="State Guide Dispatch" 
-                    widget="badge" 
+                    string="State Guide Dispatch" widget="badge" 
                     decoration-muted="state_guide_dispatch == 'to_invoice'"
                     decoration-success="state_guide_dispatch == 'invoiced'"
                 />
+                <field 
+                    name="invoice_state"
+                    string="Invoice State" widget="badge"
+                    decoration-muted="invoice_state == 'draft'"
+                    decoration-success="invoice_state == 'posted'"
+                    decoration-danger="invoice_state == 'cancel'"
+                    optional="hide"
+                 />
                 <button 
                     name="create_invoice" 
                     class="btn btn-link text-info" 
@@ -53,31 +66,32 @@
                     type="object"
                     attrs="{'invisible': [('show_create_vendor_credit', '=', False)]}"
                 />
+                <button 
+                    name="create_internal_invoice" 
+                    class="btn btn-link text-info" 
+                    icon="fa-file-text" 
+                    string="Create Internal Invoice" 
+                    type="object"
+                    invisible="1"
+                />
             </tree>
         </field>
     </record>
-
     <record id="stock_picking_guide_dispatch_view_search" model="ir.ui.view">
         <field name="name">stock.picking.guide.dispatch.view.search</field>
         <field name="model">stock.picking</field>
         <field name="arch" type="xml">
-            
             <search string="Search">
                 <field name="name" />
                 <field name="guide_number" />
-            
                 <filter name="state_guide_dispatch" string="State guide dispatch" context="{'group_by': 'state_guide_dispatch'}"/>
                 <filter name="date_done_group" string="Guide Date" context="{'group_by': 'date_done'}"/>
-
                 <filter name="state_guide_dispatch_to_invoice" string="To Invoice" domain="[('state_guide_dispatch', '=', 'to_invoice')]"/>
                 <filter name="state_guide_dispatch_invoiced" string="Invoiced" domain="[('state_guide_dispatch', '=', 'invoiced')]"/>
                 <filter name="date_done_filter" string="Guide Date" date="date_done"/>
-            
             </search>
-        
         </field>
     </record>
-
     <record id="action_picking_guide_dispatch" model="ir.actions.act_window">
         <field name="name">Report Guide Dispatch</field>
         <field name="res_model">stock.picking</field>
@@ -91,5 +105,17 @@
             ]"
         />
         <field name="context">{"search_default_state_guide_dispatch_to_invoice":1}</field>
+        <field name="domain">[
+            '&amp;',
+            '&amp;',
+            '&amp;',
+                ('state', '=', 'done'),
+                ('type_delivery_step', 'in', ['out', 'int']),
+                ('transfer_reason_id.code', '!=', 'self_consumption'),
+            '|',
+                ('type_delivery_step', '=', 'out'),
+            '&amp;',
+                ('type_delivery_step', '=', 'int'),
+                ('is_dispatch_guide', '=', True)]</field>
     </record>
 </odoo>

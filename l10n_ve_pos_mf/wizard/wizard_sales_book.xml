@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<odoo>
+    <data>
+        <record id="wizard_sales_book_pos" model="ir.ui.view">
+            <field name="name">wizard.sales.book</field>
+            <field name="model">wizard.sales.book</field>
+            <field name="arch" type="xml">
+                <form string="Reportes Contables">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="download_sales_book" type="object" string="Generar Informe"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_pos_sales_book">
+            <field name="name">Sales book</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">wizard.sales.book</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

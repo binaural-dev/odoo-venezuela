@@ -32,15 +32,20 @@
         </xpath>
         <xpath expr="//div[hasclass('payment-status-total-due')]" position="inside">
             <t t-if="isIgtf">
+                <br/>
                 <span>BI IGTF:</span>
                 <span t-esc="biAmount"/>
                 <br/>
                 <span>IGTF:</span>
                 <span t-esc="igtfAmount"/>
                 <br/>
+            </t>
+        </xpath>
+        <xpath expr="//div[hasclass('payment-status-change')]" position="inside"> 
+            <div class="payment-status-total-due">
                 <span>Foreign IGTF:</span>
                 <span t-esc="igtfForeignAmount"/>
-            </t>
+            </div>
         </xpath>
     </t>
 </templates>

@@ -4,11 +4,14 @@
     inherit_id="web.layout" active="True">
     <xpath expr="//body" position="inside">
       <t t-set="env" t-value="request.env(context=ctx)" />
-      <t t-set="pickings"
-        t-value="env['stock.picking'].sudo().search([('type_delivery_step','=','out'),('transfer_reason_id.code','not in', ['consignment','transfer', False])])" />
+      <t t-set="pickings_combined" t-value="env['stock.picking'].sudo().search([
+            ('state', '=', 'done'),
+            ('type_delivery_step', '!=', 'int'),
+            ('transfer_reason_id.code', '!=', 'self_consumption'),
+            ('state_guide_dispatch', '=', 'to_invoice')])"/>
       <div>
         <span id="oe_neutralize_banner"
-          t-if="pickings"
+          t-if="pickings_combined"
           t-attf-style="
                 text-align: center;
                 color: #FFFFFF;
@@ -16,7 +19,7 @@
                 position: relative;
                 display: block;
                 font-size: 16px;">
-          Tienes <t t-out="len(pickings)" /> traslados por facturar </span>
+          Tienes <t t-out="len(pickings_combined)" /> guías de despacho por facturar </span>
       </div>
     </xpath>
     <xpath expr="//head">
