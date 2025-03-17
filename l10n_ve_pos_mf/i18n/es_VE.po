@@ -382,4 +382,4 @@ msgstr "Wizard para descargar xlsx de libro de ventas POS"
 #. module: l10n_ve_pos_mf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.res_config_settings_l10n_ve_pos
 msgid "message in head"
-msgstr ""
+msgstr "Mensaje en encabezado"

@@ -27,9 +27,6 @@
                         <label for="pos_access_button_mf"/>
                     </div>
                 </div>
-            </xpath>
-            <xpath expr="//div[@name='binaural_igtf_settings']" position="after">
-
                 <div class="col-12 col-lg-6 o_setting_box"
                         id="message_in_head">
                         <div class="o_setting_left_pane">
@@ -42,7 +39,7 @@
                             </div>
                         </div>
                     </div>
-                </xpath>
+            </xpath>
         </field>
     </record>
 </odoo>
