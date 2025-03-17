@@ -1,4 +1,4 @@
-odoo.define("binaural_pos_mf.OrderState", function(require) {
+odoo.define("l10n_ve_pos_mf.OrderState", function(require) {
   "use strict";
 
   const { Order } = require("point_of_sale.models");

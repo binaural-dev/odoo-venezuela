@@ -1,4 +1,4 @@
-odoo.define("binaural_pos_mf.PosState", function(require) {
+odoo.define("l10n_ve_pos_mf.PosState", function(require) {
   "use strict";
 
   const { PosGlobalState } = require("point_of_sale.models");

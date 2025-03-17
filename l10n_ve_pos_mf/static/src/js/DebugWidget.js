@@ -1,4 +1,4 @@
-odoo.define("binaural_pos_mf.DebugWidget", function(require) {
+odoo.define("l10n_ve_pos_mf.DebugWidget", function(require) {
   'use strict';
 
   const DebugWidget = require('point_of_sale.DebugWidget');

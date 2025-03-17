@@ -1,4 +1,4 @@
-odoo.define("binaural_pos_mf.Chrome", function(require) {
+odoo.define("l10n_ve_pos_mf.Chrome", function(require) {
   'use strict';
 
   const Chrome = require('point_of_sale.Chrome');
