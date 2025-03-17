@@ -5,18 +5,10 @@
     <xpath expr="//body" position="inside">
       <t t-set="env" t-value="request.env(context=ctx)" />
       <t t-set="pickings_combined" t-value="env['stock.picking'].sudo().search([
-        '&amp;',
-        '&amp;',
-        '&amp;',
             ('state', '=', 'done'),
-            ('type_delivery_step', 'in', ['out', 'int']),
+            ('type_delivery_step', '!=', 'int'),
             ('transfer_reason_id.code', '!=', 'self_consumption'),
-            ('state_guide_dispatch', '=', 'to_invoice'),
-        '|',
-            ('type_delivery_step', '=', 'out'),
-            '&amp;',
-                ('type_delivery_step', '=', 'int'),
-                ('is_dispatch_guide', '=', True)])"/>
+            ('state_guide_dispatch', '=', 'to_invoice')])"/>
       <div>
         <span id="oe_neutralize_banner"
           t-if="pickings_combined"

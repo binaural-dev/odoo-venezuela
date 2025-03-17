@@ -12,8 +12,7 @@ function onIoTActionResult(data, env) {
   if (data.result === true) {
     env.services.notification.add(env._t("Successfully sent to printer!"));
   } else {
-    const errorMessage = data.message ? env._t(data.message) : env._t("Check if the printer is still connected");
-    env.services.notification.add(errorMessage, {
+    env.services.notification.add(env._t("Check if the printer is still connected"), {
       title: env._t("Connection to printer failed"),
       type: "danger",
     });
@@ -22,7 +21,6 @@ function onIoTActionResult(data, env) {
 
 
 const { xml, useState } = owl;
-
 
 export class IoTFiscalMachineComponent extends Widget {
   setup() {
@@ -68,7 +66,6 @@ export class IoTFiscalMachineComponent extends Widget {
     })
   }
   get iotDevice() {
-    console.log(this.device)
     return this.device
   }
   /*--------------------------------------------------------
@@ -76,6 +73,33 @@ export class IoTFiscalMachineComponent extends Widget {
    *-------------------------------------------------------*/
   not_function() {
     console.log("CLOWN, please set a function name")
+  }
+  get_serial_machine() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+      this.env.services.rpc("web/dataset/call_kw/iot.device/set_serial_machine", {
+        model: 'iot.device',
+        method: 'set_serial_machine',
+        args: [this.props.record.data.id, value],
+        kwargs: {},
+      })
+        .then(() => {
+          window.location.reload()
+        })
+    });
+    this.iotDevice.action({
+      action: "get_last_invoice_number",
+      data: { "me": "you" },
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   get_serial_machine() {
@@ -96,8 +120,6 @@ export class IoTFiscalMachineComponent extends Widget {
           window.location.reload()
         })
     });
-    
-    
     this.iotDevice.action({
       action: "get_last_invoice_number",
       data: { "me": "you" },
@@ -409,138 +431,78 @@ export class IoTFiscalMachineComponent extends Widget {
       return
     }
 
-    const move_id = this.props.record.__bm_load_params__.res_id
+    const move_id = this.props.record.resId
 
-    try{
-      const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_print_out_invoice", {
+    const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_print_out_invoice", {
+      model: 'account.move',
+      method: 'check_print_out_invoice',
+      args: [move_id],
+      kwargs: {},
+    })
+
+    this.device = new DeviceController(
+      this.env.services.iot_longpolling,
+      { iot_ip: request.iot_ip, identifier: request.identifier }
+    );
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+      this.env.services.rpc("web/dataset/call_kw/account.move/print_out_invoice", {
         model: 'account.move',
-        method: 'check_print_out_invoice',
-        args: [move_id],
+        method: 'print_out_invoice',
+        args: [move_id, value],
         kwargs: {},
+      }).then(() => window.location.reload())
+    });
+
+    this.iotDevice.action({
+      action: "print_out_invoice",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
       })
-
-      if (!this.device || this.device.iotIp !== request.iot_ip) {
-        this.device = new DeviceController(this.env.services.iot_longpolling, {
-          iot_ip: request.iot_ip,
-          identifier: request.identifier,
-        });
-      }
-
-      const printResponse = await new Promise((resolve, reject) => {
-        try {
-            const result = this.iotDevice.action({
-                action: "print_out_invoice",
-                data: request,
-            });
-            resolve(result); 
-        } catch (error) {
-            reject(error); 
-        }
-      });
-      
-      if(printResponse.result) {
-
-        onIoTActionResult(printResponse, this.env);
-        
-        await this.iotDevice.action({
-          action: "get_last_invoice_number",
-          data: { me: "you" },
-        });
-        
-        this.listener = async ({ value }) => {
-          await this.env.services.rpc("web/dataset/call_kw/account.move/print_out_invoice", {
-            model: "account.move",
-            method: "print_out_invoice",
-            args: [this.props.record.data.id, value],
-            kwargs: {},
-          }).then(data => {
-
-            setTimeout(function(){}, 2000);
-            
-            if (data){
-              window.location.reload();   
-            }
-
-          });
-        };
-        
-        this.iotDevice.addListener(this.listener);
-      }
-
-    }catch (error) {
-      let errorMessage = error.data?.message || error.message || "Ocurrió un error desconocido.";
-      console.error("Error en print_out_refund:", errorMessage);
-      onIoTActionResult({ result: false, message: errorMessage }, this.env);
-    }
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async print_out_refund() {
     if (!this.device) {
-      this.showFailedConnection();
-      return;
+      this.showFailedConnection()
+      return
     }
-  
-    const move_id = this.props.record.__bm_load_params__.res_id;
-  
-    try {
-      const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_print_out_refund", {
-        model: 'account.move',
-        method: 'check_print_out_refund',
-        args: [move_id],
-        kwargs: {},
-      });
-  
-      if (!this.device || this.device.iotIp !== request.iot_ip) {
-        this.device = new DeviceController(this.env.services.iot_longpolling, {
-          iot_ip: request.iot_ip,
-          identifier: request.identifier,
-        });
-      }
-  
-      const printResponse = await new Promise((resolve, reject) => {
-        try {
-          const result = this.iotDevice.action({
-            action: "print_out_refund",
-            data: request,
-          });
-          resolve(result);
-        } catch (error) {
-          reject(error);
-        }
-      });
-  
-      if (printResponse.result) {
-        onIoTActionResult(printResponse, this.env);
-  
-        await this.iotDevice.action({
-          action: "get_last_out_refund_number",
-          data: { me: "you" },
-        });
-  
-        this.listener = async ({ value }) => {
-          await this.env.services.rpc("web/dataset/call_kw/account.move/print_out_refund", {
-            model: "account.move",
-            method: "print_out_refund",
-            args: [this.props.record.data.id, value],
-            kwargs: {},
-          }).then(data => {
-            
-            setTimeout(function(){}, 3000);
-            
-            if (data){
-              window.location.reload();   
-            }
 
-          });
-        };
-        this.iotDevice.addListener(this.listener);
-      }
-  
-    } catch (error) {
-      let errorMessage = error.data?.message || error.message || "Ocurrió un error desconocido.";
-      console.error("Error en print_out_refund:", errorMessage);
-      onIoTActionResult({ result: false, message: errorMessage }, this.env);
-    }
+    const move_id = this.props.record.resId
+
+    const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_print_out_refund", {
+      model: 'account.move',
+      method: 'check_print_out_refund',
+      args: [move_id],
+      kwargs: {},
+    })
+
+    this.device = new DeviceController(
+      this.env.services.iot_longpolling,
+      { iot_ip: request.iot_ip, identifier: request.identifier }
+    );
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+      this.env.services.rpc("web/dataset/call_kw/account.move/print_out_refund", {
+        model: 'account.move',
+        method: 'print_out_refund',
+        args: [move_id, value],
+        kwargs: {},
+      }).then(() => window.location.reload())
+    });
+
+    this.iotDevice.action({
+      action: "print_out_refund",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async reprint_document() {
@@ -548,9 +510,8 @@ export class IoTFiscalMachineComponent extends Widget {
       this.showFailedConnection()
       return
     }
-    
-    const move_id = this.props.record.__bm_load_params__.res_id;
-    
+
+    const move_id = this.props.record.resId
 
     const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_reprint", {
       model: 'account.move',
@@ -559,24 +520,23 @@ export class IoTFiscalMachineComponent extends Widget {
       kwargs: {},
     })
 
-    if (!this.device || this.device.iotIp !== request.iot_ip) {
-      this.device = new DeviceController(this.env.services.iot_longpolling, {
-        iot_ip: request.iot_ip,
-        identifier: request.identifier,
-      });
-    }
+    this.device = new DeviceController(
+      this.env.services.iot_longpolling,
+      { iot_ip: request.iot_ip, identifier: request.identifier }
+    );
 
-    await new Promise((resolve, reject) => {
-      try {
-        const result = this.iotDevice.action({
-          action: "reprint",
-          data: request,
-        });
-        resolve(result);
-      } catch (error) {
-        reject(error);
-      }
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
     });
+
+    this.iotDevice.action({
+      action: "reprint",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 }
 

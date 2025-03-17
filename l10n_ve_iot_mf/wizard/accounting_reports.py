@@ -69,7 +69,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "document_number": f"Desde {data.get('range_start')} Hasta {data.get('range_end')}",
             "mf_reportz": data.get("mf_reportz"),
             "mf_serial": data.get("mf_serial"),
-            "move_type": self._determinate_type(data.get("move_type")),
+            "move_type": data.get("move_type"),
             "transaction_type": "01-REG",
             "number_invoice_affected": "",
             "correlative": "",
