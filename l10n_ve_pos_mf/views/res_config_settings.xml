@@ -28,13 +28,10 @@
                     </div>
                 </div>
             </xpath>
-            <!-- /div[@id='receipt_journal_id_pane'] -->
             <xpath expr="//div[@name='binaural_igtf_settings']" position="after">
 
-                <div 
-                        class="col-12 col-lg-6 o_setting_box"
-                        id="message_in_head"
-                    >
+                <div class="col-12 col-lg-6 o_setting_box"
+                        id="message_in_head">
                         <div class="o_setting_left_pane">
                             <field name="message_in_head"/>
                         </div>

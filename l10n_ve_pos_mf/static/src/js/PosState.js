@@ -234,7 +234,7 @@ odoo.define("l10n_ve_pos_mf.PosState", function(require) {
         }
       }
       async push_single_order(order, opts) {
-        if (this.useFiscalMachine() && !order.to_receipt && !order.mf_invoice_number) {
+        if (this.useFiscalMachine() && !order.mf_invoice_number) {
           let response = await this.pushToMF(order)
           if (response.code != 200) throw response
           let value = await super.push_single_order.apply(this, [order, opts]);
