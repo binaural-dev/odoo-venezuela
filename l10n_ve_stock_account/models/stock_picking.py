@@ -148,7 +148,7 @@ class StockPicking(models.Model):
                 if not customer_journal_id:
                     raise UserError(_("Please configure the journal from settings"))
 
-                invoice_line_list = picking_id._get_invoice_lines_for_invoice()
+                invoice_line_list = picking_id._get_invoice_lines_for_invoice(from_picking_line=True)
                 origin_name = self._get_origin_name(picking_id)
                 invoice = self.env["account.move"].create(
                     {
@@ -163,9 +163,9 @@ class StockPicking(models.Model):
                         "picking_id": picking_id.id,
                         "invoice_line_ids": invoice_line_list,
                         "transfer_ids": self,
+                        "from_picking": True,
                     }
                 )
-                invoice.with_context(move_action_post_alert=True).action_post()
             picking_id.write({"state_guide_dispatch": "invoiced"})
         return invoice
 
@@ -352,7 +352,7 @@ class StockPicking(models.Model):
             picking_id.write({"state_guide_dispatch": "invoiced"})
         return invoice
 
-    def _get_invoice_lines_for_invoice(self):
+    def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
         invoice_line_list = []
         for move_id in self.move_ids_without_package:
@@ -376,6 +376,7 @@ class StockPicking(models.Model):
                     ),
                     "tax_ids": tax_ids,
                     "quantity": move_id.quantity_done,
+                    "from_picking_line": from_picking_line,
                 },
             )
             invoice_line_list.append(vals)
