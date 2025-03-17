@@ -29,7 +29,7 @@ class WebBackend(home.Home):
         response = super(WebBackend, self).web_login(redirect, **kw)
         return response
 
-    @http.route(['/web', '/odoo', '/odoo/<path:subpath>', '/scoped_app/<path:subpath>'], type='http', auth="none")
+    @http.route('/web', type='http', auth="none")
     def web_client(self, s_action=None, **kw):
         ensure_db()
         if request.env.user.id != request.env.ref('base.public_user').id and request.env.user.pwd_expire:

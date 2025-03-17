@@ -4,14 +4,16 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+
 
 
 class SecurityMasterConfig(models.TransientModel):
     _inherit = 'res.config.settings'
 
-    login_alert = fields.Boolean(string='Is Login Alert?',
+    login_alert = fields.Boolean(string='Is Login Alert?', default=True,
                                  config_parameter='tk_security_master.login_alert')
     auto_session_terminate = fields.Boolean(string='Auto terminate inactive session ?', default=False,
                                             config_parameter='tk_security_master.auto_terminate_session')
@@ -26,14 +28,12 @@ class SecurityMasterConfig(models.TransientModel):
                                 config_parameter='tk_security_master.pwd_expire_policy')
     pwd_expire_days = fields.Integer(string='Expiry Days', default=30,
                                      config_parameter='tk_security_master.pwd_expire_days')
-    enable_auto_delete = fields.Boolean(string='Is Enable Auto delete tag?', default=False,
-                                        config_parameter='tk_security_master.enable_auto_delete')
+    enable_auto_delete = fields.Boolean(string='Is Enable Auto delete tag?', default=False, config_parameter='tk_security_master.enable_auto_delete')
     create_log = fields.Boolean(string='Create', default=False, config_parameter='tk_security_master.create_log')
     read_log = fields.Boolean(string='Read', default=False, config_parameter='tk_security_master.read_log')
     update_log = fields.Boolean(string='Update', default=False, config_parameter='tk_security_master.update_log')
-    delete_log = fields.Boolean(string='Delete', default=False, config_parameter='tk_security_master.delete_log')
-    auto_delete_log_days = fields.Integer('After How many days.', default=30,
-                                          config_parameter='tk_security_master.auto_delete_log_days')
+    delete_log = fields.Boolean(string='Delete', default=False,  config_parameter='tk_security_master.delete_log')
+    auto_delete_log_days = fields.Integer('After How many days.', default=30, config_parameter='tk_security_master.auto_delete_log_days')
 
     @api.constrains('pwd_expire_days')
     def _validate_pwd_input(self):

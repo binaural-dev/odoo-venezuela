@@ -4,7 +4,7 @@
 from odoo.tools import convert_file
 
 
-def import_csv_data(cr):
+def import_csv_data(cr, registry):
     """Import CSV data as it is faster than xml and because we can't use
     noupdate anymore with csv"""
     filenames = [
@@ -18,5 +18,5 @@ def import_csv_data(cr):
         )
 
 
-def post_init(cr):
-    import_csv_data(cr)
+def post_init(cr, registry):
+    import_csv_data(cr, registry)

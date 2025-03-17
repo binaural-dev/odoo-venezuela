@@ -55,10 +55,10 @@ class Home(home.Home):
         if request.httprequest.method == 'POST':
             data = detect_user_login_attempt()
             if request.params['login_success']:
-                credential = {'login': request.params['login'], 'password': request.params['password'], 'type': 'password'}
-                auth_info = request.session.authenticate(request.session.db, credential)
-                if auth_info['uid'] is not False:
-                    data['user_id'] = auth_info['uid']
+                uid = request.session.authenticate(request.session.db, request.params['login'],
+                                                   request.params['password'])
+                if uid is not False:
+                    data['user_id'] = uid
             else:
                 tried_user = request.env['res.users'].sudo().search([('login', '=', request.params['login'])], limit=1)
                 if tried_user:
@@ -66,17 +66,14 @@ class Home(home.Home):
                 data['is_anonymous'] = True
                 data['active'] = False
                 data['status'] = 'inactive'
-                request.env['user.sign.in.details'].sudo().create(data)
+            request.env['user.sign.in.details'].sudo().create(data)
+
+            # raise odoo.exceptions.AccessDenied as e:
+            #     if e.args == odoo.exceptions.AccessDenied().args:
+            #         values['error'] = _("Wrong login/password")
         return response
 
-    def _login_redirect(self, uid, redirect=None):
-        if request.session.uid:
-            data = detect_user_login_attempt()
-            data["user_id"] = request.session.uid
-            request.env["user.sign.in.details"].sudo().create(data)
-        return super()._login_redirect(uid, redirect)
-
-    @http.route(['/web', '/odoo', '/odoo/<path:subpath>', '/scoped_app/<path:subpath>'], type='http', auth="none")
+    @http.route('/web', type='http', auth="none")
     def web_client(self, s_action=None, **kw):
         response = super(Home, self).web_client(s_action, **kw)
         user_session = request.env['user.sign.in.details'].sudo().search([('user_id', '=', request.uid),
@@ -86,10 +83,11 @@ class Home(home.Home):
             user_session.session = request.session.sid
         return response
 
+
 class Session(session.Session):
 
     @http.route('/web/session/logout', type='http', auth="none")
-    def logout(self, redirect='/odoo'):
+    def logout(self, redirect='/web'):
         session_details = request.env['user.sign.in.details'].sudo().search([('session', '=', request.session.sid)],
                                                                             limit=1)
         if session_details:
@@ -102,48 +100,34 @@ class Session(session.Session):
         session_id = request.session.sid
         browser_hash = kw.get('url_hash', {})
         dntm, user_logged_id = None, None
-        title = ''
-        model = ''
         res_model = browser_hash.get('model', False)
         dntm_model = request.env['ir.model'].sudo().search([('model', '=', 'do.not.track.models')]).id
         if dntm_model and res_model:
             dntm = request.env['do.not.track.models'].sudo().search([('res_model', '=', res_model)]).id
+
         if session_id:
             user_logged_id = request.env['user.sign.in.details'].sudo().search([('session', '=', session_id)],
                                                                                limit=1)
+
         if user_logged_id:
             user_logged_id.write({'last_active_time': datetime.now()})
+
             if browser_hash.get('action') and browser_hash.get('action') != 'menu' and browser_hash.get(
                     'action') != 'studio':
-                action = browser_hash.get('action')
-                if isinstance(action, int):
-                    if isinstance(browser_hash.get('action'), int):
-                        act_rec = request.env['ir.actions.actions'].sudo().browse(int(browser_hash.get('action')))
-                        window_act_rec = request.env['ir.actions.act_window'].sudo().search([('name', '=', act_rec.name)])
-                        if act_rec and window_act_rec:
-                            title = act_rec.name
-                            model = window_act_rec[0].res_model
-                        else:
-                            title = 'N/A'
-                            model = ''
-                    else:
-                        title = 'N/A'
-                        model = ''
+                act_rec = request.env['ir.actions.actions'].sudo().browse(int(browser_hash.get('action')))
+                if act_rec:
+                    title = act_rec.name
                 else:
-                    window_act_rec = request.env['ir.actions.act_window'].sudo().search([('name', '=', browser_hash.get('action').capitalize())])
-                    if window_act_rec:
-                        title = browser_hash.get('action')
-                        model = window_act_rec[0].res_model
-                    else:
-                        title = 'N/A'
-                        model = ''
+                    title = 'N/A'
+            else:
+                title = 'N/A'
 
-            if not dntm and user_logged_id.user_id.tu_read_logs and title != 'N/A':
+            if not dntm and user_logged_id.user_id.tu_read_logs:
                 request.env['user.audit'].sudo().create({
                     'title': title,
                     'res_url': kw.get('browser_url') if kw.get('browser_url') else '',
-                    'res_model': model if model else '',
-                    'res_id': browser_hash.get('resId') if browser_hash.get('resId') else '',
+                    'res_model': browser_hash.get('model') if res_model else '',
+                    'res_id': browser_hash.get('id') if browser_hash.get('id') else '',
                     'view_type': browser_hash.get('view_type') if browser_hash.get('view_type') else "",
                     'action_type': 'read',
                     'user_session_id': user_logged_id.id,
@@ -172,7 +156,6 @@ def detect_user_login_attempt():
             ip_address = get_ip_address()
         _logger.info('User logged ip_address: %s', ip_address)
         data['ip_address'] = ip_address
-
     except requests.exceptions.ConnectionError:
         pass
     data['logged_datetime'] = datetime.now()

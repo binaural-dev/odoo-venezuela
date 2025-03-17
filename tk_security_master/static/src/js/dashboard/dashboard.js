@@ -5,7 +5,6 @@ import {getDefaultConfig} from "@web/views/view";
 import {useService} from "@web/core/utils/hooks";
 import {Domain} from "@web/core/domain";
 import {sprintf} from "@web/core/utils/strings";
-import { rpc } from "@web/core/network/rpc";
 
 const {Component, useSubEnv, useState, onMounted, onWillStart, useRef} = owl;
 import {loadJS, loadCSS} from "@web/core/assets"
@@ -33,17 +32,18 @@ class TKSecurityMasterDashboard extends Component {
                 ...this.env.config,
             },
         });
+        this.rpc = useService("rpc");
         this.action = useService("action");
         this.orm = useService("orm");
         this.worldMap = useRef('worldMap');
         this.sessionOS = useRef('sessionOS');
 
         onWillStart(async () => {
-            await loadJS('/tk_security_master/static/src/lib/index.js');
-            await loadJS('/tk_security_master/static/src/lib/map.js');
-            await loadJS('/tk_security_master/static/src/lib/xy.js');
-            await loadJS('/tk_security_master/static/src/lib/worldLow.js');
-            await loadJS('/tk_security_master/static/src/lib/Animated.js');
+            await loadJS('tk_security_master/static/src/lib/index.js');
+            await loadJS('tk_security_master/static/src/lib/map.js');
+            await loadJS('tk_security_master/static/src/lib/xy.js');
+            await loadJS('tk_security_master/static/src/lib/worldLow.js');
+            await loadJS('tk_security_master/static/src/lib/Animated.js');
 
             const sessionsData = await this.orm.call('user.sign.in.details', 'get_browser_wise_session_stats', []);
             if (sessionsData) {
@@ -193,37 +193,37 @@ class TKSecurityMasterDashboard extends Component {
             name: "Mac OS",
             steps: sessionData['mac'],
             pictureSettings: {
-                src: "/tk_security_master/static/src/img/mac.svg"
+                src: "tk_security_master/static/src/img/mac.svg"
             }
         }, {
             name: "Windows",
             steps: sessionData['windows'],
             pictureSettings: {
-                src: "/tk_security_master/static/src/img/windowsOS.svg"
+                src: "tk_security_master/static/src/img/windowsOS.svg"
             }
         }, {
             name: "iOS",
             steps: sessionData['ios'],
             pictureSettings: {
-                src: "/tk_security_master/static/src/img/ios.svg"
+                src: "tk_security_master/static/src/img/ios.svg"
             }
         }, {
             name: "Android",
             steps: sessionData['android'],
             pictureSettings: {
-                src: "/tk_security_master/static/src/img/androidOS.svg"
+                src: "tk_security_master/static/src/img/androidOS.svg"
             }
         }, {
             name: "Linux",
             steps: sessionData['linux'],
             pictureSettings: {
-                src: "/tk_security_master/static/src/img/linux.svg"
+                src: "tk_security_master/static/src/img/linux.svg"
             }
         }, {
             name: "Other",
             steps: sessionData['other_os'],
             pictureSettings: {
-                src: "/tk_security_master/static/src/img/os.svg"
+                src: "tk_security_master/static/src/img/os.svg"
             }
         }];
         const chart = root.container.children.push(

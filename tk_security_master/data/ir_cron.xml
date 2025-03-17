@@ -12,7 +12,9 @@
             <field name="code">model.terminate_inactive_session_cron()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">minutes</field>
+            <field name="numbercall">1</field>
             <field name="active" eval="True"/>
+            <field name="doall" eval="True"/>
         </record>
         <record id="action_check_password_expiry_status_of_users" model="ir.cron">
             <field name="name">TK Security Master: Password Expiry Status</field>
@@ -21,16 +23,20 @@
             <field name="code">model.check_users_pwd_expire_status()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
+            <field name="numbercall">1</field>
             <field name="active" eval="True"/>
+            <field name="doall" eval="True"/>
         </record>
-          <record id="action_auto_delete_log" model="ir.cron">
+         <record id="action_auto_delete_log" model="ir.cron">
             <field name="name">TK Security Master: Delete log</field>
             <field name="model_id" ref="tk_security_master.model_user_audit"/>
             <field name="state" eval="'code'"/>
             <field name="code">model.auto_delete_user_logs()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
+            <field name="numbercall">1</field>
             <field name="active" eval="True"/>
+            <field name="doall" eval="True"/>
         </record>
     </data>
 </odoo>

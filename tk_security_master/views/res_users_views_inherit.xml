@@ -40,12 +40,12 @@
                             class="btn btn-danger"
                             confirm="Are you sure you want to terminate all sessions ?"
                             string="Terminate All Sessions"
-                            invisible="not user_session_ids">
+                            attrs="{'invisible':[('user_session_ids','=', False)]}">
                     </button>
                 </xpath>
             </field>
         </record>
-        <!--<record id="tk_security_master_res_user_preference_inherit_view_form" model="ir.ui.view">
+        <record id="tk_security_master_res_user_preference_inherit_view_form" model="ir.ui.view">
             <field name="name">tk.security.master.res.users.preference.inherit.view.form</field>
             <field name="model">res.users</field>
             <field name="priority" eval="40"/>
@@ -60,7 +60,7 @@
                     </page>
                 </xpath>
             </field>
-        </record> -->
+        </record>
 
     </data>
 </odoo>
