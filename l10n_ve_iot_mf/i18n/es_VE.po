@@ -383,7 +383,7 @@ msgstr "Última actualización en"
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__manufacturer_type
 msgid "Manufacturer Type"
-msgstr ""
+msgstr "Marca del dispositivo"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_amount_decimal
