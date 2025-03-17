@@ -167,6 +167,8 @@ class StockPicking(models.Model):
                     }
                 )
             picking_id.write({"state_guide_dispatch": "invoiced"})
+            if picking_id.sale_id:
+                picking_id.sale_id.write({"invoice_status": "invoiced"})
         return invoice
 
     def create_bill(self):
@@ -195,6 +197,7 @@ class StockPicking(models.Model):
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_purchase_tax_id.id])],
                             "quantity": move_ids_without_package.quantity_done,
+                            "from_picking_line": True,
                         },
                     )
                     invoice_line_list.append(vals)
@@ -211,10 +214,13 @@ class StockPicking(models.Model):
                             "picking_id": picking_id.id,
                             "invoice_line_ids": invoice_line_list,
                             "transfer_ids": self,
+                            "from_picking": True,
                         }
                     )
-                    invoice.with_context(move_action_post_alert=True).action_post()
+                    # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
+                if picking_id.sale_id:
+                    picking_id.sale_id.write({"invoice_status": "invoiced"})
             return invoice
 
     def create_customer_credit(self):
@@ -243,6 +249,7 @@ class StockPicking(models.Model):
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_sale_tax_id.id])],
                             "quantity": move_ids_without_package.quantity_done,
+                            "from_picking_line": True,
                         },
                     )
                     invoice_line_list.append(vals)
@@ -259,10 +266,13 @@ class StockPicking(models.Model):
                             "picking_id": picking_id.id,
                             "invoice_line_ids": invoice_line_list,
                             "transfer_ids": self,
+                            "from_picking_line": True,
                         }
                     )
-                    invoice.with_context(move_action_post_alert=True).action_post()
+                    # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
+                if picking_id.sale_id:
+                    picking_id.sale_id.write({"invoice_status": "invoiced"})
             return invoice
 
     def create_vendor_credit(self):
@@ -291,6 +301,7 @@ class StockPicking(models.Model):
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_purchase_tax_id.id])],
                             "quantity": move_ids_without_package.quantity_done,
+                            "from_picking_line": True,
                         },
                     )
                     invoice_line_list.append(vals)
@@ -307,10 +318,13 @@ class StockPicking(models.Model):
                             "picking_id": picking_id.id,
                             "invoice_line_ids": invoice_line_list,
                             "transfer_ids": self,
+                            "from_picking_line": True,
                         }
                     )
-                    invoice.with_context(move_action_post_alert=True).action_post()
+                    # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
+                if picking_id.sale_id:
+                    picking_id.sale_id.write({"invoice_status": "invoiced"})
             return invoice
 
     def create_internal_invoice(self):
@@ -329,7 +343,7 @@ class StockPicking(models.Model):
             if not internal_consigned_journal_id:
                 raise UserError(_("Please configure the internal consigned journal from settings."))
 
-            invoice_line_list = picking_id._get_invoice_lines_for_invoice()
+            invoice_line_list = picking_id._get_invoice_lines_for_invoice(from_picking_line=True)
             origin_name = self._get_origin_name(picking_id)
 
             invoice = self.env["account.move"].create(
@@ -345,11 +359,14 @@ class StockPicking(models.Model):
                     "picking_id": picking_id.id,
                     "invoice_line_ids": invoice_line_list,
                     "transfer_ids": self,
+                    "from_picking": True,
                 }
             )
 
-            invoice.with_context(move_action_post_alert=True).action_post()
+            # invoice.with_context(move_action_post_alert=True).action_post()
             picking_id.write({"state_guide_dispatch": "invoiced"})
+            if picking_id.sale_id:
+                picking_id.sale_id.write({"invoice_status": "invoiced"})
         return invoice
 
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
