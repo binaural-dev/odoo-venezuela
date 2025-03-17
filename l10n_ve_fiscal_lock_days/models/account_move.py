@@ -32,7 +32,8 @@ class AccountMoveInherit(models.Model):
                 last_day = self.get_last_day_previous_fortnight(
                     move.company_id.tax_period
                 )
-                if move.company_id.tax_lock_date != last_day:
+
+                if move.company_id.tax_lock_date and move.company_id.tax_lock_date != last_day:
                     raise ValidationError(
                         _("You must lock the previous fortnight or month before creating or posting invoices in a new fiscal period.")
                     )
