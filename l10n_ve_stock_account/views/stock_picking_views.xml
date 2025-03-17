@@ -1,58 +1,112 @@
 <odoo>
-    <record id="view_picking_form_l10n_ve_stock_account" model="ir.ui.view">
-        <field name="name">stock.picking.form.l10n.ve.stock.account</field>
+    <!-- ### TREE VIEWS ### -->
+    <record id="stock_vpicktree_l10n_ve_stock_account" model="ir.ui.view">
+        <field name="name">stock.vpicktree.l10n_ve_stock_account</field>
         <field name="model">stock.picking</field>
-        <field name="inherit_id" ref="stock.view_picking_form" />
+        <field name="inherit_id" ref="stock.vpicktree"/>
         <field name="arch" type="xml">
-
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="guide_number" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <!-- ### FORM VIEWS ### -->
+    <record id="stock_picking_form_view_inherited" model="ir.ui.view">
+        <field name="name">stock.picking.form.view.inherited</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
             <xpath expr="//form//header" position="inside">
-
                 <field name="dispatch_guide_controls" invisible="1" />
-
-                <button name="print_dispatch_guide"
-                    string="Shipping guide/Delivery order"
-                    type="object"
-                    class="o_btn_validate"
-                    attrs="{'invisible': [
-                        ('dispatch_guide_controls', '!=', True),
-                        ]
-                    }"
+                <button 
+                    name="print_dispatch_guide" string="Guide Dispatch"
+                    type="object" class="o_btn_validate"
+                    attrs="{'invisible': [ ('dispatch_guide_controls', '!=', True)]}"
                 />
-
                 <!-- data-hotkey="m" attrs="{'invisible': [('show_button', '=', False)]}"
                 nolabel="1" /> -->
             </xpath>
-
             <xpath expr="//field[@name='origin']" position="after">
-
                 <field name="is_consignment" invisible="1" />
-                <field name="is_dispatch_guide"
+                <field 
+                    name="is_dispatch_guide"
                     attrs="{
                     'readonly': ['|', ('state', '=', 'done'), ('is_consignment', '=', True)],
                     'invisible': [('operation_code', '!=', 'internal')]
                 }" />
-
-                <field name="transfer_reason_id"
+                <field 
+                    name="transfer_reason_id"
                     attrs="{
                         'readonly': [('state', '=', 'done')],
                         'invisible': [('operation_code', '!=', 'internal')],
                         'required': [('operation_code', '=', 'internal')]
                     }" />
-
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="is_donation" invisible="1" />
-                <field name="transfer_reason_id"
+                <field 
+                    name="transfer_reason_id"
                     attrs="{'readonly': ['|', ('is_donation', '=', True), ('state', '=', 'done')], 
-                              'invisible': [('operation_code', '!=', 'outgoing')]}" />
-                <field name="guide_number" readonly="1"
+                            'invisible': [('operation_code', '!=', 'outgoing')]}" 
+                />
+                <field 
+                    name="guide_number" readonly="1"
                     attrs="{'invisible': [
                         ('dispatch_guide_controls', '!=', True),
                         ]
                     }"
                 />
             </xpath>
-
-
+            <xpath expr="//field[@name='picking_type_id']" position="after">
+                <field name="operation_code" invisible="1"/>
+                <field name="is_return" invisible="1"/>
+                <field name="show_create_invoice" invisible="1"/>
+                <field name="show_create_bill" invisible="1"/>
+                <field name="show_create_customer_credit" invisible="1"/>
+                <field name="show_create_vendor_credit" invisible="1"/>
+                <field name="show_create_invoice_internal" invisible="1"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_picking_invoice" type="object"
+                            class="oe_stat_button" icon="fa-file-text"
+                            attrs="{'invisible': [('invoice_count','=', 0)]}">
+                    <field name="invoice_count" widget="statinfo"/>
+                </button>
+            </xpath>
+            <xpath expr="//button[@name='action_toggle_is_locked']" position="after">
+                <button 
+                    name="create_invoice" class="oe_highlight"
+                    string="Create Invoice" type="object"
+                    attrs="{'invisible': [('show_create_invoice', '=', False)]}"/>
+                <button 
+                    name="create_bill" class="oe_highlight"
+                    string="Create Bill" type="object"
+                    attrs="{'invisible': [('show_create_bill', '=', False)]}"/>
+                <button 
+                    name="create_customer_credit" class="oe_highlight"
+                    string="Create Credit Note" type="object"
+                    attrs="{'invisible': [('show_create_customer_credit', '=', False)]}"/>
+                <button 
+                    name="create_vendor_credit" class="oe_highlight"
+                    string="Create Vendor Credit" type="object"
+                    attrs="{'invisible': [('show_create_vendor_credit', '=', False)]}"/>
+                <button 
+                    name="create_internal_invoice" class="oe_highlight"
+                    string="Create Internal Invoice" type="object"
+                    invisible="1"
+                />
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- ### ACTIONS SERVERS ### -->
+    <record id="action_create_invoice_for_multi_transfer" model="ir.actions.server">
+        <field name="name">Create Invoice/Bill</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                action = records.action_create_multi_invoice_for_multi_transfer()
         </field>
     </record>
 </odoo>

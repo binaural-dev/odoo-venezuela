@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_pos_mf.FiscalMachinePopup" owl="1">
+        <div class="popup">
+            <header class="title drag-handle">
+                <t t-esc="props.title" />
+            </header>
+            <main class="body">
+                <div class="fdm-reports">
+                    <div t-on-click="report_z" class="button">
+                        Reporte Z
+                    </div>
+                    <div t-on-click="report_x" class="button">
+                        Reporte X
+                    </div>
+                </div>
+            </main>
+            <footer class="footer cash-move">
+                <div class="button confirm highlight dynamic-size" t-on-click="confirm">
+                    Confirm
+                </div>
+                <div class="button cancel" t-on-click="cancel">
+                    <t t-esc="props.cancelText" />
+                </div>
+            </footer>
+        </div>
+    </t>
+</templates>

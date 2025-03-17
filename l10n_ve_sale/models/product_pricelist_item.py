@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class ProductPricelistItem(models.Model):
@@ -21,3 +22,9 @@ class ProductPricelistItem(models.Model):
             )
             item.price_without_tax = taxes["total_excluded"]
             item.price_with_tax = taxes["total_included"]
+
+    @api.constrains("fixed_price")
+    def _check_fixed_price(self):
+        for item in self:
+            if item.fixed_price < 0:
+                raise ValidationError(_("Price cannot be negative"))
