@@ -12,4 +12,4 @@ class AccountMove(models.Model):
     guide_number = fields.Char(related="picking_id.guide_number")
     picking_id = fields.Many2one("stock.picking", string="Picking")
     transfer_ids = fields.Many2many("stock.picking", string="Transfers")
-    
+    from_picking = fields.Boolean(string="From Picking", default=False)
