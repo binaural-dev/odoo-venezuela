@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
 # Part of TechKhedut. See LICENSE file for full copyright and licensing details.
-import logging 
+from psycopg2 import errors as pc2_errors
 from odoo import http, api, fields, models, tools, _
 from odoo.http import request
 
-_logger = logging.getLogger(__name__)
 
 def _get_user_logged_session():
     session_id = None
@@ -23,14 +22,12 @@ class Base(models.AbstractModel):
     @api.returns('self', lambda value: value.id)
     def create(self, vals_list):
         res = super(Base, self).create(vals_list)
-
         tk_app_status = self.env['ir.module.module'].sudo().search(
             [('name', '=', 'tk_security_master'), ('state', '=', 'installed')]).id
         if not tk_app_status:
             return res
         for rec in res:
             self._perform_activity_audit(rec, 'create')
-
         return res
 
     def write(self, vals):
@@ -62,38 +59,31 @@ class Base(models.AbstractModel):
         for rec in self:
             change_logs = []
             for field in vals:
-                try:
-                    data = None
-                    if str(rec[field]) == str(vals[field]):
+                data = None
+                if str(rec[field]) == str(vals[field]):
+                    continue
+                ir_field_id = ir_fields_obj.search([('name', '=', field), ('model', '=', rec._name)], limit=1)
+                if not ir_field_id:
+                    continue
+
+                if ir_field_id.ttype == 'many2one':
+                    if rec[field].id == vals[field]:
                         continue
-                    ir_field_id = ir_fields_obj.search([('name', '=', field), ('model', '=', rec._name)], limit=1)
+                    data = self._get_many2one_logs_details(rec, ir_field_id, vals, field)
+                elif ir_field_id.ttype == 'many2many':
+                    if len(vals[field][0]) == 3:
+                        data = self._get_many2many_logs_details(rec, ir_field_id, vals, field)
+                elif ir_field_id.ttype == 'one2many':
+                    pass
+                elif ir_field_id.ttype in ('html', 'binary', 'text'):
+                    if rec[field] and rec[field] in vals[field]:
+                        continue
+                    data = self._get_other_fields_logs_details(rec, ir_field_id, vals, field)
+                else:
+                    data = self._get_other_fields_logs_details(rec, ir_field_id, vals, field)
 
-                    if ir_field_id.ttype == 'many2one':
-                        if rec[field].id == vals[field]:
-                            continue
-                        data = self._get_many2one_logs_details(rec, ir_field_id, vals, field)
-                    elif ir_field_id.ttype == 'many2many':
-                        if vals[field] and type(vals[field]) is list and len(vals[field][0]) == 3:
-                            data = self._get_many2many_logs_details(rec, ir_field_id, vals, field)
-                    elif ir_field_id.ttype == 'one2many':
-                        pass
-                    elif ir_field_id.ttype in ('html', 'binary', 'text'):
-                        if rec and field and vals and rec[field] and type(vals[field]) is list:
-                            if rec[field] in vals[field]:
-                                pass
-                            continue
-                        data = self._get_other_fields_logs_details(rec, ir_field_id, vals, field)
-                    else:
-                        data = self._get_other_fields_logs_details(rec, ir_field_id, vals, field)
-
-                    if data:
-                        change_logs.append((0, 0, data))
-                except IndexError as ie:
-                    _logger.exception(ie)
-                except TypeError as te:
-                    _logger.exception(te)
-                except e:
-                    _logger.exception(e)
+                if data:
+                    change_logs.append((0, 0, data))
             if change_logs and user_logged_id.user_id.tu_update_logs:
                 user_audit_log_obj.create({
                     'title': rec.display_name,
@@ -138,16 +128,10 @@ class Base(models.AbstractModel):
         previous_value, new_value = '', ''
         if rec[field] and values[field]:
             previous_value = ir_model.browse(rec[field].id).display_name
-            if type(values[field] in (int, tuple, list, str)):
-                new_value = ir_model.browse(values[field]).display_name
-            else:
-                new_value = ir_model.browse(values[field].id).display_name
+            new_value = ir_model.browse(values[field]).display_name
             operation_type = 'update'
         elif not rec[field] and values[field]:
-            if type(values[field] in (int, tuple, list, str)):
-                new_value = ir_model.browse(values[field]).display_name
-            else:
-                new_value = ir_model.browse(values[field].id).display_name
+            new_value = ir_model.browse(values[field]).display_name
             operation_type = 'new'
         elif not values[field] and rec[field]:
             previous_value = ir_model.browse(rec[field].id).display_name
@@ -230,7 +214,6 @@ class Base(models.AbstractModel):
         do_not_track_model = None
         dntm_model = self.env['ir.model'].sudo().search([('model', '=', 'do.not.track.models')]).id
         if dntm_model:
-            do_not_track_model2 = self.env['do.not.track.models'].sudo().search([('res_model', '=', res._name)])
             do_not_track_model = self.env['do.not.track.models'].sudo().search([('res_model', '=', res._name)]).id
 
         if do_not_track_model or res._transient:

@@ -16,7 +16,6 @@
                                     type="object"
                                     name="open_record"
                                     icon="fa-location-arrow"
-                                    invisible="not res_url"
                                     string="Open Record">
                             </button>
                         </div>
@@ -25,28 +24,27 @@
                         </h2>
                         <group>
                             <group string="User Details">
-                                <field name="user_id"  readonly="1" force_save="1" />
-                                <field name="user_session_id" invisible="not user_session_id" readonly="1" force_save="1" />
+                                <field name="user_id" attrs="{'invisible':[('user_id','=', False)]}"  readonly="1" force_save="1" />
+                                <field name="user_session_id" attrs="{'invisible':[('user_session_id','=', False)]}"  readonly="1" force_save="1" />
                             </group>
                         </group>
                         <group string="Record Details">
                             <group>
-                                <field name="res_model" invisible="not res_model" />
-                                <field name="res_id" invisible="not res_id" />
+                                <field name="res_model" attrs="{'invisible':[('res_model','=', '')]}"/>
+                                <field name="res_id" attrs="{'invisible':[('res_id','=', '')]}"/>
                                 <field name="action_type"/>
                                 <field name="create_date"/>
-                                <field name="res_url" invisible="1"/>
                             </group>
                         </group>
-                        <notebook invisible="not user_audit_log_ids">
+                        <notebook  attrs="{'invisible': [('user_audit_log_ids', '=', [])]}">
                             <page string="Value Logs" name="value_logs">
                                 <field name="user_audit_log_ids" readonly="1" force_save="1">
-                                    <list>
+                                    <tree>
                                         <field name="name" />
                                         <field name="operation_type" />
                                         <field name="previous_value" />
                                         <field name="new_value" />
-                                    </list>
+                                    </tree>
                                     <form>
                                         <group>
                                             <group>
@@ -70,15 +68,15 @@
             <field name="name">user.audit.tree.view</field>
             <field name="model">user.audit</field>
             <field name="arch" type="xml">
-                <list>
+                <tree>
                     <field name="create_date" string="Date"/>
-                    <field name="title"/>
+                    <field name="title" />
                     <field name="action_type" />
                     <field name="res_model" />
                     <field name="res_id"/>
                     <field name="user_id"/>
                     <button name="open_record" type='object' title="Open Record" class="fa fa-fw fa-share-square-o" />
-                </list>
+                </tree>
             </field>
         </record>
         <record id="user_audit_search_view" model="ir.ui.view">
@@ -109,7 +107,7 @@
             <field name="name">Users Audit Logs</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">user.audit</field>
-            <field name="view_mode">list,form</field>
+            <field name="view_mode">tree,form</field>
         </record>
     </data>
 </odoo>

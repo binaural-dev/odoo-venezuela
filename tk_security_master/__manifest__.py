@@ -28,7 +28,7 @@
            Advanced Security Master for manage user activity logs, session management, inactive session terminate, password expiry, password extra layers,
      login alert, & much more.
     """,
-    'version': "1.0.9",
+    'version': "1.0.3",
     'author': 'TechKhedut Inc.',
     'company': 'TechKhedut Inc.',
     'maintainer': 'TechKhedut Inc.',
@@ -80,7 +80,7 @@
     'installable': True,
     'application': True,
     'auto_install': False,
-    'price': 160,
+    'price': 199,
     'currency': 'USD',
     'post_init_hook': 'post_init',
 }

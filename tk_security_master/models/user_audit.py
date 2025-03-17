@@ -2,8 +2,6 @@
 # Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
 # Part of TechKhedut. See LICENSE file for full copyright and licensing details.
 from datetime import datetime, timedelta
-from xmlrpc.client import boolean
-
 from odoo import fields, models, api, http, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.http import request
@@ -38,7 +36,7 @@ class UserAudit(models.Model):
         read_log = config_param.get_param('tk_security_master.read_log')
         update_log = config_param.get_param('tk_security_master.update_log')
         delete_log = config_param.get_param('tk_security_master.delete_log')
-        auto_delete_log_days = int(config_param.get_param('tk_security_master.auto_delete_log_days'))
+        auto_delete_log_days = int(config_param.get_param('tk_security_master.auto_delete_log_days', default=30))
         # Calculate the date threshold
         date_threshold = datetime.now() - timedelta(days=auto_delete_log_days)
         # Search for logs older than the threshold
@@ -147,7 +145,7 @@ class UserSignInDetails(models.Model):
     def action_view_user_logs(self):
         action = {
             'name': _('Activity Logs'),
-            'view_mode': 'list,form',
+            'view_mode': 'tree,form',
             'res_model': 'user.audit',
             'type': 'ir.actions.act_window',
             'domain': [('user_session_id', '=', self.id)],
@@ -158,13 +156,10 @@ class UserSignInDetails(models.Model):
     def terminate_user_active_session(self):
         for rec in self:
             session_obj = http.root.session_store
-            if type(rec.session) == bool:
-               return
-            else:
-                session_id = session_obj.get(rec.session)
-                if session_id.db and session_id.uid == rec.user_id.id and session_id.sid == rec.session:
-                    session_obj.delete(session_id)
-                rec.sudo().write({'status': 'inactive', 'active': False, 'logout_datetime': datetime.now()})
+            session_id = session_obj.get(rec.session)
+            if session_id.db and session_id.uid == rec.user_id.id and session_id.sid == rec.session:
+                session_obj.delete(session_id)
+            rec.sudo().write({'status': 'inactive', 'active': False, 'logout_datetime': datetime.now()})
 
     def action_gmap_location(self):
         if not self.latitude or not self.longitude:
@@ -213,17 +208,14 @@ class UserSignInDetails(models.Model):
 
         sessions = self.env['user.sign.in.details'].sudo().search([('active', '=', True)])
         for sess in sessions:
-            if type(sess.session) == bool:
-               return
-            else:
-                time_diff = datetime.now() - sess.last_active_time
-                float_diff = time_diff.total_seconds() / 60
-                if float_diff > int(session_timeout):
-                    session_obj = http.root.session_store
-                    session_id = session_obj.get(sess.session)
-                    if session_id.db and session_id.uid == sess.user_id.id and session_id.sid == sess.session:
-                        session_obj.delete(session_id)
-                    sess.sudo().write({'status': 'inactive', 'active': False, 'logout_datetime': datetime.now()})
+            time_diff = datetime.now() - sess.last_active_time
+            float_diff = time_diff.total_seconds() / 60
+            if float_diff > int(session_timeout):
+                session_obj = http.root.session_store
+                session_id = session_obj.get(sess.session)
+                if session_id.db and session_id.uid == sess.user_id.id and session_id.sid == sess.session:
+                    session_obj.delete(session_id)
+                sess.sudo().write({'status': 'inactive', 'active': False, 'logout_datetime': datetime.now()})
 
     @api.model
     def get_users_sessions_stats(self):
@@ -293,5 +285,3 @@ class DoNotTrackModels(models.Model):
     _rec_name = 'res_model'
 
     res_model = fields.Char(string="Model", required=True)
-
-    _sql_constraints = [('model_uniq', 'unique(res_model)', "Model Already Exist")]
