@@ -6,4 +6,10 @@
         parent="account.menu_finance_receivables"
         action="l10n_ve_stock_account.action_picking_guide_dispatch"
 	/>
+    <menuitem 
+        id="menu_stock_report_consignation"
+        name="Consignation Report"
+        parent="stock.menu_warehouse_report" 
+        action="action_stock_move_line_consignation_report"
+    />
 </odoo>
