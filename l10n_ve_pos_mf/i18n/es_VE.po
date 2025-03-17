@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240422\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-01 21:15+0000\n"
-"PO-Revision-Date: 2024-07-01 21:15+0000\n"
+"POT-Creation-Date: 2025-03-17 00:46+0000\n"
+"PO-Revision-Date: 2025-03-17 00:46+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -75,7 +75,7 @@ msgstr "Compañia"
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
@@ -108,6 +108,20 @@ msgstr "Fecha Hasta"
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_wizard_sales_book__display_name
 msgid "Display Name"
 msgstr "Mostrar nombre"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
+#, python-format
+msgid "Error de Conexion con la Maquina Fiscal #1"
+msgstr ""
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
+#, python-format
+msgid "Error de Conexion con la Maquina Fiscal #2"
+msgstr ""
 
 #. module: l10n_ve_pos_mf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.pos_config_view_form_inherit
@@ -144,7 +158,7 @@ msgstr ""
 #: code:addons/l10n_ve_pos_mf/static/src/xml/ClosePosPopup.xml:0
 #, python-format
 msgid "Generate report X"
-msgstr ""
+msgstr "Generar Reporte X"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
@@ -205,6 +219,12 @@ msgid "Maquina Fiscal"
 msgstr ""
 
 #. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__message_in_head
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_res_config_settings__message_in_head
+msgid "Message In Head"
+msgstr "Mensaje en encabezado"
+
+#. module: l10n_ve_pos_mf
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf/static/src/xml/TicketScreen.xml:0
 #, python-format
@@ -212,10 +232,31 @@ msgid "N Invoice"
 msgstr "NUmero de Factura"
 
 #. module: l10n_ve_pos_mf
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf/models/pos_config.py:0
+#, python-format
+msgid "Need activate iot in the Box and use Fiscal Machine"
+msgstr "Necesita activar el IOT en la caja y usar una maquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/xml/ReceiptScreen.xml:0
+#, python-format
+msgid "Nro Factura:"
+msgstr ""
+
+#. module: l10n_ve_pos_mf
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf/static/src/xml/DebugWidget.xml:0
 #, python-format
 msgid "PROGRAMACION"
+msgstr ""
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/xml/ReceiptScreen.xml:0
+#, python-format
+msgid "Pertenece al siguiente Z:"
 msgstr ""
 
 #. module: l10n_ve_pos_mf
@@ -226,7 +267,7 @@ msgstr "Configuración del TPV"
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_pos_order
 msgid "Point of Sale Orders"
-msgstr "Pedidos del TPV"
+msgstr "Pedidos de TPV"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_pos_payment_method
@@ -316,6 +357,13 @@ msgid "Serial de Maquina fiscal"
 msgstr ""
 
 #. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/xml/ReceiptScreen.xml:0
+#, python-format
+msgid "Serial de la Máquina fiscal:"
+msgstr ""
+
+#. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__serial_machine
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_session__serial_machine
 msgid "Serial of fiscal machine"
@@ -332,12 +380,6 @@ msgid "Wizard to download xlsx of sakes Book POS"
 msgstr "Wizard para descargar xlsx de libro de ventas POS"
 
 #. module: l10n_ve_pos_mf
-#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__message_in_head
-#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_res_config_settings__message_in_head
-msgid "Message In Head"
-msgstr "Mensaje en encabezado"
-
-#. module: l10n_ve_pos_mf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.res_config_settings_l10n_ve_pos
 msgid "message in head"
-msgstr "Breve descripción agregada al encabezado de la factura fiscal"
+msgstr ""
