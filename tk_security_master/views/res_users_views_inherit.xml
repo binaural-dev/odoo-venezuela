@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <data>
+        <record id="tk_security_master_res_user_inherit_view_form" model="ir.ui.view">
+            <field name="name">tk.security.master.res.users.inherit.view.form</field>
+            <field name="model">res.users</field>
+            <field name="priority" eval="40"/>
+            <field name="inherit_id" ref="base.view_users_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Sessions" name="user_session">
+                        <div class="o_horizontal_separator mt-4 mb-3 text-uppercase fw-bolder small"
+                             groups="tk_security_master.t_k_security_master_admin">
+                            User Logs Tracking Details
+                        </div>
+                        <span class="d-flex" groups="tk_security_master.t_k_security_master_admin">
+                            <field name="tu_read_logs"/>
+                            <label for="tu_read_logs"/>
+                            <field name="tu_create_logs"/>
+                            <label for="tu_create_logs"/>
+                            <field name="tu_update_logs"/>
+                            <label for="tu_update_logs"/>
+                            <field name="tu_delete_logs"/>
+                            <label for="tu_delete_logs"/>
+                        </span>
+                        <div class="o_horizontal_separator mt16 mb-3 text-uppercase fw-bolder small">
+                            User Session Details
+                        </div>
+                        <field name="user_session_ids" readonly="1" force_save="1"/>
+                    </page>
+                </xpath>
+                <xpath expr="//header" position="inside">
+                    <button name="terminate_user_active_sessions"
+                            type="object"
+                            icon="fa-ban"
+                            class="btn btn-danger"
+                            confirm="Are you sure you want to terminate all sessions ?"
+                            string="Terminate All Sessions"
+                            invisible="not user_session_ids">
+                    </button>
+                </xpath>
+            </field>
+        </record>
+        <!--<record id="tk_security_master_res_user_preference_inherit_view_form" model="ir.ui.view">
+            <field name="name">tk.security.master.res.users.preference.inherit.view.form</field>
+            <field name="model">res.users</field>
+            <field name="priority" eval="40"/>
+            <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Sessions" name="user_session">
+                        <div class="o_horizontal_separator mt16 mb-3 text-uppercase fw-bolder small">
+                            User Session Details
+                        </div>
+                        <field name="user_session_ids" readonly="1" force_save="1"/>
+                    </page>
+                </xpath>
+            </field>
+        </record> -->
+
+    </data>
+</odoo>

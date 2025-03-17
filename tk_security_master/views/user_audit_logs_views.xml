@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <data>
+        <record id="user_audit_form_view" model="ir.ui.view">
+            <field name="name">user.audit.form.view</field>
+            <field name="model">user.audit</field>
+            <field name="arch" type="xml">
+                <form create="0" edit="0">
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button"
+                                    type="object"
+                                    name="open_record"
+                                    icon="fa-location-arrow"
+                                    invisible="not res_url"
+                                    string="Open Record">
+                            </button>
+                        </div>
+                        <h2>
+                            <field name="title" />
+                        </h2>
+                        <group>
+                            <group string="User Details">
+                                <field name="user_id"  readonly="1" force_save="1" />
+                                <field name="user_session_id" invisible="not user_session_id" readonly="1" force_save="1" />
+                            </group>
+                        </group>
+                        <group string="Record Details">
+                            <group>
+                                <field name="res_model" invisible="not res_model" />
+                                <field name="res_id" invisible="not res_id" />
+                                <field name="action_type"/>
+                                <field name="create_date"/>
+                                <field name="res_url" invisible="1"/>
+                            </group>
+                        </group>
+                        <notebook invisible="not user_audit_log_ids">
+                            <page string="Value Logs" name="value_logs">
+                                <field name="user_audit_log_ids" readonly="1" force_save="1">
+                                    <list>
+                                        <field name="name" />
+                                        <field name="operation_type" />
+                                        <field name="previous_value" />
+                                        <field name="new_value" />
+                                    </list>
+                                    <form>
+                                        <group>
+                                            <group>
+                                                <field name="name" />
+                                                <field name="operation_type" />
+                                            </group>
+                                        </group>
+                                        <group>
+                                            <field name="previous_value" />
+                                            <field name="new_value" />
+                                        </group>
+                                    </form>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="user_audit_tree_view" model="ir.ui.view">
+            <field name="name">user.audit.tree.view</field>
+            <field name="model">user.audit</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="create_date" string="Date"/>
+                    <field name="title"/>
+                    <field name="action_type" />
+                    <field name="res_model" />
+                    <field name="res_id"/>
+                    <field name="user_id"/>
+                    <button name="open_record" type='object' title="Open Record" class="fa fa-fw fa-share-square-o" />
+                </list>
+            </field>
+        </record>
+        <record id="user_audit_search_view" model="ir.ui.view">
+            <field name="name">user.audit.search.view</field>
+            <field name="model">user.audit</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="title" />
+                    <field name="action_type" />
+                    <field name="res_model" />
+                    <field name="res_id"/>
+                    <field name="user_id"/>
+                    <filter string="Read" domain="[('action_type', '=', 'read')]" name="action_type_read" />
+                    <separator/>
+                    <filter string="Create" domain="[('action_type', '=', 'create')]" name="action_type_create" />
+                    <filter string="Update" domain="[('action_type', '=', 'update')]" name="action_type_update" />
+                    <separator/>
+                    <filter string="Delete" domain="[('action_type', '=', 'delete')]" name="action_type_delete" />
+                    <separator/>
+                    <filter string="N/A Records" domain="[('title', '=', 'N/A')]" name="na_records" />
+                    <filter string="Action" name="group_by_action" domain="[]" context="{'group_by':'action_type'}"/>
+                    <filter string="User" name="group_by_user" domain="[]" context="{'group_by':'user_id'}"/>
+                    <filter string="Model" name="group_by_model" domain="[]" context="{'group_by':'res_model'}"/>
+                </search>
+            </field>
+        </record>
+        <record id="action_user_audit_view" model="ir.actions.act_window">
+            <field name="name">Users Audit Logs</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">user.audit</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>
