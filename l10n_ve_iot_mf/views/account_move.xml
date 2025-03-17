@@ -20,13 +20,13 @@
                     />
             </button>
             <xpath expr="//field[@name='ref']" position="after">
-                <field name='iot_mf' context="{'reload': 1}"/>
+                <field name='iot_mf' readonly="1" context="{'reload': 1}"/>
             </xpath>
             <xpath expr="//group[@name='accounting_info_group']" position="after">
                 <group string="Fiscal Machine">
-                    <field name='mf_invoice_number'/>
-                    <field name='mf_serial'/>
-                    <field name="mf_reportz"/>
+                    <field name='mf_invoice_number' readonly="1"/>
+                    <field name='mf_serial' readonly="1"/>
+                    <field name="mf_reportz" readonly="1"/>
                 </group>
             </xpath>
         </field>
