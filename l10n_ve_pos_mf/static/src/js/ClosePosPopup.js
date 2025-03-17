@@ -1,4 +1,4 @@
-odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
+odoo.define("l10n_ve_pos_mf.ClosePosPopup", function(require) {
   'use strict';
 
   const ClosePosPopup = require('point_of_sale.ClosePosPopup');

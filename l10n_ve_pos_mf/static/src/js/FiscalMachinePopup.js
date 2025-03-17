@@ -59,7 +59,7 @@ class FiscalMachinePopup extends AbstractAwaitablePopup {
   }
 }
 
-FiscalMachinePopup.template = 'binaural_pos_mf.FiscalMachinePopup';
+FiscalMachinePopup.template = 'l10n_ve_pos_mf.FiscalMachinePopup';
 
 FiscalMachinePopup.defaultProps = {
   cancelText: _lt('Cancel'),
