@@ -51,5 +51,6 @@
             (<t t-esc="partner.prefix_vat" /><t t-esc="partner.vat" />)
             </span>
         </xpath>
+        <xpath expr="//div[@class='button js_invoice'][1]" position="replace"></xpath>
     </t>
 </templates>
