@@ -418,48 +418,6 @@ class StockPicking(models.Model):
     def print_dispatch_guide(self):
         return self.env.ref("l10n_ve_stock_account.action_dispatch_guide").read()[0]
 
-    def get_totals(self, use_foreign_currency=False):
-        """Calcula y agrupa los totales del picking, incluyendo impuestos por porcentaje."""
-        self.ensure_one()
-        totals = {
-            "subtotal": 0.0,  # Suma de todos los subtotales
-            "exempt": 0.0,  # Suma de productos exentos (0% IVA)
-            "tax_base": 0.0,  # Base imponible (productos con IVA)
-            "tax": 0.0,  # Total de impuestos calculados
-            "total": 0.0,  # Monto final correcto
-            "tax_details": {},  # Agrupación de impuestos por porcentaje
-        }
-
-        for line in self.move_ids_without_package:
-            line_values = line._get_line_values(use_foreign_currency=use_foreign_currency)
-
-            totals["subtotal"] += line_values["subtotal_after_discount"]
-
-            tax_rate = line_values["tax_percentage"]
-            tax_amount = line_values["tax_amount"]
-            subtotal_after_discount = line_values["subtotal_after_discount"]
-
-            # Si es exento (0%), solo lo sumamos a "exempt"
-            if tax_rate == 0.0:
-                totals["exempt"] += subtotal_after_discount
-            else:
-                totals["tax_base"] += subtotal_after_discount
-                totals["tax"] += tax_amount
-
-                # Agrupar impuestos por porcentaje
-                if tax_rate not in totals["tax_details"]:
-                    totals["tax_details"][tax_rate] = {
-                        "base": 0.0,
-                        "tax_amount": 0.0,
-                    }
-
-                totals["tax_details"][tax_rate]["base"] += subtotal_after_discount
-                totals["tax_details"][tax_rate]["tax_amount"] += tax_amount
-
-        totals["total"] = totals["exempt"] + totals["tax_base"] + totals["tax"]
-
-        return totals
-
     def _validate_one_invoice_posted(self):
         for picking in self:
             invoice_ids = self.env["account.move"].search(
