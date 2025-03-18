@@ -18,17 +18,21 @@ class StockLocation(models.Model):
     is_consignation_warehouse = fields.Boolean(
         string="Consignation Warehouse",
         compute="_compute_is_consignation_warehouse",
-        store=True,
-    )
+    ) 
 
-    @api.constrains("usage", "location_id")
+    @api.constrains("usage", "location_id", "partner_id")
     def _check_internal_location_only(self):
         for record in self:
             warehouse = record.get_warehouse()
-            if warehouse and warehouse.is_consignation_warehouse and record.usage != "internal":
-                raise ValidationError(
-                    _("Only 'Internal' locations can be created inside a consignation warehouse.")
-                )
+            if warehouse and warehouse.is_consignation_warehouse:
+                if record.usage != "internal":
+                    raise ValidationError(
+                        _("Only 'Internal' locations can be created inside a consignation warehouse.")
+                    )
+                if not record.partner_id:
+                    raise ValidationError(
+                        _("A consignation warehouse must have an assigned customer.")
+                    )
 
     @api.depends("location_id")
     def _compute_is_consignation_warehouse(self):

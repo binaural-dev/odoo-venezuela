@@ -10,7 +10,7 @@
                 <h2>
                     <field name="partner_id" placeholder="Partner" options="{'no_create': True}" attrs="{'required': [('is_consignation_warehouse', '=', True)]}"/>
                 </h2>
-                <field name="is_consignation_warehouse" invisible="0"/>
+                <field name="is_consignation_warehouse" invisible="1"/>
             </xpath>
         </field>
     </record>
