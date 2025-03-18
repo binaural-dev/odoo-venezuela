@@ -93,6 +93,17 @@ class StockPicking(models.Model):
         compute="_compute_invoice_state",
     )
 
+    order_is_consignment = fields.Boolean(compute="_compute_order_is_consignment")
+
+    location_id = fields.Many2one(compute="_compute_location_id")
+
+    @api.depends("sale_id")
+    def _compute_order_is_consignment(self):
+        for picking in self:
+            picking.order_is_consignment = (
+                picking.sale_id.is_consignation if picking.sale_id else False
+            )
+
     def _set_guide_number(self):
         for picking in self:
             if picking.dispatch_guide_controls:
@@ -149,7 +160,9 @@ class StockPicking(models.Model):
                 if not customer_journal_id:
                     raise UserError(_("Please configure the journal from settings"))
 
-                invoice_line_list = picking_id._get_invoice_lines_for_invoice(from_picking_line=True)
+                invoice_line_list = picking_id._get_invoice_lines_for_invoice(
+                    from_picking_line=True
+                )
                 origin_name = self._get_origin_name(picking_id)
                 invoice = self.env["account.move"].create(
                     {
@@ -597,7 +610,46 @@ class StockPicking(models.Model):
         return [("id", "in", invoices.mapped("transfer_ids").ids)]
 
     # === COMPUTE METHODS ===#
-    
+
+    @api.depends("picking_type_id", "partner_id", "sale_id")
+    def _compute_location_id(self):
+        for picking in self:
+            picking = picking.with_company(picking.company_id)
+
+            if picking.picking_type_id and picking.state in ["draft", "confirmed", "assigned"]:
+                if picking.picking_type_id.default_location_src_id:
+                    location_id = picking.picking_type_id.default_location_src_id.id
+                elif picking.partner_id:
+                    location_id = picking.partner_id.property_stock_supplier.id
+                if picking.sale_id and picking.sale_id.is_consignation:
+                    _logger.info("Consignation")
+                    location_id = (
+                        self.env["stock.location"]
+                        .search(
+                            [
+                                ("partner_id", "=", picking.sale_id.partner_id.id),
+                                ("usage", "=", "internal"),
+                                ("is_consignation_warehouse", "=", True),
+                            ],
+                            limit=1,
+                        )
+                        .id
+                    )
+                else:
+                    _customerloc, location_id = self.env["stock.warehouse"]._get_partner_locations()
+
+                if picking.picking_type_id.default_location_dest_id:
+                    location_dest_id = picking.picking_type_id.default_location_dest_id.id
+                elif picking.partner_id:
+                    location_dest_id = picking.partner_id.property_stock_customer.id
+                else:
+                    location_dest_id, _supplierloc = self.env[
+                        "stock.warehouse"
+                    ]._get_partner_locations()
+
+                picking.location_id = location_id
+                picking.location_dest_id = location_dest_id
+
     @api.depends("invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return")
     def _compute_button_visibility(self):
         for record in self:
@@ -631,9 +683,7 @@ class StockPicking(models.Model):
     # @api.depends()
     def _compute_invoice_ids(self):
         for picking in self:
-            invoices = self.env["account.move"].search(
-                [("transfer_ids", "in", picking.ids)]
-            )
+            invoices = self.env["account.move"].search([("transfer_ids", "in", picking.ids)])
             picking.invoice_ids = invoices
 
     def _compute_invoice_state(self):
