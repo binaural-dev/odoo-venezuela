@@ -306,7 +306,6 @@ class SerialFiscalDriver(SerialDriver):
         _invoice = invoice.get("data", False)
         if _invoice:
             invoice = _invoice
-        _logger.warning("print_out_invoice: %s" % invoice)
         valid, _msg = self._validate_invoice_parameter(invoice)
         msg = ""
 
@@ -420,7 +419,6 @@ class SerialFiscalDriver(SerialDriver):
             if status["data"]["status"]["code"] not in ["1", "4"]:
                 raise Exception(status["data"]["status"]["msg"])
 
-            _logger.warning("print_out_refound %s", invoice)
             cmd.append(str("iR*" + invoice["partner_id"]["vat"]))
             cmd.append(str("iS*" + invoice["partner_id"]["name"]))
             cmd.append(str("iF*" + invoice["invoice_affected"]["number"]))
@@ -609,7 +607,6 @@ class SerialFiscalDriver(SerialDriver):
             if status["data"]["status"]["code"] not in ["1", "4"]:
                 raise Exception(status["data"]["status"]["msg"])
 
-            _logger.warning("print_out_invoice %s", invoice)
             cmd.append(str("iR*" + invoice["partner_id"]["vat"]))
             cmd.append(str("iS*" + invoice["partner_id"]["name"]))
             if invoice["partner_id"]["address"]:
@@ -764,7 +761,6 @@ class SerialFiscalDriver(SerialDriver):
         response = {"valid": valid, "message": msg}
         if machine:
             response.update(machine["data"])
-            _logger.warning(response)
 
         return response
 
@@ -1413,13 +1409,17 @@ class SerialFiscalDriver(SerialDriver):
 
     def PrintXReport(self, action):
         self.trama = self._States_Report("I0X", 4)
-        _logger.warning("AQUIIIIII")
         response = {"valid": True, "message": "Impreso con exito"}
         self.data["value"] = response
         event_manager.device_changed(self)
         return response
 
-    def PrintZReport(self, data, *items):  # (self, mode, startParam, endParam):
+    def PrintZReport(self, data, *items):# (self, mode, startParam, endParam):
+        status = self.ReadFpStatus(True)
+        if status["data"]["error"]["code"] != "0":
+            raise Exception(status["data"]["error"]["msg"])
+        if status["data"]["status"]["code"] not in ["1", "4"]:
+            raise Exception(status["data"]["status"]["msg"])
         if len(items) > 0:
             mode = items[0]
             startParam = items[1]
