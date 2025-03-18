@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250222\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-13 18:35+0000\n"
-"PO-Revision-Date: 2025-03-13 18:35+0000\n"
+"POT-Creation-Date: 2025-03-18 13:20+0000\n"
+"PO-Revision-Date: 2025-03-18 13:20+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -2506,6 +2506,13 @@ msgstr "Fecha de Comprobante"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__voucher
 msgid "Voucher Number"
 msgstr "Nro de Comprobante"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The number must be exactly 14 numeric digits."
+msgstr "El número de comprobante debe tener exactamente 14 dígitos numéricos."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python

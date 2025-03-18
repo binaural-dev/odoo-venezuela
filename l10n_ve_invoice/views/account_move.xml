@@ -52,7 +52,7 @@
                 <field name="is_debit_journal" readonly="True" invisible="1"/>
             </xpath>
             <xpath expr="//page[@name='other_info']//field[@name='ref']" position="attributes">
-                <attribute name="attrs">
+                 <attribute name="attrs">
                     {
                         'readonly': [
                             '|',
