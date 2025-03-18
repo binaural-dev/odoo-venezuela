@@ -1,5 +1,6 @@
 from odoo import api, models, fields, Command, _
 from datetime import datetime
+import re
 from odoo.exceptions import UserError, ValidationError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
@@ -894,3 +895,10 @@ class AccountRetention(models.Model):
             return config.signature.decode()
         else:
             return False
+
+    @api.constrains("number", "type")
+    def _check_number(self):
+        for record in self:
+            if record.type == "out_invoice" and record.number:
+                if not re.fullmatch(r"\d{14}", record.number):
+                    raise ValidationError(_("The number must be exactly 14 numeric digits."))
