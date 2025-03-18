@@ -30,17 +30,23 @@ class SaleOrder(models.Model):
         help="Indicates if this sale order is a consignation sale.",
     )
 
-    @api.depends("warehouse_id")
+    ### COMPUTES ###
+    @api.depends("warehouse_id", "document")
     def _compute_is_consignation(self):
         for order in self:
-            order.is_consignation = order.warehouse_id and order.warehouse_id.is_consignation_warehouse
+            order.is_consignation = (
+                order.warehouse_id and order.warehouse_id.is_consignation_warehouse
+            )
+            order.document = "dispatch_guide"
 
+    ### DEFAULTS ###
     @api.model
     def _default_document(self):
         """Get the default value for the document field from the partner's default_document."""
         partner = self.env["res.partner"].browse(self._context.get("default_partner_id"))
         return partner.default_document if partner else "invoice"
 
+    ### ONCHANGE ###
     @api.onchange("partner_id")
     def _onchange_partner_id(self):
         """Update the document field when the partner is changed."""
@@ -49,6 +55,37 @@ class SaleOrder(models.Model):
         else:
             self.document = "invoice"
 
+    @api.onchange("is_consignation")
+    def _onchange_is_consignation(self):
+        if not self.is_consignation:
+            warehouse_id = self.env["stock.warehouse"].search(
+                [("is_consignation_warehouse", "=", False)], limit=1
+            )
+
+            if not warehouse_id:
+                raise ValidationError(
+                    _(
+                        "No default warehouse found. \nIf you wish to configure one, please go to Inventory > Configuration > Warehouses \nand select a warehouse as 'Default Warehouse'."
+                    )
+                )
+
+            self.warehouse_id = warehouse_id
+
+        if self.is_consignation:
+            warehouse_id = self.env["stock.warehouse"].search(
+                [("is_consignation_warehouse", "=", True)], limit=1
+            )
+
+            if not warehouse_id:
+                raise ValidationError(
+                    _(
+                        "No consignation warehouse found. \nIf you wish to configure one, please go to Inventory > Configuration > Warehouses \nand select a warehouse as 'Consignation Warehouse'."
+                    )
+                )
+
+            self.warehouse_id = warehouse_id
+
+    ### CONSTRAINTS ###
     @api.constrains("is_donation", "state")
     def _check_is_donation(self):
         for order in self:
@@ -59,3 +96,43 @@ class SaleOrder(models.Model):
                             "The field 'Is Donation' cannot be modified on a confirmed or completed order."
                         )
                     )
+
+    @api.constrains("warehouse_id", "order_line")
+    def _check_consignation_warehouse(self):
+        for order in self:
+            if order.warehouse_id.is_consignation_warehouse:
+                for line in order.order_line:
+                    picking_location_count = self.env["stock.quant"].search_count(
+                        [
+                            ("product_id", "=", line.product_id.id),
+                            ("location_id.partner_id", "=", order.partner_id.id),
+                            ("location_id.usage", "=", "internal"),
+                            ("quantity", ">", 0),
+                        ]
+                    )
+                    if picking_location_count == 0:
+                        raise ValidationError(
+                            _(
+                                "The product %s is not available in the customer's consignation location."
+                            )
+                            % line.product_id.name
+                        )
+
+                    stock_available = self.env["stock.quant"].read_group(
+                        domain=[
+                            ("product_id", "=", line.product_id.id),
+                            ("location_id.partner_id", "=", order.partner_id.id),
+                            ("location_id.usage", "=", "internal"),
+                        ],
+                        fields=["quantity:sum"],
+                        groupby=[],
+                    )
+                    total_stock = stock_available[0]["quantity"] if stock_available else 0
+
+                    if line.product_uom_qty > total_stock:
+                        raise ValidationError(
+                            _(
+                                "Cannot sell more than the available consignation stock for product %s."
+                            )
+                            % line.product_id.name
+                        )

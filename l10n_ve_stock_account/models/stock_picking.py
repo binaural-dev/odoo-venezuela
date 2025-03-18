@@ -3,7 +3,7 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.osv import expression
-from datetime import datetime, timedelta
+from datetime import date,datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -77,6 +77,7 @@ class StockPicking(models.Model):
     )
 
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
+    is_consignment_readonly = fields.Boolean(default=False)
 
     # This field controls the visibility of the button, determines when to generate
     # the dispatch guide sequence, and controls the visibility of the 'guide_number' field.
@@ -91,6 +92,17 @@ class StockPicking(models.Model):
         string="Invoice State",
         compute="_compute_invoice_state",
     )
+
+    order_is_consignment = fields.Boolean(compute="_compute_order_is_consignment")
+
+    location_id = fields.Many2one(compute="_compute_location_id")
+
+    @api.depends("sale_id")
+    def _compute_order_is_consignment(self):
+        for picking in self:
+            picking.order_is_consignment = (
+                picking.sale_id.is_consignation if picking.sale_id else False
+            )
 
     def _set_guide_number(self):
         for picking in self:
@@ -148,7 +160,9 @@ class StockPicking(models.Model):
                 if not customer_journal_id:
                     raise UserError(_("Please configure the journal from settings"))
 
-                invoice_line_list = picking_id._get_invoice_lines_for_invoice(from_picking_line=True)
+                invoice_line_list = picking_id._get_invoice_lines_for_invoice(
+                    from_picking_line=True
+                )
                 origin_name = self._get_origin_name(picking_id)
                 invoice = self.env["account.move"].create(
                     {
@@ -167,6 +181,8 @@ class StockPicking(models.Model):
                     }
                 )
             picking_id.write({"state_guide_dispatch": "invoiced"})
+            if picking_id.sale_id:
+                picking_id.sale_id.write({"invoice_status": "invoiced"})
         return invoice
 
     def create_bill(self):
@@ -195,6 +211,7 @@ class StockPicking(models.Model):
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_purchase_tax_id.id])],
                             "quantity": move_ids_without_package.quantity_done,
+                            "from_picking_line": True,
                         },
                     )
                     invoice_line_list.append(vals)
@@ -211,10 +228,13 @@ class StockPicking(models.Model):
                             "picking_id": picking_id.id,
                             "invoice_line_ids": invoice_line_list,
                             "transfer_ids": self,
+                            "from_picking": True,
                         }
                     )
-                    invoice.with_context(move_action_post_alert=True).action_post()
+                    # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
+                if picking_id.sale_id:
+                    picking_id.sale_id.write({"invoice_status": "invoiced"})
             return invoice
 
     def create_customer_credit(self):
@@ -243,6 +263,7 @@ class StockPicking(models.Model):
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_sale_tax_id.id])],
                             "quantity": move_ids_without_package.quantity_done,
+                            "from_picking_line": True,
                         },
                     )
                     invoice_line_list.append(vals)
@@ -259,10 +280,13 @@ class StockPicking(models.Model):
                             "picking_id": picking_id.id,
                             "invoice_line_ids": invoice_line_list,
                             "transfer_ids": self,
+                            "from_picking_line": True,
                         }
                     )
-                    invoice.with_context(move_action_post_alert=True).action_post()
+                    # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
+                if picking_id.sale_id:
+                    picking_id.sale_id.write({"invoice_status": "invoiced"})
             return invoice
 
     def create_vendor_credit(self):
@@ -291,6 +315,7 @@ class StockPicking(models.Model):
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_purchase_tax_id.id])],
                             "quantity": move_ids_without_package.quantity_done,
+                            "from_picking_line": True,
                         },
                     )
                     invoice_line_list.append(vals)
@@ -307,10 +332,13 @@ class StockPicking(models.Model):
                             "picking_id": picking_id.id,
                             "invoice_line_ids": invoice_line_list,
                             "transfer_ids": self,
+                            "from_picking_line": True,
                         }
                     )
-                    invoice.with_context(move_action_post_alert=True).action_post()
+                    # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
+                if picking_id.sale_id:
+                    picking_id.sale_id.write({"invoice_status": "invoiced"})
             return invoice
 
     def create_internal_invoice(self):
@@ -329,7 +357,7 @@ class StockPicking(models.Model):
             if not internal_consigned_journal_id:
                 raise UserError(_("Please configure the internal consigned journal from settings."))
 
-            invoice_line_list = picking_id._get_invoice_lines_for_invoice()
+            invoice_line_list = picking_id._get_invoice_lines_for_invoice(from_picking_line=True)
             origin_name = self._get_origin_name(picking_id)
 
             invoice = self.env["account.move"].create(
@@ -345,11 +373,14 @@ class StockPicking(models.Model):
                     "picking_id": picking_id.id,
                     "invoice_line_ids": invoice_line_list,
                     "transfer_ids": self,
+                    "from_picking": True,
                 }
             )
 
-            invoice.with_context(move_action_post_alert=True).action_post()
+            # invoice.with_context(move_action_post_alert=True).action_post()
             picking_id.write({"state_guide_dispatch": "invoiced"})
+            if picking_id.sale_id:
+                picking_id.sale_id.write({"invoice_status": "invoiced"})
         return invoice
 
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
@@ -383,6 +414,7 @@ class StockPicking(models.Model):
         return invoice_line_list
 
     # === OVERRIDES ===#
+
     def _action_done(self):
         res = super()._action_done()
         self._set_guide_number()
@@ -395,53 +427,12 @@ class StockPicking(models.Model):
         return res
 
     # === METHODS ===#
+
     def get_digits(self):
         return self.env.ref("base.VEF").decimal_places
 
     def print_dispatch_guide(self):
         return self.env.ref("l10n_ve_stock_account.action_dispatch_guide").read()[0]
-
-    def get_totals(self, use_foreign_currency=False):
-        """Calcula y agrupa los totales del picking, incluyendo impuestos por porcentaje."""
-        self.ensure_one()
-        totals = {
-            "subtotal": 0.0,  # Suma de todos los subtotales
-            "exempt": 0.0,  # Suma de productos exentos (0% IVA)
-            "tax_base": 0.0,  # Base imponible (productos con IVA)
-            "tax": 0.0,  # Total de impuestos calculados
-            "total": 0.0,  # Monto final correcto
-            "tax_details": {},  # Agrupación de impuestos por porcentaje
-        }
-
-        for line in self.move_ids_without_package:
-            line_values = line._get_line_values(use_foreign_currency=use_foreign_currency)
-
-            totals["subtotal"] += line_values["subtotal_after_discount"]
-
-            tax_rate = line_values["tax_percentage"]
-            tax_amount = line_values["tax_amount"]
-            subtotal_after_discount = line_values["subtotal_after_discount"]
-
-            # Si es exento (0%), solo lo sumamos a "exempt"
-            if tax_rate == 0.0:
-                totals["exempt"] += subtotal_after_discount
-            else:
-                totals["tax_base"] += subtotal_after_discount
-                totals["tax"] += tax_amount
-
-                # Agrupar impuestos por porcentaje
-                if tax_rate not in totals["tax_details"]:
-                    totals["tax_details"][tax_rate] = {
-                        "base": 0.0,
-                        "tax_amount": 0.0,
-                    }
-
-                totals["tax_details"][tax_rate]["base"] += subtotal_after_discount
-                totals["tax_details"][tax_rate]["tax_amount"] += tax_amount
-
-        totals["total"] = totals["exempt"] + totals["tax_base"] + totals["tax"]
-
-        return totals
 
     def _validate_one_invoice_posted(self):
         for picking in self:
@@ -496,7 +487,7 @@ class StockPicking(models.Model):
         #         }
         return res
 
-    # === ACTIONS FUNCTIONS ===#
+    # === ACTIONS METHODS ===#
 
     def action_open_picking_invoice(self):
         """This is the function of the smart button which redirect to the
@@ -612,7 +603,53 @@ class StockPicking(models.Model):
         else:
             raise UserError(_("Please select single type transfer"))
 
+    # === SEARCH METHODS ===#
+
+    def _search_invoice_ids(self, operator, value):
+        invoices = self.env["account.move"].search([("id", operator, value)])
+        return [("id", "in", invoices.mapped("transfer_ids").ids)]
+
     # === COMPUTE METHODS ===#
+
+    @api.depends("picking_type_id", "partner_id", "sale_id")
+    def _compute_location_id(self):
+        for picking in self:
+            picking = picking.with_company(picking.company_id)
+
+            if picking.picking_type_id and picking.state in ["draft", "confirmed", "assigned"]:
+                if picking.picking_type_id.default_location_src_id:
+                    location_id = picking.picking_type_id.default_location_src_id.id
+                elif picking.partner_id:
+                    location_id = picking.partner_id.property_stock_supplier.id
+                if picking.sale_id and picking.sale_id.is_consignation:
+                    _logger.info("Consignation")
+                    location_id = (
+                        self.env["stock.location"]
+                        .search(
+                            [
+                                ("partner_id", "=", picking.sale_id.partner_id.id),
+                                ("usage", "=", "internal"),
+                                ("is_consignation_warehouse", "=", True),
+                            ],
+                            limit=1,
+                        )
+                        .id
+                    )
+                else:
+                    _customerloc, location_id = self.env["stock.warehouse"]._get_partner_locations()
+
+                if picking.picking_type_id.default_location_dest_id:
+                    location_dest_id = picking.picking_type_id.default_location_dest_id.id
+                elif picking.partner_id:
+                    location_dest_id = picking.partner_id.property_stock_customer.id
+                else:
+                    location_dest_id, _supplierloc = self.env[
+                        "stock.warehouse"
+                    ]._get_partner_locations()
+
+                picking.location_id = location_id
+                picking.location_dest_id = location_dest_id
+
     @api.depends("invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return")
     def _compute_button_visibility(self):
         for record in self:
@@ -646,14 +683,8 @@ class StockPicking(models.Model):
     # @api.depends()
     def _compute_invoice_ids(self):
         for picking in self:
-            invoices = self.env["account.move"].search(
-                [("transfer_ids", "in", picking.ids)]
-            )
+            invoices = self.env["account.move"].search([("transfer_ids", "in", picking.ids)])
             picking.invoice_ids = invoices
-
-    def _search_invoice_ids(self, operator, value):
-        invoices = self.env["account.move"].search([("id", operator, value)])
-        return [("id", "in", invoices.mapped("transfer_ids").ids)]
 
     def _compute_invoice_state(self):
         for picking_id in self:
@@ -678,7 +709,7 @@ class StockPicking(models.Model):
             if picking.state != "done":
                 continue
 
-            if not picking.sale_id:
+            if not picking.sale_id and not picking.operation_code == "internal":
                 continue
 
             if picking.document == "invoice":
@@ -726,7 +757,7 @@ class StockPicking(models.Model):
                 # This is necessary always should be return a value
                 picking.is_dispatch_guide = picking.is_dispatch_guide
 
-    @api.depends("is_donation", "is_dispatch_guide", "operation_code")
+    @api.depends("is_donation", "is_dispatch_guide", "operation_code", "location_dest_id")
     def _compute_allowed_reason_ids(self):
         for picking in self:
             allowed_reason_ids = []
@@ -744,36 +775,54 @@ class StockPicking(models.Model):
                 key: self.env.ref(ref, raise_if_not_found=False) for key, ref in reason_refs.items()
             }
 
+            is_outgoing = picking.operation_code == "outgoing"
+            has_sale = bool(picking.sale_id)
+
             # Outgoing with sale
-            if picking.operation_code == "outgoing" and picking.sale_id:
+            if is_outgoing and has_sale:
+                donation_reason = reasons.get("donation")
+                sale_reason = reasons.get("sale")
+                export_reason = reasons.get("export")
 
                 ## Donations
-                if picking.is_donation and reasons["donation"]:
-                    allowed_reason_ids.append(reasons["donation"].id)
-                    picking.transfer_reason_id = reasons["donation"].id
+                if picking.is_donation and donation_reason:
+                    allowed_reason_ids.append(donation_reason.id)
+                    picking.transfer_reason_id = donation_reason.id
 
                 ## Without Donations
-                elif picking.operation_code == "outgoing" and picking.sale_id:
-                    if reasons["sale"]:
-                        allowed_reason_ids.append(reasons["sale"].id)
+                else:
+                    if sale_reason:
+                        allowed_reason_ids.append(sale_reason.id)
                         if not picking.transfer_reason_id:
-                            picking.transfer_reason_id = reasons["sale"].id
-                    if reasons["export"]:
-                        allowed_reason_ids.append(reasons["export"].id)
+                            picking.transfer_reason_id = sale_reason.id
+                    if export_reason:
+                        allowed_reason_ids.append(export_reason.id)
 
             # Outgoing without sale
-            elif picking.operation_code == "outgoing" and not picking.sale_id:
-                if reasons["self_consumption"]:
-                    allowed_reason_ids.append(reasons["self_consumption"].id)
+            elif is_outgoing and not has_sale:
+                self_consumption_reason = reasons.get("self_consumption")
+                if self_consumption_reason:
+                    allowed_reason_ids.append(self_consumption_reason.id)
 
             # Internal
             elif picking.operation_code == "internal":
 
+                consignment_reason = reasons.get("consignment")
+                transfer_between_warehouses_reason = reasons.get("transfer_between_warehouses")
+                warehouse = picking.location_dest_id.warehouse_id
+
                 ## Consignments and internal transfers
-                if reasons["consignment"]:
-                    allowed_reason_ids.append(reasons["consignment"].id)
-                if reasons["transfer_between_warehouses"]:
-                    allowed_reason_ids.append(reasons["transfer_between_warehouses"].id)
+                if consignment_reason:
+                    allowed_reason_ids.append(consignment_reason.id)
+
+                if transfer_between_warehouses_reason:
+                    allowed_reason_ids.append(transfer_between_warehouses_reason.id)
+
+                if consignment_reason and warehouse and warehouse.is_consignation_warehouse:
+                    picking.transfer_reason_id = consignment_reason.id
+                    picking.is_consignment_readonly = True
+                else:
+                    picking.is_consignment_readonly = False
 
             # Force update of transfer_reason_id field to avoid inconsistencies
             if allowed_reason_ids:
@@ -858,3 +907,30 @@ class StockPicking(models.Model):
             except Exception as e:
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
+
+    def alert_views(self):
+        pickings_combined = self.env['stock.picking'].sudo().search([
+            ('state', '=', 'done'),
+            ('type_delivery_step', '!=', 'int'),
+            ('transfer_reason_id.code', '!=', 'self_consumption'),
+            ('state_guide_dispatch', '=', 'to_invoice')])
+        
+        hoy = date.today()
+        taxpayer_type = self.env.company.taxpayer_type
+        result = hoy  # Valor por defecto
+        
+        if taxpayer_type == 'special':
+            if hoy.day < 15:
+                # Si es antes del 15: mostrar día 15
+                result = hoy.replace(day=15)
+            else:
+                # Si es 15 o después: último día del mes
+                result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
+                result = result - timedelta(days=1)
+
+        elif taxpayer_type in ("ordinary", "formal"):
+            # Siempre último día del mes para estos tipos
+           result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
+           result = result - timedelta(days=1)
+ 
+        return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}"
