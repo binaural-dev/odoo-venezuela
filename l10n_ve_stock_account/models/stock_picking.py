@@ -709,7 +709,7 @@ class StockPicking(models.Model):
             if picking.state != "done":
                 continue
 
-            if not picking.sale_id:
+            if not picking.sale_id and not picking.operation_code == "internal":
                 continue
 
             if picking.document == "invoice":
