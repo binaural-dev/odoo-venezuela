@@ -401,6 +401,7 @@ class StockPicking(models.Model):
         return invoice_line_list
 
     # === OVERRIDES ===#
+
     def _action_done(self):
         res = super()._action_done()
         self._set_guide_number()
@@ -413,6 +414,7 @@ class StockPicking(models.Model):
         return res
 
     # === METHODS ===#
+
     def get_digits(self):
         return self.env.ref("base.VEF").decimal_places
 
@@ -472,7 +474,7 @@ class StockPicking(models.Model):
         #         }
         return res
 
-    # === ACTIONS FUNCTIONS ===#
+    # === ACTIONS METHODS ===#
 
     def action_open_picking_invoice(self):
         """This is the function of the smart button which redirect to the
@@ -588,6 +590,12 @@ class StockPicking(models.Model):
         else:
             raise UserError(_("Please select single type transfer"))
 
+    # === SEARCH METHODS ===#
+
+    def _search_invoice_ids(self, operator, value):
+        invoices = self.env["account.move"].search([("id", operator, value)])
+        return [("id", "in", invoices.mapped("transfer_ids").ids)]
+
     # === COMPUTE METHODS ===#
     
     @api.depends("invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return")
@@ -627,10 +635,6 @@ class StockPicking(models.Model):
                 [("transfer_ids", "in", picking.ids)]
             )
             picking.invoice_ids = invoices
-
-    def _search_invoice_ids(self, operator, value):
-        invoices = self.env["account.move"].search([("id", operator, value)])
-        return [("id", "in", invoices.mapped("transfer_ids").ids)]
 
     def _compute_invoice_state(self):
         for picking_id in self:

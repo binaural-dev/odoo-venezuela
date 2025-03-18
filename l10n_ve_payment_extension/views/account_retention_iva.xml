@@ -33,8 +33,11 @@
                         <field name="date_accounting" select="1"
                             attrs="{'readonly':[('state','in',['emitted','cancel'])]}" />
                         <field name="number" force_save="1"
-                            attrs="{'readonly':['|',('type','=', 'in_invoice'),('state','in', ['emitted','cancel'])],
-                        'required':[('type','=', 'out_invoice')]}" />
+                            attrs="{
+                                'readonly': ['|', ('type', '=', 'in_invoice'), ('state', 'in', ['emitted', 'cancel'])],
+                                'required': [('type', '=', 'out_invoice')]
+                            }"
+                        />
                         <field name="correlative" force_save="1" invisible="1"
                             attrs="{'readonly':[('type','=', 'in_invoice')] }" />
                         <field name="date"
