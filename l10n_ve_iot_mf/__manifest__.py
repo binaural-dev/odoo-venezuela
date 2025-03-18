@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - IoT / Maquina Fiscal",
-    "version": "16.0.3.4.2",
+    "version": "16.0.3.4.3",
     "category": "Accounting",
     "summary": "Implementación de DLLs de The Factory HKA (VE) y desarrollos PnP para Internet of Things (IoT) y compatibilidad con Odoo.",
     "license": "LGPL-3",

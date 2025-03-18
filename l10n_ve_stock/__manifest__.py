@@ -8,7 +8,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.16.1.12",
+    "version": "16.0.16.1.13",
     "depends": [
         "stock",
         "l10n_ve_tax",

@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "16.0.1.0.25",
+    "version": "16.0.1.0.29",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_accountant",
@@ -21,6 +21,7 @@
         "data/transfer_reason.xml",
         "views/account_move_views.xml",
         "views/stock_picking_guide_dispatch_views.xml",
+        "views/stock_move_line_consignation_views.xml",
         "views/stock_picking_views.xml",
         "views/sale_order_views.xml",
         "views/res_partner_view.xml",
