@@ -77,6 +77,7 @@ class StockPicking(models.Model):
     )
 
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
+    is_consignment_readonly = fields.Boolean(default=False)
 
     # This field controls the visibility of the button, determines when to generate
     # the dispatch guide sequence, and controls the visibility of the 'guide_number' field.
@@ -588,6 +589,7 @@ class StockPicking(models.Model):
             raise UserError(_("Please select single type transfer"))
 
     # === COMPUTE METHODS ===#
+    
     @api.depends("invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return")
     def _compute_button_visibility(self):
         for record in self:
@@ -701,7 +703,7 @@ class StockPicking(models.Model):
                 # This is necessary always should be return a value
                 picking.is_dispatch_guide = picking.is_dispatch_guide
 
-    @api.depends("is_donation", "is_dispatch_guide", "operation_code")
+    @api.depends("is_donation", "is_dispatch_guide", "operation_code", "location_dest_id")
     def _compute_allowed_reason_ids(self):
         for picking in self:
             allowed_reason_ids = []
@@ -719,36 +721,54 @@ class StockPicking(models.Model):
                 key: self.env.ref(ref, raise_if_not_found=False) for key, ref in reason_refs.items()
             }
 
+            is_outgoing = picking.operation_code == "outgoing"
+            has_sale = bool(picking.sale_id)
+
             # Outgoing with sale
-            if picking.operation_code == "outgoing" and picking.sale_id:
+            if is_outgoing and has_sale:
+                donation_reason = reasons.get("donation")
+                sale_reason = reasons.get("sale")
+                export_reason = reasons.get("export")
 
                 ## Donations
-                if picking.is_donation and reasons["donation"]:
-                    allowed_reason_ids.append(reasons["donation"].id)
-                    picking.transfer_reason_id = reasons["donation"].id
+                if picking.is_donation and donation_reason:
+                    allowed_reason_ids.append(donation_reason.id)
+                    picking.transfer_reason_id = donation_reason.id
 
                 ## Without Donations
-                elif picking.operation_code == "outgoing" and picking.sale_id:
-                    if reasons["sale"]:
-                        allowed_reason_ids.append(reasons["sale"].id)
+                else:
+                    if sale_reason:
+                        allowed_reason_ids.append(sale_reason.id)
                         if not picking.transfer_reason_id:
-                            picking.transfer_reason_id = reasons["sale"].id
-                    if reasons["export"]:
-                        allowed_reason_ids.append(reasons["export"].id)
+                            picking.transfer_reason_id = sale_reason.id
+                    if export_reason:
+                        allowed_reason_ids.append(export_reason.id)
 
             # Outgoing without sale
-            elif picking.operation_code == "outgoing" and not picking.sale_id:
-                if reasons["self_consumption"]:
-                    allowed_reason_ids.append(reasons["self_consumption"].id)
+            elif is_outgoing and not has_sale:
+                self_consumption_reason = reasons.get("self_consumption")
+                if self_consumption_reason:
+                    allowed_reason_ids.append(self_consumption_reason.id)
 
             # Internal
             elif picking.operation_code == "internal":
 
+                consignment_reason = reasons.get("consignment")
+                transfer_between_warehouses_reason = reasons.get("transfer_between_warehouses")
+                warehouse = picking.location_dest_id.warehouse_id
+
                 ## Consignments and internal transfers
-                if reasons["consignment"]:
-                    allowed_reason_ids.append(reasons["consignment"].id)
-                if reasons["transfer_between_warehouses"]:
-                    allowed_reason_ids.append(reasons["transfer_between_warehouses"].id)
+                if consignment_reason:
+                    allowed_reason_ids.append(consignment_reason.id)
+
+                if transfer_between_warehouses_reason:
+                    allowed_reason_ids.append(transfer_between_warehouses_reason.id)
+
+                if consignment_reason and warehouse and warehouse.is_consignation_warehouse:
+                    picking.transfer_reason_id = consignment_reason.id
+                    picking.is_consignment_readonly = True
+                else:
+                    picking.is_consignment_readonly = False
 
             # Force update of transfer_reason_id field to avoid inconsistencies
             if allowed_reason_ids:
