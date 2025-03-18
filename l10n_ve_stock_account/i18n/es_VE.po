@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-18 17:09+0000\n"
-"PO-Revision-Date: 2025-03-18 17:09+0000\n"
+"POT-Creation-Date: 2025-03-18 21:26+0000\n"
+"PO-Revision-Date: 2025-03-18 21:26+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -243,7 +243,9 @@ msgstr "Cancelada"
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid "Cannot sell more than the available consignation stock for product %s."
-msgstr "No se puede vender más de lo disponible en el stock de consignación para el producto %s."
+msgstr ""
+"No se puede vender más de lo disponible en el stock de consignación para el "
+"producto %s."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -278,10 +280,22 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_stock_account
+#: model:ir.actions.act_window,name:l10n_ve_stock_account.action_stock_move_line_consignation_report
+#: model:ir.ui.menu,name:l10n_ve_stock_account.menu_stock_report_consignation_report
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
+msgid "Consignation Report"
+msgstr "Informe de Consignación"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_location__is_consignation_warehouse
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__is_consignation_warehouse
 msgid "Consignation Warehouse"
 msgstr "Almacén de Consignación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.ui.menu,name:l10n_ve_stock_account.menu_stock_report_consignation_account
+msgid "Consignations Guides"
+msgstr "Guías de Consignación"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_res_partner
@@ -359,6 +373,21 @@ msgstr "Diario de clientes"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__invoice_cron_type
 msgid "Date Cron Invoice"
 msgstr "Fecha del Cron de Facturación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__date_done
+msgid "Date Invoiced"
+msgstr "Fecha de Facturación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_move_line__date_done
+msgid "Date at which the transfer has been processed or cancelled."
+msgstr "Fecha en la que se ha procesado o cancelado la transferencia."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
+msgid "Date done"
+msgstr "Fecha realizada"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_partner__default_document
@@ -460,7 +489,6 @@ msgid "Generate Invoices from Pickings"
 msgstr "Generar facturas desde los albaranes"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Guide Date"
 msgstr "​Fecha de Guía"
@@ -474,7 +502,10 @@ msgstr "Guía de Despacho"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__guide_number
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__guide_number
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_payment__guide_number
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__guide_number
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__guide_number
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_stock_move_line_search
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Guide Number"
 msgstr "​Nro de Guía de Despacho"
@@ -557,7 +588,6 @@ msgstr "Estado de la factura"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 msgid "Invoiced"
 msgstr "Facturada"
 
@@ -661,6 +691,11 @@ msgstr "Última actualización por"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__write_date
 msgid "Last Updated on"
 msgstr "Última actualización en"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
+msgid "Location"
+msgstr "Ubicación"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
@@ -785,6 +820,11 @@ msgid "Precio"
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
+msgid "Product"
+msgstr "Producto"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_move_line
 msgid "Product Moves (Stock Move Line)"
 msgstr "Movimientos de producto (línea de movimiento de stock)"
@@ -800,7 +840,13 @@ msgid "Purchase Journal"
 msgstr "Diario de Compras"
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
+msgid "Quantity Dispatched"
+msgstr "Cantidad despachada"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__qty_invoiced
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 msgid "Quantity Invoiced"
 msgstr "Cantidad Facturada"
 
@@ -905,7 +951,9 @@ msgid "Source Location"
 msgstr "Ubicación origen"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__state_guide_dispatch
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__state_guide_dispatch
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "State Guide Dispatch"
 msgstr "Estado de Guía"
@@ -962,7 +1010,8 @@ msgstr ""
 msgid ""
 "The product %s is not available in the customer's consignation location."
 msgstr ""
-"El producto %s no está disponible en la ubicación de consignación del cliente."
+"El producto %s no está disponible en la ubicación de consignación del "
+"cliente."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -1005,7 +1054,6 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__to_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 msgid "To Invoice"
 msgstr "Por facturar"
 
@@ -1059,6 +1107,11 @@ msgstr "Tipo de operación"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Unidad"
 msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
+msgid "Unit of Measure"
+msgstr "Unidad de medida"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
