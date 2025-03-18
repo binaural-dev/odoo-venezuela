@@ -97,3 +97,43 @@ class SaleOrder(models.Model):
                             "The field 'Is Donation' cannot be modified on a confirmed or completed order."
                         )
                     )
+
+    @api.constrains("warehouse_id", "order_line")
+    def _check_consignation_warehouse(self):
+        for order in self:
+            if order.warehouse_id.is_consignation_warehouse:
+                for line in order.order_line:
+                    picking_location_count = self.env["stock.quant"].search_count(
+                        [
+                            ("product_id", "=", line.product_id.id),
+                            ("location_id.partner_id", "=", order.partner_id.id),
+                            ("location_id.usage", "=", "internal"),
+                            ("quantity", ">", 0),
+                        ]
+                    )
+                    if picking_location_count == 0:
+                        raise ValidationError(
+                            _(
+                                "The product %s is not available in the customer's consignation location."
+                            )
+                            % line.product_id.name
+                        )
+
+                    stock_available = self.env["stock.quant"].read_group(
+                        domain=[
+                            ("product_id", "=", line.product_id.id),
+                            ("location_id.partner_id", "=", order.partner_id.id),
+                            ("location_id.usage", "=", "internal"),
+                        ],
+                        fields=["quantity:sum"],
+                        groupby=[],
+                    )
+                    total_stock = stock_available[0]["quantity"] if stock_available else 0
+
+                    if line.product_uom_qty > total_stock:
+                        raise ValidationError(
+                            _(
+                                "Cannot sell more than the available consignation stock for product %s."
+                            )
+                            % line.product_id.name
+                        )

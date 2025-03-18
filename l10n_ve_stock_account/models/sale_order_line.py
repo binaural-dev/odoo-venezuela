@@ -8,7 +8,7 @@ _logger = logging.getLogger(__name__)
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
-    @api.constrains("product_id", "order_id", "order_id.is_consignation")
+    @api.constrains("product_id", "order_id")
     def _check_product_in_consignation(self):
         for line in self:
             warehouse = line.order_id.warehouse_id
