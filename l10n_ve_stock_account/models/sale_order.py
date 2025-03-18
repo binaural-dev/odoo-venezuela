@@ -31,14 +31,13 @@ class SaleOrder(models.Model):
     )
 
     ### COMPUTES ###
-    @api.depends("warehouse_id")
+    @api.depends("warehouse_id", "document")
     def _compute_is_consignation(self):
         for order in self:
             order.is_consignation = (
                 order.warehouse_id and order.warehouse_id.is_consignation_warehouse
             )
-
-            
+            order.document = "dispatch_guide"
 
     ### DEFAULTS ###
     @api.model
