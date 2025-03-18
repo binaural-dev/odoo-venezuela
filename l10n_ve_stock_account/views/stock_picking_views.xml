@@ -34,13 +34,15 @@
                     'readonly': ['|', ('state', '=', 'done'), ('is_consignment', '=', True)],
                     'invisible': [('operation_code', '!=', 'internal')]
                 }" />
+                <field name="is_consignment_readonly" invisible="1"/>
                 <field 
                     name="transfer_reason_id"
                     attrs="{
-                        'readonly': [('state', '=', 'done')],
+                        'readonly': ['|', ('state', '=', 'done'), ('is_consignment_readonly', '=', True)],
                         'invisible': [('operation_code', '!=', 'internal')],
                         'required': [('operation_code', '=', 'internal')]
                     }" />
+                <field name="is_consignment" />
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="is_donation" invisible="1" />
                 <field 
