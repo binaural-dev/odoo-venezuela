@@ -616,13 +616,8 @@ class StockPicking(models.Model):
         for picking in self:
             picking = picking.with_company(picking.company_id)
 
-            if picking.picking_type_id and picking.state in ["draft", "confirmed", "assigned"]:
-                if picking.picking_type_id.default_location_src_id:
-                    location_id = picking.picking_type_id.default_location_src_id.id
-                elif picking.partner_id:
-                    location_id = picking.partner_id.property_stock_supplier.id
+            if picking.picking_type_id and picking.state in ["draft", "confirmed"]:
                 if picking.sale_id and picking.sale_id.is_consignation:
-                    _logger.info("Consignation")
                     location_id = (
                         self.env["stock.location"]
                         .search(
@@ -635,6 +630,10 @@ class StockPicking(models.Model):
                         )
                         .id
                     )
+                elif picking.picking_type_id.default_location_src_id:
+                    location_id = picking.picking_type_id.default_location_src_id.id
+                elif picking.partner_id:
+                    location_id = picking.partner_id.property_stock_supplier.id
                 else:
                     _customerloc, location_id = self.env["stock.warehouse"]._get_partner_locations()
 
