@@ -830,3 +830,10 @@ msgstr "Debes llenar el campo de inicio o fin, si lo hay, repite el número"
 #: model:ir.model,name:l10n_ve_iot_mf.model_iot_port
 msgid "iot.port"
 msgstr ""
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Print Debit Note"
+msgstr "Imprimir Nota de Débito"
