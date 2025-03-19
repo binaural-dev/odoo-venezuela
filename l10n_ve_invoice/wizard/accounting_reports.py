@@ -73,7 +73,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
-            "move_type": self._determinate_type(move),
+            "move_type": self._determinate_type_for_move(move),
             "transaction_type": self._determinate_transaction_type(move),
             "number_invoice_affected": (
                 move.debit_origin_id.name
@@ -106,7 +106,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
-            "move_type": self._determinate_type(move),
+            "move_type": self._determinate_type_for_move(move),
             "transaction_type": self._determinate_transaction_type(move),
             "number_invoice_affected": move.debit_origin_id.name if move.journal_id.is_debit else move.reversed_entry_id.name or "--",
             "correlative": move.correlative,
@@ -620,10 +620,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         _fn = datetime.strptime(str(date), "%Y-%m-%d")
         return _fn.strftime("%d/%m/%Y")
 
-    def _determinate_type(self, move):
+    def _determinate_type_for_move(self, move):
         move_type = move.move_type
         if move.journal_id.is_debit:
             move_type = "in_debit"
+
+        type_for_move = self._determinate_type(move_type)
+
+        return type_for_move
+
+
+    def _determinate_type(self, type):
 
         types = {
             "out_debit": "ND",
@@ -633,8 +640,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "out_refund": "NC",
             "in_refund": "NC",
         }
-
-        return types[move_type]
+        return types[type]
 
     def _determinate_transaction_type(self, move):
         if move.move_type in ["out_invoice", "in_invoice"] and move.state == "posted":

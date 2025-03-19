@@ -32,6 +32,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res = super().sale_book_fields()
         if not self.with_fiscal_machine:
             return res
+        for i, field in enumerate(res):
+            if field.get("field", False) == "correlative":
+                del res[i]
+                break
         res.insert(4, {"name": "Reporte Z", "field": "mf_reportz"})
         res.insert(4, {"name": "Serial de Maquina", "field": "mf_serial"})
         return res
@@ -40,6 +44,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res = super()._fields_sale_book_line(move, taxes)
         if not self.with_fiscal_machine:
             return res
+        del res["correlative"]
         res["document_number"] = move.mf_invoice_number if move.mf_invoice_number else "-"
         res["mf_reportz"] = move.mf_reportz if move.mf_reportz else "-"
         res["mf_serial"] = move.mf_serial if move.mf_serial else "-"
@@ -69,7 +74,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "document_number": f"Desde {data.get('range_start')} Hasta {data.get('range_end')}",
             "mf_reportz": data.get("mf_reportz"),
             "mf_serial": data.get("mf_serial"),
-            "move_type": data.get("move_type"),
+            "move_type": self._determinate_type(data.get("move_type")),
             "transaction_type": "01-REG",
             "number_invoice_affected": "",
             "correlative": "",
