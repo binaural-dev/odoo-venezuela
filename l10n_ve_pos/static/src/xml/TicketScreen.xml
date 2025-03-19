@@ -4,8 +4,12 @@
     <t t-name="TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension" owl="1">
       <xpath expr="//button[@class='highlight'][1]" position="replace">
       </xpath>
-       <xpath expr="//InvoiceButton[1]" position="before">
-            <FullRefundButton order="_selectedSyncedOrder" actionToTrigger="'do-fullrefund'"/>
+       <xpath expr="//InvoiceButton" position="replace">
+       </xpath>
+       <xpath expr="//ReprintReceiptButton" position="replace">
+       </xpath>
+       <xpath expr="//div[@class='control-buttons'][1]" position="after">
+          <FullRefundButton order="_selectedSyncedOrder" actionToTrigger="'do-fullrefund'"/>
        </xpath>
     </t>
 
