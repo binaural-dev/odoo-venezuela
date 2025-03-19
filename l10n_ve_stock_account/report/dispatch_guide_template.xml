@@ -190,6 +190,7 @@
                                     <!-- name -->
                                     <td class="text-start">
                                         <t t-out="line.product_id.name[0:35]" />
+                                        <t t-if="line_values['tax_percentage'] == 0.0" t-out="'(E)'"/>
                                     </td>
                                     <!-- quantity -->
                                     <td class="text-center">
