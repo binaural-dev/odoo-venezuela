@@ -5,6 +5,7 @@
         <field name="arch" type="xml">
             <tree string="Consignation Report" create="0" edit="0">
                 <field name="date_done" string="Date done"/>
+                <field name="partner_id" string="Partner" />
                 <field name="guide_number" string="Guide Number"/>
                 <field name="location_id" string="Location"/>
                 <field name="product_id" string="Product"/>
