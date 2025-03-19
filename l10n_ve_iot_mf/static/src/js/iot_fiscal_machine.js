@@ -51,6 +51,7 @@ export class IoTFiscalMachineComponent extends Widget {
       "command": _t("Send Command"),
       "print_resume_date": _t("Print Resume"),
       "configure_device": _t("Configure Device"),
+      "print_debit_note": _t("Print Debit Note"),
     }
 
     this.state = useState({
@@ -497,6 +498,46 @@ export class IoTFiscalMachineComponent extends Widget {
 
     this.iotDevice.action({
       action: "print_out_refund",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+  }
+
+  async print_debit_note() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    const move_id = this.props.record.resId
+
+    const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_print_debit_note", {
+      model: 'account.move',
+      method: 'check_print_debit_note',
+      args: [move_id],
+      kwargs: {},
+    })
+
+    this.device = new DeviceController(
+      this.env.services.iot_longpolling,
+      { iot_ip: request.iot_ip, identifier: request.identifier }
+    );
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+      this.env.services.rpc("web/dataset/call_kw/account.move/print_debit_note", {
+        model: 'account.move',
+        method: 'print_debit_note',
+        args: [move_id, value],
+        kwargs: {},
+      }).then(() => window.location.reload())
+    });
+
+    this.iotDevice.action({
+      action: "print_debit_note",
       data: request,
     })
       .then(data => {
