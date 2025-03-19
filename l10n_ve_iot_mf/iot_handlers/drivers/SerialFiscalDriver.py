@@ -221,6 +221,7 @@ class SerialFiscalDriver(SerialDriver):
                 # deprecated
                 "pre_invoice": self.pre_invoice,
                 "hello": self.get_last_invoice_number,
+                "print_debit_note": self.print_debit_note
             }
         )
 
@@ -581,6 +582,211 @@ class SerialFiscalDriver(SerialDriver):
 
         return response
 
+    def print_debit_note(self, invoice):
+        self.data["value"] = {"valid": False, "message": "No se ha completado"}
+        _invoice = invoice.get("data", False)
+        if _invoice:
+            invoice = _invoice
+        valid, _msg = self._validate_out_refund_parameter(invoice)
+        msg = ""
+
+        if not valid or len(_msg) > 0:
+            msg = ", ".join(_msg)
+            self.data["value"] = {"valid": valid, "message": msg}
+            event_manager.device_changed(self)
+            return self.data["value"]
+
+        self.data["value"] = self._print_debit_note(invoice)
+        event_manager.device_changed(self)
+        return self.data["value"]
+                
+    def _print_debit_note(self, invoice):
+        valid = True
+        cmd = []
+
+        max_amount_int = FLAG_21[invoice["flag_21"]]["max_amount_int"]
+        max_amount_decimal = FLAG_21[invoice["flag_21"]]["max_amount_decimal"]
+        max_payment_amount_int = FLAG_21[invoice["flag_21"]]["max_payment_amount_int"]
+        max_payment_amount_decimal = FLAG_21[invoice["flag_21"]]["max_payment_amount_decimal"]
+        max_qty_int = FLAG_21[invoice["flag_21"]]["max_qty_int"]
+        max_qty_decimal = FLAG_21[invoice["flag_21"]]["max_qty_decimal"]
+        disc_int = FLAG_21[invoice["flag_21"]]["disc_int"]
+        disc_decimal = FLAG_21[invoice["flag_21"]]["disc_decimal"]
+
+        try:
+            last_trama = self._States("S1")
+            last_res = S1PrinterData(last_trama)
+            last_number = last_res.__dict__["_lastNCNumber"]
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+
+            _logger.warning("print_out_refound %s", invoice)
+            cmd.append(str("iR*" + invoice["partner_id"]["vat"]))
+            cmd.append(str("iS*" + invoice["partner_id"]["name"]))
+            cmd.append(str("iF*" + invoice["invoice_affected"]["number"]))
+            cmd.append(str("iI*" + invoice["invoice_affected"]["serial_machine"]))
+            cmd.append(str("iD*" + invoice["invoice_affected"]["date"]))
+            if invoice["partner_id"]["address"]:
+                cmd.append(str("i00Direccion:" + invoice["partner_id"]["address"]))
+            if invoice["partner_id"]["phone"]:
+                cmd.append(str("i01Telefono:" + invoice["partner_id"]["phone"]))
+
+            if len(invoice.get("info", [])) > 0:
+                for index, info in enumerate(invoice.get("info")):
+                    cmd.append(f"i{str(index+2).zfill(2)}{info}")
+
+            discount_amount = 0
+
+            for item in invoice["invoice_lines"]:
+                if item.get("price_unit", 0) < 0:
+                    discount_amount += abs(item.get("price_unit", 0))
+                    continue
+
+                code = ""
+                if item.get("code", False):
+                    code = "|" + item.get("code", "") + "|"
+
+                amount_i, amount_d = self.split_amount(
+                    abs(round(item["price_unit"], max_amount_decimal)),
+                    dec=max_amount_decimal,
+                )
+                qty_i, qty_d = self.split_amount(item["quantity"], dec=max_qty_decimal)
+
+                if invoice.get("traditional_line", True):
+                    cmd.append(
+                        str(
+                            "`"
+                            + str(item.get("tax", "0"))
+                            + amount_i.zfill(max_amount_int)
+                            + amount_d.zfill(max_amount_decimal)
+                            + qty_i.zfill(max_qty_int)
+                            + qty_d.zfill(max_qty_decimal)
+                            + f"{code}"
+                            + item["name"][0:127].strip().replace("Ñ", "N").replace("ñ", "n")
+                        )
+                    )
+                # else:
+                #     cmd.append(
+                #         str(
+                #             "GC+"
+                #             + str(item["tax"])
+                #             + amount_i.zfill(max_amount_int)
+                #             + ","
+                #             + amount_d.zfill(max_amount_decimal)
+                #             + "||"
+                #             + qty_i.zfill(max_qty_int)
+                #             + ","
+                #             + qty_d.zfill(max_qty_decimal)
+                #             + "||"
+                #             + code
+                #             + item["name"][0:127].replace("Ñ", "N").replace("ñ", "n")
+                #         )
+                #     )
+
+                if item.get("discount", 0) > 0:
+                    amount_i, amount_d = self.split_amount(
+                        round(item.get("discount"), disc_decimal), dec=disc_decimal
+                    )
+                    cmd.append(f"p-{amount_i.zfill(2)}{amount_d.zfill(2)}")
+                if len(invoice.get("barcode", [])) > 0:
+                 number = invoice.get("barcode")
+                 numberint = number[0]
+                 cmd.append(str("y" + str(numberint)))
+            cmd.append(str("3"))  # sub total en factura
+
+            if discount_amount > 0:
+                amount_i, amount_d = self.split_amount(
+                    round(discount_amount, disc_decimal), dec=disc_decimal
+                )
+                cmd.append("q-" + amount_i.zfill(disc_int) + amount_d.zfill(disc_decimal))
+
+            def filter_unique_type_method(payment):
+                return payment["payment_method"] == "20"
+
+            new_payment_lines = []
+            for item in invoice["payment_lines"]:
+                if item["payment_method"] not in [
+                    payment["payment_method"] for payment in new_payment_lines
+                ]:
+                    new_payment_lines.append(item)
+                    continue
+
+                for value in new_payment_lines:
+                    if item["payment_method"] == value["payment_method"]:
+                        value["amount"] += item["amount"]
+
+            if invoice.get("has_cashbox", False):
+                cmd.append("w")
+
+            for item in new_payment_lines:
+                item["amount"] = abs(item["amount"])
+
+            if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
+                cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
+            elif len(invoice["payment_lines"]) > 1 and len(
+                list(filter(filter_unique_type_method, invoice["payment_lines"]))
+            ) == len(invoice["payment_lines"]):
+                cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
+            else:
+                for item in new_payment_lines:
+                    amount_i, amount_d = self.split_amount(
+                        item["amount"],
+                        dec=max_payment_amount_decimal,
+                    )
+                    cmd.append(
+                        "2"
+                        + str(
+                            (item["payment_method"] or "01")
+                            + amount_i.zfill(max_payment_amount_int)
+                            + amount_d
+                        )
+                    )
+
+            cmd.append(str("101"))
+            if len(invoice.get("aditional_lines", [])) > 0:
+                for index, aditional_lines in enumerate(invoice.get("aditional_lines")):
+                    cmd.append(f"i{str(index).zfill(2)}{aditional_lines}")
+            cmd.append(str("199"))
+
+            for command in cmd:
+                self.SendCmd(command)
+
+            msg = "Nota de debito impresa correctamente"
+            trama = self._States("S1")
+            res = S1PrinterData(trama)
+            number = res.__dict__.get("_lastDebtNoteNumber", "")
+            number_z = res.__dict__.get("_dailyClosureCounter", "")
+            machine_number = res.__dict__.get("_registeredMachineNumber", "")
+            
+            
+            if number == last_number:
+                return {"valid": False, "message": "No se imprimio el documento"}
+
+            machine = {
+                "valid": True,
+                "data": {
+                    "sequence": number,
+                    "serial_machine": machine_number,
+                    "mf_reportz": number_z + 1,
+                },
+            }
+
+        except Exception as _e:
+            _logger.warning(cmd)
+            valid = False
+            machine = False
+            msg = str(_e)
+
+        response = {"valid": valid, "message": msg}
+        if machine:
+            response.update(machine["data"])
+            _logger.warning(response)
+
+        return response
+    
     def _print_out_invoice(self, invoice):
         valid = True
         cmd = []
