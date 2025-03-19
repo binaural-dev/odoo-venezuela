@@ -10,8 +10,6 @@
                 <field name="product_id" string="Product"/>
                 <field name="product_uom_id" string="Unit of Measure"/>
                 <field name="qty_done" string="Quantity Dispatched"/>
-                <field name="qty_invoiced" string="Quantity Invoiced"/>
-                <field name="state_guide_dispatch" string="State Guide Dispatch" />
             </tree>
         </field>
     </record>

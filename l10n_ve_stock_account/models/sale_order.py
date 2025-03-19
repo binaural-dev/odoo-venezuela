@@ -37,7 +37,7 @@ class SaleOrder(models.Model):
             order.is_consignation = (
                 order.warehouse_id and order.warehouse_id.is_consignation_warehouse
             )
-            order.document = "document"
+            order.document = "invoice"
 
     ### DEFAULTS ###
     @api.model
