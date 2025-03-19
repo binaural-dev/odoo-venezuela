@@ -223,11 +223,22 @@
                                     </td>
                                     <!-- tax percentage  -->
                                     <td class="text-center" t-if="o.operation_code != 'internal'">
-                                        <t t-out="line_values['tax_percentage'] or 0" />% </td>
+                                        <t t-set="tax" t-value="line_values['tax_percentage'] or 0"/>
+                                        <t t-if="tax != 0.0">
+                                            <t t-out="tax"/>%
+                                        </t>
+                                        <t t-else="">
+                                            <t t-out="'0'"/>%
+                                        </t>
+                                        
+                                    </td>
                                     <!-- total -->
                                     <td class="text-center" t-if="o.operation_code != 'internal'">
-                                        <t t-out="line_values['subtotal_after_discount']"
-                                            t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                        <t 
+                                            t-out="line_values['total_with_tax']"
+                                            t-options='{"widget": "float", "precision": o.get_digits()}' 
+                                        />
+                                        <t t-out="o.company_id.currency_id.symbol"/>
                                     </td>
                                 </tr>
                             </t>
