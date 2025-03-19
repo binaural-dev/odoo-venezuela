@@ -3,7 +3,7 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.osv import expression
-from datetime import date,datetime, timedelta
+from datetime import date, datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -96,13 +96,6 @@ class StockPicking(models.Model):
     order_is_consignment = fields.Boolean(compute="_compute_order_is_consignment")
 
     location_id = fields.Many2one(compute="_compute_location_id")
-
-    @api.depends("sale_id")
-    def _compute_order_is_consignment(self):
-        for picking in self:
-            picking.order_is_consignment = (
-                picking.sale_id.is_consignation if picking.sale_id else False
-            )
 
     def _set_guide_number(self):
         for picking in self:
@@ -611,18 +604,20 @@ class StockPicking(models.Model):
 
     # === COMPUTE METHODS ===#
 
+    @api.depends("sale_id")
+    def _compute_order_is_consignment(self):
+        for picking in self:
+            picking.order_is_consignment = (
+                picking.sale_id.is_consignation if picking.sale_id else False
+            )
+
     @api.depends("picking_type_id", "partner_id", "sale_id")
     def _compute_location_id(self):
         for picking in self:
             picking = picking.with_company(picking.company_id)
 
-            if picking.picking_type_id and picking.state in ["draft", "confirmed", "assigned"]:
-                if picking.picking_type_id.default_location_src_id:
-                    location_id = picking.picking_type_id.default_location_src_id.id
-                elif picking.partner_id:
-                    location_id = picking.partner_id.property_stock_supplier.id
+            if picking.picking_type_id and picking.state in ["draft", "confirmed"]:
                 if picking.sale_id and picking.sale_id.is_consignation:
-                    _logger.info("Consignation")
                     location_id = (
                         self.env["stock.location"]
                         .search(
@@ -635,6 +630,10 @@ class StockPicking(models.Model):
                         )
                         .id
                     )
+                elif picking.picking_type_id.default_location_src_id:
+                    location_id = picking.picking_type_id.default_location_src_id.id
+                elif picking.partner_id:
+                    location_id = picking.partner_id.property_stock_supplier.id
                 else:
                     _customerloc, location_id = self.env["stock.warehouse"]._get_partner_locations()
 
@@ -909,17 +908,24 @@ class StockPicking(models.Model):
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
     def alert_views(self):
-        pickings_combined = self.env['stock.picking'].sudo().search([
-            ('state', '=', 'done'),
-            ('type_delivery_step', '!=', 'int'),
-            ('transfer_reason_id.code', '!=', 'self_consumption'),
-            ('state_guide_dispatch', '=', 'to_invoice')])
-        
+        pickings_combined = (
+            self.env["stock.picking"]
+            .sudo()
+            .search(
+                [
+                    ("state", "=", "done"),
+                    ("type_delivery_step", "!=", "int"),
+                    ("transfer_reason_id.code", "!=", "self_consumption"),
+                    ("state_guide_dispatch", "=", "to_invoice"),
+                ]
+            )
+        )
+
         hoy = date.today()
         taxpayer_type = self.env.company.taxpayer_type
         result = hoy  # Valor por defecto
-        
-        if taxpayer_type == 'special':
+
+        if taxpayer_type == "special":
             if hoy.day < 15:
                 # Si es antes del 15: mostrar día 15
                 result = hoy.replace(day=15)
@@ -930,7 +936,7 @@ class StockPicking(models.Model):
 
         elif taxpayer_type in ("ordinary", "formal"):
             # Siempre último día del mes para estos tipos
-           result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-           result = result - timedelta(days=1)
- 
+            result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
+            result = result - timedelta(days=1)
+
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}"
