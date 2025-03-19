@@ -12,8 +12,6 @@ class StockMoveLine(models.Model):
 
     guide_number = fields.Char(related="picking_id.guide_number", string="Guide Number", store=True)
 
-    partner_id = fields.Many2one(related="picking_id.partner_id", store=True)
-
     state_guide_dispatch = fields.Selection(related="picking_id.state_guide_dispatch")
 
     @api.depends("product_id", "picking_id")
