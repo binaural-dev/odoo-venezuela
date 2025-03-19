@@ -163,6 +163,7 @@
             <div class="row">
                 <div class="col-12">
                     <table class="table table-bordered">
+                        <t t-set="operation_code" t-value="o.operation_code"/>
                         <thead>
                             <tr>
                                 <th class="text-center">Item</th>
@@ -170,10 +171,10 @@
                                 <th class="text-center">Cant.</th>
                                 <th class="text-center">Unidad</th>
                                 <th class="text-center">Peso</th>
-                                <th class="text-center">Precio</th>
-                                <th class="text-center">Dscto.</th>
-                                <th class="text-center">Impuesto</th>
-                                <th class="text-center">Total</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal'">Precio</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal'">Dscto.</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal'">Impuesto</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal'">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -189,6 +190,7 @@
                                     <!-- name -->
                                     <td class="text-start">
                                         <t t-out="line.product_id.name[0:35]" />
+                                        <t t-if="line_values['tax_percentage'] == 0.0" t-out="'(E)'"/>
                                     </td>
                                     <!-- quantity -->
                                     <td class="text-center">
@@ -205,7 +207,7 @@
                                             t-out="(line.product_id.weight or 0) * (line.quantity_done or 0)" />
                                     </td>
                                     <!-- price -->
-                                    <td class="text-center">
+                                    <td class="text-center" t-if="o.operation_code != 'internal'">
                                         <t t-if="o.get_foreign_currency_is_vef()">
                                             <t t-out="line.sale_line_id.foreign_price or 0"
                                                 t-options='{"widget": "float", "precision": o.get_digits()}' />
@@ -216,16 +218,27 @@
                                         </t>
                                     </td>
                                     <!-- discount percentage -->
-                                    <td class="text-center">
+                                    <td class="text-center" t-if="o.operation_code != 'internal'">
                                         <t t-out="line_values['discount_percentage'] or 0" />%
                                     </td>
                                     <!-- tax percentage  -->
-                                    <td class="text-center">
-                                        <t t-out="line_values['tax_percentage'] or 0" />% </td>
+                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                        <t t-set="tax" t-value="line_values['tax_percentage'] or 0"/>
+                                        <t t-if="tax != 0.0">
+                                            <t t-out="tax"/>%
+                                        </t>
+                                        <t t-else="">
+                                            <t t-out="'0'"/>%
+                                        </t>
+                                        
+                                    </td>
                                     <!-- total -->
-                                    <td class="text-center">
-                                        <t t-out="line_values['subtotal_after_discount']"
-                                            t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                        <t 
+                                            t-out="line_values['total_with_tax']"
+                                            t-options='{"widget": "float", "precision": o.get_digits()}' 
+                                        />
+                                        <t t-out="o.company_id.currency_id.symbol"/>
                                     </td>
                                 </tr>
                             </t>
