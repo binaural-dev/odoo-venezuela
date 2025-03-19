@@ -39,6 +39,7 @@ class AccountMoveInh(models.Model):
         compute="_compute_is_debit_journal"
     )
 
+    @api.depends('journal_id.is_debit')
     def _compute_is_debit_journal(self):
         for record in self:
             record.is_debit_journal = record.journal_id.is_debit
@@ -390,13 +391,10 @@ class AccountMoveInh(models.Model):
             "invoice_lines": _invoice_lines,
             "payment_lines": payment_lines,
         }
-        
-        _logger.info("DATA AQUI : %s", _data)
 
         return _data
     
     def print_debit_note(self, values):
-        _logger.info("AQUI LOS VALORES: %s", values)
         self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
     
     def _get_reconciled_info_JSON_values(self):
