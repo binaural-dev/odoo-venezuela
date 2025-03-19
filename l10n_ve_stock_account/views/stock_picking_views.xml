@@ -19,7 +19,10 @@
             <xpath expr="//field[@name='location_id']" position="after">
                 <field name="order_is_consignment" invisible="1"/>
             </xpath>
-            <xpath expr="//field[@name='location_id']" position="attributes">
+            <xpath expr="//form//group//group//field[@name='location_id'][2]" position="attributes">
+                <attribute name="attrs">{'readonly': [('order_is_consignment', '=', True)]}</attribute>
+            </xpath>
+            <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
                 <attribute name="attrs">{'readonly': [('order_is_consignment', '=', True)]}</attribute>
             </xpath>
             <xpath expr="//form//header" position="inside">
@@ -28,9 +31,8 @@
                     name="print_dispatch_guide" string="Guide Dispatch"
                     type="object" class="o_btn_validate"
                     attrs="{'invisible': [ ('dispatch_guide_controls', '!=', True)]}"
+                    data-hotkey="m"
                 />
-                <!-- data-hotkey="m" attrs="{'invisible': [('show_button', '=', False)]}"
-                nolabel="1" /> -->
             </xpath>
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="is_consignment" invisible="1" />
