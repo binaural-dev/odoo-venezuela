@@ -116,9 +116,11 @@
             <xpath expr="//field[@name='identifier']" position="after">
                 <field 
                     name="manufacturer_type"
+                    readonly="1"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 <field 
                     name="serial_machine"
+                    readonly="1"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 <field 
                     name="flag_21"
