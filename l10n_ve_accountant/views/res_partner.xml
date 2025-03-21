@@ -10,7 +10,7 @@
                 <label for="use_partner_credit_limit_order"/>
                 <div class="o_row">
                     <field name="use_partner_credit_limit_order"/>
-                    <field name="credit_limit" widget='monetary' class="oe_inline" attrs="{'invisible': [('use_partner_credit_limit_order', '=', False)]}"/>
+                    <field name="credit_limit" widget='monetary' class="oe_inline" invisible="not use_partner_credit_limit_order"/>
                     <field name="currency_id" options="{'no_create': True, 'no_open': True}" readonly="1" groups="base.group_multi_currency"/>
                 </div>
             </xpath>
@@ -23,7 +23,7 @@
     <!--     <field name="arch" type="xml"> -->
     <!--         <xpath expr="//group[@name='accounting_entries']" position="attributes"> -->
     <!--             <attribute name="groups">account.group_account_manager</attribute> -->
-    <!--             <attribute name="attrs">{'invisible': [('is_coa_installed', 'not in', (False,True))]}</attribute> -->
+    <!--             <attribute name="invisible">is_coa_installed not in (False,True)</attribute> -->
     <!--         </xpath> -->
     <!--     </field> -->
     <!-- </record> -->

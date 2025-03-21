@@ -7,21 +7,21 @@
             <field name="inherit_id" ref="account.view_account_payment_register_form"/>
             <field name="arch" type="xml">
 		<field name="journal_id" position="attributes">
-		    <attribute name="attrs">{'readonly': [('edit_retention_fields', '=', False)]}</attribute>
+		    <attribute name="readonly">not edit_retention_fields</attribute>
 		</field>
 		<field name="foreign_rate" position="attributes">
-		    <attribute name="attrs">{'readonly': [('edit_retention_fields', '=', False)]}</attribute>
+		    <attribute name="readonly">not edit_retention_fields</attribute>
 		</field>
 		<field name="journal_id" position="before">
-                    <field name="is_retention" attrs="{'invisible': [('is_out_invoice', '=', False)]}"/>
+                    <field name="is_retention" invisible="not is_out_invoice"/>
 		</field>
 				
 				<field name="amount" position="attributes">
-					<attribute name="attrs">{'readonly': [('is_retention', '=', True)]}</attribute>
+					<attribute name="readonly">is_retention == True</attribute>
 				</field>
 
 				<field name="currency_id" position="attributes">
-					<attribute name="attrs">{'readonly': [('is_retention', '=', True)]}</attribute>
+					<attribute name="readonly">is_retention == True</attribute>
 				</field>
 
                 <group name="group2" position="after">
@@ -31,15 +31,15 @@
 		    <field name="is_out_invoice" invisible="1"/>
 			<field name="journal_id" invisible="1"/>
 
-		    <div attrs="{'invisible':[('is_retention', '=', False)]}">
+		    <div invisible="not is_retention">
 			<label for="voucher_date"/>
-			<field name="voucher_date" attrs="{'required':[('is_retention', '=', True)]}"/>
+			<field name="voucher_date" required="is_retention == True"/>
 
 		    	<label for="retention_ref" />
-		    	<field name="retention_ref" attrs="{'required':[('is_retention', '=', True)]}"/>
+		    	<field name="retention_ref" required="is_retention == True"/>
 	    	    </div>
 
-                    <notebook attrs="{'invisible':[('is_retention', '=', False)]}">
+                    <notebook invisible="not is_retention">
                         <page name="retention_lines" string="Retention lines">
                             <field name="retention_line_ids" nolabel="1">
                                 <tree editable="bottom">
@@ -57,17 +57,17 @@
 				    <field
 					name="invoice_total"
 					widget="monetary"
-					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+					column_invisible="not parent.base_currency_is_vef"
 				    />
 				    <field
 					name="invoice_amount"
 					widget="monetary"
-					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+					column_invisible="not parent.base_currency_is_vef"
 				    />
 				    <field
 					name="iva_amount"
 					widget="monetary"
-					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+					column_invisible="not parent.base_currency_is_vef"
 				    />
 				    <field
 					name="retention_amount"
@@ -77,22 +77,22 @@
 				    <field
 					name="foreign_invoice_amount"
 					widget="monetary"
-					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+					column_invisible="parent.base_currency_is_vef"
 				    />
 				    <field
 					name="foreign_iva_amount"
 					widget="monetary"
-					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+					column_invisible="parent.base_currency_is_vef"
 				    />
 				    <field
 					name="foreign_invoice_total"
 					widget="monetary"
-					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+					column_invisible="parent.base_currency_is_vef"
 				    />
 				    <field
 					name="foreign_retention_amount"
 					widget="monetary"
-					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+					column_invisible="parent.base_currency_is_vef"
 				    />
                                 </tree>
                             </field>

@@ -9,7 +9,7 @@
         <field name="edit_rate" invisible="1" />
       </xpath>
       <xpath expr="//page[1]/field[1]" position="attributes">
-        <attribute name="attrs">{'readonly': [('edit_rate', '=', False)]}</attribute>
+        <attribute name="readonly">not edit_rate</attribute>
       </xpath>
     </field>
   </record>

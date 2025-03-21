@@ -17,16 +17,15 @@
                                 class="btn btn-danger"
                                 confirm="Are you want to sure ?"
                                 string="Terminate"
-                                attrs="{'invisible':[('status','=','inactive')]}">
-                        </button>
+                                invisible="status == inactive"/>
                         <field name="status" widget="statusbar"/>
                     </header>
-                    <div class="alert alert-warning text-center" attrs="{'invisible':[('is_bot','=', False)]}"
+                    <div class="alert alert-warning text-center" invisible="is_bot == False"
                          role="alert">
                         <strong>Bot</strong>
                         detected.
                     </div>
-                    <div class="alert alert-success text-center" attrs="{'invisible':[('status','!=', 'active')]}"
+                    <div class="alert alert-success text-center" invisible="status != active"
                          role="alert">
                         Session: <strong>alive</strong>.
                     </div>
@@ -35,7 +34,7 @@
                          role="alert">
                         Session: <strong>terminated</strong>.
                     </div>
-                    <div class="alert alert-danger text-center" attrs="{'invisible':[('is_anonymous','!=', True)]}"
+                    <div class="alert alert-danger text-center" invisible="is_anonymous != True"
                          role="alert">
                         <strong>Anonymous</strong>
                         login attempt detected.
@@ -47,7 +46,7 @@
                                     name="action_gmap_location"
                                     icon="fa-location-arrow"
                                     string="Map Location"
-                                    attrs="{'invisible':['|',('latitude','=',False), ('longitude', '=', False)]}">
+                                    invisible="not latitude or not longitude">
                             </button>
                             <button class="oe_stat_button"
                                     type="object"
@@ -70,10 +69,10 @@
                             <group string="Tracking Device Details">
                                 <field name="ip_address"/>
                                 <field name="platform"/>
-                                <field name="other_platform" attrs="{'invisible': [('platform', '!=', 'Other')]}"/>
+                                <field name="other_platform" invisible="platform != 'Other'"/>
                                 <field name="platform_version"/>
                                 <field name="browser"/>
-                                <field name="other_browser" attrs="{'invisible': [('browser', '!=', 'Other')]}"/>
+                                <field name="other_browser" invisible="browser != Other'"/>
                                 <field name="browser_version"/>
                                 <field name="isp"/>
                             </group>
@@ -123,7 +122,7 @@
                     <field name="active" invisible="1"/>
                     <button name="terminate_user_active_session" type='object'
                             confirm="Are you sure you want to terminate session ?" title="Terminate Session"
-                            class="fa fa-fw fa-times-circle-o" attrs="{'invisible': [('active', '=', False)]}"/>
+                            class="fa fa-fw fa-times-circle-o" invisible="not active"/>
                 </tree>
             </field>
         </record>

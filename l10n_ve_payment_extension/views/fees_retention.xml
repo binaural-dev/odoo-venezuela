@@ -41,7 +41,7 @@
                             </group>
                         </group>
                         <group>
-                            <field name="accumulated_rate_ids" attrs="{'invisible': [('accumulated_rate', '=', False)]}">
+                            <field name="accumulated_rate_ids" invisible="not accumulated_rate">
                                 <tree editable="bottom" string="Accumulated fees">
                                     <field name="name"/>
                                     <field name="start"/>

@@ -13,7 +13,7 @@
                                 <field name="date_from" widget="date"/>
                                 <field name="date_to" widget="date"/>
                                 <field name="show_field_currency_system" invisible="1"/>
-                                <field name="currency_system" attrs="{'invisible': [('show_field_currency_system', '=', True)]}"/>
+                                <field name="currency_system" invisible="show_field_currency_system == True"/>
                             </group>
                         </group>
                     </sheet>

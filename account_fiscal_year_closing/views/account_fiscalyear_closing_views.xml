@@ -30,7 +30,7 @@
                         type="object"
                         string="Calculate"
                         class="oe_highlight"
-                        attrs="{'invisible': [('state', 'not in', ['draft'])]}"
+                        invisible="state not in ['draft']"
                     />
                     <button
                         name="button_recalculate"
@@ -43,7 +43,7 @@
                         type="object"
                         string="Confirm and post moves"
                         class="oe_highlight"
-                        attrs="{'invisible': ['|', ('move_config_ids', '=', []), ('state', 'not in', ['calculated'])]}"
+                        invisible="(move_config_ids == []) or (state not in ['calculated'])"
                     />
                     <button
                         name="button_recover"
@@ -108,7 +108,7 @@
                             <field name="check_draft_moves" />
                         </group>
                     </group>
-                    <group attrs="{'invisible': [('calculation_date', '=', False)]}">
+                    <group invisible="not calculation_date">
                         <group>
                             <field name="calculation_date" />
                         </group>
