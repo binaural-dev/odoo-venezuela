@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+purchase.access_account_move,purchase.access_account_move,account.model_account_move,purchase.group_purchase_user,1,1,1,0
+purchase_stock.access_stock_picking_purchase_user_manager,purchase_stock.access_stock_picking_purchase_user_manager,stock.model_stock_picking,purchase.group_purchase_manager,1,1,1,0
+purchase_stock.access_stock_picking_purchase_user,purchase_stock.access_stock_picking_purchase_user,stock.model_stock_picking,purchase.group_purchase_user,1,1,1,0

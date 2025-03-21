@@ -1,10 +1,10 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
     <data>
 
-        <record id="view_account_retention_line_tree_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">views.account.retention.line.tree.binaural.payment.extension</field>
+        <record id="view_account_retention_line_tree_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">views.account.retention.line.tree.l10n.ve.payment.extension</field>
             <field name="model">account.retention.line</field>
             <field name="type">tree</field>
             <field name="arch" type="xml">
@@ -21,8 +21,8 @@
             </field>
         </record>
 
-        <record id="view_account_retention_line_form_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">views.account.retention.line.form.binaural.payment.extension</field>
+        <record id="view_account_retention_line_form_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">views.account.retention.line.form.l10n.ve.payment.extension</field>
             <field name="model">account.retention.line</field>
             <field name="type">form</field>
             <field name="arch" type="xml">

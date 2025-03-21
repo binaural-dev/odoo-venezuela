@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_kanban_view" model="ir.ui.view">
+        <field name="name">product.template.kanban.view.binaural.stock</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_kanban_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='product_lst_price']" position="after">
+                <div name="product_lst_price" class="mt-1">
+                    Price + IVA:
+                    <field name="price_with_tax" widget="monetary" options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+    <record id="product_template_tree_view" model="ir.ui.view">
+        <field name="name">product.template.tree.view.binaural.stock</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='list_price']" position="after">
+                <field name="price_with_tax" string="Sales Price" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show" decoration-muted="not sale_ok"/>
+                <field name="priority_location" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_product_template_search_alternate_code" model="ir.ui.view">
+        <field name="name">product.template.search.alternate.code</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view" />
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="alternate_code" />
+                <filter
+                    string="Alternate Code"
+                    name="groupby_alternate_code"
+                    domain="[]"
+                    context="{'group_by' : 'alternate_code'}"
+                />
+                <separator />
+            </field>
+        </field>
+    </record>
+    <record id="product_template_form_view_from_binaural_stock" model="ir.ui.view">
+        <field name="name">product.template.form.view.binaural.stock</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <label for="standard_price" position="attributes">
+                <attribute name="groups">l10n_ve_stock.group_show_standard_price</attribute>
+            </label>
+            <div name="standard_price_uom" position="attributes">
+                <attribute name="groups">l10n_ve_stock.group_show_standard_price</attribute>
+            </div>
+            <xpath expr="//div[@name='volume']" position="after">
+                <field name="liters_per_unit" groups="l10n_ve_stock.group_block_liters_per_unit"/>
+            </xpath>
+            <xpath expr="//group[@name='inventory']" position="inside">
+                <group>
+                    <field name="physical_location_id" options="{'no_create': True}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+    <record id="product_template_form_view" model="ir.ui.view">
+        <field name="name">product.template.form.view.binaural.stock</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='default_code']" position="after">
+                <field name="alternate_code"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="product_normal_form_view" model="ir.ui.view">
+        <field name="name">product.product.form.view</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='barcode']" position="before">
+                <field name="alternate_code"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="product_template_form_view_procurement_button" model="ir.ui.view">
+        <field name="name">product.template.form.view.procurement.button.binaural.stock</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="stock.product_template_form_view_procurement_button"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_open_quants']" position="before">
+                <t groups="l10n_ve_stock.group_product_available_quantity_on_sale">
+                    <button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" attrs="{'invisible':[('type', '!=', 'product')]}">
+                        <div class="o_field_widget o_stat_info" name="quantity">
+                            <span class="o_stat_value" widget="statinfo">
+                                <field name="quantity" widget="statinfo" nolabel="1" class="mr4"/>
+                                <field name="uom_name"/>
+                            </span>
+                            <span class="o_stat_text">Available Quantity To Sale</span>
+                        </div>
+                    </button>
+                </t>
+            </xpath>
+
+        </field>
+    </record>
+    <record model="ir.ui.view" id="product_form_view_procurement_button">
+        <field name="name">product.product.form.view.procurement.button.binaural.stock</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="stock.product_form_view_procurement_button"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_open_quants']" position="before">
+                <t groups="l10n_ve_stock.group_product_available_quantity_on_sale">
+                    <button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" attrs="{'invisible':[('type', '!=', 'product')]}">
+                        <div class="o_field_widget o_stat_info" name="quantity">
+                            <span class="o_stat_value" widget="statinfo">
+                                <field name="free_qty" widget="statinfo" nolabel="1" class="mr4"/>
+                                <field name="uom_name"/>
+                            </span>
+                            <span class="o_stat_text">Available Quantity To Sale</span>
+                        </div>
+                    </button>
+                </t>
+            </xpath>
+        </field>
+    </record>
+</odoo>

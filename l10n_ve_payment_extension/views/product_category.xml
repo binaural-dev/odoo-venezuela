@@ -1,7 +1,6 @@
 <odoo>
-
     <record id="view_form_product_category" model="ir.ui.view">
-        <field name="name">product.category.binaural.extend.ciu</field>
+        <field name="name">product.category.l10n.ve.extend.ciu</field>
         <field name="model">product.category</field>
         <field name="inherit_id" ref="product.product_category_form_view"/>
         <field name="arch" type="xml">
@@ -12,5 +11,4 @@
             </group>
         </field>
     </record>
-    
 </odoo>

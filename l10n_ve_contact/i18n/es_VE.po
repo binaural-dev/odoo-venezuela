@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20241210\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-12-17 13:21+0000\n"
-"PO-Revision-Date: 2024-12-17 13:21+0000\n"
+"POT-Creation-Date: 2025-03-13 02:18+0000\n"
+"PO-Revision-Date: 2025-03-13 02:18+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_contact
-#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_binaural_contact
+#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
 msgid ""
 "<span class=\"o_text-muted\">\n"
 "\n"
@@ -24,15 +24,12 @@ msgid ""
 "                                            each company using the\n"
 "                                            document number field</span>"
 msgstr ""
-"<span class=\"o_text-muted\">\n"
-"\n"
-"                                            Evita crear contactos repetidos en\n"
-"                                            cada compañía mediante el\n"
-"                                            campo nùmero de documento</span>"
-
+"Evitar la creación de contactos en cada\n"
+" companía utilizando el campo\n"
+" el número de documento"
 
 #. module: l10n_ve_contact
-#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_binaural_contact
+#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
 msgid ""
 "<span class=\"o_text-muted\"> Avoid creating repeated contacts\n"
 "                                            in\n"
@@ -40,28 +37,35 @@ msgid ""
 "                                            document\n"
 "                                            number fieldesta</span>"
 msgstr ""
-"<span class=\"o_text-muted\"> Evita crear contactos repetidos\n"
-"                                            en\n"
-"                                            la base de datos mediante el\n"
-"                                            campo\n"
-"                                            nùmero de documento</span>"
+"<span class=\"o_text-muted\"> Evitar la creación de contactos\n"
+" en toda la base de datos utilizando el campo\n"
+" número de documento</span>"
 
 #. module: l10n_ve_contact
-#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_binaural_contact
+#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
 msgid "<span> Validate contact creation in the entire database </span>"
-msgstr "<span> Validar la creación de contactos en toda la base de datos </span>"
+msgstr ""
+"<span> Validar la creación de contactos en toda la base de datos </span>"
 
 #. module: l10n_ve_contact
-#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_binaural_contact
+#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
 msgid ""
 "<span> Validate the creation of contacts by company\n"
 "                                    </span>"
 msgstr ""
-"<span> Validar la creación de contactos por compañía\n"
-"                                    </span>"
+"<span> Validar la creación de contactos por companía\n"
+" </span>"
 
 #. module: l10n_ve_contact
 #. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid "A partner with the same VAT number already exists for this company."
+msgstr "Ya existe un cliente con el mismo RIF/CI/PAS para esta compañía."
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "A partner with the same email address already exists for this company."
@@ -76,6 +80,12 @@ msgid "A partner with the same email already exists."
 msgstr "Ya existe un usuario con el mismo correo electrónico."
 
 #. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__city_id
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__city_id
+msgid "City"
+msgstr "Ciudad"
+
+#. module: l10n_ve_contact
 #: model:ir.model,name:l10n_ve_contact.model_res_company
 msgid "Companies"
 msgstr "Empresas"
@@ -84,6 +94,11 @@ msgstr "Empresas"
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__company_id
 msgid "Company"
 msgstr "Empresa"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__company_id
+msgid "Company"
+msgstr "Compañía"
 
 #. module: l10n_ve_contact
 #: model:ir.model,name:l10n_ve_contact.model_res_config_settings
@@ -101,6 +116,48 @@ msgid "Contact Configuration"
 msgstr "Configuraciones de Contacto"
 
 #. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__country_id
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__country_id
+msgid "Country"
+msgstr "País"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__property_payment_term_id
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__property_payment_term_id
+msgid "Customer Payment Terms"
+msgstr "Condiciones de pago de cliente"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__property_account_position_id
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__property_account_position_id
+msgid "Fiscal Position"
+msgstr "Posición fiscal"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__mobile
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__mobile
+msgid "Mobile"
+msgstr "Móvil"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__municipality
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__municipality
+msgid "Municipality"
+msgstr "Municipio"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__name
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__name
+msgid "Name"
+msgstr "Nombre"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__parish_id
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__parish_id
+msgid "Parish"
+msgstr "Parroquia"
+
+#. module: l10n_ve_contact
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__prefix_vat
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__prefix_vat
 msgid "Prefix VAT"
@@ -113,6 +170,37 @@ msgid "Prefix of the VAT number"
 msgstr "Tipo de documento"
 
 #. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__property_product_pricelist
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__property_product_pricelist
+msgid "Pricelist"
+msgstr "Tarifa"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__state_id
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__state_id
+msgid "State"
+msgstr "Estado"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__street
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__street
+msgid "Street"
+msgstr "Calle"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__street2
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__street2
+msgid "Street2"
+msgstr "Calle"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_account_position_id
+#: model:ir.model.fields,help:l10n_ve_contact.field_res_users__property_account_position_id
+msgid ""
+"The fiscal position determines the taxes/accounts used for this contact."
+msgstr "La posición fiscal determina los impuestos/cuentas utilizados para este contacto."
+
+#. module: l10n_ve_contact
 #. odoo-python
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
@@ -120,13 +208,73 @@ msgid "The vat field only accepts numbers"
 msgstr "El campo Identificación fiscal solo admite números"
 
 #. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid "There is already a partner with the same VAT number for this company."
+msgstr "Ya existe un cliente con el mismo número de RIF para esta compañía."
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_supplier_payment_term_id
+#: model:ir.model.fields,help:l10n_ve_contact.field_res_users__property_supplier_payment_term_id
+msgid ""
+"This payment term will be used instead of the default one for purchase "
+"orders and vendor bills"
+msgstr "Este término de pago se utilizará en lugar del predeterminado para órdenes de compra y facturas de proveedores"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_payment_term_id
+#: model:ir.model.fields,help:l10n_ve_contact.field_res_users__property_payment_term_id
+msgid ""
+"This payment term will be used instead of the default one for sales orders "
+"and customer invoices"
+msgstr "Este término de pago se utilizará en lugar del predeterminado para órdenes de venta y facturas de clientes"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_product_pricelist
+#: model:ir.model.fields,help:l10n_ve_contact.field_res_users__property_product_pricelist
+msgid ""
+"This pricelist will be used, instead of the default one, for sales to the "
+"current partner"
+msgstr ""
+"Esta tarifa se utilizará, en lugar de la por defecto, para las ventas de la "
+"empresa actual."
+
+#. module: l10n_ve_contact
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_company__validate_user_creation_by_company
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_config_settings__validate_user_creation_by_company
 msgid "Validate user creation by company"
-msgstr "Validar creacion de usario por compañía"
+msgstr "Validar creacion de usuario por compañía"
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_company__validate_user_creation_general
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_config_settings__validate_user_creation_general
 msgid "Validate user creation general"
-msgstr "Validar creacion de usuraio general"
+msgstr "Validar creacion de usuario general"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__property_supplier_payment_term_id
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__property_supplier_payment_term_id
+msgid "Vendor Payment Terms"
+msgstr "Condiciones de pago del proveedor"
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__zip
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__zip
+msgid "Zip"
+msgstr "C.P."
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid "The name contains a character that is not allowed for registration."
+msgstr "El nombre contiene al menos un carácter que no está permitido para el registro"
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid "The address contains a character that is not allowed for registration."
+msgstr "La dirección contiene al menos un carácter que no está permitido para el registro."
