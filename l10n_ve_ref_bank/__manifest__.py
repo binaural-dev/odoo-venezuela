@@ -6,7 +6,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.1.0.3",
+    "version": "17.0.1.0.3",
     "depends": ["l10n_ve_invoice"],
     "data": [
         "views/account_journal.xml",

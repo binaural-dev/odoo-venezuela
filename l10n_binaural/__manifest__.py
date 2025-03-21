@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Plan de cuentas",
-    "version": "16.0.0.0.1",
+    "version": "17.0.0.0.1",
     "category": "Accounting/Localizations/Account Charts",
     "license": "LGPL-3",
     "depends": ["base", "account", "account_accountant", "stock", "sale", "contacts"],

@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.1.0.11",
+    "version": "17.0.1.0.11",
     "depends": [
         "base",
         "point_of_sale",
