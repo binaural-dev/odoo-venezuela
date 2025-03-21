@@ -10,7 +10,7 @@
             <xpath expr="//group[@name='group1']" position="after">
                 <group name="igtf_group">
                     <field name="is_igtf_on_foreign_exchange"/>
-                        <div attrs="{'invisible' : [('is_igtf_on_foreign_exchange', '=',False)]}">
+                        <div invisible="not is_igtf_on_foreign_exchange">
                             <span class="oe_title">IGTF(<field name="igtf_percentage" readonly="1"/>)%:</span>
                             <field name="igtf_amount" widget="monetary"/>
                         </div>
@@ -22,4 +22,3 @@
     
 
 </odoo>
-

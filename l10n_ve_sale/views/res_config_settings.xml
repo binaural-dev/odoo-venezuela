@@ -47,7 +47,7 @@
                                 <field name="are_sale_lines_limited" />
                                 <field
                                     name="maximum_sales_line_limit"
-                                    attrs="{ 'invisible': [('are_sale_lines_limited','=', False)]  }"
+                                    invisible="not are_sale_lines_limited"
                                 />
                             </group>
                             <div class="text-muted">

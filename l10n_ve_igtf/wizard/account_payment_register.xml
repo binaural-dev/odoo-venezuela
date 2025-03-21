@@ -10,8 +10,8 @@
                     <group name="igtf_group">
                         <field name="is_igtf" invisible="1" />
                         <field name="is_igtf_on_foreign_exchange"
-                            attrs="{'invisible': [('is_igtf', '=', False)]}" />
-                        <div attrs="{'invisible': [('is_igtf_on_foreign_exchange', '=', False)]}"
+                            invisible="not is_igtf" />
+                        <div invisible="not is_igtf_on_foreign_exchange"
                             style="display: flex; align-items: baseline; gap: 4px; white-space: nowrap;">
                             <span style="vertical-align: middle;">IGTF (</span>
                             <field name="igtf_percentage" readonly="1"
