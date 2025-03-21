@@ -1,12 +1,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 {
-    'name': 'Venezuela Binaural - Accounting',
-    'website': 'https://www.odoo.com/documentation/17.0/applications/finance/fiscal_localizations.html',
-    'icon': '/account/static/description/l10n.png',
-    'countries': ['ve'],
-    'author': 'Odoo S.A., Binaural C.A',
-    'category': 'Accounting/Localizations/Account Charts',
-    'description': """
+    "name": "Venezuela Binaural - Accounting",
+    "website": "https://www.odoo.com/documentation/17.0/applications/finance/fiscal_localizations.html",
+    "icon": "/account/static/description/l10n.png",
+    "countries": ["ve"],
+    "author": "Odoo S.A., Binaural C.A",
+    "category": "Accounting/Localizations/Account Charts",
+    "description": """
 Chart of Account for Venezuela.
 ===============================
 
@@ -35,11 +35,11 @@ stocks as Venezuela does with out invoices.
 If you install this module, and select Custom chart a basic chart will be proposed,
 but you will need set manually account defaults for taxes.
 """,
-    'depends': [
-        'account',
+    "depends": [
+        "account",
     ],
-    'demo': [
-        'demo/demo_company.xml',
+    "demo": [
+        "demo/demo_company.xml",
     ],
-    'license': 'LGPL-3',
+    "license": "LGPL-3",
 }

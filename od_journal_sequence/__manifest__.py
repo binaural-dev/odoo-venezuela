@@ -2,7 +2,7 @@
 
 {
     "name": "Secuencia de diario para Odoo 16",
-    "version": "16.0.1.0.1",
+    "version": "17.0.1.0.1",
     "category": "Accounting",
     "summary": "Secuencia de Diario Odoo, Secuencia de Asiento, Secuencia de Diario Odoo 16, Secuencia de Diario Para Odoo 16, Secuencia de Diario Para Facturación",
     "description": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 16 Journal Sequence, Journal Sequence For Odoo 16, Journal Sequence For Invoice",

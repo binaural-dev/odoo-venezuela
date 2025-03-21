@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
-    "version": "16.0.1.1.9",
+    "version": "17.0.1.1.9",
     "category": "Accounting",
     "summary": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
     "description": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",

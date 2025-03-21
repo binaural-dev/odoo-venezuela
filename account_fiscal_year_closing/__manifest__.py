@@ -6,7 +6,7 @@
 {
     "name": "Venezuela - Cierre Fiscal",
     "summary": "Asistente genérico para el cierre del año fiscal",
-    "version": "16.0.1.0.1",
+    "version": "17.0.1.0.1",
     "category": "Accounting & Finance",
     "website": "https://github.com/OCA/account-closing",
     "author": "Tecnativa, Odoo Community Association (OCA)",
