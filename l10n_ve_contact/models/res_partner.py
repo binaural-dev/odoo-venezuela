@@ -23,7 +23,7 @@ class ResPartner(models.Model):
     property_account_position_id = fields.Many2one(tracking=True)
 
     street = fields.Char(tracking=True)
-    
+
     street2 = fields.Char(tracking=True)
 
     country_id = fields.Many2one(tracking=True)
@@ -64,20 +64,25 @@ class ResPartner(models.Model):
             ("vat", "=", vat),
             ("id", "!=", self.id if self else False),
         ]
-        
+
         if prefix_vat and vat:
             if self.env.company.validate_user_creation_by_company:
-                domain.extend([
-                    ('company_id', '=', company_id or self.env.company.id),
-                ])
-                error_message = _("There is already a partner with the same VAT number for this company.")
+                domain.extend(
+                    [
+                        ("company_id", "=", company_id or self.env.company.id),
+                    ]
+                )
+                error_message = _(
+                    "There is already a partner with the same VAT number for this company."
+                )
             elif self.env.company.validate_user_creation_general:
-                error_message = _("A partner with the same VAT number already exists for this company.")
+                error_message = _(
+                    "A partner with the same VAT number already exists for this company."
+                )
 
             existing_partner = self.env["res.partner"].search(domain)
             if existing_partner:
                 raise ValidationError(error_message)
-                
 
     def check_duplicate_email(self, email, company_id=None):
         if email:
@@ -87,14 +92,21 @@ class ResPartner(models.Model):
             ]
 
             if self.env.company.validate_user_creation_by_company:
-                domain.extend([
-                    ('company_id', '=', company_id or self.env.company.id),
-                ])
-                error_message = _("A partner with the same email address already exists for this company.")
+                domain.extend(
+                    [
+                        ("company_id", "=", company_id or self.env.company.id),
+                    ]
+                )
+                error_message = _(
+                    "A partner with the same email address already exists for this company."
+                )
             elif self.env.company.validate_user_creation_general:
-                error_message = _("A partner with the same email already exists.")
+                error_message = _(
+                    "A partner with the same email already exists.")
             else:
-                error_message = _("A partner with the same email address already exists for this company.")
+                error_message = _(
+                    "A partner with the same email address already exists for this company."
+                )
 
             existing_partner = self.env["res.partner"].search(domain, limit=1)
             if existing_partner:
@@ -123,22 +135,26 @@ class ResPartner(models.Model):
                 name = vals.get("name")
                 vat = vals.get("vat")
                 if prefix_vat == "V" and not name and prefix_vat in ["V", "E"]:
-                    name, flag = binaural_cne_query.get_default_name_by_vat(self, prefix_vat, vat)
+                    name, flag = binaural_cne_query.get_default_name_by_vat(
+                        self, prefix_vat, vat
+                    )
                     if not flag:
                         continue
                     vals["name"] = name
-            if 'vat' and 'prefix_vat' in vals:
-                self.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
-            if 'email' in vals:
+            if "vat" and "prefix_vat" in vals:
+                self.check_duplicate_vat(
+                    vals.get("prefix_vat"), vals.get("vat"))
+            if "email" in vals:
                 self.check_duplicate_email(vals.get("email"))
         return super(ResPartner, self).create(vals_list)
-    
+
     def write(self, vals):
         res = super().write(vals)
-        if 'prefix_vat' and 'vat' in vals:
+        if "prefix_vat" and "vat" in vals:
             for record in self:
-                record.check_duplicate_vat(vals.get('prefix_vat'), vals.get('vat'))
-        if 'email' in vals:
+                record.check_duplicate_vat(
+                    vals.get("prefix_vat"), vals.get("vat"))
+        if "email" in vals:
             for record in self:
                 record.check_duplicate_email(vals.get("email"))
         return res
@@ -154,33 +170,33 @@ class ResPartner(models.Model):
     # def _onchange_(self):
     #     """This function assign the name of the person by the vat number and the prefix of the vat number
     #     calling the function get_default_name_by_vat from binaural_cne_query
-
-        Args:
-            prefix_vat (string): prefix of the vat number (V)
-            vat (string): vat number of the person, this number is unique in Venezuela
-        """
-        if self.vat and not self.name and self.prefix_vat in ["V", "E"]:
-            self._check_vat()
-            name, flag = binaural_cne_query.get_default_name_by_vat(self, self.prefix_vat, self.vat)
-            if not flag:
-                return
-            for record in self:
-                record.name = name
-
-    @api.constrains('name')
-    def _check_name(self):
-        for record in self:
-            if not re.match(r'^[a-zA-Z0-9 .,()-]+$', record.name):
-                raise ValidationError(_("The name contains a character that is not allowed for registration."))
-            
-    @api.constrains('street')
-    def _check_address(self):
-        for record in self:
-            if not re.match(r'^[a-zA-Z0-9 .,()-]+$', record.street):
-                raise ValidationError(_("The address contains a character that is not allowed for registration."))
-            
-    @api.constrains('street2')
-    def _check_address2(self):
-        for record in self:
-            if not re.match(r'^[a-zA-Z0-9 .,()-]+$', record.street2):
-                raise ValidationError(_("The address contains a character that is not allowed for registration."))
+    #
+    #     Args:
+    #         prefix_vat (string): prefix of the vat number (V)
+    #         vat (string): vat number of the person, this number is unique in Venezuela
+    #     """
+    #     if self.vat and not self.name and self.prefix_vat in ["V", "E"]:
+    #         self._check_vat()
+    #         name, flag = binaural_cne_query.get_default_name_by_vat(self, self.prefix_vat, self.vat)
+    #         if not flag:
+    #             return
+    #         for record in self:
+    #             record.name = name
+    #
+    # @api.constrains('name')
+    # def _check_name(self):
+    #     for record in self:
+    #         if not re.match(r'^[a-zA-Z0-9 .,()-]+$', record.name):
+    #             raise ValidationError(_("The name contains a character that is not allowed for registration."))
+    #
+    # @api.constrains('street')
+    # def _check_address(self):
+    #     for record in self:
+    #         if not re.match(r'^[a-zA-Z0-9 .,()-]+$', record.street):
+    #             raise ValidationError(_("The address contains a character that is not allowed for registration."))
+    #
+    # @api.constrains('street2')
+    # def _check_address2(self):
+    #     for record in self:
+    #         if not re.match(r'^[a-zA-Z0-9 .,()-]+$', record.street2):
+    #             raise ValidationError(_("The address contains a character that is not allowed for registration."))

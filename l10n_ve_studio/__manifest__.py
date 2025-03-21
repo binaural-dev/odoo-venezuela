@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Base",
-    "version": "17.0.0.0.0",
+    "version": "17.0.0.0.00",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
