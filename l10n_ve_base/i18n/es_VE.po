@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20240827\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-01 19:19+0000\n"
-"PO-Revision-Date: 2024-10-01 19:19+0000\n"
+"POT-Creation-Date: 2025-03-16 17:27+0000\n"
+"PO-Revision-Date: 2025-03-16 17:27+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -21,11 +21,32 @@ msgid "Binaural"
 msgstr ""
 
 #. module: l10n_ve_base
-#: model_terms:ir.ui.view,arch_db:l10n_ve_base.res_config_settings_view_form_binaural_base
-msgid "Binaural Settings"
-msgstr "Ajustes Binaural"
-
-#. module: l10n_ve_base
 #: model:ir.model,name:l10n_ve_base.model_ir_module_module
 msgid "Module"
 msgstr "Módulo"
+
+#. module: l10n_ve_base
+#. odoo-python
+#: code:addons/l10n_ve_base/models/ir_ui_view.py:0
+#, python-format
+msgid "Only the superuser can create system views."
+msgstr "Solo el superusuario puede crear vistas del sistema."
+
+#. module: l10n_ve_base
+#. odoo-python
+#: code:addons/l10n_ve_base/models/ir_ui_view.py:0
+#, python-format
+msgid "Only the superuser can delete system views."
+msgstr "Solo el superusuario puede eliminar vistas del sistema."
+
+#. module: l10n_ve_base
+#. odoo-python
+#: code:addons/l10n_ve_base/models/ir_ui_view.py:0
+#, python-format
+msgid "Only the superuser can modify system views."
+msgstr "Solo el superusuario puede modificar vistas del sistema."
+
+#. module: l10n_ve_base
+#: model:ir.model,name:l10n_ve_base.model_ir_ui_view
+msgid "View"
+msgstr "Vista"

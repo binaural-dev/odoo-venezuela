@@ -1,0 +1,18 @@
+<odoo>
+    <menuitem
+        name="Tax unit"
+        id="menu_retention_tax_unit"
+        parent="account.menu_finance_configuration"
+        action="action_tax_unit_l10n_ve_payment_extension"
+    />
+
+    <menuitem name="Support views"
+        id="l10n_ve_account_support_views"
+        groups="l10n_ve_accountant.group_fiscal_config_user" sequence="60"
+        web_icon="l10n_ve_accountant,static/description/icon.png">
+        <menuitem name="Taxes" id="l10n_ve_accountant_account_tax" action="account.action_tax_form" />
+        <menuitem name="Tax Unit" id="l10n_ve_accountant_tax_unit"
+            action="action_tax_unit_l10n_ve_payment_extension" />
+        <menuitem name="Sequence" id="l10n_ve_accountant_ir_sequence" action="base.ir_sequence_form" />
+    </menuitem>
+</odoo>

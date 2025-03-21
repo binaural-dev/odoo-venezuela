@@ -1,0 +1,13 @@
+<odoo>
+    <record id="ir_cron_auto_invoice_stock" model="ir.cron">
+        <field name="name">Generate Invoices from Pickings</field>
+        <field name="model_id" ref="model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_generate_invoices_from_pickings()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="doall">0</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

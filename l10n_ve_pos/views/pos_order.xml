@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_pos_form" model="ir.ui.view">
+        <field name="name">l10n.ve.pos.order.form</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='session_id']" position="after">
+                <field name="foreign_currency_rate"/>
+            </xpath>
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="foreign_currency_id" invisible="1"/>
+                <div class="oe_subtotal_footer_separator oe_inline o_td_label">
+                    <label for="foreign_amount_total"/> 
+                </div>
+                <field name="foreign_amount_total" force_save="1" nolabel="1" class="oe_subtotal_footer_separator" widget="monetary" options="{'currency_field': 'foreign_currency_id'}" />
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="sales_order"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_tree" model="ir.ui.view">
+        <field name="name">pos.order.tree</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="foreign_currency_id" invisible="1"/>
+                <field 
+                    name="foreign_amount_total" 
+                    sum="Foreign Amount total" 
+                    widget="monetary" 
+                    options="{'currency_field': 'foreign_currency_id'}"
+                    decoration-bf="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,17 +1,20 @@
 {
-    "name": "Binaural Base",
+    "name": "Venezuela - Base",
     "summary": """
-        Módulo base para manejo de Modulos de Binaural 
+        Módulo Base de la localización de Venezuela
     """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.1.0.0",
-    # any module necessary for this one to work correctly
-    "depends": ["base", "base_setup"],
-    # always loaded
+    "version": "16.0.0.0.6",
+    "depends": ["base", "web"],
     "auto_install": True,
-    "data": ["views/res_config_settings_views.xml"],
-    "binaural": True,
+    "data": ["security/ir.model.access.csv", "data/ir_config_parameter.xml"],
+    "assets": {
+        "web.assets_backend": [
+            "l10n_ve_base/static/src/core/debug/debug_menu_items.js",
+        ],
+    },
 }
+

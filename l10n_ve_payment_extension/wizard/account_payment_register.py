@@ -12,9 +12,6 @@ class AccountPaymentRegister(models.TransientModel):
     foreign_currency_id = fields.Many2one(
         "res.currency", default=lambda self: self.env.company.currency_foreign_id
     )
-    base_currency_is_vef = fields.Boolean(
-        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
-    )
 
     is_out_invoice = fields.Boolean()
     is_retention = fields.Boolean(string="IVA Retention payment", default=False)

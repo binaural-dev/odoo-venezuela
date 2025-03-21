@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="FullRefundButton" owl="1">
+        <div class="control-button" style="width: 100%" t-on-click="() => this.trigger(props.actionToTrigger)">
+            <i class="fa fa-check-square-o"></i>
+            <span>Full refund</span>
+        </div>
+    </t>
+
+</templates>

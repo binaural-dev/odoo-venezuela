@@ -2,7 +2,7 @@ from odoo import api, models, fields, _
 from odoo.exceptions import UserError, ValidationError
 
 
-class PaymentConceptBinaural(models.Model):
+class PaymentConcept(models.Model):
     _name = "payment.concept"
     _description = "Payment Concept"
 

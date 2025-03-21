@@ -1,5 +1,4 @@
-from operator import is_
-from odoo import api, models, _
+from odoo import models, _
 from odoo.tools.misc import formatLang
 from odoo.tools.float_utils import float_round, float_is_zero
 
@@ -13,12 +12,7 @@ class AccountTax(models.Model):
     _inherit = "account.tax"
 
     def _prepare_tax_totals(
-        self,
-        base_lines,
-        currency,
-        is_company_currency_requested=False,
-        tax_lines=None,
-        igtf_base_amount=False,
+        self, base_lines, currency, tax_lines=None, igtf_base_amount=False
     ):
         """
         This function add values and calculated of igtf on invoices
@@ -40,12 +34,7 @@ class AccountTax(models.Model):
             - foreign_amount_total_igtf: float
             - formatted_foreign_amount_total_igtf: str
         """
-        res = super()._prepare_tax_totals(
-            base_lines,
-            currency,
-            tax_lines,
-            is_company_currency_requested=is_company_currency_requested,
-        )
+        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
 
         invoice = self.env["account.move"]
         order = False
@@ -70,16 +59,22 @@ class AccountTax(models.Model):
         if type_model == "sale.order.line":
             rate = order.foreign_inverse_rate
 
-        float_igtf_percentage = (
-            self.env.company.igtf_percentage if not invoice.is_two_percentage else 2
-        )
+        float_igtf_percentage = self.env.company.igtf_percentage
+
         igtf_percentage = (float_igtf_percentage or 0) / 100
 
-        if type_model == "account.move.line" and self.env.company.show_igtf_suggested_account_move:
+        if (
+            type_model == "account.move.line"
+            and self.env.company.show_igtf_suggested_account_move
+            and invoice.payment_state == "not_paid"
+        ):
             is_igtf_suggested = True
             base_igtf = res.get("amount_total", 0)
             foreign_base_igtf = res.get("foreign_amount_total", 0)
-        if type_model == "sale.order.line" and self.env.company.show_igtf_suggested_sale_order:
+        if (
+            type_model == "sale.order.line"
+            and self.env.company.show_igtf_suggested_sale_order
+        ):
             is_igtf_suggested = True
             base_igtf = res.get("amount_total", 0)
             foreign_base_igtf = res.get("foreign_amount_total", 0)
@@ -91,12 +86,17 @@ class AccountTax(models.Model):
             if invoice.bi_igtf == res.get("amount_total"):
                 foreign_base_igtf = res.get("foreign_amount_total")
 
-        igtf_base_amount = float_round(base_igtf or 0, precision_rounding=currency.rounding)
+        igtf_base_amount = float_round(
+            base_igtf or 0, precision_rounding=currency.rounding
+        )
         igtf_foreign_base_amount = float_round(
             foreign_base_igtf or 0, precision_rounding=foreign_currency.rounding
         )
 
-        if float_is_zero(igtf_base_amount, precision_rounding=currency.rounding) == False:
+        if (
+            float_is_zero(igtf_base_amount, precision_rounding=currency.rounding)
+            == False
+        ):
             apply_igtf = True
 
         foreign_igtf_base_amount = float_round(
@@ -107,7 +107,8 @@ class AccountTax(models.Model):
             igtf_base_amount * igtf_percentage, precision_rounding=currency.rounding
         )
         foreign_igtf_amount = float_round(
-            foreign_igtf_base_amount * igtf_percentage, precision_rounding=foreign_currency.rounding
+            foreign_igtf_base_amount * igtf_percentage,
+            precision_rounding=foreign_currency.rounding,
         )
 
         res["igtf"] = {}
@@ -148,3 +149,4 @@ class AccountTax(models.Model):
         res["igtf"]["is_igtf_suggested"] = is_igtf_suggested
 
         return res
+
