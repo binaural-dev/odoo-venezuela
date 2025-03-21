@@ -45,7 +45,7 @@
                                 widget="account-tax-foreign-totals-field" 
                                 nolabel="1" 
                                 colspan="2"
-                                attrs="{'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('move_type', 'not in', ('in_invoice', 'in_refund')), ('quick_edit_mode', '=', False)]}"/>
+                                readonly="state != 'draft' or (move_type not in ('in_invoice', 'in_refund') and not quick_edit_mode)"/>
                             <field name="invoice_payments_widget" colspan="2" nolabel="1" widget="payment"/>
                             <field name="invoice_outstanding_credits_debits_widget"
                                 class="oe_invoice_outstanding_credits_debits"

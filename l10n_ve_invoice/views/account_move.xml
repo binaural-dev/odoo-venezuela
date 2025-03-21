@@ -15,26 +15,20 @@
                 <attribute name="invisible">move_type not in ('in_invoice', 'in_refund', 'in_receipt') and not posted_before and not is_contingency</attribute>
             </xpath>
             <field name="name" position="attributes">
-                <attribute name="attrs">
-		            {
-                        'readonly': ['&amp;', '|', ('move_type', 'in', ('out_invoice', 'out_refund')), ('is_contingency', '=', False), ('state', '=', 'posted')],
-                        'required': ['|', ('move_type', 'in', ('in_invoice', 'in_refund', 'in_receipt')), ('is_contingency', '=', True)]
-        		    }
-		        </attribute>
+                <attribute name="readonly">(move_type in ('out_invoice', 'out_refund') or not is_contingency) and state == 'posted'</attribute>
+		        <attribute name="required">move_type in ('in_invoice', 'in_refund', 'in_receipt') or is_contingency</attribute>
                 <attribute name="placeholder">JRNL/2016/00001</attribute>
             </field>
             <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
                 <div class="inline-block"></div>
                 <label for="correlative"
                     style="font-weight: bold;"
-                    attrs="{'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],}"/>
-                <!-- attrs of "correlative" is overwritten in l10n_ve_commissions/account_move_views.xml -->
+                    invisible="(move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])"/>
                 <field name="correlative"
-                    attrs="{
-                        'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],
-                        'readonly':  ['|', ('move_type', 'in', ['out_invoice', 'out_refund']), ('state', '=', 'posted')],
-                        'required':  [('move_type', 'in', ['in_invoice', 'in_refund'])]
-                    }"/>
+                    invisible="move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']"
+                    readonly="(move_type in ['out_invoice', 'out_refund'] and not is_contingency) or state == 'posted'"
+                    required="move_type in ['in_invoice', 'in_refund']"
+                />
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_reception_date"
