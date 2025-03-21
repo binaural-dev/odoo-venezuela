@@ -2,21 +2,23 @@
 <!-- Copyright 2016 Antonio Espinosa <antonio.espinosa@tecnativa.com>
      License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
 <odoo>
+
     <record id="view_account_fiscalyear_closing_tree" model="ir.ui.view">
         <field name="name">account.fiscalyear.closing.tree</field>
         <field name="model">account.fiscalyear.closing</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="name"  readonly="state != 'draft'"/>
-                <field name="company_id" groups="base.group_multi_company"  readonly="state != 'draft'"/>
-                <field name="date_start"  readonly="state != 'draft'"/>
-                <field name="date_end"  readonly="state != 'draft'"/>
-                <field name="date_opening"  readonly="state != 'draft'"/>
+                <field name="name" />
+                <field name="company_id" groups="base.group_multi_company" />
+                <field name="date_start" />
+                <field name="date_end" />
+                <field name="date_opening" />
                 <field name="state" />
                 <field name="calculation_date" />
             </tree>
         </field>
     </record>
+
     <record id="view_account_fiscalyear_closing_form" model="ir.ui.view">
         <field name="name">account.fiscalyear.closing.form</field>
         <field name="model">account.fiscalyear.closing</field>
@@ -28,29 +30,34 @@
                         type="object"
                         string="Calculate"
                         class="oe_highlight"
-                        invisible="state != 'draft'"/>
+                        attrs="{'invisible': [('state', 'not in', ['draft'])]}"
+                    />
                     <button
                         name="button_recalculate"
-                        invisible="state != 'calculated'"
+                        states="calculated"
                         type="object"
-                        string="Recalculate"/>
+                        string="Recalculate"
+                    />
                     <button
                         name="button_post"
                         type="object"
                         string="Confirm and post moves"
                         class="oe_highlight"
-                        invisible="not move_config_ids or state != 'calculated'"/>
+                        attrs="{'invisible': ['|', ('move_config_ids', '=', []), ('state', 'not in', ['calculated'])]}"
+                    />
                     <button
                         name="button_recover"
-                        invisible="state != 'cancelled'"
+                        states="cancelled"
                         type="object"
-                        string="Draft"/>
+                        string="Draft"
+                    />
                     <button
                         name="button_cancel"
-                        invisible="state not in ('calculated', 'posted')"
+                        states="calculated,posted"
                         type="object"
                         string="Cancel"
-                        confirm="This will remove all the closing moves. Are you sure you want to continue?"/>
+                        confirm="This will remove all the closing moves. Are you sure you want to continue?"
+                    />
                     <field
                         name="state"
                         widget="statusbar"
@@ -63,49 +70,51 @@
                         <button
                             class="oe_stat_button"
                             name="button_open_moves"
-                            invisible="state not in ('calculated', 'posted')"
+                            states="calculated,posted"
                             type="object"
                             string="Show moves"
-                            icon="fa-list"/>
+                            icon="fa-list"
+                        />
                         <button
                             class="oe_stat_button"
                             name="button_open_move_lines"
-                            invisible="state not in ('calculated', 'posted')"
+                            states="calculated,posted"
                             type="object"
                             string="Show move lines"
-                            icon="fa-list"/>
+                            icon="fa-list"
+                        />
                     </div>
                     <div class="oe_title">
                         <label for="name" string="Fiscal closing" />
-                        <field name="name" class="oe_inline"  readonly="state != 'draft'"/>
+                        <field name="name" class="oe_inline" />
                     </div>
                     <group>
                         <group>
-                            <!-- <field name="chart_template_id" invisible="1" /> -->
+                            <field name="chart_template_id" invisible="1" />
                             <label for="closing_template_id" />
                             <div>
-                                <field name="closing_template_id" class="oe_inline"  readonly="state != 'draft'"/>
+                                <field name="closing_template_id" class="oe_inline" />
                             </div>
                             <field
                                 name="company_id"
                                 groups="base.group_multi_company"
-                             readonly="state != 'draft'"/>
+                            />
                         </group>
                         <group>
-                            <field name="year"  readonly="state != 'draft'"/>
-                            <field name="date_start"  readonly="state != 'draft'"/>
-                            <field name="date_end"  readonly="state != 'draft'"/>
-                            <field name="date_opening"  readonly="state != 'draft'"/>
-                            <field name="check_draft_moves"  readonly="state != 'draft'"/>
+                            <field name="year" />
+                            <field name="date_start" />
+                            <field name="date_end" />
+                            <field name="date_opening" />
+                            <field name="check_draft_moves" />
                         </group>
                     </group>
-                    <group invisible="not calculation_date">
+                    <group attrs="{'invisible': [('calculation_date', '=', False)]}">
                         <group>
                             <field name="calculation_date" />
                         </group>
                     </group>
                     <label for="move_config_ids" string="Moves configuration" />
-                    <field name="move_config_ids" nolabel="1" readonly="state != 'draft'">
+                    <field name="move_config_ids" nolabel="1">
                         <tree>
                             <field name="sequence" widget="handle" />
                             <field name="enabled" />
@@ -163,6 +172,7 @@
             </form>
         </field>
     </record>
+
     <record id="view_account_fiscalyear_closing_search" model="ir.ui.view">
         <field name="name">account.fiscalyear.closing.search</field>
         <field name="model">account.fiscalyear.closing</field>
@@ -195,6 +205,7 @@
             </search>
         </field>
     </record>
+
     <record id="action_account_fiscalyear_closing" model="ir.actions.act_window">
         <field name="name">Fiscal year closings</field>
         <field name="type">ir.actions.act_window</field>
@@ -202,6 +213,7 @@
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_account_fiscalyear_closing_tree" />
     </record>
+
     <menuitem
         id="menu_account_fiscalyear_closing"
         parent="account.menu_finance_entries"
@@ -209,4 +221,5 @@
         name="Fiscal year closings"
         action="action_account_fiscalyear_closing"
     />
+
 </odoo>

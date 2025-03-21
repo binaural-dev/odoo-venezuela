@@ -1,4 +1,4 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
         <record forcecreate="True" id="sequence_iva_retention" model="ir.sequence">

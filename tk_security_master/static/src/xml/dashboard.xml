@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="tk_security_master.master_dashboard" owl="1">
+        <section class="section tk__master_dash">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12 mt32">
+                        <h4 class="tk-primary">Browser Wise Active Sessions</h4>
+                        <hr class="border-primary"/>
+                    </div>
+                    <div class="col-md-2 mb-4 mt8 mb16" t-att-type="'Safari'" t-on-click="() => this.viewSessions('Safari')">
+                        <div class="card info-bg p-32">
+                            <div class="card-body info-bg tk-card-body">
+                                <img alt="users" width="40" class="rounded-circle" src="tk_security_master/static/src/img/safari.svg" />
+                                <h4 class="tk-st-1"> Safari </h4>
+                                <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['safari']" /> </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-4 mt8 mb16" t-att-type="'Chrome'" t-on-click="() => this.viewSessions('Chrome')">
+                        <div class="card warn-bg p-32">
+                            <div class="card-body warn-bg tk-card-body">
+                                <img alt="users" width="40" class="rounded-circle" src="tk_security_master/static/src/img/chrome.svg" />
+                                <h4 class="tk-st-1"> Chrome </h4>
+                                <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['chrome']" /> </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-4 mt8 mb16" t-att-type="'ChromiumEdge'" t-on-click="() => this.viewSessions('ChromiumEdge')">
+                        <div class="card success-bg p-32">
+                            <div class="card-body success-bg tk-card-body">
+                                <img alt="users" width="40" class="rounded-circle" src="tk_security_master/static/src/img/edge.svg" />
+                                <h4 class="tk-st-1"> Edge </h4>
+                                <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['edge']" /> </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-4 mt8 mb16" t-att-type="'Firefox'" t-on-click="() => this.viewSessions('Firefox')">
+                        <div class="card purple-bg p-32">
+                            <div class="card-body purple-bg tk-card-body">
+                                <img alt="users" width="40" class="rounded-circle" src="tk_security_master/static/src/img/firefox.svg" />
+                                <h4 class="tk-st-1"> Firefox </h4>
+                                <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['firefox']" /> </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-4 mt8 mb16" t-att-type="'Opera'" t-on-click="() => this.viewSessions('Opera')">
+                        <div class="card danger-bg p-32">
+                            <div class="card-body danger-bg tk-card-body">
+                                <img alt="users" width="40" class="rounded-circle" src="tk_security_master/static/src/img/opera.svg" />
+                                <h4 class="tk-st-1"> Opera </h4>
+                                <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['opera']" /> </h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-4 mt8 mb16" t-att-type="'Other'" t-on-click="() => this.viewSessions('Other')">
+                        <div class="card info-bg p-32">
+                            <div class="card-body info-bg tk-card-body">
+                                <img alt="users" width="40" class="rounded-circle" src="tk_security_master/static/src/img/other.svg" />
+                                <h4 class="tk-st-1"> Others </h4>
+                                <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['other']" /> </h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8 mt32">
+                        <h4 class="tk-primary">Active Sessions by Operating System</h4>
+                        <hr class="border-primary"/>
+                        <div class="tk-os-chart" t-ref="sessionOS"></div>
+                    </div>
+                    <div class="col-md-4 mt32 align-items-stretch">
+                        <h4 class="tk-primary">Sessions Details</h4>
+                        <hr class="border-primary"/>
+                        <div class="row">
+
+                            <div class="col-md-6 mb-4 mt8 mb16" t-att-type="'active'" t-on-click="() => this.viewSessionsData('active')">
+                                <div class="card active-bg p-32">
+                                    <div class="card-body active-bg tk-card-body">
+                                        <img alt="users" width="40" class="rounded-circle" src="tk_security_master/static/src/img/a1.svg" />
+                                        <h4 class="tk-st-1"> Active Sessions </h4>
+                                        <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['active']" /> </h6>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4 mt8 mb16" t-att-type="'terminate'" t-on-click="() => this.viewSessionsData('terminate')">
+                                <div class="card terminate-bg p-32">
+                                    <div class="card-body terminate-bg tk-card-body">
+                                        <img alt="users" width="40" class="rounded-circle" src="tk_security_master/static/src/img/a2.svg" />
+                                        <h4 class="tk-st-1"> Terminated Sessions </h4>
+                                        <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['terminate']" /> </h6>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mb-4 mt8 mb16" t-att-type="'all'" t-on-click="() => this.viewSessionsData('all')">
+                                <div class="card all-bg p-32">
+                                    <div class="card-body all-bg tk-card-body">
+                                        <img alt="users" width="50" class="rounded-circle" src="tk_security_master/static/src/img/all.svg" />
+                                        <h4 class="tk-st-1"> All Sessions </h4>
+                                        <h6 class="tk-st-2"> <t t-esc="state.sessionCounts['all']" /> </h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mt32">
+                        <h4 class="tk-primary">Active Sessions by Locations</h4>
+                        <hr class="border-primary"/>
+                        <div class="tk-charts" t-ref="worldMap"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </t>
+</templates>

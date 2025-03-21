@@ -1,18 +1,16 @@
 {
-    "name": "Binaural Tasa de Cambio",
+    "name": "Venezuela - Tipo de cambio",
     "summary": """
-        Módulo para obtener la tasa de cambio de la moneda base a la moneda extranjera
+        Módulo para configurar el tipo de cambio de Venezuela
     """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.1.0.1",
+    "version": "17.0.0.0.6",
     # any module necessary for this one to work correctly
-    "depends": ["base", "base_setup", "l10n_ve_base","currency_rate_live"],
-    # always loaded
+    "depends": ["base"],
     "data": [
         "views/res_config_settings.xml",
     ],
-    "binaural": True,
 }

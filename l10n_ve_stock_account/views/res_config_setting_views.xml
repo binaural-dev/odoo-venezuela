@@ -1,0 +1,73 @@
+<odoo>
+    <record id="res_config_settings_view_form_invoice_cron" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.invoice.cron</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='l10n_ve_stock_settings']" position="after">
+                <h2>Programmed Invoices</h2>
+                <div class="row mt16 o_settings_container" name="invoice_cron_settings">
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_right_pane">
+                            <group colspan="4" col="4">
+                                <field name="invoice_cron_type" class="oe_inline"/>
+                            </group>
+                            <div class="text-muted">Select the type of invoice</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_right_pane">
+                            <group colspan="4" col="4">
+                                <field name="invoice_cron_time" class="oe_inline"/>
+                            </group>
+                            <div class="text-muted">Exact time to generate the invoice</div>
+                        </div>
+                    </div>
+                </div>
+                <h2>Invoice From Stock Picking</h2>
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-6 o_setting_box"
+                         title="These taxes are set in any new product created.">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">Journals</span>
+                            <span class="fa fa-lg fa-building-o"
+                                  title="Values set here are company-specific."
+                                  aria-label="Values set here are company-specific."
+                                  role="img"/>
+                            <div class="text-muted">
+                                Journals which should apply for the invoice
+                                creation from stock picking
+                            </div>
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label string="Sales Journal"
+                                           for="customer_journal_id"
+                                           class="col-lg-3 o_light_label"/>
+                                    <field name="customer_journal_id"
+                                           domain="[('type', '=', 'sale')]"/>
+                                </div>
+                                <br/>
+                                <div class="row">
+                                    <label string="Purchase Journal"
+                                           for="vendor_journal_id"
+                                           class="col-lg-3 o_light_label"/>
+                                    <field name="vendor_journal_id"
+                                           domain="[('type', '=', 'purchase')]"/>
+                                </div>
+                                <br/>
+                                <div class="row">
+                                    <label string="Internal Consigned Journal"
+                                           for="internal_consigned_journal_id"
+                                           class="col-lg-3 o_light_label"/>
+                                    <field name="internal_consigned_journal_id" 
+                                           domain="[('type', '=', 'general')]"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

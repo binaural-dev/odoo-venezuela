@@ -258,7 +258,7 @@ class AccountMove(models.Model):
             foreign_currency_symbol = foreign_currency_record.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
-                    "l10n_ve_accountant.view_account_move_form_binaural_invoice"
+                    "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
                 ).id
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
@@ -283,9 +283,10 @@ class AccountMove(models.Model):
                     raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
 
         moves = super().create(vals_list)
-        moves._compute_rate()
 
         for move in moves:
+            if move.move_type != "in_invoice":
+                move._compute_rate()
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
@@ -609,7 +610,7 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat) if move.partner_id.vat else ''
             move.vat = vat.upper()
 
-    @api.depends("date", "invoice_date")
+    @api.depends("invoice_date")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
@@ -844,6 +845,19 @@ class AccountMove(models.Model):
                         line.account_id = move.journal_id.default_account_id
 
     def action_post(self):
+        if not self.env.context.get("move_action_post_alert"):
+            for move in self:
+                if move.move_type in ("out_invoice", "out_refund"):
+                    return {
+                        'name': _('Alert'),
+                        'type': 'ir.actions.act_window',
+                        'res_model': 'move.action.post.alert.wizard',
+                        'view_mode': 'form',
+                        'view_id': False,
+                        'target': 'new',
+                        'context': {'default_move_id': self.id},
+                    }
+
         for invoice in self:
             if (
                 invoice.company_id.account_use_credit_limit

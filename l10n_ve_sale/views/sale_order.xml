@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_sale_order_form_l10n_ve_sales" model="ir.ui.view">
+        <field name="name">view.sale.order.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="replace">
+                <field name="partner_id_domain" invisible="1" />
+                <field name="filter_partner"
+                    attrs="{'readonly': [('state', 'in', ['sale', 'done'])]}"
+                    groups="!l10n_ve_sale.contact_filter_sale_order_group" />
+                <field name="filter_partner" invisible="1"
+                    groups="l10n_ve_sale.contact_filter_sale_order_group" />
+                <field name="partner_id" domain="partner_id_domain"
+                    context="{'res_partner_search_mode': 'customer', 'show_address': 1}"
+                    options="{&quot;always_reload&quot;: True, 'no_quick_create': True}" />
+                <field name="manually_set_rate" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="vat" />
+            </xpath>
+
+            <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']"
+                position="after">
+                <field name="foreign_price" />
+            </xpath>
+
+            <xpath
+                expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']"
+                position="after">
+                <field name="foreign_subtotal" />
+                <field name="foreign_rate" optional="hide" readonly="1"/>
+                <field
+                    name="foreign_inverse_rate"
+                    groups="base.group_no_one"
+                    string="Foreign inverse rate"
+                    optional="hide"
+                    readonly="1" />
+            </xpath>
+
+            <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='tax_id']" position="attributes">
+                <attribute name="readonly">1</attribute>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Foreign currency" name="foreign_currency">
+                    <group>
+                        <field name="foreign_currency_id" invisible="1" />
+                        <field
+                            name="foreign_inverse_rate"
+                            invisible="1"
+                            readonly="1"
+                            string="Foreign inverse rate" />
+                        <field name="foreign_inverse_rate" groups="base.group_no_one" readonly="1"/>
+                        <field name="foreign_rate" readonly="1"/>
+                    </group>
+                    <group class="oe_subtotal_footer oe_right" colspan="2" name="sale_total">
+                        <field
+                            name="tax_totals"
+                            widget="account-tax-foreign-totals-field"
+                            nolabel="1"
+                            colspan="2"
+                            readonly="1" />
+                    </group>
+                </page>
+            </xpath>
+
+            <xpath expr="//button[@id='create_invoice'][1]" position="replace">
+                <button id="create_invoice" name="%(sale.action_view_sale_advance_payment_inv)d"
+                    string="Create Invoice"
+                    type="action" class="btn-primary" data-hotkey="q"
+                    attrs="{'invisible': [('invoice_status', '!=', 'to invoice')]}"
+                    groups="!l10n_ve_sale.create_invoice_sale_order_group" />
+            </xpath>
+
+            <xpath expr="//button[@id='create_invoice_percentage'][1]" position="replace">
+                <button id="create_invoice_percentage"
+                    name="%(sale.action_view_sale_advance_payment_inv)d" string="Create Invoice"
+                    type="action" context="{'default_advance_payment_method': 'percentage'}"
+                    data-hotkey="q"
+                    attrs="{'invisible': ['|',('invoice_status', '!=', 'no'), ('state', '!=', 'sale')]}"
+                    groups="!l10n_ve_sale.create_invoice_sale_order_group" />
+            </xpath>
+
+            <xpath expr="//sheet//group[1]//div[3]" position="replace">
+                <field name="pricelist_id" invisible="1" />
+                <div groups="l10n_ve_sale.pricelist_sale_order_group" class="o_row">
+                    <field name="pricelist_id" readonly="1"
+                        options="{'no_open':True,'no_create': True}" />
+                    <button name="action_update_prices" type="object"
+                        string=" Update Prices"
+                        help="Recompute all prices based on this pricelist"
+                        class="btn-link mb-1 px-0" icon="fa-refresh"
+                        confirm="This will update all unit prices based on the currently set pricelist."
+                        attrs="{'invisible': ['|', ('show_update_pricelist', '=', False), ('state', 'in', ['sale', 'done', 'cancel'])]}" />
+                </div>
+                <div groups="!l10n_ve_sale.pricelist_sale_order_group" class="o_row">
+                    <field name="pricelist_id" options="{'no_open':True,'no_create': True}" />
+                    <button name="action_update_prices" type="object"
+                        string=" Update Prices"
+                        help="Recompute all prices based on this pricelist"
+                        class="btn-link mb-1 px-0" icon="fa-refresh"
+                        confirm="This will update all unit prices based on the currently set pricelist."
+                        attrs="{'invisible': ['|', ('show_update_pricelist', '=', False), ('state', 'in', ['sale', 'done', 'cancel'])]}" />
+                </div>
+            </xpath>
+
+            <field name="payment_term_id" position="replace">
+                <field name="payment_term_id" options="{'no_open':True,'no_create': True}"
+                    groups="!l10n_ve_sale.payment_terms_sale_order_group" />
+            </field>
+
+            <xpath expr="//notebook/page[1]//tree/field[@name='price_unit']" position="replace">
+                <field name="price_unit" readonly="1"
+                    groups="l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
+                <field name="price_unit"
+                    groups="!l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="view_quotation_tree" model="ir.ui.view">
+        <field name="name">sale.order.tree</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="foreign_currency_id" invisible="1" />
+                <field
+                    name="foreign_total_billed"
+                    sum="Foreign Amount total"
+                    widget="monetary"
+                    options="{'currency_field': 'foreign_currency_id'}"
+                    decoration-bf="1" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_order_tree" model="ir.ui.view">
+        <field name="name">sale.order.tree</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="vat" optional="hide" />
+                <field name="address" optional="hide" />
+                <field name="mobile" optional="hide" />
+            </xpath>
+            <xpath expr="//field[@name='activity_ids']" position="after">
+                <field name="foreign_rate" optional="hide" />
+                <field name="foreign_currency_id" invisible="1" />
+                <field name="foreign_total_billed" optional="hide"
+                    options="{'currency_field': 'foreign_currency_id'}" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
+        <field name="name">Quotations</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_id" ref="sale.view_quotation_tree_with_onboarding" />
+        <field name="view_mode">tree,kanban,form,calendar,pivot,graph,activity</field>
+        <field name="search_view_id" ref="sale.sale_order_view_search_inherit_quotation" />
+        <field name="context">{'search_default_my_quotation': 1, 'default_filter_partner':
+            'customer'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new quotation, the first step of a new sale!
+            </p>
+            <p> Once the quotation is confirmed by the customer, it becomes a sales order.<br /> You
+                will be able to create an invoice and collect the payment. </p>
+        </field>
+    </record>
+
+</odoo>

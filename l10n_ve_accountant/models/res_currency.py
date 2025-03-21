@@ -1,22 +1,23 @@
-from odoo import models, _
-from odoo.exceptions import ValidationError
+from odoo import models, fields, api, _
+
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ResCurrency(models.Model):
     _inherit = "res.currency"
 
-    def write(self, vals):
-        res = super().write(vals)
-        if "active" in vals and not vals["active"]:
-            company_id = self.env.company
-            if self.id == company_id.currency_foreign_id.id or self.id == company_id.currency_id.id:
-                lines = self.env["account.move.line"].search(
-                    ["|", ("foreign_currency_id", "=", self.id), ("currency_id", "=", self.id)]
+    # TDE FIXME: move to l10n_ve_currency_rate_live
+    edit_rate = fields.Boolean(
+        compute="_compute_edit_rate",
+    )
+
+    def _compute_edit_rate(self):
+        for record in self:
+            record.edit_rate = (
+                record.env.company.currency_provider == "bcv"
+                and record.env.user.has_group(
+                    "l10n_ve_accountant.group_fiscal_config_support"
                 )
-                if lines:
-                    raise ValidationError(
-                        _(
-                            "The currency already has accounting movements, you cannot deactivate this currency"
-                        )
-                    )
-        return res
+            )

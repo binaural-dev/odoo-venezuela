@@ -1,9 +1,9 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
     <data>
 
-        <record id="view_fees_retention_tree_binaural_payment_extension" model="ir.ui.view">
+        <record id="view_fees_retention_tree_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">view.fees.retention.tree</field>
             <field name="model">fees.retention</field>
             <field name="arch" type="xml">
@@ -18,7 +18,7 @@
             </field>
         </record>
 
-        <record id="view_fees_retention_form_binaural_payment_extension" model="ir.ui.view">
+        <record id="view_fees_retention_form_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">view.fees.retention.from</field>
             <field name="model">fees.retention</field>
             <field name="arch" type="xml">
@@ -41,7 +41,7 @@
                             </group>
                         </group>
                         <group>
-                            <field name="accumulated_rate_ids" invisible="not accumulated_rate">
+                            <field name="accumulated_rate_ids" attrs="{'invisible': [('accumulated_rate', '=', False)]}">
                                 <tree editable="bottom" string="Accumulated fees">
                                     <field name="name"/>
                                     <field name="start"/>
@@ -56,7 +56,7 @@
             </field>
         </record>
 
-        <record id="view_fees_retention_search_binaural_payment_extension" model="ir.ui.view">
+        <record id="view_fees_retention_search_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">view.fees.retention.search</field>
             <field name="model">fees.retention</field>
             <field name="arch" type="xml">
@@ -66,6 +66,7 @@
             </field>
         </record>
 
+
         <record id="action_fees" model="ir.actions.act_window">
             <field name="name">Fees</field>
             <field name="res_model">fees.retention</field>
@@ -74,7 +75,9 @@
             <field name="view_mode">tree,kanban,form</field>
             <field name="context">{"search_default_status":True}</field>
         </record>
+
     
     </data>
     
+
 </odoo>

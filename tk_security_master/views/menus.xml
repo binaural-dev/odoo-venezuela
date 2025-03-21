@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <data>
+        <!--Main Menu-->
+        <menuitem id="main_menu_security_master"
+                  name="Security Master"
+                  groups="tk_security_master.t_k_security_master_admin"
+                  web_icon="tk_security_master,static/description/icon.png"/>
+
+        <menuitem id="menu_tk_master_pro_dashboard"
+                  name="Dashboard"
+                  sequence="0"
+                  groups="tk_security_master.t_k_security_master_admin"
+                  action="action_tk_secu_pro_master_dashboard"
+                  parent="main_menu_security_master" />
+
+        <menuitem id="menu_user_sessions_details"
+                  name="Sessions"
+                  parent="main_menu_security_master"
+                  action="action_user_audit_logged_view"
+                  groups="tk_security_master.t_k_security_master_admin"
+                  sequence='2'/>
+
+        <menuitem id="menu_security_master_configurations"
+                  name="Configurations"
+                  parent="main_menu_security_master"
+                  groups="tk_security_master.t_k_security_master_admin"
+                  sequence='99'/>
+        <menuitem id="menu_do_not_track_models"
+                  name="Do Not Track Models"
+                  parent="menu_security_master_configurations"
+                  action="action_do_not_track_models_view"
+                  groups="tk_security_master.t_k_security_master_admin"
+                  sequence='01'/>
+    </data>
+</odoo>
