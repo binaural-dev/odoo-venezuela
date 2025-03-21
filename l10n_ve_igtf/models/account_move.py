@@ -1,7 +1,6 @@
-from odoo import fields, models, api, _
+from odoo import api, fields, models, _
 from odoo.tools.sql import column_exists, create_column
 import logging
-
 
 _logger = logging.getLogger(__name__)
 
@@ -9,9 +8,33 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    def _auto_init(self):
+        if not column_exists(self.env.cr, "account_move", "amount_to_pay_igtf"):
+            create_column(self.env.cr, "account_move", "amount_to_pay_igtf", "numeric")
+            self.env.cr.execute("""
+                UPDATE account_move
+                SET amount_to_pay_igtf = 0.0
+            """)
+        if not column_exists(self.env.cr, "account_move", "amount_residual_igtf"):
+            create_column(self.env.cr, "account_move", "amount_residual_igtf", "numeric")
+            self.env.cr.execute("""
+                UPDATE account_move
+                SET amount_residual_igtf = 0.0
+            """)
+        return super()._auto_init()
+
     bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", copy=False)
-    is_two_percentage = fields.Boolean(string="Is two percentage", default=False, copy=False)
     amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", copy=False)
+
+
+    payment_igtf_id = fields.Many2one(
+        "account.payment",
+        string="Payment IGTF",
+        help="Payment IGTF",
+        readonly=True,
+        copy=False,
+    )
+
     amount_to_pay_igtf = fields.Monetary(
         string="IGTF Paid",
         default=0.00,
@@ -26,78 +49,6 @@ class AccountMove(models.Model):
         default=0.00,
         help="IGTF Residual",
         compute="_compute_amount_residual_igtf",
-        copy=False,
-    )
-
-    @api.depends("tax_totals")
-    def _compute_amount_to_pay_igtf(self):
-        """
-        Compute the amount to pay of the IGTF
-        """
-        for move in self:
-            move.amount_to_pay_igtf = 0
-            if move.invoice_line_ids and move.is_invoice(include_receipts=True) and move.tax_totals:
-                move.amount_to_pay_igtf = move.tax_totals["igtf"]["igtf_amount"] - move.amount_paid
-
-    @api.depends(
-        "amount_total", "amount_residual", "amount_residual_igtf", "amount_to_pay_igtf", "bi_igtf"
-    )
-    def _compute_amount_residual_igtf(self):
-        for record in self:
-            record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
-
-    @api.depends(
-        "bi_igtf",
-    )
-    def _compute_tax_totals(self):
-        return super()._compute_tax_totals()
-
-    def button_draft(self):
-        """
-        When the user click on the button draft, we need to delete the igtf
-        """
-        for record in self:
-            record.bi_igtf = 0
-            record.is_two_percentage = False
-        return super().button_draft()
-
-    def _auto_init(self):
-        if not column_exists(self.env.cr, "account_move", "amount_to_pay_igtf"):
-            create_column(self.env.cr, "account_move", "amount_to_pay_igtf", "numeric")
-            self.env.cr.execute(
-                """
-                UPDATE account_move
-                SET amount_to_pay_igtf = 0.0
-            """
-            )
-        if not column_exists(self.env.cr, "account_move", "amount_residual_igtf"):
-            create_column(self.env.cr, "account_move", "amount_residual_igtf", "numeric")
-            self.env.cr.execute(
-                """
-                UPDATE account_move
-                SET amount_residual_igtf = 0.0
-            """
-            )
-        if not column_exists(self.env.cr, "account_move", "default_is_igtf_config"):
-            create_column(self.env.cr, "account_move", "default_is_igtf_config", "boolean")
-            self.env.cr.execute(
-                """
-                UPDATE account_move
-                SET default_is_igtf_config = false
-            """
-            )
-        return super()._auto_init()
-
-    def default_is_igtf(self):
-        return self.env.company.is_igtf or False
-
-    default_is_igtf_config = fields.Boolean(default=default_is_igtf)
-
-    payment_igtf_id = fields.Many2one(
-        "account.payment",
-        string="Payment IGTF",
-        help="Payment IGTF",
-        readonly=True,
         copy=False,
     )
 
@@ -159,7 +110,11 @@ class AccountMove(models.Model):
         reverse_move_debit = partial.debit_move_id.payment_id.reconciled_bill_ids
 
         for move in move_credit:
-            if payment_credit.is_igtf_on_foreign_exchange and move and move.bi_igtf > 0:
+            if (
+                payment_credit.is_igtf_on_foreign_exchange
+                and move
+                and move.bi_igtf > 0
+            ):
                 amount = partial.credit_move_id.payment_id.amount
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     amount = amount * move.foreign_rate
@@ -170,11 +125,12 @@ class AccountMove(models.Model):
                     result = 0
                 move.write({"bi_igtf": result})
 
-                if payment_credit.is_two_percentage:
-                    move.write({"is_two_percentage": True})
-
         for move in move_debit:
-            if payment_debit.is_igtf_on_foreign_exchange and move and move.bi_igtf > 0:
+            if (
+                payment_debit.is_igtf_on_foreign_exchange
+                and move
+                and move.bi_igtf > 0
+            ):
                 amount = partial.debit_move_id.payment_id.amount
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     amount = amount * move.foreign_rate
@@ -184,12 +140,11 @@ class AccountMove(models.Model):
                 if result < 0:
                     result = 0
                 move.write({"bi_igtf": result})
-                if payment_debit.is_two_percentage:
-                    move.write({"is_two_percentage": True})
 
         for reverse_credit in reverse_move_credit:
             if (
-                payment_credit.is_igtf_on_foreign_exchange
+                payment_credit.is_igtf
+                and payment_credit.is_igtf_on_foreign_exchange
                 and reverse_credit
                 and reverse_credit.bi_igtf > 0
             ):
@@ -202,12 +157,11 @@ class AccountMove(models.Model):
                 if result < 0:
                     result = 0
                 reverse_credit.write({"bi_igtf": result})
-                if payment_credit.is_two_percentage:
-                    move_credit.write({"is_two_percentage": True})
 
         for reverse_debit in reverse_move_debit:
             if (
-                payment_debit.is_igtf_on_foreign_exchange
+                payment_debit.is_igtf
+                and payment_debit.is_igtf_on_foreign_exchange
                 and reverse_debit
                 and reverse_debit.bi_igtf > 0
             ):
@@ -220,8 +174,6 @@ class AccountMove(models.Model):
                 if result < 0:
                     result = 0
                 reverse_debit.write({"bi_igtf": result})
-                if payment_debit.is_two_percentage:
-                    reverse_debit.write({"is_two_percentage": True})
 
     def js_remove_outstanding_partial(self, partial_id):
         for move in self:
@@ -234,10 +186,39 @@ class AccountMove(models.Model):
         res = super().js_assign_outstanding_line(line_id)
         self.recalculate_bi_igtf(
             line_id,
-            initial_residual=(
-                amount_residual
-                if not self.currency_id.is_zero(amount_residual)
-                else self.amount_residual
-            ),
+            initial_residual=amount_residual
+            if not self.currency_id.is_zero(amount_residual)
+            else self.amount_residual,
         )
         return res
+
+    @api.depends("tax_totals")
+    def _compute_amount_to_pay_igtf(self):
+        """
+        Compute the amount to pay of the IGTF
+        """
+        for move in self:
+            move.amount_to_pay_igtf = 0
+            if move.invoice_line_ids and move.is_invoice(include_receipts=True) and move.tax_totals:
+                move.amount_to_pay_igtf = move.tax_totals["igtf"]["igtf_amount"] - move.amount_paid
+
+    @api.depends(
+        "amount_total", "amount_residual", "amount_residual_igtf", "amount_to_pay_igtf", "bi_igtf"
+    )
+    def _compute_amount_residual_igtf(self):
+        for record in self:
+            record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
+
+    @api.depends(
+        "bi_igtf",
+    )
+    def _compute_tax_totals(self):
+        return super()._compute_tax_totals()
+
+    def button_draft(self):
+        """
+        When the user click on the button draft, we need to delete the igtf
+        """
+        for record in self:
+            record.bi_igtf = 0
+        return super().button_draft()

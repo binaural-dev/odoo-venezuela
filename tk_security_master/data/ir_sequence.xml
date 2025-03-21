@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <data noupdate="1">
+        <record id="user_sign_in_details_sequence" model="ir.sequence">
+            <field name="name">User Logged In Sequence Details</field>
+            <field name="code">user.sign.in.details</field>
+            <field name="active">TRUE</field>
+            <field name="prefix">S</field>
+            <field name="padding">7</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

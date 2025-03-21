@@ -1,8 +1,8 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <record id="view_economic_activity_tree_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.economic.activity.tree.binaural.payment.extension</field>
+        <record id="view_economic_activity_tree_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.activity.tree.l10n.ve.payment.extension</field>
             <field name="model">economic.activity</field>
             <field name="arch" type="xml">
                 <tree>
@@ -16,8 +16,8 @@
             </field>
         </record>
 
-        <record id="view_economic_activity_from_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.economic.activity.from.binaural.payment.extension</field>
+        <record id="view_economic_activity_from_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.activity.from.l10n.ve.payment.extension</field>
             <field name="model">economic.activity</field>
             <field name="arch" type="xml">
                 <form string="Economic activity">

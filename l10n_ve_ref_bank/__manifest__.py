@@ -1,15 +1,13 @@
 {
-    "name": "Binaural Referencias Bancarias",
+    "name": "Venezuela - Referencias Bancarias",
     "summary": """
-       Modulo para validar referencias Bancarias """,
+       Validando referencias bancarias""",
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.1.0.1",
-    # any module necessary for this one to work correctly
+    "version": "16.0.1.0.3",
     "depends": ["l10n_ve_invoice"],
-    # always loaded
     "data": [
         "views/account_journal.xml",
         "views/res_config_settings.xml",

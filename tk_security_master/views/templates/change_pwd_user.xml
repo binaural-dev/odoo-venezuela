@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <template id="change_pwd_url" inherit_id="auth_signup.login" name="Change Password URL">
+        <xpath expr="//button[@type='submit']" position="after">
+            <div class="d-flex small mt-3">
+                <a t-attf-href="/web/change_password" t-if="reset_password_enabled">Change Password</a>
+            </div>
+        </xpath>
+    </template>
+    <template id="tk_change_pwd_user" name="Change Password">
+        <t t-call="web.login_layout">
+            <form class="oe_reset_password_form" role="form" method="post">
+                <p class="alert alert-danger" t-if="error" role="alert">
+                    <t t-esc="error"/>
+                </p>
+                <div class="form-group mb-3">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <label for="login" class="form-label">Your Email</label>
+                    <input type="text" name="login" t-att-value="login" id="login"
+                           class="form-control" autocapitalize="off" autofocus="autofocus" required="required" />
+                </div>
+                <div class="form-group mb-3">
+                    <label for="old_pwd" class="form-label">Old Password</label>
+                    <input type="password" name="old_pwd" t-att-value="old_pwd" id="old_pwd"
+                           class="form-control" autocapitalize="off" autofocus="autofocus" required="required" />
+                </div>
+                <label for="new_pwd" class="form-label">New Password</label>
+                <div class="form-group mb-3 d-flex">
+                    <input type="password" name="new_pwd" t-att-value="new_pwd" id="new_pwd"
+                           class="form-control"
+                           autofocus="autofocus" autocapitalize="off" required="required" />
+                    <span class="usr_pwd input-group-text ml4" role="button"><i class="fa fa-eye"/></span>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="confirm_new_pwd" class="form-label">Confirm New Password</label>
+                    <input type="password" name="confirm_new_pwd" t-att-value="confirm_new_pwd"
+                           id="confirm_new_pwd" class="form-control"
+                           autofocus="autofocus" autocapitalize="off" required="required" />
+                </div>
+                <div class="mt-3 text-center">
+                    <button type="submit" class="btn btn-primary btn-block">Change Password</button>
+                    <div class="mt-2 small text-center">
+                        <a t-attf-href="/web/login">Go Back to Login</a>
+                    </div>
+                </div>
+            </form>
+        </t>
+    </template>
+</odoo>

@@ -28,12 +28,9 @@
                                 <field name="unique_tax" />
                             </div>
                             <div class="o_setting_right_pane">
-                                <label for="unique_tax" />
+                                <label for="unique_tax"/>
                                 <div class="text-muted">
-
-                                    Tax is required on order and invoice lines, additionally only
-                                    allows one tax
-
+                                    Tax is mandatory on order and invoice lines, additionally only one tax is allowed.
                                 </div>
                             </div>
                         </div>
@@ -43,20 +40,21 @@
                                 <field name="show_discount_on_moves" />
                             </div>
                             <div class="o_setting_right_pane">
-                                <label for="show_discount_on_moves" />
+                                <label for="show_discount_on_moves"/>
                                 <div class="text-muted">
-                                    Allows you to show the discount column on the invoice lines
-
+                                    Allow showing the discount column on invoice lines
                                 </div>
                             </div>
                         </div>
 
                     </div>
                     <h2>Sales Book Configuration</h2>
-                    <div class="row mt16 o_settings_container" name="binaural_tax_sale">
+                    <div class="row mt16 o_settings_container" name="l10n_ve_tax_sale">
                         <div class="text-muted">
                             Allows you to select the tax columns that should be reflected in the
                             client's book
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_sale_setting">
 
 
                         </div>

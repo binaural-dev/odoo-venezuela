@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="stock_quant_tree_view" model="ir.ui.view">
+        <field name="name">stock.quant.tree.view.negative</field>
+        <field name="model">stock.quant</field>
+        <field name="inherit_id" ref="stock.view_stock_quant_tree_inventory_editable"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='inventory_date']" position="after">
+                <field name="write_date" optional="show"/>
+                <field name="write_uid" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="stock_physical_quant_form_view" model="ir.ui.view">
+        <field name="name">stock.quant.form.view.negative</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="product_id" class="oe_edit_only"/>
+                        <h1>
+                            <field name="product_id" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <field name="location_id" readonly="1"/>
+                        <field name="available_quantity" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Show Location Available">
+                            <field name="product_alter_location_ids" editable="button">
+                                <tree>
+                                    <field name="location_id"/>
+                                    <field name="quantity"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="stock_physical_quant_tree_view" model="ir.ui.view">
+        <field name="name">stock.quant.tree.negative.view</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <tree create="0" delete="0" multi_edit="0" edit="0">
+                <field name="product_id"/>
+                <field name="location_id"/>
+                <field name="available_quantity"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_stock_quant" model="ir.actions.act_window">
+        <field name="name">Physical Locations</field>
+        <field name="res_model">stock.quant</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="l10n_ve_stock.stock_physical_quant_tree_view"/>
+        <field name="view_ids" 
+               eval="[(5, 0, 0), 
+                    (0, 0, {'view_mode': 'tree', 'view_id': ref('l10n_ve_stock.stock_physical_quant_tree_view')}),
+                    (0, 0, {'view_mode': 'form', 'view_id': ref('l10n_ve_stock.stock_physical_quant_form_view')})]"/>
+        <field name="domain">[('is_physical_location','=',True)]</field>
+    </record>
+
+    <menuitem 
+        id="menu_stock_quant" 
+        action="l10n_ve_stock.action_stock_quant" 
+        name="Physical Locations" 
+        parent="stock.menu_warehouse_report" 
+        sequence="10"/>
+</odoo>

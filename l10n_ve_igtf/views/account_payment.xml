@@ -1,4 +1,4 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
     <data>
@@ -10,8 +10,8 @@
             <xpath expr="//group[@name='group1']" position="after">
                 <group name="igtf_group">
                     <field name="is_igtf_on_foreign_exchange"/>
-                        <div invisible="not is_igtf_on_foreign_exchange">
-                            <field name="igtf_percentage_text" readonly="1"/>
+                        <div attrs="{'invisible' : [('is_igtf_on_foreign_exchange', '=',False)]}">
+                            <span class="oe_title">IGTF(<field name="igtf_percentage" readonly="1"/>)%:</span>
                             <field name="igtf_amount" widget="monetary"/>
                         </div>
                 </group>
@@ -22,3 +22,4 @@
     
 
 </odoo>
+

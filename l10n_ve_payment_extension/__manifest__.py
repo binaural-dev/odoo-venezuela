@@ -1,14 +1,13 @@
 {
-    "name": "Binaural Retenciones",
+    "name": "Venezuela - Retenciones",
     "summary": """
-       Modulo de extensiones de pago """,
+        Módulo de Retenciones Venezuela
+    """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "17.0.1.0.5",
-    # any module necessary for this one to work correctly
-    "external_dependencies": {"python": ["pandas"]},
+    "version": "16.0.19.1.24",
     "depends": [
         "base",
         "account",
@@ -18,10 +17,8 @@
         "l10n_ve_location",
         "l10n_ve_contact",
         "l10n_ve_tax_payer",
-        "l10n_ve_base",
         "product",
     ],
-    # always loaded
     "data": [
         "security/ir.model.access.csv",
         "security/ir_rule.xml",
@@ -29,7 +26,6 @@
         "data/type_person_data.xml",
         "data/account_withholding_type_data.xml",
         "data/report_paperformat_data.xml",
-        "data/tax_unit_data.xml",
         "data/fees_retention_data.xml",
         "data/payment_concept_data.xml",
         "report/retention_line_report_views.xml",
@@ -38,7 +34,6 @@
         "report/arcv_report.xml",
         "views/ir_sequence.xml",
         "views/res_config_settings.xml",
-        "views/tax_unit.xml",
         "views/fees_retention.xml",
         "views/economic_activity.xml",
         "views/economic_branch.xml",
@@ -65,5 +60,4 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "binaural": True,
 }

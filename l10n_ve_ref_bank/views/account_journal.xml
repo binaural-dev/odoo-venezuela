@@ -2,8 +2,8 @@
 <odoo>
 
     <data>
-        <record id="view_account_journal_form_binaural_ref_bank" model="ir.ui.view">
-            <field name="name">view.account.journal.form.binaural.ref.bank</field>
+        <record id="view_account_journal_form_l10n_ve_ref_bank" model="ir.ui.view">
+            <field name="name">view.account.journal.form.l10n.ve.ref.bank</field>
             <field name="model">account.journal</field>
             <field name="inherit_id" ref="account.view_account_journal_form"/>
             <field name="arch" type="xml">
