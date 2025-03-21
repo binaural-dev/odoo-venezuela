@@ -1,6 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_pos_payment_report,access_pos_payment_report,model_pos_payment_report,,1,1,1,1
-
-point_of_sale.access_stock_picking_pos_user,point_of_sale.access_stock_picking_pos_user,stock.model_stock_picking,point_of_sale.group_pos_user,1,1,1,0
-point_of_sale.access_pos_payment_user,point_of_sale.access_pos_payment_user,point_of_sale.model_pos_payment,point_of_sale.group_pos_user,1,1,1,0
-point_of_sale.access_pos_order,point_of_sale.access_pos_order,point_of_sale.model_pos_order,point_of_sale.group_pos_user,1,1,1,0

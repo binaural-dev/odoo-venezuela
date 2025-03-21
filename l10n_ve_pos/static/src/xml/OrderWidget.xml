@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<templates id="template" xml:space="preserve">
-    <t t-name="OrderWidget" t-inherit="point_of_sale.OrderWidget" t-inherit-mode="extension" owl="1">
-        <xpath expr="//div[hasclass('order-container')]//ul" position="after">
-            <div class="rate_bcv">RATE BCV: <t t-esc="rate_bcv"/></div>
-            <div class="cant_prod">Total Products: <t t-esc="product_qty"/></div>
-        </xpath>
-    </t>
-</templates>
