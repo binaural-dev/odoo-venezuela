@@ -89,7 +89,7 @@
         <field name="arch" type="xml">
             <xpath expr="//button[@class='oe_stat_button'][1]" position="before">
                 <t groups="l10n_ve_stock.group_product_available_quantity_on_sale">
-                    <button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" attrs="{'invisible':[('type', '!=', 'product')]}">
+                    <button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" invisible="type != 'product'">
                         <div class="o_field_widget o_stat_info" name="quantity">
                             <span class="o_stat_value" widget="statinfo">
                                 <field name="quantity" widget="statinfo" nolabel="1" class="mr4"/>
@@ -110,7 +110,7 @@
         <field name="arch" type="xml">
             <xpath expr="//button[@name='action_open_quants']" position="before">
                 <t groups="l10n_ve_stock.group_product_available_quantity_on_sale">
-                    <button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" attrs="{'invisible':[('type', '!=', 'product')]}">
+                    <button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" invisible="type != 'product'">
                         <div class="o_field_widget o_stat_info" name="quantity">
                             <span class="o_stat_value" widget="statinfo">
                                 <field name="free_qty" widget="statinfo" nolabel="1" class="mr4"/>

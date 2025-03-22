@@ -29,7 +29,7 @@
                                 Define a main sell's warehouse.
                             </div>
                             <div class="content-group">
-                                <div class="mt16" attrs="{'invisible': [('use_main_warehouse', '=', False)]}">
+                                <div class="mt16" invisible="not use_main_warehouse">
                                     <field name="main_warehouse_id" class="oe_inline"/>
                                 </div>
                             </div>
