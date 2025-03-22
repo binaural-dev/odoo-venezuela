@@ -40,9 +40,6 @@
             <xpath expr="//form/header/button[@name='%(stock.action_report_delivery)d']" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_print_button_for_inventory_transfers</attribute>
             </xpath>
-            <!-- <xpath expr="//button[@name='do_unreserve']" position="attributes">
-                <attribute name="groups">!l10n_ve_stock.group_hide_override_button_for_inventory_transfers</attribute>
-            </xpath> -->
             <xpath expr="//button[@name='button_validate'][2]" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_validate_inventory_transfers_button</attribute>
             </xpath>
@@ -52,17 +49,8 @@
             <xpath expr="//button[@name='action_cancel'][1]" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_cancel_button_from_inventory_transfers</attribute>
             </xpath>
-            <xpath expr="//button[@name='action_toggle_is_locked'][2]" position="attributes">
-                <attribute name="groups">!l10n_ve_stock.group_hide_unlock_lock_button_for_inventory_transfers</attribute>
-            </xpath>
-            <xpath expr="//button[@name='action_toggle_is_locked'][1]" position="attributes">
-                <attribute name="groups">!l10n_ve_stock.group_hide_unlock_lock_button_for_inventory_transfers</attribute>
-            </xpath>
             <xpath expr="//button[@name='%(stock.act_stock_return_picking)d'][1]" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_return_inventory_transfers_button</attribute>
-            </xpath>
-            <xpath expr="//button[@name='button_scrap'][1]" position="attributes">
-                <attribute name="groups">!l10n_ve_stock.group_hide_discard_inventory_transfers_button</attribute>
             </xpath>
             <field name="date_deadline" position="after">
                 <field name="reception_date" invisible="picking_type_code != 'outgoing'"/>
@@ -109,5 +97,14 @@
                     (0, 0, {'view_mode': 'calendar', 'view_id': ref('stock.stock_picking_calendar')}),
                 ]"
             />
+    </record>
+    <record id="stock.action_unreserve_picking" model="ir.actions.server">
+        <field name="groups_id" eval="[Command.link(ref('l10n_ve_stock.group_hide_override_button_for_inventory_transfers'))]"/>
+    </record>
+    <record id="stock.action_toggle_is_locked" model="ir.actions.server">
+        <field name="groups_id" eval="[Command.link(ref('l10n_ve_stock.group_hide_override_button_for_inventory_transfers'))]"/>
+    </record>
+    <record id="stock.action_scrap" model="ir.actions.server">
+        <field name="groups_id" eval="[Command.link(ref('l10n_ve_stock.group_hide_discard_inventory_transfers_button'))]"/>
     </record>
 </odoo>
