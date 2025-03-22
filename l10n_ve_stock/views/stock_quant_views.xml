@@ -48,6 +48,7 @@
         <field name="model">stock.quant</field>
         <field name="arch" type="xml">
             <tree create="0" delete="0" multi_edit="0" edit="0">
+                <field name="company_id" />
                 <field name="product_id"/>
                 <field name="location_id"/>
                 <field name="available_quantity"/>
