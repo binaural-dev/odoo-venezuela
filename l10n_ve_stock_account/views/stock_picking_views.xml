@@ -20,17 +20,17 @@
                 <field name="order_is_consignment" invisible="1"/>
             </xpath>
             <xpath expr="//form//group//group//field[@name='location_id'][2]" position="attributes">
-                <attribute name="attrs">{'readonly': [('order_is_consignment', '=', True)]}</attribute>
+                <attribute name="readonly">order_is_consignment</attribute>
             </xpath>
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
-                <attribute name="attrs">{'readonly': [('order_is_consignment', '=', True)]}</attribute>
+                <attribute name="readonly">order_is_consignment</attribute>
             </xpath>
             <xpath expr="//form//header" position="inside">
                 <field name="dispatch_guide_controls" invisible="1" />
                 <button 
                     name="print_dispatch_guide" string="Guide Dispatch"
                     type="object" class="o_btn_validate"
-                    attrs="{'invisible': [ ('dispatch_guide_controls', '!=', True)]}"
+                    invisible="not dispatch_guide_controls"
                     data-hotkey="m"
                 />
             </xpath>
@@ -38,32 +38,26 @@
                 <field name="is_consignment" invisible="1" />
                 <field 
                     name="is_dispatch_guide"
-                    attrs="{
-                    'readonly': ['|', ('state', '=', 'done'), ('is_consignment', '=', True)],
-                    'invisible': [('operation_code', '!=', 'internal')]
-                }" />
+                    readonly="state = 'done' or is_consignment"
+                    invisible="operation_code != 'internal'"/>
                 <field name="is_consignment_readonly" invisible="1"/>
                 <field 
                     name="transfer_reason_id"
-                    attrs="{
-                        'readonly': ['|', ('state', '=', 'done'), ('is_consignment_readonly', '=', True)],
-                        'invisible': [('operation_code', '!=', 'internal')],
-                        'required': [('operation_code', '=', 'internal')]
-                    }" />
+                    readonly="state = 'done' or is_consignment_readonly"
+                    invisible="operation_code != 'internal'"
+                    required="operation_code = 'internal'"
+                    />
                 <field name="is_consignment" />
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="is_donation" invisible="1" />
                 <field 
                     name="transfer_reason_id"
-                    attrs="{'readonly': ['|', ('is_donation', '=', True), ('state', '=', 'done')], 
-                            'invisible': [('operation_code', '!=', 'outgoing')]}" 
-                />
+                    readonly="is_donation or state = 'done'"
+                    invisible="operation_code != 'outgoing'"
+                    />
                 <field 
                     name="guide_number" readonly="1"
-                    attrs="{'invisible': [
-                        ('dispatch_guide_controls', '!=', True),
-                        ]
-                    }"
+                    invisible="not dispatch_guide_controls"
                 />
             </xpath>
             <xpath expr="//field[@name='picking_type_id']" position="after">
@@ -78,7 +72,8 @@
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_open_picking_invoice" type="object"
                             class="oe_stat_button" icon="fa-file-text"
-                            attrs="{'invisible': [('invoice_count','=', 0)]}">
+                    invisible="invoice_count == 0"
+                    />
                     <field name="invoice_count" widget="statinfo"/>
                 </button>
             </xpath>
@@ -86,19 +81,23 @@
                 <button 
                     name="create_invoice" class="oe_highlight"
                     string="Create Invoice" type="object"
-                    attrs="{'invisible': [('show_create_invoice', '=', False)]}"/>
+                    invisible="not show_create_invoice"
+                    />
                 <button 
                     name="create_bill" class="oe_highlight"
                     string="Create Bill" type="object"
-                    attrs="{'invisible': [('show_create_bill', '=', False)]}"/>
+                    invisible="not show_create_bill"
+                    />
                 <button 
                     name="create_customer_credit" class="oe_highlight"
                     string="Create Credit Note" type="object"
-                    attrs="{'invisible': [('show_create_customer_credit', '=', False)]}"/>
+                    invisible="not show_create_customer_credit"
+                    />
                 <button 
                     name="create_vendor_credit" class="oe_highlight"
                     string="Create Vendor Credit" type="object"
-                    attrs="{'invisible': [('show_create_vendor_credit', '=', False)]}"/>
+                    invisible="not show_create_vendor_credit"
+                    />
                 <button 
                     name="create_internal_invoice" class="oe_highlight"
                     string="Create Internal Invoice" type="object"
