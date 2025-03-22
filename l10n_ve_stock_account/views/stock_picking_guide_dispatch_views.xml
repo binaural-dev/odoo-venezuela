@@ -40,7 +40,7 @@
                     icon="fa-file-text" 
                     string="Create Invoice" 
                     type="object"
-                    attrs="{'invisible': [('show_create_invoice', '=', False)]}"
+                    invisible="show_create_invoice_internal"
                 />
                 <button 
                     name="create_bill" 
@@ -48,7 +48,7 @@
                     icon="fa-file-text" 
                     string="Create Bill" 
                     type="object"
-                    attrs="{'invisible': [('show_create_bill', '=', False)]}"
+                    invisible="not show_create_invoice_internal"
                 />
                 <button 
                     name="create_customer_credit" 
@@ -56,7 +56,7 @@
                     icon="fa-file-text" 
                     string="Create Credit Note" 
                     type="object"
-                    attrs="{'invisible': [('show_create_customer_credit', '=', False)]}"
+                    invisible="not show_create_invoice_internal"
                 />
                 <button 
                     name="create_vendor_credit" 
@@ -64,7 +64,7 @@
                     icon="fa-file-text" 
                     string="Create Vendor Credit" 
                     type="object"
-                    attrs="{'invisible': [('show_create_vendor_credit', '=', False)]}"
+                    invisible="not show_create_invoice_internal"
                 />
                 <button 
                     name="create_internal_invoice" 
