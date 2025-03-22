@@ -13,13 +13,13 @@
                 <field name="date_done" string="Guide Date"/>
                 <field name="operation_code" optional="hide"/>
                 <field name="transfer_reason_id" optional="hide"/>
-                <field name="company_id" invisible="1"/>
-                <field name="allowed_reason_ids" invisible="1"/>
-                <field name="show_create_invoice" invisible="1"/>
-                <field name="show_create_bill" invisible="1"/>
-                <field name="show_create_customer_credit" invisible="1"/>
-                <field name="show_create_vendor_credit" invisible="1"/>
-                <field name="show_create_invoice_internal" invisible="1"/>
+                <field name="company_id" column_invisible="True"/>
+                <field name="allowed_reason_ids" column_invisible="True"/>
+                <field name="show_create_invoice" column_invisible="True"/>
+                <field name="show_create_bill" column_invisible="True"/>
+                <field name="show_create_customer_credit" column_invisible="True"/>
+                <field name="show_create_vendor_credit" column_invisible="True"/>
+                <field name="show_create_invoice_internal" column_invisible="True"/>
                 <field 
                     name="state_guide_dispatch" 
                     string="State Guide Dispatch" widget="badge" 
@@ -72,8 +72,7 @@
                     icon="fa-file-text" 
                     string="Create Internal Invoice" 
                     type="object"
-                    invisible="1"
-                />
+                    column_invisible="True"/>
             </tree>
         </field>
     </record>
