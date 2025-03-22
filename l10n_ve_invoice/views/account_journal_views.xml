@@ -6,11 +6,11 @@
         <field name="inherit_id" ref="account.view_account_journal_form" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='type']" position="after">
-                <field name="is_contingency" invisible="type != 'sale" />
-                <field name="is_debit" invisible="type != 'sale" />
-                <field name="series_correlative_sequence_id"
-                    invisible="type != 'sale'"
-                    groups="l10n_ve_invoice.group_sales_invoicing_series" />
+                <field name="is_contingency" invisible="type != 'sale'"/>
+                <field name="is_debit" invisible="type != 'sale'"/>
+                <field name="series_correlative_sequence_id" 
+                       invisible="type != 'sale'"
+                       groups="l10n_ve_invoice.group_sales_invoicing_series"/>
             </xpath>
         </field>
     </record>

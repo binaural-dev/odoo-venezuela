@@ -15,14 +15,9 @@
                     'in_receipt') and not posted_before and not is_contingency</attribute>
             </xpath>
             <field name="name" position="attributes">
-                <field name="name" position="attributes">
-                    <attribute name="readonly">(move_type in ('out_invoice', 'out_refund') or not
-                        is_contingency) and state == 'posted'</attribute>
-                    <attribute name="required">move_type in ('in_invoice', 'in_refund',
-                        'in_receipt') or is_contingency</attribute>
-                    <attribute name="placeholder">JRNL/2016/00001</attribute>
-                </field>
-
+                <attribute name="readonly">(move_type in ('out_invoice', 'out_refund') or not is_contingency) and state == 'posted'</attribute>
+		        <attribute name="required">move_type in ('in_invoice', 'in_refund', 'in_receipt') or is_contingency</attribute>
+                <attribute name="placeholder">JRNL/2016/00001</attribute>
             </field>
             <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
                 <div class="inline-block"></div>
