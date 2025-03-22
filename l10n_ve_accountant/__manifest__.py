@@ -13,7 +13,6 @@
         "web",
         "account",
         "account_reports",
-        "account_sequence",
         "l10n_ve_tax",
         "l10n_ve_contact",
         "l10n_ve_rate",
