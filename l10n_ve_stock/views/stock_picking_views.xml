@@ -23,19 +23,19 @@
                 <field name="picks_count" invisible="1"/>
                 <field name="packs_count" invisible="1"/>
                 <field name="outs_count" invisible="1"/>
-                <button type="object" name="action_get_picks" class="oe_stat_button" icon="fa-cubes" groups="stock.group_stock_user" attrs="{'invisible': [('picks_count', '&lt;', 1)]}">
+                <button type="object" name="action_get_picks" class="oe_stat_button" icon="fa-cubes" groups="stock.group_stock_user" invisible="picks_count &lt; 1">
                     <field name="picks_count" widget="statinfo" string="PICKS"/>
                 </button>
-                <button type="object" name="action_get_packs" class="oe_stat_button" icon="fa-cube" groups="stock.group_stock_user" attrs="{'invisible': [('packs_count', '&lt;', 1)]}">
+                <button type="object" name="action_get_packs" class="oe_stat_button" icon="fa-cube" groups="stock.group_stock_user" invisible="packs_count &lt; 1">
                     <field name="packs_count" widget="statinfo" string="PACKS"/>
                 </button>
-                <button type="object" name="action_get_outs" class="oe_stat_button" icon="fa-truck" groups="stock.group_stock_user" attrs="{'invisible': [('outs_count', '&lt;', 1)]}">
+                <button type="object" name="action_get_outs" class="oe_stat_button" icon="fa-truck" groups="stock.group_stock_user" invisible="outs_count &lt; 1">
                     <field name="outs_count" widget="statinfo" string="OUTS"/>
                 </button>
             </xpath>
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="type_delivery_step" invisible="1"/>
-                <field name="package_qty" attrs="{'invisible': [('type_delivery_step','!=','out')]}"/>
+                <field name="package_qty" invisible="type_delivery_step != 'out'"/>
             </xpath>
             <xpath expr="//form/header/button[@name='%(stock.action_report_delivery)d']" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_print_button_for_inventory_transfers</attribute>
@@ -65,7 +65,7 @@
                 <attribute name="groups">!l10n_ve_stock.group_hide_discard_inventory_transfers_button</attribute>
             </xpath>
             <field name="date_deadline" position="after">
-                <field name="reception_date" attrs="{'invisible': [('picking_type_code', '!=', 'outgoing')],}"/>
+                <field name="reception_date" invisible="picking_type_code != 'outgoing'"/>
             </field>
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="options">{'no_quick_create': True}</attribute>
