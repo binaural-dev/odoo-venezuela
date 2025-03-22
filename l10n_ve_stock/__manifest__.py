@@ -14,7 +14,7 @@
         "l10n_ve_tax",
         "product",
         "l10n_ve_rate",
-        "delivery",
+        "stock_delivery",
     ],
     "data": [
         "security/ir.model.access.csv",

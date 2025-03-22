@@ -8,9 +8,9 @@
             <field name="arch" type="xml">
                 <xpath expr="//group[@name='group2']" position="after">
                     <field name="is_retention" string="Is retention" invisible="1"/>
-                    <field name="payment_type_retention" string="Payment type retention" attrs="{'invisible':[('is_retention', '=', False)]}"/>
-                    <field name="retention_ref" string="Retention ref" attrs="{'invisible':[('is_retention', '=', False)]}"/>
-                    <notebook attrs="{'invisible':[('is_retention', '=', False)]}">
+                    <field name="payment_type_retention" string="Payment type retention" invisible="not is_retention"/>
+                    <field name="retention_ref" string="Retention ref" invisible="not is_retention"/>
+                    <notebook invisible="not is_retention">
                         <page name="retention_lines" string="Retention lines">
                             <field name="retention_line_ids" nolabel="1">
                                 <tree editable="bottom">
