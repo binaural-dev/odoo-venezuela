@@ -85,12 +85,15 @@
     <record id="delivery_inherit_binaural_stock" model="ir.ui.view">
         <field name="name">stock.picking.view.form.inherit</field>
         <field name="model">stock.picking</field>
-        <field name="inherit_id" ref="delivery.view_picking_withcarrier_out_form"/>
+        <field name="inherit_id" ref="stock_delivery.view_picking_withcarrier_out_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='weight'][1]" position="replace">
-                <field name="change_weight" invisible="1"/>
-                <field name="weight" class="oe_inline" attrs="{'invisible': [('change_weight', '!=', True)], 'readonly': [('state', 'in', ['done','cancel'])]}"/>
-                <field name="weight" class="oe_inline" attrs="{'invisible': [('change_weight', '!=', False)]}"/>
+            <xpath expr="//group[@name='carrier_data']//div[2]" position="replace">
+                <div>
+                    <field name="change_weight" invisible="1"/>
+                    <field name="weight" class="oe_inline" invisible="not change_weight" readonly="state in ['done', 'cancel']"/>
+                    <field name="weight" class="oe_inline" invisible="change_weight"/>
+                    <field name="weight_uom_name" nolabel="1" class="oe_inline" style="margin-left:5px"/>
+                </div>
             </xpath>
         </field>
     </record>
