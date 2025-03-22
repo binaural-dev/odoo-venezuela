@@ -44,10 +44,10 @@
                 <field name="is_debit_journal" readonly="1" invisible="1" />
             </xpath>
             <xpath expr="//page[@name='other_info']//field[@name='ref']" position="attributes">
-                <attribute name="readonly">move_type in ('out_refund', 'out_invoice') and is_debit_journal = True and move_type in ('out_refund', 'out_invoice')</attribute>
+                <attribute name="readonly">move_type in ['out_refund', 'out_invoice'] and is_debit_journal</attribute>
             </xpath>
             <button name="button_draft" position="attributes">
-                <attribute name="invisible">state in ('posted', 'cancel') and move_type in ('out_invoice', 'out_refund') and is_debit_journal and not show_reset_to_draft_button</attribute>
+                <attribute name="invisible">state in ['posted', 'cancel'] and move_type in ['out_invoice', 'out_refund'] and is_debit_journal and not show_reset_to_draft_button</attribute>
             </button>
         </field>
     </record>
