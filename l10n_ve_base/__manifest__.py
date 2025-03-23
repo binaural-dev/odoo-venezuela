@@ -8,7 +8,7 @@
     "website": "https://binauraldev.com/",
     "category": "Technical",
     "version": "17.0.0.0.0",
-    "depends": ["base", "web"],
+    "depends": ["base", "base_setup", "web"],
     "auto_install": True,
     "data": ["security/ir.model.access.csv"],
     "assets": {
