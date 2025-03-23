@@ -26,6 +26,7 @@
                         <field name="foreign_currency_id" invisible="1" />
                         <field name="type_retention" invisible="1" force_save="1" />
                         <field name="type" force_save="1" select="2" />
+                        <field name="company_id" invisible="1"/>
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
                             select="1"
                             invisible="not type"
@@ -143,6 +144,7 @@
                             <field name="payment_ids" nolabel="1"
                                 readonly="state in ['emitted', 'cancel']">
                                 <tree string="Payments" editable="bottom">
+                                    <field name="company_id" optional="hide"/>
                                     <field name="date" />
                                     <field name="name" />
                                     <field name="amount" />

@@ -12,6 +12,7 @@
         "l10n_ve_stock",
         "l10n_ve_accountant",
         "l10n_ve_sale",
+        "web",
     ],
     "data": [
         "security/ir.model.access.csv",
