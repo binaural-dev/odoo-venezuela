@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <data>
-
         <record id="view_account_retention_line_tree_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">views.account.retention.line.tree.l10n.ve.payment.extension</field>
             <field name="model">account.retention.line</field>
@@ -11,16 +9,9 @@
                 <tree string="Retention Lines">
                     <field name="name"/>
                     <field name="payment_id" />
-                    <!-- <field name="invoice_id"/> -->
-                    <!-- <field name="retetion_rate" /> -->
-                    <!-- <field name="base_ret" /> -->
-                    <!-- <field name="tax_line" /> -->
-                    <!-- <field name="imp_ret" /> -->
-                    <!-- <field name="amount_tax_ret" /> -->
                 </tree>
             </field>
         </record>
-
         <record id="view_account_retention_line_form_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">views.account.retention.line.form.l10n.ve.payment.extension</field>
             <field name="model">account.retention.line</field>
@@ -29,11 +20,8 @@
                 <form string="Retention Lines">
                     <group>
                         <field name="name"/>
-                        <!-- <field name="invoice_id" domain="[('state', '=', 'open'), ('partner_id','=', parent.partner_id)]"/> -->
-                        <!-- <field name="retention_rate"/> -->
                         <field name="base_ret"/>
                         <field name="imp_ret"/>
-                        <!-- <field name="tax_line"/> -->
                         <field name="amount_tax_ret"/>
                         <field name="invoice_amount" />
                         <field name="iva_amount" />

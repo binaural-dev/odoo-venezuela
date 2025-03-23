@@ -7,11 +7,12 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "17.0.1.0.31",
+    "version": "17.0.0.0.0",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_accountant",
         "l10n_ve_sale",
+        "web",
     ],
     "data": [
         "security/ir.model.access.csv",

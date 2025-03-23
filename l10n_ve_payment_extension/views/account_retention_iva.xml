@@ -11,10 +11,10 @@
                         <field name="state" invisible="1" />
                         <button name="action_draft" type="object"
                             string="Convert to draft"
-                            attrs="{'invisible': ['|', ('type', '!=', 'out_invoice'), ('state', '!=', 'cancel')]}" />
-                        <button name="action_post" type="object" states="draft" string="Approve"
+                            invisible="type != 'out_invoice' or state != 'cancel'" />
+                        <button name="action_post" type="object" invisible="state != 'draft'" string="Approve"
                             class="oe_highlight" />
-                        <button name="action_cancel" type="object" states="emitted" string="Cancel"
+                        <button name="action_cancel" type="object" invisible="state != 'emitted'" string="Cancel"
                             confirm="Are you sure you want to cancel this voucher? The associated accounting entries will be reversed" />
                         <field name="state" widget="statusbar" nolabel="1" />
                     </header>
@@ -24,35 +24,33 @@
                         <field name="base_currency_is_vef" invisible="1" />
                         <field name="company_currency_id" invisible="1" />
                         <field name="foreign_currency_id" invisible="1" />
-
                         <field name="type_retention" invisible="1" force_save="1" />
                         <field name="type" force_save="1" select="2" />
+                        <field name="company_id" invisible="1"/>
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
                             select="1"
-                            attrs="{'invisible':[('type','=', False)],'readonly':[('state','in',['emitted','cancel'])]}" />
+                            invisible="not type"
+                            readonly="state in ['emitted', 'cancel']" />
                         <field name="date_accounting" select="1"
-                            attrs="{'readonly':[('state','in',['emitted','cancel'])]}" />
+                            readonly="state in ['emitted', 'cancel']" />
                         <field name="number" force_save="1"
-                            attrs="{
-                                'readonly': ['|', ('type', '=', 'in_invoice'), ('state', 'in', ['emitted', 'cancel'])],
-                                'required': [('type', '=', 'out_invoice')]
-                            }"
-                        />
-                        <field name="correlative" force_save="1" invisible="1"
-                            attrs="{'readonly':[('type','=', 'in_invoice')] }" />
+                            readonly="type == 'in_invoice' or state in ['emitted', 'cancel']"
+                            required="type == 'out_invoice'"/>
+                        <field name="correlative" force_save="1"
+                            invisible="1"
+                            readonly="type == 'in_invoice'" />
                         <field name="date"
-                            attrs="{'readonly':[('state','in',['emitted','cancel'])]}" />
+                            readonly="state in ['emitted', 'cancel']" />
                     </group>
                     <notebook>
                         <page name="retention_lines" string="Retention Lines">
                             <field colspan="4" name="retention_line_ids" nolabel="1"
-                                attrs="{'readonly':[('state','in',['emitted','cancel'])]}">
+                                readonly="state in ['emitted', 'cancel']">
                                 <tree string="Retention Lines" editable="bottom">
                                     <!-- Invisible fields -->
-                                    <field name="invoice_type" invisible="1" />
-                                    <field name="company_currency_id" invisible="1" />
-                                    <field name="foreign_currency_id" invisible="1" />
-
+                                    <field name="invoice_type" column_invisible="True" />
+                                    <field name="company_currency_id" column_invisible="True" />
+                                    <field name="foreign_currency_id" column_invisible="True" />
                                     <field name="name" />
                                     <field name="move_id"
                                         domain="[('iva_voucher_number', '=',False)]" />
@@ -65,58 +63,48 @@
                                         name="invoice_total"
                                         widget="monetary"
                                         options="{'currency_field': 'company_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
-                                    />
+                                        column_invisible="not parent.base_currency_is_vef"/>
                                     <field
                                         name="invoice_amount"
                                         widget="monetary"
                                         options="{'currency_field': 'company_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
-                                    />
+                                        column_invisible="not parent.base_currency_is_vef"/>
                                     <field
                                         name="iva_amount"
                                         widget="monetary"
                                         options="{'currency_field': 'company_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
-                                    />
+                                        column_invisible="not parent.base_currency_is_vef"/>
                                     <field
                                         name="retention_amount"
                                         widget="monetary"
                                         options="{'currency_field': 'company_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
-                                    />
+                                        column_invisible="not parent.base_currency_is_vef"/>
                                     <!-- Foreign Amounts -->
                                     <field
                                         name="foreign_invoice_amount"
                                         widget="monetary"
                                         options="{'currency_field': 'foreign_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
-                                    />
+                                        column_invisible="parent.base_currency_is_vef"/>
                                     <field
                                         name="foreign_iva_amount"
                                         widget="monetary"
                                         options="{'currency_field': 'foreign_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
-                                    />
+                                        column_invisible="parent.base_currency_is_vef"/>
                                     <field
                                         name="foreign_invoice_total"
                                         widget="monetary"
                                         options="{'currency_field': 'foreign_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
-                                    />
+                                        column_invisible="parent.base_currency_is_vef"/>
                                     <field
                                         name="foreign_retention_amount"
                                         widget="monetary"
                                         options="{'currency_field': 'foreign_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
-                                    />
-
+                                        column_invisible="parent.base_currency_is_vef"/>
                                     <field name="foreign_currency_rate" optional="hide" />
                                 </tree>
                             </field>
-
                             <group col="2" colspan="2"
-                                attrs="{'invisible': [('base_currency_is_vef', '=', False)]}">
+                                invisible="not base_currency_is_vef">
                                 <field
                                     name="total_invoice_amount"
                                     widget="monetary"
@@ -133,9 +121,8 @@
                                     options="{'currency_field': 'company_currency_id'}"
                                 />
                             </group>
-
                             <group col="2" colspan="2"
-                                attrs="{'invisible': [('base_currency_is_vef', '=', True)]}">
+                                invisible="base_currency_is_vef">
                                 <field
                                     name="foreign_total_invoice_amount"
                                     widget="monetary"
@@ -155,8 +142,9 @@
                         </page>
                         <page name="Payments" string="payments">
                             <field name="payment_ids" nolabel="1"
-                                attrs="{'readonly':[('state','in',['emitted','cancel'])]}">
+                                readonly="state in ['emitted', 'cancel']">
                                 <tree string="Payments" editable="bottom">
+                                    <field name="company_id" optional="hide"/>
                                     <field name="date" />
                                     <field name="name" />
                                     <field name="amount" />
@@ -175,7 +163,6 @@
                 </form>
             </field>
         </record>
-
         <record id="view_retention_iva_tree_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">Retention IVA client list</field>
             <field name="model">account.retention</field>
@@ -187,14 +174,11 @@
                     <field name="partner_id" />
                     <field name="date" />
                     <field name="date_accounting" />
-                    <!-- <field name="total_tax_ret" string="Monto Retenido" widget="monetary"
-                    options="{'currency_field': 'company_currency_id'}"/> -->
                     <field name="company_id" optional="hide" groups="base.group_multi_company" />
                     <field name="state" />
                 </tree>
             </field>
         </record>
-
         <!--View:
         Search: Retenciones client-->
         <record id="view_retention_iva_search_l10n_ve_payment_extension" model="ir.ui.view">
@@ -210,7 +194,6 @@
                         filter_domain="[('date_accounting','ilike',self)]" />
                     <!-- <field name="retention_line" string="Factura"
                     filter_domain="[('retention_line.invoice_id.name','ilike',self)]"/> -->
-
                     <group expand="0" string="Group By">
                         <filter name="group_state" string="State" domain="[]"
                             context="{'group_by':'state'}" />
@@ -222,7 +205,6 @@
                 </search>
             </field>
         </record>
-
         <record id="action_retention_iva_client" model="ir.actions.act_window">
             <field name="name">IVA Retention Clients</field>
             <field name="res_model">account.retention</field>
@@ -235,7 +217,6 @@
             <field name="context">{"default_type":'out_invoice', "default_type_retention":'iva'}</field>
             <field name="domain">[('type_retention', '=', 'iva'), ('type', '=', 'out_invoice')]</field>
         </record>
-
         <record id="action_retention_iva_supplier" model="ir.actions.act_window">
             <field name="name">IVA Retention Suppliers</field>
             <field name="res_model">account.retention</field>

@@ -7,9 +7,9 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.0.0.6",
+    "version": "17.0.0.0.0",
     # any module necessary for this one to work correctly
-    "depends": ["base"],
+    "depends": ["base", "l10n_ve_base"],
     "data": [
         "views/res_config_settings.xml",
     ],

@@ -13,10 +13,10 @@
                     <header>
                         <button name="action_draft" type="object"
                             string="Convert to draft"
-                            attrs="{'invisible': ['|', ('type', '!=', 'out_invoice'), ('state', '!=', 'cancel')]}" />
-                        <button name="action_post" type="object" states="draft" string="Approve"
+                            invisible="type != 'out_invoice' or state != 'cancel'" />
+                        <button name="action_post" type="object" invisible="state != 'draft'" string="Approve"
                             class="oe_highlight" />
-                        <button name="action_cancel" type="object" states="emitted" string="Cancel"
+                        <button name="action_cancel" type="object" invisible="state != 'emitted'" string="Cancel"
                             confirm="Are you sure you want to cancel this voucher? The associated accounting entries will be reversed" />
                         <field name="state" widget="statusbar" nolabel="1" />
                     </header>
@@ -31,21 +31,24 @@
                         <field name="type_retention" force_save="1" select="2" invisible="1" />
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
                             select="1"
-                            attrs="{'invisible':[('type','=', False)],'readonly':[('state','in',['emitted','cancel'])]}" />
+                            invisible="not type"
+                            readonly="state in ['emitted', 'cancel']" />
                         <field name="date_accounting" select="1"
-                            attrs="{'readonly':[('state','in',['emitted','cancel'])]}" />
+                            readonly="state in ['emitted', 'cancel']" />
                         <field name="number" force_save="1"
-                            attrs="{'readonly':['|',('type','=', 'in_invoice'),('state','in', ['emitted','cancel'])],
-                        'required':[('type','=', 'out_invoice')]}" />
-                        <field name="correlative" force_save="1" invisible="1"
-                            attrs="{'readonly':[('type','=', 'in_invoice')] }" />
+                            readonly="type == 'in_invoice' or state in ['emitted', 'cancel']"
+                            required="type == 'out_invoice'" />
+                        <field name="correlative" force_save="1"
+                            invisible="1"
+                            readonly="type == 'in_invoice'" />
                         <field name="date"
-                            attrs="{'readonly':[('state','in',['emitted','cancel'])]}" />
+                            readonly="state in ['emitted', 'cancel']" />
                     </group>
                     <notebook colspan="4">
                         <page name="retention_lines" string="Retention Lines">
                             <field colspan="4" name="retention_line_ids" nolabel="1"
-                                attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
+                                invisible="not partner_id"
+                                readonly="state in ['emitted', 'cancel']">
                                 <tree editable="bottom">
                                     <field name="name" readonly="1" force_save="1" />
                                     <field
@@ -53,37 +56,34 @@
                                         domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('islr_voucher_number', '=',False)]"
                                     />
                                     <field name="code"
-                                        attrs="{'column_invisible': [('parent.code_visible' , '=' , False)] }" />
+                                        column_invisible="not parent.code_visible" />
                                     <field name="company_id" optional="hide"
                                         groups="base.group_multi_company" />
                                     <field name="payment_concept_id" force_save="1" />
-                                    <field name="is_retention_client" invisible="1" />
+                                    <field name="is_retention_client" column_invisible="True" />
                                     <field
                                         name="invoice_total"
                                         force_save="1"
                                         string="Invoice Total"
-                                        readonly="1"
                                         widget="monetary"
                                         options="{'currency_field': 'company_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
-                                    />
+                                        readonly="1"
+                                        column_invisible="not parent.base_currency_is_vef"/>
                                     <field
                                         name="foreign_invoice_total"
                                         force_save="1"
                                         string="Invoice Total"
-                                        readonly="1"
                                         widget="monetary"
                                         options="{'currency_field': 'foreign_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
-                                    />
+                                        readonly="1"
+                                        column_invisible="parent.base_currency_is_vef"/>
                                     <field
                                         name="invoice_amount"
                                         force_save="1"
                                         string="Invoice Amount"
                                         widget="monetary"
                                         options="{'currency_field': 'company_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
-                                    />
+                                        column_invisible="not parent.base_currency_is_vef"/>
 
                                     <field
                                         name="foreign_invoice_amount"
@@ -91,15 +91,13 @@
                                         string="Invoice Amount"
                                         widget="monetary"
                                         options="{'currency_field': 'foreign_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
-                                    />
+                                        column_invisible="parent.base_currency_is_vef"/>
 
                                     <field
                                         name="related_pay_from"
                                         force_save="1"
                                         readonly="1"
-                                        attrs="{'column_invisible': [('parent.type', '=', 'out_invoice')]}"
-                                    />
+                                        column_invisible="parent.type == 'out_invoice'"/>
                                     <field
                                         name="related_percentage_tax_base"
                                         force_save="1"
@@ -126,20 +124,20 @@
                                         force_save="1"
                                         widget="monetary"
                                         options="{'currency_field': 'company_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)], 'readonly': [('parent.type', '=', 'in_invoice')]}"
-                                    />
+                                        column_invisible="not parent.base_currency_is_vef"
+                                        readonly="parent.type == 'in_invoice'"/>
                                     <field
                                         name="foreign_retention_amount"
                                         force_save="1"
                                         widget="monetary"
                                         options="{'currency_field': 'foreign_currency_id'}"
-                                        attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)], 'readonly': [('parent.type', '=', 'in_invoice')]}"
-                                    />
+                                        column_invisible="parent.base_currency_is_vef"
+                                        readonly="parent.type == 'in_invoice'"/>
                                 </tree>
                             </field>
 
                             <group col="2" colspan="2"
-                                attrs="{'invisible': [('base_currency_is_vef', '=', False)]}">
+                                invisible="not base_currency_is_vef">
                                 <field
                                     name="total_invoice_amount"
                                     widget="monetary"
@@ -153,7 +151,7 @@
                             </group>
 
                             <group col="2" colspan="2"
-                                attrs="{'invisible': [('base_currency_is_vef', '=', True)]}">
+                                invisible="base_currency_is_vef">
                                 <field
                                     name="foreign_total_invoice_amount"
                                     widget="monetary"
@@ -168,11 +166,12 @@
                         </page>
                         <page name="Payments" string="payments">
                             <field name="payment_ids" nolabel="1"
-                                attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
+                                invisible="not partner_id"
+                                readonly="state in ['emitted', 'cancel']">
                                 <tree string="Payments" editable="bottom">
                                     <field name="date" />
                                     <field name="name" />
-                                    <field name="currency_id" invisible="1" />
+                                    <field name="currency_id" column_invisible="True" />
                                     <field name="amount" widget="monetary"
                                         options="{'currency_field': 'currency_id'}" />
                                 </tree>

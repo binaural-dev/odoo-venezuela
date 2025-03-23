@@ -10,44 +10,41 @@
                 <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
                     <h2>Sales Configuration</h2>
                     <div class="row mt16 o_settings_container" name="l10n_ve_sale_settings">
-                        <div class="o_setting_right_pane">
-                            <group colspan="4" col="4">
-                                <field name="use_invoice_rate_from_sale_order" />
-
-                            </group>
-                            <div class="text-muted">
-                                Check this if you want the rate of the invoice to be taken from its
-                                sale order. Else it will take the rate of the date when it is
-                                created.
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="use_invoice_rate_from_sale_order"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="use_invoice_rate_from_sale_order"/>
+                                <div class="text-muted">
+                                    Check this if you want the rate of the invoice to be taken from its
+                                    sale order. Else it will take the rate of the date when it is created.
+                                </div>
                             </div>
                         </div>
-                        <br />
-                        <div class="o_setting_right_pane">
-                            <group colspan="4" col="4">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
                                 <field name="not_allow_sell_products" />
-                            </group>
-                            <div class="text-muted">
-                                If you have more than the quantity on stock dont allow sell.
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="not_allow_sell_products"/>
+                                <div class="text-muted">
+                                    If you have more than the quantity on stock dont allow sell.
+                                </div>
                             </div>
                         </div>
-                        <br />
-                        <div class="o_setting_right_pane">
-                            <group colspan="4" col="4">
-                                <field name="update_sale_order_rate_using_date_order" />
-                            </group>
-                            <div class="text-muted">
-                                When checked, the rate of the sale order will be updated using the
-                                date order whenever it changes. Else, when the rate is already set,
-                                it will not be updated.
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="update_sale_order_rate_using_date_order"/>
                             </div>
                         </div>
-                        <br />
+                        <br/>
                         <div class="o_setting_right_pane">
                             <group colspan="4" col="4">
-                                <field name="are_sale_lines_limited" />
-                                <field
+                                <field name="are_sale_lines_limited"/>
+                                <field 
                                     name="maximum_sales_line_limit"
-                                    attrs="{ 'invisible': [('are_sale_lines_limited','=', False)]  }"
+                                    invisible="not are_sale_lines_limited"
                                 />
                             </group>
                             <div class="text-muted">
@@ -55,10 +52,10 @@
                             </div>
                         </div>
                     </div>
-
                     <div name="l10n_ve_block_confirm">
                         <h2>Block order confirmationn</h2>
                         <div class="row mt16 o_settings_container">
+                            <div class="o_setting_left_pane"/>
                             <div class="o_setting_right_pane">
                                 <group colspan="4" col="4">
                                     <field name="block_order_invoice_payment_state" />
@@ -69,6 +66,7 @@
                                 </div>
                             </div>
                             <br />
+                            <div class="o_setting_left_pane"/>
                             <div class="o_setting_right_pane">
                                 <group colspan="4" col="4">
                                     <field name="block_order_invoice_total_amount_overdue" />
@@ -80,7 +78,6 @@
                             </div>
                         </div>
                     </div>
-
                 </xpath>
             </field>
         </record>

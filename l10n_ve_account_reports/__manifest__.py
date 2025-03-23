@@ -5,7 +5,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.5.5.8",
+    "version": "17.0.0.0.0",
     "depends": ["base", "account_reports", "l10n_ve_accountant"],
     "data": [
         "security/security.xml",
