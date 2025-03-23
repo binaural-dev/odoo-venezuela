@@ -9,6 +9,7 @@
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
     "depends": [
+        "l10n_ve_rate",
         "l10n_ve_base",
         "l10n_ve_accountant",
         "l10n_ve_contact",
