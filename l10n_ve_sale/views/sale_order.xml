@@ -9,7 +9,7 @@
             <xpath expr="//field[@name='partner_id']" position="replace">
                 <field name="partner_id_domain" invisible="1" />
                 <field name="filter_partner"
-                    attrs="{'readonly': [('state', 'in', ['sale', 'done'])]}"
+                    readonly="state in ['sale', 'done']"
                     groups="!l10n_ve_sale.contact_filter_sale_order_group" />
                 <field name="filter_partner" invisible="1"
                     groups="l10n_ve_sale.contact_filter_sale_order_group" />
@@ -71,7 +71,7 @@
                 <button id="create_invoice" name="%(sale.action_view_sale_advance_payment_inv)d"
                     string="Create Invoice"
                     type="action" class="btn-primary" data-hotkey="q"
-                    attrs="{'invisible': [('invoice_status', '!=', 'to invoice')]}"
+                    invisible="invoice_status != 'to invoice'"
                     groups="!l10n_ve_sale.create_invoice_sale_order_group" />
             </xpath>
 
@@ -80,7 +80,7 @@
                     name="%(sale.action_view_sale_advance_payment_inv)d" string="Create Invoice"
                     type="action" context="{'default_advance_payment_method': 'percentage'}"
                     data-hotkey="q"
-                    attrs="{'invisible': ['|',('invoice_status', '!=', 'no'), ('state', '!=', 'sale')]}"
+                    invisible="invoice_status != 'no' or state != 'sale'"
                     groups="!l10n_ve_sale.create_invoice_sale_order_group" />
             </xpath>
 
@@ -94,7 +94,7 @@
                         help="Recompute all prices based on this pricelist"
                         class="btn-link mb-1 px-0" icon="fa-refresh"
                         confirm="This will update all unit prices based on the currently set pricelist."
-                        attrs="{'invisible': ['|', ('show_update_pricelist', '=', False), ('state', 'in', ['sale', 'done', 'cancel'])]}" />
+                        invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']" />
                 </div>
                 <div groups="!l10n_ve_sale.pricelist_sale_order_group" class="o_row">
                     <field name="pricelist_id" options="{'no_open':True,'no_create': True}" />
@@ -103,7 +103,7 @@
                         help="Recompute all prices based on this pricelist"
                         class="btn-link mb-1 px-0" icon="fa-refresh"
                         confirm="This will update all unit prices based on the currently set pricelist."
-                        attrs="{'invisible': ['|', ('show_update_pricelist', '=', False), ('state', 'in', ['sale', 'done', 'cancel'])]}" />
+                        invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']" />
                 </div>
             </xpath>
 
@@ -128,7 +128,7 @@
         <field name="inherit_id" ref="sale.view_quotation_tree" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='amount_total']" position="after">
-                <field name="foreign_currency_id" invisible="1" />
+                <field name="foreign_currency_id" column_invisible="True" />
                 <field
                     name="foreign_total_billed"
                     sum="Foreign Amount total"
@@ -151,7 +151,7 @@
             </xpath>
             <xpath expr="//field[@name='activity_ids']" position="after">
                 <field name="foreign_rate" optional="hide" />
-                <field name="foreign_currency_id" invisible="1" />
+                <field name="foreign_currency_id" column_invisible="True" />
                 <field name="foreign_total_billed" optional="hide"
                     options="{'currency_field': 'foreign_currency_id'}" />
             </xpath>

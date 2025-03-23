@@ -8,13 +8,13 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "17.0.16.1.13",
+    "version": "17.0.0.0.0",
     "depends": [
         "stock",
         "l10n_ve_tax",
         "product",
         "l10n_ve_rate",
-        "delivery",
+        "stock_delivery",
     ],
     "data": [
         "security/ir.model.access.csv",

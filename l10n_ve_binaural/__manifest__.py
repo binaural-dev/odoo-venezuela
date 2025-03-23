@@ -1,6 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 {
-    "name": "Venezuela Binaural - Accounting",
+    "name": "Venezuela - Binaural",
     "website": "https://www.odoo.com/documentation/17.0/applications/finance/fiscal_localizations.html",
     "icon": "/account/static/description/l10n.png",
     "countries": ["ve"],

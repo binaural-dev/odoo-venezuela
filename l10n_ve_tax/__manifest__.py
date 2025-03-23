@@ -7,9 +7,9 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.0.0.13",
+    "version": "17.0.0.0.0",
     # any module necessary for this one to work correctly
-    "depends": ["base", "account", "l10n_ve_rate"],
+    "depends": ["base", "account", "l10n_ve_base", "l10n_ve_rate"],
     "data": [
         "views/res_config_settings.xml",
         "views/account_move.xml",

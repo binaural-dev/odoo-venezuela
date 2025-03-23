@@ -1,12 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <record id="view_account_journal_form" model="ir.ui.view">
         <field name="name">view.account.journal.l10n.ve.invoice.form</field>
         <field name="model">account.journal</field>
-        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="inherit_id" ref="account.view_account_journal_form" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='type']" position="after">
-                <field name="is_contingency" attrs="{'invisible': [('type', '!=', 'sale')]}"/>
-                <field name="is_debit" attrs="{'invisible': [('type', '!=', 'sale')]}"/>
+                <field name="is_contingency" invisible="type != 'sale'"/>
+                <field name="is_debit" invisible="type != 'sale'"/>
                 <field name="series_correlative_sequence_id" 
                        invisible="type != 'sale'"
                        groups="l10n_ve_invoice.group_sales_invoicing_series"/>
