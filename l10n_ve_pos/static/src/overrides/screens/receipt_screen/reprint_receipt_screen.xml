@@ -1,0 +1,8 @@
+
+<templates id="template" xml:space="preserve">
+    <t t-name="binaural_pos.ReprintReceiptScreen" t-inherit="point_of_sale.ReprintReceiptScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//OrderReceipt" position="attributes">
+            <attribute name="formatForeignCurrency">env.utils.formatForeignCurrency</attribute>
+        </xpath>
+    </t>
+</templates>

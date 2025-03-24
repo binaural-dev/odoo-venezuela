@@ -1,0 +1,10 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="binaural_pos.PaymentScreenMethods" t-inherit="point_of_sale.PaymentScreenMethods" t-inherit-mode="extension">
+        <xpath expr="//PaymentScreenPaymentLines" position="replace">
+        </xpath>
+        <xpath expr="//div[hasclass('paymentmethods')]" position="before">
+            <PaymentScreenPaymentLines paymentLines="paymentLines" deleteLine.bind="deletePaymentLine" sendForceDone.bind="sendForceDone" sendPaymentReverse.bind="sendPaymentReverse" sendPaymentCancel.bind="sendPaymentCancel" sendPaymentRequest.bind="sendPaymentRequest" selectLine.bind="selectPaymentLine" updateSelectedPaymentline.bind="updateSelectedPaymentline" />
+        </xpath>
+    </t>
+
+</templates>

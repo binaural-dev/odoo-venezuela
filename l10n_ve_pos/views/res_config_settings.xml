@@ -1,0 +1,232 @@
+
+<odoo>
+    <data>
+        <record id="res_config_settings_binaural_pos" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.rate</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate"/>
+            <field name="arch" type="xml">
+            <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
+                    <h2>POS Configuration</h2>
+                    <div class="row mt16 o_settings_container" name="binaural_igtf_settings" >
+                        <div class="col-12 col-lg-6 o_setting_box" id="igtf_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="module_binaural_pos_igtf"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="module_binaural_pos_igtf"/>
+                                <div class="text-muted">
+                                    Calculate IGTF with payments made in USD
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_unreconcile_moves"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_unreconcile_moves"/>
+                                <div class="text-muted">
+                                    It is allowed to break reconciliation of payments associated with the POS
+                                    if the session it corresponds to is open
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_search_cne"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_search_cne"/>
+                                <div class="text-muted">
+                                    Search clients by vat number in CNE database
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="tax_inside_setting" groups="base.group_no_one">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_tax_inside"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_tax_inside"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="module_binaural_pos_mf"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="module_binaural_pos_mf"/>
+                                <div class="text-muted">
+                                    Print invoices on Fiscal Machine, and get reports 
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="advance_payment_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="module_binaural_pos_advance_payment"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="module_binaural_pos_advance_payment"/>
+                                <div class="text-muted">
+                                    Manage advance payments
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_show_free_qty"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_show_free_qty"/>
+                                <div class="text-muted">
+                                    Show free quantity on POS
+                                </div>
+                            </div>
+                        </div>
+                        <div 
+                            class="col-12 col-lg-6 o_setting_box" 
+                            id="qty_warehosue_setting" 
+                            invisible="not pos_show_free_qty">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_show_free_qty_on_warehouse"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_show_free_qty_on_warehouse"/>
+                                <div class="text-muted">
+                                    Show quantites from warehouse of TPV
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_move_to_draft"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_move_to_draft"/>
+                                <div class="text-muted">
+                                    Change state to draft in account moves from POS 
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="bin_igtf_settings_pos_show_just_products_with_available_qty">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_show_just_products_with_available_qty"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_show_just_products_with_available_qty"/>
+                                <p class="text-muted">
+				                    Deletes automatically products without free qty on POS
+                                </p>
+                            </div>
+                        </div>
+
+                        <hr style="margin-top: 24px;"/>
+                        <div class="app_settings_header pt-1 pb-1">
+                            <div class="col-xs-12 col-md-6 ms-0 o_setting_box">
+                                <div class="o_setting_right_pane border-start-0 ms-0 ps-0">
+                                    <div class="content-group">
+                                        <div class="row flex-row flex-nowrap mt8 align-items-center">
+                                            <label class="col text-nowrap ml8 flex-nowrap" string="Point of Sale" for="pos_config_id"/>
+                                            <field name="pos_config_id" class="w-50" options="{'no_open': True, 'no_create': True}" title="Settings on this page will apply to this point of sale."/>
+                                            <button name="action_pos_config_create_new" type="object" string="+ New Shop" class="col btn-link ms-2 text-nowrap" style="line-height: 0.5;"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="o_view_nocontent" invisible="pos_config_id">
+                            <div class="o_nocontent_help">
+                                <p class="o_view_nocontent_empty_folder">No Point of Sale selected</p>
+                                <p>Please create/select a Point of Sale above to show the configuration options.</p>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="always_invoice"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="always_invoice"/>
+                                <div class="text-muted">
+                                    Set default invoice or receipt with account moves
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="receipt_journal_id_pane">
+                            <div class="o_setting_right_pane">
+                                <div>
+                                    <label for="receipt_journal_id"/>
+                                    <i class="fa fa-info-circle me-1" title="This setting is common to all PoS." pos-data-toggle="tooltip"/>
+                                    <div class="text-muted">
+                                        Default journal to receipt account moves 
+                                    </div>
+                                    <div class="content-group mt16">
+                                        <field name="receipt_journal_id" colspan="4" nolabel="1" domain="[('type','=','sale')]"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="sell_kit_from_another_store">
+                            <div class="o_setting_left_pane">
+                                <field name="sell_kit_from_another_store"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <div>
+                                    <label for="sell_kit_from_another_store"/>
+                                    <div class="text-muted">
+                                        Allows you to sell kits whose products are not in the main warehouse of the box.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="keep_journal">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_keep_journal"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <div>
+                                    <label for="pos_keep_journal"/>
+                                    <div class="text-muted">
+                                        Keep the last journal used in POS
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="activate_barcode_strict_mode_container">
+                            <div class="o_setting_left_pane">
+                                <field name="activate_barcode_strict_mode"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <div>
+                                    <label for="activate_barcode_strict_mode"/>
+                                    <div class="text-muted">
+                                        Activate product entry with barcode in strict mode
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="amount_to_zero"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="amount_to_zero" string="Amount to zero"/>
+                                <div class="text-muted">
+                                    Do not allow sales less than
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
