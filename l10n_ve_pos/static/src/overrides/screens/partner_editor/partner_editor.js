@@ -43,9 +43,8 @@ patch(PartnerDetailsEdit.prototype, {
 			});
 		}
 		if (
-			!isValidPhone(
-				processedChanges.phone && this.pos.config.validate_phone_in_pos,
-			)
+			!isValidPhone(processedChanges.phone) &&
+			this.pos.config.validate_phone_in_pos
 		) {
 			return this.popup.add(ErrorPopup, {
 				title: _t("A valid phone number is required"),
