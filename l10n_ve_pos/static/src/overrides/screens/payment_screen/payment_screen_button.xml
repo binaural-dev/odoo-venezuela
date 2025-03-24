@@ -1,6 +1,6 @@
 
 <templates id="template" xml:space="preserve">
-    <t t-name="binaural_pos.PaymentScreenButtons" t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
+    <t t-name="l10n_ve_pos.PaymentScreenButtons" t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
         <xpath expr="//button[@t-on-click='toggleIsToInvoice']" position="replace">
             <button 
                 class="button js_invoice btn btn-light py-3 text-start rounded-0 border-bottom" 

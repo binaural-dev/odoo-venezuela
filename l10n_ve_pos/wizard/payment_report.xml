@@ -31,7 +31,7 @@
     <menuitem 
         id="menu_pos_payment_report" 
         name="Payment report" 
-        action="binaural_pos.action_pos_payment_report" 
+        action="l10n_ve_pos.action_pos_payment_report" 
         parent="point_of_sale.menu_point_rep" 
         sequence="4"/>
 </odoo>
