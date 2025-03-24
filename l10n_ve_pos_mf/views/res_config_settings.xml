@@ -1,6 +1,6 @@
 
 <odoo>
-    <record id="res_config_settings_view_form" model="ir.ui.view">
+    <record id="l10n_ve_pos_mf_res_config_settings_iot" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.inherit.pos_mf</field>
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form" />
@@ -11,12 +11,19 @@
                     <field name="iface_fiscal_data_module"/>
                 </div>
             </xpath>
+            <xpath expr="//div[@class='row'][1]/label[@for='pos_iface_printer_id']"
+                position="replace">
+            </xpath>
+            <xpath expr="//div[@class='row'][1]/field[@name='pos_iface_printer_id']"
+                position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
         </field>
     </record>
-    <record id="res_config_settings_binaural_pos" model="ir.ui.view">
+    <record id="l10n_ve_pos_mf_res_config_settings" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.inherit.pos_mf</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="binaural_pos.res_config_settings_binaural_pos"/>
+        <field name="inherit_id" ref="l10n_ve_pos.res_config_settings_l10n_ve_pos"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='binaural_igtf_settings']">
                 <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
@@ -28,12 +35,10 @@
                     </div>
                 </div>
             </xpath>
-            <xpath expr="//div[@name='binaural_igtf_settings']/div[@id='receipt_journal_id_pane']" position="after">
+            <xpath expr="//div[@name='binaural_igtf_settings']" position="after">
 
-                <div 
-                        class="col-12 col-lg-6 o_setting_box"
-                        id="message_in_head"
-                    >
+                <div class="col-12 col-lg-6 o_setting_box"
+                        id="message_in_head">
                         <div class="o_setting_left_pane">
                             <field name="message_in_head"/>
                         </div>
