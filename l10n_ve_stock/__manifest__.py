@@ -18,8 +18,8 @@
     ],
     "data": [
         "security/ir.model.access.csv",
-        "security/security_binaural_stock.xml",
-        "security/binaural_stock_groups.xml",
+        "security/security_l10n_ve_stock.xml",
+        "security/l10n_ve_stock_groups.xml",
         "data/inventory_valuation_paperformat.xml",
         "data/ir_actions_server.xml",
         "report/packaging_picking_template.xml",
