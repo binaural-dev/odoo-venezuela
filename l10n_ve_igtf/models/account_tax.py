@@ -12,7 +12,7 @@ class AccountTax(models.Model):
     _inherit = "account.tax"
 
     def _prepare_tax_totals(
-        self, base_lines, currency, tax_lines=None, igtf_base_amount=False
+        self, base_lines, currency, tax_lines=None, igtf_base_amount=False, is_company_currency_requested=False
     ):
         """
         This function add values and calculated of igtf on invoices
