@@ -14,7 +14,9 @@ export class ChangeFiscalButton extends Component {
     return this.pos.get_order();
   }
   async onClick() {
-    this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
+    this.currentOrder.toggle_receipt_invoice(
+      !this.currentOrder.is_to_receipt(),
+    );
     this.render(true);
   }
 }
@@ -23,4 +25,3 @@ ProductScreen.addControlButton({
   component: ChangeFiscalButton,
   position: ["before", "SetFiscalPositionButton"],
 });
-

@@ -1,4 +1,3 @@
-
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.PaymentScreenButtons" t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
         <xpath expr="//button[@t-on-click='toggleIsToInvoice']" position="replace">
@@ -7,12 +6,7 @@
                 t-att-class="{ 'highlight text-bg-primary': currentOrder.useReceiptConfiguration  }" 
                 t-on-click="toggleIsToInvoice">
                     <i class="fa fa-file-text-o me-2" /> 
-                    <t t-if="currentOrder.is_to_receipt()">
-                        Receipt
-                    </t>
-                    <t t-else="">
                         Invoice
-                    </t>
             </button>
         </xpath>
     </t>

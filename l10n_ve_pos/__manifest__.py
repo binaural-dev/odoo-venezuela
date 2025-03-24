@@ -37,8 +37,8 @@
     "application": True,
     "assets": {
         "point_of_sale._assets_pos": [
-            "l10_ve_pos/static/src/**/**",
-            "l10_ve_pos/static/src/**/**/**/*",
+            "l10n_ve_pos/static/src/**/**",
+            "l10n_ve_pos/static/src/**/**/**/*",
         ],
     },
 }
