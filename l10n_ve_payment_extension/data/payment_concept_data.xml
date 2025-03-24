@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
         <record id="payment_concept_one_l10n_ve_payment_extension" model="payment.concept">

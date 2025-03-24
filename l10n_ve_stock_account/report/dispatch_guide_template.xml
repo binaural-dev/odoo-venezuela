@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="dispatch_guide_template" name="dispatch_guide_template_name">
         <t t-name="l10n_ve_stock_account.dispatch_guide_template_report">

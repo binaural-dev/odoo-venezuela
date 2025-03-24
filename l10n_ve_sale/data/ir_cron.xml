@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="ir_cron_cancel_orders_after_date" model="ir.cron">
         <field name="name">Cancel Orders After Day</field>
