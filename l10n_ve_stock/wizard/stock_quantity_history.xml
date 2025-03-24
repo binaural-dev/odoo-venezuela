@@ -1,27 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <record id="view_stock_quantity_history_inherit_binaural_stock" model="ir.ui.view">
         <field name="name">stock.quantity.history.view.inherit</field>
         <field name="model">stock.quantity.history</field>
         <field name="inherit_id" ref="stock.view_stock_quantity_history"/>
         <field name="arch" type="xml">
-
             <field name="inventory_datetime" position="after">
                 <field name="warehouse_search_id" domain="[('usage', '=', 'internal')]" 
                 options="{'no_create': True, 'no_open': True}" placeholder="All Warehouse"/>
                 <field name="except_products_at_zero" />
             </field>
-
             <xpath expr="//button[@name='open_at_date']" position="attributes">
                 <attribute name="groups">base.group_no_one</attribute>
             </xpath>
-
             <xpath expr="//button[@name='open_at_date']" position="after">
                 <button name="generate_report" type="object" class="btn-primary" string="Download"></button>
             </xpath>
-
         </field>
     </record>
-
 </odoo>

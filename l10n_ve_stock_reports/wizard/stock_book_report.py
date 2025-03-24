@@ -70,7 +70,7 @@ class WizardStockBookReport(models.TransientModel):
                 quantity_done = stock_move.quantity
                 stock_move_id = stock_move.stock_move_id.id
 
-                if not product_id in product_movements:
+                if product_id not in product_movements:
                     old_total_stock_qty_product = self.get_old_stock_by_product(stock_move.product_id.id)
                     product_movements[product_id]["stock_move_id"] = stock_move_id
                     product_movements[product_id]["old_stock"] = old_total_stock_qty_product["total_stock_qty"]

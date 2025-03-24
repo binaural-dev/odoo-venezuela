@@ -162,20 +162,84 @@ class StockPicking(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for val in vals_list:
+            self.validate_block_transfers_expedition(vals=val)
         res = super().create(vals_list)
         self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
-
         return res
 
     def write(self, vals):
         res = super().write(vals)
         self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
+        keys_to_check = [
+            "move_line_ids_without_package",
+            "move_line_nosuggest_ids",
+            "move_ids_without_package",
+        ]
+        matched_key = None
+        for key in keys_to_check:
+            if key in vals:
+                matched_key = key
+                break
+
+        if matched_key:
+            self.validate_block_transfers_expedition(write=vals, matched_key=matched_key)
 
         return res
 
-    # def action_assign(self):
-    #     if self.type_delivery_step != "pick":
-    #         self = self.with_context(skip_physical_location=True)
-    #     return super().action_assign()
+    def validate_block_transfers_expedition(self, vals=None, write=None, matched_key=None):
+        block_transfer_expedition = self.env.user.has_group(
+            "l10n_ve_stock.group_block_type_inventory_transfers_expeditions"
+        )
+        if block_transfer_expedition:
+            picking_type = (
+                self.env["stock.picking.type"].search(
+                    [("id", "=", vals.get("picking_type_id", False))]
+                )
+                if vals
+                else self.picking_type_id
+            )
+            if picking_type.code == "outgoing":
+                if write and matched_key:
+                    for move_line in write[matched_key]:
+                        if isinstance(move_line[1], str):
+                            raise UserError(_("You cannot add products to shipment-type transfers"))
+
+                        if isinstance(move_line[1], int):
+                            if not move_line[2]:
+                                raise UserError(
+                                    _("You cannot add products to shipment-type transfers")
+                                )
+
+                            if "quantity" in move_line[2] or "quantity" in move_line[2]:
+                                lines = self[matched_key]
+                                for line in lines:
+                                    if line.id == move_line[1]:
+                                        if "quantity" in move_line[2]:
+                                            quantity_done = move_line[2].get("quantity")
+                                            if line.product_uom_qty < quantity_done:
+                                                raise UserError(
+                                                    _(
+                                                        "You cannot make transfers larger than the demand"
+                                                    )
+                                                )
+                                        elif "quantity" in move_line[2]:
+                                            quantity_done = move_line[2].get("quantity")
+                                            # if line.quantity_product_uom < quantity_done: ??
+                                            if line.reserved_uom_qty < quantity_done:
+                                                raise UserError(
+                                                    _(
+                                                        "You cannot make transfers larger than the reserved quantity"
+                                                    )
+                                                )
+
+                else:
+                    raise UserError(_("You do not have permission to make shipment-type transfers"))
+
+    def action_assign(self):
+        if self.type_delivery_step != "pick":
+            self = self.with_context(skip_physical_location=True)
+        return super().action_assign()
+
