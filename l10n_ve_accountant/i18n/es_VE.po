@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-16 06:10+0000\n"
-"PO-Revision-Date: 2025-03-16 06:10+0000\n"
+"POT-Creation-Date: 2025-03-24 19:06+0000\n"
+"PO-Revision-Date: 2025-03-24 19:06+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -24,31 +24,6 @@ msgstr ""
 #: model:ir.actions.report,print_report_name:l10n_ve_accountant.action_account_related_report
 msgid "'Asientos contables Relacionados %s' % (object.name)"
 msgstr ""
-
-#. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
-msgid ""
-"<b>Warning: This invoice has been reset to draft.</b>\n"
-"                    Please note that you\n"
-"                    <b>should not modify the prices of the invoice lines</b>, \n"
-"                    as this will prevent the\n"
-"                    <b>“Reset to Draft”</b> button from being available again.\n"
-"                    When\n"
-"                    <b>inventory valuation is active</b>, modifying a confirmed invoice, changing the prices, \n"
-"                    and reconfirming it may result in an incorrect inventory valuation. \n"
-"                    This restriction avoids inconsistencies by preventing the creation of erroneous \n"
-"                    adjustment layers during repeated edits."
-msgstr ""
-"<b>Advertencia: Esta factura se ha restablecido a borrador.</b>\n"
-"                    Tenga en cuenta que\n"
-"                    <b>no debe modificar los precios de las líneas de la factura</b>, \n"
-"                    ya que esto impedirá que el botón\n"
-"                    <b>'Restablecer a Borrador'</b> vuelva a estar disponible.\n"
-"                    Cuando\n"
-"                    <b>la valoración de inventario está activa</b>, modificar una factura confirmada, cambiar los precios, \n"
-"                    y volver a confirmarla puede generar una valoración incorrecta del inventario. \n"
-"                    Esta restricción evita inconsistencias al impedir la creación de asientos de valoracion erróneos \n"
-"                    durante ediciones repetidas. Cualquier duda comunicarse con el equipo de soporte de Binaural."
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
@@ -87,12 +62,12 @@ msgid "<strong>Contabilizado por</strong>"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "<strong>Cuenta Emisora: </strong>"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "<strong>Cuenta Receptora: </strong>"
 msgstr ""
 
@@ -154,6 +129,13 @@ msgid "Alert"
 msgstr "Alerta"
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "All added lines must indicate the product."
+msgstr "Todas las líneas agregadas deben indicar el producto."
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__amount_currency
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Amount in Currency"
@@ -193,7 +175,7 @@ msgstr "B.I./Descuento"
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_account_bank_statement_line
 msgid "Bank Statement Line"
-msgstr "Línea de extracto bancario"
+msgstr "Línea de un estado de cuenta bancario"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__base_currency_is_vef
@@ -284,7 +266,7 @@ msgstr "Creado en"
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_res_currency
 msgid "Currency"
-msgstr "Moneda"
+msgstr "Divisa"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_payment_search_inherit_l10n_ve_accountant
@@ -384,7 +366,7 @@ msgid "Financial Document"
 msgstr "Documento financiero"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "Firma Autorizada"
 msgstr ""
 
@@ -651,7 +633,7 @@ msgid "Journal Item"
 msgstr "Apunte contable"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "La cantidad de"
 msgstr ""
 
@@ -661,14 +643,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__last_foreign_rate
 msgid "Last Foreign Rate"
 msgstr "Ultima tasa"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details____last_update
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard____last_update
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report____last_update
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit____last_update
-msgid "Last Modified on"
-msgstr "Última modificación en"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_uid
@@ -784,7 +758,7 @@ msgstr "Reporte de pagos"
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_account_payment_term
 msgid "Payment Terms"
-msgstr "Condiciones de pago"
+msgstr "Términos de pago"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__payment_type
@@ -809,7 +783,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
 msgid "RIF"
-msgstr "RIF"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
@@ -991,6 +965,51 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #, python-format
+msgid ""
+"The operation cannot be completed: Another entry with the same name already "
+"exists."
+msgstr "La operación no se puede completar: Ya existe otro asiento con el mismo nombre."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "The price entered cannot be negative"
+msgstr "El precio ingresado no puede ser negativo."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "The quantity entered cannot be negative"
+msgstr "La cantidad ingresada no puede ser negativa."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate entered cannot be negative"
+msgstr "La tasa ingresada no puede ser negativa."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate entered cannot be negative."
+msgstr "La tasa ingresada no puede ser negativa."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate entered cannot be zero."
+msgstr "La tasa ingresada no puede ser cero."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
 msgid "The rate has been updated from %(last_rate)s to %(rate)s "
 msgstr ""
 
@@ -1132,7 +1151,7 @@ msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "____________________________________________"
 msgstr ""
 
