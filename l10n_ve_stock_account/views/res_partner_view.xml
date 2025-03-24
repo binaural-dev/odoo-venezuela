@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_partner_form_l10n_ve_stock_account" model="ir.ui.view">
         <field name="name">res.partner.form.l10n.ve.stock.account</field>

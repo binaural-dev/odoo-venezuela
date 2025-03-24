@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <template id="l10n_ve_stock_account.l10n_ve_stock_account_alert" name="Alert Banner" inherit_id="web.layout" active="True">
     <xpath expr="//body" position="inside">
