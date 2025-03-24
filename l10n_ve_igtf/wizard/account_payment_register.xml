@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
         <record id="view_account_payment_register_form_igtf" model="ir.ui.view">

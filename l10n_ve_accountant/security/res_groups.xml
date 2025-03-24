@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <record id="group_fiscal_config_user" model="res.groups">
         <field name="name">Configuraciones fiscales usuario</field>

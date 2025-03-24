@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
     <record id="account_fiscal_year_closing_inherit_binaural" model="ir.ui.view">
