@@ -203,7 +203,7 @@
                                     <!-- weight -->
                                     <td class="text-center">
                                         <t
-                                            t-out="(line.product_id.weight or 0) * (line.quantity_done or 0)" />
+                                            t-out="(line.product_id.weight or 0) * (line.quantity or 0)" />
                                     </td>
                                     <!-- price -->
                                     <td class="text-center" t-if="o.operation_code != 'internal'">
