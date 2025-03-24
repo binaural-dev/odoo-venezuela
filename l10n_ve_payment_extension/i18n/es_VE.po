@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250222\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-18 13:20+0000\n"
-"PO-Revision-Date: 2025-03-18 13:20+0000\n"
+"POT-Creation-Date: 2025-03-24 19:15+0000\n"
+"PO-Revision-Date: 2025-03-24 19:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -1369,27 +1369,6 @@ msgid "June"
 msgstr "Junio"
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva____last_update
-msgid "Last Modified on"
-msgstr "Ultima modificación"
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__write_uid
@@ -1778,7 +1757,7 @@ msgstr "Producto"
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_product_category
 msgid "Product Category"
-msgstr "Categoría de producto"
+msgstr "Categoría del producto"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__subtract_money
@@ -2317,6 +2296,13 @@ msgstr "La factura no tiene impuesto"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The number must be exactly 14 numeric digits."
+msgstr "El número de comprobante debe tener exactamente 14 dígitos numéricos."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #, python-format
 msgid "The partner has no withholding type."
@@ -2506,13 +2492,6 @@ msgstr "Fecha de Comprobante"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__voucher
 msgid "Voucher Number"
 msgstr "Nro de Comprobante"
-
-#. module: l10n_ve_payment_extension
-#. odoo-python
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-#, python-format
-msgid "The number must be exactly 14 numeric digits."
-msgstr "El número de comprobante debe tener exactamente 14 dígitos numéricos."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
