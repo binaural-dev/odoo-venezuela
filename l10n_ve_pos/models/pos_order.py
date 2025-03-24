@@ -11,12 +11,10 @@ class PosOrder(models.Model):
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
     foreign_amount_total = fields.Float(string="Foreign Total", readonly=True, required=True)
     foreign_currency_rate = fields.Float(readonly=True, required=False)
-    to_receipt = fields.Boolean(readonly=True)
     
     def _process_order(self, order, draft, existing_order):
         res = super()._process_order(order, draft, existing_order)
         order = self.browse(res)
-        order.config_id.change_always_receipt(order.to_receipt)
         return res
 
     @api.model
@@ -25,7 +23,6 @@ class PosOrder(models.Model):
         _logger.info("UI ORDER: %s", ui_order)
         res["foreign_amount_total"] = ui_order["foreign_amount_total"]
         res["foreign_currency_rate"] = ui_order["foreign_currency_rate"]
-        res["to_receipt"] = ui_order["to_receipt"]
         return res
 
     def _payment_fields(self, order, ui_paymentline):
@@ -44,15 +41,11 @@ class PosOrder(models.Model):
                 "manually_set_rate": True,
             }
         )
-        if not self.to_receipt:
-            return res
-        res.update({"journal_id": self.session_id.config_id.receipt_journal_id.id})
         return res
 
     def _export_for_ui(self, order):
         res = super()._export_for_ui(order)
         res["foreign_currency_rate"] = order.foreign_currency_rate
-        res["to_receipt"] = order.to_receipt
         return res 
 
     def get_payments_order_refund(self):
@@ -68,7 +61,6 @@ class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
 
     foreign_currency_rate = fields.Float(related="order_id.foreign_currency_rate")
-    to_receipt = fields.Boolean(related="order_id.to_receipt")
     foreign_price = fields.Float(readonly=True)
 
     def _prepare_refund_data(self, refund_order, PosOrderLineLot):

@@ -8,12 +8,6 @@ class ResConfigSettings(models.TransientModel):
     pos_move_to_draft = fields.Boolean(
         related="company_id.pos_move_to_draft", readonly=False
     )
-    receipt_journal_id = fields.Many2one(
-        "account.journal", related="pos_config_id.receipt_journal_id", readonly=False
-    )
-    always_invoice = fields.Boolean(
-        related="pos_config_id.always_invoice", readonly=False
-    )
     pos_show_free_qty = fields.Boolean(
         related="company_id.pos_show_free_qty", readonly=False
     )
@@ -28,9 +22,6 @@ class ResConfigSettings(models.TransientModel):
     )
     pos_search_cne = fields.Boolean(related="company_id.pos_search_cne", readonly=False)
 
-    pos_keep_journal = fields.Boolean(
-        related="pos_config_id.keep_journal", readonly=False
-    )
     pos_unreconcile_moves = fields.Boolean(
         related="company_id.pos_unreconcile_moves", readonly=False
     )
