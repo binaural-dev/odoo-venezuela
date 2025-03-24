@@ -9,7 +9,6 @@ patch(OrderWidget, {
     conversion_rate: { optional: true },
     foreign_total: { type: String, optional: true },
     foreign_tax: { type: String, optional: true },
-    pos_tax_inside: { type: Boolean, optional: true },
     quantity_products: { optional: true },
   },
 });
