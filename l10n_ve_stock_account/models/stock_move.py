@@ -36,7 +36,7 @@ class StockMove(models.Model):
             else 0.0
         )
 
-        quantity = self.quantity_done or 0.0
+        quantity = self.quantity or 0.0
         discount = self.sale_line_id.discount or 0.0
         tax = self.sale_line_id.tax_id.amount or 0.0
 

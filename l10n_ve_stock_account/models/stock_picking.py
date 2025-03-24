@@ -203,7 +203,7 @@ class StockPicking(models.Model):
                                 else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_purchase_tax_id.id])],
-                            "quantity": move_ids_without_package.quantity_done,
+                            "quantity": move_ids_without_package.quantity,
                             "from_picking_line": True,
                         },
                     )
@@ -255,7 +255,7 @@ class StockPicking(models.Model):
                                 else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_sale_tax_id.id])],
-                            "quantity": move_ids_without_package.quantity_done,
+                            "quantity": move_ids_without_package.quantity,
                             "from_picking_line": True,
                         },
                     )
@@ -307,7 +307,7 @@ class StockPicking(models.Model):
                                 else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
                             ),
                             "tax_ids": [(6, 0, [picking_id.company_id.account_purchase_tax_id.id])],
-                            "quantity": move_ids_without_package.quantity_done,
+                            "quantity": move_ids_without_package.quantity,
                             "from_picking_line": True,
                         },
                     )
@@ -399,7 +399,7 @@ class StockPicking(models.Model):
                         else move_id.product_id.categ_id.property_account_income_categ_id.id
                     ),
                     "tax_ids": tax_ids,
-                    "quantity": move_id.quantity_done,
+                    "quantity": move_id.quantity,
                     "from_picking_line": from_picking_line,
                 },
             )
@@ -525,7 +525,7 @@ class StockPicking(models.Model):
                                     "tax_ids": [
                                         (6, 0, [picking_id.company_id.account_purchase_tax_id.id])
                                     ],
-                                    "quantity": move_ids_without_package.quantity_done,
+                                    "quantity": move_ids_without_package.quantity,
                                 },
                             )
                             invoice_line_list.append(vals)
@@ -571,7 +571,7 @@ class StockPicking(models.Model):
                                     "tax_ids": [
                                         (6, 0, [picking_id.company_id.account_purchase_tax_id.id])
                                     ],
-                                    "quantity": move_ids_without_package.quantity_done,
+                                    "quantity": move_ids_without_package.quantity,
                                 },
                             )
                             bill_line_list.append(vals)
