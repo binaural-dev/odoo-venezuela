@@ -18,7 +18,7 @@
                     <div class="col-12 col-lg-6 o_setting_box">
                         <div class="o_setting_right_pane">
                             <group colspan="4" col="4">
-                                <field name="invoice_cron_time" class="oe_inline"/>
+                                <field name="invoice_cron_time" class="oe_inline" widget="float_time"/>
                             </group>
                             <div class="text-muted">Exact time to generate the invoice</div>
                         </div>
