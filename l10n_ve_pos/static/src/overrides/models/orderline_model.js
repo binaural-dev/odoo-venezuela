@@ -13,7 +13,7 @@ import {
 patch(Orderline.prototype, {
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
-    this.tax_2ids = json.tax_ids && json.tax_ids.length !== 0 ? json.tax_ids[0][2] : undefined;
+    this.tax_ids = json.tax_ids && json.tax_ids.length !== 0 ? json.tax_ids[0][2] : undefined;
     this.foreign_price = json.foreign_price || 0;
     this.foreign_currency_rate = json.foreign_currency_rate || false;
   },
@@ -22,6 +22,7 @@ patch(Orderline.prototype, {
       return this.get_refund_orderline().orderline.foreign_currency_rate
     }
 
+    console.log("rate", this.foreign_currency_rate, this.order.init_conversion_rate);
     if (this.foreign_currency_rate && this.foreign_currency_rate != this.order.init_conversion_rate) return this.foreign_currency_rate;
 
     return this.order.init_conversion_rate;

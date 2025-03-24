@@ -6,20 +6,38 @@
             <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate" />
             <field name="arch" type="xml">
                 <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
-                    <h2>Taxes Configuration</h2>
                     <div class="row mt16 o_settings_container" name="l10n_ve_igtf_settings">
                         <div class="col-12 col-lg-6 o_setting_box" id="base_igtf_setting">
+                            <div class="o_setting_right_pane">
+                                <h2>Configurations of IGTF</h2>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="unique_tax_setting">
                             <div class="o_setting_left_pane">
-                                <field name="module_l10n_ve_igtf"/>
+                                <field name="unique_tax"/>
                             </div>
                             <div class="o_setting_right_pane">
-                                <label for="module_l10n_ve_igtf"/>
+                                <label for="unique_tax"/>
                                 <div class="text-muted">
-                                    IGTF Settings
-
+                                    Tax is mandatory on order and invoice lines, additionally only one tax is allowed.
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="show_discount_on_moves_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="show_discount_on_moves"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="show_discount_on_moves"/>
+                                <div class="text-muted">
+                                    Allow showing the discount column on invoice lines
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <h2>Taxes Configuration</h2>
+                    <div class="row mt16 o_settings_container" name="l10n_ve_igtf_settings">
                         <div class="col-12 col-lg-6 o_setting_box" id="unique_tax_setting">
                             <div class="o_setting_left_pane">
                                 <field name="unique_tax"/>

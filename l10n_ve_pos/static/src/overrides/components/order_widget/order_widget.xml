@@ -1,9 +1,6 @@
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.OrderWidget" t-inherit="point_of_sale.OrderWidget" t-inherit-mode="extension">
         <!-- XPath para insertar los nuevos datos dentro del div 'order-summary' -->
-        <xpath expr="//div[hasclass('order-summary')]//div[@t-if='props.tax']" position="attributes">
-            <attribute name="t-if">props.tax and !props.pos_tax_inside</attribute>
-        </xpath>
         <xpath expr="//div[hasclass('order-summary')]" position="inside">
             <!-- Wrapper to align left and right content -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;text-align:left;font-size: 80%">
@@ -27,7 +24,7 @@
                         Total:
                         <span t-out="props.foreign_total" class="total"/>
                     </div>
-                    <div t-if="props.tax and !props.pos_tax_inside" class="fs-6 text-muted subentry">
+                    <div t-if="props.tax" class="fs-6 text-muted subentry">
                         Taxes: <span t-out="props.foreign_tax" class="tax"/>
                     </div>
                 </div>

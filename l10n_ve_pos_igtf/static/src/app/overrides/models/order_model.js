@@ -17,7 +17,7 @@ patch(Order.prototype, {
     this.foreign_igtf_amount = 0;
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
-    this.update_igtf()
+    this.update_igtf();
   },
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
@@ -37,165 +37,177 @@ patch(Order.prototype, {
   update_igtf() {
     var rounding = this.pos.currency.rounding;
     const paymentlines = this.get_paymentlines();
-    let igtf_payment_methods = paymentlines.filter(payment => payment.payment_method.apply_igtf);
-    let last_igtf_amount = 0
-    let last_foreign_igtf_amount = 0
+    let igtf_payment_methods = paymentlines.filter(
+      (payment) => payment.payment_method.apply_igtf,
+    );
+    let last_igtf_amount = 0;
+    let last_foreign_igtf_amount = 0;
 
     if (paymentlines.length > 0) {
-      last_igtf_amount = this.igtf_amount
-      last_foreign_igtf_amount = this.foreign_igtf_amount
+      last_igtf_amount = this.igtf_amount;
+      last_foreign_igtf_amount = this.foreign_igtf_amount;
     }
 
-    let is_return = this.get_total_without_igtf() < 0
+    let is_return = this.get_total_without_igtf() < 0;
 
     this.igtf_amount = 0;
     this.foreign_igtf_amount = 0;
     this.bi_igtf = 0;
-    this.foreign_bi_igtf = 0
+    this.foreign_bi_igtf = 0;
 
     let bi_igtf = 0;
     let foreign_bi_igtf = 0;
     let repeat_same_method = [];
     let bi_payments = [];
 
-    let igtf_amount = 0
-    let foreign_igtf_amount = 0
+    let igtf_amount = 0;
+    let foreign_igtf_amount = 0;
 
     paymentlines.forEach((payment) => {
-      payment.set_include_igtf(false)
-    })
+      payment.set_include_igtf(false);
+    });
 
     if (!this.to_invoice) {
-      return
-    }
-
-    if (this.is_to_receipt()){
-      return
+      return;
     }
 
     paymentlines.forEach((payment) => {
-      let is_change = false
+      let is_change = false;
       if (!is_return) {
-        is_change = payment.amount < 0
+        is_change = payment.amount < 0;
       } else {
-        is_change = payment.amount > 0
+        is_change = payment.amount > 0;
       }
 
-      if (payment.payment_method.apply_igtf && last_igtf_amount == payment.amount) {
-        return
+      if (
+        payment.payment_method.apply_igtf &&
+        last_igtf_amount == payment.amount
+      ) {
+        return;
       }
-      
-      if (!payment.payment_method.apply_igtf && igtf_payment_methods.length <=0) {
-        foreign_bi_igtf = this.get_foreign_total_without_igtf()
+
+      if (
+        !payment.payment_method.apply_igtf &&
+        igtf_payment_methods.length <= 0
+      ) {
+        foreign_bi_igtf = this.get_foreign_total_without_igtf();
         igtf_amount = 0;
         foreign_igtf_amount = 0;
 
         let payment_without_change = paymentlines.filter((payment) => {
           if (!bi_payments.includes(payment.cid)) {
-            return false
+            return false;
           }
 
-          let is_change = false
+          let is_change = false;
           if (!is_return) {
-            is_change = payment.amount < 0
+            is_change = payment.amount < 0;
           } else {
-            is_change = payment.amount > 0
+            is_change = payment.amount > 0;
           }
 
           if (is_change) {
-            return false
+            return false;
           }
 
-          return true
-
-        })
+          return true;
+        });
 
         if (payment_without_change.length > 0) {
           payment_without_change.forEach((payment) => {
             if (!payment.include_igtf) {
-              payment.set_igtf_amount(igtf_amount / payment_without_change.length)
-              payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
-              return
+              payment.set_igtf_amount(
+                igtf_amount / payment_without_change.length,
+              );
+              payment.set_foreign_igtf_amount(
+                foreign_igtf_amount / payment_without_change.length,
+              );
+              return;
             }
             // payment.set_igtf_amount(igtf_amount / payment_without_change.length)
             // payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
-          })
+          });
         }
         return;
       }
 
-      
       bi_igtf += round_pr(payment.amount, rounding);
       foreign_bi_igtf += round_pr(payment.get_foreign_amount(), rounding);
-      repeat_same_method.push(payment.payment_method.id)
-      bi_payments.push(payment.cid)
+      repeat_same_method.push(payment.payment_method.id);
+      bi_payments.push(payment.cid);
 
       if (payment.payment_method.apply_igtf) {
-        payment.set_include_igtf(true)
+        payment.set_include_igtf(true);
       }
-      let amount_to_pay = payment.amount
-      let foreign_amount_to_pay = payment.get_foreign_amount()
+      let amount_to_pay = payment.amount;
+      let foreign_amount_to_pay = payment.get_foreign_amount();
 
-      if (payment.amount > this.get_total_with_tax() && !is_return || payment.amount < this.get_total_with_tax() && is_return) {
-        amount_to_pay = this.get_total_with_tax()
-        foreign_amount_to_pay = this.get_foreign_total_with_tax()
+      if (
+        (payment.amount > this.get_total_with_tax() && !is_return) ||
+        (payment.amount < this.get_total_with_tax() && is_return)
+      ) {
+        amount_to_pay = this.get_total_with_tax();
+        foreign_amount_to_pay = this.get_foreign_total_with_tax();
       }
 
       if (!is_change) {
-        payment.set_igtf_amount(this.compute_igtf_amount(amount_to_pay))
-        payment.set_foreign_igtf_amount(this.compute_igtf_amount(foreign_amount_to_pay))
+        payment.set_igtf_amount(this.compute_igtf_amount(amount_to_pay));
+        payment.set_foreign_igtf_amount(
+          this.compute_igtf_amount(foreign_amount_to_pay),
+        );
 
-        igtf_amount += payment.igtf_amount
-        foreign_igtf_amount += payment.foreign_igtf_amount
+        igtf_amount += payment.igtf_amount;
+        foreign_igtf_amount += payment.foreign_igtf_amount;
+      } else {
+        payment.set_include_igtf(false);
       }
-      else {
-        payment.set_include_igtf(false)
-      }
-    })
+    });
 
-    if (bi_igtf !== 0 && ((bi_igtf >= this.get_total_without_igtf() && !is_return)  )) {
-      bi_igtf = this.get_total_without_igtf()
-      foreign_bi_igtf = this.get_foreign_total_without_igtf()
-      igtf_amount = this.compute_igtf_amount(bi_igtf)
-      foreign_igtf_amount = this.compute_igtf_amount(foreign_bi_igtf)
+    if (
+      bi_igtf !== 0 &&
+      bi_igtf >= this.get_total_without_igtf() &&
+      !is_return
+    ) {
+      bi_igtf = this.get_total_without_igtf();
+      foreign_bi_igtf = this.get_foreign_total_without_igtf();
+      igtf_amount = this.compute_igtf_amount(bi_igtf);
+      foreign_igtf_amount = this.compute_igtf_amount(foreign_bi_igtf);
 
       let payment_without_change = paymentlines.filter((payment) => {
         if (!bi_payments.includes(payment.cid)) {
-          return false
+          return false;
         }
 
-        let is_change = false
+        let is_change = false;
         if (!is_return) {
-          is_change = payment.amount < 0
+          is_change = payment.amount < 0;
         } else {
-          is_change = payment.amount > 0
+          is_change = payment.amount > 0;
         }
 
         if (is_change) {
-          return false
+          return false;
         }
 
-        return true
-
-      })
+        return true;
+      });
 
       if (payment_without_change.length > 0) {
         payment_without_change.forEach((payment) => {
           if (!payment.include_igtf) {
-            return
+            return;
           }
           // payment.set_igtf_amount(igtf_amount / payment_without_change.length)
           // payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
-        })
+        });
       }
     }
-    
+
     if (igtf_payment_methods.length > 0) {
-        
-        let amount_sum = 0;
-        let foreign_amount_sum = 0;
-        let igtf_amount_sum = 0;
-        let foreign_igtf_amount_sum = 0;
+      let amount_sum = 0;
+      let foreign_amount_sum = 0;
+      let igtf_amount_sum = 0;
+      let foreign_igtf_amount_sum = 0;
 
       for (let payments of igtf_payment_methods) {
         amount_sum += payments.amount;
@@ -225,16 +237,18 @@ patch(Order.prototype, {
   },
   get_foreign_total_without_igtf() {
     const res = super.get_foreign_total_with_tax(...arguments);
-    return res
+    return res;
   },
   get_total_with_tax() {
     const res = super.get_total_with_tax(...arguments);
     let paymentlines = this.get_paymentlines();
     if (paymentlines.length > 0) {
-      let igtf_payment_methods = paymentlines.filter(payment => payment.payment_method.apply_igtf);
+      let igtf_payment_methods = paymentlines.filter(
+        (payment) => payment.payment_method.apply_igtf,
+      );
       if (igtf_payment_methods.length === 0) {
         return res;
-      }else{
+      } else {
         for (let payment of paymentlines) {
           if (payment.payment_method.apply_igtf) {
             return res + this.igtf_amount;
@@ -249,12 +263,14 @@ patch(Order.prototype, {
     const res = super.get_foreign_total_with_tax(...arguments);
     let paymentlines = this.get_paymentlines();
     if (paymentlines.length > 0) {
-      let igtf_payment_methods = paymentlines.filter(payment => payment.payment_method.apply_igtf);
+      let igtf_payment_methods = paymentlines.filter(
+        (payment) => payment.payment_method.apply_igtf,
+      );
       if (igtf_payment_methods.length === 0) {
         return res;
       } else {
         for (let payment of paymentlines) {
-          if (  payment.payment_method.apply_igtf) {
+          if (payment.payment_method.apply_igtf) {
             return res + this.foreign_igtf_amount;
           }
         }
@@ -264,7 +280,9 @@ patch(Order.prototype, {
     }
   },
   get_max_total_with_igtf() {
-    const result = this.compute_igtf_amount(super.get_foreign_total_with_tax()) + this.props.order.get_foreign_rounding_applied();
+    const result =
+      this.compute_igtf_amount(super.get_foreign_total_with_tax()) +
+      this.props.order.get_foreign_rounding_applied();
     return result;
   },
 
@@ -276,25 +294,26 @@ patch(Order.prototype, {
     return this.foreign_igtf_amount;
   },
   add_paymentline(payment_method) {
-
-    let is_change = false
-    let is_return = this.get_total_without_igtf() < 0
+    let is_change = false;
+    let is_return = this.get_total_without_igtf() < 0;
     if (!is_return) {
-      is_change = this.get_due() < 0
+      is_change = this.get_due() < 0;
     } else {
-      is_change = this.get_due() > 0
+      is_change = this.get_due() > 0;
     }
 
-    if (!payment_method.apply_igtf
-      || this.get_due() <= this.get_igtf_amount()
-      || is_change) {
+    if (
+      !payment_method.apply_igtf ||
+      this.get_due() <= this.get_igtf_amount() ||
+      is_change
+    ) {
       let res = super.add_paymentline(...arguments);
-      this.update_igtf()
+      this.update_igtf();
       return res;
     }
-    let res_igtf = this.add_paymentline_without_igtf(...arguments)
-    this.update_igtf()
-    return res_igtf
+    let res_igtf = this.add_paymentline_without_igtf(...arguments);
+    this.update_igtf();
+    return res_igtf;
   },
 
   add_paymentline_without_igtf(payment_method) {
@@ -304,7 +323,7 @@ patch(Order.prototype, {
     } else {
       var newPaymentline = new Payment(
         { env: this.env },
-        { order: this, payment_method: payment_method, pos: this.pos }
+        { order: this, payment_method: payment_method, pos: this.pos },
       );
       this.paymentlines.add(newPaymentline);
       this.select_paymentline(newPaymentline);
@@ -312,7 +331,10 @@ patch(Order.prototype, {
         this.selected_paymentline.set_amount(0);
       }
 
-      newPaymentline.set_foreign_amount(this.get_foreign_due() - this.get_foreign_igtf_amount(), true)
+      newPaymentline.set_foreign_amount(
+        this.get_foreign_due() - this.get_foreign_igtf_amount(),
+        true,
+      );
       newPaymentline.set_amount(this.get_due() - this.get_igtf_amount(), true);
 
       if (payment_method.payment_terminal) {
@@ -320,5 +342,5 @@ patch(Order.prototype, {
       }
       return newPaymentline;
     }
-  }
+  },
 });
