@@ -27,9 +27,7 @@ class StockPicking(models.Model):
                 ]
             )
             pickings -= self
-        action = self.env["ir.actions.actions"]._for_xml_id(
-            "stock.action_picking_tree_all"
-        )
+        action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
 
         if len(pickings) > 1:
             action["domain"] = [("id", "in", pickings.ids)]
@@ -88,9 +86,7 @@ class StockPicking(models.Model):
             if self.type_delivery_step == "pick":
                 return self
 
-            domain = expression.AND(
-                [[("state", "in", ["assigned", "waiting"])], domain]
-            )
+            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
@@ -107,9 +103,7 @@ class StockPicking(models.Model):
             if self.type_delivery_step == "pack":
                 return self
 
-            domain = expression.AND(
-                [[("state", "in", ["assigned", "waiting"])], domain]
-            )
+            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
@@ -126,9 +120,7 @@ class StockPicking(models.Model):
             if self.type_delivery_step == "out":
                 return self
 
-            domain = expression.AND(
-                [[("state", "in", ["assigned", "waiting"])], domain]
-            )
+            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
@@ -173,14 +165,13 @@ class StockPicking(models.Model):
         res = super().create(vals_list)
         self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
-        self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
+
         return res
 
     def write(self, vals):
         res = super().write(vals)
         self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
-        self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
 
         return res
 
@@ -188,4 +179,3 @@ class StockPicking(models.Model):
     #     if self.type_delivery_step != "pick":
     #         self = self.with_context(skip_physical_location=True)
     #     return super().action_assign()
-    
