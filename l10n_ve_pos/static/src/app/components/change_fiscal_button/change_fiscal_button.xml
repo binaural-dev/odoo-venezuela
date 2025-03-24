@@ -1,0 +1,17 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.ChangeFiscalButton">
+        <div
+            class="control-button btn rounded-0 fw-bolder text-truncate"
+            t-attf-class="{{currentOrder.useReceiptConfiguration ? 'btn-primary' : 'btn-light'}}"
+            t-on-click="() => this.onClick()"
+            >
+            <i class="fa fa-file-text-o me-2" />
+            <t t-if="this.currentOrder.is_to_receipt()">
+                <span>Receipt</span>
+            </t>
+            <t t-else="">
+                <span>Invoice</span>
+            </t>
+        </div>
+    </t>
+</templates>

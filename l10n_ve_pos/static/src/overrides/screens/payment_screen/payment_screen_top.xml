@@ -1,0 +1,12 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="PaymentScreenTop" t-inherit="point_of_sale.PaymentScreenTop" t-inherit-mode="extension">
+        <xpath expr="//div[1]/div[1]" position="after">
+            <div class="button ms-1 back btn btn-lg btn-secondary"
+                t-on-click="() => this.showPaymentsOrigin()"
+                > 
+                <i class="fa fa-angle-double-left me-2" />
+                <span class="back_text">View Payments Origin</span>
+            </div>
+        </xpath>
+    </t>
+</templates>
