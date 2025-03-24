@@ -11,12 +11,12 @@
                 <button 
                     name="print_invoice_free_form" string="Free Form"
                     type="object" class="o_btn_validate"
-                    invisible="(move_type != 'out_invoice') or (state != 'posted')"
+                    invisible="move_type != 'out_invoice' or state != 'posted'"
                 />
                 <button 
                     name="print_invoice_free_form" string="Free Form"
                     type="object" class="o_btn_validate"
-                    invisible="(move_type != 'out_refund') or (state != 'posted')]}"
+                    invisible="move_type != 'out_refund' or state != 'posted'"
                 />
             </xpath>
 
