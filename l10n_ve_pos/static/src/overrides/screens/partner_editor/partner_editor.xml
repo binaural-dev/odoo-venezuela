@@ -1,0 +1,46 @@
+
+<templates id="template" xml:space="preserve">
+    <t t-name="PartnerDetailsEdit" t-inherit="point_of_sale.PartnerDetailsEdit" t-inherit-mode="extension" owl="1">
+        <xpath expr="//input[@name='vat']/parent::div" position="replace">
+        </xpath>
+        <xpath expr="//input[@name='name']" position="replace">
+            <div class="headerPartner">
+                <select class="detail partner-name form-select" 
+                    name="prefix_vat"
+                    t-model="changes.prefix_vat">
+                    <t t-foreach="pos.prefix_vats" t-as="prefix" t-key="prefix[0]">
+                        <option t-att-selected="prefix[0] == changes.prefix_vat" t-att-value="prefix[0]">
+                            <t t-esc="prefix[1]" />
+                        </option>
+                    </t>
+                </select>
+                <input class="detail partner-name form-control form-control-lg" 
+                    name="vat" 
+                    placeholder="Document" 
+                    t-model="changes.vat" />
+                <input 
+                    class="detail partner-name form-control form-control-lg" 
+                    t-model="changes.name"
+                    name="name" 
+                    placeholder="Name" />
+            </div>
+        </xpath>
+        <xpath expr="//div[@class='partner-details-box row row-cols-1 row-cols-sm-2 gy-3 mt-3']//t[@t-key='item']" position="attributes">
+            <attribute name="t-foreach">['Street', 'Zip', 'Email', 'Phone', 'Mobile', 'Barcode' ]</attribute>
+        </xpath>
+
+        <xpath expr="//div[@class='partner-details-box row row-cols-1 row-cols-sm-2 gy-3 mt-3']//t[@t-key='item']" position="after">
+            <div class="partner-detail col">
+                <label class="form-label label" for="state">City</label>
+                <select class="detail form-select" id="city_id" name="city_id" t-model="changes.city_id" t-att="{'disabled': isFieldCommercialAndPartnerIsChild('city_id')}" t-att-class="{'border-danger': missingFields.includes('city_id')}">
+                    <option value="">None</option>
+                    <t t-foreach="pos.cities" t-as="city" t-key="city.id">
+                        <option t-att-value="city.id" t-att-selected="city.name == changes.city">
+                            <t t-out="city.name" />
+                        </option>
+                    </t>
+                </select>
+            </div>
+        </xpath>
+    </t>
+</templates>
