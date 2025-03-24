@@ -6,8 +6,13 @@
     "website": "https://www.binauraldev.com",
     "category": "Technical",
     "version": "17.0.0.0.0",
-    "depends": ["web_domain_field"],
+    "depends": ["web"],
     "data": [
-        # 'security/ir.model.access.csv',
+        "security/ir.model.access.csv",
     ],
+    # "assets": {
+    #     "web.assets_backend": [
+    #         "/l10n_ve_filter_partner/static/lib/js/*.js",
+    #     ],
+    # },
 }

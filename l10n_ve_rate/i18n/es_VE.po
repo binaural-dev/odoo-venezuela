@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-09 19:58+0000\n"
-"PO-Revision-Date: 2025-03-09 19:58+0000\n"
+"POT-Creation-Date: 2025-03-24 19:55+0000\n"
+"PO-Revision-Date: 2025-03-24 19:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,13 +16,8 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_rate
-#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_binaural_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
 msgid "<span>Select alternate currency</span>"
-msgstr "Seleccionar moneda alterna"
-
-#. module: l10n_ve_rate
-#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_binaural_rate
-msgid "Binaural"
 msgstr ""
 
 #. module: l10n_ve_rate
@@ -60,29 +55,31 @@ msgstr "Moneda alterna de la compañía"
 #. module: l10n_ve_rate
 #: model:ir.model,name:l10n_ve_rate.model_res_currency_rate
 msgid "Currency Rate"
-msgstr "Tipo de cambio"
+msgstr "Tasa de cambio"
 
 #. module: l10n_ve_rate
-#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_binaural_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
 msgid "Rates Configuration"
 msgstr "Configuración de tasas"
 
 #. module: l10n_ve_rate
 #: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
 msgid ""
-"Select the alternate currency that the system will use to make an\n"
-"                                accounting copy in the selected currency"
-msgstr "" 
+"Select the alternate currency that the system will use to\n"
+"                                        make\n"
+"                                        an\n"
+"                                        accounting copy in the selected currency"
+msgstr ""
 "Seleccione la moneda alterna que el sistema utilizara para hacer realizar\n"
 "una copia contable en la moneda seleccionada"
 
 #. module: l10n_ve_rate
 #. odoo-python
-#: code:addons/l10n_ve_rate/models/res_currency.py:0
+#: code:addons/l10n_ve_rate/models/res_company.py:0
 #, python-format
 msgid ""
-"Select the alternate currency that the system will use to make an\n"
-"                                accounting copy in the selected currency"
+"The currency already has accounting movements, you cannot deactivate this "
+"foreign currency"
 msgstr ""
 "Seleccione la moneda alterna que usara el sistema para realizar una\n"
 "                                copia contable en la moneda seleccionada"
