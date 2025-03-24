@@ -56,6 +56,6 @@ class PosPaymentReport(models.TransientModel):
             "type_report": self.type_report,
         }
 
-        return self.env.ref("binaural_pos.action_payment_report_pos").report_action(
+        return self.env.ref("l10n_ve_pos.action_payment_report_pos").report_action(
             [], data=data
         )

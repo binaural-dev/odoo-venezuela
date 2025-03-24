@@ -6,7 +6,7 @@ import { Component } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 
 export class ChangeFiscalButton extends Component {
-  static template = "binaural_pos.ChangeFiscalButton";
+  static template = "l10n_ve_pos.ChangeFiscalButton";
   setup() {
     this.pos = usePos();
   }

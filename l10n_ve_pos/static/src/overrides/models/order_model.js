@@ -101,20 +101,10 @@ patch(Order.prototype, {
   // },
 
   reload_taxes() {
-    if (this.is_to_receipt() == undefined) return
-    if (!this.is_to_receipt() && !this.pos.config.pos_tax_inside) {
       this.orderlines.forEach((el) => {
         el.product.taxes_id = el.product.originalTaxes
         el.tax_ids = el.product.taxes_id
       })
-    } else {
-      const taxes = Object.values(this.pos.taxes_by_id)
-      const exempt = taxes.find(el => el.amount == 0)
-      this.orderlines.forEach((el) => {
-        el.product.taxes_id = [exempt.id]
-        el.tax_ids = el.product.taxes_id
-      })
-    }
   },
   toggle_receipt_invoice(to_receipt) {
     if (this.getHasRefundLines()) {

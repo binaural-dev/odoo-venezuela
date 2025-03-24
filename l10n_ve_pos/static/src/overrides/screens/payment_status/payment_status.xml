@@ -1,6 +1,5 @@
-
 <templates id="template" xml:space="preserve">
-    <t t-name="binaural_pos.PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension">
+    <t t-name="l10n_ve_pos.PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('text-success')]" position="after">
             <div class="total text-center py-2 text-success">
                 <t t-out="foreignTotalDueText" />

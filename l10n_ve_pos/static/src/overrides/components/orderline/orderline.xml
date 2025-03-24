@@ -1,6 +1,5 @@
-
 <templates id="template" xml:space="preserve">
-    <t t-name="binaural_pos.Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+    <t t-name="l10n_ve_pos.Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('product-price')]" position="inside">
                 / <t t-out="line.foreignPrice"/>
         </xpath>

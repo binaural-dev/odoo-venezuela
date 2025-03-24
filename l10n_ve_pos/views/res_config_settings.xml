@@ -1,7 +1,7 @@
 
 <odoo>
     <data>
-        <record id="res_config_settings_binaural_pos" model="ir.ui.view">
+        <record id="res_config_settings_l10n_ve_pos" model="ir.ui.view">
             <field name="name">res.config.settings.binaural.rate</field>
             <field name="model">res.config.settings</field>
             <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate"/>
@@ -9,17 +9,6 @@
             <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
                     <h2>POS Configuration</h2>
                     <div class="row mt16 o_settings_container" name="binaural_igtf_settings" >
-                        <div class="col-12 col-lg-6 o_setting_box" id="igtf_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="module_binaural_pos_igtf"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="module_binaural_pos_igtf"/>
-                                <div class="text-muted">
-                                    Calculate IGTF with payments made in USD
-                                </div>
-                            </div>
-                        </div>
                         <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane">
                                 <field name="pos_unreconcile_moves"/>
@@ -40,36 +29,6 @@
                                 <label for="pos_search_cne"/>
                                 <div class="text-muted">
                                     Search clients by vat number in CNE database
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="tax_inside_setting" groups="base.group_no_one">
-                            <div class="o_setting_left_pane">
-                                <field name="pos_tax_inside"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="pos_tax_inside"/>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="module_binaural_pos_mf"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="module_binaural_pos_mf"/>
-                                <div class="text-muted">
-                                    Print invoices on Fiscal Machine, and get reports 
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="advance_payment_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="module_binaural_pos_advance_payment"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="module_binaural_pos_advance_payment"/>
-                                <div class="text-muted">
-                                    Manage advance payments
                                 </div>
                             </div>
                         </div>
