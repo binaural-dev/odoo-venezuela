@@ -14,7 +14,7 @@ patch(PartnerDetailsEdit.prototype, {
       ...this.changes,
       prefix_vat: this.props.partner.prefix_vat || "V",
       city_id: this.props.partner.city_id && this.props.partner.city_id[0],
-    }
+    };
   },
   saveChanges() {
     const processedChanges = {};
@@ -25,11 +25,38 @@ patch(PartnerDetailsEdit.prototype, {
         processedChanges[key] = value;
       }
     }
-    if ((!this.props.partner.vat && !processedChanges.vat) || processedChanges.vat === "") {
+    if (
+      (!this.props.partner.vat && !processedChanges.vat) ||
+      processedChanges.vat === ""
+    ) {
       return this.popup.add(ErrorPopup, {
-        title: _t("La Cédula o RIF es obligatoria"),
+        title: _t("A Customer VAT Is Required"),
       });
     }
+    if (!this.props.partner.phone && !processedChanges.phone) {
+      return this.popup.add(ErrorPopup, {
+        title: _t("A phone number is required"),
+      });
+    }
+    if (!isValidPhone(processedChanges.phone)) {
+      return this.popup.add(ErrorPopup, {
+        title: _t("A valid phone number is required"),
+      });
+    }
+    if (!this.props.partner.street && !processedChanges.street) {
+      return this.popup.add(ErrorPopup, {
+        title: _t("A street is required"),
+      });
+    }
+    if (!this.props.partner.country_id && !processedChanges.country_id) {
+      return this.popup.add(ErrorPopup, {
+        title: _t("A valid country is required"),
+      });
+    }
+    function isValidPhone(phone) {
+      const phoneRegex = /^0[24]\d{9}$/;
+      return phoneRegex.test(phone);
+    }
     return super.saveChanges();
-  }
-})
+  },
+});
