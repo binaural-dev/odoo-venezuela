@@ -7,9 +7,6 @@
 !env.utils.floatIsZero(currentOrder.get_foreign_total_tax()) and env.utils.formatForeignCurrency(currentOrder.get_foreign_total_tax()) or ''
             </attribute>
             <attribute name="quantity_products">currentOrder.get_qty_products()</attribute>
-            <attribute name="pos_tax_inside">
-currentOrder.pos.config.pos_tax_inside
-            </attribute>
         </xpath>
     </t>
 </templates>
