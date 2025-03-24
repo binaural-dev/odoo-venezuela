@@ -6,8 +6,8 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="l10n_ve_invoice.res_config_settings_binaural_invoice"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@class='col-12 col-lg-4 o_setting_box']" position="after">
-                <div class="col-12 col-lg-4 o_setting_box">
+            <xpath expr="//div[@class='col-12 col-lg-6 o_setting_box']" position="after">
+                <div class="col-12 col-lg-6 o_setting_box">
                     <div class="o_setting_left_pane">
                         <field name="ref_required"/>
                     </div>
