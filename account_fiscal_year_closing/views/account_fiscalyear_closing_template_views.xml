@@ -2,7 +2,6 @@
 <!-- Copyright 2016 Antonio Espinosa <antonio.espinosa@tecnativa.com>
      License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
 <odoo>
-
     <record id="view_account_fiscalyear_closing_template_tree" model="ir.ui.view">
         <field name="model">account.fiscalyear.closing.template</field>
         <field name="arch" type="xml">
@@ -13,7 +12,6 @@
             </tree>
         </field>
     </record>
-
     <record id="view_account_fiscalyear_closing_template_form" model="ir.ui.view">
         <field name="model">account.fiscalyear.closing.template</field>
         <field name="arch" type="xml">
@@ -27,13 +25,7 @@
                         <group>
                             <field name="check_draft_moves" />
                         </group>
-                        <group>
-                            <field name="chart_template_ids" widget="many2many_tags" />
-                            <field
-                                name="company_id"
-                                groups="base.group_multi_company"
-                            />
-                        </group>
+                       
                     </group>
                     <label for="move_config_ids" string="Moves configuration" />
                     <field name="move_config_ids" nolabel="1">
@@ -91,7 +83,6 @@
             </form>
         </field>
     </record>
-
     <record
         id="action_account_fiscalyear_closing_template"
         model="ir.actions.act_window"
@@ -101,7 +92,6 @@
         <field name="res_model">account.fiscalyear.closing.template</field>
         <field name="view_mode">tree,form</field>
     </record>
-
     <menuitem
         id="menu_account_fiscalyear_closing_configuration"
         parent="account.menu_finance_configuration"
@@ -115,5 +105,4 @@
         name="Closing templates"
         action="action_account_fiscalyear_closing_template"
     />
-
 </odoo>

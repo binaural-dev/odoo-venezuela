@@ -52,12 +52,6 @@ class AccountFiscalyearClosing(models.Model):
         readonly=True,
         states={"draft": [("readonly", False)]},
     )
-    chart_template_id = fields.Many2one(
-        comodel_name="account.chart.template",
-        string="Chart template",
-        related="company_id.chart_template_id",
-        readonly=True,
-    )
     state = fields.Selection(
         selection=[
             ("draft", "Draft"),
@@ -111,16 +105,6 @@ class AccountFiscalyearClosing(models.Model):
         readonly=True,
     )
 
-    _sql_constraints = [
-        (
-            "year_company_uniq",
-            "unique(year, company_id)",
-            _(
-                "There should be only one fiscal year closing for that year and "
-                "company!"
-            ),
-        ),
-    ]
 
     def _prepare_mapping(self, tmpl_mapping):
         self.ensure_one()
