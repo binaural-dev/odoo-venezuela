@@ -7,8 +7,9 @@ from odoo.exceptions import ValidationError
 class PosConfig(models.Model):
     _inherit = "pos.config"
 
-    foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
-    pos_tax_inside = fields.Boolean(related="company_id.pos_tax_inside")
+    foreign_currency_id = fields.Many2one(
+        "res.currency", related="company_id.currency_foreign_id"
+    )
 
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for moves.",
@@ -17,9 +18,6 @@ class PosConfig(models.Model):
         default=0.0,
         readonly=False,
     )
-    receipt_journal_id = fields.Many2one("account.journal")
-    always_invoice = fields.Boolean(default=True)
-    keep_journal = fields.Boolean(default=False)
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
@@ -37,13 +35,6 @@ class PosConfig(models.Model):
         help="Activate product entry with barcode in strict mode"
     )
 
-    def change_always_receipt(self, is_receipt):
-        if not self.keep_journal:
-            return
-
-        if self.always_invoice == is_receipt:
-            self.always_invoice = not self.always_invoice
-
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):
         """
@@ -51,7 +42,9 @@ class PosConfig(models.Model):
         """
         rate = self.env["res.currency.rate"]
         for config in self:
-            rate_values = rate.compute_rate(config.foreign_currency_id.id, fields.Date.today())
+            rate_values = rate.compute_rate(
+                config.foreign_currency_id.id, fields.Date.today()
+            )
             config.update(rate_values)
 
     def _action_to_open_ui(self):
@@ -60,7 +53,7 @@ class PosConfig(models.Model):
             not self.current_session_id.foreign_currency_id
             or not self.current_session_id.foreign_currency_id.active
         ):
-            raise ValidationError(_("The session must have a foreign currency or active"))
-        if not self.receipt_journal_id:
-            raise ValidationError(_("The pos config must have a receipt journal"))
+            raise ValidationError(
+                _("The session must have a foreign currency or active")
+            )
         return res
