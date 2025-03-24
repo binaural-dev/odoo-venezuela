@@ -162,19 +162,6 @@ class AccountRetention(models.Model):
 
     @api.depends("type", "partner_id")
     def _compute_allowed_lines_move_ids(self):
-        """
-        Computes the allowed move types for the moves of the retention lines.
-
-        If the retention is of type "in_invoice", the allowed move types are "in_invoice" and
-        "in_refund". If the retention is of type "out_invoice", the allowed move types are
-        "out_invoice" and "out_refund".
-
-        In any case the moves must be posted, must be of the same company as the retention and must
-        have a fiscal journal (this last one if it's not a municipal retention).
-
-        This is used to filter the moves that can be selected in the retention lines for each type
-        of retention (ISLR and municipal).
-        """
         for retention in self:
             allowed_types = (
                 ("in_invoice", "in_refund")
