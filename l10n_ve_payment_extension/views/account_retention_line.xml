@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
         <record id="view_account_retention_line_tree_l10n_ve_payment_extension" model="ir.ui.view">

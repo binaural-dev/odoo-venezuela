@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <record id="l10n_ve_accountant_res_currency" model="ir.ui.view">
     <field name="name">res.currency.form.l10n.ve</field>

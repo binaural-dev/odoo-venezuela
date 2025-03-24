@@ -93,38 +93,13 @@ class ProductProduct(models.Model):
             domain_move_in += date_date_expected_domain_to
             domain_move_out += date_date_expected_domain_to
 
-        if location:
-            domain_quant = expression.AND([domain_quant, [("location_id", "=", location.id)]])
-
-        Move = self.env["stock.move"].with_context(active_test=False)
-        Quant = self.env["stock.quant"].with_context(active_test=False)
-        domain_move_in_todo = [
-            ("state", "in", ("waiting", "confirmed", "assigned", "partially_available"))
-        ] + domain_move_in
-        domain_move_out_todo = [
-            ("state", "in", ("waiting", "confirmed", "assigned", "partially_available"))
-        ] + domain_move_out
-        moves_in_res = dict(
-            (item["product_id"][0], item["product_qty"])
-            for item in Move._read_group(
-                domain_move_in_todo, ["product_id", "product_qty"], ["product_id"], orderby="id"
-            )
-        )
-        moves_out_res = dict(
-            (item["product_id"][0], item["product_qty"])
-            for item in Move._read_group(
-                domain_move_out_todo, ["product_id", "product_qty"], ["product_id"], orderby="id"
-            )
-        )
-        quants_res = dict(
-            (item["product_id"][0], (item["quantity"], item["reserved_quantity"]))
-            for item in Quant._read_group(
-                domain_quant,
-                ["product_id", "quantity", "reserved_quantity"],
-                ["product_id"],
-                orderby="id",
-            )
-        )
+        Move = self.env['stock.move'].with_context(active_test=False)
+        Quant = self.env['stock.quant'].with_context(active_test=False)
+        domain_move_in_todo = [('state', 'in', ('waiting', 'confirmed', 'assigned', 'partially_available'))] + domain_move_in
+        domain_move_out_todo = [('state', 'in', ('waiting', 'confirmed', 'assigned', 'partially_available'))] + domain_move_out
+        moves_in_res = {product.id: product_qty for product, product_qty in Move._read_group(domain_move_in_todo, ['product_id'], ['product_qty:sum'])}
+        moves_out_res = {product.id: product_qty for product, product_qty in Move._read_group(domain_move_out_todo, ['product_id'], ['product_qty:sum'])}
+        quants_res = {product.id: (quantity, reserved_quantity) for product, quantity, reserved_quantity in Quant._read_group(domain_quant, ['product_id'], ['quantity:sum', 'reserved_quantity:sum'])}
         if dates_in_the_past:
             # Calculate the moves that were done before now to calculate back in time (as most questions will be recent ones)
             if location:
@@ -142,29 +117,10 @@ class ProductProduct(models.Model):
                 domain_move_out_done = expression.OR(
                     [copy_domain_move_out_done, [("location_id", "=", location.id)]]
                 )
-            domain_move_in_done = [
-                ("state", "=", "done"),
-                ("date", ">", to_date),
-            ] + domain_move_in_done
-            domain_move_out_done = [
-                ("state", "=", "done"),
-                ("date", ">", to_date),
-            ] + domain_move_out_done
-            moves_in_res_past = dict(
-                (item["product_id"][0], item["product_qty"])
-                for item in Move._read_group(
-                    domain_move_in_done, ["product_id", "product_qty"], ["product_id"], orderby="id"
-                )
-            )
-            moves_out_res_past = dict(
-                (item["product_id"][0], item["product_qty"])
-                for item in Move._read_group(
-                    domain_move_out_done,
-                    ["product_id", "product_qty"],
-                    ["product_id"],
-                    orderby="id",
-                )
-            )
+            domain_move_in_done = [('state', '=', 'done'), ('date', '>', to_date)] + domain_move_in_done 
+            domain_move_out_done = [('state', '=', 'done'), ('date', '>', to_date)] + domain_move_out_done
+            moves_in_res_past = dict((item['product_id'][0], item['product_qty']) for item in Move._read_group(domain_move_in_done, ['product_id'], ['product_qty:sum']))
+            moves_out_res_past = dict((item['product_id'][0], item['product_qty']) for item in Move._read_group(domain_move_out_done, ['product_id'], ['product_qty:sum']))
 
         res = dict()
         for product in self.with_context(prefetch_fields=False):
@@ -193,21 +149,99 @@ class ProductProduct(models.Model):
             else:
                 qty_available = quants_res.get(origin_product_id, [0.0])[0]
             reserved_quantity = quants_res.get(origin_product_id, [False, 0.0])[1]
-            res[product_id]["qty_available"] = float_round(
-                qty_available, precision_rounding=rounding
-            )
-            res[product_id]["free_qty"] = float_round(
-                qty_available - reserved_quantity, precision_rounding=rounding
-            )
-            res[product_id]["incoming_qty"] = float_round(
-                moves_in_res.get(origin_product_id, 0.0), precision_rounding=rounding
-            )
-            res[product_id]["outgoing_qty"] = float_round(
-                moves_out_res.get(origin_product_id, 0.0), precision_rounding=rounding
-            )
-            res[product_id]["virtual_available"] = float_round(
-                qty_available + res[product_id]["incoming_qty"] - res[product_id]["outgoing_qty"],
-                precision_rounding=rounding,
+            res[product_id]['qty_available'] = float_round(qty_available, precision_rounding=rounding)
+            res[product_id]['free_qty'] = float_round(qty_available - reserved_quantity, precision_rounding=rounding)
+            res[product_id]['incoming_qty'] = float_round(moves_in_res.get(origin_product_id, 0.0), precision_rounding=rounding)
+            res[product_id]['outgoing_qty'] = float_round(moves_out_res.get(origin_product_id, 0.0), precision_rounding=rounding)
+            res[product_id]['virtual_available'] = float_round(
+                qty_available + res[product_id]['incoming_qty'] - res[product_id]['outgoing_qty'],
+                precision_rounding=rounding)
+            
+        return res
+
+    def _compute_quantities_dict_for_report(
+        self, lot_id, owner_id, package_id, from_date=False, to_date=False, location=False
+    ):
+        domain_quant_loc, domain_move_in_loc, domain_move_out_loc = self._get_domain_locations()
+        domain_quant = [("product_id", "in", self.ids)] + domain_quant_loc
+        dates_in_the_past = False
+        to_date = fields.Datetime.to_datetime(to_date)
+        if to_date and to_date < fields.Datetime.now():
+            dates_in_the_past = True
+
+        domain_move_in = [("product_id", "in", self.ids)] + domain_move_in_loc
+        domain_move_out = [("product_id", "in", self.ids)] + domain_move_out_loc
+
+        if lot_id is not None:
+            domain_quant += [("lot_id", "=", lot_id)]
+        if owner_id is not None:
+            domain_quant += [("owner_id", "=", owner_id)]
+            domain_move_in += [("restrict_partner_id", "=", owner_id)]
+            domain_move_out += [("restrict_partner_id", "=", owner_id)]
+        if package_id is not None:
+            domain_quant += [("package_id", "=", package_id)]
+
+        if from_date:
+            date_date_expected_domain_from = [("date", ">=", from_date)]
+            domain_move_in += date_date_expected_domain_from
+            domain_move_out += date_date_expected_domain_from
+        if to_date:
+            date_date_expected_domain_to = [("date", "<=", to_date)]
+            domain_move_in += date_date_expected_domain_to
+            domain_move_out += date_date_expected_domain_to
+
+        MoveLine = self.env['stock.move.line'].with_context(active_test=False)
+
+        domain_move_line_in = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_in_loc
+        domain_move_line_out = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_out_loc
+
+        if from_date:
+            domain_move_line_in += [('date', '>=', from_date)]
+            domain_move_line_out += [('date', '>=', from_date)]
+        if to_date:
+            domain_move_line_in += [('date', '<=', to_date)]
+            domain_move_line_out += [('date', '<=', to_date)]
+
+        move_lines_in_res = {product.id: product_qty for product, product_qty in MoveLine._read_group(domain_move_line_in, ['product_id'], ['quantity:sum'])}
+        move_lines_out_res = {product.id: product_qty for product, product_qty in MoveLine._read_group(domain_move_line_out, ['product_id'], ['quantity:sum'])}
+
+        Quant = self.env['stock.quant'].with_context(active_test=False)
+        quants_res = {product.id: (quantity, reserved_quantity) for product, quantity, reserved_quantity in Quant._read_group(domain_quant, ['product_id'], ['quantity:sum', 'reserved_quantity:sum'])}
+
+        res = dict()
+        for product in self.with_context(prefetch_fields=False):
+            origin_product_id = product._origin.id
+            product_id = product.id
+            if not origin_product_id:
+                res[product_id] = dict.fromkeys(
+                    [
+                        "qty_available",
+                        "free_qty",
+                        "incoming_qty",
+                        "outgoing_qty",
+                        "virtual_available",
+                    ],
+                    0.0,
+                )
+                continue
+
+            rounding = product.uom_id.rounding
+            res[product_id] = {}
+
+            qty_available = quants_res.get(origin_product_id, [0.0])[0]
+            qty_available += move_lines_in_res.get(origin_product_id, 0.0) - move_lines_out_res.get(origin_product_id, 0.0)
+
+            reserved_quantity = quants_res.get(origin_product_id, [False, 0.0])[1]
+
+            res[product_id]['qty_available'] = float_round(qty_available, precision_rounding=rounding)
+            res[product_id]['free_qty'] = float_round(qty_available - reserved_quantity, precision_rounding=rounding)
+            res[product_id]['incoming_qty'] = float_round(move_lines_in_res.get(origin_product_id, 0.0), precision_rounding=rounding)
+            res[product_id]['outgoing_qty'] = float_round(move_lines_out_res.get(origin_product_id, 0.0), precision_rounding=rounding)
+            res[product_id]['virtual_available'] = float_round(
+                qty_available + res[product_id]['incoming_qty'] - res[product_id]['outgoing_qty'],
+                precision_rounding=rounding
             )
 
         return res
+
+

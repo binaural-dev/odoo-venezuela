@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="financial_situation_statement" model="account.report">
         <field name="name">Financial situation statement</field>

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="tk_security_master.master_dashboard" owl="1">
         <section class="section tk__master_dash">

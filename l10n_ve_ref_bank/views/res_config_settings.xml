@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
     <record id="res_config_settings_l10n_ve_ref_bank" model="ir.ui.view">
