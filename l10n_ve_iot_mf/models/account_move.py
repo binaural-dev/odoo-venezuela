@@ -1,5 +1,5 @@
 from odoo import fields, models, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError,UserError
 
 import logging
 
@@ -129,79 +129,84 @@ class AccountMoveInh(models.Model):
     def check_print_out_invoice(self):
         # if not self.journal_id.fiscal:
         #     raise ValidationError(_("You cannot print an invoice with a non-fiscal journal"))
-        if self.mf_invoice_number:
-            raise ValidationError(_("The invoice has already been printed"))
-        if not self.iot_mf:
-            raise ValidationError(_("The invoice has no fiscal machine assigned"))
-        if self.state in ["draft", "cancel"]:
-            raise ValidationError(_("Cannot print an invoice without validation"))
-        if self.invoice_date != fields.Date.today():
-            raise ValidationError(_("Cannot print an invoice with a future date"))
-        if self.is_credit and self.amount_residual != self.amount_total:
-            raise ValidationError(_("You cannot print a credit invoice with associated payments"))
+        try:
+            if self.mf_invoice_number:
+                raise ValidationError(_("The invoice has already been printed"))
+            if not self.iot_mf:
+                raise ValidationError(_("The invoice has no fiscal machine assigned"))
+            if self.state in ["draft", "cancel"]:
+                raise ValidationError(_("Cannot print an invoice without validation"))
+            if self.invoice_date != fields.Date.today():
+                raise ValidationError(_("Cannot print an invoice with a future date"))
+            if self.is_credit and self.amount_residual != self.amount_total:
+                raise ValidationError(_("You cannot print a credit invoice with associated payments"))
 
-        data = self
+            data = self
 
-        if not data:
-            return {"valid": False, "message": "No se envio datos"}
+            if not data:
+                return {"valid": False, "message": "No se envio datos"}
 
-        if not data.invoice_line_ids:
-            return {"valid": False, "message": "La factura no tiene lineas"}
+            if not data.invoice_line_ids:
+                return {"valid": False, "message": "La factura no tiene lineas"}
 
-        payment_lines = []
-        payments = data.invoice_payments_widget
+            payment_lines = []
+            payments = data.invoice_payments_widget
 
-        if not payments:
-            payment_lines.append({"amount": 0, "payment_method": "01"})
-        else:
-            payments = payments["content"]
-            for payment in payments:
-                journal_id = self.env["account.journal"].search(
-                    [("name", "=", payment["journal_name"])], limit=1
+            if not payments:
+                payment_lines.append({"amount": 0, "payment_method": "01"})
+            else:
+                payments = payments["content"]
+                for payment in payments:
+                    journal_id = self.env["account.journal"].search(
+                        [("name", "=", payment["journal_name"])], limit=1
+                    )
+                    new_payment = {
+                        "amount": payment["amount"],
+                        "payment_method": journal_id["payment_method"] or "01",
+                    }
+                    if payment["currency_id"] != data.env.ref("base.VEF").id:
+                        new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
+
+                    payment_lines.append(new_payment)
+
+            _invoice_lines = []
+            for line in data.invoice_line_ids:
+                price_vef = line.price_unit
+                if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
+                    price_vef = line.foreign_price
+                _invoice_lines.append(
+                    {
+                        "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
+                        "price_unit": price_vef,
+                        "quantity": line.quantity,
+                        "code": False,
+                        "name": f"[{line.product_id.default_code}] {line.product_id.name}"
+                        if line.product_id
+                        else line.name,
+                    }
                 )
-                new_payment = {
-                    "amount": payment["amount"],
-                    "payment_method": journal_id["payment_method"] or "01",
-                }
-                if payment["currency_id"] != data.env.ref("base.VEF").id:
-                    new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
 
-                payment_lines.append(new_payment)
-
-        _invoice_lines = []
-        for line in data.invoice_line_ids:
-            price_vef = line.price_unit
-            if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
-                price_vef = line.foreign_price
-            _invoice_lines.append(
-                {
-                    "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
-                    "price_unit": price_vef,
-                    "quantity": line.quantity,
-                    "code": False,
-                    "name": f"[{line.product_id.default_code}] {line.product_id.name}"
-                    if line.product_id
-                    else line.name,
-                }
-            )
-
-        _data = {
-            "flag_21": data.iot_mf.flag_21,
-            "identifier": data.iot_mf.identifier,
-            "iot_ip": data.iot_box.ip,
-            "company_id": {"name": data.company_id.name},
-            "partner_id": {
-                "name": data.partner_id.name,
-                "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
-                "address": data.partner_id.street or False,
-                "phone": data.partner_id.phone or False,
-            },
-            "invoice_lines": _invoice_lines,
-            "payment_lines": payment_lines,
-        }
-        return _data
+            _data = {
+                "flag_21": data.iot_mf.flag_21,
+                "identifier": data.iot_mf.identifier,
+                "iot_ip": data.iot_box.ip,
+                "company_id": {"name": data.company_id.name},
+                "partner_id": {
+                    "name": data.partner_id.name,
+                    "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
+                    "address": data.partner_id.street or False,
+                    "phone": data.partner_id.phone or False,
+                },
+                "invoice_lines": _invoice_lines,
+                "payment_lines": payment_lines,
+            }
+            return _data
+        
+        except ValidationError as ae:
+            raise ValidationError(str(ae))
 
     def print_out_invoice(self, values):
+        _logger.info("VALUE %s", values)
         self.write(
             {
                 "mf_invoice_number": values["sequence"],
@@ -231,82 +236,86 @@ class AccountMoveInh(models.Model):
         """
         Print out refund in fiscal machine
         """
-        if not self.iot_mf:
-            raise ValidationError(_("The invoice has no fiscal machine assigned"))
-        # if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
-        #     raise ValidationError(_("The credit note must be made in the same fiscal machine"))
-        if self.invoice_date != fields.Date.today():
-            raise ValidationError(_("The credit note must be made on the same day"))
-        if self.state in ["draft", "cancel"]:
-            raise ValidationError(_("Cannot print an invoice without validation"))
+        try:
+            if not self.iot_mf:
+                raise ValidationError(_("The invoice has no fiscal machine assigned"))
+            # if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
+            #     raise ValidationError(_("The credit note must be made in the same fiscal machine"))
+            if self.invoice_date != fields.Date.today():
+                raise ValidationError(_("The credit note must be made on the same day"))
+            if self.state in ["draft", "cancel"]:
+                raise ValidationError(_("Cannot print an invoice without validation"))
 
-        data = self
+            data = self
 
-        if not data:
-            return {"valid": False, "message": "No se envio datos"}
+            if not data:
+                return {"valid": False, "message": "No se envio datos"}
 
-        if not data.invoice_line_ids:
-            return {"valid": False, "message": "La factura no tiene lineas"}
+            if not data.invoice_line_ids:
+                return {"valid": False, "message": "La factura no tiene lineas"}
 
-        payment_lines = []
-        payments = data.invoice_payments_widget
+            payment_lines = []
+            payments = data.invoice_payments_widget
 
-        if not payments:
-            payment_lines.append({"amount": 0, "payment_method": "01"})
-        else:
-            payments = payments["content"]
-            for payment in payments:
-                journal_id = self.env["account.journal"].search(
-                    [("name", "=", payment["journal_name"])], limit=1
+            if not payments:
+                payment_lines.append({"amount": 0, "payment_method": "01"})
+            else:
+                payments = payments["content"]
+                for payment in payments:
+                    journal_id = self.env["account.journal"].search(
+                        [("name", "=", payment["journal_name"])], limit=1
+                    )
+                    new_payment = {
+                        "amount": payment["amount"],
+                        "payment_method": journal_id["payment_method"] or "01",
+                    }
+                    if payment["currency_id"] != data.env.ref("base.VEF").id:
+                        new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
+
+                    payment_lines.append(new_payment)
+
+            _invoice_lines = []
+            for line in data.invoice_line_ids:
+                price_vef = line.price_unit
+                if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
+                    price_vef = line.foreign_price
+                _invoice_lines.append(
+                    {
+                        "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
+                        "price_unit": price_vef,
+                        "quantity": line.quantity,
+                        "code": False,
+                        "name": f"[{line.product_id.default_code}] {line.product_id.name}"
+                        if line.product_id
+                        else line.name,
+                    }
                 )
-                new_payment = {
-                    "amount": payment["amount"],
-                    "payment_method": journal_id["payment_method"] or "01",
-                }
-                if payment["currency_id"] != data.env.ref("base.VEF").id:
-                    new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
 
-                payment_lines.append(new_payment)
+            _data = {
+                "flag_21": data.iot_mf.flag_21,
+                "identifier": data.iot_mf.identifier,
+                "iot_ip": data.iot_box.ip,
+                "company_id": {"name": data.company_id.name},
+                "partner_id": {
+                    "name": data.partner_id.name,
+                    "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
+                    "address": data.partner_id.street or False,
+                    "phone": data.partner_id.phone or False,
+                },
+                "invoice_affected": {
+                    "number": data.reversed_entry_id.mf_invoice_number,
+                    "serial_machine": data.reversed_entry_id.mf_serial,
+                    "date": data.reversed_entry_id.invoice_date.strftime("%d/%m/%Y"),
+                },
+                "invoice_lines": _invoice_lines,
+                "payment_lines": payment_lines,
+            }
 
-        _invoice_lines = []
-        for line in data.invoice_line_ids:
-            price_vef = line.price_unit
-            if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
-                price_vef = line.foreign_price
-            _invoice_lines.append(
-                {
-                    "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
-                    "price_unit": price_vef,
-                    "quantity": line.quantity,
-                    "code": False,
-                    "name": f"[{line.product_id.default_code}] {line.product_id.name}"
-                    if line.product_id
-                    else line.name,
-                }
-            )
-
-        _data = {
-            "flag_21": data.iot_mf.flag_21,
-            "identifier": data.iot_mf.identifier,
-            "iot_ip": data.iot_box.ip,
-            "company_id": {"name": data.company_id.name},
-            "partner_id": {
-                "name": data.partner_id.name,
-                "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
-                "address": data.partner_id.street or False,
-                "phone": data.partner_id.phone or False,
-            },
-            "invoice_affected": {
-                "number": data.reversed_entry_id.mf_invoice_number,
-                "serial_machine": data.reversed_entry_id.mf_serial,
-                "date": data.reversed_entry_id.invoice_date.strftime("%d/%m/%Y"),
-            },
-            "invoice_lines": _invoice_lines,
-            "payment_lines": payment_lines,
-        }
-
-        return _data
-
+            return _data
+        
+        except ValidationError as ae:
+            raise ValidationError(str(ae))
+        
     def print_out_refund(self, values):
         self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
 
@@ -326,81 +335,86 @@ class AccountMoveInh(models.Model):
         """
         Print debit note in fiscal machine
         """
-        if not self.iot_mf:
-            raise ValidationError(_("The invoice has no fiscal machine assigned"))
-        # if self.iot_mf.serial_machine != self.debit_origin_id.mf_serial:
-        #     raise ValidationError(_("The debit note must be made in the same fiscal machine"))
-        if self.invoice_date != fields.Date.today():
-            raise ValidationError(_("The debit note must be made on the same day"))
-        if self.state in ["draft", "cancel"]:
-            raise ValidationError(_("Cannot print an invoice without validation"))
+        try:
+            if not self.iot_mf:
+                raise ValidationError(_("The invoice has no fiscal machine assigned"))
+            # if self.iot_mf.serial_machine != self.debit_origin_id.mf_serial:
+            #     raise ValidationError(_("The debit note must be made in the same fiscal machine"))
+            if self.invoice_date != fields.Date.today():
+                raise ValidationError(_("The debit note must be made on the same day"))
+            if self.state in ["draft", "cancel"]:
+                raise ValidationError(_("Cannot print an invoice without validation"))
 
-        data = self
+            data = self
 
-        if not data:
-            return {"valid": False, "message": "No se envio datos"}
+            if not data:
+                return {"valid": False, "message": "No se envio datos"}
 
-        if not data.invoice_line_ids:
-            return {"valid": False, "message": "La factura no tiene lineas"}
+            if not data.invoice_line_ids:
+                return {"valid": False, "message": "La factura no tiene lineas"}
 
-        payment_lines = []
-        payments = data.invoice_payments_widget
+            payment_lines = []
+            payments = data.invoice_payments_widget
 
-        if not payments:
-            payment_lines.append({"amount": 0, "payment_method": "01"})
-        else:
-            payments = payments["content"]
-            for payment in payments:
-                journal_id = self.env["account.journal"].search(
-                    [("name", "=", payment["journal_name"])], limit=1
+            if not payments:
+                payment_lines.append({"amount": 0, "payment_method": "01"})
+            else:
+                payments = payments["content"]
+                for payment in payments:
+                    journal_id = self.env["account.journal"].search(
+                        [("name", "=", payment["journal_name"])], limit=1
+                    )
+                    new_payment = {
+                        "amount": payment["amount"],
+                        "payment_method": journal_id["payment_method"] or "01",
+                    }
+                    if payment["currency_id"] != data.env.ref("base.VEF").id:
+                        new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
+
+                    payment_lines.append(new_payment)
+
+            _invoice_lines = []
+            for line in data.invoice_line_ids:
+                price_vef = line.price_unit
+                if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
+                    price_vef = line.foreign_price
+                _invoice_lines.append(
+                    {
+                        "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
+                        "price_unit": price_vef,
+                        "quantity": line.quantity,
+                        "code": False,
+                        "name": f"[{line.product_id.default_code}] {line.product_id.name}"
+                        if line.product_id
+                        else line.name,
+                    }
                 )
-                new_payment = {
-                    "amount": payment["amount"],
-                    "payment_method": journal_id["payment_method"] or "01",
-                }
-                if payment["currency_id"] != data.env.ref("base.VEF").id:
-                    new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
 
-                payment_lines.append(new_payment)
+            _data = {
+                "flag_21": data.iot_mf.flag_21,
+                "identifier": data.iot_mf.identifier,
+                "iot_ip": data.iot_box.ip,
+                "company_id": {"name": data.company_id.name},
+                "partner_id": {
+                    "name": data.partner_id.name,
+                    "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
+                    "address": data.partner_id.street or False,
+                    "phone": data.partner_id.phone or False,
+                },
+                "invoice_affected": {
+                    "number": data.debit_origin_id.mf_invoice_number,
+                    "serial_machine": data.debit_origin_id.mf_serial,
+                    "date": data.debit_origin_id.invoice_date.strftime("%d/%m/%Y"),
+                },
+                "invoice_lines": _invoice_lines,
+                "payment_lines": payment_lines,
+            }
 
-        _invoice_lines = []
-        for line in data.invoice_line_ids:
-            price_vef = line.price_unit
-            if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
-                price_vef = line.foreign_price
-            _invoice_lines.append(
-                {
-                    "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
-                    "price_unit": price_vef,
-                    "quantity": line.quantity,
-                    "code": False,
-                    "name": f"[{line.product_id.default_code}] {line.product_id.name}"
-                    if line.product_id
-                    else line.name,
-                }
-            )
-
-        _data = {
-            "flag_21": data.iot_mf.flag_21,
-            "identifier": data.iot_mf.identifier,
-            "iot_ip": data.iot_box.ip,
-            "company_id": {"name": data.company_id.name},
-            "partner_id": {
-                "name": data.partner_id.name,
-                "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
-                "address": data.partner_id.street or False,
-                "phone": data.partner_id.phone or False,
-            },
-            "invoice_affected": {
-                "number": data.debit_origin_id.mf_invoice_number,
-                "serial_machine": data.debit_origin_id.mf_serial,
-                "date": data.debit_origin_id.invoice_date.strftime("%d/%m/%Y"),
-            },
-            "invoice_lines": _invoice_lines,
-            "payment_lines": payment_lines,
-        }
-
-        return _data
+            return _data
+        
+        except ValidationError as ae:
+            raise ValidationError(str(ae))
+        
     
     def print_debit_note(self, values):
         self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
