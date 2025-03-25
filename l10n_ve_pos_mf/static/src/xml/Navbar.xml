@@ -1,0 +1,18 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//CashierName" position="after">
+                <div t-att-class="cssClass" class="btn btn-light border-0 rounded-0" t-if="this.pos.useFiscalMachine()" t-on-click="_on_click_mf_test" name="fiscal_machine">
+                <span class="button d-flex align-items-center gap-1">
+                    <i class="fa fa-fw fa-print" role="img"/> 
+                    <span class="username">Maquina Fiscal</span>
+                </span>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-branding')]" position="inside">
+            <div t-if="access_button_mf" class="cash-move-button" t-on-click="showFiscalMachinePopup">
+                <i class="fa fa-fw fa-print" role="img"></i>
+                <p>Reporte Maquina Fiscal</p>
+            </div>
+        </xpath>
+    </t>
+</templates>
