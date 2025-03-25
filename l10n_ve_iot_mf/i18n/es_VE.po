@@ -914,3 +914,13 @@ msgstr ""
 #, python-format
 msgid "Print Debit Note"
 msgstr "Imprimir Nota de Débito"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "The debit note must be made on the same day"
+msgstr ""
+"No puede emitir una Nota de Débito por Maquina fiscal con una fecha "
+"distinta a la de hoy, por favor edite la fecha de la factura, la tasa y "
+"verifique montos en  Bs"
