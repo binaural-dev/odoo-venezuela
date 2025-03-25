@@ -15,6 +15,11 @@ class AccountMove(models.Model):
     from_picking = fields.Boolean(string="From Picking", default=False)
 
     free_form_copy_number = fields.Integer(default=0)  # 0: not printed yet, 1: first print (original), 2 or more: copies
+    
+    print_type = fields.Selection(
+        related='company_id.invoice_print_type',
+        store=True
+    )
 
     def print_invoice_free_form(self):
 
