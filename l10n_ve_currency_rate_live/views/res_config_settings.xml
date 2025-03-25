@@ -3,13 +3,22 @@
         <record id="res_config_settings_view_form_inherit_currency_rate_live" model="ir.ui.view">
             <field name="name">res.config.settings.binaural.rate.update</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="currency_rate_live.res_config_settings_view_form"/>
+            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
             <field name="arch" type="xml">
-                <xpath expr="//div[@class='mt8 row']" position="after">
-                    <div style="margin-top: 4%">
-                        <field name="can_update_habil_days"/>
-                        <span><b>only update in habil days</b></span>
-                    </div>   
+                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                    <block title="Currency Rate Live" string="Currency Rate Live" name="l10n_ve_currency_rate_live_block">
+                        <div id="l10n_ve_currency_rate_live_div" class="col-6 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="can_update_habil_days" readonly="False"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="can_update_habil_days" string="Only update in habil days"/>
+                                <div class="text-muted">
+                                    <span class="o_text-muted">only update in habil days</span>
+                                </div>
+                            </div>
+                        </div>
+                    </block>
                 </xpath>
             </field>
         </record>
