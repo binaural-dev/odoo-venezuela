@@ -135,19 +135,6 @@ class ReportPaymentPos(models.AbstractModel):
                     else:
                         payments["global"][payment_method_id] = payment
 
-                    if order.account_move.journal_id.fiscal:
-                        order_fiscal |= order
-                        if payments["fiscal"].get(payment_method_id, False):
-                            payments["fiscal"][payment_method_id] |= payment
-                        else:
-                            payments["fiscal"][payment_method_id] = payment
-                    else:
-                        order_no_fiscal |= order
-                        if payments["no_fiscal"].get(payment_method_id, False):
-                            payments["no_fiscal"][payment_method_id] |= payment
-                        else:
-                            payments["no_fiscal"][payment_method_id] = payment
-
             def get_percentage(amount):
                 if not order_ids.payment_ids:
                     return 0
