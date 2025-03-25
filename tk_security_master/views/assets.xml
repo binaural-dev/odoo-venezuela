@@ -1,6 +1,0 @@
-<odoo>
-    <record id="action_tk_secu_pro_master_dashboard" model="ir.actions.client">
-        <field name="name">Security Master</field>
-        <field name="tag">tk_security_master_dashboard</field>
-    </record>
-</odoo>
