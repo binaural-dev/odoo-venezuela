@@ -27,7 +27,6 @@ class SalesBookPOS(models.TransientModel):
             "&",
             ("mf_serial", "!=", False),
             ("mf_reportz", "!=", False),
-            ("journal_id.fiscal", "=", True),
         ]
         return search_domain
 
