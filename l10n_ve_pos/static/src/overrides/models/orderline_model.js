@@ -16,16 +16,19 @@ patch(Orderline.prototype, {
     this.tax_ids = json.tax_ids && json.tax_ids.length !== 0 ? json.tax_ids[0][2] : undefined;
     this.foreign_price = json.foreign_price || 0;
     this.foreign_currency_rate = json.foreign_currency_rate || false;
+    this.foreign_currency_rate_display=false;
   },
   get_rate() {
     if (this.order._isRefundOrder() && this.get_refund_orderline()) {
       return this.get_refund_orderline().orderline.foreign_currency_rate
     }
 
-    console.log("rate", this.foreign_currency_rate, this.order.init_conversion_rate);
     if (this.foreign_currency_rate && this.foreign_currency_rate != this.order.init_conversion_rate) return this.foreign_currency_rate;
 
     return this.order.init_conversion_rate;
+  },
+  get currency_rate_display(){
+   return this.order.get_display_rate
   },
   get_refund_orderline() {
     for (let id of Object.keys(this.pos.toRefundLines)) {
@@ -200,6 +203,7 @@ patch(Orderline.prototype, {
       : this.env.utils.formatForeignCurrency(this.get_display_foreign_price())
     res["aliquot_type"] = this.get_aliquot_type();
     res["foreign_currency_rate"] = this.get_rate();
+    res["foreign_currency_rate_display"] = this.env.utils.formatForeignCurrency(this.currency_rate_display());
     return res
   },
 

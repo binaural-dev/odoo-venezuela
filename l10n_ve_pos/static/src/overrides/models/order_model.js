@@ -37,15 +37,15 @@ patch(Order.prototype, {
   assert_editable() {},
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
-    console.log("JELOU")
     if (this.pos.currency.name == "VEF") {
-      console.log("Base bs")
-      return this.pos.foreign_currency.inverse_rate;
+      return this.pos.config.foreign_inverse_rate;
     }
     if (this.pos.currency.name == "USD") {
-      console.log("Base USD")
-      return this.pos.foreign_currency.rate;
+      return this.pos.config.foreign_rate;
     }
+  },
+  get_display_rate() {
+    return this.pos.config.foreign_rate;
   },
 
   add_orderline(line) {
@@ -55,7 +55,7 @@ patch(Order.prototype, {
   },
   get_conversion_rate() {
     if (this.orderlines.length != 0) {
-      return this.orderlines[0].get_rate();
+      return this.orderlines[0].currency_rate_display();
     }
     if (!this.init_conversion_rate) {
       throw new Error(
