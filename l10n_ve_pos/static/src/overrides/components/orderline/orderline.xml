@@ -7,7 +7,7 @@
         <xpath expr="//div[hasclass('product-name')]" position="inside">
             <t t-out="line.aliquot_type"/> 
             <t  t-if="this.env.debug">
-                (Tasa: <t t-out="line.foreign_currency_rate"/>)
+                (Tasa: <t t-out="line.foreign_currency_rate_display"/>)
             </t>
         </xpath>
     </t>
