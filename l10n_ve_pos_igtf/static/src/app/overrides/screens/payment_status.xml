@@ -11,7 +11,7 @@
                     +
                     </span>
                     <span>
-                        <t t-esc="amountIGTF" />
+                        <t t-esc="suggestedIgtf" />
                     </span>
                     <span class="me-1" style="font-size:15px;">
                         (IGTF) <br/>
@@ -19,7 +19,7 @@
                     <span class="ms-2 me-2">
                     =
                     </span>
-                    <t t-esc="totalDueTextWithIGTF" />
+                    <t t-esc="totalDueTextWithIGTFDisplay" />
             </div>
         </xpath>
         <xpath expr="//div[hasclass('payment-status-change')]" position="after">
