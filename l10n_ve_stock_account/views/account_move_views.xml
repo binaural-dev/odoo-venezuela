@@ -7,7 +7,6 @@
 
 
             <xpath expr="//form//header" position="inside">
-                <field name='print_type' invisible="1" />
                 <button
                     name="print_invoice_free_form" string="Free Form"
                     type="object" class="o_btn_validate"
