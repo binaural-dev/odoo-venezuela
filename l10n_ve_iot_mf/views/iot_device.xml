@@ -111,6 +111,7 @@
                     invisible="type != 'fiscal_data_module'"/>
                 <field 
                     name="serial_machine"
+                    readonly="1"
                     invisible="type != 'fiscal_data_module'"/>
                 <field 
                     name="flag_21"
