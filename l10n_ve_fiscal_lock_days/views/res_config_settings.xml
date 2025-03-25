@@ -4,39 +4,31 @@
             <field name="name">res.config.settings.l10n.ve.fiscal.lock.days</field>
             <field name="model">res.config.settings</field>
             <field name="priority" eval="100" />
-            <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate" />
+            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
             <field name="arch" type="xml">
-                <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
-                    <h2>Fiscal Configuration</h2>
-                    <div class="row mt16 o_settings_container"
-                        name="l10n_ve_fiscal_lock_days_settings">
-
-                        <div class="col-12 col-lg-6 o_setting_box" id="">
+                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                    <block title="Fiscal Configuration" name="l10n_ve_fiscal_lock_days_block">
+                        <div class="col-6 col-lg-6 o_setting_box" id="l10n_ve_fiscal_lock_days_tax_period">
                             <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <field name="tax_period" />
-                                </group>
+                                <label for="tax_period">Tax Period</label>
+                                <field name="tax_period" />
                                 <div class="text-muted">
                                     Tax Periodicity
                                 </div>
                             </div>
                         </div>
-
-                        <div class="col-12 col-lg-6 o_setting_box" id="">
+                        <div class="col-6 col-lg-6 o_setting_box" id="l10n_ve_fiscal_lock_days_lock_date_tax_validation">
                             <div class="o_setting_left_pane">
                                 <field name="lock_date_tax_validation" />
                             </div>
                             <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <label for="lock_date_tax_validation" />
-                                </group>
+                                <label for="lock_date_tax_validation" />
                                 <div class="text-muted">
                                     Validate Fiscal Period
                                 </div>
                             </div>
                         </div>
-
-                    </div>
+                    </block>
                 </xpath>
             </field>
         </record>
