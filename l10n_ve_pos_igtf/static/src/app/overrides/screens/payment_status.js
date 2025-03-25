@@ -3,6 +3,10 @@
 import { PaymentScreenStatus } from "@point_of_sale/app/screens/payment_screen/payment_status/payment_status";
 import { usePos } from "@point_of_sale/app/store/pos_hook";
 import { patch } from "@web/core/utils/patch";
+import {
+  roundPrecision as round_pr,
+} from "@web/core/utils/numbers";
+
 
 // New orders are now associated with the current table, if any.
 patch(PaymentScreenStatus.prototype, {
@@ -52,6 +56,11 @@ patch(PaymentScreenStatus.prototype, {
     
     return this.env.utils.formatCurrency(igtfAmount, 'Product Price');
   },  
+  get suggestedIgtf(){
+      var rounding = this.pos.currency.rounding;
+      var result = round_pr(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100),rounding);
+      return this.env.utils.formatCurrency(result);
+  },
   get foreignTotalDueTextWithIGTF() {
     return this.env.utils.formatForeignCurrency(
       (this.props.order.get_foreign_total_with_tax() * ((this.pos.config.igtf_percentage / 100) + 1)) + this.props.order.get_foreign_rounding_applied()
@@ -69,6 +78,13 @@ patch(PaymentScreenStatus.prototype, {
         (this.props.order.get_total_without_igtf())
       );
     }
+  },
+  get totalDueTextWithIGTFDisplay() {
+    var rounding = this.pos.currency.rounding;
+    var result = round_pr(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100),rounding);
+    return this.env.utils.formatCurrency(
+      (this.props.order.get_total_with_tax()+result)
+    );
   },
   get totalDueText() {
       return this.env.utils.formatCurrency(
