@@ -3,7 +3,6 @@
     <t t-name="PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[hasclass('total')]" position="replace">
             <div style="font-size:35px;" class="d-flex w-100 justify-content-center py-2 text-success">
-                <t t-if="!this.props.order.is_to_receipt() and this.pos.config.apply_igtf">
                     <span>
                         <t t-esc="totalDueText" /> 
                     </span>
@@ -21,14 +20,10 @@
                     =
                     </span>
                     <t t-esc="totalDueTextWithIGTF" />
-                </t>
-                <t t-else="">
-                    <t t-esc="totalDueText" />
-                </t>
             </div>
         </xpath>
         <xpath expr="//div[hasclass('payment-status-change')]" position="after">
-            <div t-if="!this.props.order.is_to_receipt() and this.pos.config.apply_igtf" class="payment-status-total-change py-2 fs-3">
+            <div class="payment-status-total-change py-2 fs-3">
                 <span class="label pe-2">BI IGTF</span>
                 <span class="amount" t-esc="biAmount"/>
                 <br/>
