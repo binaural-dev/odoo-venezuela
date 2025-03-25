@@ -34,8 +34,8 @@ class AccountMove(models.Model):
         for record in self:
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
-            facturas = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', '=', record.move_type)])
-            if facturas:
+            invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', '=', record.move_type)])
+            if invoices:
                 raise ValidationError(_("An invoice with the Control Number already exists: %s"%correlative))
         return super().action_post()
 
