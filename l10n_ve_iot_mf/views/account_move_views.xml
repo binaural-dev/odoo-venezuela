@@ -1,0 +1,18 @@
+<odoo>
+    <record id="l10n_ve_iot_mf_account_move_form_view" model="ir.ui.view">
+        <field name="name">l10n.ve.iot.mf.account.move.form.view</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_ve_stock_account.l10n_ve_stock_account_account_move_form_view" />
+        <field name="arch" type="xml">
+
+            <xpath expr="//button[@class='o_btn_validate'][1]" position="attributes">
+                <attribute name="invisible">move_type != 'out_invoice' or state != 'posted' or print_type != 'free'</attribute>
+            </xpath>
+
+            <xpath expr="//button[@class='o_btn_validate'][2]" position="attributes">
+                <attribute name="invisible">move_type != 'out_refund' or state != 'posted' or print_type != 'free'</attribute>
+            </xpath>
+        </field>
+
+    </record>
+</odoo>
