@@ -17,11 +17,6 @@ patch(Order.prototype, {
     super.setup(...arguments);
     this.set_to_invoice(true);
     if (options.json) {
-      this.to_receipt = options.json.to_receipt;
-      if (options.json.to_receipt === undefined) {
-        let always_invoice = !this.pos.config.always_invoice;
-        this.toggle_receipt_invoice(always_invoice);
-      }
       if (options.json.account_move === undefined) {
         this.set_to_invoice(true);
         this.lock_toggle_receipt_invoice = false;
@@ -31,13 +26,6 @@ patch(Order.prototype, {
       let always_invoice = !this.pos.config.always_invoice;
       this.to_receipt = always_invoice;
     }
-  },
-  get useReceiptConfiguration() {
-    let always_invoice = this.pos.config.always_invoice;
-    return (
-      always_invoice == !this.is_to_receipt() ||
-      !always_invoice == this.is_to_receipt()
-    );
   },
   _isValidEmptyOrder() {
     let res = super._isValidEmptyOrder(...arguments);
