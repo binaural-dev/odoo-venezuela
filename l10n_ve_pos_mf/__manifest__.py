@@ -12,7 +12,7 @@
         "point_of_sale",
         "l10n_ve_pos",
         "pos_iot",
-        # "l10n_ve_iot_mf",
+        "l10n_ve_iot_mf",
     ],
     "data": [
         "security/ir.model.access.csv",
