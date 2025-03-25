@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_account" model="ir.ui.view">
+        <field name="name">res.config.settings.binaural.rate</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate" />
+        <field name="arch" type="xml">
+            <xpath expr="//div[@id='show_column_default_code_free_form_setting'][1]" position="after">
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_iot_mf_setting">
+                    <div class="o_setting_left_pane">
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <div class="content-group">
+                            <div class="row">
+                                <label for="invoice_print_type" class="col-lg-6 o_light_label"/>
+                                <field name="invoice_print_type"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
