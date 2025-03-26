@@ -1,77 +1,69 @@
 <odoo>
     <data>
-        <record id="res_config_settings_binaural_invoice" model="ir.ui.view">
-            <field name="name">res.config.settings.binaural.rate</field>
+        <record id="view_res_config_settings_l10n_ve_invoice" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.invoice</field>
             <field name="model">res.config.settings</field>
             <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <h2>Invoice Configuration</h2>
-                    <div class="row mt16 o_settings_container" name="invoice_settings">
-                        <div class="col-12 col-lg-6 o_setting_box" id="multiple_prices_setting">
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div>
-                                    Limit the number of lines that can be printed on a free form
-                                    invoice
-
-                                </div>
-                                <field name="max_product_invoice" />
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="show_usd_on_free_form">
+                    <block title="Configuration Invoice: General" string="Invoice Configuration" name="l10n_ve_invoice_block">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_invoice_div_show_total_on_usd_invoice">
                             <div class="o_setting_left_pane">
                                 <field name="show_total_on_usd_invoice" />
                             </div>
                             <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <label for="show_total_on_usd_invoice" />
-                                </group>
+                                <label for="show_total_on_usd_invoice" />
                                 <div class="text-muted">
                                     Show Total USD on Free Form Invoice
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="show_tag_usd_on_free_form">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_invoice_div_show_tag_on_usd_invoice">
                             <div class="o_setting_left_pane">
                                 <field name="show_tag_on_usd_invoice" />
                             </div>
                             <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <label for="show_tag_on_usd_invoice" />
-                                </group>
+                                <label for="show_tag_on_usd_invoice" />
                                 <div class="text-muted">
                                     Show Tag USD on Free Form Invoice
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_invoice_div_group_sales_invoicing_series">
                             <div class="o_setting_left_pane">
-                                <field name="group_sales_invoicing_series" class="oe_inline"
-                                    required="1" />
+                                <field name="group_sales_invoicing_series" class="oe_inline" required="1" />
                             </div>
                             <div class="o_setting_right_pane">
                                 <label for="group_sales_invoicing_series" />
-                                <div class="text-muted">It allow enable the invoicing sequences by
-                                    series in sale's journals.</div>
+                                <div class="text-muted">
+                                    It allow enable the invoicing sequences by
+                                    series in sale's journals.
+                                </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box"
-                            id="show_column_default_code_free_form_setting">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_invoice_div_show_column_default_code_free_form">
                             <div class="o_setting_left_pane">
                                 <field name="show_column_default_code_free_form" />
                             </div>
                             <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <label for="show_column_default_code_free_form" />
-                                </group>
+                                <label for="show_column_default_code_free_form" />
                                 <div class="text-muted">
                                     Show Default Code on Free Form Invoice
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_max_product_invoice">
+                            <div class="o_setting_left_pane"/>
+                            <div class="o_setting_right_pane">
+                                <label for="max_product_invoice" class="oe_inline"/>
+                                <div class="text-muted">
+                                    Limit the number of lines that can be printed on a free form
+                                    invoice
+                                </div>
+                                <field name="max_product_invoice" class="oe_inline"/>
+                            </div>
+                        </div>
+                    </block>
                 </xpath>
             </field>
         </record>

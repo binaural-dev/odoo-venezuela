@@ -7,7 +7,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
                     <block title="Configuration Taxes: IGTF" name="igtf_config_block" >
-                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_unique_tax">
                             <div class="o_setting_right_pane">
                                 <separator string="Core Settings"/>
                                 <group>
@@ -18,7 +18,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_show_discount_on_moves">
                             <div class="o_setting_right_pane">
                                 <separator string="Display Options"/>
                                 <group>
@@ -55,7 +55,7 @@
                         </div>
                     </block>
                     <block title="Configuration Taxes: Non-Deductible " name="non_deductible_block" >
-                        <div class="col-12 col-lg-6 o_setting_box" >
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_deductibility">
                             <div class="o_setting_right_pane">
                                 <separator string="Deductibility"/>
                                 <group>
@@ -63,7 +63,7 @@
                                 </group>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" invisible="not config_deductible_tax">
+                        <div class="col-12 col-lg-6 o_setting_box" invisible="not config_deductible_tax" id="l10n_ve_tax_div_non_deductible_rates">
                             <div class="o_setting_right_pane">
                                 <separator string="Non-Deductible Rates" />
                                 <group>
