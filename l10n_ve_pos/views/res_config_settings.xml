@@ -6,9 +6,24 @@
             <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <h2>POS Configuration</h2>
-                    <div class="row mt16 o_settings_container" name="binaural_igtf_settings" >
-                        <div class="col-12 col-lg-6 o_setting_box">
+                    <block title="POS Configuration" string="POS Configuration" name="l10n_ve_pos_block">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_pos_config_id">
+                            <div class="o_setting_left_pane"/>
+                            <div class="o_setting_right_pane">
+                                <div class="row flex-row flex-nowrap mt8 align-items-center">
+                                    <label class="col text-nowrap ml8 flex-nowrap" string="Point of Sale" for="pos_config_id"/>
+                                    <field name="pos_config_id" class="w-50" options="{'no_open': True, 'no_create': True}" title="Settings on this page will apply to this point of sale."/>
+                                    <button name="action_pos_config_create_new" type="object" string="+ New Shop" class="col btn-link ms-2 text-nowrap" style="line-height: 0.5;"/>
+                                </div>
+                                <div class="o_view_nocontent" invisible="pos_config_id">
+                                    <div class="o_nocontent_help">
+                                        <p class="o_view_nocontent_empty_folder">No Point of Sale selected</p>
+                                        <p>Please create/select a Point of Sale above to show the configuration options.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_pos_unreconcile_moves">
                             <div class="o_setting_left_pane">
                                 <field name="pos_unreconcile_moves"/>
                             </div>
@@ -20,7 +35,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_pos_search_cne">
                             <div class="o_setting_left_pane">
                                 <field name="pos_search_cne"/>
                             </div>
@@ -31,32 +46,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="pos_show_free_qty"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="pos_show_free_qty"/>
-                                <div class="text-muted">
-                                    Show free quantity on POS
-                                </div>
-                            </div>
-                        </div>
-                        <div 
-                            class="col-12 col-lg-6 o_setting_box" 
-                            id="qty_warehosue_setting" 
-                            invisible="not pos_show_free_qty">
-                            <div class="o_setting_left_pane">
-                                <field name="pos_show_free_qty_on_warehouse"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="pos_show_free_qty_on_warehouse"/>
-                                <div class="text-muted">
-                                    Show quantites from warehouse of TPV
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_pos_move_to_draft">
                             <div class="o_setting_left_pane">
                                 <field name="pos_move_to_draft"/>
                             </div>
@@ -67,7 +57,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="bin_igtf_settings_pos_show_just_products_with_available_qty">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_pos_show_just_products_with_available_qty">
                             <div class="o_setting_left_pane">
                                 <field name="pos_show_just_products_with_available_qty"/>
                             </div>
@@ -78,27 +68,7 @@
                                 </p>
                             </div>
                         </div>
-                        <hr style="margin-top: 24px;"/>
-                        <div class="app_settings_header pt-1 pb-1">
-                            <div class="col-xs-12 col-md-6 ms-0 o_setting_box">
-                                <div class="o_setting_right_pane border-start-0 ms-0 ps-0">
-                                    <div class="content-group">
-                                        <div class="row flex-row flex-nowrap mt8 align-items-center">
-                                            <label class="col text-nowrap ml8 flex-nowrap" string="Point of Sale" for="pos_config_id"/>
-                                            <field name="pos_config_id" class="w-50" options="{'no_open': True, 'no_create': True}" title="Settings on this page will apply to this point of sale."/>
-                                            <button name="action_pos_config_create_new" type="object" string="+ New Shop" class="col btn-link ms-2 text-nowrap" style="line-height: 0.5;"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="o_view_nocontent" invisible="pos_config_id">
-                            <div class="o_nocontent_help">
-                                <p class="o_view_nocontent_empty_folder">No Point of Sale selected</p>
-                                <p>Please create/select a Point of Sale above to show the configuration options.</p>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="sell_kit_from_another_store">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_sell_kit_from_another_store">
                             <div class="o_setting_left_pane">
                                 <field name="sell_kit_from_another_store"/>
                             </div>
@@ -111,7 +81,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="activate_barcode_strict_mode_container">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_activate_barcode_strict_mode">
                             <div class="o_setting_left_pane">
                                 <field name="activate_barcode_strict_mode"/>
                             </div>
@@ -124,7 +94,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_amount_to_zero">
                             <div class="o_setting_left_pane">
                                 <field name="amount_to_zero"/>
                             </div>
@@ -135,7 +105,29 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_pos_show_free_qty">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_show_free_qty"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_show_free_qty"/>
+                                <div class="text-muted">
+                                    Show free quantity on POS
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_div_pos_pos_show_free_qty_on_warehouse" invisible="not pos_show_free_qty">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_show_free_qty_on_warehouse"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_show_free_qty_on_warehouse"/>
+                                <div class="text-muted">
+                                    Show quantites from warehouse of TPV
+                                </div>
+                            </div>
+                        </div>
+                    </block>
                 </xpath>
             </field>
         </record>

@@ -6,8 +6,8 @@
             <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <block title="Sales Configuration" name="l10n_ve_sale_block">
-                        <div class="col-6 col-lg-6 o_setting_box" id="l10n_ve_sale_div_use_invoice_rate_from_sale_order">
+                    <block title="Configuration Sales: Generals" name="l10n_ve_sale_block">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_sale_div_use_invoice_rate_from_sale_order">
                             <div class="o_setting_left_pane">
                                 <field name="use_invoice_rate_from_sale_order"/>
                             </div>
@@ -54,28 +54,26 @@
                             </div>
                         </div>
                         <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_sale_block_order_confirmation">
-                            <h2>Block order confirmationn</h2>
-                            <div class="row mt16 o_settings_container">
-                                <div class="o_setting_left_pane"/>
-                                <div class="o_setting_right_pane">
-                                    <group colspan="4" col="4">
-                                        <field name="block_order_invoice_payment_state" />
-                                    </group>
-                                    <div class="text-muted">
-                                        Block order confirmation action with invoices in payment status
-                                        Not Paid / In payment process.
-                                    </div>
+                            <separator string="Block order confirmation" />
+                            <div class="o_setting_left_pane"/>
+                            <div class="o_setting_right_pane">
+                                <group colspan="4" col="4">
+                                    <field name="block_order_invoice_payment_state" />
+                                </group>
+                                <div class="text-muted">
+                                    Block order confirmation action with invoices in payment status
+                                    Not Paid / In payment process.
                                 </div>
-                                <br />
-                                <div class="o_setting_left_pane"/>
-                                <div class="o_setting_right_pane">
-                                    <group colspan="4" col="4">
-                                        <field name="block_order_invoice_total_amount_overdue" />
-                                    </group>
-                                    <div class="text-muted">
-                                        Block order confirmation action with invoices overdue with a
-                                        total amount greater than specified.
-                                    </div>
+                            </div>
+                            <br />
+                            <div class="o_setting_left_pane"/>
+                            <div class="o_setting_right_pane">
+                                <group colspan="4" col="4">
+                                    <field name="block_order_invoice_total_amount_overdue" />
+                                </group>
+                                <div class="text-muted">
+                                    Block order confirmation action with invoices overdue with a
+                                    total amount greater than specified.
                                 </div>
                             </div>
                         </div>
