@@ -1,80 +1,56 @@
 <odoo>
-    <data>
-        <record id="res_config_settings_l10n_ve_igtf" model="ir.ui.view">
-            <field name="name">res.config.settings.l10n_ve_igtf</field>
-            <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
-            <field name="arch" type="xml">
-                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+    <record id="res_config_settings_l10n_ve_igtf" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n_ve_igtf</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_tax.view_res_config_settings_l10n_ve_taxes"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='l10n_ve_tax_block_igtf']//div[@id='l10n_ve_tax_div_config_igtf_show_discount_on_moves']" position="after">
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_show_igtf_suggested_sale_order">
                     <div class="o_setting_left_pane">
                         <field name="show_igtf_suggested_sale_order" />
                     </div>
                     <div class="o_setting_right_pane">
-                        <div class="content-group">
-                            <div class="row">
-                                <label for="show_igtf_suggested_sale_order"
-                                    class="col-lg-12 o_light_label" />
-                                <div class="text-muted">
-                                    Show suggestion of the igtf amount based on the total amount of
-                                    the Order
-                                </div>
-                            </div>
+                        <label for="show_igtf_suggested_sale_order" />
+                        <div class="text-muted">
+                            Show suggestion of the igtf amount based on the total amount of the Order
                         </div>
                     </div>
-
+                </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_show_igtf_suggested_account_move">
                     <div class="o_setting_left_pane">
                         <field name="show_igtf_suggested_account_move" />
                     </div>
                     <div class="o_setting_right_pane">
-                        <div class="content-group">
-                            <div class="row">
-                                <label for="show_igtf_suggested_account_move"
-                                    class="col-lg-12 o_light_label" />
-                                <div class="text-muted">
-                                    Show suggestion of the igtf amount based on the total amount of
-                                    the Invoice
-                                </div>
-                            </div>
+                        <label for="show_igtf_suggested_account_move" />
+                        <div class="text-muted">
+                            Show suggestion of the igtf amount based on the total amount of the Invoice
                         </div>
                     </div>
-
-                    <br />
-
-                    <div class="o_setting_left_pane">
-                    </div>
+                </div>
+            </xpath>
+            <xpath expr="//block[@name='l10n_ve_tax_block_igtf']//div[@id='l10n_ve_tax_div_config_igtf_unique_tax']" position="after">
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_igtf_percentage">
+                    <div class="o_setting_left_pane"/>
                     <div class="o_setting_right_pane">
-                        <div class="content-group">
-                            <div class="row">
-                                <label for="igtf_percentage" class="col-lg-6 o_light_label" />
-                                <field name="igtf_percentage" />
-                            </div>
-                        </div>
+                        <label for="igtf_percentage" />
+                        <field name="igtf_percentage" />
                     </div>
-
-                    <div class="o_setting_left_pane">
-                    </div>
+                </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_customer_account_igtf_id">
+                    <div class="o_setting_left_pane"/>
                     <div class="o_setting_right_pane">
-                        <div class="content-group">
-                            <div class="row">
-                                <label for="customer_account_igtf_id" class="col-lg-6 o_light_label" />
-                                <field name="customer_account_igtf_id" />
-                            </div>
-                        </div>
+                        <label for="customer_account_igtf_id"  />
+                        <field name="customer_account_igtf_id" />
                     </div>
-
-                    <div class="o_setting_left_pane">
-                    </div>
+                </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_supplier_account_igtf_id">
+                    <div class="o_setting_left_pane"/>
                     <div class="o_setting_right_pane">
-                        <div class="content-group">
-                            <div class="row">
-                                <label for="supplier_account_igtf_id" class="col-lg-6 o_light_label" />
-                                <field name="supplier_account_igtf_id" />
-                            </div>
-                        </div>
+                        <label for="supplier_account_igtf_id"  />
+                        <field name="supplier_account_igtf_id" />
                     </div>
-
-                </xpath>
-            </field>
-        </record>
-    </data>
+                </div>
+            </xpath>
+        </field>
+    </record>
 </odoo>
