@@ -6,6 +6,7 @@
         <field name="inherit_id" ref="l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice" />
         <field name="arch" type="xml">
             <xpath expr="//block[@name='l10n_ve_invoice_block']" position="inside">
+                <separator string="Fiscal Machine" />
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_iot_mf_invoice_print_type">
                     <div class="o_setting_left_pane"/>
                     <div class="o_setting_right_pane">

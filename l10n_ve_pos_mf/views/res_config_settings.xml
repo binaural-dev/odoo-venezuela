@@ -1,55 +1,88 @@
-
 <odoo>
-    <record id="l10n_ve_pos_mf_res_config_settings_iot" model="ir.ui.view">
-        <field name="name">res.config.settings.view.form.inherit.pos_mf</field>
+    <record id="l10n_ve_pos_mf_res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">l10n.ve.pos.mf.res.config.settings.view.form.inherit</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form" />
+        <field name="inherit_id" ref="pos_iot.res_config_view_form_inherit_pos_iot" />
         <field name="arch" type="xml">
-            <xpath expr="//div[@class='content-group pos_iot_config']/div[@class='row'][2]" position="after">
+            <xpath expr="//div[hasclass('pos_iot_config')]//div[@class='row'][2]" position="after">
                 <div class="row">
                     <label string="Fiscal Data Module" for="iface_fiscal_data_module" class="col-lg-4 o_light_label"/>
                     <field name="iface_fiscal_data_module"/>
                 </div>
             </xpath>
-            <xpath expr="//div[@class='row'][1]/label[@for='pos_iface_printer_id']"
-                position="replace">
-            </xpath>
-            <xpath expr="//div[@class='row'][1]/field[@name='pos_iface_printer_id']"
-                position="attributes">
+            <xpath expr="//div[@class='row'][1]" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
         </field>
     </record>
-    <record id="l10n_ve_pos_mf_res_config_settings" model="ir.ui.view">
-        <field name="name">res.config.settings.view.form.inherit.pos_mf</field>
+    <record id="l10n_ve_pos_mf_res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">l10n.ve.pos.mf.res.config.settings.view.form.inherit</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//label[@for='pos_iface_print_via_proxy']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pos_iface_print_via_proxy']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_res_config_settings_pos_mf" model="ir.ui.view">
+        <field name="name">view.res.config.setting.pos.mf</field>
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="l10n_ve_pos.res_config_settings_l10n_ve_pos"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@name='binaural_igtf_settings']">
-                <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
+            <xpath expr="//block[@name='l10n_ve_pos_block']" position="inside">
+                <separator string="Fiscal Machine"/>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_mf_pos_access_button_mf">
                     <div class="o_setting_left_pane">
                         <field name="pos_access_button_mf"/>
                     </div>
                     <div class="o_setting_right_pane">
                         <label for="pos_access_button_mf"/>
+                        <div class="text-muted">
+                            Access button for MF
+                        </div>
                     </div>
                 </div>
-            </xpath>
-            <xpath expr="//div[@name='binaural_igtf_settings']" position="after">
-
-                <div class="col-12 col-lg-6 o_setting_box"
-                        id="message_in_head">
-                        <div class="o_setting_left_pane">
-                            <field name="message_in_head"/>
-                        </div>
-                        <div class="o_setting_right_pane">
-                            <label for="message_in_head"/>
-                            <div class="text-muted">
-                                message in head                            
-                            </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_mf_message_in_head">
+                    <div class="o_setting_left_pane">
+                        <field name="message_in_head"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="message_in_head"/>
+                        <div class="text-muted">
+                            Message in head                            
                         </div>
                     </div>
-                </xpath>
+                </div>
+                <separator string="IoT - Fiscal Machine" />
+                <setting string="IoT Box" help="Connect devices using an IoT Box">
+                    <field name="pos_is_posbox"/>
+                    <div class="content-group pos_iot_config" invisible="not pos_is_posbox">
+                        <div class="row">
+                            <label string="Fiscal Data Module" for="iface_fiscal_data_module" class="col-lg-4 o_light_label"/>
+                            <field name="iface_fiscal_data_module"/>
+                        </div>
+                        <div class="row">
+                            <label string="Customer Display" for="pos_iface_display_id" class="col-lg-4 o_light_label"/>
+                            <field name="pos_iface_display_id"/>
+                        </div>
+                        <div class="row iot_barcode_scanner">
+                            <label string="Barcode Scanners/Card Readers" for="pos_iface_scanner_ids" class="col-lg-4 o_light_label"/>
+                            <field name="pos_iface_scanner_ids" widget="many2many_tags"/>
+                        </div>
+                        <div class="row" name="row_scale">
+                            <label string="Electronic Scale" for="pos_iface_scale_id" class="col-lg-4 o_light_label"/>
+                            <field name="pos_iface_scale_id"/>
+                        </div>
+                        <div>
+                            <button name="%(iot.iot_device_action)d" icon="oi-arrow-right" type="action" string="IoT Devices" class="btn-link mt8"/>
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
         </field>
     </record>
 </odoo>
