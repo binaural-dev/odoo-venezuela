@@ -81,13 +81,14 @@
         <field name="model">stock.picking</field>
         <field name="arch" type="xml">
             <search string="Search">
-                <field name="name" />
-                <field name="guide_number" />
+                <filter name="name" />
+                <filter name="guide_number" />
                 <filter name="state_guide_dispatch" string="State guide dispatch" context="{'group_by': 'state_guide_dispatch'}"/>
                 <filter name="date_done_group" string="Guide Date" context="{'group_by': 'date_done'}"/>
                 <filter name="state_guide_dispatch_to_invoice" string="To Invoice" domain="[('state_guide_dispatch', '=', 'to_invoice')]"/>
                 <filter name="state_guide_dispatch_invoiced" string="Invoiced" domain="[('state_guide_dispatch', '=', 'invoiced')]"/>
                 <filter name="date_done_filter" string="Guide Date" date="date_done"/>
+                <filter string="Location" name="location_id" domain="[]" context="{'group_by': 'location_id'}"/>
             </search>
         </field>
     </record>
@@ -103,7 +104,8 @@
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('l10n_ve_stock_account.stock_picking_guide_dispatch_views')}),
             ]"
         />
-        <field name="context">{"search_default_state_guide_dispatch_to_invoice":1}</field>
+        <field name="context">{'search_default_state_guide_dispatch_to_invoice': 1}</field>
+        <field name="search_view_id" ref="stock_picking_guide_dispatch_view_search"/>
         <field name="domain">[
             '&amp;',
             '&amp;',

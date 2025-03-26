@@ -1,37 +1,38 @@
 <odoo>
     <data>
-        <record id="res_config_settings_l10n_ve_taxes" model="ir.ui.view">
-            <field name="name">res.config.settings.binaural.rate</field>
+        <record id="view_res_config_settings_l10n_ve_taxes" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.taxes</field>
             <field name="model">res.config.settings</field>
             <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <!-- Configuración IGTF -->
-                    <block title="IGTF Configuration" name="igtf_config_block">
-                        <div class="col-12 col-lg-6 o_setting_box">
+                    <block title="Configuration Taxes: IGTF" name="igtf_config_block" >
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf">
                             <div class="o_setting_right_pane">
                                 <separator string="Core Settings"/>
                                 <group>
                                     <field name="unique_tax" string="Unique Tax Enforcement"/>
-                                    <div class="text-muted">
-                                        Tax is mandatory on order and invoice lines, only one tax allowed
-                                    </div>
                                 </group>
+                                <div class="text-muted">
+                                    Tax is mandatory on order and invoice lines, only one tax allowed
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_">
+                            <div class="o_setting_right_pane">
                                 <separator string="Display Options"/>
                                 <group>
                                     <field name="show_discount_on_moves" string="Show Discount Column"/>
-                                    <div class="text-muted">
-                                        Enable discount column visibility on invoice lines
-                                    </div>
                                 </group>
+                                <div class="text-muted">
+                                    Enable discount column visibility on invoice lines
+                                </div>
                             </div>
                         </div>
                     </block>
-                    <!-- Configuración de Impuestos -->
-                    <block title="Tax Settings" name="tax_config_block">
-                        <div class="col-12 col-lg-6 o_setting_box">
+                    <block title="Configuration Taxes: Taxes Sales/Purchase" name="tax_config_block">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sales">
                             <div class="o_setting_right_pane">
-                                <h2></h2>
                                 <separator string="Sales Tax Rates"/>
                                 <group>
                                     <field name="exent_aliquot_sale" string="Exempt Aliquot"/>
@@ -39,6 +40,10 @@
                                     <field name="reduced_aliquot_sale" string="Reduced Aliquot"/>
                                     <field name="extend_aliquot_sale" string="Extended Aliquot"/>
                                 </group>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_purchase">
+                            <div class="o_setting_right_pane">
                                 <separator string="Purchase Tax Rates"/>
                                 <group>
                                     <field name="exent_aliquot_purchase" string="Exempt Aliquot"/>
@@ -49,10 +54,28 @@
                             </div>
                         </div>
                     </block>
-                    <!-- Configuración de Libros -->
-                    <block title="Book Configuration" name="book_config_block">
-                        <!-- Libro de Ventas -->
-                        <div class="col-12 col-lg-6 o_setting_box">
+                    <block title="Configuration Taxes: Non-Deductible " name="non_deductible_block" >
+                        <div class="col-12 col-lg-6 o_setting_box" >
+                            <div class="o_setting_right_pane">
+                                <separator string="Deductibility"/>
+                                <group>
+                                    <field name="config_deductible_tax" string="Enable Non-Deductible Taxes"/>
+                                </group>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" invisible="not config_deductible_tax">
+                            <div class="o_setting_right_pane">
+                                <separator string="Non-Deductible Rates" />
+                                <group>
+                                    <field name="no_deductible_general_aliquot_purchase" string="General Aliquot"/>
+                                    <field name="no_deductible_reduced_aliquot_purchase" string="Reduced Aliquot"/>
+                                    <field name="no_deductible_extend_aliquot_purchase" string="Extended Aliquot"/>
+                                </group>
+                            </div>
+                        </div>
+                    </block>
+                    <block title="Configuration: Accountant Books" name="book_config_block">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_sales_book">
                             <div class="o_setting_right_pane">
                                 <separator string="Sales Book" />
                                 <group>
@@ -61,30 +84,12 @@
                                 </group>
                             </div>
                         </div>
-                        <!-- Libro de Compras -->
-                        <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_purchase_book">
                             <div class="o_setting_right_pane">
                                 <separator string="Purchase Book" />
                                 <group>
                                     <field name="not_show_reduced_aliquot_purchase" string="Hide Reduced Aliquot"/>
                                     <field name="not_show_extend_aliquot_purchase" string="Hide Extended Aliquot"/>
-                                </group>
-                                <separator string="Deductibility"/>
-                                <group>
-                                    <field name="config_deductible_tax" string="Enable Non-Deductible Taxes"/>
-                                </group>
-                            </div>
-                        </div>
-                    </block>
-                    <!-- Configuración No Deductible (Condicional) -->
-                    <block title="Non-Deductible Configuration" name="non_deductible_block" invisible="not config_deductible_tax">
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_right_pane">
-                                <h2>Non-Deductible Rates</h2>
-                                <group>
-                                    <field name="no_deductible_general_aliquot_purchase" string="General Aliquot"/>
-                                    <field name="no_deductible_reduced_aliquot_purchase" string="Reduced Aliquot"/>
-                                    <field name="no_deductible_extend_aliquot_purchase" string="Extended Aliquot"/>
                                 </group>
                             </div>
                         </div>
