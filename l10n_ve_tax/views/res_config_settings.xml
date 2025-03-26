@@ -6,31 +6,33 @@
             <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <block title="Configuration Taxes: IGTF" name="igtf_config_block" >
+                    <block title="Configuration Taxes: IGTF" name="l10n_ve_tax_block_igtf" >
+                        <separator string="Core Settings"/>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_unique_tax">
+                            <div class="col-lg-6 o_setting_left_pane">
+                                <field name="unique_tax"/>
+                            </div>
                             <div class="o_setting_right_pane">
-                                <separator string="Core Settings"/>
-                                <group>
-                                    <field name="unique_tax" string="Unique Tax Enforcement"/>
-                                </group>
+                                <label for="unique_tax"/>
                                 <div class="text-muted">
                                     Tax is mandatory on order and invoice lines, only one tax allowed
                                 </div>
                             </div>
                         </div>
+                        <separator string="Display Options" />
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_show_discount_on_moves">
+                            <div class="col-12 col-lg-6 o_setting_left_pane">
+                                <field name="show_discount_on_moves"/>
+                            </div>
                             <div class="o_setting_right_pane">
-                                <separator string="Display Options"/>
-                                <group>
-                                    <field name="show_discount_on_moves" string="Show Discount Column"/>
-                                </group>
+                                <label for="show_discount_on_moves"/>
                                 <div class="text-muted">
                                     Enable discount column visibility on invoice lines
                                 </div>
                             </div>
                         </div>
                     </block>
-                    <block title="Configuration Taxes: Taxes Sales/Purchase" name="tax_config_block">
+                    <block title="Configuration Taxes: Taxes Sales/Purchase" name="l10n_ve_tax_block_tax_rates">
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sales">
                             <div class="o_setting_right_pane">
                                 <separator string="Sales Tax Rates"/>
@@ -54,7 +56,7 @@
                             </div>
                         </div>
                     </block>
-                    <block title="Configuration Taxes: Non-Deductible " name="non_deductible_block" >
+                    <block title="Configuration Taxes: Non-Deductible " name="l10n_ve_tax_block_non_deductible" >
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_deductibility">
                             <div class="o_setting_right_pane">
                                 <separator string="Deductibility"/>
@@ -74,7 +76,7 @@
                             </div>
                         </div>
                     </block>
-                    <block title="Configuration: Accountant Books" name="book_config_block">
+                    <block title="Configuration: Accountant Books" name="l10n_ve_tax_block_books">
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_sales_book">
                             <div class="o_setting_right_pane">
                                 <separator string="Sales Book" />

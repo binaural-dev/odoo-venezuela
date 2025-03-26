@@ -6,8 +6,8 @@
             <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <block title="Rates Configuration" name="l10n_ve_rate_block">
-                        <setting string="Rates Configuration" name="l10n_ve_rate_setting">
+                    <block title="Configuration: Currency" name="l10n_ve_rate_block">
+                        <setting string="Set foreign currency" name="l10n_ve_rate_setting">
                             <div class="content-group">
                                 <div class="row mt16">
                                     <label for="currency_foreign_id" class="col-lg-6 o_light_label"/>
