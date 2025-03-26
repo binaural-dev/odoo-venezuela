@@ -67,6 +67,7 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
    - Compatibilidad con reportes fiscales.
 
 5. **l10n_ve_location**
+
    - Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos.
 
 6. **l10n_ve_fiscal**
@@ -119,8 +120,4 @@ Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra for
 
 ---
 
-
-
 ¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.
-
-
