@@ -24,16 +24,6 @@
             </group>
         </field>
     </record>
-    <record id="stock_picking_guide_dispatch_view_search" model="ir.ui.view">
-        <field name="name">stock.picking.guide.dispatch.view.search</field>
-        <field name="model">stock.picking</field>
-        <field name="arch" type="xml">
-            <search string="Search">
-                <filter name="state_guide_dispatch" string="State guide dispatch" context="{'group_by': 'state_guide_dispatch'}"/>
-                <filter string="Location" name="location_id" domain="[]" context="{'group_by': 'location_id'}"/>
-            </search>
-        </field>
-    </record>
     <record id="action_stock_move_line_consignation_report" model="ir.actions.act_window">
         <field name="name">Consignation Report</field>
         <field name="res_model">stock.move.line</field>
@@ -46,7 +36,8 @@
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('l10n_ve_stock_account.stock_move_line_consignation_report_tree')}),
             ]"
         />
-        <field name="context">{'search_default_state_done': 1, 'group_by': 'guide_number'}</field>
+        <field name="context">{'search_default_guide_number': 1}</field>
+        <field name="search_view_id" ref="l10n_ve_stock_account_stock_move_line_search"/>
         <field name="domain">
             [
                 ('picking_id.state', '=', 'done'),
