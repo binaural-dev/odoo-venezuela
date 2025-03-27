@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-24 19:22+0000\n"
-"PO-Revision-Date: 2025-03-24 19:22+0000\n"
+"POT-Creation-Date: 2025-03-27 20:17+0000\n"
+"PO-Revision-Date: 2025-03-27 20:17+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -36,11 +36,12 @@ msgstr "<span class=\"o_stat_text\">Cantidad Disponible para Vender</span>"
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid ""
-"<strong>When marked:</strong> On the product sheet Take into account all the the locations to calculate Available Quantities<br/>\n"
+"<strong>When marked:</strong> On the product sheet Take into account all the the locations to calculate Available Quantities\n"
+"                                <br/>\n"
 "                                <strong>When unchecked:</strong> The quantity of products will be filtered ('Available quantity') by parent and child locations that are only of Type 'Stock'"
 msgstr ""
-"<strong>Al estar marcado:</strong> En la ficha del producto Toma en cuenta todas las ubicaciones para calcular las Cantidades Disponibles<br/>\n"
-"                                <strong>Al estar desmarcado:</strong> Se filtrara la cantidad de productos ('Cantidad disponible') por ubicaciones padres e hijas que solo sean de Tipo 'Stock'"
+"<strong>Cuando está marcado:</strong> En la ficha del producto toma en cuenta todas las ubicaciones para calcular las cantidades disponibles<br/>\n"
+"                                <strong>Cuando está desmarcado:</strong> Se filtrará la cantidad de productos ('Cantidad disponible') por ubicaciones padre e hijo que solo sean de tipo 'Stock'"
 
 #. module: l10n_ve_stock
 #. odoo-python
@@ -325,8 +326,12 @@ msgstr "Si se encuentra marcado, algunos mensajes tienen error de envío."
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
-msgid "If you have more than the quantity on stock dont allow transfer/sell."
-msgstr "Si hay más cantidad en la demanda que en el inventario, no se permite la transferencia/venta."
+msgid ""
+"If you have more than the quantity on stock dont allow\n"
+"                                transfer/sell."
+msgstr ""
+"Si tienes más de la cantidad en stock, no permitir\n"
+"                                transferir/vender."
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_location
@@ -556,7 +561,7 @@ msgstr "Etiquetas de Producto"
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_product_product
 msgid "Product Variant"
-msgstr "Variantes de producto"
+msgstr "Variante del producto"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__quantity
@@ -567,7 +572,7 @@ msgstr "Cantidad"
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quant
 msgid "Quants"
-msgstr "Cuantos"
+msgstr "Cantidades"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
@@ -640,7 +645,7 @@ msgstr "Historial de cantidad de existencias "
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid "Stock Settings"
-msgstr "Configuraciones de Inventario"
+msgstr "Configuración de Inventario: General"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_product_product__quantity

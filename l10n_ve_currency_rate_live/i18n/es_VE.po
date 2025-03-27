@@ -18,7 +18,7 @@ msgstr ""
 #. module: l10n_ve_currency_rate_live
 #: model_terms:ir.ui.view,arch_db:l10n_ve_currency_rate_live.res_config_settings_view_form_inherit_currency_rate_live
 msgid "<span class=\"o_text-muted\">Only update in habil days</span>"
-msgstr "<span class=\"o_text-muted\">only update in habil days</span>"
+msgstr "<span class=\"o_text-muted\">Solo actualizar en días hábiles</span>"
 
 #. module: l10n_ve_currency_rate_live
 #: model:ir.model.fields,field_description:l10n_ve_currency_rate_live.field_res_company__can_update_habil_days

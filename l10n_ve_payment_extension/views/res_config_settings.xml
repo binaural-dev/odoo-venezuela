@@ -6,35 +6,62 @@
             <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <block title="Payment Extension Settings: Retention Journals" name="l10n_ve_payment_extension_journal_block">
-                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_payment_extension_journal">
+                    <block title="Payment Extension Settings" name="l10n_ve_payment_extension_journal_block">
+                        <separator string="General Configuration" role="section"/>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="code_visible"/>
+                            </div>
                             <div class="o_setting_right_pane">
-                                <group string="IVA Retention Journals">
-                                    <field name="iva_supplier_retention_journal_id" string="Supplier Journal"/>
-                                    <field name="iva_customer_retention_journal_id" string="Customer Journal"/>
-                                </group>
-                                <group string="ISLR Retention Journals">
-                                    <field name="islr_supplier_retention_journal_id" string="Supplier Journal"/>
-                                    <field name="islr_customer_retention_journal_id" string="Customer Journal"/>
-                                </group>
-                                <group string="Municipal Retention Journals">
-                                    <field name="municipal_supplier_retention_journal_id" string="Supplier Journal"/>
-                                    <field name="municipal_customer_retention_journal_id" string="Customer Journal"/>
-                                </group>
-                                <group string="General Settings">
-                                    <field name="code_visible" string="Show Code in Reports"/>
-                                </group>
+                                <label for="code_visible" string="Show Code in Reports" />
+                                <div class="text-muted">
+                                    <p>When this option is enabled, the code will be displayed in the reports.</p>
+                                </div>
                             </div>
                         </div>
-                    </block>
-                    <block title="Payment Extension Settings: Other" name="l10n_ve_payment_extension_withholding_block">
-                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_payment_extension_withholding">
+                        <separator string="Withholding Conditions" role="section"/>
+                        <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_right_pane">
-                                <group string="Withholding Conditions">
-                                    <field name="condition_withholding_id" string="Applicable Condition"/>
-                                </group>
+                                <label for="condition_withholding_id" string="Applicable Condition" class="mb8"/>
+                                <field name="condition_withholding_id" class="mb16"/>
                             </div>
                         </div>
+                        <!-- Diarios de Retención -->
+                        <separator string="Retention Journals" role="section"/>
+                        <setting name="retention_journals_settings">
+                            <div class="content-group">
+                                <!-- IVA Retention Journals -->
+                                <separator string="IVA Retention Journals"/>
+                                <div class="row mt16">
+                                    <label for="iva_supplier_retention_journal_id" string="Supplier Journal" class="col-lg-6 o_light_label"/>
+                                    <field name="iva_supplier_retention_journal_id" class="col-lg-6"/>
+                                </div>
+                                <div class="row mt16">
+                                    <label for="iva_customer_retention_journal_id" string="Customer Journal" class="col-lg-6 o_light_label"/>
+                                    <field name="iva_customer_retention_journal_id" class="col-lg-6"/>
+                                </div>
+                                <!-- ISLR Retention Journals -->
+                                <separator string="ISLR Retention Journals"/>
+                                <div class="row mt16">
+                                    <label for="islr_supplier_retention_journal_id" string="Supplier Journal" class="col-lg-6 o_light_label"/>
+                                    <field name="islr_supplier_retention_journal_id" class="col-lg-6"/>
+                                </div>
+                                <div class="row mt16">
+                                    <label for="islr_customer_retention_journal_id" string="Customer Journal" class="col-lg-6 o_light_label"/>
+                                    <field name="islr_customer_retention_journal_id" class="col-lg-6"/>
+                                </div>
+                                <!-- Municipal Retention Journals -->
+                                <separator string="Municipal Retention Journals"/>
+                                <div class="row mt16">
+                                    <label for="municipal_supplier_retention_journal_id" string="Supplier Journal" class="col-lg-6 o_light_label"/>
+                                    <field name="municipal_supplier_retention_journal_id" class="col-lg-6"/>
+                                </div>
+                                <div class="row mt16">
+                                    <label for="municipal_customer_retention_journal_id" string="Customer Journal" class="col-lg-6 o_light_label"/>
+                                    <field name="municipal_customer_retention_journal_id" class="col-lg-6"/>
+                                </div>
+                            </div>
+                        </setting>
                     </block>
                 </xpath>
             </field>

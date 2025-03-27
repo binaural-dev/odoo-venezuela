@@ -32,21 +32,21 @@
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_igtf_percentage">
                     <div class="o_setting_left_pane"/>
                     <div class="o_setting_right_pane">
-                        <label for="igtf_percentage" />
+                        <label for="igtf_percentage" class="col-6"/>
                         <field name="igtf_percentage" />
                     </div>
                 </div>
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_customer_account_igtf_id">
                     <div class="o_setting_left_pane"/>
                     <div class="o_setting_right_pane">
-                        <label for="customer_account_igtf_id"  />
+                        <label for="customer_account_igtf_id"  class="col-6"/>
                         <field name="customer_account_igtf_id" />
                     </div>
                 </div>
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_supplier_account_igtf_id">
                     <div class="o_setting_left_pane"/>
                     <div class="o_setting_right_pane">
-                        <label for="supplier_account_igtf_id"  />
+                        <label for="supplier_account_igtf_id"  class="col-6"/>
                         <field name="supplier_account_igtf_id" />
                     </div>
                 </div>
