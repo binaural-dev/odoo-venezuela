@@ -5,7 +5,7 @@
         <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
         <field name="arch" type="xml">
             <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                <block title="Contact Configuration" string="Contact Configuration" name="l10n_ve_contact_block">
+                <block title="Configuration Contact: General" string="Contact Configuration" name="l10n_ve_contact_block">
                     <div id="l10n_ve_contact_div_validate_user_by_company" class="col-6 col-lg-6 o_setting_box">
                         <div class="o_setting_left_pane">
                             <field name="validate_user_creation_by_company" readonly="False"/>
