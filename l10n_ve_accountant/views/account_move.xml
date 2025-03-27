@@ -33,14 +33,14 @@
                 <page string="Foreign currency" name="foreign_currency">
                     <group>
                         <field name="foreign_currency_id" invisible='1' />
-                        <field name="manually_set_rate" />
+                        <field name="manually_set_rate" invisible="1" />
                         <field
                             name="foreign_inverse_rate"
                             invisible="1"
                             string="Foreign inverse rate"
                         />
                         <t groups="base.group_no_one">
-                            <field name="foreign_inverse_rate" />
+                            <field name="foreign_inverse_rate" invisible="1" />
                         </t>
                         <field name="foreign_rate" readonly="state == 'posted'" />
                     </group>
