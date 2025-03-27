@@ -47,7 +47,8 @@
                 <attribute name="readonly">move_type in ['out_refund', 'out_invoice'] and is_debit_journal</attribute>
             </xpath>
             <button name="button_draft" position="attributes">
-                <attribute name="invisible">state in ['posted', 'cancel'] and move_type in ['out_invoice', 'out_refund'] and is_debit_journal and not show_reset_to_draft_button</attribute>
+                <attribute name="invisible">1</attribute>
+                <!-- <attribute name="invisible">state in ['posted', 'cancel'] and move_type in ['out_invoice', 'out_refund'] and is_debit_journal and not show_reset_to_draft_button</attribute> -->
             </button>
         </field>
     </record>
@@ -152,5 +153,3 @@
         </field>
     </record>
 </odoo>
-
-
