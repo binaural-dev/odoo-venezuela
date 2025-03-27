@@ -1,0 +1,48 @@
+
+<odoo>
+    <data noupdate="1">
+        <record id="iot_port_com_1" model="iot.port">
+            <field name="name">COM1</field>
+        </record>
+
+        <record id="iot_port_com_2" model="iot.port">
+            <field name="name">COM2</field>
+        </record>
+
+        <record id="iot_port_com_3" model="iot.port">
+            <field name="name">COM3</field>
+        </record>
+
+        <record id="iot_port_com_4" model="iot.port">
+            <field name="name">COM4</field>
+        </record>
+
+        <record id="iot_port_com_5" model="iot.port">
+            <field name="name">COM5</field>
+        </record>
+
+        <record id="iot_port_com_6" model="iot.port">
+            <field name="name">COM6</field>
+        </record>
+
+        <record id="iot_port_com_7" model="iot.port">
+            <field name="name">COM7</field>
+        </record>
+
+        <record id="iot_port_com_8" model="iot.port">
+            <field name="name">COM8</field>
+        </record>
+
+        <record id="iot_port_com_9" model="iot.port">
+            <field name="name">COM9</field>
+        </record>
+
+        <record id="iot_port_com_10" model="iot.port">
+            <field name="name">COM10</field>
+        </record>
+
+        <record id="iot_port_com_11" model="iot.port">
+            <field name="name">COM11</field>
+        </record>
+    </data>
+</odoo>
