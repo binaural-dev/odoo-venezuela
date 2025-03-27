@@ -7,13 +7,12 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Base",
-    "version": "17.0.0.0.00",
+    "version": "17.0.0.0.1",
     # any module necessary for this one to work correctly
-    "depends": [
-        "base",
-    ],
+    "depends": ["l10n_ve_base"],
     "data": [],
     "images": ["static/description/icon.png"],
     "application": True,
     "auto_install": True,
+    "post_init_hook": "post_init_hook",
 }
