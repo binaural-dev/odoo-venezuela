@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20240422\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-01 21:15+0000\n"
-"PO-Revision-Date: 2024-07-01 21:15+0000\n"
+"POT-Creation-Date: 2025-03-27 21:29+0000\n"
+"PO-Revision-Date: 2025-03-27 21:29+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -35,6 +35,17 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_res_config_settings__pos_access_button_mf
 msgid "Access Button Mf"
 msgstr "Mostrar Reportes Fiscales"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "Access button for MF"
+msgstr "Botón de acceso para MF"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.l10n_ve_pos_mf_res_config_settings_view_form_inherit_pos_iot
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "Barcode Scanners/Card Readers"
+msgstr "Escáneres de código de barras/Lectores de tarjetas"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
@@ -75,7 +86,7 @@ msgstr "Compañia"
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
@@ -83,6 +94,11 @@ msgstr "Opciones de configuración"
 #, python-format
 msgid "Confirm"
 msgstr "Confirmar"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "Connect devices using an IoT Box"
+msgstr "Conectar dispositivos usando una IoT Box"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_wizard_sales_book__create_uid
@@ -93,6 +109,12 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_wizard_sales_book__create_date
 msgid "Created on"
 msgstr "Creado en"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.l10n_ve_pos_mf_res_config_settings_view_form_inherit_pos_iot
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "Customer Display"
+msgstr "Pantalla del cliente"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_wizard_sales_book__date_from
@@ -110,10 +132,22 @@ msgid "Display Name"
 msgstr "Mostrar nombre"
 
 #. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.l10n_ve_pos_mf_res_config_settings_view_form_inherit_pos_iot
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "Electronic Scale"
+msgstr "Balanza Electrónica"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.l10n_ve_pos_mf_res_config_settings_view_form_inherit_pos_iot
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.pos_config_view_form_inherit
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.res_config_settings_view_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
 msgid "Fiscal Data Module"
-msgstr "Maquina Fiscal"
+msgstr "Módulo de Datos Fiscales"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "Fiscal Machine"
+msgstr "Máquina Fiscal"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
@@ -171,6 +205,30 @@ msgid "Iface Fiscal Data Module"
 msgstr "Maquina Fiscal"
 
 #. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
+#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
+#, python-format
+msgid "Internal MF error"
+msgstr "Error interno de MF"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "IoT - Fiscal Machine"
+msgstr "IoT - Máquina Fiscal"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "IoT Box"
+msgstr "Caja IoT"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.l10n_ve_pos_mf_res_config_settings_view_form_inherit_pos_iot
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "IoT Devices"
+msgstr "Dispositivos IoT"
+
+#. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
@@ -181,11 +239,6 @@ msgstr "Asiento contable"
 #, python-format
 msgid "LOGGER THIS"
 msgstr ""
-
-#. module: l10n_ve_pos_mf
-#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_wizard_sales_book____last_update
-msgid "Last Modified on"
-msgstr "Ultima modificación en"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_wizard_sales_book__write_uid
@@ -199,44 +252,77 @@ msgstr "Última actualización en"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/xml/Chrome.xml:0
+#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
+#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
+#, python-format
+msgid "MF error"
+msgstr "Error de MF"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/xml/Navbar.xml:0
 #, python-format
 msgid "Maquina Fiscal"
-msgstr ""
+msgstr "Máquina Fiscal"
+
+#. module: l10n_ve_pos_mf
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__message_in_head
+#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_res_config_settings__message_in_head
+msgid "Message In Head"
+msgstr "Mensaje en el encabezado"
+
+#. module: l10n_ve_pos_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
+msgid "Message in head"
+msgstr "Mensaje en el encabezado"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf/static/src/xml/TicketScreen.xml:0
 #, python-format
 msgid "N Invoice"
-msgstr "Numero de Factura"
+msgstr "Número de Factura"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/xml/ReceiptScreen.xml:0
+#, python-format
+msgid "Nro Factura:"
+msgstr "Nro. Factura:"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_mf/static/src/xml/DebugWidget.xml:0
 #, python-format
 msgid "PROGRAMACION"
-msgstr ""
+msgstr "PROGRAMACIÓN"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/xml/ReceiptScreen.xml:0
+#, python-format
+msgid "Pertece al siguiente Z:"
+msgstr "Pertenece al siguiente Z:"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_pos_config
 msgid "Point of Sale Configuration"
-msgstr "Configuración del TPV"
+msgstr "Configuración del punto de venta"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_pos_order
 msgid "Point of Sale Orders"
-msgstr "Pedidos del TPV"
+msgstr "Órdenes del Punto de venta"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_pos_payment_method
 msgid "Point of Sale Payment Methods"
-msgstr "Métodos de pago en el punto de venta "
+msgstr "Métodos de pago del Punto de venta "
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model,name:l10n_ve_pos_mf.model_pos_session
 msgid "Point of Sale Session"
-msgstr "Sesión TPV"
+msgstr "Sesión del punto de venta"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
@@ -262,7 +348,7 @@ msgstr "Reporte Z"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/xml/Chrome.xml:0
+#: code:addons/l10n_ve_pos_mf/static/src/xml/Navbar.xml:0
 #, python-format
 msgid "Reporte Maquina Fiscal"
 msgstr ""
@@ -313,7 +399,14 @@ msgstr ""
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order__fiscal_machine
 msgid "Serial de Maquina fiscal"
-msgstr ""
+msgstr "Serial de la Máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/xml/ReceiptScreen.xml:0
+#, python-format
+msgid "Serial de la Maquina fiscal:"
+msgstr "Serial de la Máquina fiscal:"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__serial_machine
@@ -330,14 +423,3 @@ msgstr "Lineas Tradicionales"
 #: model:ir.model,name:l10n_ve_pos_mf.model_wizard_sales_book
 msgid "Wizard to download xlsx of sakes Book POS"
 msgstr "Wizard para descargar xlsx de libro de ventas POS"
-
-#. module: l10n_ve_pos_mf
-#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_config__message_in_head
-#: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_res_config_settings__message_in_head
-msgid "Message In Head"
-msgstr "Mensaje en encabezado"
-
-#. module: l10n_ve_pos_mf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.res_config_settings_binaural_pos
-msgid "message in head"
-msgstr "Breve descripción agregada al encabezado de la factura fiscal"
