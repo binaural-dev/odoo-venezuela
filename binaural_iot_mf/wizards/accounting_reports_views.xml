@@ -1,13 +1,12 @@
-
 <odoo>
     <data>
         <record id="wizard_binaural_facturacion_with_mf_view" model="ir.ui.view">
             <field name="name">wizard.accounting.reports.view.mf</field>
             <field name="model">wizard.accounting.reports</field>
-            <field name="inherit_id" ref="binaural_invoice.wizard_binaural_facturacion_reportes_view"/>
+            <field name="inherit_id" ref="l10n_ve_invoice.wizard_binaural_facturacion_reportes_view" />
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='currency_system']" position="after">
-                    <field name="with_fiscal_machine"/>
+                    <field name="with_fiscal_machine" />
                 </xpath>
             </field>
         </record>
