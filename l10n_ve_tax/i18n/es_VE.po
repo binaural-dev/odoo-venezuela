@@ -6,28 +6,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-24 19:27+0000\n"
-"PO-Revision-Date: 2025-03-24 19:27+0000\n"
+"POT-Creation-Date: 2025-03-27 15:38+0000\n"
+"PO-Revision-Date: 2025-03-27 15:38+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid "Allow showing the discount column on invoice lines"
-msgstr "Permite mostrar la columna de descuento en las líneas de factura"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid ""
-"Allows you to select the tax columns that should be reflected in the\n"
-"                            client's book"
-msgstr ""
-"Permite seleccionar las columnas de impuesto que deben reflejarse en el\n"
-"libro del cliente"
 
 #. module: l10n_ve_tax
 #: model:ir.model,name:l10n_ve_tax.model_res_company
@@ -47,12 +33,62 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Configuration Taxes: IGTF"
+msgstr "Configuración Impuestos: IGTF"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Configuration Taxes: Non-Deductible"
+msgstr "Configuración Impuestos: No Deducibles"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Configuration Taxes: Taxes Sales/Purchase"
+msgstr "Configuración Impuestos: Ventas/Compras"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Configuration: Accountant Books"
+msgstr "Configuración: Libros Contables"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Core Settings"
+msgstr "Configuración Principal"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Deductibility"
+msgstr "Deducibilidad"
+
+#. module: l10n_ve_tax
 #. odoo-javascript
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #, python-format
 msgid "Discount"
-msgstr ""
+msgstr "Descuento"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Display Options"
+msgstr "Opciones de visualización"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Enable Non-Deductible Taxes"
+msgstr "Habilitar impuestos no deducibles"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Enable discount column visibility on invoice lines"
+msgstr "Habilitar visibilidad de la columna de descuento en líneas de factura"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Exempt Aliquot"
+msgstr "Alícuota exenta"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_purchase
@@ -79,6 +115,16 @@ msgid "Extend Aliquot Sale"
 msgstr "Alícuota extendida ventas"
 
 #. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Extended Aliquot"
+msgstr "Alícuota extendida"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "General Aliquot"
+msgstr "Alícuota general"
+
+#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_purchase
 msgid "General Aliquot Purchase"
@@ -91,19 +137,19 @@ msgid "General Aliquot Sale"
 msgstr "Alícuota general ventas"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid "IGTF Settings"
-msgstr ""
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Hide Extended Aliquot"
+msgstr "Ocultar alícuota extendida"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Hide Reduced Aliquot"
+msgstr "Ocultar alícuota reducida"
 
 #. module: l10n_ve_tax
 #: model:ir.model,name:l10n_ve_tax.model_account_move_line
 msgid "Journal Item"
 msgstr "Apunte contable"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__module_l10n_ve_igtf
-msgid "Module L10N Ve Igtf"
-msgstr "Módulo de IGTF"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__no_deductible_extend_aliquot_purchase
@@ -128,12 +174,12 @@ msgstr "No Deducible Aliquota Reducida (Compra)"
 #: code:addons/l10n_ve_tax/models/account_tax.py:0
 #, python-format
 msgid "No foreign currency configured in the company"
-msgstr ""
+msgstr "No hay moneda extranjera configurada en la empresa"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid "Non-deductible in Purchases"
-msgstr "No deducibles en compras"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Non-Deductible Rates"
+msgstr "Tasas no deducibles"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_account_move_line__not_deductible_tax
@@ -165,9 +211,19 @@ msgid "Not Show Reduced Aliquot Sale"
 msgstr "No mostrar alícuota reducida (Ventas)"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid "Purchases Book Configuration"
-msgstr "Configuración de Libro de Compras"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Purchase Book"
+msgstr "Libro de Compras"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Purchase Tax Rates"
+msgstr "Tasas de Impuestos de Compras"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Reduced Aliquot"
+msgstr "Alícuota Reducida"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_purchase
@@ -182,9 +238,14 @@ msgid "Reduced Aliquot Sale"
 msgstr "Alícuota reducida ventas"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid "Sales Book Configuration"
-msgstr "Configuración de Libro de Ventas"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Sales Book"
+msgstr "Libro de Ventas"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Sales Tax Rates"
+msgstr "Tasas de Impuestos de Ventas"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__show_discount_on_moves
@@ -206,18 +267,9 @@ msgid "Tax"
 msgstr "Impuesto"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid ""
-"Tax is mandatory on order and invoice lines, additionally only one tax is "
-"allowed."
-msgstr ""
-"El impuesto es obligatorio en las lineas de pedido y factura, adicionalmente"
-" solo se permite un impuesto."
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid "Taxes Configuration"
-msgstr "Configuración de impuestos"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Tax is mandatory on order and invoice lines, only one tax allowed"
+msgstr "El impuesto es obligatorio en las líneas de pedido y factura, solo se permite un impuesto"
 
 #. module: l10n_ve_tax
 #. odoo-javascript
@@ -231,8 +283,3 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__unique_tax
 msgid "Unique Tax"
 msgstr "Impuesto único"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
-msgid "Use non-deductible taxes on purchases"
-msgstr "Usar Impuestos no deducibles en compras"
