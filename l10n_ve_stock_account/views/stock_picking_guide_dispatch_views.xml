@@ -71,8 +71,8 @@
         <field name="model">stock.picking</field>
         <field name="arch" type="xml">
             <search string="Search">
-                <filter name="name" />
-                <filter name="guide_number" />
+                <field name="name" />
+                <field name="guide_number" />
                 <filter name="state_guide_dispatch" string="State guide dispatch" context="{'group_by': 'state_guide_dispatch'}"/>
                 <filter name="date_done_group" string="Guide Date" context="{'group_by': 'date_done'}"/>
                 <filter name="state_guide_dispatch_to_invoice" string="To Invoice" domain="[('state_guide_dispatch', '=', 'to_invoice')]"/>
