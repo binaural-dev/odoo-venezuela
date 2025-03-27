@@ -7,10 +7,10 @@
         <field name="arch" type="xml">
             <button name="button_draft" position="after">
                 <field name='print_type' invisible="1"/>
-                <widget name="iot-mf-button" action="print_out_invoice" invisible="move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != False or print_type != 'fiscal'"/>                
+                <widget name="iot-mf-button" action="print_out_invoice" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != False or print_type != 'fiscal'"/>                
                 <widget name="iot-mf-button" action="reprint_document" invisible="mf_invoice_number == False or print_type != 'fiscal'"/>
-                <widget name="iot-mf-button" action="print_out_refund" invisible="move_type != 'out_refund' or mf_invoice_number or print_type != 'fiscal'"/>
-                <widget name="iot-mf-button" action="print_debit_note" invisible="move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != True or print_type != 'fiscal'"/>
+                <widget name="iot-mf-button" action="print_out_refund" invisible="state != 'posted' or move_type != 'out_refund' or mf_invoice_number or print_type != 'fiscal'"/>
+                <widget name="iot-mf-button" action="print_debit_note" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != True or print_type != 'fiscal'"/>
 
             </button>
             <xpath expr="//field[@name='ref']" position="after">
