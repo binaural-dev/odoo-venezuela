@@ -100,7 +100,7 @@ msgstr "Activar entrada de producto con código de barras en modo estricto"
 msgid ""
 "Allows you to sell kits whose products are not in the main warehouse of the "
 "box."
-msgstr ""
+msgstr "Permite vender kits cuyos productos no están en el almacén principal de la caja."
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__amount_to_zero
@@ -181,7 +181,7 @@ msgstr "Cambiar cantidad en orden de POS"
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Change state to draft in account moves from POS"
-msgstr ""
+msgstr "Cambiar estado a borrador en movimientos contables desde el POS"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -439,6 +439,8 @@ msgid ""
 "It is allowed to break reconciliation of payments associated with the POS\n"
 "                                    if the session it corresponds to is open"
 msgstr ""
+"Se permite romper la conciliación de pagos asociados con el POS\n"
+"                                    si la sesión correspondiente está abierta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_account_move
@@ -570,7 +572,7 @@ msgstr "Pagos en"
 msgid ""
 "Please create/select a Point of Sale above to show the configuration "
 "options."
-msgstr ""
+msgstr "Por favor cree/seleccione un Punto de Venta arriba para mostrar las opciones de configuración."
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
@@ -708,7 +710,7 @@ msgstr "Detalle de ventas"
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Search clients by vat number in CNE database"
-msgstr ""
+msgstr "Buscar clientes por número de identificación en la base de datos del CNE"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__sell_kit_from_another_store
