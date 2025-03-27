@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20241007\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-15 14:37+0000\n"
-"PO-Revision-Date: 2024-10-15 14:37+0000\n"
+"POT-Creation-Date: 2025-03-27 17:00+0000\n"
+"PO-Revision-Date: 2025-03-27 17:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,14 +16,6 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/ProductScreen.js:0
-#, python-format
-msgid " is out of stock."
-msgstr " no tiene suficiente stock"
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos_general
 msgid "&gt;$"
 msgstr ""
@@ -34,9 +26,16 @@ msgid "'Payment Report.pdf'"
 msgstr "'Reporte de Pagos.pdf'"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/orderline/orderline.xml:0
+#, python-format
+msgid "(Tasa:"
+msgstr ""
+
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "+ New Shop"
-msgstr "+ Nuevo terminal"
+msgstr "+ Nueva Tienda"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields.selection,name:l10n_ve_pos.selection__pos_payment_report__show_categories__1_level
@@ -49,18 +48,39 @@ msgid "2nd Level"
 msgstr "2do Nivel"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid ""
-"<i class=\"fa fa-info-circle me-1\" title=\"This setting is common to all "
-"PoS.\" pos-data-toggle=\"tooltip\"/>"
-msgstr ""
-
-#. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/PartnerDetailsEdit.js:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.js:0
 #, python-format
 msgid "A Customer VAT Is Required"
 msgstr "El documento de identidad es requerido"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.js:0
+#, python-format
+msgid "A phone number is required"
+msgstr "Se requiere un número de teléfono"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.js:0
+#, python-format
+msgid "A street is required"
+msgstr "Se requiere una calle"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.js:0
+#, python-format
+msgid "A valid country is required"
+msgstr "Se requiere un país válido"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.js:0
+#, python-format
+msgid "A valid phone number is required"
+msgstr "Se requiere un número de teléfono válido"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__activate_barcode_strict_mode
@@ -71,35 +91,21 @@ msgstr "Activar Modo Estricto Barcode"
 #. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__activate_barcode_strict_mode
 #: model:ir.model.fields,help:l10n_ve_pos.field_res_config_settings__activate_barcode_strict_mode
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Activate product entry with barcode in strict mode"
 msgstr "Activar entrada de producto con código de barras en modo estricto"
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__module_binaural_pos_advance_payment
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__module_binaural_pos_advance_payment
-msgid "Advance Payment"
-msgstr "Anticipos"
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid ""
 "Allows you to sell kits whose products are not in the main warehouse of the "
 "box."
 msgstr ""
-"Permite vender kits cuyos productos no están en el almacén principal de la "
-"caja."
-
-#. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__always_invoice
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__always_invoice
-msgid "Always Invoice"
-msgstr "Facturar siempre"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__amount_to_zero
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__amount_to_zero
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.pos_config_form_view_validation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Amount to zero"
 msgstr "Cantidad en 0"
 
@@ -120,7 +126,7 @@ msgstr "Descuento autorizado pos"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/ProductItem.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/components/product_card/product_card.xml:0
 #, python-format
 msgid "Available:"
 msgstr "Disponible:"
@@ -139,22 +145,6 @@ msgstr "Ambos"
 #: model:ir.model.fields.selection,name:l10n_ve_pos.selection__pos_payment_report__type_report__by_cash_register
 msgid "By Cash Register"
 msgstr "Por Caja"
-
-#. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/TicketScreen.js:0
-#, python-format
-msgid ""
-"By confirming each product line will be assigned with the total amount to be"
-" reimbursed."
-msgstr ""
-"Al confirmar a cada línea de producto se le asignará la cantidad total para "
-"ser reembolsado."
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Calculate IGTF with payments made in USD"
-msgstr "Calcula el IGTF con los pagos realizados en USD"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.pos_payment_report
@@ -189,15 +179,13 @@ msgid "Change quantity on POS order"
 msgstr "Cambiar cantidad en orden de POS"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Change state to draft in account moves from POS"
 msgstr ""
-"Editar el estatus de los asientos contables asociados al POS (Punto de "
-"Venta) si la sesiona la que corresponde esta abierta"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.xml:0
 #, python-format
 msgid "City"
 msgstr "Ciudad"
@@ -205,17 +193,29 @@ msgstr "Ciudad"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "Configuration POS: Point of Sale"
+msgstr "Configuración POS: Punto de Venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/closing_popup/closing_popup.xml:0
+#, python-format
+msgid "Counted"
+msgstr "Contado"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__create_uid
@@ -251,14 +251,16 @@ msgid "Currency Foreign for the company"
 msgstr "Moneda alterna para la compañía"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Default journal to receipt account moves"
-msgstr "Diario contable por defecto para generar recibos de ventas"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "Deletes automatically products without free qty on POS"
+msgstr "Elimina automáticamente productos sin cantidad disponible en el POS"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Deletes automatically products without free qty on POS"
-msgstr "Eliminar automáticamente los productos sin disponibilidad del POS"
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/closing_popup/closing_popup.xml:0
+#, python-format
+msgid "Difference"
+msgstr "Diferencia"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
@@ -277,21 +279,21 @@ msgid "Distribución del Reporte"
 msgstr ""
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.pos_config_form_view_validation
-msgid "Do not allow sales less than 0"
-msgstr "No permitir ventas si no hay disponibilidad suficiente"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "Do not allow sales less than"
+msgstr "No permitir ventas menores a"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PartnerDetailsEdit.xml:0
-#: code:addons/l10n_ve_pos/static/src/xml/PartnerListScreen.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_list/partner_list.xml:0
 #, python-format
 msgid "Document"
 msgstr "Documento"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/PaymentScreen.js:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 #, python-format
 msgid "Empty Paymentline"
 msgstr "Linea de Pago Vacía"
@@ -313,23 +315,17 @@ msgstr ""
 "intente más tarde"
 
 #. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/closing_popup/closing_popup.xml:0
+#, python-format
+msgid "Expected"
+msgstr "Esperado"
+
+#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos_general
 msgid "FISCAL"
 msgstr ""
-
-#. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/PartnerListScreen.js:0
-#, python-format
-msgid "Failed connection"
-msgstr "Conexion Fallida"
-
-#. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__module_binaural_pos_mf
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__module_binaural_pos_mf
-msgid "Fiscal Machine"
-msgstr "Maquina Fiscal"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment__foreign_amount
@@ -344,7 +340,7 @@ msgstr "Monto alterno"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreenStatus.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_status/payment_status.xml:0
 #, python-format
 msgid "Foreign Change"
 msgstr "Cambio alterno"
@@ -379,7 +375,7 @@ msgstr "Tasa alterna"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreenStatus.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_status/payment_status.xml:0
 #, python-format
 msgid "Foreign Remaining"
 msgstr "Restante alterno"
@@ -392,7 +388,7 @@ msgstr "Monto Alterno"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreenStatus.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_status/payment_status.xml:0
 #, python-format
 msgid "Foreign Total Due"
 msgstr "Adeudado alterno"
@@ -403,13 +399,6 @@ msgid "Foreign Total:"
 msgstr "Total Alterno:"
 
 #. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/OrderSummary.xml:0
-#, python-format
-msgid "Foreign total:"
-msgstr "Total alterno:"
-
-#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos_general
 msgid "Formas de Pago"
@@ -417,7 +406,7 @@ msgstr ""
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/FullRefundButton.xml:0
+#: code:addons/l10n_ve_pos/static/src/app/components/full_refund/full_refund.xml:0
 #, python-format
 msgid "Full refund"
 msgstr "Reembolso total"
@@ -433,21 +422,8 @@ msgid "ID"
 msgstr ""
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__module_binaural_base_igtf
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__module_binaural_base_igtf
-msgid "IGTF"
-msgstr ""
-
-#. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__module_binaural_pos_igtf
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__module_binaural_pos_igtf
-msgid "IGTF in POS"
-msgstr "IGTF en TPV"
-
-#. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/ChangeFiscalButton.xml:0
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreen.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen_button.xml:0
 #, python-format
 msgid "Invoice"
 msgstr "Factura"
@@ -458,13 +434,11 @@ msgid "Is Foreign Currency"
 msgstr "Es moneda alterna"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid ""
 "It is allowed to break reconciliation of payments associated with the POS\n"
 "                                    if the session it corresponds to is open"
 msgstr ""
-"Se permite romper conciliacion de pagos asociados al POS si la sesion a la "
-"que corresponde esta abierta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_account_move
@@ -477,24 +451,6 @@ msgid "Journal Item"
 msgstr "Apunte contable"
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__keep_journal
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_keep_journal
-msgid "Keep Journal"
-msgstr "Mantener Diario"
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Keep the last journal used in POS"
-msgstr ""
-"Al seleccionar Factura/Recibo, se mantendra el ultimo diario usado para la "
-"proxima orden"
-
-#. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report____last_update
-msgid "Last Modified on"
-msgstr "Ultima modificación en"
-
-#. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__write_uid
 msgid "Last Updated by"
 msgstr "Última actualización por"
@@ -505,9 +461,12 @@ msgid "Last Updated on"
 msgstr "Última actualización en"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Manage advance payments"
-msgstr "Pago de anticipos"
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/navbar.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/navbar.xml:0
+#, python-format
+msgid "Logo"
+msgstr ""
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos
@@ -523,16 +482,16 @@ msgstr ""
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.xml:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
 #, python-format
 msgid "Name"
 msgstr "Nombre"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "No Point of Sale selected"
-msgstr "No se ha seleccionado un punto de venta"
+msgstr "No se ha seleccionado un Punto de Venta"
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -543,28 +502,41 @@ msgstr "Sin impuesto"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.xml:0
 #, python-format
 msgid "None"
 msgstr "Ninguno"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/closing_popup/closing_popup.xml:0
+#, python-format
+msgid "Open the money details popup"
+msgstr "Abrir el popup de detalles de dinero"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/closing_popup/closing_popup.xml:0
+#, python-format
+msgid "Opening"
+msgstr "Apertura"
+
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "POS Configuration"
-msgstr "Configuración de POS"
+msgstr "Configuración del POS"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_account_partial_reconcile
 msgid "Partial Reconcile"
-msgstr "Conciliación parcial"
+msgstr "Conciliación Parcial"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreen.xml:0
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreen.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/closing_popup/closing_popup.xml:0
 #, python-format
-msgid "Pay"
-msgstr "Pagar"
+msgid "Payment Method"
+msgstr "Método de Pago"
 
 #. module: l10n_ve_pos
 #: model:ir.actions.act_window,name:l10n_ve_pos.action_pos_payment_report
@@ -574,61 +546,46 @@ msgid "Payment Report"
 msgstr "Reporte de Pagos"
 
 #. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreen.xml:0
-#, python-format
-msgid "Payment method"
-msgstr "Metodo de pago"
-
-#. module: l10n_ve_pos
 #: model:ir.ui.menu,name:l10n_ve_pos.menu_pos_payment_report
 msgid "Payment report"
 msgstr "Reporte de Pagos"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/PaymentScreen.js:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
 #, python-format
 msgid "Payments"
 msgstr "Pagos"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/navbar/closing_popup/closing_popup.xml:0
+#, python-format
+msgid "Payments in"
+msgstr "Pagos en"
+
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid ""
 "Please create/select a Point of Sale above to show the configuration "
 "options."
 msgstr ""
-"Por favor, selecciona o crea un punto de venta para ver su configuracion"
 
 #. module: l10n_ve_pos
-#. odoo-python
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#, python-format
-msgid "PoS Payment Method Adjustment"
-msgstr "Ajuste de método de pago del PoS"
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Point of Sale"
 msgstr "Punto de Venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_config
 msgid "Point of Sale Configuration"
-msgstr "Configuración del TPV"
+msgstr "Configuración del punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_report_point_of_sale_report_saledetails
 msgid "Point of Sale Details"
-msgstr "Detalles del Punto de Venta"
+msgstr "Detalles del Punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment_report
@@ -638,27 +595,27 @@ msgstr "Punto de Venta Reporte de Detalles"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_order_line
 msgid "Point of Sale Order Lines"
-msgstr "Líneas de pedido de Punto de Venta"
+msgstr "Líneas de orden del Punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_order
 msgid "Point of Sale Orders"
-msgstr "Pedidos del TPV"
+msgstr "Órdenes del punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment_method
 msgid "Point of Sale Payment Methods"
-msgstr "Métodos de pago en el punto de venta "
+msgstr "Métodos de pago de punto de venta "
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment
 msgid "Point of Sale Payments"
-msgstr "Pagos en puntos de venta"
+msgstr "Pagos en punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_session
 msgid "Point of Sale Session"
-msgstr "Sesión TPV"
+msgstr "Sesión de punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__pos_config_ids
@@ -704,13 +661,6 @@ msgid "Pos Show Just Products With Available Qty"
 msgstr "Mostrar solamente los productos disponibles"
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__pos_tax_inside
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__pos_tax_inside
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_tax_inside
-msgid "Pos Tax Inside"
-msgstr "Impuestos incluidos"
-
-#. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__pos_unreconcile_moves
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_unreconcile_moves
 msgid "Pos Unreconcile Moves"
@@ -725,11 +675,6 @@ msgstr "Precio unitario"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.pos_payment_report
 msgid "Print"
 msgstr "Imprimir"
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Print invoices on Fiscal Machine, and get reports"
-msgstr "Imprimir Facturas en maquina fiscal, y obtener reportes"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
@@ -747,13 +692,6 @@ msgid "Quantity"
 msgstr "Cantidad"
 
 #. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/OrderWidget.xml:0
-#, python-format
-msgid "RATE BCV:"
-msgstr "TASA BCV:"
-
-#. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__foreign_inverse_rate
 msgid ""
 "Rate that will be used as factor to multiply of the foreign currency for "
@@ -763,35 +701,14 @@ msgstr ""
 " movimientos."
 
 #. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/ChangeFiscalButton.xml:0
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreen.xml:0
-#, python-format
-msgid "Receipt"
-msgstr "Recibo"
-
-#. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__receipt_journal_id
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__receipt_journal_id
-msgid "Receipt Journal"
-msgstr "Diario de recibo"
-
-#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
 msgid "Sales Details"
 msgstr "Detalle de ventas"
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order__sales_order
-msgid "Sales Order"
-msgstr "Comercial"
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Search clients by vat number in CNE database"
 msgstr ""
-"Buscar clientes por el numero de cedula en la base de datos del CNE (Centro "
-"Nacional Electoral)"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__sell_kit_from_another_store
@@ -800,15 +717,9 @@ msgid "Sell Kit From Another Store"
 msgstr "Vender Kit con Producto de Otro Almacen"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Set default invoice or receipt with account moves"
-msgstr ""
-"Seleccionar por defecto facturas o recibos para generar asientos contables"
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Settings on this page will apply to this point of sale."
-msgstr "Las configuraciones en esta pagina se aplicaran a este punto de venta"
+msgstr "La configuración en esta página se aplicará a este punto de venta."
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__show_categories
@@ -816,9 +727,14 @@ msgid "Show Categories"
 msgstr "Mostrar categorias"
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Show free quantity on POS"
-msgstr "Mostrar la cantidad disponible en el punto de venta"
+msgstr "Mostrar cantidad disponible en el POS"
+
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "Show quantites from warehouse of TPV"
+msgstr "Mostrar cantidades del almacén del TPV"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__start_date
@@ -827,7 +743,14 @@ msgstr "Fecha de Inicio"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreenStatus.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/order_receipt/order_receipt.xml:0
+#, python-format
+msgid "TOTAL"
+msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
 #, python-format
 msgid "Tasa BCV:"
 msgstr ""
@@ -844,10 +767,25 @@ msgstr "Impuestos"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/OrderSummary.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
 #, python-format
 msgid "Taxes:"
 msgstr "Impuestos:"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#, python-format
+msgid "The category %s does not belong to this company."
+msgstr "La categoría %s no pertenece a la compañía actual."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/models/order_model.js:0
+#, python-format
+msgid "The product %s You do not have enough stock in the warehouse"
+msgstr "El producto '%s' no tiene suficiente stock en el almacén"
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -869,10 +807,11 @@ msgid "The rate that is gonna be always shown to the user."
 msgstr "La tarifa que siempre se mostrará al usuario."
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order__to_receipt
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_order_line__to_receipt
-msgid "To Receipt"
-msgstr "Para recibo"
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_config.py:0
+#, python-format
+msgid "The session must have a foreign currency or active"
+msgstr "La sesión debe tener una moneda extranjera o estar activa"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
@@ -881,20 +820,23 @@ msgstr ""
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/OrderWidget.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
 #, python-format
-msgid "Total Products:"
-msgstr "Total de Productos:"
+msgid "Total de productos:"
+msgstr "Total de productos:"
 
 #. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
+#, python-format
 msgid "Total:"
 msgstr ""
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Transferir "
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__type_report
@@ -902,22 +844,13 @@ msgid "Type Report"
 msgstr "Tipo de Reporte"
 
 #. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/NumpadWidget.js:0
-#, python-format
-msgid "Usuario no autorizado para aplicar descuento"
-msgstr ""
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__validate_phone_in_pos
+msgid "Validate Phone In Pos"
+msgstr "Validar Teléfono en el POS"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreen.xml:0
-#, python-format
-msgid "Validate"
-msgstr "Validar"
-
-#. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/ProductScreen.js:0
+#: code:addons/l10n_ve_pos/static/src/overrides/models/order_model.js:0
 #, python-format
 msgid "Validate Product in Warehouse"
 msgstr "Caja tiene otro almacen asignado"
@@ -930,14 +863,14 @@ msgstr ""
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/xml/PaymentScreen.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen_top.xml:0
 #, python-format
 msgid "View Payments Origin"
 msgstr "Ver Pagos del Origen"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/PaymentScreen.js:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 #, python-format
 msgid "You can't validate with empty payment lines"
 msgstr "No puede validar con lineas de pago vacias"
@@ -964,60 +897,6 @@ msgstr ""
 "aún está abierta"
 
 #. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/TicketScreen.js:0
-#, python-format
-msgid "You want to refund all products"
-msgstr "Desea reembolsar todos los productos"
-
-#. module: l10n_ve_pos
-#: model:ir.model,name:l10n_ve_pos.model_report_binaural_pos_payment_report_pos
+#: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos
 msgid "report.l10n_ve_pos.payment_report_pos"
 msgstr ""
-
-#. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/js/ProductScreen.js:0
-#, python-format
-msgid "the quantity cannot be negative"
-msgstr "La cantidad no puede ser negativa"
-
-#. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/overrides/models/order_model.js:0
-#, python-format
-msgid "There is not enough quantity available"
-msgstr "No hay suficiente cantidad disponible."
-
-#. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/overrides/models/order_model.js:0
-#, python-format
-msgid "The product %s You do not have enough stock"
-msgstr "El Producto %s No tiene suficiente stock."
-
-#. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/overrides/models/order_model.js:0
-#, python-format
-msgid "The product %s You do not have enough stock in the warehouse"
-msgstr "El producto '%s' no tiene suficiente stock en el almacén"
-
-#. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__amount_to_zero
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__amount_to_zero
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Amount to zero"
-msgstr "Cantidad en 0"
-
-#. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
-msgid "Do not allow sales less than"
-msgstr "No permitir ventas si no hay disponibilidad suficiente"
-
-#. module: l10n_ve_pos
-#. odoo-python
-#: code:addons/l10n_ve_pos/models/pos_session.py:0
-#, python-format
-msgid "The category %s does not belong to this company."
-msgstr "La categoría %s no pertenece a la compañía actual."

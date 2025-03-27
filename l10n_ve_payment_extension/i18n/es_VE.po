@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-24 19:15+0000\n"
-"PO-Revision-Date: 2025-03-24 19:15+0000\n"
+"POT-Creation-Date: 2025-03-27 17:12+0000\n"
+"PO-Revision-Date: 2025-03-27 17:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -413,6 +413,11 @@ msgid "Annual Taxable Minimum"
 msgstr "Mínimo tributable Anual"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Applicable Condition"
+msgstr "Condición Aplicable"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__apply_islr_retention
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__apply_islr_retention
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__apply_islr_retention
@@ -648,6 +653,11 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__create_date
 msgid "Created on"
 msgstr "Creado en"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Customer Journal"
+msgstr "Diario del Cliente"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_search
@@ -987,6 +997,11 @@ msgid "Foreign total invoiced"
 msgstr "Total facturado alterno"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "General Settings"
+msgstr "Configuración General"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_arcv_report
 msgid "Generate ARCV Report"
 msgstr "Generar Comprobante ARCV"
@@ -1064,6 +1079,11 @@ msgid "ISLR Retention"
 msgstr "Retención de ISLR"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "ISLR Retention Journals"
+msgstr "Diarios de Retención de ISLR"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__retention_islr_line_ids
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__retention_islr_line_ids
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_islr_line_ids
@@ -1118,6 +1138,11 @@ msgstr "Retención de IVA"
 #: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_iva_client
 msgid "IVA Retention Clients"
 msgstr "Retenciones de IVA para Cliente"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "IVA Retention Journals"
+msgstr "Diarios de Retención"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__retention_iva_line_ids
@@ -1485,6 +1510,11 @@ msgid "Municipal Retention Clients"
 msgstr "Retenciones Municipales de Clientes"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Municipal Retention Journals"
+msgstr "Diarios de Retención Municipal"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__retention_municipal_line_ids
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__retention_municipal_line_ids
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_municipal_line_ids
@@ -1617,11 +1647,6 @@ msgid "Original Lines Per Invoice Counter"
 msgstr "Líneas Originales Por Factura"
 
 #. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
-msgid "Other withholding settings"
-msgstr "Otras configuraciones de Retenciones"
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__out_contingence
 msgid "Out contingence"
 msgstr "Sin contingencia"
@@ -1671,6 +1696,16 @@ msgstr "Concepto de Pago"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__line_payment_concept_ids
 msgid "Payment Concept Line"
 msgstr "Linea de Concepto de Pago"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Payment Extension Settings: Other"
+msgstr "Configuración de Extensión de Pago: Otros"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Payment Extension Settings: Retention Journals"
+msgstr "Configuración de Extensión de Pago: Diarios de Retención"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__payment_type_retention
@@ -1804,7 +1839,7 @@ msgstr "Recordar usar (,) como separador decimal"
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_ir_actions_report
 msgid "Report Action"
-msgstr "Acción de informe"
+msgstr "Reportar acción"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__report
@@ -1868,11 +1903,6 @@ msgstr "Fecha Contable"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_foreign_amount
 msgid "Retention Foreign Amount"
 msgstr "Monto de Retención Alterno"
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
-msgid "Retention Journals"
-msgstr "Diarios de Retención"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_account_retention_line
@@ -2000,6 +2030,11 @@ msgid "Sequences_municipal"
 msgstr "Secuencias Municipales"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Show Code in Reports"
+msgstr "Mostrar Código en los Informes"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__signature
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_signature_config_form_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_signature_config_search_l10n_ve_payment_extension
@@ -2068,6 +2103,11 @@ msgstr "Aplica Sustraendo"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__amount_subtract
 msgid "Subtract mount"
 msgstr "Monto Sustraendo"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Supplier Journal"
+msgstr "Diario del Proveedor"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_search
@@ -2499,6 +2539,11 @@ msgstr "Nro de Comprobante"
 #, python-format
 msgid "Warning"
 msgstr "Advertencia"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Withholding Conditions"
+msgstr "Condiciones de Retención"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__withholding_type_id
