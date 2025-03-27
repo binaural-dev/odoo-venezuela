@@ -41,32 +41,28 @@
                     icon="fa-file-text" 
                     string="Create Invoice" 
                     type="object"
-                    invisible="show_create_invoice_internal"
-                />
+                    invisible="not show_create_invoice"/>
                 <button 
                     name="create_bill" 
                     class="btn btn-link text-info" 
                     icon="fa-file-text" 
                     string="Create Bill" 
                     type="object"
-                    invisible="not show_create_invoice_internal"
-                />
+                    invisible="not show_create_bill"/>
                 <button 
                     name="create_customer_credit" 
                     class="btn btn-link text-info" 
                     icon="fa-file-text" 
                     string="Create Credit Note" 
                     type="object"
-                    invisible="not show_create_invoice_internal"
-                />
+                    invisible="not show_create_customer_credit"/>
                 <button 
                     name="create_vendor_credit" 
                     class="btn btn-link text-info" 
                     icon="fa-file-text" 
                     string="Create Vendor Credit" 
                     type="object"
-                    invisible="not show_create_invoice_internal"
-                />
+                    invisible="not show_create_vendor_credit"/>
             </tree>
         </field>
     </record>
