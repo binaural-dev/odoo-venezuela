@@ -1,30 +1,31 @@
 <odoo>
-    <record id="l10n_ve_pos_mf_res_config_settings_view_form" model="ir.ui.view">
-        <field name="name">l10n.ve.pos.mf.res.config.settings.view.form.inherit</field>
+    <record id="l10n_ve_pos_mf_res_config_settings_view_form_inherit_pos_iot" model="ir.ui.view">
+        <field name="name">l10n.ve.pos.mf.res.config.settings.view.form.inherit.pos.iot</field>
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="pos_iot.res_config_view_form_inherit_pos_iot" />
         <field name="arch" type="xml">
-            <xpath expr="//div[hasclass('pos_iot_config')]//div[@class='row'][2]" position="after">
-                <div class="row">
-                    <label string="Fiscal Data Module" for="iface_fiscal_data_module" class="col-lg-4 o_light_label"/>
-                    <field name="iface_fiscal_data_module"/>
+            <xpath expr="//div[hasclass('pos_iot_config')]" position="replace">
+                <div class="content-group pos_iot_config" invisible="not pos_is_posbox">
+                    <div class="row">
+                        <label string="Fiscal Data Module" for="iface_fiscal_data_module" class="col-lg-4 o_light_label"/>
+                        <field name="iface_fiscal_data_module"/>
+                    </div>
+                    <div class="row">
+                        <label string="Customer Display" for="pos_iface_display_id" class="col-lg-4 o_light_label"/>
+                        <field name="pos_iface_display_id"/>
+                    </div>
+                    <div class="row iot_barcode_scanner">
+                        <label string="Barcode Scanners/Card Readers" for="pos_iface_scanner_ids" class="col-lg-4 o_light_label"/>
+                        <field name="pos_iface_scanner_ids" widget="many2many_tags"/>
+                    </div>
+                    <div class="row" name="row_scale">
+                        <label string="Electronic Scale" for="pos_iface_scale_id" class="col-lg-4 o_light_label"/>
+                        <field name="pos_iface_scale_id"/>
+                    </div>
+                    <div>
+                        <button name="%(iot.iot_device_action)d" icon="oi-arrow-right" type="action" string="IoT Devices" class="btn-link mt8"/>
+                    </div>
                 </div>
-            </xpath>
-            <xpath expr="//div[@class='row'][1]" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-        </field>
-    </record>
-    <record id="l10n_ve_pos_mf_res_config_settings_view_form" model="ir.ui.view">
-        <field name="name">l10n.ve.pos.mf.res.config.settings.view.form.inherit</field>
-        <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form" />
-        <field name="arch" type="xml">
-            <xpath expr="//label[@for='pos_iface_print_via_proxy']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-            <xpath expr="//field[@name='pos_iface_print_via_proxy']" position="attributes">
-                <attribute name="invisible">1</attribute>
             </xpath>
         </field>
     </record>
