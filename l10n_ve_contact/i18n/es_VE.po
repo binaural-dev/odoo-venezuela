@@ -31,6 +31,8 @@ msgid ""
 "<span class=\"o_text-muted\">Avoid creating repeated contacts in each "
 "company using the document number field</span>"
 msgstr ""
+"<span class=\"o_text-muted\">Evitar la creación de contactos repetidos en "
+"cada compañía utilizando el campo número de documento</span>"
 
 #. module: l10n_ve_contact
 #. odoo-python
