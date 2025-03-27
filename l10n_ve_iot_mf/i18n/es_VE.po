@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20240116\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-26 15:55+0000\n"
-"PO-Revision-Date: 2024-01-26 15:55+0000\n"
+"POT-Creation-Date: 2025-03-27 21:29+0000\n"
+"PO-Revision-Date: 2025-03-27 21:29+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -142,13 +142,14 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_iot_mf/models/account_move.py:0
 #: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
 #, python-format
 msgid "Cannot print an invoice without validation"
 msgstr "No se puede imprimir una factura sin validación"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Check if the printer is still connected"
 msgstr "Revisa si la maquina fiscal esta conectada"
@@ -159,16 +160,25 @@ msgid "Command"
 msgstr "Commando"
 
 #. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_res_company
+msgid "Companies"
+msgstr "Empresas"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Configure Device"
 msgstr "Configurar Dispositivo"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Connection to printer failed"
 msgstr "Conexión a la impresora falló"
@@ -199,11 +209,9 @@ msgid "Date to"
 msgstr "Fecha Fin"
 
 #. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
-#, python-format
-msgid "Device is not connected"
-msgstr "El dispositivo no esta conteado"
+#: model:ir.model.fields,help:l10n_ve_iot_mf.field_res_config_settings__invoice_print_type
+msgid "Determina el tipo de impresión predeterminado para facturas de cliente"
+msgstr ""
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__display_name
@@ -225,13 +233,6 @@ msgstr ""
 "                                y es usado para pagar facturas y notas de credito"
 
 #. module: l10n_ve_iot_mf
-#. odoo-python
-#: code:addons/l10n_ve_iot_mf/iot_handlers/drivers/SerialFiscalDriver.py:0
-#, python-format
-msgid "Error while reading %s"
-msgstr "Error mientras %s"
-
-#. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_tax__fiscal_code
 msgid "Fiscal Code"
 msgstr "Código en Maquina fiscal"
@@ -241,6 +242,7 @@ msgstr "Código en Maquina fiscal"
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__iot_mf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.account_move_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.res_config_settings_view_form_inherit_l10n_ve_iot_mf
 msgid "Fiscal Machine"
 msgstr "Maquina fiscal"
 
@@ -272,43 +274,41 @@ msgid "Flag 24"
 msgstr "Bandera 24"
 
 #. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "GET SERIAL FISCAL MACHINE"
-msgstr "OBTENER NUMERO DE SERIE DE MAQUINA FISCAL"
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__res_company__invoice_print_type__free
+msgid "Forma Libre"
+msgstr ""
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Generate Report X"
 msgstr "Generar reporte X"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Generate Report Z"
 msgstr "Generar reporte Z"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Get Serial Machine"
 msgstr "Obtener Serial de la Maquina Fiscal"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Get Status / Error"
 msgstr "Obtener Status / Error"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Get Status 1"
 msgstr "Obtener Status 1"
@@ -336,7 +336,7 @@ msgstr "Id del método de pago"
 #. module: l10n_ve_iot_mf
 #: model:ir.model,name:l10n_ve_iot_mf.model_iot_device
 msgid "IOT Device"
-msgstr "Dispositivo IOT"
+msgstr "Dispositivo IoT"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__rf
@@ -350,7 +350,7 @@ msgstr "Facturas"
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__iot_box
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__iot_box
 msgid "IoT Box"
-msgstr ""
+msgstr "Caja IoT"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__iot_box_ids
@@ -380,11 +380,6 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: l10n_ve_iot_mf
-#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port____last_update
-msgid "Last Modified on"
-msgstr "Ultima modificación en"
-
-#. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__write_uid
 msgid "Last Updated by"
 msgstr "Última actualización por"
@@ -393,6 +388,11 @@ msgstr "Última actualización por"
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__write_date
 msgid "Last Updated on"
 msgstr "Última actualización en"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__manufacturer_type
+msgid "Manufacturer Type"
+msgstr "Tipo de Fabricante"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_amount_decimal
@@ -430,6 +430,11 @@ msgid "Max quantity int"
 msgstr "Enteros Maximos de la cantidad"
 
 #. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__res_company__invoice_print_type__fiscal
+msgid "Máquina Fiscal"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
 msgid "Name to set on Fiscal machine"
 msgstr "Nombre para colocar en la Maquina fiscal"
@@ -442,22 +447,7 @@ msgstr ""
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "No device connected"
-msgstr "Dispositivo no se ha conectado"
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Not are invoices to Report Z"
 msgstr "No hay facturas disponibles para reporte Z"
@@ -476,27 +466,6 @@ msgstr "Número Desde"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
 msgid "Number to"
 msgstr "Número Hasta"
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "PRINT INVOICE FISCAL MACHINE"
-msgstr "IMPRIMIR FACTURA FISCAL"
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "PRINT REFUND FISCAL MACHINE"
-msgstr "IMPRIMIR NOTA DE CREDITO FISCAL"
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "PROGRAMACION"
-msgstr "Programación"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_journal__payment_method
@@ -528,15 +497,27 @@ msgid "Payment method name is empty"
 msgstr "El nombre del método de pago esta vacío"
 
 #. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__manufacturer_type__pnp
+msgid "PnP Desarrollos"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Print Debit Note"
+msgstr "Imprimir Nota de Débito"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Print Invoice"
 msgstr "Imprimir Factura"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Print Refund"
 msgstr "Imprimir Nota de crédito"
@@ -548,14 +529,14 @@ msgstr "Imprimir Reporte"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Print Resume"
 msgstr "Imprimir Resumen"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Programming"
 msgstr "Programación"
@@ -564,27 +545,6 @@ msgstr "Programación"
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_box__ip_public
 msgid "Public IP Address"
 msgstr "Ip Pública"
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "REPORT X"
-msgstr "Reporte X"
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "REPORT Z"
-msgstr "Reporte Z"
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "REPRINT DOCUMENT"
-msgstr "REIMPRIMIR DOCUMENTO"
 
 #. module: l10n_ve_iot_mf
 #. odoo-python
@@ -622,21 +582,21 @@ msgstr "Número de reporte Z"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Reprint"
 msgstr "Reimprimir"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Reprint Date"
 msgstr "Reimpimir (Fecha)"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Reprint Document"
 msgstr "Reimprimir Documento"
@@ -697,22 +657,13 @@ msgid "Resume Range To"
 msgstr "Rango hasta"
 
 #. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "STATUS"
-msgstr "Status"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.res_config_settings_view_form_inherit_l10n_ve_iot_mf
+msgid "Select the type of invoice to print"
+msgstr "Seleccione el tipo de factura a imprimir"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf.js:0
-#, python-format
-msgid "STATUS 1"
-msgstr "Status 1"
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Send Command"
 msgstr "Enviar Comando"
@@ -741,7 +692,7 @@ msgstr "Serial de la maquina fiscal"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Set Payment Method"
 msgstr "Establecer método de pago"
@@ -753,7 +704,7 @@ msgstr "Mostrar Version"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Successfully sent to printer!"
 msgstr "¡Enviado exitosamente a la impresora!"
@@ -765,10 +716,15 @@ msgstr "Impuesto"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Test"
 msgstr "Imprimir Test"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__manufacturer_type__hka
+msgid "The Factory HKA"
+msgstr "La Fábrica HKA"
 
 #. module: l10n_ve_iot_mf
 #. odoo-python
@@ -776,13 +732,6 @@ msgstr "Imprimir Test"
 #, python-format
 msgid "The command is empty"
 msgstr "El comando esta vacío"
-
-#. module: l10n_ve_iot_mf
-#. odoo-python
-#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
-#, python-format
-msgid "The credit note must be made in the same fiscal machine"
-msgstr "La nota de crédito debe ser realizada en la misma maquina fiscal"
 
 #. module: l10n_ve_iot_mf
 #. odoo-python
@@ -798,11 +747,22 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_iot_mf/models/account_move.py:0
 #, python-format
+msgid "The debit note must be made on the same day"
+msgstr ""
+"No puede emitir una Nota de Débito por Maquina fiscal con una fecha distinta"
+" a la de hoy, por favor edite la fecha de la factura, la tasa y verifique "
+"montos en  Bs"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
 msgid "The invoice has already been printed"
 msgstr "La factura ya fue impresa"
 
 #. module: l10n_ve_iot_mf
 #. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
 #: code:addons/l10n_ve_iot_mf/models/account_move.py:0
 #: code:addons/l10n_ve_iot_mf/models/account_move.py:0
 #: code:addons/l10n_ve_iot_mf/models/account_move.py:0
@@ -816,6 +776,19 @@ msgstr "La factura no tiene una maquina fiscal asignada"
 #, python-format
 msgid "The invoice has not already been printed"
 msgstr "La factura no fue impresa"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__print_type
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__print_type
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__print_type
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_res_company__invoice_print_type
+msgid "Tipo de Impresión de Factura"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_res_config_settings__invoice_print_type
+msgid "Tipo de Impresión de Facturas"
+msgstr ""
 
 #. module: l10n_ve_iot_mf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
@@ -834,7 +807,7 @@ msgstr "Tipo"
 
 #. module: l10n_ve_iot_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/action_mf_16.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
 #, python-format
 msgid "Verify invoices with Serial Machine"
 msgstr "Verifica si las facturas tienen Serial de maquina fiscal"
@@ -875,13 +848,6 @@ msgstr ""
 
 #. module: l10n_ve_iot_mf
 #. odoo-python
-#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
-#, python-format
-msgid "You cannot print an invoice with a non-fiscal journal"
-msgstr "No puede imprimir una factura con un  diario no fiscal"
-
-#. module: l10n_ve_iot_mf
-#. odoo-python
 #: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
 #, python-format
 msgid "You must fill in the start or end field, if there is one"
@@ -907,20 +873,3 @@ msgstr "Debes llenar el campo de inicio o fin, si lo hay, repite el número"
 #: model:ir.model,name:l10n_ve_iot_mf.model_iot_port
 msgid "iot.port"
 msgstr ""
-
-#. module: l10n_ve_iot_mf
-#. odoo-javascript
-#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
-#, python-format
-msgid "Print Debit Note"
-msgstr "Imprimir Nota de Débito"
-
-#. module: l10n_ve_iot_mf
-#. odoo-python
-#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
-#, python-format
-msgid "The debit note must be made on the same day"
-msgstr ""
-"No puede emitir una Nota de Débito por Maquina fiscal con una fecha "
-"distinta a la de hoy, por favor edite la fecha de la factura, la tasa y "
-"verifique montos en  Bs"
