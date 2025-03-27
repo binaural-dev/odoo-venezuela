@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <data noupdate="0">
+        <record id="action_terminate_inactive_session_time_out" model="ir.cron">
+            <field name="name">TK Security Master: Inactive Session Terminate</field>
+            <field name="model_id" ref="tk_security_master.model_user_sign_in_details"/>
+            <field name="state" eval="'code'"/>
+            <field name="code">model.terminate_inactive_session_cron()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="action_check_password_expiry_status_of_users" model="ir.cron">
+            <field name="name">TK Security Master: Password Expiry Status</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="state" eval="'code'"/>
+            <field name="code">model.check_users_pwd_expire_status()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+          <record id="action_auto_delete_log" model="ir.cron">
+            <field name="name">TK Security Master: Delete log</field>
+            <field name="model_id" ref="tk_security_master.model_user_audit"/>
+            <field name="state" eval="'code'"/>
+            <field name="code">model.auto_delete_user_logs()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

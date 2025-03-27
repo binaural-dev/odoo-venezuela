@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <record id="action_tk_secu_pro_master_dashboard" model="ir.actions.client">
+        <field name="name">Security Master</field>
+        <field name="tag">tk_security_master_dashboard</field>
+    </record>
+</odoo>

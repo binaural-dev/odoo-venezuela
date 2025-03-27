@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <data>
+        <record id="tk_security_master_res_config_settings_view_form" model="ir.ui.view">
+            <field name="name">tk.security.master.res.config.settings.view.form</field>
+            <field name="model">res.config.settings</field>
+            <field name="priority" eval="40"/>
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="inside">
+                    <app name="tk_security_master" data-string="Security Master" string="Security Master" groups="tk_security_master.t_k_security_master_admin">
+                        <h2>Login Alert</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                     <field name="login_alert" />
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="login_alert" class="o_form_label">User Login Alert ?</label>
+                                    <div class="text-muted">
+                                        Email Notification sent to user email once login
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <h2>Inactive Session Terminate</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                     <field name="auto_session_terminate" />
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="auto_session_terminate" class="o_form_label" string="Auto Terminate Inactive Session?" />
+                                    <div class="text-muted">
+                                        Enable auto terminate inactive user session
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 o_setting_box" invisible="not auto_session_terminate">
+                                <div class="o_setting_left_pane">
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="session_timeout" class="o_form_label" string="Inactive Session Terminate Timeout" />
+                                    <field name="session_timeout" /> in Minutes
+                                    <div class="text-muted">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <h2>Password Expire Policy</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                     <field name="pwd_expire" />
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="pwd_expire" class="o_form_label" string="Password Expire Policy?" />
+                                    <div class="text-muted">
+                                        Enable auto password expiration after reaching the limit time.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 o_setting_box" invisible="not pwd_expire">
+                                <div class="o_setting_left_pane">
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="pwd_expire_days" class="o_form_label" string="Expiry Days" /> <br />
+                                    <field name="pwd_expire_days" /> in Days
+                                    <div class="text-muted">
+                                        Auto expire password after above set days.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <h2>Login Security</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="login_max_attempts" class="o_form_label" string="Maximum Number of Retry" /><br />
+                                    <field name="login_max_attempts" /> No. of Retry
+                                    <div class="text-muted">
+                                        Login retry maximum attempt
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="login_cooldown" class="o_form_label" string="Login Cooldown Time" /> <br />
+                                    <field name="login_cooldown" /> in Seconds
+                                    <div class="text-muted">
+                                        After maximum retry disable login up to cooldown time.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <h2>Auto Delete tag</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                     <field name="enable_auto_delete" />
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="enable_auto_delete" class="o_form_label" />
+                                    <div class="text-muted">
+                                        Enable auto delete after reaching the limit time.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 o_setting_box" invisible="not enable_auto_delete">
+                                <div class="o_setting_left_pane">
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="auto_delete_log_days" class="o_form_label" string="After How many days: " /> <br />
+                                    <field name="auto_delete_log_days" /> in Days
+                                    <div class="text-muted">
+                                        Auto delete logs after above set days.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                           <div class="row mt16 o_settings_container" invisible="not enable_auto_delete">
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                     <field name="create_log" />
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="create_log" class="o_form_label" />
+                                    <div class="text-muted">
+                                        Enable auto delete log of create actions.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                     <field name="read_log"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                     <label for="read_log" class="o_form_label" />
+                                    <div class="text-muted">
+                                        Enable auto delete log of Read actions.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt16 o_settings_container" invisible="not enable_auto_delete">
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                     <field name="update_log" />
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="update_log" class="o_form_label" />
+                                    <div class="text-muted">
+                                        Enable auto delete log of update actions.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                     <field name="delete_log" />
+                                </div>
+                                <div class="o_setting_right_pane">
+                                     <label for="delete_log" class="o_form_label" />
+                                    <div class="text-muted">
+                                        Enable auto delete log of delete actions.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </app>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
+
