@@ -7,16 +7,13 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.0.0.1",
+    "version": "17.0.0.0.2",
     "depends": ["base", "web"],
     "auto_install": True,
-    "data": [
-        "security/ir.model.access.csv", 
-        "views/res_config_settings_views.xml"
-    ],
-    "assets": {
-        "web.assets_backend": [
-            "l10n_ve_base/static/src/core/debug/debug_menu_items.js",
-        ],
-    },
+    "data": ["security/ir.model.access.csv", "views/res_config_settings_views.xml"],
+    # "assets": {
+    #     "web.assets_backend": [
+    #         "l10n_ve_base/static/src/core/debug/debug_menu_items.js",
+    #     ],
+    # },
 }
