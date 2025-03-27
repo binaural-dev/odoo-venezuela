@@ -14,7 +14,7 @@
             </field>
 
             <xpath expr="//button[@id='create_invoice']" position="attributes">
-                <attribute name="invisible">invoice_status != 'to invoice' or document == 'dispatch_guide'</attribute>
+                <attribute name="invisible">invoice_status != 'to invoice' or document == 'dispatch_guide' or is_consignation</attribute>
             </xpath>
         </field>
     </record>
