@@ -66,13 +66,6 @@
                     type="object"
                     invisible="not show_create_invoice_internal"
                 />
-                <button 
-                    name="create_internal_invoice" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Internal Invoice" 
-                    type="object"
-                    column_invisible="True"/>
             </tree>
         </field>
     </record>

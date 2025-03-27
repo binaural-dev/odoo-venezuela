@@ -90,11 +90,6 @@
                     name="create_vendor_credit" class="oe_highlight"
                     string="Create Vendor Credit" type="object"
                     invisible="not show_create_vendor_credit"/>
-                <button 
-                    name="create_internal_invoice" class="oe_highlight"
-                    string="Create Internal Invoice" type="object"
-                    invisible="1"
-                />
             </xpath>
         </field>
     </record>

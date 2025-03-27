@@ -174,8 +174,7 @@ class StockPicking(models.Model):
                     }
                 )
             picking_id.write({"state_guide_dispatch": "invoiced"})
-            if picking_id.sale_id:
-                picking_id.sale_id.write({"invoice_status": "invoiced"})
+            picking_id._update_order_sale_invoiced()
         return invoice
 
     def create_bill(self):
@@ -226,8 +225,7 @@ class StockPicking(models.Model):
                     )
                     # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
-                if picking_id.sale_id:
-                    picking_id.sale_id.write({"invoice_status": "invoiced"})
+                picking_id._update_order_sale_invoiced()
             return invoice
 
     def create_customer_credit(self):
@@ -278,8 +276,7 @@ class StockPicking(models.Model):
                     )
                     # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
-                if picking_id.sale_id:
-                    picking_id.sale_id.write({"invoice_status": "invoiced"})
+                picking_id._update_order_sale_invoiced()
             return invoice
 
     def create_vendor_credit(self):
@@ -330,51 +327,15 @@ class StockPicking(models.Model):
                     )
                     # invoice.with_context(move_action_post_alert=True).action_post()
                 picking_id.write({"state_guide_dispatch": "invoiced"})
-                if picking_id.sale_id:
-                    picking_id.sale_id.write({"invoice_status": "invoiced"})
+                picking_id._update_order_sale_invoiced()
             return invoice
-
-    def create_internal_invoice(self):
-        """
-        Creates an internal invoice from an internal stock transfer.
-        """
-        self._validate_one_invoice_posted()
-        for picking_id in self:
-            if picking_id.picking_type_id.code != "internal":
-                raise UserError(_("Este proceso solo aplica para transferencias internas."))
-
-            current_user = self.env.uid
-            company = self.env.company
-
-            internal_consigned_journal_id = company.internal_consigned_journal_id
-            if not internal_consigned_journal_id:
-                raise UserError(_("Please configure the internal consigned journal from settings."))
-
-            invoice_line_list = picking_id._get_invoice_lines_for_invoice(from_picking_line=True)
-            origin_name = self._get_origin_name(picking_id)
-
-            invoice = self.env["account.move"].create(
-                {
-                    "move_type": "out_invoice",
-                    "invoice_origin": origin_name,
-                    "invoice_user_id": current_user,
-                    "narration": picking_id.name,
-                    "partner_id": company.partner_id.id,
-                    "currency_id": company.currency_id.id,
-                    "journal_id": internal_consigned_journal_id,
-                    "payment_reference": picking_id.name,
-                    "picking_id": picking_id.id,
-                    "invoice_line_ids": invoice_line_list,
-                    "transfer_ids": self,
-                    "from_picking": True,
-                }
-            )
-
-            # invoice.with_context(move_action_post_alert=True).action_post()
-            picking_id.write({"state_guide_dispatch": "invoiced"})
-            if picking_id.sale_id:
-                picking_id.sale_id.write({"invoice_status": "invoiced"})
-        return invoice
+        
+    def _update_order_sale_invoiced(self):
+        for picking in self:
+            if picking.sale_id:
+                picking.sale_id.write({"invoice_status": "invoiced"})
+                for line in picking.sale_id.order_line:
+                    line.write({"qty_invoiced": line.qty_invoiced + line.qty_delivered})
 
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
