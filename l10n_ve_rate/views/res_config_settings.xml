@@ -7,7 +7,8 @@
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
                     <block title="Configuration: Currency" name="l10n_ve_rate_block">
-                        <setting string="Set foreign currency" name="l10n_ve_rate_setting">
+                        <separator string="Set foreign currency" />
+                        <setting name="l10n_ve_rate_setting">
                             <div class="content-group">
                                 <div class="row mt16">
                                     <label for="currency_foreign_id" class="col-lg-6 o_light_label"/>

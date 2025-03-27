@@ -2,6 +2,7 @@
     <record id="stock_picking_guide_dispatch_views" model="ir.ui.view">
         <field name="name">stock.picking.guide.dispatch.account.views</field>
         <field name="model">stock.picking</field>
+        <field name="priority" eval="17"/>
         <field name="arch" type="xml">
             <tree string="Picking list" multi_edit="1" sample="1" create="0">
                 <header>
