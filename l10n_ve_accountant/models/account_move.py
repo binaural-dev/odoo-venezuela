@@ -107,7 +107,7 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
-    
+    amount = fields.Float(tracking=True)
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         context = self.with_context(active_test=False)
