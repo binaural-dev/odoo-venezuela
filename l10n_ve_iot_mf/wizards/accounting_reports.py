@@ -4,10 +4,6 @@ from io import BytesIO
 from odoo import models, fields
 import xlsxwriter
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     _inherit = "wizard.accounting.reports"
@@ -36,6 +32,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res = super().sale_book_fields()
         if not self.with_fiscal_machine:
             return res
+        for i, field in enumerate(res):
+            if field.get("field", False) == "correlative":
+                del res[i]
+                break
         res.insert(4, {"name": "Reporte Z", "field": "mf_reportz"})
         res.insert(4, {"name": "Serial de Maquina", "field": "mf_serial"})
         return res
@@ -44,6 +44,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res = super()._fields_sale_book_line(move, taxes)
         if not self.with_fiscal_machine:
             return res
+        del res["correlative"]
         res["document_number"] = (
             move.mf_invoice_number if move.mf_invoice_number else "-"
         )
@@ -78,7 +79,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "move_type": self._determinate_type(data.get("move_type")),
             "transaction_type": "01-REG",
             "number_invoice_affected": "",
-            # "correlative": "",
+            "correlative": "",
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
             "total_sales_iva": amounts.get("amount_taxed", 0),
@@ -148,6 +149,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                             or move.partner_id.taxpayer_type != "ordinary"
                             or move.move_type != "out_invoice"
                         ):
+                            if (
+                                move.move_type == "out_invoice"
+                                and move.journal_id.is_debit
+                            ):
+                                sale_book_lines.append(
+                                    self._fields_sale_book_line(move, amounts)
+                                )
+                                cumulative = init_cumulative.copy()
+                                range_start = 0
+                                continue
                             if cumulative["amount_taxed"] != amounts["amount_taxed"]:
                                 data = {
                                     "move_type": move.move_type,
@@ -163,24 +174,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                                 }
                                 range_last = 0
                                 sale_book_lines.append(
-                                    self._fields_sale_book_group_line(data, cumulative)
+                                    self._fields_sale_book_group_line(
+                                        data, cumulative)
                                 )
-                            sale_book_lines.append(
-                                self._fields_sale_book_line(move, amounts)
-                            )
-                            cumulative = init_cumulative.copy()
-                            range_start = 0
-                            continue
-                        # TODO: Facturas de cliente
-                        if move.move_type == "out_invoice":
-                            sale_book_lines.append(
-                                self._fields_sale_book_line(move, amounts)
-                            )
-                            cumulative = init_cumulative.copy()
-                            range_start = 0
-                            continue
-                        # TODO: Notas de débito
-                        if move.move_type == "out_invoice" and move.journal_id.is_debit:
                             sale_book_lines.append(
                                 self._fields_sale_book_line(move, amounts)
                             )
@@ -209,7 +205,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                                 "mf_serial": move.mf_serial,
                             }
                             sale_book_lines.append(
-                                self._fields_sale_book_group_line(data, cumulative)
+                                self._fields_sale_book_group_line(
+                                    data, cumulative)
                             )
                             cumulative = init_cumulative.copy()
                             range_start = 0
