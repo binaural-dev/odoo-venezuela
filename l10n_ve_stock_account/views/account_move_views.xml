@@ -10,19 +10,14 @@
                 <button
                     name="print_invoice_free_form" string="Free Form"
                     type="object" class="o_btn_validate"
-                    invisible="move_type != 'out_invoice' or state != 'posted'"
-                />
-                <button
-                    name="print_invoice_free_form" string="Free Form"
-                    type="object" class="o_btn_validate"
-                    invisible="move_type != 'out_refund' or state != 'posted'"
+                    invisible="(move_type not in ('out_invoice', 'out_refund')) or state != 'posted'"
                 />
             </xpath>
 
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="picking_id" readonly="1" />
                 <field name="guide_number" />
-                <field name="free_form_copy_number" />
+                <field name="free_form_copy_number" readonly="1" />
                 <field name="transfer_ids" widget="many2many_tags" invisible="1" />
             </xpath>
 
@@ -35,7 +30,7 @@
             </xpath>
 
             <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[1]" position="before">
-                <field name="from_picking_line" readonly="1" />
+                <field name="from_picking_line" readonly="1" invisible="1"/>
             </xpath>
 
             <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='quantity']"
