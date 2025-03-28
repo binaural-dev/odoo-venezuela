@@ -144,21 +144,18 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         range_start = move.mf_invoice_number
 
                     if move.move_type in ["out_invoice", "out_refund"]:
+                        if move.move_type == "out_invoice" and move.journal_id.is_debit:
+                            sale_book_lines.append(
+                                self._fields_sale_book_line(move, amounts)
+                            )
+                            cumulative = init_cumulative.copy()
+                            range_start = 0
+                            continue
                         if (
                             move.partner_id.prefix_vat == "J"
                             or move.partner_id.taxpayer_type != "ordinary"
                             or move.move_type != "out_invoice"
                         ):
-                            if (
-                                move.move_type == "out_invoice"
-                                and move.journal_id.is_debit
-                            ):
-                                sale_book_lines.append(
-                                    self._fields_sale_book_line(move, amounts)
-                                )
-                                cumulative = init_cumulative.copy()
-                                range_start = 0
-                                continue
                             if cumulative["amount_taxed"] != amounts["amount_taxed"]:
                                 data = {
                                     "move_type": move.move_type,
