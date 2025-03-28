@@ -7,6 +7,10 @@
                 </t>
             </t>
         </xpath>
+        <xpath expr="//InvoiceButton[1]" position="replace"> 
+         </xpath> 
+         <xpath expr="//ReprintReceiptButton[1]" position="replace"> 
+         </xpath> 
 
         <xpath expr="//div[hasclass('header-row')]" position="inside">
             <div class="col">
