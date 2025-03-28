@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.0.0.5",
+    "version": "17.0.0.0.6",
     "depends": [
         "base",
         "web",
@@ -41,6 +41,7 @@
         "report/account_report_templates.xml",
         "report/account_report_document.xml",
         "report/account_template_report_views.xml",
+        "report/report_invoice.xml",
         "wizard/account_payment_register.xml",
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
