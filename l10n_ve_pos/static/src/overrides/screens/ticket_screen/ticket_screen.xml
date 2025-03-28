@@ -10,8 +10,8 @@
 !env.utils.floatIsZero(_selectedSyncedOrder.get_foreign_total_tax()) and env.utils.formatForeignCurrency(_selectedSyncedOrder.get_foreign_total_tax()) or ''
             </attribute>
         </xpath>
-       <xpath expr="//InvoiceButton[1]" position="before">
-            <FullRefundButton order="_selectedSyncedOrder" ticket_screen="this"/>
-       </xpath>
+        <xpath expr="//div[@class='control-buttons d-flex flex-wrap border-bottom overflow-hidden bg-300'][1]" position="inside">
+             <FullRefundButton order="_selectedSyncedOrder" ticket_screen="this"/>
+        </xpath>
     </t>
 </templates>
