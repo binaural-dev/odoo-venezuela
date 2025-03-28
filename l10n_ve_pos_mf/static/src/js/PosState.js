@@ -229,7 +229,7 @@ patch(PosStore.prototype, {
     }
   },
   async push_single_order(order, opts) {
-    if (this.useFiscalMachine() && !order.to_receipt && !order.mf_invoice_number) {
+    if (this.useFiscalMachine() && !order.mf_invoice_number) {
       if (!await this.pushToMF(order)) return
     }
     return await super.push_single_order.apply(this, [order, opts]);
