@@ -20,24 +20,24 @@ msgstr ""
 #: code:addons/tk_security_master/static/src/lib/index.js:0
 #, python-format
 msgid "%1 hidden"
-msgstr ""
+msgstr "%1 oculto"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/lib/index.js:0
 #, python-format
 msgid "%1 shown"
-msgstr ""
+msgstr "%1 mostrado"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "<strong>Anonymous</strong> login attempt detected."
-msgstr ""
+msgstr "Intento de inicio de sesión <strong>anónimo</strong> detectado."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "<strong>Bot</strong> detected."
-msgstr ""
+msgstr "Se detectó un <strong>bot</strong>."
 
 #. module: tk_security_master
 #: model:mail.template,body_html:tk_security_master.pwd_expire_warning_notification_users_seven_days
@@ -447,164 +447,164 @@ msgstr ""
 #. module: tk_security_master
 #: model:ir.module.category,description:tk_security_master.module_tk_security_master
 msgid "Access rights for TK Security Master"
-msgstr ""
+msgstr "Derechos de acceso para TK Security Master"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit__action_type
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
 msgid "Action"
-msgstr ""
+msgstr "Acción"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__active
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__status__active
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Active"
-msgstr ""
+msgstr "Activo"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "Active Sessions"
-msgstr ""
+msgstr "Sesiones activas"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "Active Sessions by Locations"
-msgstr ""
+msgstr "Sesiones activas por ubicaciones"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "Active Sessions by Operating System"
-msgstr ""
+msgstr "Sesiones activas por sistema operativo"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/models/user_audit.py:0
 #, python-format
 msgid "Activity Logs"
-msgstr ""
+msgstr "Registros de actividad"
 
 #. module: tk_security_master
 #: model:res.groups,name:tk_security_master.t_k_security_master_admin
 msgid "Administrator"
-msgstr ""
+msgstr "Administrador"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__auto_delete_log_days
 msgid "After How many days."
-msgstr ""
+msgstr "Después de cuántos días."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "After How many days:"
-msgstr ""
+msgstr "Después de cuántos días:"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "After maximum retry disable login up to cooldown time."
-msgstr ""
+msgstr "Después del máximo de reintentos, deshabilitar el inicio de sesión hasta el tiempo de espera."
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "All Sessions"
-msgstr ""
+msgstr "Todas las sesiones"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__android
 msgid "Android"
-msgstr ""
+msgstr "Android"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Anonymous Attempt"
-msgstr ""
+msgstr "Intento anónimo"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__is_anonymous
 msgid "Anonymous User"
-msgstr ""
+msgstr "Usuario anónimo"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
 msgid "Are you sure you want to terminate all sessions ?"
-msgstr ""
+msgstr "¿Está seguro de que desea terminar todas las sesiones?"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_tree_view
 msgid "Are you sure you want to terminate session ?"
-msgstr ""
+msgstr "¿Está seguro de que desea terminar la sesión?"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Are you want to sure ?"
-msgstr ""
+msgstr "¿Está seguro?"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Auto Delete tag"
-msgstr ""
+msgstr "Etiqueta de eliminación automática"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Auto Terminate Inactive Session?"
-msgstr ""
+msgstr "¿Terminar automáticamente la sesión inactiva?"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Auto delete logs after above set days."
-msgstr ""
+msgstr "Eliminar automáticamente los registros después de los días establecidos."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Auto expire password after above set days."
-msgstr ""
+msgstr "Expirar automáticamente la contraseña después de los días establecidos."
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__auto_session_terminate
 msgid "Auto terminate inactive session ?"
-msgstr ""
+msgstr "¿Terminar automáticamente la sesión inactiva?"
 
 #. module: tk_security_master
 #: model:ir.model,name:tk_security_master.model_base
 msgid "Base"
-msgstr ""
+msgstr "Base"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Bots Attempt"
-msgstr ""
+msgstr "Intento de bots"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__browser
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Browser"
-msgstr ""
+msgstr "Navegador"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__browser_version
 msgid "Browser Version"
-msgstr ""
+msgstr "Versión del navegador"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "Browser Wise Active Sessions"
-msgstr ""
+msgstr "Sesiones activas por navegador"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.change_pwd_url
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
 msgid "Change Password"
-msgstr ""
+msgstr "Cambiar contraseña"
 
 #. module: tk_security_master
 #. odoo-javascript
@@ -612,13 +612,13 @@ msgstr ""
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__chrome
 #, python-format
 msgid "Chrome"
-msgstr ""
+msgstr "Chrome"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__city
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "City"
-msgstr ""
+msgstr "Ciudad"
 
 #. module: tk_security_master
 #: model:ir.model,name:tk_security_master.model_res_config_settings
@@ -628,37 +628,37 @@ msgstr "Ajustes de configuración"
 #. module: tk_security_master
 #: model:ir.ui.menu,name:tk_security_master.menu_security_master_configurations
 msgid "Configurations"
-msgstr ""
+msgstr "Configuraciones"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
 msgid "Confirm New Password"
-msgstr ""
+msgstr "Confirmar nueva contraseña"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/controllers/backend.py:0
 #, python-format
 msgid "Confirm password is required"
-msgstr ""
+msgstr "Se requiere confirmar la contraseña"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__country
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Country"
-msgstr ""
+msgstr "País"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__create_log
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit__action_type__create
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
 msgid "Create"
-msgstr ""
+msgstr "Crear"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_users__tu_create_logs
 msgid "Create Logs ?"
-msgstr ""
+msgstr "¿Crear registros?"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__create_uid
@@ -666,7 +666,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__create_uid
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__create_uid
 msgid "Created by"
-msgstr ""
+msgstr "Creado por"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__create_date
@@ -674,29 +674,29 @@ msgstr ""
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__create_date
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__create_date
 msgid "Created on"
-msgstr ""
+msgstr "Creado el"
 
 #. module: tk_security_master
 #: model:ir.ui.menu,name:tk_security_master.menu_tk_master_pro_dashboard
 msgid "Dashboard"
-msgstr ""
+msgstr "Tablero"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_tree_view
 msgid "Date"
-msgstr ""
+msgstr "Fecha"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__delete_log
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit__action_type__delete
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
 msgid "Delete"
-msgstr ""
+msgstr "Eliminar"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_users__tu_delete_logs
 msgid "Delete Logs ?"
-msgstr ""
+msgstr "¿Eliminar registros?"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__display_name
@@ -704,18 +704,18 @@ msgstr ""
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__display_name
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__display_name
 msgid "Display Name"
-msgstr ""
+msgstr "Nombre para mostrar"
 
 #. module: tk_security_master
 #: model:ir.actions.act_window,name:tk_security_master.action_do_not_track_models_view
 #: model:ir.ui.menu,name:tk_security_master.menu_do_not_track_models
 msgid "Do Not Track Models"
-msgstr ""
+msgstr "No rastrear modelos"
 
 #. module: tk_security_master
 #: model:ir.model,name:tk_security_master.model_do_not_track_models
 msgid "Do not track models"
-msgstr ""
+msgstr "No rastrear modelos"
 
 #. module: tk_security_master
 #. odoo-javascript
@@ -723,67 +723,67 @@ msgstr ""
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__chromiumedge
 #, python-format
 msgid "Edge"
-msgstr ""
+msgstr "Edge"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Email Notification sent to user email once login"
-msgstr ""
+msgstr "Notificación por correo electrónico enviada al correo del usuario una vez que inicia sesión"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/controllers/backend.py:0
 #, python-format
 msgid "Email is required"
-msgstr ""
+msgstr "Se requiere correo electrónico"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Enable auto delete after reaching the limit time."
-msgstr ""
+msgstr "Habilitar eliminación automática después de alcanzar el tiempo límite."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Enable auto delete log of Read actions."
-msgstr ""
+msgstr "Habilitar eliminación automática de registros de acciones de lectura."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Enable auto delete log of create actions."
-msgstr ""
+msgstr "Habilitar eliminación automática de registros de acciones de creación."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Enable auto delete log of delete actions."
-msgstr ""
+msgstr "Habilitar eliminación automática de registros de acciones de eliminación."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Enable auto delete log of update actions."
-msgstr ""
+msgstr "Habilitar eliminación automática de registros de acciones de actualización."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Enable auto password expiration after reaching the limit time."
-msgstr ""
+msgstr "Habilitar expiración automática de contraseñas después de alcanzar el tiempo límite."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Enable auto terminate inactive user session"
-msgstr ""
+msgstr "Habilitar terminación automática de sesiones de usuario inactivas"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__pwd_expire_days
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Expiry Days"
-msgstr ""
+msgstr "Días de expiración"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/models/res_config_settings.py:0
 #, python-format
 msgid "Expiry Days cannot be less than 0."
-msgstr ""
+msgstr "Los días de expiración no pueden ser menores a 0."
 
 #. module: tk_security_master
 #. odoo-javascript
@@ -791,26 +791,26 @@ msgstr ""
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__firefox
 #, python-format
 msgid "Firefox"
-msgstr ""
+msgstr "Firefox"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/lib/index.js:0
 #, python-format
 msgid "From %1"
-msgstr ""
+msgstr "Desde %1"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/lib/index.js:0
 #, python-format
 msgid "From %1 to %2"
-msgstr ""
+msgstr "Desde %1 hasta %2"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
 msgid "Go Back to Login"
-msgstr ""
+msgstr "Volver al inicio de sesión"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__id
@@ -818,69 +818,69 @@ msgstr ""
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__id
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__id
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__ip_address
 msgid "IP Address"
-msgstr ""
+msgstr "Dirección IP"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__isp
 msgid "ISP Providers"
-msgstr ""
+msgstr "Proveedores de ISP"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Inactive Session Terminate"
-msgstr ""
+msgstr "Terminar sesión inactiva"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Inactive Session Terminate Timeout"
-msgstr ""
+msgstr "Tiempo de espera para terminar sesión inactiva"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/controllers/backend.py:0
 #, python-format
 msgid "Invalid username or old password"
-msgstr ""
+msgstr "Nombre de usuario o contraseña anterior inválidos"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.do_not_track_models_form_view
 msgid "Ir Model"
-msgstr ""
+msgstr "Modelo Ir"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__is_bot
 msgid "Is Bot"
-msgstr ""
+msgstr "Es Bot"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__enable_auto_delete
 msgid "Is Enable Auto delete tag?"
-msgstr ""
+msgstr "¿Está habilitada la etiqueta de eliminación automática?"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__login_alert
 msgid "Is Login Alert?"
-msgstr ""
+msgstr "¿Es alerta de inicio de sesión?"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_users__pwd_expire
 msgid "Is Password Expired ?"
-msgstr ""
+msgstr "¿La contraseña ha expirado?"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__last_active_time
 msgid "Last Active Time"
-msgstr ""
+msgstr "Última hora activa"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_users__pwd_update_datetime
 msgid "Last Update Datetime"
-msgstr ""
+msgstr "Última fecha y hora de actualización"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__write_uid
@@ -888,7 +888,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__write_uid
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__write_uid
 msgid "Last Updated by"
-msgstr ""
+msgstr "Última actualización por"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__write_date
@@ -896,165 +896,165 @@ msgstr ""
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__write_date
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__write_date
 msgid "Last Updated on"
-msgstr ""
+msgstr "Última actualización el"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__latitude
 msgid "Latitude"
-msgstr ""
+msgstr "Latitud"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__linux
 msgid "Linux"
-msgstr ""
+msgstr "Linux"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/models/user_audit.py:0
 #, python-format
 msgid "Location coordinates required"
-msgstr ""
+msgstr "Se requieren coordenadas de ubicación"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__logged_datetime
 msgid "Logged Datetime"
-msgstr ""
+msgstr "Fecha y hora de inicio de sesión"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Logged In/Out Details"
-msgstr ""
+msgstr "Detalles de inicio/cierre de sesión"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Login Alert"
-msgstr ""
+msgstr "Alerta de inicio de sesión"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__login_cooldown
 msgid "Login CoolDown"
-msgstr ""
+msgstr "Tiempo de espera para inicio de sesión"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Login Cooldown Time"
-msgstr ""
+msgstr "Tiempo de espera para reintentar inicio de sesión"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__login_max_attempts
 msgid "Login Max Attempts"
-msgstr ""
+msgstr "Máximo de intentos de inicio de sesión"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Login Security"
-msgstr ""
+msgstr "Seguridad de inicio de sesión"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Login retry maximum attempt"
-msgstr ""
+msgstr "Máximo de intentos de reintento de inicio de sesión"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__logout_datetime
 msgid "Logout Datetime"
-msgstr ""
+msgstr "Fecha y hora de cierre de sesión"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Logs"
-msgstr ""
+msgstr "Registros"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit__user_audit_log_ids
 msgid "Logs Details"
-msgstr ""
+msgstr "Detalles de registros"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__longitude
 msgid "Longitude"
-msgstr ""
+msgstr "Longitud"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__mac_os
 msgid "Mac OS"
-msgstr ""
+msgstr "Mac OS"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Map Location"
-msgstr ""
+msgstr "Ubicación en el mapa"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Maximum Number of Retry"
-msgstr ""
+msgstr "Número máximo de reintentos"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__res_model
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
 msgid "Model"
-msgstr ""
+msgstr "Modelo"
 
 #. module: tk_security_master
 #: model:ir.model.constraint,message:tk_security_master.constraint_do_not_track_models_model_uniq
 msgid "Model Already Exist"
-msgstr ""
+msgstr "El modelo ya existe"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
 msgid "N/A Records"
-msgstr ""
+msgstr "Registros N/D"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit_logs__operation_type__new
 msgid "New Add"
-msgstr ""
+msgstr "Nuevo agregado"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
 msgid "New Password"
-msgstr ""
+msgstr "Nueva contraseña"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__new_value
 msgid "New Value"
-msgstr ""
+msgstr "Nuevo valor"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/controllers/backend.py:0
 #, python-format
 msgid "New password is required"
-msgstr ""
+msgstr "Se requiere una nueva contraseña"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "No. of Retry"
-msgstr ""
+msgstr "Número de reintentos"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__platform_version
 msgid "OS Version"
-msgstr ""
+msgstr "Versión del sistema operativo"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
 msgid "Old Password"
-msgstr ""
+msgstr "Contraseña anterior"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/controllers/backend.py:0
 #, python-format
 msgid "Old password is required"
-msgstr ""
+msgstr "Se requiere la contraseña anterior"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_form_view
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_tree_view
 msgid "Open Record"
-msgstr ""
+msgstr "Abrir registro"
 
 #. module: tk_security_master
 #. odoo-javascript
@@ -1062,136 +1062,136 @@ msgstr ""
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__opera
 #, python-format
 msgid "Opera"
-msgstr ""
+msgstr "Opera"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__platform
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Operating System"
-msgstr ""
+msgstr "Sistema Operativo"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__operation_type
 msgid "Operation Type"
-msgstr ""
+msgstr "Tipo de Operación"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__other
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__other
 msgid "Other"
-msgstr ""
+msgstr "Otro"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__other_browser
 msgid "Other Browser"
-msgstr ""
+msgstr "Otro Navegador"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Other Details"
-msgstr ""
+msgstr "Otros Detalles"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__other_platform
 msgid "Other Operating System"
-msgstr ""
+msgstr "Otro Sistema Operativo"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "Others"
-msgstr ""
+msgstr "Otros"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__pwd_expire
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Password Expire Policy"
-msgstr ""
+msgstr "Política de Expiración de Contraseña"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Password Expire Policy?"
-msgstr ""
+msgstr "¿Política de Expiración de Contraseña?"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_users__pwd_expire_date
 msgid "Password Expiry Date"
-msgstr ""
+msgstr "Fecha de Expiración de Contraseña"
 
 #. module: tk_security_master
 #: model:mail.template,name:tk_security_master.pwd_expire_warning_notification_users_one_day
 msgid "Password Expiry Notification: 1 day"
-msgstr ""
+msgstr "Notificación de Expiración de Contraseña: 1 día"
 
 #. module: tk_security_master
 #: model:mail.template,name:tk_security_master.pwd_expire_warning_notification_users_seven_days
 msgid "Password Expiry Notification: 7 days"
-msgstr ""
+msgstr "Notificación de Expiración de Contraseña: 7 días"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/controllers/backend.py:0
 #, python-format
 msgid "Password does not match"
-msgstr ""
+msgstr "La contraseña no coincide"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__postal_code
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Postal Code"
-msgstr ""
+msgstr "Código Postal"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/lib/index.js:0
 #, python-format
 msgid "Press ENTER to toggle"
-msgstr ""
+msgstr "Presione ENTER para alternar"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__previous_value
 msgid "Previous Value"
-msgstr ""
+msgstr "Valor Anterior"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__read_log
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit__action_type__read
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
 msgid "Read"
-msgstr ""
+msgstr "Leer"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_users__tu_read_logs
 msgid "Read Logs ?"
-msgstr ""
+msgstr "¿Leer Registros?"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit__title
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_form_view
 msgid "Record Details"
-msgstr ""
+msgstr "Detalles del registro"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit__res_id
 msgid "Record IDs"
-msgstr ""
+msgstr "IDs de registro"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__region
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Region"
-msgstr ""
+msgstr "Región"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit_logs__operation_type__remove
 msgid "Removed"
-msgstr ""
+msgstr "Eliminado"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit__res_model
 msgid "Res Model"
-msgstr ""
+msgstr "Modelo de recurso"
 
 #. module: tk_security_master
 #. odoo-javascript
@@ -1199,7 +1199,7 @@ msgstr ""
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__safari
 #, python-format
 msgid "Safari"
-msgstr ""
+msgstr "Safari"
 
 #. module: tk_security_master
 #: model:ir.actions.client,name:tk_security_master.action_tk_secu_pro_master_dashboard
@@ -1207,126 +1207,126 @@ msgstr ""
 #: model:ir.ui.menu,name:tk_security_master.main_menu_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "Security Master"
-msgstr ""
+msgstr "Maestro de seguridad"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__name
 msgid "Sequence"
-msgstr ""
+msgstr "Secuencia"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__session
 msgid "Session ID"
-msgstr ""
+msgstr "ID de sesión"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__session_timeout
 msgid "Session Timeout"
-msgstr ""
+msgstr "Tiempo de espera de la sesión"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Session: <strong>alive</strong>."
-msgstr ""
+msgstr "Sesión: <strong>activa</strong>."
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Session: <strong>terminated</strong>."
-msgstr ""
+msgstr "Sesión: <strong>terminada</strong>."
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_users__user_session_ids
 #: model:ir.ui.menu,name:tk_security_master.menu_user_sessions_details
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
 msgid "Sessions"
-msgstr ""
+msgstr "Sesiones"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "Sessions Details"
-msgstr ""
+msgstr "Detalles de sesiones"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__status
 msgid "Status"
-msgstr ""
+msgstr "Estado"
 
 #. module: tk_security_master
 #: model:ir.actions.server,name:tk_security_master.action_auto_delete_log_ir_actions_server
 msgid "TK Security Master: Delete log"
-msgstr ""
+msgstr "TK Security Master: Eliminar registro"
 
 #. module: tk_security_master
 #: model:ir.actions.server,name:tk_security_master.action_terminate_inactive_session_time_out_ir_actions_server
 msgid "TK Security Master: Inactive Session Terminate"
-msgstr ""
+msgstr "TK Security Master: Terminar sesión inactiva"
 
 #. module: tk_security_master
 #: model:ir.actions.server,name:tk_security_master.action_check_password_expiry_status_of_users_ir_actions_server
 msgid "TK Security Master: Password Expiry Status"
-msgstr ""
+msgstr "Estado de caducidad de la contraseña de TK Security Master"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Terminate"
-msgstr ""
+msgstr "Terminar"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
 msgid "Terminate All Sessions"
-msgstr ""
+msgstr "Terminar todas las sesiones"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_tree_view
 msgid "Terminate Session"
-msgstr ""
+msgstr "Terminar sesión"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__status__inactive
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Terminated"
-msgstr ""
+msgstr "Terminado"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "Terminated Sessions"
-msgstr ""
+msgstr "Sesiones terminadas"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__timezone
 msgid "TimeZone"
-msgstr ""
+msgstr "Zona horaria"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
 msgid "Timezone"
-msgstr ""
+msgstr "Zona horaria"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__name
 msgid "Title"
-msgstr ""
+msgstr "Título"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/lib/index.js:0
 #, python-format
 msgid "To %1"
-msgstr ""
+msgstr "A %1"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Tracking Address Details"
-msgstr ""
+msgstr "Detalles de dirección de seguimiento"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
 msgid "Tracking Device Details"
-msgstr ""
+msgstr "Detalles del dispositivo de seguimiento"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__update_log
@@ -1334,17 +1334,17 @@ msgstr ""
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit_logs__operation_type__update
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
 msgid "Update"
-msgstr ""
+msgstr "Actualizar"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_res_users__tu_update_logs
 msgid "Update Logs ?"
-msgstr ""
+msgstr "¿Actualizar registros?"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit__res_url
 msgid "Url"
-msgstr ""
+msgstr "Url"
 
 #. module: tk_security_master
 #: model:ir.model,name:tk_security_master.model_res_users
@@ -1360,47 +1360,47 @@ msgstr "Usuario"
 #. module: tk_security_master
 #: model:ir.model,name:tk_security_master.model_user_audit
 msgid "User Actions Logs Details"
-msgstr ""
+msgstr "Detalles de registros de acciones de usuario"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__user_audit_id
 msgid "User Audit"
-msgstr ""
+msgstr "Auditoría de usuario"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_form_view
 msgid "User Details"
-msgstr ""
+msgstr "Detalles del usuario"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "User Login Alert ?"
-msgstr ""
+msgstr "¿Alerta de inicio de sesión del usuario?"
 
 #. module: tk_security_master
 #: model:ir.model,name:tk_security_master.model_user_audit_logs
 msgid "User Logs"
-msgstr ""
+msgstr "Registros de usuario"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
 msgid "User Logs Tracking Details"
-msgstr ""
+msgstr "Detalles de seguimiento de registros de usuario"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
 msgid "User Session Details"
-msgstr ""
+msgstr "Detalles de la sesión del usuario"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit__user_session_id
 msgid "User Sessions"
-msgstr ""
+msgstr "Sesiones de usuario"
 
 #. module: tk_security_master
 #: model:ir.model,name:tk_security_master.model_user_sign_in_details
 msgid "User Sign In Details"
-msgstr ""
+msgstr "Detalles de inicio de sesión del usuario"
 
 #. module: tk_security_master
 #: model:ir.model,name:tk_security_master.model_change_password_user
@@ -1410,89 +1410,89 @@ msgstr "Usuario, asistente de cambio de contraseña"
 #. module: tk_security_master
 #: model:ir.actions.act_window,name:tk_security_master.action_user_audit_view
 msgid "Users Audit Logs"
-msgstr ""
+msgstr "Registros de auditoría de usuarios"
 
 #. module: tk_security_master
 #: model:ir.actions.act_window,name:tk_security_master.action_user_audit_logged_view
 msgid "Users Sessions"
-msgstr ""
+msgstr "Sesiones de usuarios"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_form_view
 msgid "Value Logs"
-msgstr ""
+msgstr "Registros de valores"
 
 #. module: tk_security_master
 #: model:ir.model.fields,field_description:tk_security_master.field_user_audit__view_type
 msgid "View"
-msgstr ""
+msgstr "Vista"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/models/user_audit.py:0
 #, python-format
 msgid "View Logs"
-msgstr ""
+msgstr "Ver registros"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__windows
 msgid "Windows"
-msgstr ""
+msgstr "Windows"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
 msgid "Your Email"
-msgstr ""
+msgstr "Tu correo electrónico"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/controllers/backend.py:0
 #, python-format
 msgid "Your password is expired."
-msgstr ""
+msgstr "Tu contraseña ha expirado."
 
 #. module: tk_security_master
 #: model:mail.template,subject:tk_security_master.pwd_expire_warning_notification_users_one_day
 msgid "Your password will expire after 1 day"
-msgstr ""
+msgstr "Tu contraseña expirará después de 1 día"
 
 #. module: tk_security_master
 #: model:mail.template,subject:tk_security_master.pwd_expire_warning_notification_users_seven_days
 msgid "Your password will expire after 7 days"
-msgstr ""
+msgstr "Tu contraseña expirará después de 7 días"
 
 #. module: tk_security_master
 #. odoo-javascript
 #: code:addons/tk_security_master/static/src/lib/map.js:0
 #, python-format
 msgid "Zoom level changed to %1"
-msgstr ""
+msgstr "El nivel de zoom cambió a %1"
 
 #. module: tk_security_master
 #: model:mail.template,name:tk_security_master.login_user_alert_template
 #: model:mail.template,subject:tk_security_master.login_user_alert_template
 msgid "[Alert] New Login Detected - Take Action Now"
-msgstr ""
+msgstr "[Alerta] Nuevo inicio de sesión detectado - Actúe ahora"
 
 #. module: tk_security_master
 #: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__ios
 msgid "iOS"
-msgstr ""
+msgstr "iOS"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "in Days"
-msgstr ""
+msgstr "en días"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "in Minutes"
-msgstr ""
+msgstr "en minutos"
 
 #. module: tk_security_master
 #: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
 msgid "in Seconds"
-msgstr ""
+msgstr "en segundos"
 
 #. module: tk_security_master
 #. odoo-javascript
@@ -1507,11 +1507,11 @@ msgstr ""
 #: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
 #, python-format
 msgid "users"
-msgstr ""
+msgstr "usuarios"
 
 #. module: tk_security_master
 #. odoo-python
 #: code:addons/tk_security_master/models/user_audit.py:0
 #, python-format
 msgid "you can't delete your own session"
-msgstr ""
+msgstr "no puedes eliminar tu propia sesión"
