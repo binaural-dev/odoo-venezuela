@@ -29,6 +29,12 @@ class AccountMove(models.Model):
         compute="_compute_is_debit_journal",
         store=True
     )
+    @api.constrains("invoice_line_ids")
+    def _check_price_in_zero(self):
+        for record in self:
+            for line in record.invoice_line_ids:
+                if line.price_unit <= 0:
+                    raise ValidationError(("Una factura no puede tener una linea con precio en cero"))
 
     def action_post(self):
         for record in self:
@@ -206,3 +212,10 @@ class AccountMove(models.Model):
                 }
             )
         return correlative.next_by_id(correlative.id)
+
+
+    def action_debit_note_button(self):
+        action = ""
+        for picking in self:
+            action = picking.env.ref('account_debit_note.action_view_account_move_debit').read()[0]
+        return action

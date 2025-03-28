@@ -25,7 +25,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         string="IGTF on Foreign Exchange?",
         default=False,
         help="IGTF on Foreign Exchange?",
-        readonly=False,
         store=True,
     )
 

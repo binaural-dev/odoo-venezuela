@@ -11,7 +11,6 @@ class AccountPaymentIgtf(models.Model):
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         help="IGTF on Foreign Exchange?",
-        readonly=False,
         compute="_compute_is_igtf",
         store=True,
     )
