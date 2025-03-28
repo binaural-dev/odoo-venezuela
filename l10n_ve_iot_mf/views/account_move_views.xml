@@ -6,12 +6,9 @@
         <field name="arch" type="xml">
 
             <xpath expr="//button[@class='o_btn_validate'][1]" position="attributes">
-                <attribute name="invisible">move_type != 'out_invoice' or state != 'posted' or print_type != 'free'</attribute>
+                <attribute name="invisible">(move_type not in ('out_invoice', 'out_refund')) or state != 'posted' or print_type != 'free'</attribute>
             </xpath>
 
-            <xpath expr="//button[@class='o_btn_validate'][2]" position="attributes">
-                <attribute name="invisible">move_type != 'out_refund' or state != 'posted' or print_type != 'free'</attribute>
-            </xpath>
         </field>
 
     </record>
