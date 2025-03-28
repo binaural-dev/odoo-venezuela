@@ -551,3 +551,8 @@ msgstr "Número de control"
 #: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
 msgid "Credit Notes"
 msgstr "Notas de Crédito"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
+msgid "Debit note"
+msgstr "Notas de Débito"
