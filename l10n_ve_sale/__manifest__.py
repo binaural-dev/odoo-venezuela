@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "17.0.1.1.8",
+    "version": "17.0.1.1.9",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -23,6 +23,7 @@
         "security/ir.model.access.csv",
         "security/res_groups.xml",
         "data/ir_cron.xml",
+        "report/report_sale_document.xml",
         "views/res_config_settings.xml",
         "views/sale_order.xml",
         "views/product_pricelist_item_views.xml",
