@@ -9,7 +9,7 @@
         </xpath>
 
         <xpath expr="//div[@class='mt-5'][1]/p[2]" position="after">
-            <t t-if="o.free_form_copy_number > 1">
+            <t t-if="o.state == 'draft' or o.free_form_copy_number > 1">
                 <div class="row mt-4">
                     <div class="col-12 text-center">
                         <p class="fw-bold">COPIA</p>
