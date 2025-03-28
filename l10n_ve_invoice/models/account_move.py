@@ -42,7 +42,7 @@ class AccountMove(models.Model):
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
             invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])
             if invoices and record.move_type in ["out_invoice","out_refund"]:
-                raise ValidationError(_("An invoice with the Control Number already exists: %s"%correlative))
+                raise ValidationError(_("Ya existe una factura con el Número de Control: %s"%correlative))
         return super().action_post()
 
     @api.constrains("correlative", "is_contingency")
