@@ -43,10 +43,9 @@
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='foreign_price']"
-                position="attributes">
+            <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='foreign_price']" position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
-            </xpath>
+            </xpath> -->
 
             <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='account_id']"
                 position="attributes">
@@ -73,10 +72,9 @@
                 <attribute name="readonly">{'readonly': [('from_picking_line', '=',True)]}</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='tax_ids']"
-                position="attributes">
+            <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='tax_ids']" position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
-            </xpath>
+            </xpath> -->
 
         </field>
     </record>
