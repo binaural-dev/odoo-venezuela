@@ -20,7 +20,6 @@
                                     with the POS
                                     if the session it corresponds to is open
                                 </div>
-                            </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
                             id="l10n_ve_pos_div_pos_config_id">
@@ -56,7 +55,6 @@
                                 <div class="text-muted">
                                     Search clients by vat number in CNE database
                                 </div>
-                            </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
                             id="l10n_ve_pos_div_pos_move_to_draft">
@@ -68,7 +66,6 @@
                                 <div class="text-muted">
                                     Change state to draft in account moves from POS
                                 </div>
-                            </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
                             id="l10n_ve_pos_div_pos_show_just_products_with_available_qty">
@@ -80,7 +77,6 @@
                                 <p class="text-muted">
                                     Deletes automatically products without free qty on POS
                                 </p>
-                            </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
                             id="l10n_ve_pos_div_sell_kit_from_another_store">
@@ -94,7 +90,6 @@
                                         Allows you to sell kits whose products are not in the main
                                         warehouse of the box.
                                     </div>
-                                </div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
@@ -108,7 +103,6 @@
                                     <div class="text-muted">
                                         Activate product entry with barcode in strict mode
                                     </div>
-                                </div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
@@ -121,7 +115,6 @@
                                 <div class="text-muted">
                                     Do not allow sales less than
                                 </div>
-                            </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
                             id="l10n_ve_pos_div_pos_show_free_qty">
@@ -133,7 +126,6 @@
                                 <div class="text-muted">
                                     Show free quantity on POS
                                 </div>
-                            </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
                             id="l10n_ve_pos_div_pos_pos_show_free_qty_on_warehouse"
@@ -146,7 +138,6 @@
                                 <div class="text-muted">
                                     Show quantites from warehouse of TPV
                                 </div>
-                            </div>
                         </div>
                     </block>
                 </xpath>
