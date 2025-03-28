@@ -1,3 +1,4 @@
+from odoo.exceptions import UserError
 import logging
 
 from odoo import _, api, fields, models
@@ -6,8 +7,6 @@ from odoo.osv import expression
 from datetime import date, datetime, timedelta
 
 _logger = logging.getLogger(__name__)
-
-from odoo.exceptions import UserError
 
 
 class StockPicking(models.Model):
@@ -81,7 +80,9 @@ class StockPicking(models.Model):
 
     # This field controls the visibility of the button, determines when to generate
     # the dispatch guide sequence, and controls the visibility of the 'guide_number' field.
-    dispatch_guide_controls = fields.Boolean(compute="_compute_dispatch_guide_controls", store=True)
+    dispatch_guide_controls = fields.Boolean(
+        compute="_compute_dispatch_guide_controls", store=True
+    )
 
     invoice_state = fields.Selection(
         selection=[
@@ -126,10 +127,14 @@ class StockPicking(models.Model):
     # === MAIN FUNCTIONS ===#
 
     def create_invoice_lots(self):
-        valid_picking = self.filtered(lambda picking: picking.state_guide_dispatch == "invoiced")
+        valid_picking = self.filtered(
+            lambda picking: picking.state_guide_dispatch == "invoiced"
+        )
 
         if valid_picking:
-            raise UserError(_("You cannot create an invoice from this picking for this state."))
+            raise UserError(
+                _("You cannot create an invoice from this picking for this state.")
+            )
 
         for picking in self:
             if picking.show_create_invoice:
@@ -186,7 +191,9 @@ class StockPicking(models.Model):
             if picking_id.picking_type_id.code == "incoming":
                 vendor_journal_id = self.env.company.vendor_journal_id
                 if not vendor_journal_id:
-                    raise UserError(_("Please configure the journal from the settings."))
+                    raise UserError(
+                        _("Please configure the journal from the settings.")
+                    )
                 invoice_line_list = []
                 for move_ids_without_package in picking_id.move_ids_without_package:
                     vals = (
@@ -201,7 +208,13 @@ class StockPicking(models.Model):
                                 if move_ids_without_package.product_id.property_account_income_id
                                 else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
                             ),
-                            "tax_ids": [(6, 0, [picking_id.company_id.account_purchase_tax_id.id])],
+                            "tax_ids": [
+                                (
+                                    6,
+                                    0,
+                                    [picking_id.company_id.account_purchase_tax_id.id],
+                                )
+                            ],
                             "quantity": move_ids_without_package.quantity,
                             "from_picking_line": True,
                         },
@@ -252,7 +265,9 @@ class StockPicking(models.Model):
                                 if move_ids_without_package.product_id.property_account_income_id
                                 else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
                             ),
-                            "tax_ids": [(6, 0, [picking_id.company_id.account_sale_tax_id.id])],
+                            "tax_ids": [
+                                (6, 0, [picking_id.company_id.account_sale_tax_id.id])
+                            ],
                             "quantity": move_ids_without_package.quantity,
                             "from_picking_line": True,
                         },
@@ -288,7 +303,9 @@ class StockPicking(models.Model):
             if picking_id.picking_type_id.code == "outgoing":
                 vendor_journal_id = self.env.company.vendor_journal_id
                 if not vendor_journal_id:
-                    raise UserError(_("Please configure the journal from the settings."))
+                    raise UserError(
+                        _("Please configure the journal from the settings.")
+                    )
                 invoice_line_list = []
                 for move_ids_without_package in picking_id.move_ids_without_package:
                     vals = (
@@ -303,7 +320,13 @@ class StockPicking(models.Model):
                                 if move_ids_without_package.product_id.property_account_income_id
                                 else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
                             ),
-                            "tax_ids": [(6, 0, [picking_id.company_id.account_purchase_tax_id.id])],
+                            "tax_ids": [
+                                (
+                                    6,
+                                    0,
+                                    [picking_id.company_id.account_purchase_tax_id.id],
+                                )
+                            ],
                             "quantity": move_ids_without_package.quantity,
                             "from_picking_line": True,
                         },
@@ -329,7 +352,7 @@ class StockPicking(models.Model):
                 picking_id.write({"state_guide_dispatch": "invoiced"})
                 picking_id._update_order_sale_invoiced()
             return invoice
-        
+
     def _update_order_sale_invoiced(self):
         for picking in self:
             if picking.sale_id:
@@ -395,7 +418,9 @@ class StockPicking(models.Model):
             )
             if invoice_ids:
                 raise UserError(
-                    _("This guide has at least one posted invoice, please check your invoice.")
+                    _(
+                        "This guide has at least one posted invoice, please check your invoice."
+                    )
                 )
 
     def _get_origin_name(self, picking):
@@ -470,7 +495,9 @@ class StockPicking(models.Model):
                     if not customer_journal_id:
                         raise UserError(_("Please configure the journal from settings"))
                     for picking_id in self:
-                        for move_ids_without_package in picking_id.move_ids_without_package:
+                        for (
+                            move_ids_without_package
+                        ) in picking_id.move_ids_without_package:
                             vals = (
                                 0,
                                 0,
@@ -484,7 +511,13 @@ class StockPicking(models.Model):
                                         else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
                                     ),
                                     "tax_ids": [
-                                        (6, 0, [picking_id.company_id.account_purchase_tax_id.id])
+                                        (
+                                            6,
+                                            0,
+                                            [
+                                                picking_id.company_id.account_purchase_tax_id.id
+                                            ],
+                                        )
                                     ],
                                     "quantity": move_ids_without_package.quantity,
                                 },
@@ -514,9 +547,13 @@ class StockPicking(models.Model):
                     bill_line_list = []
                     vendor_journal_id = self.env.company.vendor_journal_id
                     if not vendor_journal_id:
-                        raise UserError(_("Please configure the journal from " "the settings."))
+                        raise UserError(
+                            _("Please configure the journal from " "the settings.")
+                        )
                     for picking_id in self:
-                        for move_ids_without_package in picking_id.move_ids_without_package:
+                        for (
+                            move_ids_without_package
+                        ) in picking_id.move_ids_without_package:
                             vals = (
                                 0,
                                 0,
@@ -530,7 +567,13 @@ class StockPicking(models.Model):
                                         else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
                                     ),
                                     "tax_ids": [
-                                        (6, 0, [picking_id.company_id.account_purchase_tax_id.id])
+                                        (
+                                            6,
+                                            0,
+                                            [
+                                                picking_id.company_id.account_purchase_tax_id.id
+                                            ],
+                                        )
                                     ],
                                     "quantity": move_ids_without_package.quantity,
                                 },
@@ -596,10 +639,14 @@ class StockPicking(models.Model):
                 elif picking.partner_id:
                     location_id = picking.partner_id.property_stock_supplier.id
                 else:
-                    _customerloc, location_id = self.env["stock.warehouse"]._get_partner_locations()
+                    _customerloc, location_id = self.env[
+                        "stock.warehouse"
+                    ]._get_partner_locations()
 
                 if picking.picking_type_id.default_location_dest_id:
-                    location_dest_id = picking.picking_type_id.default_location_dest_id.id
+                    location_dest_id = (
+                        picking.picking_type_id.default_location_dest_id.id
+                    )
                 elif picking.partner_id:
                     location_dest_id = picking.partner_id.property_stock_customer.id
                 else:
@@ -610,7 +657,9 @@ class StockPicking(models.Model):
                 picking.location_id = location_id
                 picking.location_dest_id = location_dest_id
 
-    @api.depends("invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return")
+    @api.depends(
+        "invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return"
+    )
     def _compute_button_visibility(self):
         for record in self:
             is_invoice_empty = record.invoice_count == 0
@@ -637,13 +686,17 @@ class StockPicking(models.Model):
 
     def _compute_invoice_count(self):
         for picking_id in self:
-            move_ids = self.env["account.move"].search([("transfer_ids", "in", picking_id.id)])
+            move_ids = self.env["account.move"].search(
+                [("transfer_ids", "in", picking_id.id)]
+            )
             picking_id.invoice_count = len(move_ids)
 
     # @api.depends()
     def _compute_invoice_ids(self):
         for picking in self:
-            invoices = self.env["account.move"].search([("transfer_ids", "in", picking.ids)])
+            invoices = self.env["account.move"].search(
+                [("transfer_ids", "in", picking.ids)]
+            )
             picking.invoice_ids = invoices
 
     def _compute_invoice_state(self):
@@ -696,7 +749,9 @@ class StockPicking(models.Model):
         )
         for picking in self:
             if consignment_reason:
-                picking.is_consignment = picking.transfer_reason_id.id == consignment_reason.id
+                picking.is_consignment = (
+                    picking.transfer_reason_id.id == consignment_reason.id
+                )
             else:
                 picking.is_consignment = False
 
@@ -717,7 +772,9 @@ class StockPicking(models.Model):
                 # This is necessary always should be return a value
                 picking.is_dispatch_guide = picking.is_dispatch_guide
 
-    @api.depends("is_donation", "is_dispatch_guide", "operation_code", "location_dest_id")
+    @api.depends(
+        "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
+    )
     def _compute_allowed_reason_ids(self):
         for picking in self:
             allowed_reason_ids = []
@@ -732,7 +789,8 @@ class StockPicking(models.Model):
             }
 
             reasons = {
-                key: self.env.ref(ref, raise_if_not_found=False) for key, ref in reason_refs.items()
+                key: self.env.ref(ref, raise_if_not_found=False)
+                for key, ref in reason_refs.items()
             }
 
             is_outgoing = picking.operation_code == "outgoing"
@@ -744,12 +802,12 @@ class StockPicking(models.Model):
                 sale_reason = reasons.get("sale")
                 export_reason = reasons.get("export")
 
-                ## Donations
+                # Donations
                 if picking.is_donation and donation_reason:
                     allowed_reason_ids.append(donation_reason.id)
                     picking.transfer_reason_id = donation_reason.id
 
-                ## Without Donations
+                # Without Donations
                 else:
                     if sale_reason:
                         allowed_reason_ids.append(sale_reason.id)
@@ -768,17 +826,23 @@ class StockPicking(models.Model):
             elif picking.operation_code == "internal":
 
                 consignment_reason = reasons.get("consignment")
-                transfer_between_warehouses_reason = reasons.get("transfer_between_warehouses")
+                transfer_between_warehouses_reason = reasons.get(
+                    "transfer_between_warehouses"
+                )
                 warehouse = picking.location_dest_id.warehouse_id
 
-                ## Consignments and internal transfers
+                # Consignments and internal transfers
                 if consignment_reason:
                     allowed_reason_ids.append(consignment_reason.id)
 
                 if transfer_between_warehouses_reason:
                     allowed_reason_ids.append(transfer_between_warehouses_reason.id)
 
-                if consignment_reason and warehouse and warehouse.is_consignation_warehouse:
+                if (
+                    consignment_reason
+                    and warehouse
+                    and warehouse.is_consignation_warehouse
+                ):
                     picking.transfer_reason_id = consignment_reason.id
                     picking.is_consignment_readonly = True
                 else:
@@ -793,7 +857,9 @@ class StockPicking(models.Model):
             picking.allowed_reason_ids = (
                 self.env["transfer.reason"].search([])
                 if not allowed_reason_ids
-                else self.env["transfer.reason"].search([("id", "in", allowed_reason_ids)])
+                else self.env["transfer.reason"].search(
+                    [("id", "in", allowed_reason_ids)]
+                )
             )
 
             # if not allowed_reason_ids, then no option is returned
@@ -818,15 +884,21 @@ class StockPicking(models.Model):
     # === CRON METHODS ===#
 
     def _cron_generate_invoices_from_pickings(self):
-        config_type = self.company_id.invoice_cron_type or self.env.company.invoice_cron_type
-        config_time = self.company_id.invoice_cron_time or self.env.company.invoice_cron_time
+        config_type = (
+            self.company_id.invoice_cron_type or self.env.company.invoice_cron_type
+        )
+        config_time = (
+            self.company_id.invoice_cron_time or self.env.company.invoice_cron_time
+        )
 
         if self._is_execution_day(config_type) and self._is_execution_time(config_time):
             self._create_invoices_from_pickings()
 
     def _is_execution_day(self, config_type):
         today = fields.Date.today()
-        last_day = (today.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        last_day = (today.replace(day=1) + timedelta(days=32)).replace(
+            day=1
+        ) - timedelta(days=1)
 
         if config_type == "last_day":
             return today == last_day
@@ -900,4 +972,4 @@ class StockPicking(models.Model):
             result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
             result = result - timedelta(days=1)
 
-        return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}"
+        return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
