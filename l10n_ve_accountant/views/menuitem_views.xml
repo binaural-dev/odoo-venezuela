@@ -20,6 +20,6 @@
         id="base.menu_server_action" 
         action="base.action_server_action"
         parent="base.next_id_6"
-        groups="l10n_ve_accountant.group_fiscal_config_support"
+        active="False"
     />
 </odoo>
