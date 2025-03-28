@@ -29,6 +29,23 @@
             </xpath>
         </field>
     </record>
+    <!-- <record id="res_config_view_form_inherit_pos_iot_custom" model="ir.ui.view">
+        <field name="name">res.config.form.inherit.pos.iot.custom</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="1"/>
+        <field name="inherit_id" ref="pos_iot.res_config_view_form_inherit_pos_iot"/>
+        
+        <field name="arch" type="xml">
+            
+            <xpath expr="//field[@name='pos_iface_printer_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            
+            <xpath expr="//div[@class='row'][2]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record> -->
     <record id="view_res_config_settings_pos_mf" model="ir.ui.view">
         <field name="name">view.res.config.setting.pos.mf</field>
         <field name="model">res.config.settings</field>
