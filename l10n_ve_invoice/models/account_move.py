@@ -212,3 +212,10 @@ class AccountMove(models.Model):
                 }
             )
         return correlative.next_by_id(correlative.id)
+
+
+    def action_debit_note_button(self):
+        action = ""
+        for picking in self:
+            action = picking.env.ref('account_debit_note.action_view_account_move_debit').read()[0]
+        return action
