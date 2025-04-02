@@ -1,18 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="view_partner_property_form_inherit_binaural" model="ir.ui.view">
+    <record id="view_partner_property_form_inherit_l10n_ve_accountant" model="ir.ui.view">
         <field name="name">res.partner.view.form.inherit</field>
         <field name="model">res.partner</field>
-        <field name="inherit_id" ref="account.view_partner_property_form"/>
+        <field name="inherit_id" ref="account.view_partner_property_form" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='credit']" position="after">
-                <label for="use_partner_credit_limit_order"/>
+                <label for="use_partner_credit_limit_order" />
                 <div class="o_row">
-                    <field name="use_partner_credit_limit_order"/>
-                    <field name="credit_limit" widget='monetary' class="oe_inline" attrs="{'invisible': [('use_partner_credit_limit_order', '=', False)]}"/>
-                    <field name="currency_id" options="{'no_create': True, 'no_open': True}" readonly="1" groups="base.group_multi_currency"/>
+                    <field name="use_partner_credit_limit_order" />
+                    <field name="credit_limit" widget='monetary' class="oe_inline"
+                        attrs="{'invisible': [('use_partner_credit_limit_order', '=', False)]}" />
+                    <field name="currency_id" options="{'no_create': True, 'no_open': True}"
+                        readonly="1" groups="base.group_multi_currency" />
                 </div>
+            </xpath>
+        </field>
+    </record>
+    <record id="res_partner_l10n_ve_taxpayer" model="ir.ui.view">
+        <field name="name">res.partner.binaural.taxpayer</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="taxpayer_type" required="1" />
             </xpath>
         </field>
     </record>
@@ -23,7 +35,8 @@
     <!--     <field name="arch" type="xml"> -->
     <!--         <xpath expr="//group[@name='accounting_entries']" position="attributes"> -->
     <!--             <attribute name="groups">account.group_account_manager</attribute> -->
-    <!--             <attribute name="attrs">{'invisible': [('is_coa_installed', 'not in', (False,True))]}</attribute> -->
+    <!--             <attribute name="attrs">{'invisible': [('is_coa_installed', 'not in',
+    (False,True))]}</attribute> -->
     <!--         </xpath> -->
     <!--     </field> -->
     <!-- </record> -->
