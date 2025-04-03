@@ -25,6 +25,11 @@ class AccountMove(models.Model):
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
+    is_debit_journal = fields.Boolean(
+        compute="_compute_is_debit_journal",
+        store=True
+    )
+
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]
@@ -53,6 +58,20 @@ class AccountMove(models.Model):
                 raise UserError(
                     _("The correlative must be unique per journal when using a contingency journal")
                 )
+    #FIXME:: Comentado mientrase se corrije esta validación.
+    # def action_post(self):
+    #     for record in self:
+    #         sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
+    #         correlative = str(sequence.number_next_actual).zfill(sequence.padding)
+    #         invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', '=', record.move_type)])
+    #         if invoices:
+    #             raise ValidationError(_("An invoice with the Control Number already exists: %s"%correlative))
+    #     return super().action_post()
+
+    @api.depends('journal_id')
+    def _compute_is_debit_journal(self):
+        for move in self:
+            move.is_debit_journal = move.journal_id.is_debit if move.journal_id else False
 
     @api.depends("amount_residual")
     def _compute_payment_dates(self):
@@ -142,8 +161,8 @@ class AccountMove(models.Model):
             True or False whether the invoice already has a sequence number or not.
         """
         
-        journal_type = self.journal_id.type == "sale"
         is_contingency = self.journal_id.is_contingency
+        journal_type = self.journal_id.type == "sale"
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
         is_valid = (            
             not self.correlative
