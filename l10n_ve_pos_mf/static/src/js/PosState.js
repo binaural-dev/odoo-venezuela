@@ -186,20 +186,18 @@ patch(PosStore.prototype, {
           fdm.removeListener(listener);            
           reject({  
             valid: false,
-            message: "Error con la conexión a la máquina fiscal, verifique si está encendida o conectada al IoT",
+            message: _t("Error connecting to the fiscal machine, check if it is turned on or connected to the IoT"),
             printer_connection: false
           });
         }
       } catch (error) {
 
-        console.log(error.statusText)
-
         fdm.removeListener(listener);
         reject({
             valid: false,
             message: error.statusText === "timeout" 
-                ? "La máquina fiscal no respondió a tiempo" 
-                : "Error con la máquina fiscal",
+                ? _t("The tax machine did not respond in time")
+                : _t("Error with the tax machine"),
             printer_connection: false
         });
       }
