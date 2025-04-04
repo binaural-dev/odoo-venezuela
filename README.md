@@ -118,6 +118,20 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
 
    - Validación de montos acumulados por sesión.
 
+## Módulos de terceros requeridos/recomendados:
+  - Security Master (Recomendado)
+    Función principal:
+    Gestiona los reportes de auditoría exigidos por el SENIAT para cambios en modelos del sistema.
+    [Descargar en Odoo Store](https://apps.odoo.com/apps/modules/16.0/tk_security_master)
+
+  - Journal Sequence (Requerido)
+    Función principal:
+    Administra las secuencias numéricas de diarios contables (facturas y notas de crédito).
+    Importancia:
+      Dependencia esencial para el funcionamiento del módulo l10n_ve_accountant.
+      Centraliza la configuración de numeración según normativas locales.
+      [Descargar en Odoo Store](https://apps.odoo.com/apps/modules/16.0/od_journal_sequence)
+
 ## TODO: Planteamientos Futuros
 
 Estamos trabajando para mejorar continuamente esta localización. Entre nuestros próximos pasos están:
