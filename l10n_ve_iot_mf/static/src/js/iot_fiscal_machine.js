@@ -8,10 +8,12 @@ import { Component, onWillStart } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { IoTConnectionErrorDialog } from '@iot/iot_connection_error_dialog';
 
-const PRINT_OUT_INVOICE = "print_out_invoice";
-const PRINT_OUT_REFUND = "print_out_refund";
-const PRINT_DEBIT_NOTE = "print_debit_note";
-const REPRINT = "reprint";
+const PRINT_ACTIONS = Object.freeze({
+  OUT_INVOICE: "print_out_invoice",
+  OUT_REFUND: "print_out_refund",
+  DEBIT_NOTE: "print_debit_note",
+  REPRINT: "reprint"
+});
 
 function onIoTActionResult(data, notification) {
   if (data.result === true) {
@@ -42,8 +44,8 @@ export class IoTFiscalMachineComponent extends Component {
 
 
     this.button_names = {
-      [PRINT_OUT_INVOICE]: _t("Print Invoice"),
-      [PRINT_OUT_REFUND]: _t("Print Refund"),
+      [PRINT_ACTIONS.OUT_INVOICE]: _t("Print Invoice"),
+      [PRINT_ACTIONS.OUT_REFUND]: _t("Print Refund"),
       "generate_report_z": _t("Generate Report Z"),
       "generate_report_x": _t("Generate Report X"),
       "get_serial_machine": _t("Get Serial Machine"),
@@ -58,7 +60,7 @@ export class IoTFiscalMachineComponent extends Component {
       "command": _t("Send Command"),
       "print_resume_date": _t("Print Resume"),
       "configure_device": _t("Configure Device"),
-      [PRINT_DEBIT_NOTE]: _t("Print Debit Note"),
+      [PRINT_ACTIONS.DEBIT_NOTE]: _t("Print Debit Note"),
     }
 
     this.state = useState({
@@ -379,19 +381,19 @@ export class IoTFiscalMachineComponent extends Component {
   }
 
   async print_out_invoice() {
-    return await this.print_document(PRINT_OUT_INVOICE)
+    return await this.print_document(PRINT_ACTIONS.OUT_INVOICE)
   }
   
   async print_out_refund() {
-    return await this.print_document(PRINT_OUT_REFUND)
+    return await this.print_document(PRINT_ACTIONS.OUT_REFUND)
   }
 
   async print_debit_note() {
-    return await this.print_document(PRINT_DEBIT_NOTE)
+    return await this.print_document(PRINT_ACTIONS.DEBIT_NOTE)
   }
 
   async reprint_document() {
-    return await this.print_document(REPRINT)
+    return await this.print_document(PRINT_ACTIONS.REPRINT)
   }
 
   async print_document(print_type) {
