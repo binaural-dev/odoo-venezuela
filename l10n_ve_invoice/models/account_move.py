@@ -155,9 +155,18 @@ class AccountMove(models.Model):
     def _post(self, soft=True):
         res = super()._post(soft)
         for move in res:
-            if move.is_valid_to_sequence():
+            
+            if "invoice_print_type" in move.company_id._fields:
+                invoice_print_type = move.company_id.invoice_print_type
+            else:
+                invoice_print_type = None
+            
+            if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
+                
                 move.correlative = move.get_sequence()
+                
         return res
+        
 
     @api.model
     def is_valid_to_sequence(self) -> bool:
