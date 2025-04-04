@@ -67,9 +67,56 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
    - Compatibilidad con reportes fiscales.
 
 5. **l10n_ve_location**
+
    - Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos.
 
-Adicionalmente encontraras otros modulos que se describen por si mismos.
+6. **l10n_ve_currency_rate_live** 
+
+   - Actualización diaria automática de tasas BCV.
+   - Configuración por compañía
+   - Fallback a última tasa registrada en días sin actualización oficial.
+
+7. **l10n_ve_igtf**
+
+   - Implementa la gestión automatizada del Impuesto a las Grandes Transacciones Financieras (IGTF), adaptándose a normativas venezolanas.
+   - Configuración centralizada de cuentas, porcentajes y diarios contables para el impuesto.
+   - Cálculos automáticos en facturas, pagos y asientos (moneda local/extranjera).
+   - Integración con el núcleo contable de Odoo (account.move, account.payment).
+   - Interfaz optimizada con visualización contextual del IGTF en documentos y reportes.
+   - Validaciones de precisión y compatibilidad con multi-moneda.
+
+8. **l10n_ve_iot_mf**
+   - Conexión segura vía IoT Box con protocolos fiscales y SDK HKA integrado.
+   - Trazabilidad completa en facturas: serial del dispositivo, numeración fiscal única y Reporte Z.
+   - Configuración de códigos tributarios compatibles con formatos HKA.
+   - Mejoras de seguridad en permisos (acceso restringido a puertos IoT).
+
+9. **l10n_ve_payment_extension**
+
+     - Modelos especializados para retenciones, con cabeceras, líneas detalladas y tipos configurables (ISLR, municipales, etc.).
+     - Estructuras complementarias: actividades económicas, ramos, tarifas asociadas y configuración de firma digital.
+     - Campos dedicados en facturas y pagos para vincular retenciones, montos en divisa y referencias únicas.
+     - Validación automática de cálculos según parámetros legales.
+     - Generación de documentos en formatos oficiales (PDF, XLSX, SENIAT) para ISLR, IVA y retenciones municipales.
+     - Libros de compras/ventas (ARCV) y certificados de retención personalizables.
+     - Tipos de persona (natural/jurídica), conceptos de pago y tarifas dinámicas por actividad económica.
+     - Soporte para firma digital en documentos fiscales.
+
+10. **l10n_ve_pos**
+
+   - Tasas BCV actualizadas automáticamente para cálculos en BsD, USD o EUR.
+   - Límites configurables de diferencial cambiario según regulaciones locales.
+   - Moneda base (BsD) y alternativas (USD/EUR) con actualización en tiempo real.
+   - Validación de tasas en apertura/cierre de sesión, pagos y conciliación contable.
+   - Campos extendidos en pagos (pos.payment): monto base en divisa, diferencial y tasa de referencia.
+
+11. **l10n_ve_pos_igtf**
+
+   - Aplicación en tiempo real durante el proceso de pago en POS (PosOrder).
+
+   - Configuración por método de pago (habilitar/deshabilitar IGTF).
+
+   - Validación de montos acumulados por sesión.
 
 ## TODO: Planteamientos Futuros
 
