@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_config_settings_inherit_tfhka" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.tfhka</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                <block title="TFHKA" string="TFHKA" name="l10n_ve_invoice_digital_block">
+                    <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_max_product_invoice">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <div class="col12 col-lg-6">
+                                <div class="form-group">
+                                    <label for="username_tfhka" class="col-form-label">Username</label>
+                                    <div class="col-sm-8">
+                                        <field name="username_tfhka"/>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="password_tfhka" class="col-form-label">Password</label>
+                                    <div class="col-sm-8">
+                                        <field name="password_tfhka"/>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="url_tfhka" class="col-form-label">URL</label>
+                                    <div class="col-sm-8">
+                                        <field name="url_tfhka"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>
