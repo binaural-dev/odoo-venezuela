@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_inherit" model="ir.ui.view">
+        <field name="name">account.move.form.inherit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='button_draft']" position="attributes">
+                <attribute name="invisible">not show_reset_to_draft_button or document_digital_check_tfhka</attribute>
+            </xpath>      
+            <xpath expr="//header" position="inside">
+            <field name="show_digital_invoice" invisible="1"/>
+            <field name="show_digital_note_credit" invisible="1"/>
+            <field name="show_digital_note_debit" invisible="1"/>
+
+                <button name="Emission" string="Generar Factura Digital" type="object" 
+                    context="{'tipoDocumento': '01'}" 
+                    invisible="show_digital_invoice"/>
+
+                <button name="Emission" string="Generar Nota Crédito Digital" type="object" 
+                    context="{'tipoDocumento': '02'}" 
+                    invisible="show_digital_note_credit"/>
+
+                <button name="Emission" string="Generar Nota Débito Digital" type="object" 
+                    context="{'tipoDocumento': '03'}" 
+                    invisible="show_digital_note_debit"/>
+            </xpath>
+            <xpath expr="//group[@id='header_right_group']/label[1]" position="before">
+                <field name="document_digital_check_tfhka" string="Digitalizado" invisible="move_type == 'entry'"/>
+            </xpath>        
+        </field>
+    </record>
+</odoo>
