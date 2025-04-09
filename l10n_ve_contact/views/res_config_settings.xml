@@ -2,40 +2,58 @@
 <odoo>
 
     <record id="res_config_settings_l10n_ve_contact" model="ir.ui.view">
-            <field name="name">res.config.settings.binaural.contact</field>
-            <field name="model">res.config.settings</field>
-            <field name="priority" eval="100"/>
-            <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate"/>
-            <field name="arch" type="xml">
-                <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
-                    <h2>Contact Configuration</h2>
-                    <div class="row mt16 o_settings_container" name="l10n_ve_contact_settings_container">
-                        <div id="partner_section" class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_right_pane">
-                                <div class="text-muted">
-                                    Validate user creation by company
-                                </div>
-                                <div class="content-group">
-                                    <div class="mt16">
-                                        <field name="validate_user_creation_by_company"/>
+        <field name="name">res.config.settings.l10n.ve.contact</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="100" />
+        <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate" />
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
+                <h2>Contact Configuration</h2>
+                <div class="row mt16 o_settings_container" name="l10n_ve_contact_settings_container">
+                    <div id="partner_section" class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_right_pane">
+                            <div class="content-group">
+                                <div class="mt16">
+
+                                    <field
+                                        name="validate_user_creation_by_company" />
+                                    <span> Validate the creation of contacts by company
+                                    </span>
+                                    <div class="text-muted">
+                                        <span class="o_text-muted">
+
+                                            Avoid creating repeated contacts in
+                                            each company using the
+                                            document number field</span>
                                     </div>
+
                                 </div>
                             </div>
-                            <div class="o_setting_right_pane">
-                                <div class="text-muted">
-                                    Validate user creation general
-                                </div>
-                                <div class="content-group">
-                                    <div class="mt16">
-                                        <field name="validate_user_creation_general"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <div
+                                class="content-group">
+                                <div class="mt16">
+                                    <field
+                                        name="validate_user_creation_general" />
+                                    <span> Validate contact creation in the entire database </span>
+
+                                    <div class="text-muted">
+                                        <span class="o_text-muted"> Avoid creating repeated contacts
+                                            in
+                                            the database using the
+                                            document
+                                            number fieldesta</span>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
                     </div>
-                </xpath>
+                </div>
+            </xpath>
 
-            </field>
+        </field>
     </record>
 
 </odoo>

@@ -1,0 +1,874 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_iot_mf
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 20:03+0000\n"
+"PO-Revision-Date: 2025-03-19 20:03+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__flag_21__00
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__flag_24__00
+msgid "00"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__flag_21__01
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__flag_24__01
+msgid "01"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__flag_21__02
+msgid "02"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__10
+msgid "10"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__11
+msgid "11"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__12
+msgid "12"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__13
+msgid "13"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__14
+msgid "14"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__15
+msgid "15"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__16
+msgid "16"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__17
+msgid "17"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__18
+msgid "18"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__19
+msgid "19"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__20
+msgid "20 (*)"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__21
+msgid "21 (*)"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__22
+msgid "22 (*)"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__23
+msgid "23 (*)"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__payment_methods__24
+msgid "24 (*)"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__flag_21__30
+msgid "30"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__ra
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_number__r@
+msgid "All"
+msgstr "Todos"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_box__blacklist
+msgid "Blacklist"
+msgstr "Lista Negra"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_box__blacklist_port_ids
+msgid "Blacklist Port"
+msgstr "Puertos De Lista negra"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "Cannot print an invoice with a future date"
+msgstr ""
+"No puede emitir una Nota de credito por Maquina fiscal con una fecha "
+"distinta a la de hoy, por favor edite la fecha de la factura, la tasa y "
+"verifique montos en  Bs"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "Cannot print an invoice without validation"
+msgstr "No se puede imprimir una factura sin validación"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Check if the printer is still connected"
+msgstr "Revisa si la maquina fiscal esta conectada"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__command
+msgid "Command"
+msgstr "Commando"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Configure Device"
+msgstr "Configurar Dispositivo"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Connection to printer failed"
+msgstr "Conexión a la impresora falló"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__create_date
+msgid "Created on"
+msgstr "Creado en"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type__date
+msgid "Date"
+msgstr "Fechas"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Date from"
+msgstr "Fecha Inicio"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Date to"
+msgstr "Fecha Fin"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Device is not connected"
+msgstr "El dispositivo no esta conteado"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__display_name
+msgid "Display Name"
+msgstr "Nombre"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Document"
+msgstr "Documento"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid ""
+"Edit the name of the payment method shown in \"programming\"\n"
+"                                        and used to pay on invoices or credit notes"
+msgstr ""
+"Editar el nombre del metodo de pago mostrado en \"programacion\"\n"
+"                                y es usado para pagar facturas y notas de credito"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_tax__fiscal_code
+msgid "Fiscal Code"
+msgstr "Código en Maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.account_move_form
+msgid "Fiscal Machine"
+msgstr "Maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_box__fiscal_port_ids
+msgid "Fiscal Port"
+msgstr "Puerto Serial (Fiscal)"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__name
+msgid "Fiscal Ports"
+msgstr "Puertos seriales (Fiscal)"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__mf_serial
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__mf_serial
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__mf_serial
+msgid "Fiscal machine serial"
+msgstr "Serial de maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__flag_21
+msgid "Flag 21"
+msgstr "Bandera 21"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__flag_24
+msgid "Flag 24"
+msgstr "Bandera 24"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Generate Report X"
+msgstr "Generar reporte X"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Generate Report Z"
+msgstr "Generar reporte Z"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Get Serial Machine"
+msgstr "Obtener Serial de la Maquina Fiscal"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Get Status / Error"
+msgstr "Obtener Status / Error"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Get Status 1"
+msgstr "Obtener Status 1"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__has_cashbox
+msgid "Has Cashbox"
+msgstr "Tiene Caja Registradora?"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_box__has_fiscal_machine
+msgid "Has Fiscal Machine"
+msgstr "¿Tiene maquina fiscal? (Windows)"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "ID Payment Method"
+msgstr "Id del método de pago"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_iot_device
+msgid "IOT Device"
+msgstr "Dispositivo IOT"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__rf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_number__rf
+msgid "Invoices"
+msgstr "Facturas"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_account_invoice_report
+msgid "Invoices Statistics"
+msgstr "Estadísticas de facturas"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_iot_box
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__iot_box
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__iot_box
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__iot_box
+msgid "IoT Box"
+msgstr "Caja IoT"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__iot_box_ids
+msgid "Iot Box"
+msgstr "Caja IoT"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__iot_box_blacklist_ids
+msgid "Iot Box Blacklist"
+msgstr "Iot Lista negra"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__is_credit
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__is_credit
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__is_credit
+msgid "Is Credit"
+msgstr "Es a Crédito"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__is_debit_journal
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__is_debit_journal
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__is_debit_journal
+msgid "Is Debit Journal"
+msgstr "Es un diario de débito"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_account_journal
+msgid "Journal"
+msgstr "Diario"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port____last_update
+msgid "Last Modified on"
+msgstr "Ultima modificación en"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__write_date
+msgid "Last Updated on"
+msgstr "Última actualización en"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__manufacturer_type
+msgid "Manufacturer Type"
+msgstr "Marca del dispositivo"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_amount_decimal
+msgid "Max Amount Decimal"
+msgstr "Monto máximo decimal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_amount_int
+msgid "Max Amount Int"
+msgstr "Monto máximo entero"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_description
+msgid "Max Description"
+msgstr "Maximo de descripción"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_payment_amount_decimal
+msgid "Max Payment Amount Decimal"
+msgstr "Decimales Maximos del monto de pago"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_payment_amount_int
+msgid "Max Payment Amount Int"
+msgstr "Enteros Maximos del monto de pago"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_qty_decimal
+msgid "Max quantity Deciamal"
+msgstr "Decimales Maximos de la cantidad"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__max_qty_int
+msgid "Max quantity int"
+msgstr "Enteros Maximos de la cantidad"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Name to set on Fiscal machine"
+msgstr "Nombre para colocar en la Maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__rt
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_number__rt
+msgid "No Fiscal"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Not are invoices to Report Z"
+msgstr "No hay facturas disponibles para reporte Z"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type__number
+msgid "Number"
+msgstr "Numero"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Number from"
+msgstr "Número Desde"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Number to"
+msgstr "Número Hasta"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_invoice_report__mf_invoice_number
+msgid "Número de secuencia"
+msgstr "Número de secuencia"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_journal__payment_method
+msgid "Payment Method"
+msgstr "Método de pago"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__payment_method_name
+msgid "Payment Method Name"
+msgstr "Nombre del método de pago"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__payment_methods
+msgid "Payment Methods"
+msgstr "Métodos de pago"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "Payment method id is empty"
+msgstr "El id del método de pago esta vacio"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "Payment method name is empty"
+msgstr "El nombre del método de pago esta vacío"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__manufacturer_type__pnp
+msgid "PnP Desarrollos"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Print Debit Note"
+msgstr "Imprimir Nota de Débito"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Print Invoice"
+msgstr "Imprimir Factura"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Print Refund"
+msgstr "Imprimir Nota de crédito"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Print Reports"
+msgstr "Imprimir Reporte"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Print Resume"
+msgstr "Imprimir Resumen"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Programming"
+msgstr "Programación"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_box__ip_public
+msgid "Public IP Address"
+msgstr "Ip Pública"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "Range to is greater than range from"
+msgstr "El rango hasta es mayor que el rango desde"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__rc
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_number__rc
+msgid "Refund"
+msgstr "Nota de crédito"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__rx
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_number__rx
+msgid "Report X"
+msgstr "Reporte X"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__rz
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_number__rz
+msgid "Report Z"
+msgstr "Reporte Z"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__mf_reportz
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__mf_reportz
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__mf_reportz
+msgid "Report number Z"
+msgstr "Número de reporte Z"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_invoice_report__mf_reportz
+msgid "Reporte Z"
+msgstr "Reporte Z"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Reprint"
+msgstr "Reimprimir"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Reprint Date"
+msgstr "Reimpimir (Fecha)"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Reprint Document"
+msgstr "Reimprimir Documento"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Reprint Documents"
+msgstr "Reimprimir documentos"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Reprint Documents range"
+msgstr "Reimprimir rango de documentos"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__reprint_range_from_date
+msgid "Reprint Range From Date"
+msgstr "Reimprimir Rango desde Fecha"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__reprint_range_from_number
+msgid "Reprint Range From Number"
+msgstr "Reimpirimir Rango desde Numero"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__reprint_range_to_date
+msgid "Reprint Range To Date"
+msgstr "Reimprimir Rango hasta Fecha"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__reprint_range_to_number
+msgid "Reprint Range To Number"
+msgstr "Reimprimir Rango hasta Numero"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__reprint_type
+msgid "Reprint Type"
+msgstr "Tipo de Reimpresión"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__reprint_type_date
+msgid "Reprint Type Date"
+msgstr "Tipo de Reimpresión Fecha"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__reprint_type_number
+msgid "Reprint Type Number"
+msgstr "Tipo de Reimpresión"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__resume_range_from
+msgid "Resume Range From"
+msgstr "Rango desde"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__resume_range_to
+msgid "Resume Range To"
+msgstr "Rango hasta"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Send Command"
+msgstr "Enviar Comando"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Send command to Fiscal Machine"
+msgstr "Enviar comando a la maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Send raw command to the fiscal machine"
+msgstr "Enviar comando a la maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__mf_invoice_number
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__mf_invoice_number
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__mf_invoice_number
+msgid "Sequence number"
+msgstr "Número de secuencia"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_invoice_report__mf_serial
+msgid "Serial de maquina de fiscal"
+msgstr "Serial de maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__serial_machine
+msgid "Serial of fiscal machine"
+msgstr "Serial de la maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Set Payment Method"
+msgstr "Establecer método de pago"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__show_version
+msgid "Show Version"
+msgstr "Mostrar Version"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Successfully sent to printer!"
+msgstr "¡Enviado exitosamente a la impresora!"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_account_tax
+msgid "Tax"
+msgstr "Impuesto"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Test"
+msgstr "Imprimir Test"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__manufacturer_type__hka
+msgid "The Factory HKA"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "The command is empty"
+msgstr "El comando esta vacío"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "The credit note must be made in the same fiscal machine"
+msgstr "La nota de crédito debe ser realizada en la misma maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "The credit note must be made on the same day"
+msgstr ""
+"No puede emitir una Nota de crédito por Maquina fiscal con una fecha "
+"distinta a la de hoy, por favor edite la fecha de la factura, la tasa y "
+"verifique montos en  Bs"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "The debit note must be made in the same fiscal machine"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "The debit note must be made on the same day"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "The invoice has already been printed"
+msgstr "La factura ya fue impresa"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "The invoice has no fiscal machine assigned"
+msgstr "La factura no tiene una maquina fiscal asignada"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "The invoice has not already been printed"
+msgstr "La factura no fue impresa"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Tools"
+msgstr "Herramientas"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__traditional_line
+msgid "Traditional Line"
+msgstr "Lineas tradicionales"
+
+#. module: l10n_ve_iot_mf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
+msgid "Type"
+msgstr "Tipo"
+
+#. module: l10n_ve_iot_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_iot_mf/static/src/js/iot_fiscal_machine.js:0
+#, python-format
+msgid "Verify invoices with Serial Machine"
+msgstr "Verifica si las facturas tienen Serial de maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_wizard_accounting_reports__with_fiscal_machine
+msgid "With Fiscal Machine"
+msgstr "Con maquina fiscal"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_wizard_accounting_reports
+msgid "Wizard para generar reportes de libro de compra y ventas"
+msgstr ""
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "You can't edit a paper invoice"
+msgstr "No se puede editar una factura impresa"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_move.py:0
+#, python-format
+msgid "You cannot convert an invoice to credit if it has associated payments"
+msgstr ""
+"No se puede convertir una factura en nota de credito si tiene pagos "
+"asociados"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "You must fill in the start or end field, if there is one"
+msgstr "Debes rellenar el campo de inicio o fin, si lo hay."
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#, python-format
+msgid ""
+"You must fill in the start or end field, if there is one, repeat the date"
+msgstr "Debes llenar el campo de inicio o fin, si lo hay, repite la fecha"
+
+#. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/iot_device.py:0
+#, python-format
+msgid ""
+"You must fill in the start or end field, if there is one, repeat the number"
+msgstr "Debes llenar el campo de inicio o fin, si lo hay, repite el número"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model,name:l10n_ve_iot_mf.model_iot_port
+msgid "iot.port"
+msgstr ""

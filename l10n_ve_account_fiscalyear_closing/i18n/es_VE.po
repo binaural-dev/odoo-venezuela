@@ -57,11 +57,6 @@ msgstr "Tipos de cierre de cuentas"
 msgid "Accounts mapping"
 msgstr "Asignación de cuentas"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields.selection,name:binaural_account_fiscalyear_closing.selection__account_fiscalyear_closing__journal_type__all
-msgid "All Dairy"
-msgstr "Todos los Diarios"
-
 #. module: account_fiscal_year_closing
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_template__chart_template_ids
 msgid "Available for"
@@ -360,11 +355,6 @@ msgstr "Gastos"
 msgid "First date of the opening period"
 msgstr "Primera fecha del periodo de apertura"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields.selection,name:binaural_account_fiscalyear_closing.selection__account_fiscalyear_closing__journal_type__fiscal
-msgid "Fiscal Dairy"
-msgstr "Diario Fiscal"
-
 #. module: account_fiscal_year_closing
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_config__fyc_id
 #: model:ir.ui.menu,name:account_fiscal_year_closing.menu_account_fiscalyear_closing_configuration
@@ -547,11 +537,6 @@ msgstr "Diario"
 msgid "Journal Entry"
 msgstr "Asiento contable"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields,field_description:binaural_account_fiscalyear_closing.field_account_fiscalyear_closing__journal_type
-msgid "Journal Type"
-msgstr "Tipo de diario"
-
 #. module: account_fiscal_year_closing
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing____last_update
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_config____last_update
@@ -653,11 +638,6 @@ msgstr "Configuración de movimientos"
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_unbalanced_move_line__name
 msgid "Name"
 msgstr "Nombre"
-
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields.selection,name:binaural_account_fiscalyear_closing.selection__account_fiscalyear_closing__journal_type__nofiscal
-msgid "No Fiscal Dairy"
-msgstr "Diario no Fiscal"
 
 #. module: account_fiscal_year_closing
 #. odoo-python

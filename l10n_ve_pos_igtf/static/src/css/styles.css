@@ -1,0 +1,42 @@
+.payment-status-currency, .payment-status-l10n_ve{
+  display: flex;
+  text-align: center;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+.amount-totals{
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  font-size: 0.6em !important;
+  align-items: center;
+  letter-spacing: .15rem;
+  margin: 1rem 0;
+}
+
+.minify-igtf{
+  position: absolute;
+  font-size: 18px;
+}
+
+.igtf{
+  font-size: 13px;
+  position: absolute;
+  bottom: 0px;
+  align-items:center;
+  width: 100%;
+}
+
+.total-binuaral{
+  font-size: 0.8em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.total-amount{
+  margin: 1rem 0;
+  font-size: 1em !important
+}

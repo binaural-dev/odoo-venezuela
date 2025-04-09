@@ -1,6 +1,6 @@
 {
-    "name": "Binaural plan de cuentas",
-    "version": "1.0.0",
+    "name": "Venezuela - Plan de cuentas",
+    "version": "16.0.0.0.0",
     "category": "Accounting/Localizations/Account Charts",
     "license": "LGPL-3",
     "depends": ["base", "account", "account_accountant", "stock", "sale", "contacts"],
@@ -18,7 +18,6 @@
         "data/account_tax_template_data.xml",
         "data/product_template_data.xml",
         "data/res_partner_data.xml",
-        "data/account_journal_data.xml"
+        "data/account_journal_data.xml",
     ],
-    "binaural": True,
 }
