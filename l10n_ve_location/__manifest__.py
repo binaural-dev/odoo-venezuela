@@ -1,14 +1,11 @@
 {
-    "name": "Binaural Localización",
-    "summary": """
-        Maestros de ciudades, municipios
-parroquias. 
-    """,
+    "name": "Venezuela - Localización",
+    "summary": "Modelos de ciudades, municipios y parroquias de Venezuela.",
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "16.0.1.0.2",
+    "version": "16.0.1.0.3",
     "depends": ["base", "contacts"],
     "data": [
         "security/ir.model.access.csv",
@@ -22,5 +19,4 @@ parroquias. 
         "views/menus.xml",
     ],
     "application": True,
-    "binaural": True,
 }
