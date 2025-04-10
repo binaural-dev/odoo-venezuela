@@ -14,7 +14,6 @@ class ProductProduct(models.Model):
 
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
-        # Variante del maldito Raiver e.e
         return True
 
     @api.model_create_multi
