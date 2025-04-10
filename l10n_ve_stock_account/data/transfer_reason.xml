@@ -3,7 +3,6 @@
         <!-- Donation -->
         <record id="transfer_reason_donation" model="transfer.reason">
             <field name="name">Donación</field>
-            <!-- <field name="name">Donation</field> -->
             <field name="code">donation</field>
             <field name="active">True</field>
         </record>
@@ -11,7 +10,6 @@
         <!-- Sale -->
         <record id="transfer_reason_sale" model="transfer.reason">
             <field name="name">Venta</field>
-            <!-- <field name="name">Sale</field> -->
             <field name="code">sale</field>
             <field name="active">True</field>
         </record>
@@ -26,7 +24,6 @@
         <!-- Export -->
         <record id="transfer_reason_export" model="transfer.reason">
             <field name="name">Exportación</field>
-            <!-- <field name="name">Export</field> -->
             <field name="code">export</field>
             <field name="active">True</field>
         </record>
@@ -34,7 +31,6 @@
         <!-- Self Consumption -->
         <record id="transfer_reason_self_consumption" model="transfer.reason">
             <field name="name">Autoconsumo</field>
-            <!-- <field name="name">Self Consumption</field> -->
             <field name="code">self_consumption</field>
             <field name="active">True</field>
         </record>
@@ -42,7 +38,6 @@
         <!-- Consignment -->
         <record id="transfer_reason_consignment" model="transfer.reason">
             <field name="name">Consignación</field>
-            <!-- <field name="name">Consignment</field> -->
             <field name="code">consignment</field>
             <field name="active">True</field>
         </record>

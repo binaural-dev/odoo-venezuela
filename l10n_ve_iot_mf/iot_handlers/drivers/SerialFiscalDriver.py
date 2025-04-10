@@ -623,7 +623,6 @@ class SerialFiscalDriver(SerialDriver):
             if status["data"]["status"]["code"] not in ["1", "4"]:
                 raise Exception(status["data"]["status"]["msg"])
 
-            _logger.warning("print_out_refound %s", invoice)
             cmd.append(str("iR*" + invoice["partner_id"]["vat"]))
             cmd.append(str("iS*" + invoice["partner_id"]["name"]))
             cmd.append(str("iF*" + invoice["invoice_affected"]["number"]))
@@ -994,7 +993,7 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return response
         except Exception as _e:
-            _logger.warning("exepcion %s", str(_e))
+            _logger.warning("Exception %s", str(_e))
             return str(_e)
 
     def get_last_invoice_number(self, data):

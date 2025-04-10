@@ -4,7 +4,7 @@
         <xpath expr="//CashierName" position="after">
             <div t-if="this.env.pos.useFiscalMachine()" t-on-click="_on_click_mf_test" name="fiscal_machine">
                 <i class="fa fa-fw fa-print" role="img"></i>
-                <p> Maquina Fiscal</p>
+                <p> Máquina Fiscal</p>
             </div>
         </xpath>
         <xpath expr="//div[hasclass('pos-branding')]" position="inside">

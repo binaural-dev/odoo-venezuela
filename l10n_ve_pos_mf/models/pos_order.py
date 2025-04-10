@@ -8,12 +8,14 @@ _logger = logging.getLogger(__name__)
 class PosOrderInherit(models.Model):
     _inherit = "pos.order"
 
-    mf_reportz = fields.Char(string="Codigo de reporte Z", default=False, copy=False, readonly=True)
+    mf_reportz = fields.Char(
+        string="Report code Z", default=False, copy=False, readonly=True
+    )
     fiscal_machine = fields.Char(
-        string="Serial de Maquina fiscal", default=False, copy=False, readonly=True
+        string="Fiscal Machine Serial", default=False, copy=False, readonly=True
     )
     mf_invoice_number = fields.Char(
-        string="Sequencia en maquina fiscal", default=False, copy=False, readonly=True
+        string="Sequence in fiscal machine", default=False, copy=False, readonly=True
     )
 
     def get_order_by_uid(self, uid):
@@ -25,7 +27,6 @@ class PosOrderInherit(models.Model):
         res["fiscal_machine"] = ui_order["fiscal_machine"]
         res["mf_invoice_number"] = ui_order["mf_invoice_number"]
         res["mf_reportz"] = ui_order["mf_reportz"]
-        _logger.warning(ui_order)
         return res
 
     def _export_for_ui(self, order):

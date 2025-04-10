@@ -64,8 +64,8 @@ msgstr "Código en Maquina fiscal"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order__mf_reportz
-msgid "Codigo de reporte Z"
-msgstr ""
+msgid "Report code Z"
+msgstr "Código de reporte Z"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_wizard_sales_book__company_id
@@ -348,13 +348,13 @@ msgstr "Libro de ventas (por rango)"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order__mf_invoice_number
-msgid "Sequencia en maquina fiscal"
-msgstr ""
+msgid "Sequence in fiscal machine"
+msgstr "Sequencia en máquina fiscal"
 
 #. module: l10n_ve_pos_mf
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_order__fiscal_machine
-msgid "Serial de Maquina fiscal"
-msgstr ""
+msgid "Sequence in fiscal machine"
+msgstr "Sequencia en maquina fiscal"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript

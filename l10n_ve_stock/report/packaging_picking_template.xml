@@ -3,9 +3,6 @@
     <template id="packaging_picking_item">
         <div class="container">
             <div class="row border border-dark rounded position-relative" name="header">
-                <!-- <t t-set="operation_employees" t-value="picking.get_operation_employees()"/> -->
-                <!-- <t t-set="pick_employee" t-value="operation_employees[0]"/> -->
-                <!-- <t t-set="out_employee" t-value="operation_employees[1]"/> -->
                 <div class="col-7" name="picking_info">
                     <div> Date: <span
                             t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')" />

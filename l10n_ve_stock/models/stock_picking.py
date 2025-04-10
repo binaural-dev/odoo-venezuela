@@ -16,7 +16,6 @@ class StockPicking(models.Model):
     reception_date = fields.Date(tracking=True)
 
     def _get_action_picking_delivery_type(self, picking_type):
-        # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
         pickings = self.env["stock.picking"]
         if self.group_id:
             pickings = self.search(
@@ -162,11 +161,6 @@ class StockPicking(models.Model):
         related="company_id.change_weight",
     )
 
-    # def _compute_is_out(self):
-    #     for record in self:
-    #         record.is_out = (
-    #             record.picking_type_id.warehouse_id.out_type_id.id == record.picking_type_id.id
-    #         )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -183,9 +177,3 @@ class StockPicking(models.Model):
         self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
 
         return res
-
-    # def action_assign(self):
-    #     if self.type_delivery_step != "pick":
-    #         self = self.with_context(skip_physical_location=True)
-    #     return super().action_assign()
-    

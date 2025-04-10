@@ -2,7 +2,6 @@
 <templates id="template" xml:space="preserve">
     <t t-name="DebugWidget" t-inherit="point_of_sale.DebugWidget" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[hasclass('content')][1]" position="before">
-            <p class="category">Binaural</p>
             <ul>
                 <li class="button" t-on-click="programacion">PROGRAMACION</li>
                 <li class="button" t-on-click="report_x">REPORT X</li>

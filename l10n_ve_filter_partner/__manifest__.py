@@ -7,9 +7,7 @@
     "category": "Technical",
     "version": "16.0.0.0.0",
     "depends": ["web"],
-    "data": [
-        # 'security/ir.model.access.csv',
-    ],
+    "data": [],
     "web.assets_backend": [
         "/l10n_ve_filter_partner/static/lib/js/*.js",
     ],
