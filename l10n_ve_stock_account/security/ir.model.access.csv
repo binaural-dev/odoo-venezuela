@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_transfer_reason,access_transfer_reason,model_transfer_reason,base.group_user,1,0,0,0
+access_stock_picking_self_consumption_wizard,access_stock_picking_self_consumption_wizard,model_stock_picking_self_consumption_wizard,base.group_user,1,1,1,1
+access_picking_invoice_wizard_manager,access_picking_invoice_wizard_manager,model_picking_invoice_wizard,base.group_erp_manager,1,1,1,1
+access_picking_invoice_wizard_user,access_picking_invoice_wizard_user,model_picking_invoice_wizard,base.group_user,1,1,1,1
