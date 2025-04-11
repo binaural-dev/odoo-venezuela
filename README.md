@@ -48,103 +48,94 @@ Si deseas colaborar directamente con código:
 
 Esta localización incluye los siguientes módulos, diseñados para cumplir con los requisitos específicos de la normativa venezolana:
 
-1. **l10n_ve_accounting**
+- **l10n_ve_accounting**  
+   Gestión contable adaptada a los estándares locales. Incluye configuraciones específicas para cuentas y planes contables venezolanos, permitiendo cumplir con los requerimientos fiscales nacionales.
 
-   - Gestión contable adaptada a los estándares locales.
-   - Configuración de cuentas y planes contables venezolanos.
+- **l10n_ve_tax**  
+   Manejo de impuestos nacionales como IVA, retenciones y contribuyentes especiales. Asegura que los cálculos y reportes sean conformes con las leyes fiscales de Venezuela.
 
-2. **l10n_ve_tax**
+- **l10n_ve_rate**  
+   Gestión de tasas de cambio oficiales. Actualización automática de las tasas de cambio, con la posibilidad de configurarlas por compañía y la opción de un fallback a la última tasa registrada en caso de no haber actualización oficial.
 
-   - Manejo de impuestos nacionales como IVA, retenciones y contribuyentes especiales.
+- **l10n_ve_invoice**  
+   Emisión de facturas adaptadas a los requisitos legales. Incluye compatibilidad con reportes fiscales necesarios para cumplir con la normativa de facturación en Venezuela.
 
-3. **l10n_ve_rate**
+- **l10n_ve_location**  
+   Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos. Permite una gestión geográfica más precisa de los datos de socios y clientes dentro de Odoo.
 
-   - Gestión de tasas de cambio oficiales.
+- **l10n_ve_currency_rate_live**  
+   Actualización diaria automática de tasas BCV. Configuración por compañía, con un sistema de fallback en caso de que no se reciba la actualización oficial.
 
-4. **l10n_ve_invoice**
+- **l10n_ve_igtf**  
+   Implementa la gestión automatizada del Impuesto a las Grandes Transacciones Financieras (IGTF). Gestiona los porcentajes y las cuentas asociadas al impuesto, con cálculos automáticos en las facturas y pagos. La integración es total con el módulo contable, lo que garantiza que todos los movimientos relacionados con el IGTF sean contabilizados correctamente.
 
-   - Emisión de facturas adaptadas a los requisitos legales.
-   - Compatibilidad con reportes fiscales.
+- **l10n_ve_iot_mf**  
+   Conexión segura vía IoT Box con protocolos fiscales y SDK HKA integrado. Permite la trazabilidad completa en las facturas, incluyendo el número de serie del dispositivo, la numeración fiscal única y el reporte Z.
 
-5. **l10n_ve_location**
+- **l10n_ve_payment_extension**  
+   Modelos especializados para retenciones, con cabeceras, líneas detalladas y tipos configurables (ISLR, municipales, etc.). Incluye campos dedicados en facturas y pagos para vincular retenciones y montos en divisa, con validación automática de cálculos según parámetros legales.
 
-   - Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos.
+- **l10n_ve_pos**  
+   Integración con el sistema de Punto de Venta (POS). Soporta tasas BCV actualizadas automáticamente para cálculos en BsD, USD o EUR, con límites configurables de diferencial cambiario según regulaciones locales. Además, permite la validación de tasas durante la apertura y cierre de sesiones.
 
-6. **l10n_ve_currency_rate_live** 
+- **l10n_ve_pos_igtf**  
+   Implementación del IGTF en las operaciones de pago dentro del Punto de Venta. Permite habilitar o deshabilitar la aplicación del IGTF por método de pago, con validación de montos acumulados por sesión.
 
-   - Actualización diaria automática de tasas BCV.
-   - Configuración por compañía
-   - Fallback a última tasa registrada en días sin actualización oficial.
+- **l10n_ve_pos_mf**  
+   Integración con máquinas fiscales en el sistema de Punto de Venta para Venezuela. Permite registrar transacciones fiscales y generar reportes Z, garantizando que las ventas cumplan con la normativa fiscal del país.
 
-7. **l10n_ve_igtf**
+- **l10n_ve_purchase**  
+   Gestión de compras adaptada a las normativas fiscales venezolanas. Incluye la gestión de proveedores y la emisión de documentos de compra conforme a los requerimientos del SENIAT.
 
-   - Implementa la gestión automatizada del Impuesto a las Grandes Transacciones Financieras (IGTF), adaptándose a normativas venezolanas.
-   - Configuración centralizada de cuentas, porcentajes y diarios contables para el impuesto.
-   - Cálculos automáticos en facturas, pagos y asientos (moneda local/extranjera).
-   - Integración con el núcleo contable de Odoo (account.move, account.payment).
-   - Interfaz optimizada con visualización contextual del IGTF en documentos y reportes.
-   - Validaciones de precisión y compatibilidad con multi-moneda.
+- **l10n_ve_ref_bank**  
+   Referencias bancarias para transacciones fiscales. Este módulo facilita la integración de las transacciones bancarias con el sistema contable y fiscal de Odoo.
 
-8. **l10n_ve_iot_mf**
-   - Conexión segura vía IoT Box con protocolos fiscales y SDK HKA integrado.
-   - Trazabilidad completa en facturas: serial del dispositivo, numeración fiscal única y Reporte Z.
-   - Configuración de códigos tributarios compatibles con formatos HKA.
-   - Mejoras de seguridad en permisos (acceso restringido a puertos IoT).
+- **l10n_ve_sale**  
+   Gestión de ventas adaptada a las regulaciones fiscales venezolanas. Incluye la emisión de facturas y la generación de reportes fiscales necesarios para cumplir con la legislación tributaria.
 
-9. **l10n_ve_payment_extension**
+- **l10n_ve_stock**  
+   Gestión de inventarios adaptada a las normativas venezolanas. Controla el movimiento de inventarios y proporciona reportes de stock en tiempo real, alineados con los requisitos fiscales locales.
 
-     - Modelos especializados para retenciones, con cabeceras, líneas detalladas y tipos configurables (ISLR, municipales, etc.).
-     - Estructuras complementarias: actividades económicas, ramos, tarifas asociadas y configuración de firma digital.
-     - Campos dedicados en facturas y pagos para vincular retenciones, montos en divisa y referencias únicas.
-     - Validación automática de cálculos según parámetros legales.
-     - Generación de documentos en formatos oficiales (PDF, XLSX, SENIAT) para ISLR, IVA y retenciones municipales.
-     - Libros de compras/ventas (ARCV) y certificados de retención personalizables.
-     - Tipos de persona (natural/jurídica), conceptos de pago y tarifas dinámicas por actividad económica.
-     - Soporte para firma digital en documentos fiscales.
+- **l10n_ve_stock_account**  
+   Gestión de contabilidad de inventarios adaptada a las normativas fiscales venezolanas. Permite realizar el seguimiento y la contabilidad de los movimientos de inventarios de acuerdo con los requerimientos del SENIAT.
 
-10. **l10n_ve_pos**
+- **l10n_ve_stock_purchase**  
+   Gestión de compras de inventarios con integración fiscal. Este módulo permite la creación de órdenes de compra y la integración de los movimientos de inventario con el sistema contable y fiscal.
 
-   - Tasas BCV actualizadas automáticamente para cálculos en BsD, USD o EUR.
-   - Límites configurables de diferencial cambiario según regulaciones locales.
-   - Moneda base (BsD) y alternativas (USD/EUR) con actualización en tiempo real.
-   - Validación de tasas en apertura/cierre de sesión, pagos y conciliación contable.
-   - Campos extendidos en pagos (pos.payment): monto base en divisa, diferencial y tasa de referencia.
+- **l10n_ve_stock_reports**  
+   Informes relacionados con la gestión de inventarios y operaciones fiscales. Este módulo genera reportes detallados que ayudan a las empresas a cumplir con las regulaciones fiscales en términos de inventarios.
 
-11. **l10n_ve_pos_igtf**
+- **l10n_ve_studio**  
+   Extensión del módulo Studio para personalización de campos y vistas. Permite crear y adaptar rápidamente campos, formularios y vistas para ajustarse a las necesidades de cada negocio.
 
-   - Aplicación en tiempo real durante el proceso de pago en POS (PosOrder).
+- **l10n_ve_tax**  
+   Gestión de impuestos, retenciones y tributos locales en Odoo. Permite la configuración de impuestos locales, como el IVA, y facilita la generación de reportes fiscales conforme a la ley venezolana.
 
-   - Configuración por método de pago (habilitar/deshabilitar IGTF).
-
-   - Validación de montos acumulados por sesión.
+- **l10n_ve_tax_payer**  
+   Registro y control de contribuyentes fiscales en Venezuela. Gestiona los datos de los contribuyentes y facilita el seguimiento de sus obligaciones fiscales.
 
 ## Módulos de terceros requeridos/recomendados:
-  - Security Master (Recomendado)
-    Función principal:
-    Gestiona los reportes de auditoría exigidos por el SENIAT para cambios en modelos del sistema.
+
+  - **Security Master (Recomendado)**  
+    Función principal: Gestiona los reportes de auditoría exigidos por el SENIAT para cambios en modelos del sistema.  
     [Descargar en Odoo Store](https://apps.odoo.com/apps/modules/16.0/tk_security_master)
 
-  - Journal Sequence (Requerido)
-    Función principal:
-    Administra las secuencias numéricas de diarios contables (facturas y notas de crédito).
-    Importancia:
-      Dependencia esencial para el funcionamiento del módulo l10n_ve_accountant.
-      Centraliza la configuración de numeración según normativas locales.
-      [Descargar en Odoo Store](https://apps.odoo.com/apps/modules/16.0/od_journal_sequence)
+  - **Journal Sequence (Requerido)**  
+    Función principal: Administra las secuencias numéricas de diarios contables (facturas y notas de crédito).  
+    Importancia: Dependencia esencial para el funcionamiento del módulo l10n_ve_accountant.  
+    [Descargar en Odoo Store](https://apps.odoo.com/apps/modules/16.0/od_journal_sequence)
 
 ## TODO: Planteamientos Futuros
 
 Estamos trabajando para mejorar continuamente esta localización. Entre nuestros próximos pasos están:
 
 1. **Runbot para pruebas en tiempo real**
-
    - Configurar un _runbot_ accesible para que los usuarios puedan:
      - Probar las funcionalidades actuales.
      - Validar los desarrollos más recientes.
      - Detectar errores antes de integrarlos en producción.
 
 2. **Expansión de funcionalidades**
-
    - Incorporación de reportes más detallados.
    - Automatización de procesos administrativos y fiscales.
 
@@ -157,8 +148,7 @@ Esta localización se proporciona "tal cual", sin garantías de ningún tipo, ex
 
 ---
 
-Queremos dar un especial agradecimiento a las personas que han colaborado con este proyecto a lo largo de todos estos años, algunos ya no
-forman parte directa de nuestro equipo pero han aportado a este proyecto y queremos hacer una valiosa mencion:
+Queremos dar un especial agradecimiento a las personas que han colaborado con este proyecto a lo largo de todos estos años, algunos ya no forman parte directa de nuestro equipo pero han aportado a este proyecto y queremos hacer una valiosa mención:
 
 - Daniela Gomez : [@DanielaGomezR93](https://github.com/DanielaGomezR93)
 - Anderson Armeya : [@andyengit](https://github.com/andyengit)
@@ -181,7 +171,5 @@ forman parte directa de nuestro equipo pero han aportado a este proyecto y quere
 Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra forma han colaborado con nuestro equipo.
 
 ---
-
-
 
 ¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.
