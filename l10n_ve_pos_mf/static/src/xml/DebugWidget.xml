@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="DebugWidget" t-inherit="point_of_sale.DebugWidget" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('content')][1]" position="before">
+            <ul>
+                <li class="button" t-on-click="programacion">PROGRAMACION</li>
+                <li class="button" t-on-click="report_x">REPORT X</li>
+                <li class="button" t-on-click="get_order">GET ACTUAL ORDER</li>
+                <li class="button" t-on-click="logger">LOGGER THIS</li>
+            </ul>
+        </xpath>
+    </t>
+</templates>

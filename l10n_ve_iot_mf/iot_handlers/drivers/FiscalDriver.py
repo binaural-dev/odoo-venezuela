@@ -64,7 +64,6 @@ class SerialBaseFiscalDriver(SerialDriver):
         _invoice = invoice.get("data", False)
         if _invoice:
             invoice = _invoice
-        _logger.warning("print_out_invoice: %s" % invoice)
         valid, _msg = self._validate_invoice_parameter(invoice)
         msg = ""
 

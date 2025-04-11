@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_l10n_ve_stock_account" model="ir.ui.view">
+        <field name="name">sale.order.form.l10n.ve.stock.account</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form" />
+        <field name="arch" type="xml">
+            <field name="payment_term_id" position="after">
+                <field name="document"
+                    attrs="{'readonly': ['|', ('state', 'in', ['sale', 'done', 'cancel']), ('is_consignation', '=', True)]}" />
+            </field>
+            <field name="manually_set_rate" position="after">
+                <field name="is_donation" attrs="{'readonly': [('state', 'in', ['sale', 'done', 'cancel'])]}" />
+                <field name="is_consignation" attrs="{'readonly': [('state', 'in', ['sale', 'done', 'cancel'])]}" />
+            </field>
+
+            <xpath expr="//button[@id='create_invoice']" position="attributes">
+                <attribute name="attrs">
+                    {'invisible': ['|', ('invoice_status', '!=', 'to invoice'), ('document', '=',
+                    'dispatch_guide')]}
+                </attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
