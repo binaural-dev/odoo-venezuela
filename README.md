@@ -159,7 +159,7 @@ Queremos dar un especial agradecimiento a las personas que han colaborado con es
 - Bryan Garcia : [@AlebgDev](https://github.com/AlebgDev)
 - Ysabel Godoy : [@ysabelgodoydelgado](https://github.com/ysabelgodoydelgado)
 - David Aldana : [@bin-daldana](https://github.com/bin-daldana)
-- Mauricio Istúriz : [@isturizbinaural](https://github.com/isturizbinaural) / ([@isturiz](https://github.com/isturiz)
+- Mauricio Istúriz : [@isturizbinaural](https://github.com/isturizbinaural) / [@isturiz](https://github.com/isturiz)
 - Rubén Gonzalez : [@rsgg04](https://github.com/rsgg04)
 - David Mendoza : [@deardavidBinaural](https://github.com/deardavidBinaural)
 - Omar Yépez : [@OmarYepez29](https://github.com/OmarYepez29)
