@@ -445,6 +445,9 @@ class SaleOrder(models.Model):
                 )
 
     def action_confirm(self):
+        for order in self:
+            if not order.order_line:
+                raise UserError(_("Before confirming an order, you need to add a product."))
         skip_not_allow_sell_products_validation = self.env.context.get(
             "skip_not_allow_sell_products_validation", False
         )
