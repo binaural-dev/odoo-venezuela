@@ -12,18 +12,18 @@
                 <field name="show_digital_invoice" invisible="1"/>
                 <field name="show_digital_credit_note" invisible="1"/>
                 <field name="show_digital_debit_note" invisible="1"/>
-                <button name="emit_document" string="Generate Digital Invoice" type="object" 
+                <button name="generate_document_digtal" string="Generate Digital Invoice" type="object" 
                     context="{'document_type': '01'}" 
                     invisible="show_digital_invoice"/>
-                <button name="emit_document" string="Generate Digital Credit Note" type="object" 
+                <button name="generate_document_digtal" string="Generate Digital Credit Note" type="object" 
                     context="{'document_type': '02'}" 
                     invisible="show_digital_credit_note"/>
-                <button name="emit_document" string="Generate Digital Debit Note" type="object" 
+                <button name="generate_document_digtal" string="Generate Digital Debit Note" type="object" 
                     context="{'document_type': '03'}" 
                     invisible="show_digital_debit_note"/>
             </xpath>
             <xpath expr="//group[@id='header_right_group']/label[1]" position="before">
-                <field name="is_digitalized" string="Digitized" invisible="move_type == 'entry'" readonly="True"/>
+                <field name="is_digitalized" string="Digitized" invisible="not move_type != 'entry'" readonly="True"/>
             </xpath>
         </field>
     </record>

@@ -29,12 +29,18 @@
                                         <field name="url_tfhka" class="w-100"/>
                                     </div>
                                 </div>
+                                <div class="form-group">
+                                    <label for="range_assignment_tfhka" class="col-form-label">URL</label>
+                                    <div class="col-sm-8">
+                                        <field name="range_assignment_tfhka"/>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-6" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; background-color: #f9f9f9; margin: auto; text-align: center;">
                                 <div class="form-group">
                                     <label for="token_auth_tfhka" class="col-form-label">Token Auth</label>
                                     <div class="col-sm-12" style="word-wrap: break-word;">
-                                        <field name="token_auth_tfhka" readonly="True" style="width: 100%;"/>
+                                        <field name="token_auth_tfhka" readonly="True" password="True" style="width: 100%;"/>
                                     </div>
                                 </div>
                                 <div class="form-group">
