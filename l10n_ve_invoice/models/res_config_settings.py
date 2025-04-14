@@ -24,6 +24,10 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.show_column_default_code_free_form", readonly=False
     )
 
+    auto_select_debit_note_journal = fields.Boolean(
+        string="Filter Journal Debit Note", config_parameter='account.move.auto_select_debit_note_journal'
+    ) 
+    
     @api.onchange("group_sales_invoicing_series")
     def onchange_group_sales_invoicing_series(self):
         ir_sequence = self.env["ir.sequence"].sudo()
