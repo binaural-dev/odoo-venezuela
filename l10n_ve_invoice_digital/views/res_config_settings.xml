@@ -3,36 +3,53 @@
     <record id="view_res_config_settings_inherit_tfhka" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.inherit.tfhka</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
+        <field name="inherit_id" ref="l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice" />
         <field name="arch" type="xml">
-            <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                <block title="TFHKA" string="TFHKA" name="l10n_ve_invoice_digital_block">
-                    <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_max_product_invoice">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <div class="col12 col-lg-6">
+            <xpath expr="//block[@name='l10n_ve_invoice_block']" position="inside">
+                <separator string="Digital invoice (TFHKA)" name="l10n_ve_invoice_digital_separator"/>
+                <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_max_product_invoice">
+                    <div class="o_setting_right_pane">
+                        <div class="row">
+                            <div class="col-6">
                                 <div class="form-group">
                                     <label for="username_tfhka" class="col-form-label">Username</label>
                                     <div class="col-sm-8">
-                                        <field name="username_tfhka"/>
+                                        <field name="username_tfhka" class="w-100"/>
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="password_tfhka" class="col-form-label">Password</label>
                                     <div class="col-sm-8">
-                                        <field name="password_tfhka"/>
+                                        <field name="password_tfhka" password="True" class="w-100"/>
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="url_tfhka" class="col-form-label">URL</label>
                                     <div class="col-sm-8">
-                                        <field name="url_tfhka"/>
+                                        <field name="url_tfhka" class="w-100"/>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="col-6" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; background-color: #f9f9f9; margin: auto; text-align: center;">
+                                <div class="form-group">
+                                    <label for="token_auth_tfhka" class="col-form-label">Token Auth</label>
+                                    <div class="col-sm-12" style="word-wrap: break-word;">
+                                        <field name="token_auth_tfhka" readonly="True" style="width: 100%;"/>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <button name="action_generate_token_tfhka" 
+                                            type="object" 
+                                            string="Generate Token" 
+                                            class="btn-secondary ps-2 w-50" 
+                                            icon="fa-refresh" 
+                                            title="Generate Token for TFHKA."
+                                    />
                                 </div>
                             </div>
                         </div>
                     </div>
-                </block>
+                </div>
             </xpath>
         </field>
     </record>
