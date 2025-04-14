@@ -63,6 +63,17 @@
                                 <field name="max_product_invoice" class="oe_inline"/>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_auto_select_debit_note_journal">
+                        <div class="o_setting_left_pane">
+                            <field name="auto_select_debit_note_journal" class="oe_inline"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="auto_select_debit_note_journal" class="oe_inline"/>
+                            <div class="text-muted">
+                                Selecciona automáticamente el diario de notas de débito.
+                            </div>
+                        </div>
+                        </div>
                     </block>
                 </xpath>
             </field>
