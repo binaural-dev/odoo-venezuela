@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250409\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-14 12:26+0000\n"
-"PO-Revision-Date: 2025-04-14 12:26+0000\n"
+"POT-Creation-Date: 2025-04-14 21:05+0000\n"
+"PO-Revision-Date: 2025-04-14 21:05+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -118,6 +118,16 @@ msgid "Error processing TFHKA API response."
 msgstr "Error procesando la respuesta de la API de TFHKA."
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__invoice_print_type__digital
+msgid "Factura Digital"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__invoice_print_type__free
+msgid "Forma Libre"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
 msgid "Generate Digital Credit Note"
 msgstr "Generar Nota de Crédito Digital"
@@ -156,6 +166,11 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__invoice_print_type__fiscal
+msgid "Máquina Fiscal"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__password_tfhka
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Password"
@@ -165,6 +180,16 @@ msgstr "Contraseña"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__password_tfhka
 msgid "Password Tfhka"
 msgstr "Contraseña Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__range_assignment_tfhka
+msgid "Range Assignment"
+msgstr "Asignación de rango"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__range_assignment_tfhka
+msgid "Range Assignment Tfhka"
+msgstr "Asignación de rango Tfhka"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_invoice
@@ -244,6 +269,11 @@ msgstr "La URL no está configurada en los ajustes de la empresa."
 #, python-format
 msgid "The document has already been digitalized."
 msgstr "El documento ya ha sido digitalizado."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__invoice_print_type
+msgid "Tipo de Impresión de Factura"
+msgstr ""
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__token_auth_tfhka
