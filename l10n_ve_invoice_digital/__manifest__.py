@@ -8,6 +8,7 @@
     "depends": [
         "base",
         "account",
+        "l10n_ve_invoice",
     ],
     
     "images": ["static/description/icon.png"],

@@ -1,23 +1,28 @@
-from odoo import models, api, fields
+from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
 import logging
 import requests
-from cachetools import TTLCache
 import json
 
-cache = TTLCache(maxsize=1, ttl=43200)
 _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
-    
     _inherit = 'account.move'
-    
-    document_digital_check_tfhka = fields.Boolean(string="Digitalizado", default=False, readonly=True, copy=False)
-    show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_invisible_check", copy=False)
-    show_digital_note_debit= fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
-    show_digital_note_credit = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
-    
+
+    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
+    show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_visibility_button", copy=False)
+    show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_visibility_button", copy=False)
+    show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_visibility_button", copy=False)
+
+    BASE_ENDPOINTS = {
+        "emision": "/Emision",
+        "ultimo_documento": "/UltimoDocumento",
+        "asignar_numeraciones": "/AsignarNumeraciones",
+        "consulta_numeraciones": "/ConsultaNumeraciones",
+    }
+
     def action_post(self):
+        res = super(AccountMove, self).action_post()
         for record in self:
             if record.name == '/':
                 last_invoice = self.env['account.move'].search(
@@ -27,117 +32,195 @@ class AccountMove(models.Model):
                     ], order='create_date desc', limit=1
                 )
                 if not last_invoice.name:
-                    super().action_post()
-                elif not last_invoice.document_digital_check_tfhka:
+                    continue
+                if not last_invoice.is_digitalized:
                     selection_dict = dict(last_invoice._fields['move_type'].selection)
                     move_type_name = selection_dict.get(last_invoice.move_type)
-                    raise ValidationError(f"La {move_type_name} {last_invoice.name} aún no ha sido digitalizada.\n"
-                                            "Por favor, realice la digitalización antes de continuar con el proceso.")
+                    raise ValidationError(
+                        _("The %(move_type_name)s %(invoice_name)s has not been digitalized yet.\n"
+                            "Please complete the digitalization process before proceeding.") % {
+                            'move_type_name': move_type_name,
+                            'invoice_name': last_invoice.name
+                        }
+                    )
+        return res
+
+    def emit_document(self):
+        if self.is_digitalized:
+            raise UserError(_("The document has already been digitalized."))
+        document_type = self.env.context.get('document_type')
+        end_number, start_number = self.query_numbering()
+        document_number = self.get_last_document_number(document_type)
+        document_number = str(document_number + 1)
+
+        if document_number == start_number:
+            self.assign_numbering(end_number, start_number)
+
+        self.generate_document_data(document_number, document_type)
+
+    def get_base_url(self):
+        if self.company_id.url_tfhka:
+            return self.company_id.url_tfhka.rstrip("/")
+        raise UserError(_("The URL is not configured in the company settings."))
+
+    def get_token(self):
+        if self.company_id.token_auth_tfhka:
+            return self.company_id.token_auth_tfhka
+        raise ValidationError(_("Configuration error: The authentication token is empty."))
+
+    def call_tfhka_api(self, endpoint_key, payload):
+        base_url = self.get_base_url()
+        endpoint = self.BASE_ENDPOINTS.get(endpoint_key)
+
+        if not endpoint:
+            raise UserError(_("Endpoint '%(endpoint_key)s' is not defined.") % {'endpoint_key': endpoint_key})
+
+        url = f"{base_url}{endpoint}"
+        headers = {"Authorization": f"Bearer {self.get_token()}"}
+
+        try:
+            response = requests.post(url, json=payload, headers=headers)
+        
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("codigo") == "200":
+                    return data
                 else:
-                    super().action_post()
+                    _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
+                    raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
+            if response.status_code == 401:
+                _logger.error(_("Error 401: Invalid or expired token."))
+                raise UserError(_("Authentication error: Invalid or expired token."))
             else:
-                super().action_post()
+                _logger.error(_("HTTP error %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
+                raise UserError(_("HTTP error %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
+        except requests.exceptions.RequestException as e:
+            _logger.error(_("Error connecting to the API: %(error)s") % {'error': e})
+            raise UserError(_("Error connecting to the API: %(error)s") % {'error': e})
 
-    def Emission(self):
-        if self.document_digital_check_tfhka:
-            raise UserError("El documento ya ha sido digitalizado.")
-        tipoDocumento = self.env.context.get('tipoDocumento')
-        url,token = self.GenerateToken()
-        hasta, inicio = self.ConsultaNumeracion(url, token)
-        numeroDocumento = self.UltimoDocumento(url, token, tipoDocumento)
-        numeroDocumento = str(numeroDocumento + 1)
-        
-        if numeroDocumento is inicio:
-            self.AsignarNumeracion(self, url, token, hasta, inicio)
-        _logger.info(f"Se esta ejecturando emision")
-        
-        data = self.GenerateDocument(numeroDocumento, tipoDocumento)
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.post(url + "/Emision", json=data, headers=headers)
-        respuesta_json = response.json()
-        codigo = respuesta_json.get("codigo")
-        mensaje = respuesta_json.get("mensaje")
-        validaciones = respuesta_json.get("validaciones")
-        if response.status_code is 200:
-            if codigo == "200":
-                _logger.info("Documento emitido correctamente")
-                success_message = {
-                    "01": "Factura Digital generada exitosamente",
-                    "02": "Nota Crédito Digital generada exitosamente",
-                    "03": "Nota Débito Digital generada exitosamente"
+    def generate_document_data(self, document_number, document_type):
+        document_identification = self.get_document_identification(document_type, document_number)
+        seller = self.get_seller()
+        buyer = self.get_buyer()
+        totals, foreign_totals = self.get_totals()
+        detallesItems = self.get_item_details()
+
+        payload = {
+            "documentoElectronico": {
+                "encabezado": {
+                    "identificacionDocumento": document_identification,
+                    "comprador": buyer,
+                    "totales": totals,
+                },
+                "detallesItems": detallesItems,
+            }
+        }
+        if seller:
+            payload["documentoElectronico"]["encabezado"]["vendedor"] = seller
+        if foreign_totals:
+            payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
+
+        response = self.call_tfhka_api("emision", payload)
+
+        if response:
+            self.is_digitalized = True
+            self.message_post(
+                body=_("Document successfully digitized"),  
+                message_type='comment',
+            )
+
+    def get_last_document_number(self, document_type):
+        payload = {
+                    "serie": "",
+                    "tipoDocumento": document_type,
                 }
-                self.document_digital_check_tfhka = True
-                return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'title': 'Generado exitosamente',
-                        'message': f'{success_message[tipoDocumento]}',
-                        'type': 'success',
-                        'sticky': False,
-                        'next': {'type': 'ir.actions.client', 'tag': 'reload'}
+        response = self.call_tfhka_api("ultimo_documento", payload)
+        
+        if response:
+            document_number = response["numeroDocumento"]
+            return document_number
+
+    def assign_numbering(self, end_number, start_number):
+        end = start_number + 20
+        start_number += 1
+        
+        if start_number <= end_number:
+            payload = {
+                        "serie": "",
+                        "tipoDocumento": "01",
+                        "numeroDocumentoInicio": start_number,
+                        "numeroDocumentoFin": end
                     }
-                }
+            response = self.call_tfhka_api("asignar_numeraciones", payload)
             
-            else:
-                _logger.error(f"Error al emitir documento: {mensaje}")
-                raise UserError(f"Error al emitir documento: {mensaje}")
-        else:
-            _logger.error(f"Error {response.status_code}, {mensaje}")
-            raise UserError(f"Error {response.status_code}: {validaciones}")
+            if response:
+                _logger.info("Numbering range successfully assigned.")
 
-    def GenerateDocument(self, numeroDocumento, tipoDocumento):
+    def query_numbering(self):
+        payload={
+                "serie": "",
+                "tipoDocumento": "",
+                "prefix": ""
+            }
+        response = self.call_tfhka_api("consulta_numeraciones", payload)
+
+        if response:
+            numbering = response["numeraciones"][0]
+            end_number = numbering.get("hasta")
+            start_number = numbering.get("correlativo")
+            return end_number, start_number
+
+    def get_document_identification(self, document_type, document_number):
         for record in self:
-            hora = record.create_date.strftime("%I:%M:%S %p").lower()
-            numeroFacturaAfectada = ""
-            fecha_emision_afectada = ""
-            montoFacturaAfectada = ""
-            comentarioFacturaAfectada = ""
+            emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
+            affected_invoice_number = ""
+            affected_invoice_date = ""
+            affected_invoice_amount = ""
+            affected_invoice_comment = ""
 
             if record.debit_origin_id:
-                numeroFacturaAfectada = record.debit_origin_id.name
-                fecha_emision_afectada = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
-                
+                affected_invoice_number = record.debit_origin_id.name
+                affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
+
                 if record.currency_id.name == "VEF":
-                    montoFacturaAfectada = str(record.debit_origin_id.amount_total)
-                elif record.currency_id.name == "USD":
+                    affected_invoice_amount = str(record.debit_origin_id.amount_total)
+                else:
                     tax_totals = record.debit_origin_id.tax_totals
-                    montoFacturaAfectada = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
+                    affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
                 part = record.display_name.split(',')
-                comentarioFacturaAfectada = part[1].strip().rstrip(')')
-                
+                affected_invoice_comment = part[1].strip().rstrip(')')
+
             if record.reversed_entry_id:
-                numeroFacturaAfectada = record.reversed_entry_id.name
-                fecha_emision_afectada = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
-                
+                affected_invoice_number = record.reversed_entry_id.name
+                affected_invoice_date = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
+
                 if record.currency_id.name == "VEF":
-                    montoFacturaAfectada = str(record.reversed_entry_id.amount_total)
-                elif record.currency_id.name == "USD":
+                    affected_invoice_amount = str(record.reversed_entry_id.amount_total)
+                else:
                     tax_totals = record.reversed_entry_id.tax_totals
-                    montoFacturaAfectada = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
+                    affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
                 part = record.display_name.split(',')
-                comentarioFacturaAfectada = part[1].strip().rstrip(')')
+                affected_invoice_comment = part[1].strip().rstrip(')')
 
-            fecha_emision = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
-            fecha_vencimiento = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
-            identificacionDocumento = {
-                "tipoDocumento": tipoDocumento,
-                "numeroDocumento": numeroDocumento,
+            emission_date = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
+            due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
+            return {
+                "tipoDocumento": document_type,
+                "numeroDocumento": document_number,
                 "numeroPlanillaImportacion": "",
                 "numeroExpedienteImportacion": "",
                 "serieFacturaAfectada": "",
-                "numeroFacturaAfectada": numeroFacturaAfectada,
-                "fechaFacturaAfectada": fecha_emision_afectada,
-                "montoFacturaAfectada": montoFacturaAfectada,
-                "comentarioFacturaAfectada": comentarioFacturaAfectada,
+                "numeroFacturaAfectada": affected_invoice_number,
+                "fechaFacturaAfectada": affected_invoice_date,
+                "montoFacturaAfectada": affected_invoice_amount,
+                "comentarioFacturaAfectada": affected_invoice_comment,
                 "regimenEspTributacion": "",
-                "fechaEmision": fecha_emision,
-                "fechaVencimiento": fecha_vencimiento,
-                "horaEmision": hora,
-                # "anulado": False,
-                "tipoDePago": self.GetPaymentType(),
+                "fechaEmision": emission_date,
+                "fechaVencimiento": due_date,
+                "horaEmision": emission_time,
+                "tipoDePago": self.get_payment_type(),
                 "serie": "",
                 "sucursal": "",
                 "tipoDeVenta": "Interna",
@@ -145,170 +228,8 @@ class AccountMove(models.Model):
                 "transaccionId": "",
                 "urlPdf": ""
             }
-            if "seller_id" in record._fields and record.seller_id:
-                vendedor = {
-                    "codigo": str(record.seller_id.id),
-                    "nombre": record.seller_id.name,
-                    "numCajero": ""
-                }
-            comprador = self.GetPartner()
-            totales, totalesOtraMoneda = self.GetTotales()
-            detallesItems = self.GetDetallesItems()
-        data = {
-            "documentoElectronico": {
-                "encabezado": {
-                    "identificacionDocumento": identificacionDocumento,
-                    "comprador": comprador,
-                    "totales": totales,
-                },
-                "detallesItems": detallesItems,
-            }
-        }
-        if "seller_id" in record._fields:
-            data["documentoElectronico"]["encabezado"]["vendedor"] = vendedor
 
-        if totalesOtraMoneda:
-            data["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = totalesOtraMoneda
-
-        return data
-
-    def UltimoDocumento(self, url, token, tipoDocumento):
-        _logger.info(f"Se esta ejecutando ultimodocumento")
-
-        headers = {
-            "Authorization": f"Bearer {token}"
-        }
-        
-        response = requests.post(url + "/UltimoDocumento", json={
-                "serie": "",
-                "tipoDocumento": tipoDocumento,
-            }, headers=headers)
-        response_json = response.json()
-        codigo = response_json.get("codigo")
-        mensaje = response_json.get("mensaje")
-        
-        if response.status_code == 200:
-            if codigo == "200":
-                numeroDocumento = response_json["numeroDocumento"]
-                return numeroDocumento
-            else:
-                _logger.error(f"Error {codigo}, {mensaje}")
-                raise UserError(f"Error {codigo}: {mensaje}")
-        else:
-            _logger.error(f"Error {response.status_code}, {mensaje}")
-            raise UserError(f"Error {response.status_code}: {mensaje}")
-
-    def AsignarNumeracion(self, url, token, hasta, inicio):
-        fin = inicio + 20
-        inicio += 1
-        
-        _logger.info(f"Se esta ejecutando asignar numeracion")
-        if inicio <= hasta:
-            headers = {
-                "Authorization": f"Bearer {token}"
-            }
-            response = requests.post(url + "/AsignarNumeraciones", json={
-                "serie": "",
-                "tipoDocumento": "01",
-                "numeroDocumentoInicio": inicio,
-                "numeroDocumentoFin": fin
-            }, headers=headers)
-            response_json = response.json()
-            codigo = response_json.get("codigo")
-            mensaje = response_json.get("mensaje")
-            
-            if response.status_code == 200:
-                if codigo == "200":
-                    _logger.info("Rango de numeración asignado correctamente.")
-                else:
-                    _logger.warning(f"Error {codigo}, {mensaje}")
-                    raise UserError(f"Error {codigo}: {mensaje}")
-            else:
-                _logger.error(f"Error: {response.status_code}, {mensaje}")
-                raise UserError(f"Error: {response.status_code}: {mensaje}")
-        else:
-            _logger.error("El rango de numeración asignado ha sido superado.")
-            raise UserError("El rango de numeración asignado ha sido superado.")
-
-    def ConsultaNumeracion(self, url, token):
-        _logger.info(f"Se esta ejecutando consulta numeracion")
-
-        headers = {
-            "Authorization": f"Bearer {token}"
-        }
-        
-        response = requests.post(url + "/ConsultaNumeraciones", json={
-                "serie": "",
-                "tipoDocumento": "",
-                "prefix": ""
-            }, headers=headers)
-        respuesta_json = response.json()
-        codigo = respuesta_json.get("codigo")
-        mensaje = respuesta_json.get("mensaje")
-        
-        if response.status_code == 200:
-            if codigo == "200":
-                numeracion = respuesta_json["numeraciones"][0]
-                hasta = numeracion.get("hasta")
-                inicio = numeracion.get("correlativo")
-                return hasta, inicio
-            else:
-                _logger.error(f"Error {codigo}, {mensaje}")
-                raise UserError(f"Error {codigo}: {mensaje}")
-        else:
-            _logger.error(f"Error: {response.status_code}, {mensaje}")
-            raise UserError(f"Error: {response.status_code}: {mensaje}")
-
-    def GenerateToken(self):           
-        username, password, url = self.ObtenerCredencial()
-        
-        if "auth_token" not in cache:
-            _logger.info(f"Se esta ejecutando Generar Token")
-            respuesta = requests.post(url + "/Autenticacion", json={
-                "usuario": username,
-                "clave": password
-            })
-            respuesta_json = respuesta.json()
-            codigo = respuesta_json.get("codigo")
-            mensaje = respuesta_json.get("mensaje")
-            
-            if respuesta.status_code == 200:
-                if codigo == 200 and "token" in respuesta_json:
-                    token = respuesta_json["token"]
-                    cache["auth_token"] = token
-                    return url, token
-                elif codigo == 403:
-                    raise ValidationError(f"Configuración del Módulo incorrecta: {mensaje}")
-                else:
-                    _logger.error(f"Error: {codigo}, {mensaje}")
-                    raise UserError(f"Error: {codigo} \n{mensaje}")
-            else: 
-                _logger.error(f"Error: {respuesta.status_code}", {mensaje})
-                raise UserError(f"Error {respuesta.status_code}: {mensaje}")
-        else:
-            _logger.info("El token aún es válido.")
-            token = cache["auth_token"]
-            return url, token
-
-    def ObtenerCredencial(self):
-        
-        username = None
-        password = None
-        url = None
-        
-        for move in self:
-            if move.company_id.username_tfhka and move.company_id.password_tfhka and move.company_id.url_tfhka:
-                username = move.company_id.username_tfhka
-                password = move.company_id.password_tfhka
-                url = move.company_id.url_tfhka
-                return username, password, url
-            else:
-                _logger.error("USERNAME, PASSWORD o URL vacío.")
-                raise ValidationError("Configuración del Módulo incorrecta: USERNAME, PASSWORD o URL vacío.")
-    
-    def GetTotales(self):
-        _logger.info(f"Se esta ejecutando Totales")
-
+    def get_totals(self):
         for record in self:
             currency = record.currency_id.name
             totalIGTF = 0
@@ -345,9 +266,9 @@ class AccountMove(models.Model):
                 amounts["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
                 
-                impuestosSubtotal = self.GetImpuestosSubtotal(currency)
+                taxes_subtotal = self.get_tax_subtotals(currency)
 
-            elif currency == "USD":
+            else:
                 amounts_foreign["montoGravadoTotal"] = str(
                     round(
                         tax_totals.get('subtotal', 0) - 
@@ -396,8 +317,9 @@ class AccountMove(models.Model):
                 amounts["montoTotalConIVA"] = str(round(tax_totals.get("foreign_amount_total", 0), 2))
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("foreign_discount_amount", 0), 2)))
                 
-                impuestosSubtotal, impuestosSubtotal_foreign = self.GetImpuestosSubtotal(currency)
-            totales = {
+                taxes_subtotal, taxes_subtotal_foreign = self.get_tax_subtotals(currency)
+
+            totals = {
                 "nroItems": str(len(record.invoice_line_ids)),
                 "montoGravadoTotal": amounts["montoGravadoTotal"],
                 "montoExentoTotal": amounts["montoExentoTotal"],
@@ -407,17 +329,17 @@ class AccountMove(models.Model):
                 "totalIVA": str(amounts["totalIVA"]),
                 "montoTotalConIVA": amounts["montoTotalConIVA"],
                 "totalDescuento": amounts["totalDescuento"],
-                "impuestosSubtotal": impuestosSubtotal,
+                "impuestosSubtotal": taxes_subtotal,
                 "totalIGTF": str(totalIGTF),
                 "totalIGTF_VES": str(totalIGTF_VES),
             }
-            formasPago = self.GetPaymentMethod()
+            payment_forms = self.get_payment_methods()
 
-            if formasPago:
-                totales["formasPago"] = formasPago
+            if payment_forms:
+                totals["formasPago"] = payment_forms
 
             if amounts_foreign:
-                totalesOtraMoneda = {
+                foreign_totals = {
                     "moneda": record.currency_id.name,
                     "tipoCambio": str(record.foreign_rate),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
@@ -430,23 +352,22 @@ class AccountMove(models.Model):
                     "totalDescuento": amounts_foreign["totalDescuento"],
                     "totalIGTF": str(totalIGTF),
                     "totalIGTF_VES": str(totalIGTF_VES),
-                    "impuestosSubtotal": impuestosSubtotal_foreign,
+                    "impuestosSubtotal": taxes_subtotal_foreign,
                 }
             else:
-                totalesOtraMoneda = False
-        return totales, totalesOtraMoneda
-    
-    def GetImpuestosSubtotal(self, currency):
-        _logger.info(f"Se esta ejecutando impuestos subtotal")
-        impuestosSubtotal = []
-        impuestosSubtotal_foreign = []
+                foreign_totals = False
+        return totals, foreign_totals
+
+    def get_tax_subtotals(self, currency):
+        tax_subtotals = []
+        tax_subtotals_foreign = []
         tax_code = {
             "IVA 8%": "R",
             "IVA 16%": "G",
             "IVA 31%": "A",
             "Exento": "E",
         }
-        tax = {
+        tax_rate = {
             "IVA 8%": "8.0",
             "IVA 16%": "16.0",
             "IVA 31%": "31.0",
@@ -456,57 +377,57 @@ class AccountMove(models.Model):
         for record in self:
             if currency == "VEF":
                 for tax_totals in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
-                    impuestosSubtotal.append({
+                    tax_subtotals.append({
                         "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax[tax_totals.get('tax_group_name')],
+                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
                         "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
                         "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    },)
-                return impuestosSubtotal
+                    })
+                return tax_subtotals
             else:
                 for tax_totals in record.tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', []):
-                    impuestosSubtotal.append({
+                    tax_subtotals.append({
                         "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax[tax_totals.get('tax_group_name')],
+                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
                         "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
                         "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    },)
+                    })
                 for tax_totals in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
-                    impuestosSubtotal_foreign.append({
+                    tax_subtotals_foreign.append({
                         "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax[tax_totals.get('tax_group_name')],
+                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
                         "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
                         "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    },)
+                    })
                 if record.tax_totals.get('igtf', {}).get('apply_igtf'):
                     igtf = record.tax_totals.get('igtf', {})
-                    impuestosSubtotal_foreign.append({
+                    tax_subtotals_foreign.append({
                         "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax[igtf.get('name')],
+                        "alicuotaImp": tax_rate[igtf.get('name')],
                         "baseImponibleImp": str(round(igtf.get('igtf_base_amount'), 2)),
                         "valorTotalImp": str(round(igtf.get('igtf_amount'), 2)),
-                    },)
-                    impuestosSubtotal.append({
+                    })
+                    tax_subtotals.append({
                         "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax[igtf.get('name')],
+                        "alicuotaImp": tax_rate[igtf.get('name')],
                         "baseImponibleImp": str(round(igtf.get('foreign_igtf_base_amount'), 2)),
                         "valorTotalImp": str(round(igtf.get('foreign_igtf_amount'), 2)),
-                    },)
-                return impuestosSubtotal, impuestosSubtotal_foreign
+                    })
+                return tax_subtotals, tax_subtotals_foreign
 
-    def GetDetallesItems(self):
-        detallesItems = []
-        contador = 1
+    def get_item_details(self):
+        item_details = []
+        line_number = 1
         for record in self:
             for line in record.invoice_line_ids:
-                impuesto = {
+                tax_mapping = {
                     8.0: "R",
                     16.0: "G",
                     31.0: "A",
                     0.0: "E",
-                    }
-                detallesItems.append({
-                    "numeroLinea": str(contador),
+                }
+                item_details.append({
+                    "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
                     "descripcion": line.product_id.name,
@@ -516,15 +437,26 @@ class AccountMove(models.Model):
                     "descuentoMonto": str(round((line.price_unit * (line.discount / 100)) * line.quantity, 2)),
                     "precioItem": str(round(line.price_subtotal, 2)),
                     "precioAntesDescuento": str(round(line.price_unit * line.quantity, 2)),
-                    "codigoImpuesto": impuesto[line.tax_ids.amount],
+                    "codigoImpuesto": tax_mapping[line.tax_ids.amount],
                     "tasaIVA": str(round(line.tax_ids.amount, 2)),
                     "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
                     "valorTotalItem": str(round(line.price_subtotal, 2)),
                 })
-                contador += 1
-        return detallesItems
-    
-    def GetPartner(self):
+                line_number += 1
+        return item_details
+
+    def get_seller(self):
+        for record in self:
+            if "seller_id" in record._fields and record.seller_id:
+                return {
+                    "codigo": str(record.seller_id.id),
+                    "nombre": record.seller_id.name,
+                    "numCajero": ""
+                }
+            else:
+                return False
+
+    def get_buyer(self):
         for record in self:
             if record.partner_id:
                 partner_data = {}
@@ -548,15 +480,15 @@ class AccountMove(models.Model):
                 partner_data["correo"]= record.partner_id.email
 
                 if not record.partner_id.country_code:
-                    raise UserError("El campo 'País' del Cliente no puede estar vacío para digitalizar.")
+                    raise UserError(_("The 'Country' field of the Customer cannot be empty for digitalization."))
 
                 if not (record.partner_id.mobile or record.partner_id.phone):
-                    raise UserError("El campo 'Móvil' del Cliente no puede estar vacío para digitalizar.")
+                    raise UserError(_("The 'Mobile' field of the Customer cannot be empty for digitalization."))
 
                 if not record.partner_id.email:
-                    raise UserError("El campo 'Correo' del Cliente no puede estar vacío para digitalizar.")
+                    raise UserError(_("The 'Email' field of the Customer cannot be empty for digitalization."))
 
-                comprador = {
+                return {
                     "tipoIdentificacion": partner_data["tipoIdentificacion"],
                     "numeroIdentificacion": partner_data["numeroIdentificacion"],
                     "razonSocial": partner_data["razonSocial"],
@@ -566,10 +498,9 @@ class AccountMove(models.Model):
                     "notificar": "Si",
                     "correo": [partner_data["correo"]],
                 }
-            return comprador
         return None
-    
-    def GetPaymentType(self):
+
+    def get_payment_type(self):
         for record in self:
             if not record.invoice_payment_term_id:
                 return "Inmediato"
@@ -578,66 +509,71 @@ class AccountMove(models.Model):
             else:
                 return "crédito"
 
-    def GetPaymentMethod(self):
+    def get_payment_methods(self):
         try:
+            payment_data = []
             for record in self:
                 content_data = record.invoice_payments_widget.get("content", [])
                 if content_data:
-                    payment_data = []
-
                     for item in content_data:
-                        payment = self.env['account.payment'].search(
-                            [
-                                ('id', '=', item.get('account_payment_id', 0)),
-                            ]
-                        )
-                        currency = payment.currency_id.name
+                        payment_method = self.get_payment_method(item)
+                        currency = self.get_currency(item.get('currency_id'))
+                        payment = self.get_payment(item.get('account_payment_id'))
 
-                        if item.get("payment_method_name") == "Efectivo":
-                            if currency == "VES":
-                                payment_method = "08"
-                            else:
-                                payment_method = "09"
-                        elif item.get("payment_method_name") == "Transferencia":
-                            payment_method = "03"
-
-                        if currency == "VES" and payment:
-                            payment_data.append({
-                                "descripcion": payment.concept ,
-                                "fecha": item.get("date").strftime("%d/%m/%Y"),
-                                "forma": payment_method,
-                                "monto": str(item.get("amount")),
-                                "moneda": currency,
-                            })
-                        else:
-                            payment_data.append({
-                                "descripcion": payment.concept,
-                                "fecha": item.get("date").strftime("%d/%m/%Y"),
-                                "forma": payment_method,
-                                "monto": str(item.get("amount")),
-                                "moneda": currency,
-                                "tipoCambio": str(round(record.foreign_rate, 2)),
-                            })
-
+                        if not payment:
+                            continue
+                        
+                        payment_info = self.build_payment_info(item, payment, currency, payment_method, record.foreign_rate)
+                        payment_data.append(payment_info)                    
                     return payment_data
-                else:
-                    return False
+            return False
         except Exception as e:
+            _logger.error(f"Error processing payment methods: {e}")
             return False
 
-    @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'document_digital_check_tfhka')
-    def _compute_invisible_check(self):
+    def get_payment_method(self, item):
+        if item.get("payment_method_name") == "Efectivo":
+            return "08" if self.get_currency(item.get('currency_id')) == "VES" else "09"
+        elif item.get("payment_method_name") == "Transferencia":
+            return "03"
+        elif item.get("payment_method_name") == "Manual":
+            return "99"
+        return ""
+
+    def get_currency(self, currency_id):
+        currency_data = self.env['res.currency'].search([('id', '=', currency_id)])
+        return currency_data.name if currency_data else ""
+
+    def get_payment(self, account_payment_id):
+        return self.env['account.payment'].search([('id', '=', account_payment_id)])
+
+    def build_payment_info(self, item, payment, currency, payment_method, foreign_rate):
+        payment_info = {
+            "descripcion": payment.concept,
+            "fecha": item.get("date").strftime("%d/%m/%Y"),
+            "forma": payment_method,
+            "monto": str(item.get("amount")),
+            "moneda": currency,
+        }
+
+        if currency != "VES":
+            payment_info["tipoCambio"] = str(round(foreign_rate, 2))
+
+        return payment_info
+
+    @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized', 'move_type')
+    def _compute_visibility_button(self):
         self.show_digital_invoice = True
-        self.show_digital_note_debit = True
-        self.show_digital_note_credit = True
+        self.show_digital_debit_note = True
+        self.show_digital_credit_note = True
 
         for record in self:
             if record.state == "posted":
-                if record.move_type == "out_refund" and record.reversed_entry_id and record.reversed_entry_id.document_digital_check_tfhka and not record.document_digital_check_tfhka:
-                    record.show_digital_note_credit = False
+                if record.move_type == "out_refund" and record.reversed_entry_id and record.reversed_entry_id.is_digitalized and not record.is_digitalized:
+                    record.show_digital_credit_note = False
 
-                elif record.debit_origin_id and record.debit_origin_id.document_digital_check_tfhka and not record.document_digital_check_tfhka:
-                    record.show_digital_note_debit = False
+                elif record.debit_origin_id and record.debit_origin_id.is_digitalized and not record.is_digitalized:
+                    record.show_digital_debit_note = False
 
-                elif record.move_type == "out_invoice" and not record.debit_origin_id and not record.document_digital_check_tfhka:
+                elif record.move_type == "out_invoice" and not record.debit_origin_id and not record.is_digitalized:
                     record.show_digital_invoice = False

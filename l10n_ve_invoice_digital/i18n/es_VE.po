@@ -1,0 +1,300 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_invoice_digital
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20250409\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-14 12:26+0000\n"
+"PO-Revision-Date: 2025-04-14 12:26+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#, python-format
+msgid "Authentication error: %(message)s"
+msgstr "Error de autenticación: %(message)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "Authentication error: Invalid or expired token."
+msgstr "Error de autenticación: Token inválido o expirado."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_res_company
+msgid "Companies"
+msgstr "Empresas"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "Configuration error: The authentication token is empty."
+msgstr "Error de configuración: El token de autenticación está vacío."
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "Digital invoice (TFHKA)"
+msgstr "Factura digital (TFHKA)"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__is_digitalized
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__is_digitalized
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__is_digitalized
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Digitized"
+msgstr "Digitalizado"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "Document successfully digitized"
+msgstr "Documento digitalizado exitosamente"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "Endpoint '%(endpoint_key)s' is not defined."
+msgstr "El endpoint '%(endpoint_key)s' no está definido."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "Error 401: Invalid or expired token."
+msgstr "Error 401: Token no válido o caducado."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "Error connecting to the API: %(error)s"
+msgstr "Error al conectar con la API: %(error)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#, python-format
+msgid "Error connecting to the TFHKA API: %s"
+msgstr "Error al conectar con la API de TFHKA: %s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "Error in the API response: %(message)s"
+msgstr "Error en la respuesta de la API: %(message)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#, python-format
+msgid "Error in the TFHKA API: %(status_code)s"
+msgstr "Error en la API de TFHKA: %(status_code)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#, python-format
+msgid "Error processing TFHKA API response."
+msgstr "Error procesando la respuesta de la API de TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Credit Note"
+msgstr "Generar Nota de Crédito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Debit Note"
+msgstr "Generar Nota de Débito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Invoice"
+msgstr "Generar Factura Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "Generate Token"
+msgstr "Generar Token"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "Generate Token for TFHKA."
+msgstr "Generar Token para TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "HTTP error %(status_code)s: %(text)s"
+msgstr "Error HTTP %(status_code)s: %(text)s"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__password_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "Password"
+msgstr "Contraseña"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__password_tfhka
+msgid "Password Tfhka"
+msgstr "Contraseña Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__show_digital_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_invoice
+msgid "Show Digital Invoice"
+msgstr "Mostrar Factura Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_credit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__show_digital_credit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_credit_note
+msgid "Show Digital Note Credit"
+msgstr "Mostrar Nota Crédito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_debit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__show_digital_debit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_debit_note
+msgid "Show Digital Note Debit"
+msgstr "Mostrar Nota Débito Digital"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#, python-format
+msgid "TFHKA API response does not contain 'token'."
+msgstr "La respuesta de la API de TFHKA no contiene 'token'."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"The %(move_type_name)s %(invoice_name)s has not been digitalized yet.\n"
+"Please complete the digitalization process before proceeding."
+msgstr ""
+"La %(move_type_name)s %(invoice_name)s no ha sido digitalizado aún.\n"
+"Por favor, complete el proceso de digitalización antes de continuar."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"The 'Country' field of the Customer cannot be empty for digitalization."
+msgstr ""
+"El campo 'País' del Cliente no puede estar vacío para la digitalización."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "The 'Email' field of the Customer cannot be empty for digitalization."
+msgstr ""
+"El campo 'Correo Electrónico' del Cliente no puede estar vacío para la "
+"digitalización."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "The 'Mobile' field of the Customer cannot be empty for digitalization."
+msgstr ""
+"El campo 'Móvil' del Cliente no puede estar vacío para la digitalización."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "The URL is not configured in the company settings."
+msgstr "La URL no está configurada en los ajustes de la empresa."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "The document has already been digitalized."
+msgstr "El documento ya ha sido digitalizado."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__token_auth_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "Token Auth"
+msgstr "Token de Autenticación"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__token_auth_tfhka
+msgid "Token Auth Tfhka"
+msgstr "Token de Autenticación Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__url_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "URL"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__url_tfhka
+msgid "Url Tfhka"
+msgstr "URL Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__username_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "Username"
+msgstr "Nombre de Usuario"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__username_tfhka
+msgid "Username Tfhka"
+msgstr "Nombre de Usuario Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#, python-format
+msgid "You must register the Password for TFHKA."
+msgstr "Debe registrar la Contraseña para TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#, python-format
+msgid "You must register the URL for TFHKA."
+msgstr "Debe registrar la URL para TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#, python-format
+msgid "You must register the Username for TFHKA."
+msgstr "Debe registrar el Nombre de Usuario para TFHKA."
