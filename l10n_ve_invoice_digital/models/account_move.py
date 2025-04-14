@@ -6,6 +6,14 @@ import json
 
 _logger = logging.getLogger(__name__)
 
+class EndPoints():
+    BASE_ENDPOINTS = {
+        "emision": "/Emision",
+        "ultimo_documento": "/UltimoDocumento",
+        "asignar_numeraciones": "/AsignarNumeraciones",
+        "consulta_numeraciones": "/ConsultaNumeraciones",
+    }
+
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
@@ -13,13 +21,6 @@ class AccountMove(models.Model):
     show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_visibility_button", copy=False)
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_visibility_button", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_visibility_button", copy=False)
-
-    BASE_ENDPOINTS = {
-        "emision": "/Emision",
-        "ultimo_documento": "/UltimoDocumento",
-        "asignar_numeraciones": "/AsignarNumeraciones",
-        "consulta_numeraciones": "/ConsultaNumeraciones",
-    }
 
     def action_post(self):
         res = super(AccountMove, self).action_post()
@@ -45,7 +46,7 @@ class AccountMove(models.Model):
                     )
         return res
 
-    def emit_document(self):
+    def generate_document_digtal(self):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized."))
         document_type = self.env.context.get('document_type')
@@ -70,7 +71,7 @@ class AccountMove(models.Model):
 
     def call_tfhka_api(self, endpoint_key, payload):
         base_url = self.get_base_url()
-        endpoint = self.BASE_ENDPOINTS.get(endpoint_key)
+        endpoint = EndPoints.BASE_ENDPOINTS.get(endpoint_key)
 
         if not endpoint:
             raise UserError(_("Endpoint '%(endpoint_key)s' is not defined.") % {'endpoint_key': endpoint_key})
@@ -141,7 +142,7 @@ class AccountMove(models.Model):
             return document_number
 
     def assign_numbering(self, end_number, start_number):
-        end = start_number + 20
+        end = start_number + self.company_id.range_assignment_tfhka
         start_number += 1
         
         if start_number <= end_number:
@@ -188,8 +189,8 @@ class AccountMove(models.Model):
                     tax_totals = record.debit_origin_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
-                part = record.display_name.split(',')
-                affected_invoice_comment = part[1].strip().rstrip(')')
+                part = record.ref.split(',')
+                affected_invoice_comment = part[1].strip()
 
             if record.reversed_entry_id:
                 affected_invoice_number = record.reversed_entry_id.name
@@ -201,8 +202,8 @@ class AccountMove(models.Model):
                     tax_totals = record.reversed_entry_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
-                part = record.display_name.split(',')
-                affected_invoice_comment = part[1].strip().rstrip(')')
+                part = record.ref.split(',')
+                affected_invoice_comment = part[1].strip()
 
             emission_date = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
             due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
@@ -421,11 +422,15 @@ class AccountMove(models.Model):
         for record in self:
             for line in record.invoice_line_ids:
                 tax_mapping = {
+                    0.0: "E",
                     8.0: "R",
                     16.0: "G",
                     31.0: "A",
-                    0.0: "E",
                 }
+                taxes = line.tax_ids.filtered(lambda t: t.amount)
+                if taxes:
+                    tax_rate = taxes[0].amount
+
                 item_details.append({
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
@@ -437,7 +442,7 @@ class AccountMove(models.Model):
                     "descuentoMonto": str(round((line.price_unit * (line.discount / 100)) * line.quantity, 2)),
                     "precioItem": str(round(line.price_subtotal, 2)),
                     "precioAntesDescuento": str(round(line.price_unit * line.quantity, 2)),
-                    "codigoImpuesto": tax_mapping[line.tax_ids.amount],
+                    "codigoImpuesto": tax_mapping[tax_rate],
                     "tasaIVA": str(round(line.tax_ids.amount, 2)),
                     "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
                     "valorTotalItem": str(round(line.price_subtotal, 2)),
@@ -502,12 +507,10 @@ class AccountMove(models.Model):
 
     def get_payment_type(self):
         for record in self:
-            if not record.invoice_payment_term_id:
-                return "Inmediato"
-            elif record.invoice_payment_term_id and record.invoice_payment_term_id.name == "Pago inmediato":
-                return "Inmediato"
+            if record.invoice_payment_term_id.line_ids.nb_days > 0:
+                return "Crédito"
             else:
-                return "crédito"
+                return "Inmediato"
 
     def get_payment_methods(self):
         try:
@@ -550,7 +553,7 @@ class AccountMove(models.Model):
     def build_payment_info(self, item, payment, currency, payment_method, foreign_rate):
         payment_info = {
             "descripcion": payment.concept,
-            "fecha": item.get("date").strftime("%d/%m/%Y"),
+            "fecha": item.get("date").strftime("%d/%m/%Y") if item.get("date") else "",
             "forma": payment_method,
             "monto": str(item.get("amount")),
             "moneda": currency,
