@@ -23,7 +23,7 @@
                     invisible="show_digital_debit_note"/>
             </xpath>
             <xpath expr="//group[@id='header_right_group']/label[1]" position="before">
-                <field name="is_digitalized" string="Digitized" invisible="not move_type != 'entry'" readonly="True"/>
+                <field name="is_digitalized" string="Digitized" invisible="move_type == 'entry'" readonly="True"/>
             </xpath>
         </field>
     </record>
