@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _name = "account.move"
-    _inherit = ["account.move"]
+    _inherit = "account.move"
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     invoice_reception_date = fields.Date(
@@ -25,7 +25,30 @@ class AccountMove(models.Model):
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
-    @api.constrains("correlative", "journal_id.is_contingency")
+    is_debit_journal = fields.Boolean(
+        compute="_compute_is_debit_journal",
+        store=True
+    )
+    @api.constrains("invoice_line_ids")
+    def _check_price_in_zero(self):
+        for record in self:
+            for line in record.invoice_line_ids:
+                if line.price_unit <= 0:
+                    raise ValidationError(("Una factura no puede tener una linea con precio en cero"))
+
+    def action_post(self):
+        for record in self:
+            sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
+
+            correlative = str(sequence.number_next_actual).zfill(sequence.padding)
+
+            invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])
+
+            if invoices and record.move_type in ["out_invoice","out_refund"]:
+                raise ValidationError(_("Ya existe una factura con el Número de Control: %s"%correlative))
+        return super().action_post()
+
+    @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
@@ -53,6 +76,10 @@ class AccountMove(models.Model):
                 raise UserError(
                     _("The correlative must be unique per journal when using a contingency journal")
                 )
+    @api.depends('journal_id')
+    def _compute_is_debit_journal(self):
+        for move in self:
+            move.is_debit_journal = move.journal_id.is_debit if move.journal_id else False
 
     @api.depends("amount_residual")
     def _compute_payment_dates(self):
@@ -110,15 +137,6 @@ class AccountMove(models.Model):
                     _("You can not add more than %s products to the invoice." % max_product_invoice)
                 )
 
-    @api.depends("filter_partner")
-    def _compute_partner_id_domain(self):
-        for move in self:
-            company_id = move.company_id.id
-            extend_domain = [("type", "!=", "private"), ("company_id", "in", (False, company_id))]
-            domain = move.get_partner_domain(extend=extend_domain)
-
-            move.update({"partner_id_domain": json.dumps(domain)})
-
     @api.depends("payment_term_details")
     def _compute_next_installment_date(self):
         lang = self.env["res.lang"].search([("code", "=", self.env.user.lang)])
@@ -137,9 +155,18 @@ class AccountMove(models.Model):
     def _post(self, soft=True):
         res = super()._post(soft)
         for move in res:
-            if move.is_valid_to_sequence():
+            
+            if "invoice_print_type" in move.company_id._fields:
+                invoice_print_type = move.company_id.invoice_print_type
+            else:
+                invoice_print_type = None
+            
+            if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
+                
                 move.correlative = move.get_sequence()
+                
         return res
+        
 
     @api.model
     def is_valid_to_sequence(self) -> bool:
@@ -150,8 +177,9 @@ class AccountMove(models.Model):
         Returns:
             True or False whether the invoice already has a sequence number or not.
         """
-        journal_type = self.journal_id.type == "sale"
+        
         is_contingency = self.journal_id.is_contingency
+        journal_type = self.journal_id.type == "sale"
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
         is_valid = (
             not self.correlative
@@ -196,3 +224,10 @@ class AccountMove(models.Model):
                 }
             )
         return correlative.next_by_id(correlative.id)
+
+
+    def action_debit_note_button(self):
+        action = ""
+        for picking in self:
+            action = picking.env.ref('account_debit_note.action_view_account_move_debit').read()[0]
+        return action
