@@ -2,7 +2,7 @@ from odoo import api, models, fields, _
 from odoo.exceptions import UserError, ValidationError
 
 
-class FeesRetentionBinaural(models.Model):
+class FeesRetention(models.Model):
     _name = "fees.retention"
     _description = "Fees"
 

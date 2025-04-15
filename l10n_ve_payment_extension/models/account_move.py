@@ -266,24 +266,3 @@ class AccountMoveRetention(models.Model):
                 move.foreign_rate = move.payment_id.foreign_rate
                 move.foreign_inverse_rate = move.payment_id.foreign_rate
         return res
-
-    def _get_retention_payment_move_ids(self, line_ids):
-        self.ensure_one()
-
-        if not line_ids:
-            return []
-
-        retention_ids = line_ids.mapped("move_id.retention_islr_line_ids.retention_id")
-        retention_ids = retention_ids + line_ids.mapped(
-            "move_id.retention_iva_line_ids.retention_id"
-        )
-        retention_ids = retention_ids + line_ids.mapped(
-            "move_id.retention_municipal_line_ids.retention_id"
-        )
-
-        retention_payment_move_ids = retention_ids.payment_ids.mapped("move_id")
-
-        if not retention_payment_move_ids:
-            return []
-
-        return retention_payment_move_ids.ids

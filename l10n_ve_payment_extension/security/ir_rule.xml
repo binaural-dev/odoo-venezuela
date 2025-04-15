@@ -1,4 +1,3 @@
-
 <odoo>
 
     <record id="retention_restricted_multi_company" model="ir.rule">

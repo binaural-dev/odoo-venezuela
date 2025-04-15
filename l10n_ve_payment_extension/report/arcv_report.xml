@@ -160,7 +160,7 @@
 												</t>
 												<t t-else="">
 		
-													<td style="text-align: center"><span t-out="line['total_invoice_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/><t t-out="line['']"/></td>
+													<td style="text-align: center"><span t-out="line['total_invoice_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
 													<t t-set="total_invoice_amount"
 														t-value="total_invoice_amount + line['total_invoice_amount']"/>
 													

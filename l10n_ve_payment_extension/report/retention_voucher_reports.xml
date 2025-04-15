@@ -1,4 +1,3 @@
-
 <odoo>
   <data>
         <record id="retention_voucher_action" model="ir.actions.report">
