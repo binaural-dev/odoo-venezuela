@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_filter_partner_mixin_manager,filter_partner_mixin_manager,model_filter_partner_mixin,,1,1,1,1
