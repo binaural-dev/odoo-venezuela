@@ -57,11 +57,6 @@ msgstr "Tipos de cierre de cuentas"
 msgid "Accounts mapping"
 msgstr "Asignación de cuentas"
 
-#. module: l10n_ve_account_fiscalyear_closing
-#: model:ir.model.fields.selection,name:l10n_ve_account_fiscalyear_closing.selection__account_fiscalyear_closing__journal_type__all
-msgid "All Dairy"
-msgstr "Todos los Diarios"
-
 #. module: account_fiscal_year_closing
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_template__chart_template_ids
 msgid "Available for"
@@ -541,11 +536,6 @@ msgstr "Diario"
 #: model:ir.model,name:account_fiscal_year_closing.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
-
-#. module: l10n_ve_account_fiscalyear_closing
-#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__journal_type
-msgid "Journal Type"
-msgstr "Tipo de diario"
 
 #. module: account_fiscal_year_closing
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing____last_update
