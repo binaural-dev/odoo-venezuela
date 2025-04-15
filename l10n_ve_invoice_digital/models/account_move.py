@@ -567,9 +567,9 @@ class AccountMove(models.Model):
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized', 'move_type')
     def _compute_visibility_button(self):
         for record in self:
-            self.show_digital_invoice = True
-            self.show_digital_debit_note = True
-            self.show_digital_credit_note = True
+            record.show_digital_invoice = True
+            record.show_digital_debit_note = True
+            record.show_digital_credit_note = True
             if record.state == "posted":
                 if record.move_type == "out_refund" and record.reversed_entry_id and record.reversed_entry_id.is_digitalized and not record.is_digitalized:
                     record.show_digital_credit_note = False
