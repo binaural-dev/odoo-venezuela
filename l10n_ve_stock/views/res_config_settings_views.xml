@@ -1,0 +1,74 @@
+<odoo>
+    <record id="res_config_settings_view_form_l10n_ve_stock" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.l10n.ve.stock</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                <block title="Stock Settings" name="l10n_ve_stock_block">
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_group_product_available_quantity_on_sale">
+                        <div class="o_setting_left_pane">
+                            <field name="group_product_available_quantity_on_sale" class="oe_inline" required="1"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="group_product_available_quantity_on_sale" />
+                            <div class="text-muted">Allows to show the available quantity (Total minus reserved) in both product template and variant of it.</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_use_main_warehouse">
+                        <div class="o_setting_left_pane">
+                            <field name="use_main_warehouse"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="use_main_warehouse"/>
+                            <div class="text-muted">
+                                Define a main sell's warehouse.
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16" invisible="not use_main_warehouse">
+                                    <field name="main_warehouse_id" class="oe_inline" required="use_main_warehouse"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_change_weight">
+                        <div class="o_setting_left_pane">
+                            <field name="change_weight" />
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="change_weight"/>
+                            <div class="text-muted">
+                                Allow changing weight during picking
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_validate_without_product_quantity">
+                        <div class="o_setting_left_pane">
+                            <field name="validate_without_product_quantity" />
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="validate_without_product_quantity" />
+                            <div class="text-muted">
+                                If you have more than the quantity on stock dont allow
+                                transfer/sell.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_settings_stock_use_free_qty_odoo">
+                        <div class="o_setting_left_pane">
+                            <field name="use_free_qty_odoo" />
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="use_free_qty_odoo"/>
+                            <div class="text-muted">
+                                <strong>When marked:</strong> On the product sheet Take into account all the the locations to calculate Available Quantities
+                                <br/>
+                                <strong>When unchecked:</strong> The quantity of products will be filtered ('Available quantity') by parent and child locations that are only of Type 'Stock'
+                            </div>
+                        </div>
+                    </div>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

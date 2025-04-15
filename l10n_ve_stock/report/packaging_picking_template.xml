@@ -1,0 +1,101 @@
+<odoo>
+    <template id="packaging_picking_item">
+        <div class="container">
+            <div class="row border border-dark rounded position-relative" name="header">
+                <!-- <t t-set="operation_employees" t-value="picking.get_operation_employees()"/> -->
+                <!-- <t t-set="pick_employee" t-value="operation_employees[0]"/> -->
+                <!-- <t t-set="out_employee" t-value="operation_employees[1]"/> -->
+                <div class="col-7" name="picking_info">
+                    <div> Date: <span
+                            t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')" />
+                    </div>
+                    <div> Ciudad: <span t-field="picking.partner_id.city" />
+                    </div>
+                </div>
+                <div class="col-5 text-center">
+                    <!-- 'max-width: 132px' -->
+                    <span t-field="picking.company_id.logo"
+                        t-options="{'widget': 'image', 'style': 'max-width: 110px;max-height:60px;'}"
+                        role="img" t-att-aria-label="'Logo of %s' % picking.company_id.name"
+                        t-att-title="picking.company_id.name" />
+                </div>
+            </div>
+            <div class="row border border-dark rounded mt-2 p-2">
+                <div class="col-12 text-center" style="height:2.5rem !important">
+                    <p t-out="picking.partner_id.name[:80]" class="h5" />
+                </div>
+            </div>
+            <div class="row font-weight-bold border-right border-left">
+                <div class="col-12 text-center" style="overflow:hidden;">
+                    <span t-field="picking.name" class="h2" />
+                </div>
+            </div>
+            <div class="row font-weight-bold border-right border-left">
+                <div class="col-12 text-center" style="overflow:hidden;">
+                </div>
+            </div>
+            <div class="row font-weight-bold" style="font-size:1.3rem">
+                <div class="col-12 text-center">
+                    <p>Package <span t-esc="item" /> / <t t-if="picking.package_qty == 0">
+                            <t t-set="package_qty" t-value="1" />
+                        </t>
+                        <t
+                            t-else="">
+                            <t t-set="package_qty" t-value="picking.package_qty" />
+                        </t>
+                        <span
+                            t-esc="package_qty" />
+                    </p>
+                </div>
+            </div>
+            <div class="row border border-dark" style="font-size: 0.8rem;min-height: 40px;">
+                <div class="col-12"> Note: <span t-field="picking.note" />
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="packaging_picking">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="picking">
+                <t t-call="web.basic_layout">
+                    <t t-foreach="range(1, picking.package_qty + 1)" t-as="item">
+                        <div class="page">
+                            <t t-call="l10n_ve_stock.packaging_picking_item">
+                                <t t-raw="0" />
+                            </t>
+                        </div>
+                        <p style="page-break-after:always" />
+                    </t>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="paperformat_packaging_picking" model="report.paperformat">
+        <field name="name">Packaging Stock Picking</field>
+        <field name="default" eval="False" />
+        <field name="format">custom</field>
+        <field name="page_height">70</field>
+        <field name="page_width">100</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">6</field>
+        <field name="margin_bottom">0.5</field>
+        <field name="margin_left">0.5</field>
+        <field name="margin_right">0.5</field>
+        <field name="header_line" eval="False" />
+        <field name="header_spacing">0</field>
+        <field name="dpi">103</field>
+    </record>
+
+    <record id="action_packaging_picking" model="ir.actions.report">
+        <field name="name">Packaging tags</field>
+        <field name="model">stock.picking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_ve_stock.packaging_picking</field>
+        <field name="report_file">l10n_ve_stock.packaging_picking</field>
+        <field name="print_report_name">'Packaging tags - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="stock.model_stock_picking" />
+        <field name="paperformat_id" ref="l10n_ve_stock.paperformat_packaging_picking" />
+    </record>
+</odoo>
