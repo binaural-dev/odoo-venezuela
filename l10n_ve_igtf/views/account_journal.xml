@@ -1,4 +1,3 @@
-
 <odoo>
 
     <data noupdate="1">
@@ -8,8 +7,7 @@
             <field name="inherit_id" ref="account.view_account_journal_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='type']" position="after">
-                    <field name="default_is_igtf_config" invisible="1"/>
-                    <field name="is_igtf"  invisible="type not in ('bank', 'cash')"/>
+                    <field name="is_igtf"  invisible="type not in ('bank','cash')"/>
                 </xpath>
             </field>
         </record>    
