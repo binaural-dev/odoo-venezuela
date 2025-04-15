@@ -6,7 +6,7 @@
             <form string="Validation">
                 <group>
                     <span class="o_form_label" style="font-size: 14px; white-space: nowrap;">
-                        Upon confirmation, the corresponding sequences will be generated, and you will no longer be able to edit the invoice. 
+                        Once confirmed, the system will generate the sequences and the document cannot be edited later. 
                     </span>
                 </group>
                 <footer>
