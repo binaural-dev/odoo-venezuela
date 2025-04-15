@@ -1,30 +1,28 @@
 <odoo>
     <data>
-        <record id="res_config_settings_binaural_rate" model="ir.ui.view">
-            <field name="name">res.config.settings.binaural.rate</field>
+        <record id="res_config_settings_l10n_ve_rate" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.rate</field>
             <field name="model">res.config.settings</field>
-            <field name="priority" eval="10" />
-            <field name="inherit_id" ref="l10n_ve_base.res_config_settings_view_form_binaural_base" />
+            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <div class="app_settings_block mt-6" data-string="Binaural" string="Binaural">
-                        <h2>Rates Configuration</h2>
-                        <div class="row mt16 o_settings_container" name="binaural_rate_settings">
-                            
-                            <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <field name="currency_foreign_id" />
-                                    <span>Select alternate currency</span>
-                                </group>
-                                <div class="text-muted">
-                                Select the alternate currency that the system will use to make an
-                                accounting copy in the selected currency
-
-
+                    <block title="Configuration: Currency" name="l10n_ve_rate_block">
+                        <separator string="Set foreign currency" />
+                        <setting name="l10n_ve_rate_setting">
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="currency_foreign_id" class="col-lg-6 o_light_label"/>
+                                    <field name="currency_foreign_id" options="{'no_create_edit': True, 'no_open': True}" />
+                                </div>
+                                <div class="mt8">
+                                    <div class="text-muted">
+                                        Select the alternate currency that the system will use to make an accounting copy in the selected currency
+                                    </div>
+                                    <button type="action" name="%(base.action_currency_form)d" string="Currencies" class="btn-link" icon="oi-arrow-right"/>
+                                </div>
                             </div>
-                            </div>
-                        </div>
-                    </div>
+                        </setting>
+                    </block>
                 </xpath>
             </field>
         </record>
