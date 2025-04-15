@@ -2,7 +2,7 @@ from odoo import models, api, _
 from odoo.exceptions import ValidationError
 
 
-class BinauralPaymentExtensionRetentionIvaVoucher(models.AbstractModel):
+class PaymentExtensionRetentionIvaVoucher(models.AbstractModel):
     _name = "report.l10n_ve_payment_extension.retention_voucher_template"
 
     @api.model

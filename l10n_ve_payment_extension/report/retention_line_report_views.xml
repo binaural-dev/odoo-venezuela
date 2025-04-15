@@ -1,11 +1,12 @@
 <odoo>
-
 	<record id="view_retention_line_report_search" model="ir.ui.view">
 		<field name="name">retention.line.report.search</field>
 		<field name="model">retention.line.report</field>
 		<field name="arch" type="xml">
 			<search string="Retention Line Report">
-				<filter name="retention_date_accounting" domain="[]" context="{'group_by' : 'retention_date_accounting'}"/>
+				<filter name="retention_date_accounting"
+                domain="[]"
+                context="{'group_by' : 'retention_date_accounting'}"/>
 				<field name="type"/>
 				<separator/>
 				<filter string="Customer Retention" name="filter_type_customer" domain="[('type','=','out_invoice')]"/>
@@ -13,7 +14,6 @@
 			</search>
 		</field>
 	</record>
-	
 	<record id="view_retention_line_report_tree" model="ir.ui.view">
 		<field name="name">retention.line.report.tree</field>
 		<field name="model">retention.line.report</field>
@@ -43,12 +43,10 @@
 			</tree>
 		</field>
 	</record>
-	
 	<record id="action_retention_line_report" model="ir.actions.act_window">
 		<field name="name">Retention Line Report</field>
 		<field name="res_model">retention.line.report</field>
 		<field name="view_mode">tree</field>
 		<field name="context">{"search_default_filter_type_supplier": 1}</field>
 	</record>
-
 </odoo>

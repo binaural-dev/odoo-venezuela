@@ -7,7 +7,8 @@ class ResPartner(models.Model):
     withholding_type_id = fields.Many2one(
         "account.withholding.type",
         string="Withholding Type",
-        domain=[("state", "=", True)]
+        domain=[("state", "=", True)],
+        tracking=True,
     )
 
     iva_account = fields.Many2one(
@@ -19,9 +20,9 @@ class ResPartner(models.Model):
     )
 
     type_person_id = fields.Many2one(
-        "type.person", "Type Person", store=True
+        "type.person", "Type Person", store=True, tracking=True
     )
 
     economic_activity_id = fields.Many2one(
-        "economic.activity", "Default Economic Activity", store=True
+        "economic.activity", "Default Economic Activity", store=True, tracking=True
     )
