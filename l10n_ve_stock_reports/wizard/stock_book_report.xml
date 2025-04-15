@@ -1,0 +1,35 @@
+<odoo>
+
+    <record id="wizard_l10n_ve_stock_book_report_view" model="ir.ui.view">
+        <field name="name">wizard.stock.book.report.view</field>
+        <field name="model">wizard.stock.book.report</field>
+        <field name="arch" type="xml">
+            <form string="Accounting Reports">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date_from"/>
+                        </group>
+                        <group>
+                            <field name="date_to"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="generate_report" type="object" string="Generar Informe" />
+                </footer> 
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_book_report" model="ir.actions.act_window">
+        <field name="name">Stock Book</field>
+        <field name="res_model">wizard.stock.book.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="wizard_l10n_ve_stock_book_report_view"/>
+    </record>
+
+    <menuitem action="action_stock_book_report" id="stock_book_report_l10n_ve_menu" sequence="251" parent="account.menu_finance_reports"/>
+    
+</odoo>
