@@ -1,13 +1,11 @@
 {
-    "name": "Venezuela - localization",
-    "summary": """
-        Masters of cities, municipalities, and parishes.
-    """,
+    "name": "Venezuela - Localización",
+    "summary": "Modelos de ciudades, municipios y parroquias de Venezuela.",
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.1.0.2",
+    "version": "17.0.0.0.1",
     "depends": ["base", "contacts"],
     "data": [
         "security/ir.model.access.csv",
@@ -21,5 +19,4 @@
         "views/menus.xml",
     ],
     "application": True,
-    "binaural": True,
 }
