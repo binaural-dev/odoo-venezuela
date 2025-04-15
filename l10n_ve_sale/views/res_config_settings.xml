@@ -1,0 +1,85 @@
+<odoo>
+    <data>
+        <record id="res_config_settings_l10n_ve_sale" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.sale</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
+            <field name="arch" type="xml">
+                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                    <block title="Configuration Sales: Generals" name="l10n_ve_sale_block">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_sale_div_use_invoice_rate_from_sale_order">
+                            <div class="o_setting_left_pane">
+                                <field name="use_invoice_rate_from_sale_order"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="use_invoice_rate_from_sale_order"/>
+                                <div class="text-muted">
+                                    Check this if you want the rate of the invoice to be taken from its
+                                    sale order. Else it will take the rate of the date when it is created.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_sale_div_not_allow_sell_products">
+                            <div class="o_setting_left_pane">
+                                <field name="not_allow_sell_products" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="not_allow_sell_products"/>
+                                <div class="text-muted">
+                                    If you have more than the quantity on stock dont allow sell.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_sale_div_update_sale_order_rate_using_date_order">
+                            <div class="o_setting_left_pane">
+                                <field name="update_sale_order_rate_using_date_order"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="update_sale_order_rate_using_date_order"/>
+                                <div class="text-muted">
+                                    Check this if you want to update the rate of the sale order
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_sale_div_are_sale_lines_limited">
+                            <div class="o_setting_left_pane">
+                                <field name="are_sale_lines_limited"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="are_sale_lines_limited"/>
+                                <group colspan="4" col="4">
+                                    <field name="maximum_sales_line_limit" invisible="not are_sale_lines_limited"/>
+                                </group>
+                                <div class="text-muted">Check this if you want limit the number of lines by sale order.</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_sale_block_order_confirmation">
+                            <separator string="Block order confirmation" />
+                            <div class="o_setting_left_pane"/>
+                            <div class="o_setting_right_pane">
+                                <group colspan="4" col="4">
+                                    <field name="block_order_invoice_payment_state" />
+                                </group>
+                                <div class="text-muted">
+                                    Block order confirmation action with invoices in payment status
+                                    Not Paid / In payment process.
+                                </div>
+                            </div>
+                            <br />
+                            <div class="o_setting_left_pane"/>
+                            <div class="o_setting_right_pane">
+                                <group colspan="4" col="4">
+                                    <field name="block_order_invoice_total_amount_overdue" />
+                                </group>
+                                <div class="text-muted">
+                                    Block order confirmation action with invoices overdue with a
+                                    total amount greater than specified.
+                                </div>
+                            </div>
+                        </div>
+                    </block>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
