@@ -1,0 +1,22 @@
+<odoo>
+    <menuitem 
+        name="Dispatch Guides" 
+        id="menuitem_stock_dispatch_guides" 
+        sequence="100" 
+        parent="account.menu_finance_receivables"
+        action="l10n_ve_stock_account.action_picking_guide_dispatch"
+	/>
+    <menuitem 
+        name="Consignations Guides" 
+        id="menu_stock_report_consignation_account" 
+        sequence="101" 
+        parent="account.menu_finance_receivables"
+        action="l10n_ve_stock_account.action_stock_move_line_consignation_report"
+	/>
+    <menuitem 
+        id="menu_stock_report_consignation_report"
+        name="Consignation Report"
+        parent="stock.menu_warehouse_report" 
+        action="l10n_ve_stock_account.action_stock_move_line_consignation_report"
+    />
+</odoo>

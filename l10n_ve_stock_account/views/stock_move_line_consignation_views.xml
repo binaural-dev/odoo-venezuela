@@ -1,0 +1,48 @@
+<odoo>
+    <record id="stock_move_line_consignation_report_tree" model="ir.ui.view">
+        <field name="name">stock.move.line.consignation.report.tree</field>
+        <field name="model">stock.move.line</field>
+        <field name="arch" type="xml">
+            <tree string="Consignation Report" create="0" edit="0">
+                <field name="date_done" string="Date done"/>
+                <field name="picking_partner_id" string="Partner" />
+                <field name="guide_number" string="Guide Number"/>
+                <field name="location_id" string="Location"/>
+                <field name="product_id" string="Product"/>
+                <field name="product_uom_id" string="Unit of Measure"/>
+                <field name="quantity" string="Quantity Dispatched"/>
+            </tree>
+        </field>
+    </record>
+    <record id="l10n_ve_stock_account_stock_move_line_search" model="ir.ui.view">
+        <field name="name">l10n.ve.stock.account.stock.move.line.search</field>
+        <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock.stock_move_line_view_search"/>
+        <field name="arch" type="xml">
+            <group position="inside">
+                <filter string="Guide Number" name="guide_number" domain="[]" context="{'group_by': 'guide_number'}"/>
+            </group>
+        </field>
+    </record>
+    <record id="action_stock_move_line_consignation_report" model="ir.actions.act_window">
+        <field name="name">Consignation Report</field>
+        <field name="res_model">stock.move.line</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree</field>
+        <field 
+            name="view_ids" 
+            eval="[
+                (5, 0, 0), 
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('l10n_ve_stock_account.stock_move_line_consignation_report_tree')}),
+            ]"
+        />
+        <field name="context">{'search_default_guide_number': 1}</field>
+        <field name="search_view_id" ref="l10n_ve_stock_account_stock_move_line_search"/>
+        <field name="domain">
+            [
+                ('picking_id.state', '=', 'done'),
+                ('picking_id.operation_code', '=', 'internal'),
+            ]
+        </field>
+    </record>
+</odoo>
