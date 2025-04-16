@@ -293,7 +293,7 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__auto_select_debit_note_journal
 msgid "Filter Journal Debit Note"
-msgstr ""
+msgstr "Filtrar por Diario de Débito"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__first_payment_date
@@ -565,3 +565,17 @@ msgstr "No puede agregar más de %s productos a la factura."
 #: model:ir.actions.act_window,name:l10n_ve_invoice.ir_invoice_correlative
 msgid "control number"
 msgstr "Número de control"
+#. module: account
+#: model:ir.actions.act_window,name:account.action_move_in_refund_type
+#: model:ir.actions.act_window,name:account.action_move_out_refund_type
+#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
+msgid "Credit Notes"
+msgstr "Notas de Crédito"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
+msgid "Debit note"
+msgstr "Notas de Débito"
+

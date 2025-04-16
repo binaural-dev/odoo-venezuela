@@ -11,7 +11,7 @@ class AccountDebitNote(models.TransientModel):
         filter_enabled = config.get_param('account.move.auto_select_debit_note_journal') == 'True'
 
         if filter_enabled:
-            nd_journal = self.env['account.journal'].search([('code', '=', 'ND')], limit=1)
+            nd_journal = self.env['account.journal'].search([('is_debit', '=', 'True')], limit=1)
             if nd_journal:
                 self.journal_id = nd_journal.id
           
