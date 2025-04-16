@@ -70,7 +70,7 @@
                         <div class="o_setting_right_pane">
                             <label for="auto_select_debit_note_journal" class="oe_inline"/>
                             <div class="text-muted">
-                                Selecciona automáticamente el diario de notas de débito.
+                                <span>Assists the user in selecting the appropriate journals when applying a debit note.</span>
                             </div>
                         </div>
                         </div>
