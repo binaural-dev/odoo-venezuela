@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-14 09:27+0000\n"
-"PO-Revision-Date: 2025-04-14 09:27+0000\n"
+"POT-Creation-Date: 2025-04-16 15:00+0000\n"
+"PO-Revision-Date: 2025-04-16 15:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -49,6 +49,14 @@ msgid ""
 "<span><strong>CONTRIBUYENTE FORMAL</strong></span>\n"
 "                                <br/>"
 msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
+msgid ""
+"<span>Assists the user in selecting the appropriate journals when applying a"
+" debit note.</span>"
+msgstr ""
+"<span>Asiste al usuario en la elección de los diarios adecuados al aplicar una nota de débito.</span>"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
@@ -455,11 +463,6 @@ msgstr "Reporte en moneda del sistema"
 #: model:ir.ui.menu,name:l10n_ve_invoice.account_report_sale_menu
 msgid "Sale Book"
 msgstr "Libro de Ventas"
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
-msgid "Selecciona automáticamente el diario de notas de débito."
-msgstr ""
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__correlative
