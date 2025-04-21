@@ -107,7 +107,7 @@ class AccountMove(models.Model):
         seller = self.get_seller()
         buyer = self.get_buyer()
         totals, foreign_totals = self.get_totals()
-        details_Items = self.get_item_details()
+        details_items = self.get_item_details()
 
         payload = {
             "documentoElectronico": {
@@ -116,7 +116,7 @@ class AccountMove(models.Model):
                     "comprador": buyer,
                     "totales": totals,
                 },
-                "detallesItems": details_Items,
+                "detallesItems": details_items,
             }
         }
         if seller:
