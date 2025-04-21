@@ -28,7 +28,7 @@ class AccountMove(models.Model):
             if record.name == '/':
                 last_invoice = self.env['account.move'].search(
                     [
-                        ('move_type', '!=', 'entry'),
+                        ('move_type', 'in', ['out_invoice', 'out_refund']),
                         ('name', '!=', '/')
                     ], order='create_date desc', limit=1
                 )
@@ -86,12 +86,15 @@ class AccountMove(models.Model):
                 data = response.json()
                 if data.get("codigo") == "200":
                     return data
+                elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
+                    return 1
                 else:
                     _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
                     raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
-                raise UserError(_("Authentication error: Invalid or expired token."))
+                self.company_id.generate_token_tfhka()
+                return self.call_tfhka_api(endpoint_key, payload)
             else:
                 _logger.error(_("HTTP error %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
                 raise UserError(_("HTTP error %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
@@ -104,7 +107,7 @@ class AccountMove(models.Model):
         seller = self.get_seller()
         buyer = self.get_buyer()
         totals, foreign_totals = self.get_totals()
-        detallesItems = self.get_item_details()
+        details_items = self.get_item_details()
 
         payload = {
             "documentoElectronico": {
@@ -113,7 +116,7 @@ class AccountMove(models.Model):
                     "comprador": buyer,
                     "totales": totals,
                 },
-                "detallesItems": detallesItems,
+                "detallesItems": details_items,
             }
         }
         if seller:
@@ -137,8 +140,10 @@ class AccountMove(models.Model):
                 }
         response = self.call_tfhka_api("ultimo_documento", payload)
         
-        if response:
-            document_number = response["numeroDocumento"]
+        if response == 1:
+            return response
+        else:
+            document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
     def assign_numbering(self, end_number, start_number):
@@ -428,8 +433,7 @@ class AccountMove(models.Model):
                     31.0: "A",
                 }
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
-                if taxes:
-                    tax_rate = taxes[0].amount
+                tax_rate = taxes[0].amount if taxes else 0.0
 
                 item_details.append({
                     "numeroLinea": str(line_number),
