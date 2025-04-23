@@ -137,6 +137,21 @@ msgid "Forma Libre"
 msgstr ""
 
 #. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Credit Note"
+msgstr "Generar Nota de Crédito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Debit Note"
+msgstr "Generar Nota de Débito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Invoice"
+msgstr "Generar Factura Digital"
+
+#. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_islr_form_l10n_ve_payment_extension_inherit
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_form_l10n_ve_payment_extension_inherit
 msgid "Generate Digital Retention"
