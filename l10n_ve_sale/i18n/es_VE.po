@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 17:05+0000\n"
-"PO-Revision-Date: 2025-03-27 17:05+0000\n"
+"POT-Creation-Date: 2025-04-12 14:44+0000\n"
+"PO-Revision-Date: 2025-04-12 14:44+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -21,6 +21,18 @@ msgstr ""
 #, python-format
 msgid "All products must contain only one tax."
 msgstr "Todos los productos deben contener solo un impuesto."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.report_sale_document_l10n_ve_sale
+msgid "BORRADOR"
+msgstr ""
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "Before confirming an order, you need to add a product."
+msgstr "Antes de confirmar una orden, necesitas agregar productos."
 
 #. module: l10n_ve_sale
 #: model:res.groups,name:l10n_ve_sale.edit_product_line_pricing_sale_order_group
@@ -89,7 +101,7 @@ msgstr "Marque esta opción si desea actualizar la tasa de la orden de venta"
 #. module: l10n_ve_sale
 #: model:ir.model,name:l10n_ve_sale.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_sale
 #: model:ir.model,name:l10n_ve_sale.model_res_config_settings
@@ -382,6 +394,11 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
 msgid "Recompute all prices based on this pricelist"
 msgstr "Recomputar todos los precios basados en esta Tarifa"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.report_sale_document_l10n_ve_sale
+msgid "SIN DERECHO A CRÉDITO FISCAL"
+msgstr ""
 
 #. module: l10n_ve_sale
 #: model:ir.model,name:l10n_ve_sale.model_sale_order
