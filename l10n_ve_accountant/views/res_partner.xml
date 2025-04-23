@@ -1,0 +1,21 @@
+<odoo>
+
+    <record id="view_partner_property_form_inherit_l10n_ve_accountant" model="ir.ui.view">
+        <field name="name">res.partner.view.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="account.view_partner_property_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='credit']" position="after">
+                <label for="use_partner_credit_limit_order" />
+                <div class="o_row">
+                    <field name="use_partner_credit_limit_order" />
+                    <field name="credit_limit" widget='monetary' class="oe_inline"
+                        invisible="not use_partner_credit_limit_order" />
+                    <field name="currency_id" options="{'no_create': True, 'no_open': True}"
+                        readonly="1" groups="base.group_multi_currency" />
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

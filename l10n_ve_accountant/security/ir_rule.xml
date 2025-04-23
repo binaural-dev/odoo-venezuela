@@ -1,0 +1,14 @@
+<odoo>
+    <odoo>
+        <record id="tax_support_no_archive_rule" model="ir.rule">
+            <field name="name">Impuestos: No archivar para Soporte Fiscal</field>
+            <field name="model_id" ref="account.model_account_tax"/>
+            <field name="domain_force">[('active', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('group_fiscal_config_support'))]"/>
+            <field name="perm_read">1</field>
+            <field name="perm_write">1</field>
+            <field name="perm_create">1</field>
+            <field name="perm_unlink">0</field>
+        </record>
+    </odoo>
+</odoo>

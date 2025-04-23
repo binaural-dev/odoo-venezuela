@@ -5,12 +5,6 @@ from odoo.tools import column_exists, create_column
 
 
 def pre_init_hook(env):
-    if not column_exists(env.cr, "account_payment", "is_igtf"):
-        create_column(env.cr, "account_payment", "is_igtf", "boolean")
-        env.cr.execute("""
-            UPDATE account_payment
-            SET is_igtf = false
-        """)
     if not column_exists(env.cr, "account_payment", "is_igtf_on_foreign_exchange"):
         create_column(env.cr, "account_payment", "is_igtf_on_foreign_exchange", "boolean")
         env.cr.execute("""
@@ -34,10 +28,4 @@ def pre_init_hook(env):
         env.cr.execute("""
             UPDATE account_payment
             SET amount_with_igtf = 0.0
-        """)
-    if not column_exists(env.cr, "account_journal", "default_is_igtf_config"):
-        create_column(env.cr, "account_journal", "default_is_igtf_config", "boolean")
-        env.cr.execute("""
-            UPDATE account_journal
-            SET default_is_igtf_config = false
         """)

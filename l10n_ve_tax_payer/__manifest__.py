@@ -1,17 +1,15 @@
 {
-    "name": "Binaural Technical Tax Payer",
-    "summary": "Modulo para campo de identificación del contribuyente",
+    "name": "Venezuela - Contribuyente (Técnico)",
+    "summary": "Módulo para configurar los contribuyentes de Venezuela.",
     "license": "LGPL-3",
-    "description": "Modulo para campo de identificación del contribuyente",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.1.0.0",
+    "version": "17.0.0.0.1",
     "depends": ["base", "l10n_ve_rate", "l10n_ve_tax"],
     "data": [
         "views/res_partner.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "binaural": True,
 }

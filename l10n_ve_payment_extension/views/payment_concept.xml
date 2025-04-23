@@ -1,10 +1,9 @@
-
 <odoo>
 
     <data>
     
-        <record id="view_payment_concept_tree_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.payment.concept.tree.binaural.payment.extension</field>
+        <record id="view_payment_concept_tree_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.payment.concept.tree.l10n.ve.payment.extension</field>
             <field name="model">payment.concept</field>
             <field name="arch" type="xml">
                 <tree>
@@ -14,8 +13,8 @@
             </field>
         </record>
 
-        <record id="view_payment_concept_form_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.payment.concept.form.binaural.payment.extension</field>
+        <record id="view_payment_concept_form_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.payment.concept.form.l10n.ve.payment.extension</field>
             <field name="model">payment.concept</field>
             <field name="arch" type="xml">
                 <form string="Payment concept">
@@ -46,8 +45,8 @@
             </field>
         </record>
 
-        <record id="view_payment_concept_search_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.payment.concept.search.binaural.payment.extension</field>
+        <record id="view_payment_concept_search_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.payment.concept.search.l10n.ve.payment.extension</field>
             <field name="model">payment.concept</field>
             <field name="arch" type="xml">
                 <search string="Payment concept">
@@ -56,7 +55,7 @@
             </field>
         </record>
 
-        <record id="action_payment_concept_binaural_payment_extension" model="ir.actions.act_window">
+        <record id="action_payment_concept_l10n_ve_payment_extension" model="ir.actions.act_window">
             <field name="name">Payment concept</field>
             <field name="res_model">payment.concept</field>
             <field name="type">ir.actions.act_window</field>
@@ -64,7 +63,9 @@
             <field name="view_mode">tree,kanban,form</field>
             <field name="context">{"search_default_status":True}</field>
         </record>
+
     
     </data>
     
+
 </odoo>

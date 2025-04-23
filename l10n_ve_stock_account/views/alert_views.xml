@@ -1,0 +1,23 @@
+<odoo>
+  <template id="l10n_ve_stock_account.l10n_ve_stock_account_alert" name="Alert Banner" inherit_id="web.layout" active="True">
+    <xpath expr="//body" position="inside">
+      <t t-set="env" t-value="request.env(context=ctx)" />
+      <t t-set="result" t-value="env['stock.picking'].sudo().alert_views()"/>
+      <div>
+        <span id="oe_neutralize_banner"
+          t-if="result"
+          t-attf-style="
+                text-align: center;
+                color: #FFFFFF;
+                background-color: #D0442C;
+                position: relative;
+                display: block;
+                font-size: 16px;">
+        <t t-out="result"/> </span>
+      </div>
+    </xpath>
+    <xpath expr="//head">
+      <meta name="robots" content="noindex,nofollow" />
+    </xpath>
+  </template>
+</odoo>

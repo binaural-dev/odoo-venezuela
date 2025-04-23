@@ -1,0 +1,21 @@
+<odoo>
+    <record id="view_order_form_l10n_ve_stock_account" model="ir.ui.view">
+        <field name="name">sale.order.form.l10n.ve.stock.account</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form" />
+        <field name="arch" type="xml">
+            <field name="payment_term_id" position="after">
+                <field name="document"
+                    readonly="state in ['sale', 'done', 'cancel'] or is_consignation" />
+            </field>
+            <field name="manually_set_rate" position="after">
+                <field name="is_donation" readonly="state in ['sale', 'done', 'cancel']" />
+                <field name="is_consignation" readonly="state in ['sale', 'done', 'cancel']" />
+            </field>
+
+            <xpath expr="//button[@id='create_invoice']" position="attributes">
+                <attribute name="invisible">invoice_status != 'to invoice' or document == 'dispatch_guide' or is_consignation</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

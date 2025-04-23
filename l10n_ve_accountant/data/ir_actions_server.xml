@@ -16,7 +16,7 @@
         <record model="ir.actions.server" id="recompute_foreign_debit_and_credit_of_journal_entries">
             <field name="name">Recompute foreign debit and credit of journal entries</field>
             <field name="model_id" ref="model_account_move"/>
-            <field name="binding_model_id" ref="model_account_move" />
+            <field name="binding_model_id" ref="" />
             <field name="state">code</field>
             <field name="code">
                 if records:
@@ -28,7 +28,7 @@
         <record model="ir.actions.server" id="abs_amount_line_ids_adjust">
             <field name="name">Set Abs adjustment lines</field>
             <field name="model_id" ref="account.model_account_move_line"/>
-            <field name="binding_model_id" ref="account.model_account_move_line" />
+            <field name="binding_model_id" ref="" />
             <field name="state">code</field>
             <field name="code">
 for record in records:

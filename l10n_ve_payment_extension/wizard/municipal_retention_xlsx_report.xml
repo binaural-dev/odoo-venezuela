@@ -1,4 +1,4 @@
-
+<?xml version="1.0"?>
 <odoo>
     <record id="wizard_report_municipality_retentions_report_view" model="ir.ui.view">
         <field name="name">municipal.retention.xlsx.report.view</field>
@@ -10,6 +10,7 @@
                         <field name="date_start" />
                         <field name="date_end" />
                     </group>
+
                 </sheet>
                 <footer>
                     <div style="display: flex; justify-content: center">

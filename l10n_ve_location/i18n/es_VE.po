@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0-20250227\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-02-28 02:54+0000\n"
-"PO-Revision-Date: 2025-02-28 02:54+0000\n"
+"POT-Creation-Date: 2025-03-24 19:15+0000\n"
+"PO-Revision-Date: 2025-03-24 19:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -31,7 +31,6 @@ msgstr "Ciudades"
 #: model:ir.model.fields,field_description:l10n_ve_location.field_res_country_city__name
 #: model:ir.model.fields,field_description:l10n_ve_location.field_res_partner__city_id
 #: model:ir.model.fields,field_description:l10n_ve_location.field_res_users__city_id
-#: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_form_res_partner_inherited
 #: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_res_country_city_form
 msgid "City"
 msgstr "Ciudad"
@@ -41,6 +40,11 @@ msgstr "Ciudad"
 #: model:ir.model.fields,field_description:l10n_ve_location.field_res_users__city
 msgid "City related"
 msgstr "Ciudad"
+
+#. module: l10n_ve_location
+#: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_form_res_partner_inherited
+msgid "Ciudad"
+msgstr ""
 
 #. module: l10n_ve_location
 #: model:ir.model.fields,field_description:l10n_ve_location.field_res_country_municipality__code
@@ -127,7 +131,10 @@ msgstr "Nombre"
 #. module: l10n_ve_location
 #: model:ir.actions.act_window,name:l10n_ve_location.action_res_country_parish
 #: model:ir.model,name:l10n_ve_location.model_res_country_parish
+#: model:ir.model.fields,field_description:l10n_ve_location.field_res_partner__parish_id
+#: model:ir.model.fields,field_description:l10n_ve_location.field_res_users__parish_id
 #: model:ir.ui.menu,name:l10n_ve_location.menu_res_country_parish
+#: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_form_res_partner_inherited
 #: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_res_country_parish_form
 msgid "Parish"
 msgstr "Parroquia"
@@ -136,6 +143,11 @@ msgstr "Parroquia"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_res_country_parish_tree
 msgid "Parishes"
 msgstr "Parroquias"
+
+#. module: l10n_ve_location
+#: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_form_res_partner_inherited
+msgid "Parroquia"
+msgstr ""
 
 #. module: l10n_ve_location
 #: model:ir.model.fields,field_description:l10n_ve_location.field_res_country_city__state_id
@@ -158,4 +170,3 @@ msgid ""
 msgstr ""
 "No puede registrar una ciudad con el mismo nombre para el estado y país "
 "seleccionado"
-

@@ -7,13 +7,14 @@
                     <img style="max-height:100px;width:200px;float:left" t-if="res_company.logo"
                          t-att-src="image_data_uri(res_company.logo)"/>
                 </div>
+                <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8" style="text-align: left;">
                     <h6>COMPROBANTE DE RETENCIÓN DEL IMPUESTO AL VALOR AGREGADO</h6>
                     <p>"Decreto con Rango, Valor y Fuerza de Ley de Reforma de la Ley del Impuesto al Valor agregado
                         Nro 1.436 del 17 de Noviembre del 2014"
                         Articulo 11: La Administracion Tributaria podra Designar como Responsable del Pago del
                         Impuesto, en calidad de Agentes de Retencion a quienes por sus
-                        Funciones Publicas o por Razon de sus Actividades Privadas intervengan en operaciones
+                        Funciones Publicas o por Razón de sus Actividades Privadas intervengan en operaciones
                         Gravadas con el Impuesto Establecido en este Decreto con Rango,
                         Valor y Fuerza de Ley.
                     </p>
@@ -37,7 +38,7 @@
             <div class="row" style="margin-top:10px">
                 <div class="col-4">
                     <div class="col-12">
-                        <span>Nombre o Razon Social del Agente de Retención</span>
+                        <span>Nombre o Razón Social del Agente de Retención</span>
                         <div style="width:100%">
                             <span t-esc="res_company.name"/>
                         </div>
@@ -86,7 +87,7 @@
         <div class="container" style="font-size:12px !important;">
             <div class="row">
                 <div class="col-6">
-                    <span>Nombre o Razon Social del Sujeto Retenido</span>
+                    <span>Nombre o Razón Social del Sujeto Retenido</span>
                     <div>
                         <span t-esc="retention.partner_id.name"/>
                     </div>
@@ -447,6 +448,7 @@
                     <img style="max-height:100px;width:200px;float:left" t-if="res_company.logo"
                          t-att-src="image_data_uri(res_company.logo)"/>
                 </div>
+                <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8">
                     <div class="col-12">
                         <h6>COMPROBANTE DE RETENCIÓN DE ISLR</h6>
