@@ -81,6 +81,8 @@ class StockPicking(models.Model):
         store=True,
         compute="_compute_is_dispatch_guide",
     )
+    partner_required = fields.Boolean(store=True)
+    
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
@@ -1017,3 +1019,18 @@ class StockPicking(models.Model):
     
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
+    @api.onchange('location_dest_id', 'is_dispatch_guide', 'is_consignment', 'transfer_reason_id.id')
+    def _compute_required_partner_id(self):
+        for picking in self:
+            if picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_consignment').id and picking.is_dispatch_guide and picking.is_consignment: 
+                contact = self.env['res.partner'].search([('id', '=', picking.location_dest_id.partner_id.id)], limit=1)
+                if contact:
+                    picking.partner_required = True
+                    picking.partner_id = contact.id
+                else:
+                    picking.partner_id = None
+                    picking.partner_required = False
+            else:
+                picking.partner_id = None
+                picking.partner_required = False
+            
