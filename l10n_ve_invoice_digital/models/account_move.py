@@ -87,7 +87,7 @@ class AccountMove(models.Model):
                 if data.get("codigo") == "200":
                     return data
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
-                    return 1
+                    return 0
                 else:
                     _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
                     raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
@@ -140,7 +140,7 @@ class AccountMove(models.Model):
                 }
         response = self.call_tfhka_api("ultimo_documento", payload)
         
-        if response == 1:
+        if response == 0:
             return response
         else:
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
