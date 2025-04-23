@@ -5,5 +5,5 @@
 	path = third-party-addons
 	url = git@github.com:binaural-dev/third-party-addons.git
 [submodule "homo-addons"]
-	path = homo-addons
+	path = odoo-venezuela 
 	url = git@github.com:binaural-dev/odoo-venezuela.git
