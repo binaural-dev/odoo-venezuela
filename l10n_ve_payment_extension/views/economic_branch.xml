@@ -1,10 +1,9 @@
-
 <odoo>
 
     <data>
 
-        <record id="view_economic_branch_tree_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.economic.branch.tree.binaural.payment.extension</field>
+        <record id="view_economic_branch_tree_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.branch.tree.l10n.ve.payment.extension</field>
             <field name="model">economic.branch</field>
             <field name="arch" type="xml">
                 <tree>
@@ -14,8 +13,8 @@
             </field>
         </record>
 
-        <record id="view_economic_branch_from_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.economic.branch.from.binaural.payment.extension</field>
+        <record id="view_economic_branch_from_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.branch.from.l10n.ve.payment.extension</field>
             <field name="model">economic.branch</field>
             <field name="arch" type="xml">
                 <form string="Economic branch">
@@ -29,8 +28,8 @@
             </field>
         </record>
 
-        <record id="view_economic_branch_search_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.economic.branch.search.binaural.payment.extension</field>
+        <record id="view_economic_branch_search_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.branch.search.l10n.ve.payment.extension</field>
             <field name="model">economic.branch</field>
             <field name="arch" type="xml">
                 <search>
@@ -52,6 +51,8 @@
             <field name="view_mode">tree,form</field>
         </record>
     
+    
     </data>
+    
 
 </odoo>

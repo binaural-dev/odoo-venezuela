@@ -1,0 +1,112 @@
+<odoo>
+    <record id="stock_picking_guide_dispatch_views" model="ir.ui.view">
+        <field name="name">stock.picking.guide.dispatch.account.views</field>
+        <field name="model">stock.picking</field>
+        <field name="priority" eval="17"/>
+        <field name="arch" type="xml">
+            <tree string="Picking list" multi_edit="1" sample="1" create="0">
+                <header>
+                    <button name="create_invoice_lots" type="object" string="Create Invoice by Lots"/>
+                </header>
+                <field name="name" decoration-bf="1"/>
+                <field name="guide_number" string="Guide Number"/>
+                <field name="partner_id" string="Partner" optional="hide"/>
+                <field name="date_done" string="Guide Date"/>
+                <field name="operation_code" optional="hide"/>
+                <field name="transfer_reason_id" optional="hide"/>
+                <field name="company_id" column_invisible="True"/>
+                <field name="allowed_reason_ids" column_invisible="True"/>
+                <field name="show_create_invoice" column_invisible="True"/>
+                <field name="show_create_bill" column_invisible="True"/>
+                <field name="show_create_customer_credit" column_invisible="True"/>
+                <field name="show_create_vendor_credit" column_invisible="True"/>
+                <field name="show_create_invoice_internal" column_invisible="True"/>
+                <field 
+                    name="state_guide_dispatch" 
+                    string="State Guide Dispatch" widget="badge" 
+                    decoration-muted="state_guide_dispatch == 'to_invoice'"
+                    decoration-success="state_guide_dispatch == 'invoiced'"
+                />
+                <field 
+                    name="invoice_state"
+                    string="Invoice State" widget="badge"
+                    decoration-muted="invoice_state == 'draft'"
+                    decoration-success="invoice_state == 'posted'"
+                    decoration-danger="invoice_state == 'cancel'"
+                    optional="hide"
+                 />
+                <button 
+                    name="create_invoice" 
+                    class="btn btn-link text-info" 
+                    icon="fa-file-text" 
+                    string="Create Invoice" 
+                    type="object"
+                    invisible="not show_create_invoice"/>
+                <button 
+                    name="create_bill" 
+                    class="btn btn-link text-info" 
+                    icon="fa-file-text" 
+                    string="Create Bill" 
+                    type="object"
+                    invisible="not show_create_bill"/>
+                <button 
+                    name="create_customer_credit" 
+                    class="btn btn-link text-info" 
+                    icon="fa-file-text" 
+                    string="Create Credit Note" 
+                    type="object"
+                    invisible="not show_create_customer_credit"/>
+                <button 
+                    name="create_vendor_credit" 
+                    class="btn btn-link text-info" 
+                    icon="fa-file-text" 
+                    string="Create Vendor Credit" 
+                    type="object"
+                    invisible="not show_create_vendor_credit"/>
+            </tree>
+        </field>
+    </record>
+    <record id="stock_picking_guide_dispatch_view_search" model="ir.ui.view">
+        <field name="name">stock.picking.guide.dispatch.view.search</field>
+        <field name="model">stock.picking</field>
+        <field name="arch" type="xml">
+            <search string="Search">
+                <field name="name" />
+                <field name="guide_number" />
+                <filter name="state_guide_dispatch" string="State guide dispatch" context="{'group_by': 'state_guide_dispatch'}"/>
+                <filter name="date_done_group" string="Guide Date" context="{'group_by': 'date_done'}"/>
+                <filter name="state_guide_dispatch_to_invoice" string="To Invoice" domain="[('state_guide_dispatch', '=', 'to_invoice')]"/>
+                <filter name="state_guide_dispatch_invoiced" string="Invoiced" domain="[('state_guide_dispatch', '=', 'invoiced')]"/>
+                <filter name="date_done_filter" string="Guide Date" date="date_done"/>
+                <filter string="Location" name="location_id" domain="[]" context="{'group_by': 'location_id'}"/>
+            </search>
+        </field>
+    </record>
+    <record id="action_picking_guide_dispatch" model="ir.actions.act_window">
+        <field name="name">Report Guide Dispatch</field>
+        <field name="res_model">stock.picking</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree</field>
+        <field 
+            name="view_ids" 
+            eval="[
+                (5, 0, 0), 
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('l10n_ve_stock_account.stock_picking_guide_dispatch_views')}),
+            ]"
+        />
+        <field name="context">{'search_default_state_guide_dispatch_to_invoice': 1}</field>
+        <field name="search_view_id" ref="stock_picking_guide_dispatch_view_search"/>
+        <field name="domain">[
+            '&amp;',
+            '&amp;',
+            '&amp;',
+                ('state', '=', 'done'),
+                ('type_delivery_step', 'in', ['out', 'int']),
+                ('transfer_reason_id.code', '!=', 'self_consumption'),
+            '|',
+                ('type_delivery_step', '=', 'out'),
+            '&amp;',
+                ('type_delivery_step', '=', 'int'),
+                ('is_dispatch_guide', '=', True)]</field>
+    </record>
+</odoo>

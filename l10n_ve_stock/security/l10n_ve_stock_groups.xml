@@ -1,0 +1,61 @@
+<odoo>
+
+    <data>
+
+        <record id="group_product_available_quantity_on_sale" model="res.groups">
+            <field name="name">Group Product Available Quantity on Sale</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_show_standard_price" model="res.groups">
+            <field name="name">Show standard price on the product form view</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_print_button_for_inventory_transfers" model="res.groups">
+            <field name="name">Hide Print Button for Inventory Transfers</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_override_button_for_inventory_transfers" model="res.groups">
+            <field name="name">Hide Override Button for Inventory Transfers</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_unlock_lock_button_for_inventory_transfers" model="res.groups">
+            <field name="name">Hide Unlock/Lock Button for Inventory Transfers</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_cancel_button_from_inventory_transfers" model="res.groups">
+            <field name="name">Hide Cancel Button from Inventory Transfers</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_validate_inventory_transfers_button" model="res.groups">
+            <field name="name">Hide Validate Inventory Transfers Button</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_return_inventory_transfers_button" model="res.groups">
+            <field name="name">Hide Return Button from Inventory Transfers</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_discard_inventory_transfers_button" model="res.groups">
+            <field name="name">Hide Discard Button from Inventory Transfers</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_block_type_inventory_transfers_expeditions" model="res.groups">
+            <field name="name">Block Type Inventory Transfers Expeditions (Do not add a new product to the Dispatch)</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_block_liters_per_unit" model="res.groups">
+            <field name="name">Block Liters Per Unit</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+    </data>
+
+</odoo>

@@ -4,9 +4,8 @@ from odoo import api, fields, models
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
-    module_l10n_ve_igtf = fields.Boolean(readonly=False)
-
-    unique_tax = fields.Boolean(related="company_id.unique_tax", readonly=False)
+    unique_tax = fields.Boolean(
+        related="company_id.unique_tax", readonly=False)
 
     show_discount_on_moves = fields.Boolean(
         related="company_id.show_discount_on_moves", readonly=False
@@ -55,11 +54,17 @@ class ResConfigSettings(models.TransientModel):
     )
 
     no_deductible_general_aliquot_purchase = fields.Many2one(
-        "account.tax", related="company_id.no_deductible_general_aliquot_purchase", readonly=False
+        "account.tax",
+        related="company_id.no_deductible_general_aliquot_purchase",
+        readonly=False,
     )
     no_deductible_reduced_aliquot_purchase = fields.Many2one(
-        "account.tax", related="company_id.no_deductible_reduced_aliquot_purchase", readonly=False
+        "account.tax",
+        related="company_id.no_deductible_reduced_aliquot_purchase",
+        readonly=False,
     )
     no_deductible_extend_aliquot_purchase = fields.Many2one(
-        "account.tax", related="company_id.no_deductible_extend_aliquot_purchase", readonly=False
+        "account.tax",
+        related="company_id.no_deductible_extend_aliquot_purchase",
+        readonly=False,
     )

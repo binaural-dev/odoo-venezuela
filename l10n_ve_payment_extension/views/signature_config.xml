@@ -1,10 +1,9 @@
-
 <odoo>
 
     <data>
 
-        <record id="view_signature_config_tree_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.signature.config.tree.binaural.payment.extension</field>
+        <record id="view_signature_config_tree_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.signature.config.tree.l10n.ve.payment.extension</field>
             <field name="model">signature.config</field>
             <field name="arch" type="xml">
                 <tree>
@@ -15,8 +14,8 @@
             </field>
         </record>
 
-        <record id="view_signature_config_form_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.signature.config.form.binaural.payment.extension</field>
+        <record id="view_signature_config_form_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.signature.config.form.l10n.ve.payment.extension</field>
             <field name="model">signature.config</field>
             <field name="arch" type="xml">
                 <form string="Signature">
@@ -32,15 +31,12 @@
             </field>
         </record>
 
-        <record id="view_signature_config_search_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">view.signature.config.search.binaural.payment.extension</field>
+        <record id="view_signature_config_search_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.signature.config.search.l10n.ve.payment.extension</field>
             <field name="model">signature.config</field>
             <field name="arch" type="xml">
                 <search string="Signature">
                     <filter name="active" domain="[('active','=',True)]" string="Active" />
-                    <group expand="0" string="Group By">
-                        <filter string="Company" name="company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
-                    </group>
                 </search>
             </field>
         </record>
@@ -56,4 +52,5 @@
     
     </data>
     
+
 </odoo>

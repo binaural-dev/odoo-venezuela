@@ -1,9 +1,7 @@
-
 <odoo>
     <data>
-        
-        <record id="res_partner_binaural_payment_extension" model="ir.ui.view">
-            <field name="name">res.partner.binaural.payment.extension</field>
+        <record id="res_partner_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">res.partner.l10n.ve.payment.extension</field>
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
@@ -16,6 +14,5 @@
                 </xpath>
             </field>
         </record>
-    
     </data>
 </odoo>

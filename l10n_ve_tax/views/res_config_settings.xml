@@ -1,204 +1,101 @@
 <odoo>
     <data>
-        <record id="res_config_settings_binaural_taxes" model="ir.ui.view">
-            <field name="name">res.config.settings.binaural.rate</field>
+        <record id="view_res_config_settings_l10n_ve_taxes" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.taxes</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="l10n_ve_base.res_config_settings_view_form_binaural_base" />
+            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <h2>Taxes Configuration</h2>
-                    <div class="row mt16 o_settings_container" name="binaural_igtf_settings">
-                        <div class="o_setting_box" id="base_igtf_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="module_l10n_ve_igtf" />
+                    <block title="Configuration Taxes: IGTF" name="l10n_ve_tax_block_igtf" >
+                        <separator string="Core Settings"/>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_unique_tax">
+                            <div class="col-lg-6 o_setting_left_pane">
+                                <field name="unique_tax"/>
                             </div>
                             <div class="o_setting_right_pane">
-                                <label for="module_l10n_ve_igtf" />
+                                <label for="unique_tax"/>
                                 <div class="text-muted">
-                                    IGTF Settings
-
+                                    Tax is mandatory on order and invoice lines, only one tax allowed
                                 </div>
                             </div>
-                            <div id="base_igtf_position">
-
-                            </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="unique_tax_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="unique_tax" />
+                        <separator string="Display Options" />
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_show_discount_on_moves">
+                            <div class="col-12 col-lg-6 o_setting_left_pane">
+                                <field name="show_discount_on_moves"/>
                             </div>
                             <div class="o_setting_right_pane">
-                                <label for="unique_tax" />
+                                <label for="show_discount_on_moves"/>
                                 <div class="text-muted">
-
-                                    Tax is required on order and invoice lines, additionally only
-                                    allows one tax
-
+                                    Enable discount column visibility on invoice lines
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box"
-                            id="show_discount_on_moves_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="show_discount_on_moves" />
-                            </div>
+                    </block>
+                    <block title="Configuration Taxes: Taxes Sales/Purchase" name="l10n_ve_tax_block_tax_rates">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sales">
                             <div class="o_setting_right_pane">
-                                <label for="show_discount_on_moves" />
-                                <div class="text-muted">
-                                    Allows you to show the discount column on the invoice lines
-
-                                </div>
+                                <separator string="Sales Tax Rates"/>
+                                <group>
+                                    <field name="exent_aliquot_sale" string="Exempt Aliquot"/>
+                                    <field name="general_aliquot_sale" string="General Aliquot"/>
+                                    <field name="reduced_aliquot_sale" string="Reduced Aliquot"/>
+                                    <field name="extend_aliquot_sale" string="Extended Aliquot"/>
+                                </group>
                             </div>
                         </div>
-
-                    </div>
-                    <h2>Sales Book Configuration</h2>
-                    <div class="row mt16 o_settings_container" name="binaural_tax_sale">
-                        <div class="text-muted">
-                            Allows you to select the tax columns that should be reflected in the
-                            client's book
-
-
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="binaural_tax_sale_setting">
-
-                            <div class="o_setting_left_pane">
-                            </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_purchase">
                             <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="exent_aliquot_sale"
-                                            class="col-lg-6 o_light_label" />   
-                                        <field name="exent_aliquot_sale" />
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <label for="general_aliquot_sale" class="col-lg-6 o_light_label" />
-                                    <field name="general_aliquot_sale" />
-                                </div>
-                                <div class="row">
-                                    <label for="reduced_aliquot_sale" class="col-lg-6 o_light_label" />
-                                    <field name="reduced_aliquot_sale" />
-                                </div>
-                                <div class="row">
-                                    <label for="extend_aliquot_sale" class="col-lg-6 o_light_label" />
-                                    <field name="extend_aliquot_sale" />
-                                </div>
+                                <separator string="Purchase Tax Rates"/>
+                                <group>
+                                    <field name="exent_aliquot_purchase" string="Exempt Aliquot"/>
+                                    <field name="general_aliquot_purchase" string="General Aliquot"/>
+                                    <field name="reduced_aliquot_purchase" string="Reduced Aliquot"/>
+                                    <field name="extend_aliquot_purchase" string="Extended Aliquot"/>
+                                </group>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <br />
-                                <br />
-                                <br />
-                                <field name="not_show_reduced_aliquot_sale" />
-                                <field name="not_show_extend_aliquot_sale" />
-                            </div>
+                    </block>
+                    <block title="Configuration Taxes: Non-Deductible " name="l10n_ve_tax_block_non_deductible" >
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_deductibility">
                             <div class="o_setting_right_pane">
-                                <br />
-                                <br />
-                                <br />
-                                <label for="not_show_reduced_aliquot_sale" />
-                                <br />
-                                <label for="not_show_extend_aliquot_sale" />
+                                <separator string="Deductibility"/>
+                                <group>
+                                    <field name="config_deductible_tax" string="Enable Non-Deductible Taxes"/>
+                                </group>
                             </div>
                         </div>
-                    </div>
-
-                    <h2>Purchases Book Configuration</h2>
-                    <div class="row mt16 o_settings_container" name="binaural_tax_purchase">
-                        <div class="col-12 col-lg-6 o_setting_box"
-                            id="binaural_tax_purchase_setting">
-                            <div class="o_setting_left_pane">
-                            </div>
+                        <div class="col-12 col-lg-6 o_setting_box" invisible="not config_deductible_tax" id="l10n_ve_tax_div_non_deductible_rates">
                             <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="exent_aliquot_purchase"
-                                            class="col-lg-6 o_light_label" />
-                                        <field name="exent_aliquot_purchase" />
-                                    </div>
-                                    <div class="row">
-                                        <label for="general_aliquot_purchase"
-                                            class="col-lg-6 o_light_label" />
-                                        <field name="general_aliquot_purchase" />
-                                    </div>
-                                    <div class="row">
-                                        <label for="reduced_aliquot_purchase"
-                                            class="col-lg-6 o_light_label" />
-                                        <field name="reduced_aliquot_purchase" />
-                                    </div>
-                                    <div class="row">
-                                        <label for="extend_aliquot_purchase"
-                                            class="col-lg-6 o_light_label" />
-                                        <field name="extend_aliquot_purchase" />
-                                    </div>
-                                </div>
+                                <separator string="Non-Deductible Rates" />
+                                <group>
+                                    <field name="no_deductible_general_aliquot_purchase" string="General Aliquot"/>
+                                    <field name="no_deductible_reduced_aliquot_purchase" string="Reduced Aliquot"/>
+                                    <field name="no_deductible_extend_aliquot_purchase" string="Extended Aliquot"/>
+                                </group>
                             </div>
                         </div>
-
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <br />
-                                <br />
-                                <br />
-                                <field name="not_show_reduced_aliquot_purchase" />
-                                <field name="not_show_extend_aliquot_purchase" />
-                            </div>
+                    </block>
+                    <block title="Configuration: Accountant Books" name="l10n_ve_tax_block_books">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_sales_book">
                             <div class="o_setting_right_pane">
-                                <br />
-                                <br />
-                                <br />
-                                <label for="not_show_reduced_aliquot_purchase" />
-                                <label for="not_show_extend_aliquot_purchase" />
+                                <separator string="Sales Book" />
+                                <group>
+                                    <field name="not_show_reduced_aliquot_sale" string="Hide Reduced Aliquot"/>
+                                    <field name="not_show_extend_aliquot_sale" string="Hide Extended Aliquot"/>
+                                </group>
                             </div>
                         </div>
-
-                    </div>
-
-                    <div class="row mt16 o_settings_container" name="binaural_tax_purchase">
-                      
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <field name="config_deductible_tax" />
-                            </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_purchase_book">
                             <div class="o_setting_right_pane">
-                                <label for="config_deductible_tax"
-                                    string="Use non-deductible taxes on purchases" />
+                                <separator string="Purchase Book" />
+                                <group>
+                                    <field name="not_show_reduced_aliquot_purchase" string="Hide Reduced Aliquot"/>
+                                    <field name="not_show_extend_aliquot_purchase" string="Hide Extended Aliquot"/>
+                                </group>
                             </div>
                         </div>
-                    </div>
-
-                    <h2 invisible="not config_deductible_tax">Non-deductible in Purchases</h2>
-                    <div class="row mt16 o_settings_container" invisible="not config_deductible_tax"
-                        name="binaural_tax_purchase_no_deductible">
-                        
-                        <div class="col-12 col-lg-6 o_setting_box"
-                            id="binaural_tax_purchase_no_deductible_setting">
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="no_deductible_general_aliquot_purchase"
-                                            class="col-lg-6 o_light_label" />
-                                        <field name="no_deductible_general_aliquot_purchase" />
-                                    </div>
-                                    <div class="row">
-                                        <label for="no_deductible_reduced_aliquot_purchase"
-                                            class="col-lg-6 o_light_label" />
-                                        <field name="no_deductible_reduced_aliquot_purchase" />
-                                    </div>
-                                    <div class="row">
-                                        <label for="no_deductible_extend_aliquot_purchase"
-                                            class="col-lg-6 o_light_label" />
-                                        <field name="no_deductible_extend_aliquot_purchase" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    </block>
                 </xpath>
             </field>
         </record>

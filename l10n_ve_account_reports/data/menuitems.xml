@@ -1,0 +1,113 @@
+<odoo>
+    <menuitem id="account_reports.menu_action_account_report_balance_sheet" active="False" />
+
+    <menuitem id="account_reports.menu_action_account_report_profit_and_loss" active="False" />
+
+    <menuitem
+        id="menu_action_account_report_cash_flow_usd"
+        name="Cash Flow Statement USD"
+        action="action_account_report_cs_usd"
+        parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_balance_sheet_usd"
+        name="Balance Sheet USD"
+        action="action_account_report_bs_usd"
+        parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_exec_summary_usd"
+        name="Executive Summary USD"
+        action="action_account_report_exec_summary_usd"
+        parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_profit_and_loss_usd"
+        name="Profit and Loss USD"
+        action="action_account_report_pl_usd"
+        parent="account.account_reports_legal_statements_menu"
+        active="False"
+    />
+
+    <menuitem
+        id="menu_action_account_report_result_statement"
+        name="Result Statement"
+        action="action_account_report_rs"
+        parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_result_statement_usd"
+        name="Result Statement USD"
+        action="action_account_report_rs_usd"
+        parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_financial_situation_statement"
+        name="Financial situation statement"
+        action="action_account_report_fs"
+        parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_financial_situation_statement_usd"
+        name="Financial situation statement USD"
+        action="action_account_report_fs_usd"
+        parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_general_ledger_usd"
+        name="General Ledger USD"
+        action="action_account_report_general_ledger_usd"
+        parent="account_reports.account_reports_audit_reports_menu"
+    />
+    <menuitem
+        id="menu_action_account_journal_report_usd"
+        name="Journal Report USD"
+        action="action_account_report_ja_usd"
+        parent="account_reports.account_reports_audit_reports_menu"
+    />
+    <menuitem
+        id="menu_action_account_report_aged_receivable_usd"
+        name="Aged Receivable USD"
+        action="action_account_report_ar_usd"
+        parent="account_reports.account_reports_partners_reports_menu"
+    />
+    <menuitem
+        id="menu_action_account_report_aged_payable_usd"
+        name="Aged Payable USD"
+        action="action_account_report_ap_usd"
+        parent="account_reports.account_reports_partners_reports_menu"
+    />
+    <menuitem
+        id="menu_action_account_report_partner_ledger_usd"
+        name="Partner Ledger USD"
+        action="action_account_report_partner_ledger_usd"
+        parent="account_reports.account_reports_partners_reports_menu"
+    />
+    <menuitem
+        id="menu_action_account_report_coa_usd"
+        name="Trial Balance USD"
+        action="action_account_report_coa_usd"
+        parent="account_reports.account_reports_audit_reports_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_daily_ledger"
+        name="Daily Ledger"
+        action="action_account_report_daily_ledger"
+        parent="account_reports.account_reports_audit_reports_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_daily_ledger_usd"
+        name="Daily Ledger USD"
+        action="action_account_report_daily_ledger_usd"
+        parent="account_reports.account_reports_audit_reports_menu"
+    />
+</odoo>

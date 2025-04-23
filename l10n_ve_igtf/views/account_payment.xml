@@ -1,4 +1,3 @@
-
 <odoo>
 
     <data>
@@ -11,7 +10,7 @@
                 <group name="igtf_group">
                     <field name="is_igtf_on_foreign_exchange"/>
                         <div invisible="not is_igtf_on_foreign_exchange">
-                            <field name="igtf_percentage_text" readonly="1"/>
+                            <span class="oe_title">IGTF(<field name="igtf_percentage" readonly="1"/>)%:</span>
                             <field name="igtf_amount" widget="monetary"/>
                         </div>
                 </group>

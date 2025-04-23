@@ -1,0 +1,95 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_fiscal_lock_days
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-24 19:46+0000\n"
+"PO-Revision-Date: 2025-03-24 19:46+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model:ir.model,name:l10n_ve_fiscal_lock_days.model_account_change_lock_date
+msgid "Change Lock Date"
+msgstr "Cambiar fecha de bloqueo"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model:ir.model,name:l10n_ve_fiscal_lock_days.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model:ir.model,name:l10n_ve_fiscal_lock_days.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model_terms:ir.ui.view,arch_db:l10n_ve_fiscal_lock_days.res_config_settings_l10n_ve_fiscal_lock_days
+msgid "Fiscal Configuration"
+msgstr "Configuración Fiscal"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model:ir.model.fields.selection,name:l10n_ve_fiscal_lock_days.selection__res_company__tax_period__fortnightly
+msgid "Fortnightly"
+msgstr "Quincenal"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model:ir.model,name:l10n_ve_fiscal_lock_days.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model:ir.model.fields.selection,name:l10n_ve_fiscal_lock_days.selection__res_company__tax_period__monthly
+msgid "Monthly"
+msgstr "Mensual"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model:ir.model.fields,field_description:l10n_ve_fiscal_lock_days.field_res_company__tax_period
+#: model:ir.model.fields,field_description:l10n_ve_fiscal_lock_days.field_res_config_settings__tax_period
+msgid "Tax Period"
+msgstr "Período de Impuestos"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model_terms:ir.ui.view,arch_db:l10n_ve_fiscal_lock_days.res_config_settings_l10n_ve_fiscal_lock_days
+msgid "Tax Periodicity"
+msgstr "Periocidad de Impuestos"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model_terms:ir.ui.view,arch_db:l10n_ve_fiscal_lock_days.res_config_settings_l10n_ve_fiscal_lock_days
+msgid "Validate Fiscal Period"
+msgstr "Validar Periodo Fiscal"
+
+#. module: l10n_ve_fiscal_lock_days
+#: model:ir.model.fields,field_description:l10n_ve_fiscal_lock_days.field_res_company__lock_date_tax_validation
+#: model:ir.model.fields,field_description:l10n_ve_fiscal_lock_days.field_res_config_settings__lock_date_tax_validation
+msgid "Validation to Block Invoice Creation"
+msgstr "Validar para bloquear la creación de facturas"
+
+#. module: l10n_ve_fiscal_lock_days
+#. odoo-python
+#: code:addons/l10n_ve_fiscal_lock_days/models/account_change_lock_date.py:0
+#, python-format
+msgid ""
+"You cannot set the lock date to %s because there are sales orders in 'To "
+"Invoice' status with an order date prior to this."
+msgstr ""
+"No puedes establecer la fecha de bloqueo en %s porque existen pedidos de "
+"venta en estado 'Por facturar' con una fecha de orden anterior."
+
+#. module: l10n_ve_fiscal_lock_days
+#. odoo-python
+#: code:addons/l10n_ve_fiscal_lock_days/models/account_move.py:0
+#, python-format
+msgid ""
+"You must lock the previous fortnight or month before creating or posting "
+"invoices in a new fiscal period."
+msgstr ""
+"Debe bloquear la quincena o mes anterior antes de crear nuevas facturas en "
+"un periodo fiscal nuevo"

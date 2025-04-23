@@ -1,8 +1,7 @@
-
 <odoo>
 
     <data noupdate="1">
-        <record id="fees_retention_data_substrat_binaural_payment_extension" model="fees.retention">
+        <record id="fees_retention_data_substrat_l10n_ve_payment_extension" model="fees.retention">
             <field name="name">3% -(Bs. 1,00)</field>
             <field name="apply_subtracting">True</field>
             <field name="percentage">3</field>
@@ -11,7 +10,7 @@
             <field name="tax_unit_ids">1</field>
         </record>
 
-        <record id="fees_retention_data_percentage_one_binaural_payment_extension" model="fees.retention">
+        <record id="fees_retention_data_percentage_one_l10n_ve_payment_extension" model="fees.retention">
             <field name="name">5%</field>
             <field name="apply_subtracting">False</field>
             <field name="percentage">5</field>
@@ -20,7 +19,7 @@
             <field name="tax_unit_ids">1</field>
         </record>
 
-        <record id="fees_retention_data_percentage_two_binaural_payment_extension" model="fees.retention">
+        <record id="fees_retention_data_percentage_two_l10n_ve_payment_extension" model="fees.retention">
             <field name="name">34%</field>
             <field name="apply_subtracting">False</field>
             <field name="percentage">34</field>
@@ -29,7 +28,7 @@
             <field name="tax_unit_ids">1</field>
         </record>
 
-        <record id="fees_retention_data_substrat_second_binaural_payment_extension" model="fees.retention">
+        <record id="fees_retention_data_substrat_second_l10n_ve_payment_extension" model="fees.retention">
             <field name="name">1% - (Bs. 0,33 )</field>
             <field name="apply_subtracting">True</field>
             <field name="percentage">1</field>
@@ -38,7 +37,7 @@
             <field name="tax_unit_ids">1</field>
         </record>
 
-        <record id="fees_retention_data_binaural_percentage_three_payment_extension" model="fees.retention">
+        <record id="fees_retention_data_l10n_ve_percentage_three_payment_extension" model="fees.retention">
             <field name="name">2%</field>
             <field name="apply_subtracting">False</field>
             <field name="percentage">2</field>
@@ -47,7 +46,7 @@
             <field name="tax_unit_ids">1</field>
         </record>
 
-        <record id="fees_retention_data_percentage_four_binaural_payment_extension" model="fees.retention">
+        <record id="fees_retention_data_percentage_four_l10n_ve_payment_extension" model="fees.retention">
             <field name="name">3%</field>
             <field name="apply_subtracting">False</field>
             <field name="percentage">3</field>
@@ -56,7 +55,7 @@
             <field name="tax_unit_ids">1</field>
         </record>
 
-        <record id="fees_retention_data_percentage_five_binaural_payment_extension" model="fees.retention">
+        <record id="fees_retention_data_percentage_five_l10n_ve_payment_extension" model="fees.retention">
             <field name="name">T - 2(Acumulativo)</field>
             <field name="apply_subtracting">False</field>
             <field name="percentage">0</field>
