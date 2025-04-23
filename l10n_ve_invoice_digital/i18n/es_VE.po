@@ -133,6 +133,13 @@ msgstr "Error en la respuesta de la API: "
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#, python-format
+msgid "Error in the API response: %(message)s %(endpoint_key)s"
+msgstr "Error en la respuesta de la API: "
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "Error in the TFHKA API: %(status_code)s"
