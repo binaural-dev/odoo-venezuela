@@ -8,6 +8,7 @@
     "depends": [
         "base",
         "account",
+        "account_debit_note",
         "l10n_ve_invoice",
         "l10n_ve_iot_mf",
     ],
@@ -17,5 +18,7 @@
     "data": [
         "views/res_config_settings.xml",
         "views/account_move_view.xml",
+        "views/account_retention_iva.xml",
+        "views/account_retention_islr.xml",
     ],
 }
