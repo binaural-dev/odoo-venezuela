@@ -282,6 +282,6 @@ class StockPicking(models.Model):
     def _compute_visibility_button(self):
         for record in self:
             record.show_digital_dispatch_guide = True
-            if record.state == "done":
-                if not record.is_digitalized and record.dispatch_guide_controls:
+            if record.state == "done" and not record.is_digitalized and record.company_id.invoice_print_type == "digital":
+                if record.dispatch_guide_controls:
                     record.show_digital_dispatch_guide = False

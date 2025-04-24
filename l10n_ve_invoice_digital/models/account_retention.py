@@ -275,6 +275,6 @@ class AccountRetention(models.Model):
         for record in self:
             record.show_digital_retention_iva = True
             record.show_digital_retention_islr = True
-            if record.state =='emitted' and not record.is_digitalized:
+            if record.state =='emitted' and not record.is_digitalized and record.company_id.invoice_print_type == "digital":
                 record.show_digital_retention_iva = False
                 record.show_digital_retention_islr = False
