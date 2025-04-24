@@ -276,18 +276,6 @@ class StockPicking(models.Model):
                 "origenProducto": product_origin,
                 "pesoOVolumenTotal": weight,
                 "destinoProducto": destination,
-                # "conductor": {
-                #     "nombreCompleto": "Juan Pablo",
-                #     "tipoIdentificacion": "P",
-                #     "numeroIdentificacion": "4567891",
-                #     "tipoLicencia": "Licencia de 3.ª",
-                #     "infoContacto": "ejemplo@example.com"
-                # },
-                # "transportista": {
-                #     "razonSocial": record.carrier_id.name,
-                #     "numeroIdentificacion": "123456789",
-                #     "domicilioFiscal": "Caracas La California Norte"
-                # }
             }
 
     @api.depends('state', 'is_digitalized', 'dispatch_guide_controls')
