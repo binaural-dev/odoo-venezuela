@@ -53,7 +53,7 @@ class AccountRetention(models.Model):
                     return 0
                 else:
                     _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
-                    raise UserError(_("Error in the API response: %(message)s %(endpoint_key)s") % {'message': data.get('mensaje'), 'endpoint_key': endpoint_key})
+                    raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()

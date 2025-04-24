@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250409\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-24 12:40+0000\n"
-"PO-Revision-Date: 2025-04-24 12:40+0000\n"
+"POT-Creation-Date: 2025-04-24 15:35+0000\n"
+"PO-Revision-Date: 2025-04-24 15:35+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -92,7 +92,7 @@ msgstr "El endpoint '%(endpoint_key)s' no está definido."
 #: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Error 401: Invalid or expired token."
-msgstr ""
+msgstr "Error 401: Token no válido o caducado."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -118,25 +118,12 @@ msgstr "Error al conectar con la API de TFHKA: %s"
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
 #: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Error in the API response: %(message)s"
 msgstr "Error en la respuesta de la API: %(message)s"
-
-#. module: l10n_ve_invoice_digital
-#. odoo-python
-#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
-#, python-format
-msgid "Error in the API response: %(message)s %(endpoint_key)s"
-msgstr "Error en la respuesta de la API: "
-
-#. module: l10n_ve_invoice_digital
-#. odoo-python
-#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
-#, python-format
-msgid "Error in the API response: %(message)s %(endpoint_key)s"
-msgstr "Error en la respuesta de la API: "
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
