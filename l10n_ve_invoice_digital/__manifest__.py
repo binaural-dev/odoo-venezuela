@@ -11,6 +11,8 @@
         "account_debit_note",
         "l10n_ve_invoice",
         "l10n_ve_iot_mf",
+        "l10n_ve_stock_account",
+        "stock",
     ],
     
     "images": ["static/description/icon.png"],
@@ -20,5 +22,6 @@
         "views/account_move_view.xml",
         "views/account_retention_iva.xml",
         "views/account_retention_islr.xml",
+        "views/stock_picking.xml",
     ],
 }

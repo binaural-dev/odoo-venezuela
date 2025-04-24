@@ -2,6 +2,7 @@ from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
 import logging
 import requests
+import re
 import json
 
 _logger = logging.getLogger(__name__)
@@ -14,13 +15,25 @@ class EndPoints():
         "consulta_numeraciones": "/ConsultaNumeraciones",
     }
 
-class AccountRetention(models.Model):
-    _inherit = 'account.retention'
+class StockPicking(models.Model):
+    _inherit = 'stock.picking'
 
-    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False)
-    show_digital_retention_iva = fields.Boolean(string="Show Digital Retention", compute="_compute_visibility_button", copy=False)
-    show_digital_retention_islr = fields.Boolean(string="Show Digital Retention", compute="_compute_visibility_button", copy=False)
+    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
+    show_digital_dispatch_guide = fields.Boolean(string="Show Digital Dispatch Guide", compute="_compute_visibility_button", copy=False)
     control_number_tfhka = fields.Char(string="Control Number", copy=False)
+
+    def generate_document_digtal(self):
+        if self.is_digitalized:
+            raise UserError(_("The document has already been digitalized."))
+        document_type = self.env.context.get('document_type')
+        end_number, start_number = self.query_numbering()
+        document_number = self.get_last_document_number(document_type)
+        document_number = str(document_number + 1)
+
+        if document_number == start_number:
+            self.assign_numbering(end_number, start_number)
+
+        self.generate_document_data(document_number, document_type)
 
     def get_base_url(self):
         if self.company_id.url_tfhka:
@@ -65,42 +78,33 @@ class AccountRetention(models.Model):
             _logger.error(_("Error connecting to the API: %(error)s") % {'error': e})
             raise UserError(_("Error connecting to the API: %(error)s") % {'error': e})
 
-    def generate_document_digtal(self):
-        if self.is_digitalized:
-            raise UserError(_("The document has already been digitalized."))
-        document_type = self.env.context.get('document_type')
-        end_number, start_number = self.query_numbering()
-        document_number = self.get_last_document_number(document_type)
-        document_number = str(document_number + 1)
-
-        if document_number == start_number:
-            self.assign_numbering(end_number, start_number)
-
-        self.generate_document_data(document_number, document_type)
-    
     def generate_document_data(self, document_number, document_type):
         document_identification = self.get_document_identification(document_type, document_number)
-        subject_retention = self.get_subject_retention()
-        total_retention = self.get_total_retention(document_type)
-        retention_details = self.get_retention_details(document_type)
+        buyer = self.get_buyer()
+        details_items = self.get_item_details()
+        dispatch_guide = self.get_dispatch_guide()
 
         payload = {
             "documentoElectronico": {
                 "encabezado": {
                     "identificacionDocumento": document_identification,
-                    "sujetoRetenido": subject_retention,
-                    "totalesRetencion": total_retention
+                    "comprador": buyer,
                 },
-                "detallesRetencion": retention_details,
+                "detallesItems": details_items,
+                'guiaDespacho': dispatch_guide,
             }
         }
+
         response = self.call_tfhka_api("emision", payload)
 
         if response:
-            self.is_digitalized = True
             self.control_number_tfhka = response.get("resultado").get("numeroControl")
-            return
-    
+            self.is_digitalized = True
+            self.message_post(
+                body=_("Document successfully digitized"),  
+                message_type='comment',
+            )
+
     def get_last_document_number(self, document_type):
         payload = {
                     "serie": "",
@@ -121,7 +125,7 @@ class AccountRetention(models.Model):
         if start_number <= end_number:
             payload = {
                         "serie": "",
-                        "tipoDocumento": "05",
+                        "tipoDocumento": "01",
                         "numeroDocumentoInicio": start_number,
                         "numeroDocumentoFin": end
                     }
@@ -146,29 +150,55 @@ class AccountRetention(models.Model):
 
     def get_document_identification(self, document_type, document_number):
         for record in self:
-            emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
-            emission_date = record.date_accounting.strftime("%d/%m/%Y") if record.date_accounting else ""
-            affected_invoice_number = ""
-
-            for line in record.retention_line_ids:
-                if line.move_id.debit_origin_id:
-                    affected_invoice_number = line.move_id.debit_origin_id.name
-                if line.move_id.reversed_entry_id:
-                    affected_invoice_number = line.move_id.reversed_entry_id.name
-
+            emission_time = record.sale_id.date_order.strftime("%I:%M:%S %p").lower() if record.sale_id.date_order else ""
+            emission_date = record.sale_id.date_order.strftime("%d/%m/%Y") if record.sale_id.date_order else ""
+            due_date = record.sale_id.validity_date.strftime("%d/%m/%Y") if record.sale_id.validity_date else ""
             return {
                 "tipoDocumento": document_type,
                 "numeroDocumento": document_number,
-                "numeroFacturaAfectada":affected_invoice_number,
                 "fechaEmision": emission_date,
+                "fechaVencimiento": due_date,
                 "horaEmision": emission_time,
+                "tipoDePago": self.get_payment_type(),
                 "serie": "",
                 "sucursal": "",
                 "tipoDeVenta": "Interna",
-                "moneda": record.company_currency_id.name,
+                "moneda": record.sale_id.currency_id.name,
+                "transaccionId": "",
+                "urlPdf": ""
             }
-    
-    def get_subject_retention(self):
+
+    def get_item_details(self):
+        item_details = []
+        line_number = 1
+        for record in self:
+            for line in record.sale_id.order_line:
+                tax_mapping = {
+                    0.0: "E",
+                    8.0: "R",
+                    16.0: "G",
+                    31.0: "A",
+                }
+                taxes = line.tax_id.filtered(lambda t: t.amount)
+                tax_rate = taxes[0].amount if taxes else 0.0
+
+                item_details.append({
+                    "numeroLinea": str(line_number),
+                    "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
+                    "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
+                    "descripcion": line.product_id.name,
+                    "cantidad": str(line.product_uom_qty),
+                    "precioUnitario": str(round(line.price_unit, 2)),
+                    "precioItem": str(round(line.price_total, 2)),
+                    "codigoImpuesto": tax_mapping[tax_rate],
+                    "tasaIVA": str(round(line.tax_id.amount, 2)),
+                    "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
+                    "valorTotalItem": str(round(line.price_total, 2)),
+                })
+                line_number += 1
+        return item_details
+
+    def get_buyer(self):
         for record in self:
             if record.partner_id:
                 partner_data = {}
@@ -186,7 +216,7 @@ class AccountRetention(models.Model):
 
                 partner_data["numeroIdentificacion"] = partner_data["numeroIdentificacion"].replace("-", "").replace(".", "")
                 partner_data["razonSocial"] = record.partner_id.name
-                partner_data["direccion"] = record.partner_id.street or "no definida"
+                partner_data["direccion"] = record.partner_id.contact_address_complete or "no definida"
                 partner_data["pais"] = record.partner_id.country_code
                 partner_data["telefono"] = record.partner_id.mobile or record.partner_id.phone
                 partner_data["correo"]= record.partner_id.email
@@ -211,70 +241,47 @@ class AccountRetention(models.Model):
                     "correo": [partner_data["correo"]],
                 }
         return None
-    
-    def get_total_retention(self, document_type):
-        retention_data = {}
 
-        for record in self:
-            retention_data = {
-                "totalBaseImponible": str(round(abs(record.total_invoice_amount), 2)), 
-                "numeroCompRetencion": record.number, 
-                "fechaEmisionCR": record.date.strftime("%d/%m/%Y"), 
-                "tipoComprobante": "" if record.total_iva_amount else "1",
-            }
-            if document_type == "05":
-                retention_data["totalRetenido"] = str(round(abs(record.total_retention_amount), 2))
-                retention_data["totalIVA"] = str(round(abs(record.total_iva_amount), 2))
+    def get_payment_type(self):
+        for record in self.sale_id:
+            if record.payment_term_id.line_ids.nb_days > 0:
+                return "Crédito"
             else:
-                retention_data["TotalISRL"] = str(round(abs(record.total_iva_amount), 2))
+                return "Inmediato"
 
-            return retention_data    
-
-    def get_retention_details(self, document_type):
-        retention_details = []
-        type_document = {
-            "in_invoice": "01",
-            "in_refund": "02",
-        }
-        
-        counter = 1
+    def get_dispatch_guide(self):
         for record in self:
-            for line in record.retention_line_ids:
-                tipo_documento = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
-                
-                retention_data = {
-                    "numeroLinea": str(counter), 
-                    "fechaDocumento": line.date_accounting.strftime("%d/%m/%Y"), 
-                    "tipoDocumento": tipo_documento,
-                    "numeroDocumento": line.move_id.name,
-                    "numeroControl": line.move_id.correlative,
-                    "montoTotal": str(round(line.invoice_total, 2)),  
-                    "baseImponible": str(round(line.invoice_amount, 2)),
-                    "moneda": line.company_currency_id.name,
-                    "retenido": str(round(line.retention_amount, 2)),
-                }
+            product_origin_set = set()
+            product_origin = ""
 
-                if document_type == "05":
-                    retention_data["montoIVA"] = str(round(line.iva_amount, 2))
-                    retention_data["porcentaje"] = str(round(line.aliquot, 2))
-                    retention_data["retenidoIVA"] = str(round(line.related_percentage_tax_base, 2))
+            for line in record.sale_id.order_line:
+                if line.product_id.country_of_origin.name:
+                    if line.product_id.country_of_origin.name == self.company_id.country_id.name:
+                        product_origin_set.add("Nacional")
+                    else:
+                        product_origin_set.add("Importado")
+                    if len(product_origin_set) > 1:
+                        break
+                            
+            product_origin = "Nacional e Importado" if len(product_origin_set) > 1 else (product_origin_set.pop() if product_origin_set else "Sin origen definido")
+            weight = f"{record.shipping_weight:.2f} {record.weight_uom_name}" if record.shipping_weight else "Sin peso"
+            description = re.sub(r'<.*?>', '', str(record.note)) if record.note else "Sin descripción"
+            destination = record.partner_id.contact_address_complete or "no definida"
 
-                if document_type == "06":
-                    for concept_line in line.payment_concept_id.line_payment_concept_ids:
-                        if record.partner_id.type_person_id.id == concept_line.id:
-                            retention_data["CodigoConcepto"] = concept_line.code
-                            retention_data["porcentaje"] = str(round(line.related_percentage_fees, 2))
+            return {
+                "esGuiaDespacho": "1",
+                "motivoTraslado": record.transfer_reason_id.name,
+                "descripcionServicio": description,
+                "tipoProducto": "Sin especificar",
+                "origenProducto": product_origin,
+                "pesoOVolumenTotal": weight,
+                "destinoProducto": destination,
+            }
 
-                retention_details.append(retention_data)
-                counter += 1
-
-        return retention_details
-
-    @api.depends('state', 'is_digitalized')
+    @api.depends('state', 'is_digitalized', 'dispatch_guide_controls')
     def _compute_visibility_button(self):
         for record in self:
-            record.show_digital_retention_iva = True
-            record.show_digital_retention_islr = True
-            if record.state =='emitted' and not record.is_digitalized:
-                record.show_digital_retention_iva = False
-                record.show_digital_retention_islr = False
+            record.show_digital_dispatch_guide = True
+            if record.state == "done":
+                if not record.is_digitalized and record.dispatch_guide_controls:
+                    record.show_digital_dispatch_guide = False
