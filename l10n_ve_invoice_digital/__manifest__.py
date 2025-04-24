@@ -9,7 +9,6 @@
         "base",
         "account",
         "account_debit_note",
-        "account_debit_note",
         "l10n_ve_invoice",
         "l10n_ve_iot_mf",
         "stock",
