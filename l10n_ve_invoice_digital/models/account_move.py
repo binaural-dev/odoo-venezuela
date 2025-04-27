@@ -87,7 +87,7 @@ class AccountMove(models.Model):
                 if data.get("codigo") == "200":
                     return data
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
-                    return 1
+                    return 0
                 else:
                     _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
                     raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
@@ -140,7 +140,7 @@ class AccountMove(models.Model):
                 }
         response = self.call_tfhka_api("ultimo_documento", payload)
         
-        if response == 1:
+        if response == 0:
             return response
         else:
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
@@ -574,12 +574,13 @@ class AccountMove(models.Model):
             record.show_digital_invoice = True
             record.show_digital_debit_note = True
             record.show_digital_credit_note = True
-            if record.state == "posted":
-                if record.move_type == "out_refund" and record.reversed_entry_id and record.reversed_entry_id.is_digitalized and not record.is_digitalized:
+            
+            if record.state == "posted" and not record.is_digitalized and record.company_id.invoice_print_type == "digital":
+                if record.move_type == "out_refund" and record.reversed_entry_id and record.reversed_entry_id.is_digitalized:
                     record.show_digital_credit_note = False
 
-                elif record.debit_origin_id and record.debit_origin_id.is_digitalized and not record.is_digitalized:
+                elif record.debit_origin_id and record.debit_origin_id.is_digitalized:
                     record.show_digital_debit_note = False
 
-                elif record.move_type == "out_invoice" and not record.debit_origin_id and not record.is_digitalized:
+                elif record.move_type == "out_invoice" and not record.debit_origin_id:
                     record.show_digital_invoice = False

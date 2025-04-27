@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250409\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-14 21:05+0000\n"
-"PO-Revision-Date: 2025-04-14 21:05+0000\n"
+"POT-Creation-Date: 2025-04-24 15:35+0000\n"
+"PO-Revision-Date: 2025-04-24 15:35+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -23,13 +23,6 @@ msgid "Authentication error: %(message)s"
 msgstr "Error de autenticación: %(message)s"
 
 #. module: l10n_ve_invoice_digital
-#. odoo-python
-#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
-#, python-format
-msgid "Authentication error: Invalid or expired token."
-msgstr "Error de autenticación: Token inválido o expirado."
-
-#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_company
 msgid "Companies"
 msgstr "Empresas"
@@ -42,9 +35,20 @@ msgstr "Ajustes de configuración"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Configuration error: The authentication token is empty."
 msgstr "Error de configuración: El token de autenticación está vacío."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__control_number_tfhka
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_stock_picking__control_number_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_islr_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_stock_form_inherit
+msgid "Control Number"
+msgstr "Número de control"
 
 #. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
@@ -55,13 +59,19 @@ msgstr "Factura digital (TFHKA)"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__is_digitalized
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__is_digitalized
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__is_digitalized
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__is_digitalized
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_stock_picking__is_digitalized
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_islr_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_stock_form_inherit
 msgid "Digitized"
 msgstr "Digitalizado"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Document successfully digitized"
 msgstr "Documento digitalizado exitosamente"
@@ -69,6 +79,8 @@ msgstr "Documento digitalizado exitosamente"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Endpoint '%(endpoint_key)s' is not defined."
 msgstr "El endpoint '%(endpoint_key)s' no está definido."
@@ -76,6 +88,8 @@ msgstr "El endpoint '%(endpoint_key)s' no está definido."
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Error 401: Invalid or expired token."
 msgstr "Error 401: Token no válido o caducado."
@@ -84,6 +98,10 @@ msgstr "Error 401: Token no válido o caducado."
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Error connecting to the API: %(error)s"
 msgstr "Error al conectar con la API: %(error)s"
@@ -99,6 +117,10 @@ msgstr "Error al conectar con la API de TFHKA: %s"
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Error in the API response: %(message)s"
 msgstr "Error en la respuesta de la API: %(message)s"
@@ -138,9 +160,20 @@ msgid "Generate Digital Debit Note"
 msgstr "Generar Nota de Débito Digital"
 
 #. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_stock_form_inherit
+msgid "Generate Digital Dispatch Guide"
+msgstr "Generar Guía de Despacho Digital"
+
+#. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
 msgid "Generate Digital Invoice"
 msgstr "Generar Factura Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_islr_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_form_l10n_ve_payment_extension_inherit
+msgid "Generate Digital Retention"
+msgstr "Generar Retención Digital"
 
 #. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
@@ -156,6 +189,10 @@ msgstr "Generar Token para TFHKA."
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "HTTP error %(status_code)s: %(text)s"
 msgstr "Error HTTP %(status_code)s: %(text)s"
@@ -192,6 +229,16 @@ msgid "Range Assignment Tfhka"
 msgstr "Asignación de rango Tfhka"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_account_retention
+msgid "Retention"
+msgstr "Retención"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_stock_picking__show_digital_dispatch_guide
+msgid "Show Digital Dispatch Guide"
+msgstr "Mostrar Guía de Despacho Digital"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__show_digital_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_invoice
@@ -211,6 +258,12 @@ msgstr "Mostrar Nota Crédito Digital"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_debit_note
 msgid "Show Digital Note Debit"
 msgstr "Mostrar Nota Débito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__show_digital_retention_islr
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__show_digital_retention_iva
+msgid "Show Digital Retention"
+msgstr "Mostrar Retención Digital"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -233,6 +286,8 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid ""
 "The 'Country' field of the Customer cannot be empty for digitalization."
@@ -242,6 +297,8 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "The 'Email' field of the Customer cannot be empty for digitalization."
 msgstr ""
@@ -251,6 +308,8 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "The 'Mobile' field of the Customer cannot be empty for digitalization."
 msgstr ""
@@ -259,6 +318,8 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "The URL is not configured in the company settings."
 msgstr "La URL no está configurada en los ajustes de la empresa."
@@ -266,6 +327,8 @@ msgstr "La URL no está configurada en los ajustes de la empresa."
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "The document has already been digitalized."
 msgstr "El documento ya ha sido digitalizado."
@@ -285,6 +348,11 @@ msgstr "Token de Autenticación"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__token_auth_tfhka
 msgid "Token Auth Tfhka"
 msgstr "Token de Autenticación Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_stock_picking
+msgid "Transfer"
+msgstr "Transferir "
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__url_tfhka
