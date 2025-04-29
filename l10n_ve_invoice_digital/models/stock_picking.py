@@ -30,7 +30,7 @@ class StockPicking(models.Model):
     def generate_document_digtal(self):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized."))
-        document_type = "04"
+        DOCUMENT_TYPE = "04"
         end_number, start_number = self.query_numbering()
         document_number = self.get_last_document_number(document_type)
         document_number = str(document_number + 1)
