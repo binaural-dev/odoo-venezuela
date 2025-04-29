@@ -1061,7 +1061,7 @@ class StockPicking(models.Model):
                 picking.partner_required = False
     
     def button_validate(self):
-        _logger.info("Operation Code %s", self.operation_code)
+        
         for picking in self:
             if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
                 picking.state_guide_dispatch = 'emited'
