@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 20:30+0000\n"
-"PO-Revision-Date: 2025-03-27 20:30+0000\n"
+"POT-Creation-Date: 2025-04-29 18:58+0000\n"
+"PO-Revision-Date: 2025-04-29 18:58+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -143,11 +143,6 @@ msgstr ""
 "                            <span class=\"fa fa-lg fa-building-o\" title=\"Values set here are company-specific.\" aria-label=\"Values set here are company-specific.\" role=\"img\"/>"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
-msgid "<span>Invoice will generate for selected picking</span>"
-msgstr "<span>La factura se generará para el picking seleccionado</span>"
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "<strong>CONTRIBUYENTE FORMAL</strong>"
 msgstr ""
@@ -272,7 +267,7 @@ msgstr "Código"
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
@@ -452,6 +447,11 @@ msgid "Dscto."
 msgstr "Dscto"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__emited
+msgid "Emited"
+msgstr "Emitida"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
 msgid "Exact time to generate the invoice"
 msgstr "Hora exacta para generar factura (ej: 18.5 = 18:30)"
@@ -506,6 +506,7 @@ msgstr "Guía de Despacho"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_stock_move_line_search
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_invoice_tree
 msgid "Guide Number"
 msgstr "​Nro de Guía de Despacho"
 
@@ -574,6 +575,16 @@ msgstr "Hora de ejecución (24h)"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Invoice State"
 msgstr "Estado de la factura"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__invoice_type_selection
+msgid "Invoice Type Selection"
+msgstr "Tipo de Factura"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
+msgid "Invoice will generate for selected picking"
+msgstr "Se generarán facturas para las guías de despacho seleccionas"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced
@@ -718,6 +729,16 @@ msgstr ""
 "y seleccione un almacén como 'Almacén Predeterminado'."
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_invoice_tree
+msgid "Guide Number"
+msgstr "Número de Guía"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__unique
+msgid "One invoice for all stock pickings"
+msgstr "Una factura para todas las guías de despacho"
+
+#. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_location.py:0
 #, python-format
@@ -745,16 +766,21 @@ msgid "Partner"
 msgstr "Cliente"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__partner_required
+msgid "Partner Required"
+msgstr "Contacto Requerido"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Peso"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__picking_id
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__picking_id
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_payment__picking_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__picking_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__picking_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_payment__picking_ids
 msgid "Picking"
-msgstr "Albarán"
+msgstr "Guía de Despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_picking_invoice_wizard
@@ -767,7 +793,13 @@ msgid "Picking list"
 msgstr "Lista de traslados"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__pickings_ids
+msgid "Pickings"
+msgstr "Guías de Despacho"
+
+#. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
@@ -854,7 +886,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_ir_actions_report
 msgid "Report Action"
-msgstr "Acción de informe"
+msgstr "Reportar acción"
 
 #. module: l10n_ve_stock_account
 #: model:ir.actions.act_window,name:l10n_ve_stock_account.action_picking_guide_dispatch
@@ -934,7 +966,7 @@ msgstr "Show Crear crédito de proveedor"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__location_id
 msgid "Source Location"
-msgstr "Ubicación origen"
+msgstr "Ubicación de origen"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__state_guide_dispatch
@@ -1085,6 +1117,11 @@ msgid "Unidad"
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__multiple
+msgid "Unique invoice for each stock pickings"
+msgstr "Una factura para cada guía de despacho"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 msgid "Unit of Measure"
 msgstr "Unidad de medida"
@@ -1123,5 +1160,3 @@ msgstr "No puede crear una factura de estos picking por el estado."
 #, python-format
 msgid "You cannot download a freeform from a vendor bill."
 msgstr ""
-"No puede descargar una factura de forma libre desde una factura de "
-"proveedor."
