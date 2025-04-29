@@ -7,6 +7,8 @@ import json
 
 _logger = logging.getLogger(__name__)
 
+DOCUMENT_TYPE = "04"
+
 class EndPoints():
     BASE_ENDPOINTS = {
         "emision": "/Emision",
@@ -29,16 +31,15 @@ class StockPicking(models.Model):
 
     def generate_document_digtal(self):
         if self.is_digitalized:
-            raise UserError(_("The document has already been digitalized."))
-        DOCUMENT_TYPE = "04"
+            raise UserError(_("The document has already been digitalized.")) 
         end_number, start_number = self.query_numbering()
-        document_number = self.get_last_document_number(document_type)
+        document_number = self.get_last_document_number(DOCUMENT_TYPE)
         document_number = str(document_number + 1)
 
         if document_number == start_number:
             self.assign_numbering(end_number, start_number)
 
-        self.generate_document_data(document_number, document_type)
+        self.generate_document_data(document_number, DOCUMENT_TYPE)
 
     def get_base_url(self):
         if self.company_id.url_tfhka:
