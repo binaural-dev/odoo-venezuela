@@ -126,6 +126,8 @@ msgid ""
 "Error in the API response: %(message)s \n"
 "%(validation)s"
 msgstr ""
+"Error en la respuesta de la API: %(message)s \n"
+"%(validation)s"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
