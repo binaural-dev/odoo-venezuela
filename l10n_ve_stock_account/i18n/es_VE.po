@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-29 15:04+0000\n"
-"PO-Revision-Date: 2025-04-29 15:04+0000\n"
+"POT-Creation-Date: 2025-04-29 18:58+0000\n"
+"PO-Revision-Date: 2025-04-29 18:58+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -506,6 +506,7 @@ msgstr "Guía de Despacho"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_stock_move_line_search
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_invoice_tree
 msgid "Guide Number"
 msgstr "​Nro de Guía de Despacho"
 
@@ -578,12 +579,12 @@ msgstr "Estado de la factura"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__invoice_type_selection
 msgid "Invoice Type Selection"
-msgstr "Tipo de factura"
+msgstr "Tipo de Factura"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
 msgid "Invoice will generate for selected picking"
-msgstr "Se generará una factura para la guía de despacho seleccionada"
+msgstr "Se generarán facturas para las guías de despacho seleccionas"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced
@@ -775,11 +776,11 @@ msgid "Peso"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__picking_id
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__picking_id
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_payment__picking_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__picking_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__picking_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_payment__picking_ids
 msgid "Picking"
-msgstr "Albarán"
+msgstr "Guía de Despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_picking_invoice_wizard
@@ -794,7 +795,7 @@ msgstr "Lista de traslados"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__pickings_ids
 msgid "Pickings"
-msgstr ""
+msgstr "Guías de Despacho"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -965,7 +966,7 @@ msgstr "Show Crear crédito de proveedor"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__location_id
 msgid "Source Location"
-msgstr "Ubicación origen"
+msgstr "Ubicación de origen"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__state_guide_dispatch
@@ -1118,7 +1119,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__multiple
 msgid "Unique invoice for each stock pickings"
-msgstr "Una factura para cada guía de despacho""
+msgstr "Una factura para cada guía de despacho"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
@@ -1159,5 +1160,3 @@ msgstr "No puede crear una factura de estos picking por el estado."
 #, python-format
 msgid "You cannot download a freeform from a vendor bill."
 msgstr ""
-"No puede descargar una factura de forma libre desde una factura de "
-"proveedor."
