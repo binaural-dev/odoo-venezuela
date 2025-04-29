@@ -89,8 +89,8 @@ class AccountMove(models.Model):
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
                     return 0
                 else:
-                    _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
-                    raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
+                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
+                    raise UserError(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()
@@ -575,7 +575,7 @@ class AccountMove(models.Model):
             record.show_digital_debit_note = True
             record.show_digital_credit_note = True
             
-            if record.state == "posted" and not record.is_digitalized and record.company_id.invoice_print_type == "digital":
+            if record.state == "posted" and not record.is_digitalized and record.company_id.invoice_digital_tfhka:
                 if record.move_type == "out_refund" and record.reversed_entry_id and record.reversed_entry_id.is_digitalized:
                     record.show_digital_credit_note = False
 
