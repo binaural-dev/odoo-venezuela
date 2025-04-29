@@ -19,11 +19,11 @@ class PickingInvoiceWizard(models.TransientModel):
                 self.multiple_invoice()
     
     def unique_invoice(self):
-
+        _logger.warning("Unique invoice selected")
         active_ids = self._context.get("active_ids")
         picking_ids = self.env["stock.picking"].browse(active_ids)
-        picking_id_check_state = picking_ids.filtered(lambda x: x.state != 'done' and x.invoice_count > 0)
-    
+        picking_id_check_state = picking_ids.filtered(lambda x: x.state != 'done')
+
         if picking_id_check_state: 
             raise UserError("You can only create invoices for pickings in the 'To Invoice' state.")
         partner_id = picking_ids.mapped("partner_id")
@@ -41,7 +41,7 @@ class PickingInvoiceWizard(models.TransientModel):
                 status_set.add('invoice')
             elif picking.show_create_vendor_credit:
                 status_set.add('vendor_credit')
-            elif picking.picking_type_id.code == "outgoing" and picking.is_return:
+            elif picking.show_create_customer_credit:
                 status_set.add('customer_credit')
             else: 
                 raise UserError("You can only create invoices for not internal dispatch guides.")
@@ -73,7 +73,7 @@ class PickingInvoiceWizard(models.TransientModel):
                 picking.create_invoice()
             elif picking.show_create_vendor_credit:
                 picking.create_vendor_credit()
-            elif picking.picking_type_id.code == "outgoing" and picking.is_return:
+            elif picking.show_create_customer_credit():
                 picking.create_customer_credit()
             else: 
                 raise UserError("You can only create invoices for not internal dispatch guides.")

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-27 00:43+0000\n"
-"PO-Revision-Date: 2025-04-27 00:43+0000\n"
+"POT-Creation-Date: 2025-04-29 15:04+0000\n"
+"PO-Revision-Date: 2025-04-29 15:04+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -583,7 +583,7 @@ msgstr "Tipo de factura"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
 msgid "Invoice will generate for selected picking"
-msgstr "Se generará una factura para el albarán seleccionado"
+msgstr "Se generará una factura para la guía de despacho seleccionada"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced
@@ -729,8 +729,8 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_invoice_tree
-msgid "Guide number"
-msgstr "Numero de Guía"
+msgid "Guide Number"
+msgstr "Número de Guía"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__unique
@@ -767,7 +767,7 @@ msgstr "Cliente"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__partner_required
 msgid "Partner Required"
-msgstr "Contato requerido"
+msgstr "Contacto Requerido"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -775,11 +775,11 @@ msgid "Peso"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__picking_ids
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__picking_ids
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_payment__picking_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__picking_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__picking_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_payment__picking_id
 msgid "Picking"
-msgstr "Guia de Despacho"
+msgstr "Albarán"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_picking_invoice_wizard
@@ -794,7 +794,7 @@ msgstr "Lista de traslados"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__pickings_ids
 msgid "Pickings"
-msgstr "Guias de Despacho"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -1118,7 +1118,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__multiple
 msgid "Unique invoice for each stock pickings"
-msgstr "Una factura para cada guía de despacho"
+msgstr "Una factura para cada guía de despacho""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree

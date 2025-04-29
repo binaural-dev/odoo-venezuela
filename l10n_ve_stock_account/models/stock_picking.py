@@ -140,7 +140,7 @@ class StockPicking(models.Model):
     # === MAIN FUNCTIONS ===#
 
     def create_multi_invoice(self, pickings):
-        _logger.info("Creating invoice for %s", pickings)
+
         
         lines = self._get_multiple_invoice_lines_for_invoice(pickings, from_picking_line=True)
         current_user = self.env.uid
@@ -163,7 +163,7 @@ class StockPicking(models.Model):
                     "partner_id": self.partner_id.id,
                     "currency_id": self.env.user.company_id.currency_id.id,
                     "journal_id": int(customer_journal_id),
-                    "picking_id": pickings,
+                    "picking_ids": pickings,
                     "invoice_line_ids": lines,
                     "transfer_ids": [(6, 0, pickings.ids)],
                     "from_picking": True,
@@ -200,7 +200,7 @@ class StockPicking(models.Model):
                         "currency_id": picking_id.env.user.company_id.currency_id.id,
                         "journal_id": int(customer_journal_id),
                         "payment_reference": picking_id.name,
-                        "picking_id": picking_id.id,
+                        "picking_ids": picking_id,
                         "invoice_line_ids": invoice_line_list,
                         "transfer_ids": self,
                         "from_picking": True,
@@ -485,7 +485,7 @@ class StockPicking(models.Model):
     def _validate_one_invoice_posted(self):
         for picking in self:
             invoice_ids = self.env["account.move"].search(
-                [("picking_id", "=", picking.id), ("state", "=", "posted")]
+                [("picking_ids", "=", picking.id), ("state", "=", "posted")]
             )
             if invoice_ids:
                 raise UserError(
@@ -1061,11 +1061,9 @@ class StockPicking(models.Model):
                 picking.partner_required = False
     
     def button_validate(self):
-        
+        _logger.info("Operation Code %s", self.operation_code)
         for picking in self:
-            _logger.warning(picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id)
-            _logger.warning(picking.picking_type_id.id == self.env.ref('stock.picking_type_internal').id)
-            if picking.picking_type_id.id == self.env.ref('stock.picking_type_internal').id and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
+            if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
                 picking.state_guide_dispatch = 'emited'
         return super(StockPicking, self).button_validate()
             
