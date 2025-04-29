@@ -57,6 +57,15 @@
                     </div>
                 </div>
             </xpath>
+            <xpath expr="//div[@id='l10n_ve_iot_mf_invoice_print_type']" position="after">
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_iot_mf_new_column">
+                    <div class="o_setting_left_pane"/>
+                    <div class="o_setting_right_pane">
+                        <label for="invoice_digital_tfhka" class="col-lg-6 o_light_label"/>
+                        <field name="invoice_digital_tfhka"/>
+                    </div>
+                </div>
+            </xpath>
         </field>
     </record>
 </odoo>

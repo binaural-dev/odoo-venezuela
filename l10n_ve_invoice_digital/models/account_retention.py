@@ -52,8 +52,8 @@ class AccountRetention(models.Model):
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
                     return 0
                 else:
-                    _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
-                    raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
+                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
+                    raise UserError(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()
@@ -275,6 +275,6 @@ class AccountRetention(models.Model):
         for record in self:
             record.show_digital_retention_iva = True
             record.show_digital_retention_islr = True
-            if record.state =='emitted' and not record.is_digitalized and record.company_id.invoice_print_type == "digital":
+            if record.state =='emitted' and not record.is_digitalized and record.company_id.invoice_digital_tfhka:
                 record.show_digital_retention_iva = False
                 record.show_digital_retention_islr = False

@@ -7,6 +7,7 @@ class ResConfigSettings(models.TransientModel):
     url_tfhka = fields.Char(related="company_id.url_tfhka", string="URL", readonly=False)
     token_auth_tfhka = fields.Char(related="company_id.token_auth_tfhka", string="Token Auth", readonly=False)
     range_assignment_tfhka = fields.Integer(related="company_id.range_assignment_tfhka", string="Range Assignment", readonly=False)
+    invoice_digital_tfhka = fields.Boolean(related="company_id.invoice_digital_tfhka", string="Invoice Digital", readonly=False)
     
     def action_generate_token_tfhka(self):
         self.company_id.generate_token_tfhka()
