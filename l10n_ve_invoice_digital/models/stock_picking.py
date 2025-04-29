@@ -22,10 +22,15 @@ class StockPicking(models.Model):
     show_digital_dispatch_guide = fields.Boolean(string="Show Digital Dispatch Guide", compute="_compute_visibility_button", copy=False)
     control_number_tfhka = fields.Char(string="Control Number", copy=False)
 
+    def button_validate(self):
+        super(StockPicking, self).button_validate()
+        if self.company_id.invoice_digital_tfhka and not self.is_digitalized and self.dispatch_guide_controls:
+            self.generate_document_digtal() 
+
     def generate_document_digtal(self):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized."))
-        document_type = self.env.context.get('document_type')
+        document_type = "04"
         end_number, start_number = self.query_numbering()
         document_number = self.get_last_document_number(document_type)
         document_number = str(document_number + 1)
@@ -65,8 +70,8 @@ class StockPicking(models.Model):
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
                     return 0
                 else:
-                    _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
-                    raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
+                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
+                    raise UserError(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()
@@ -278,10 +283,8 @@ class StockPicking(models.Model):
                 "destinoProducto": destination,
             }
 
-    @api.depends('state', 'is_digitalized', 'dispatch_guide_controls')
     def _compute_visibility_button(self):
         for record in self:
             record.show_digital_dispatch_guide = True
-            if record.state == "done" and not record.is_digitalized and record.company_id.invoice_print_type == "digital":
-                if record.dispatch_guide_controls:
-                    record.show_digital_dispatch_guide = False
+            if record.company_id.invoice_digital_tfhka:
+                record.show_digital_dispatch_guide = False
