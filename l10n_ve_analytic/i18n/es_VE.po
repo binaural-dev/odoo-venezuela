@@ -1,0 +1,41 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_analytic
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20241115\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-11-19 11:45+0000\n"
+"PO-Revision-Date: 2024-11-19 11:45+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_analytic
+#: model:ir.model.fields,field_description:binaural_analytic.field_account_analytic_line__foreign_amount
+msgid "Amount"
+msgstr "Importe en Moneda alterna"
+
+#. module: binaural_analytic
+#: model:ir.model,name:binaural_analytic.model_account_analytic_line
+msgid "Analytic Line"
+msgstr "Línea analítica"
+
+#. module: binaural_analytic
+#: model:ir.model.fields,help:binaural_analytic.field_account_analytic_line__foreign_currency_id
+msgid "Currency Foreign for the company"
+msgstr "Moneda alterna de la compañia"
+
+#. module: binaural_analytic
+#: model:ir.model.fields,field_description:binaural_analytic.field_account_analytic_line__foreign_currency_id
+msgid "Foreign Currency"
+msgstr "Moneda alterna"
+
+#. module: binaural_analytic
+#: model_terms:ir.ui.view,arch_db:binaural_analytic.view_account_analytic_line_tree
+msgid "Foreign Total"
+msgstr "Total alterno"

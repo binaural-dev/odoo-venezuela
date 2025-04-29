@@ -1,0 +1,15 @@
+
+<odoo>
+    <record id="view_account_journal_form" model="ir.ui.view">
+        <field name="name">account.journal.form</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='advanced_settings'][1]/group[1]" position="inside">
+                <group string="Others">
+                    <field name="subsidiary_id" />
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
