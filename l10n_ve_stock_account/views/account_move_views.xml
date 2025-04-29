@@ -87,7 +87,7 @@
                 <field
                     name="picking_ids"
                     widget="many2many_tags"
-                    string='Número de Guía'
+                    string='Guide Number'
                     optional="hide" />
             </xpath>
         </field>
