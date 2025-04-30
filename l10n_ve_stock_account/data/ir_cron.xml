@@ -8,6 +8,6 @@
         <field name="interval_type">days</field>
         <field name="numbercall">-1</field>
         <field name="doall">0</field>
-        <field name="active">True</field>
+        <field name="active">False</field>
     </record>
 </odoo>
