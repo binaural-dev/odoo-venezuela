@@ -1,6 +1,6 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* binaural_analytic
+# 	* l10n_ve_analytic
 #
 msgid ""
 msgstr ""
@@ -15,27 +15,27 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
 
-#. module: binaural_analytic
-#: model:ir.model.fields,field_description:binaural_analytic.field_account_analytic_line__foreign_amount
+#. module: l10n_ve_analytic
+#: model:ir.model.fields,field_description:l10n_ve_analytic.field_account_analytic_line__foreign_amount
 msgid "Amount"
 msgstr "Importe en Moneda alterna"
 
-#. module: binaural_analytic
-#: model:ir.model,name:binaural_analytic.model_account_analytic_line
+#. module: l10n_ve_analytic
+#: model:ir.model,name:l10n_ve_analytic.model_account_analytic_line
 msgid "Analytic Line"
 msgstr "Línea analítica"
 
-#. module: binaural_analytic
-#: model:ir.model.fields,help:binaural_analytic.field_account_analytic_line__foreign_currency_id
+#. module: l10n_ve_analytic
+#: model:ir.model.fields,help:l10n_ve_analytic.field_account_analytic_line__foreign_currency_id
 msgid "Currency Foreign for the company"
 msgstr "Moneda alterna de la compañia"
 
-#. module: binaural_analytic
-#: model:ir.model.fields,field_description:binaural_analytic.field_account_analytic_line__foreign_currency_id
+#. module: l10n_ve_analytic
+#: model:ir.model.fields,field_description:l10n_ve_analytic.field_account_analytic_line__foreign_currency_id
 msgid "Foreign Currency"
 msgstr "Moneda alterna"
 
-#. module: binaural_analytic
-#: model_terms:ir.ui.view,arch_db:binaural_analytic.view_account_analytic_line_tree
+#. module: l10n_ve_analytic
+#: model_terms:ir.ui.view,arch_db:l10n_ve_analytic.view_account_analytic_line_tree
 msgid "Foreign Total"
 msgstr "Total alterno"
