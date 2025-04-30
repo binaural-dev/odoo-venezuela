@@ -10,6 +10,9 @@
                 <field name="is_digitalized" string="Digitized" invisible="show_digital_dispatch_guide" readonly="True"/>
                 <field name="control_number_tfhka" string="Control Number" invisible="show_digital_dispatch_guide" readonly="True"/>
             </xpath>
+            <xpath expr="//button[@name='print_dispatch_guide']" position="attributes">
+                <attribute name="invisible">not dispatch_guide_controls or is_digitalized</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>
