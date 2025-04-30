@@ -65,7 +65,7 @@ class AccountRetention(models.Model):
             _logger.error(_("Error connecting to the API: %(error)s") % {'error': e})
             raise UserError(_("Error connecting to the API: %(error)s") % {'error': e})
 
-    def generate_document_digtal(self):
+    def generate_document_digital(self):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized."))
         document_type = self.env.context.get('document_type')
@@ -149,6 +149,7 @@ class AccountRetention(models.Model):
             emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
             emission_date = record.date_accounting.strftime("%d/%m/%Y") if record.date_accounting else ""
             affected_invoice_number = ""
+            series = ""
 
             for line in record.retention_line_ids:
                 if line.move_id.debit_origin_id:
@@ -156,13 +157,16 @@ class AccountRetention(models.Model):
                 if line.move_id.reversed_entry_id:
                     affected_invoice_number = line.move_id.reversed_entry_id.name
 
+                if self.company_id.group_sales_invoicing_series and record.journal_id.series_correlative_sequence_id:
+                    series = record.journal_id.sequence_id.prefix
+
             return {
                 "tipoDocumento": document_type,
                 "numeroDocumento": document_number,
                 "numeroFacturaAfectada":affected_invoice_number,
                 "fechaEmision": emission_date,
                 "horaEmision": emission_time,
-                "serie": "",
+                "serie": series,
                 "sucursal": "",
                 "tipoDeVenta": "Interna",
                 "moneda": record.company_currency_id.name,
