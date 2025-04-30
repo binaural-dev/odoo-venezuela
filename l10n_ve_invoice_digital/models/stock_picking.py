@@ -25,11 +25,12 @@ class StockPicking(models.Model):
     control_number_tfhka = fields.Char(string="Control Number", copy=False)
 
     def button_validate(self):
-        super(StockPicking, self).button_validate()
+        res = super(StockPicking, self).button_validate()
         if self.company_id.invoice_digital_tfhka and not self.is_digitalized and self.dispatch_guide_controls:
-            self.generate_document_digtal() 
+            self.generate_document_digital() 
+        return res
 
-    def generate_document_digtal(self):
+    def generate_document_digital(self):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized.")) 
         end_number, start_number = self.query_numbering()
