@@ -19,4 +19,5 @@
         "views/menus.xml",
     ],
     "application": True,
+    "pre_init_hook": "pre_init_hook"
 }

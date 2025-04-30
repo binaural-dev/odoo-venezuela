@@ -61,4 +61,8 @@ export const taxTotalsComponent = {
   component: TaxTotalsComponents,
 };
 
-registry.category("fields").add("account-tax-foreign-totals-field", taxTotalsComponent);
+const fieldsRegistry = registry.category("fields");
+
+if (!fieldsRegistry.contains("account-tax-foreign-totals-field")) {
+    fieldsRegistry.add("account-tax-foreign-totals-field", taxTotalsComponent);
+}

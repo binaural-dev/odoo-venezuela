@@ -33,4 +33,5 @@
         "wizard/stock_quantity_history.xml",
     ],
     "application": True,
+    "pre_init_hook": "pre_init_hook",
 }
