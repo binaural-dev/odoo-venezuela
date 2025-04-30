@@ -183,7 +183,7 @@ class AccountMove(models.Model):
             affected_invoice_date = ""
             affected_invoice_amount = ""
             affected_invoice_comment = ""
-            series = ""
+
             if record.debit_origin_id:
                 affected_invoice_number = record.debit_origin_id.name
                 affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
@@ -210,9 +210,6 @@ class AccountMove(models.Model):
                 part = record.ref.split(',')
                 affected_invoice_comment = part[1].strip()
 
-            if self.company_id.group_sales_invoicing_series and record.journal_id.series_correlative_sequence_id:
-                series = record.journal_id.sequence_id.prefix
-
             emission_date = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
             due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
             return {
@@ -230,7 +227,7 @@ class AccountMove(models.Model):
                 "fechaVencimiento": due_date,
                 "horaEmision": emission_time,
                 "tipoDePago": self.get_payment_type(),
-                "serie": series,
+                "serie": "",
                 "sucursal": "",
                 "tipoDeVenta": "Interna",
                 "moneda": record.currency_id.name,
