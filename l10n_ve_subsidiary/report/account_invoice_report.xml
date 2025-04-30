@@ -1,0 +1,15 @@
+
+<odoo>
+
+    <record id="view_account_invoice_report_search_inherit_l10n_ve_subsidiary" model="ir.ui.view">
+        <field name="name">account.invoice.report.view.search.inherit</field>
+        <field name="model">account.invoice.report</field>
+        <field name="inherit_id" ref="account.view_account_invoice_report_search"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="before">
+                <filter name="subsidiary_id" string="Subsidiary" context="{'group_by':'subsidiary_id'}"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,22 @@
+
+<odoo>
+    <record id="view_users_form" model="ir.ui.view">
+        <field name="name">l10n.ve.subsidiary.view.users.form</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+	    <group name="preferences" position="after">
+		<group string="Subsidiaries" name="subsidiaries">
+            <field name="is_required_subsidiary" invisible="1" />
+		    <field 
+                name="subsidiary_ids"
+                widget="many2many_tags"
+                required="is_required_subsidiary"/>
+		    <field 
+                name="subsidiary_id" 
+                required="is_required_subsidiary"/>
+		</group>
+	    </group>
+        </field>
+    </record>
+</odoo>

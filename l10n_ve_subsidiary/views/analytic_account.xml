@@ -1,0 +1,68 @@
+
+<odoo>
+    <record id="view_account_analytic_account_tree" model="ir.ui.view">
+        <field name="name">l10n.ve.subsidiary.view.account.analytic.account.tree</field>
+        <field name="model">account.analytic.account</field>
+        <field name="inherit_id" ref="analytic.view_account_analytic_account_list"/>
+        <field name="arch" type="xml">
+	    <field name="partner_id" position="before">
+		<field name="is_subsidiary" column_invisible="True"/>
+	    </field>
+        </field>
+    </record>
+
+    <record id="view_account_analytic_account_form" model="ir.ui.view">
+        <field name="name">l10n.ve.subsidiary.view.account.analytic.account.form</field>
+        <field name="model">account.analytic.account</field>
+        <field name="inherit_id" ref="analytic.view_account_analytic_account_form"/>
+        <field name="arch" type="xml">
+	    <field name="partner_id" position="before">
+		<field name="is_subsidiary" column_invisible="True"/>
+	    </field>
+        </field>
+    </record>
+
+    <record id="view_account_analytic_account_subsidiary_tree" model="ir.ui.view">
+        <field name="name">view.account.analytic.account.subsidiary.tree</field>
+        <field name="model">account.analytic.account</field>
+        <field name="inherit_id" ref="analytic.view_account_analytic_account_list"/>
+	<field name="mode">primary</field>
+        <field name="arch" type="xml">
+	    <field name="partner_id" position="replace"/>
+        </field>
+    </record>
+
+    <record id="view_account_analytic_account_subsidiary_form" model="ir.ui.view">
+        <field name="name">view.account.analytic.account.subisidiary.form</field>
+        <field name="model">account.analytic.account</field>
+        <field name="inherit_id" ref="analytic.view_account_analytic_account_form"/>
+	<field name="mode">primary</field>
+        <field name="arch" type="xml">
+	    <field name="partner_id" position="attributes">
+		<attribute name="invisible">true</attribute>
+	    </field>
+        </field>
+    </record>
+
+    <record id="action_account_analytic_subsidiary" model="ir.actions.act_window">
+	<field name="name">Subsidiaries</field>
+	<field name="res_model">account.analytic.account</field>
+	<field name="view_mode">tree,form</field>
+        <field name="context">{"default_is_subsidiary": True}</field>
+	<field name="domain">[('is_subsidiary', '=', True)]</field>
+	<field name="view_ids" 
+               eval="[(5, 0, 0), 
+                    (0, 0, {'view_mode': 'tree', 'view_id': ref('view_account_analytic_account_subsidiary_tree')}),
+                    (0, 0, {'view_mode': 'form', 'view_id': ref('view_account_analytic_account_subsidiary_form')})]"/>
+    </record>
+
+    <record id="analytic.action_analytic_account_form" model="ir.actions.act_window">
+        <field name="context">{"default_is_subsidiary": False}</field>
+	<field name="domain">[('is_subsidiary', '=', False)]</field>
+    </record>
+
+    <record id="analytic.action_account_analytic_account_form" model="ir.actions.act_window">
+        <field name="context">{"default_is_subsidiary": False}</field>
+	<field name="domain">[('is_subsidiary', '=', False)]</field>
+    </record>
+</odoo>
