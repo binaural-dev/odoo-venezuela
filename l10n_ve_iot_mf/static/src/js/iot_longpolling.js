@@ -19,4 +19,8 @@ export const iotLongpollingService = {
   }
 };
 
-registry.category('services').add('iot_longpolling', iotLongpollingService, { force: true });
+const fieldsRegistry = registry.category("services");
+
+if (!fieldsRegistry.contains("iot_longpolling")) {
+    fieldsRegistry.add('iot_longpolling', iotLongpollingService, { force: true });
+}
