@@ -5,7 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 class ResCurrency(models.Model):
     _inherit = "res.currency"
 
-    def _convert(self, from_amount, to_currency, company, date, round=True, custom_rate=0.0):
+    def _convert(self, from_amount, to_currency, company=None, date=None, round=True, custom_rate=0.0):
         """Returns the converted amount of ``from_amount``` from the currency
            ``self`` to the currency ``to_currency`` for the given ``date`` and
            company.
@@ -14,6 +14,10 @@ class ResCurrency(models.Model):
            :param date: The nearest date from which we retriev the conversion rate.
            :param round: Round the result or not
         """
+        if date is None:
+            date = fields.Date.today()
+        if company is None:
+            company = self.rate_ids.company_id
         self, to_currency = self or to_currency, to_currency or self
         assert self, "convert amount from unknown currency"
         assert to_currency, "convert amount to unknown currency"
