@@ -32,3 +32,5 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.validate_without_product_quantity", readonly=False
     )
 
+    limit_product_qty_out = fields.Integer(string="Stock Picking", related='company_id.limit_product_qty_out', readonly=False)
+
