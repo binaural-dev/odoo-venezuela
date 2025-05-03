@@ -1,0 +1,285 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_subsidiary
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20240117\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-01 21:02+0000\n"
+"PO-Revision-Date: 2024-08-01 21:02+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.wizard_binaural_facturacion_reportes_view
+msgid "All Subsidiaries"
+msgstr "Todas las sucursales"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_account_analytic_account
+msgid "Analytic Account"
+msgstr "Cuenta analítica"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_config_settings__group_analytic_accounting_related
+msgid "Analytic Accounting"
+msgstr "Contabilidad analítica"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_bank_rec_widget
+msgid "Bank reconciliation widget for a single statement line"
+msgstr ""
+"Widget de conciliación bancaria para una sola línea del estado de cuenta"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_bank_statement_line__company_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_journal__company_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_move__company_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_payment__company_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_purchase_order__company_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_sale_order__company_subsidiary
+msgid "Company Subsidiary"
+msgstr "Configuración Sucursal"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_users__subsidiary_id
+msgid "Default Subsidiary"
+msgstr "Sucursal por Defecto"
+
+#. module: l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.l10n_ve_subsidiary_account_move_view_search
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.l10n_ve_subsidiary_purchase_order_search_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.sale_order_view_search_inherit_quotation_inherit_l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.view_account_move_filter_inherit_l10n_ve_subsidiary
+msgid "Group by"
+msgstr "Agrupar Por"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_account_invoice_report
+msgid "Invoices Statistics"
+msgstr "Estadísticas de facturas"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_users__is_required_subsidiary
+msgid "Is Required Subsidiary"
+msgstr "Es necesario Sucursal"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_analytic_account__is_subsidiary
+msgid "Is Subsidiary"
+msgstr "Es Sucursal"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_account_journal
+msgid "Journal"
+msgstr "Diario"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_subsidiary
+#. odoo-python
+#: code:addons/l10n_ve_subsidiary/models/account_move.py:0
+#, python-format
+msgid ""
+"No journal could be found in company %(company_name)s for any of those "
+"types: %(journal_types)s"
+msgstr ""
+"No se pudo encontrar ningún diario en la empresa %(company_name)s para "
+"ninguno de estos tipos: %(journal_types)s"
+
+#. module: l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.view_account_journal_form
+msgid "Others"
+msgstr "Otros"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_account_payment
+msgid "Payments"
+msgstr "Pagos"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_purchase_order
+msgid "Purchase Order"
+msgstr "Pedido de compra"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_purchase_report
+msgid "Purchase Report"
+msgstr "Informe de Compras"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_account_payment_register
+msgid "Register Payment"
+msgstr "Registrar pago"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_ir_rule
+msgid "Rule"
+msgstr "Regla"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_sale_report
+msgid "Sales Analysis Report"
+msgstr "Informe de análisis de ventas"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.actions.act_window,name:l10n_ve_subsidiary.action_account_analytic_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_users__subsidiary_ids
+#: model:ir.ui.menu,name:l10n_ve_subsidiary.menu_subisidiary_configuration
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.view_users_form
+msgid "Subsidiaries"
+msgstr "Sucursales"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_bank_statement_line__account_analytic_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_invoice_report__subsidiary_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_journal__subsidiary_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_move__account_analytic_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_payment__account_analytic_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_payment_register__account_analytic_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_account_payment_register__company_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_purchase_order__account_analytic_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_purchase_report__subsidiary_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_company__subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_config_settings__subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_sale_order__subsidiary_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_sale_report__subsidiary_id
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_wizard_accounting_reports__account_analytic_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.view_account_invoice_report_search_inherit_l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.view_purchase_order_search_inherit_l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.view_search_group_by_brand_sale_report
+msgid "Subsidiary"
+msgstr "Sucursal"
+
+#. module: l10n_ve_subsidiary
+#. odoo-python
+#: code:addons/l10n_ve_subsidiary/models/res_users.py:0
+#, python-format
+msgid ""
+"Subsidiary %(subsidiary_name)s is not in the allowed subsidiaries for user "
+"%(user_name)s (%(subsidiary_allowed)s)."
+msgstr ""
+"La sucursal %(subsidiary_name)s no está en las sucursales permitidas para el"
+" usuario %(user_name)s (%(subsidiary_allowed)s)"
+
+#. module: l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.res_config_settings_l10n_ve_subsidiary
+msgid "Subsidiary (Quotation and Facture)"
+msgstr "Sucursal (Cotización y Factura)"
+
+#. module: l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.res_config_settings_l10n_ve_subsidiary
+msgid "Subsidiary Configuration"
+msgstr "Configuración de Sucursales"
+
+#. module: l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.l10n_ve_subsidiary_account_move_view_search
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.l10n_ve_subsidiary_purchase_order_search_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.sale_order_view_search_inherit_quotation_inherit_l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.view_account_move_filter_inherit_l10n_ve_subsidiary
+#: model_terms:ir.ui.view,arch_db:l10n_ve_subsidiary.view_account_payment_search
+msgid "Sucursal"
+msgstr ""
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_purchase_order__suitable_journal_ids
+msgid "Suitable Journal"
+msgstr "Diarios Seleccionables"
+
+#. module: l10n_ve_subsidiary
+#. odoo-python
+#: code:addons/l10n_ve_subsidiary/models/account_move_line.py:0
+#, python-format
+msgid "The invoice's lines should have just one subsidairy"
+msgstr "Las líneas de facturas deben tener solo una sucursal"
+
+#. module: l10n_ve_subsidiary
+#. odoo-python
+#: code:addons/l10n_ve_subsidiary/models/account_journal.py:0
+#, python-format
+msgid ""
+"The journal has been used in payments, account movements or purchase orders"
+msgstr "No se puede configurar la sucursal en el diario, porque posee movimientos sin sucursal o asociados a otra sucursal"
+
+#. module: l10n_ve_subsidiary
+#. odoo-python
+#: code:addons/l10n_ve_subsidiary/models/account_journal.py:0
+#, python-format
+msgid "The subsidiary of either journal and record must be the same"
+msgstr "La sucursal debe ser igual para el diario y el registro"
+
+#. module: l10n_ve_subsidiary
+#. odoo-python
+#: code:addons/l10n_ve_subsidiary/models/analytic_account.py:0
+#, python-format
+msgid ""
+"This analytical account is used for subsidiaries. The company must be "
+"specified."
+msgstr ""
+"La cuenta analítica es utilizada en sucursales. La compañia debe ser "
+"especificada."
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_company__analytical_accounts_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_config_settings__analytical_accounts_subsidiary
+msgid "Use Analytical Accounts as Subsidiary"
+msgstr "Utilizar cuentas analíticas como sucursales"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_res_users
+msgid "User"
+msgstr "Usuario"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_company__analytical_accounts_cost_subsidiary
+#: model:ir.model.fields,field_description:l10n_ve_subsidiary.field_res_config_settings__analytical_accounts_cost_subsidiary
+msgid "Using Analytical Accounts as Cost Center and Subsidiary"
+msgstr "Uso de Cuentas Analíticas como centro de Coste y Sucursal"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.model,name:l10n_ve_subsidiary.model_wizard_accounting_reports
+msgid "Wizard para generar reportes de libro de compra y ventas"
+msgstr ""
+
+#. module: l10n_ve_subsidiary
+#: model:ir.actions.server,name:l10n_ve_subsidiary.correction_subsidiary_account_move
+msgid "correction subsidiary account move"
+msgstr "Corrección traslado cuenta subsidiaria"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.actions.server,name:l10n_ve_subsidiary.correction_subsidiary_account_payment
+msgid "correction subsidiary account payment"
+msgstr "Corrección cuenta subsidiaria pago"
+
+#. module: l10n_ve_subsidiary
+#: model:ir.actions.server,name:l10n_ve_subsidiary.correction_subsidiary_sale_order
+msgid "correction subsidiary sale order"
+msgstr "Corrección orden de venta subsidiaria"

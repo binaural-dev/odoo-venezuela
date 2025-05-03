@@ -1,0 +1,15 @@
+
+<odoo>
+
+    <record id="view_purchase_order_search_inherit_l10n_ve_subsidiary" model="ir.ui.view">
+        <field name="name">purchase.report.view.search.inherit</field>
+        <field name="model">purchase.report</field>
+        <field name="inherit_id" ref="purchase.view_purchase_order_search"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="before">
+                <filter name="subsidiary_id" string="Subsidiary" context="{'group_by':'subsidiary_id'}"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

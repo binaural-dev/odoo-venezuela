@@ -1,0 +1,26 @@
+
+<odoo>
+    <record id="view_account_analytic_line_form_l10n_ve_analytic" model="ir.ui.view">
+        <field name="name">account.analytic.line.form.views</field>
+        <field name="model">account.analytic.line</field>
+        <field name="inherit_id" ref="analytic.view_account_analytic_line_form"/>
+        <field name="arch" type="xml">
+	    <xpath expr="//field[@name='amount']" position="after">
+            <field name="foreign_currency_id" invisible="1"/>
+            <field name="foreign_amount"/>
+	    </xpath>
+	</field>
+   </record>
+
+    <record id="view_account_analytic_line_tree" model="ir.ui.view">
+        <field name="name">account.analytic.line.tree</field>
+        <field name="model">account.analytic.line</field>
+        <field name="inherit_id" ref="analytic.view_account_analytic_line_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount']" position="after">
+                <field name="foreign_currency_id" column_invisible="True"/>
+                <field name="foreign_amount" sum="Foreign Total" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
