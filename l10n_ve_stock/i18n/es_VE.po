@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-02 12:58+0000\n"
-"PO-Revision-Date: 2025-05-02 12:58+0000\n"
+"POT-Creation-Date: 2025-05-03 18:01+0000\n"
+"PO-Revision-Date: 2025-05-03 18:01+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -655,7 +655,7 @@ msgstr "Movimiento de stock"
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__limit_product_qty_out
 msgid "Stock Picking"
-msgstr ""
+msgstr "Guía de despacho"
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quantity_history
@@ -728,7 +728,9 @@ msgstr ""
 msgid ""
 "Upon confirmation, the system will generate the number of sequences of "
 "shipping guides."
-msgstr "Al confirmar esta operación, se generará automáticamente el número de secuencia de la guía de despacho correspondiente"
+msgstr ""
+"Al confirmar esta operación, se generará automáticamente el número de "
+"secuencia de la guía de despacho correspondiente"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__use_free_qty_odoo
