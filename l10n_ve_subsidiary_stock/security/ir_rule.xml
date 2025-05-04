@@ -1,0 +1,87 @@
+<odoo>
+    <data noupdate="1">
+		<record id="stock_warehouse_subsidiary_rule" model="ir.rule">
+            <field name="name">subsidiary stock warehouse rule</field>
+            <field name="model_id" ref="model_stock_warehouse"/>
+			<field name="groups" eval="[(4, ref('l10n_ve_subsidiary_stock.permission_show_available_products'))]"/>
+            <field name="domain_force">['|',('subsidiary_id','=',False),('subsidiary_id', 'in', subsidiary_ids)]</field>
+        </record>
+	</data>
+
+	<data>
+	<record id="stock_picking_type_subsidiary_rule" model="ir.rule">
+            <field name="name">subsidiary stock picking type rule</field>
+            <field name="model_id" ref="stock.model_stock_picking_type"/>
+            <field name="domain_force">['|',('warehouse_id.subsidiary_id','=',False),('warehouse_id.subsidiary_id', 'in', subsidiary_ids)]</field>
+        </record>
+
+	<record id="stock_valuation_layer_subsidiary_rule" model="ir.rule">
+            <field name="name">subsidiary stock valuation layer rule</field>
+            <field name="model_id" ref="model_stock_valuation_layer"/>
+            <field name="domain_force">['|',('subsidiary_id','=',False),('subsidiary_id', 'in', subsidiary_ids)]</field>
+        </record>
+
+        <record id="stock_picking_subsidiary_rule" model="ir.rule">
+            <field name="name">subsidiary stock picking rule</field>
+            <field name="model_id" ref="model_stock_picking"/>
+	    <field name="domain_force">
+		[
+		    '|', '|', '|', '&amp;',
+		    	('subsidiary_origin_id', '=', False),
+		    	('subsidiary_dest_id', 'in', subsidiary_ids),
+		    '&amp;',
+		    	('subsidiary_dest_id', '=', False),
+		    	('subsidiary_origin_id', 'in', subsidiary_ids),
+		    '&amp;',
+		    	('subsidiary_origin_id', '=', False),
+		    	('subsidiary_dest_id', '=', False),
+		    '&amp;',
+		    	('subsidiary_origin_id', 'in', subsidiary_ids),
+		    	('subsidiary_dest_id', 'in', subsidiary_ids)
+		  ]
+	    </field>
+        </record>
+
+        <record id="stock_move_subsidiary_rule" model="ir.rule">
+            <field name="name">subsidiary stock move rule</field>
+            <field name="model_id" ref="model_stock_move"/>
+	    <field name="domain_force">
+		[
+		    '|', '|', '|', '&amp;',
+		    	('subsidiary_origin_id', '=', False),
+		    	('subsidiary_dest_id', 'in', subsidiary_ids),
+		    '&amp;',
+		    	('subsidiary_dest_id', '=', False),
+		    	('subsidiary_origin_id', 'in', subsidiary_ids),
+		    '&amp;',
+		    	('subsidiary_origin_id', '=', False),
+		    	('subsidiary_dest_id', '=', False),
+		    '&amp;',
+		    	('subsidiary_origin_id', 'in', subsidiary_ids),
+		    	('subsidiary_dest_id', 'in', subsidiary_ids)
+		  ]
+	    </field>
+        </record>
+
+        <record id="stock_move_line_subsidiary_rule" model="ir.rule">
+            <field name="name">subsidiary stock move line rule</field>
+            <field name="model_id" ref="model_stock_move_line"/>
+	    <field name="domain_force">
+		[
+		    '|', '|', '|', '&amp;',
+		    	('subsidiary_origin_id', '=', False),
+		    	('subsidiary_dest_id', 'in', subsidiary_ids),
+		    '&amp;',
+		    	('subsidiary_dest_id', '=', False),
+		    	('subsidiary_origin_id', 'in', subsidiary_ids),
+		    '&amp;',
+		    	('subsidiary_origin_id', '=', False),
+		    	('subsidiary_dest_id', '=', False),
+		    '&amp;',
+		    	('subsidiary_origin_id', 'in', subsidiary_ids),
+		    	('subsidiary_dest_id', 'in', subsidiary_ids)
+		  ]
+	    </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,27 @@
+
+<odoo>
+    <data>
+        <record id="res_config_settings_l10n_ve_subsidiary_payment_extension" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.subsidiary.payment.extension</field>
+            <field name="model">res.config.settings</field>
+            <field name="priority" eval="101"/>
+            <field name="inherit_id" ref="l10n_ve_subsidiary.res_config_settings_l10n_ve_subsidiary"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='l10n_ve_subsidiary_settings']" position="after">
+                    <div class="col-12 col-lg-6 o_setting_box" name="l10n_ve_subsidiary_payment_extention_settings"
+                    invisible="not subsidiary">
+                        <div class="o_setting_left_pane">
+                            <field name="use_subsidiary_with_multiple_municipalities" widget="upgrade_boolean"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="use_subsidiary_with_multiple_municipalities"/>
+                            <div class="text-muted">
+                                Use subsidiaries with multiple municipalities
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
