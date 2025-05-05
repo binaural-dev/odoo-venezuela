@@ -75,7 +75,7 @@ class StockPicking(models.Model):
         store=True,
         compute="_compute_is_dispatch_guide",
     )
-    partner_required = fields.Boolean(store=True)
+    partner_required = fields.Boolean(compute='_compute_partner_required', store=True)
     
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
@@ -1045,17 +1045,24 @@ class StockPicking(models.Model):
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     
-    @api.onchange('location_dest_id', 'is_dispatch_guide', 'is_consignment', 'transfer_reason_id')
-    def _change_required_partner_id(self):
+    @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
+    def _compute_partner_required(self):
         for picking in self:
             if picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_consignment').id and picking.is_dispatch_guide and picking.is_consignment: 
                 picking.partner_required = True
+            else:
+                picking.partner_required = False
+        _logger.warning(f"partner_required: {self.partner_required}")
+
+    @api.onchange('location_dest_id', 'partner_required')
+    def _change_required_partner_id(self):
+        for picking in self:
+            if picking.partner_required: 
                 contact = self.env['res.partner'].search([('id', '=', picking.location_dest_id.partner_id.id)], limit=1)
                 if contact:
                     picking.partner_id = contact.id
                 else:
                     picking.partner_id = None
-                    picking.partner_required = True
             else:
                 picking.partner_id = None
                 picking.partner_required = False
