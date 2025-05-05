@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250409\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-29 16:17+0000\n"
-"PO-Revision-Date: 2025-04-29 16:17+0000\n"
+"POT-Creation-Date: 2025-05-05 13:27+0000\n"
+"PO-Revision-Date: 2025-05-05 13:27+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -326,6 +326,15 @@ msgstr "La URL no está configurada en los ajustes de la empresa."
 #, python-format
 msgid "The document has already been digitalized."
 msgstr "El documento ya ha sido digitalizado."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#, python-format
+msgid "The selected subsidiary does not contain a reference"
+msgstr "La sucursal seleccionada no contiene referencia"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__token_auth_tfhka
