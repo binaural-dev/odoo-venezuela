@@ -149,12 +149,19 @@ class AccountRetention(models.Model):
             emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
             emission_date = record.date_accounting.strftime("%d/%m/%Y") if record.date_accounting else ""
             affected_invoice_number = ""
-
+            subsidiary = ""
+            
             for line in record.retention_line_ids:
                 if line.move_id.debit_origin_id:
                     affected_invoice_number = line.move_id.debit_origin_id.name
                 if line.move_id.reversed_entry_id:
                     affected_invoice_number = line.move_id.reversed_entry_id.name
+
+            if self.company_id.subsidiary:
+                if record.account_analytic_id and record.account_analytic_id.code:
+                    subsidiary = record.account_analytic_id.code
+                else:
+                    raise UserError(_("The selected subsidiary does not contain a reference"))
 
             return {
                 "tipoDocumento": document_type,
@@ -163,7 +170,7 @@ class AccountRetention(models.Model):
                 "fechaEmision": emission_date,
                 "horaEmision": emission_time,
                 "serie": "",
-                "sucursal": "",
+                "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
                 "moneda": record.company_currency_id.name,
             }

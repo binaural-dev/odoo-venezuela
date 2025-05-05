@@ -124,6 +124,8 @@ class AccountMove(models.Model):
         if foreign_totals:
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
 
+        _logger.info(f"Payload: {payload}")
+
         response = self.call_tfhka_api("emision", payload)
 
         if response:
@@ -183,6 +185,7 @@ class AccountMove(models.Model):
             affected_invoice_date = ""
             affected_invoice_amount = ""
             affected_invoice_comment = ""
+            subsidiary = ""
 
             if record.debit_origin_id:
                 affected_invoice_number = record.debit_origin_id.name
@@ -210,6 +213,12 @@ class AccountMove(models.Model):
                 part = record.ref.split(',')
                 affected_invoice_comment = part[1].strip()
 
+            if self.company_id.subsidiary:
+                if record.account_analytic_id and record.account_analytic_id.code:
+                    subsidiary = record.account_analytic_id.code
+                else:
+                    raise UserError(_("The selected subsidiary does not contain a reference"))
+
             emission_date = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
             due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
             return {
@@ -228,7 +237,7 @@ class AccountMove(models.Model):
                 "horaEmision": emission_time,
                 "tipoDePago": self.get_payment_type(),
                 "serie": "",
-                "sucursal": "",
+                "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
                 "moneda": record.currency_id.name,
                 "transaccionId": "",

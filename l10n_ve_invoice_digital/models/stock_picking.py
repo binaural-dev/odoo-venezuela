@@ -160,6 +160,14 @@ class StockPicking(models.Model):
             emission_time = record.sale_id.date_order.strftime("%I:%M:%S %p").lower() if record.sale_id.date_order else ""
             emission_date = record.sale_id.date_order.strftime("%d/%m/%Y") if record.sale_id.date_order else ""
             due_date = record.sale_id.validity_date.strftime("%d/%m/%Y") if record.sale_id.validity_date else ""
+            subsidiary = ""
+
+            if self.company_id.subsidiary:
+                if record.subsidiary_origin_id and record.subsidiary_origin_id.code:
+                    subsidiary = record.subsidiary_origin_id.code
+                else:
+                    raise UserError(_("The selected subsidiary does not contain a reference"))
+
             return {
                 "tipoDocumento": document_type,
                 "numeroDocumento": document_number,
@@ -168,7 +176,7 @@ class StockPicking(models.Model):
                 "horaEmision": emission_time,
                 "tipoDePago": self.get_payment_type(),
                 "serie": "",
-                "sucursal": "",
+                "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
                 "moneda": record.sale_id.currency_id.name,
                 "transaccionId": "",
