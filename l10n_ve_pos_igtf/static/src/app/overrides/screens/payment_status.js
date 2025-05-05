@@ -62,7 +62,6 @@ patch(PaymentScreenStatus.prototype, {
       return this.env.utils.formatCurrency(result);
   },
   get displaySuggestedIgtf(){
-    console.log("configuracion", this.pos.config.suggested_igtf)
     return this.pos.config.suggested_igtf
   },
   get foreignTotalDueTextWithIGTF() {
