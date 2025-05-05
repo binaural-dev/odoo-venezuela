@@ -124,8 +124,6 @@ class AccountMove(models.Model):
         if foreign_totals:
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
 
-        _logger.info(f"Payload: {payload}")
-
         response = self.call_tfhka_api("emision", payload)
 
         if response:
