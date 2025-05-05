@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20230503\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250429\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-07 22:13+0000\n"
-"PO-Revision-Date: 2023-07-07 22:13+0000\n"
+"POT-Creation-Date: 2025-05-05 14:13+0000\n"
+"PO-Revision-Date: 2025-05-05 14:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,22 +17,34 @@ msgstr ""
 
 #. module: l10n_ve_pos_igtf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_igtf/static/src/xml/PaymentScreenStatus.xml:0
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_status.xml:0
 #, python-format
 msgid "(IGTF)"
 msgstr ""
 
 #. module: l10n_ve_pos_igtf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_igtf/static/src/xml/PaymentScreenStatus.xml:0
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_status.xml:0
 #, python-format
 msgid "(TOTAL)"
 msgstr ""
 
 #. module: l10n_ve_pos_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_igtf.l10n_ve_pos_igtf_config_form
+msgid "Activate suggested IGTF in this box"
+msgstr "Activar IGTF sugerido en esta caja"
+
+#. module: l10n_ve_pos_igtf
 #: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_payment_method__apply_igtf
 msgid "Apply Igtf"
 msgstr "Aplica IGTF"
+
+#. module: l10n_ve_pos_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_status.xml:0
+#, python-format
+msgid "BI IGTF"
+msgstr ""
 
 #. module: l10n_ve_pos_igtf
 #: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_order__bi_igtf
@@ -41,10 +53,22 @@ msgstr "BI IGTF"
 
 #. module: l10n_ve_pos_igtf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_igtf/static/src/xml/PaymentScreenStatus.xml:0
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_status.xml:0
 #, python-format
 msgid "Foreign IGTF:"
 msgstr "IGTF Alterno:"
+
+#. module: l10n_ve_pos_igtf
+#: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_payment__foreign_igtf_amount
+msgid "Foreign Igtf Amount"
+msgstr ""
+
+#. module: l10n_ve_pos_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_lines.xml:0
+#, python-format
+msgid "IGTF ="
+msgstr ""
 
 #. module: l10n_ve_pos_igtf
 #: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_config__igtf_percentage
@@ -53,13 +77,14 @@ msgstr "Porcentaje IGTF"
 
 #. module: l10n_ve_pos_igtf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_igtf/static/src/xml/PaymentScreenStatus.xml:0
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_status.xml:0
 #, python-format
 msgid "IGTF:"
 msgstr ""
 
 #. module: l10n_ve_pos_igtf
 #: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_order__igtf_amount
+#: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_payment__igtf_amount
 msgid "Igtf Amount"
 msgstr "Monto de IGTF"
 
@@ -78,34 +103,32 @@ msgstr "Pago de factura para %s (%s) usando %s"
 #. module: l10n_ve_pos_igtf
 #: model:ir.model,name:l10n_ve_pos_igtf.model_pos_config
 msgid "Point of Sale Configuration"
-msgstr "Configuración del TPV"
+msgstr "Configuración del punto de venta"
 
 #. module: l10n_ve_pos_igtf
 #: model:ir.model,name:l10n_ve_pos_igtf.model_pos_order
 msgid "Point of Sale Orders"
-msgstr "Pedidos del TPV"
+msgstr "Órdenes del punto de venta"
 
 #. module: l10n_ve_pos_igtf
 #: model:ir.model,name:l10n_ve_pos_igtf.model_pos_payment_method
 msgid "Point of Sale Payment Methods"
-msgstr "Métodos de pago en el punto de venta "
+msgstr "Métodos de pago de punto de venta "
 
 #. module: l10n_ve_pos_igtf
 #: model:ir.model,name:l10n_ve_pos_igtf.model_pos_payment
 msgid "Point of Sale Payments"
-msgstr "Pagos en puntos de venta"
+msgstr "Pagos en punto de venta"
 
 #. module: l10n_ve_pos_igtf
 #: model:ir.model,name:l10n_ve_pos_igtf.model_pos_session
 msgid "Point of Sale Session"
-msgstr "Sesión TPV"
+msgstr "Sesión de punto de venta"
 
 #. module: l10n_ve_pos_igtf
-#. odoo-javascript
-#: code:addons/l10n_ve_pos_igtf/static/src/js/PaymentScreen.js:0
-#, python-format
-msgid "Validation Error"
-msgstr "Error de Validacion"
+#: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_config__suggested_igtf
+msgid "Suggested IGTF"
+msgstr "IGTF sugerido"
 
 #. module: l10n_ve_pos_igtf
 #. odoo-python
@@ -117,23 +140,3 @@ msgid ""
 msgstr ""
 "Tienes la configuracion de IGTF encendida, configura primero la cuenta "
 "contable y el porcentaje"
-
-#. module: l10n_ve_pos_igtf
-#. odoo-javascript
-#: code:addons/l10n_ve_pos_igtf/static/src/js/PaymentScreen.js:0
-#, python-format
-msgid ""
-"You must specify between the payment methods, the tax base and the igtf "
-"payment."
-msgstr "Debes especificar entre los metodos de pago, la base imponible y el pago del igtf."
-
-#. module: l10n_ve_pos_igtf
-#: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_config__apply_igtf
-#: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_res_config_settings__apply_igtf
-msgid "Apply IGTF"
-msgstr "Aplicar IGTF"
-
-#. module: l10n_ve_pos_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_igtf.res_config_settings_binaural_pos_igtf
-msgid "Calculate IGTF with payments made in USD on current box"
-msgstr "Calcular IGTF con pagos realizados en USD en caja actual."
