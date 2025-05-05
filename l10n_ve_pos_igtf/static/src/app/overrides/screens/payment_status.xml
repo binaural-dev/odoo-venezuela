@@ -2,7 +2,7 @@
 <templates id="template" xml:space="preserve">
     <t t-name="PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[hasclass('total')]" position="replace">
-            <div style="font-size:35px;" class="d-flex w-100 justify-content-center py-2 text-success">
+            <div t-if="displaySuggestedIgtf" style="font-size:35px;" class="d-flex w-100 justify-content-center py-2 text-success">
                     <span>
                         <t t-esc="totalDueText" /> 
                     </span>
@@ -20,6 +20,11 @@
                     =
                     </span>
                     <t t-esc="totalDueTextWithIGTFDisplay" />
+            </div>
+            <div t-else="" style="font-size:35px;" class="d-flex w-100 justify-content-center py-2 text-success">
+                    <span>
+                        <t t-esc="totalDueText" /> 
+                    </span>
             </div>
         </xpath>
         <xpath expr="//div[hasclass('payment-status-change')]" position="after">

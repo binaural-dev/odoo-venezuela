@@ -61,6 +61,10 @@ patch(PaymentScreenStatus.prototype, {
       var result = round_pr(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100),rounding);
       return this.env.utils.formatCurrency(result);
   },
+  get displaySuggestedIgtf(){
+    console.log("configuracion", this.pos.config.suggested_igtf)
+    return this.pos.config.suggested_igtf
+  },
   get foreignTotalDueTextWithIGTF() {
     return this.env.utils.formatForeignCurrency(
       (this.props.order.get_foreign_total_with_tax() * ((this.pos.config.igtf_percentage / 100) + 1)) + this.props.order.get_foreign_rounding_applied()

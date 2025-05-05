@@ -1,0 +1,16 @@
+<odoo>
+  <record id="l10n_ve_pos_igtf_config_form" model="ir.ui.view">
+    <field name="name">l10n_ve_pos_igtf.config.form</field>
+    <field name="model">pos.config</field>
+    <field name="inherit_id" ref="point_of_sale.pos_config_view_form" />
+    <field name="arch" type="xml">
+      <xpath
+        expr="//div[@class='row mt16 o_settings_container'][2]/setting[1]"
+        position="after">
+        <setting string="Activate suggested IGTF in this box">
+          <field name="suggested_igtf" />
+        </setting>
+      </xpath>
+    </field>
+  </record>
+</odoo>

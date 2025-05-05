@@ -7,3 +7,4 @@ class PosConfig(models.Model):
     igtf_percentage = fields.Float(
         "IGTF percentage", related="company_id.igtf_percentage", readonly=False
     )
+    suggested_igtf = fields.Boolean("Suggested IGTF")

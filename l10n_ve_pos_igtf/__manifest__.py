@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.0",
+    "version": "17.0.0.0.1",
     "depends": [
         "base",
         "l10n_ve_pos",
@@ -16,6 +16,7 @@
         "views/pos_payment_method.xml",
         "views/pos_payment_views.xml",
         "views/pos_order.xml",
+        "views/pos_config_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "assets": {
