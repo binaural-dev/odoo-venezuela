@@ -4,6 +4,7 @@ from odoo import api, models
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
+    # override 
     @api.depends("product_id.ciu_ids")
     def _compute_ciu_id(self):
         for line in self:

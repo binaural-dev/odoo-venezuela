@@ -25,8 +25,10 @@ class AccountRetention(models.Model):
         return res
 
     def get_sequence_municipal_retention(self):
-        # We assume that all the retention lines of the same retention will have the same subsidiary
-        # so we use the one of the first retention line we find.
+        """
+        We assume that all the retention lines of the same retention will have the same subsidiary
+        so we use the one of the first retention line we find.
+        """
         subsidiary_municipal_supplier_retencion_sequence = self.retention_line_ids[
             0
         ].move_id.account_analytic_id.municipal_supplier_retentions_sequence_id
