@@ -288,15 +288,6 @@ msgstr "La URL no está configurada en los ajustes de la empresa."
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
 #: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
-msgid "The document has already been digitalized."
-msgstr "El documento ya ha sido digitalizado."
-
-#. module: l10n_ve_invoice_digital
-#. odoo-python
-#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
-#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
-#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
-#, python-format
 msgid "The selected subsidiary does not contain a reference"
 msgstr "La sucursal seleccionada no contiene referencia"
 

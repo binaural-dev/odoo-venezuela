@@ -23,6 +23,9 @@ class AccountMove(models.Model):
     def action_post(self):
         res = super(AccountMove, self).action_post()
         if self.company_id.invoice_digital_tfhka:
+            if self.is_digitalized:
+                return res
+            
             for record in self:
                 if record.name == '/':
                     last_invoice = self.env['account.move'].search(
@@ -55,8 +58,6 @@ class AccountMove(models.Model):
         return res
 
     def generate_document_digital(self, document_type):
-        if self.is_digitalized:
-            raise UserError(_("The document has already been digitalized."))
         series = ""
 
         if self.journal_id.series_correlative_sequence_id:
