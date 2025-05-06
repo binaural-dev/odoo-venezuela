@@ -3,6 +3,7 @@ from odoo.exceptions import UserError, ValidationError
 import logging
 import requests
 import json
+import re
 
 _logger = logging.getLogger(__name__)
 
@@ -18,46 +19,59 @@ class AccountMove(models.Model):
     _inherit = 'account.move'
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
-    show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_visibility_button", copy=False)
-    show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_visibility_button", copy=False)
-    show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_visibility_button", copy=False)
 
     def action_post(self):
         res = super(AccountMove, self).action_post()
-        for record in self:
-            if record.name == '/':
-                last_invoice = self.env['account.move'].search(
-                    [
-                        ('move_type', 'in', ['out_invoice', 'out_refund']),
-                        ('name', '!=', '/')
-                    ], order='create_date desc', limit=1
-                )
-                if not last_invoice.name:
-                    continue
-                if not last_invoice.is_digitalized:
-                    selection_dict = dict(last_invoice._fields['move_type'].selection)
-                    move_type_name = selection_dict.get(last_invoice.move_type)
-                    raise ValidationError(
-                        _("The %(move_type_name)s %(invoice_name)s has not been digitalized yet.\n"
-                            "Please complete the digitalization process before proceeding.") % {
-                            'move_type_name': move_type_name,
-                            'invoice_name': last_invoice.name
-                        }
+        if self.company_id.invoice_digital_tfhka and not self.is_digitalized:
+            
+            for record in self:
+                if record.name == '/':
+                    last_invoice = self.env['account.move'].search(
+                        [
+                            ('move_type', 'in', ['out_invoice', 'out_refund']),
+                            ('name', '!=', '/')
+                        ], order='create_date desc', limit=1
                     )
+                    if not last_invoice.name:
+                        continue
+                    if not last_invoice.is_digitalized:
+                        selection_dict = dict(last_invoice._fields['move_type'].selection)
+                        move_type_name = selection_dict.get(last_invoice.move_type)
+                        raise ValidationError(
+                            _("The %(move_type_name)s %(invoice_name)s has not been digitalized yet.\n"
+                                "Please complete the digitalization process before proceeding.") % {
+                                'move_type_name': move_type_name,
+                                'invoice_name': last_invoice.name
+                            }
+                        )
+            document_type = ""
+
+            if self.move_type == "out_invoice":
+                document_type = "03" if self.debit_origin_id else "01"
+            elif self.move_type == "out_refund" and self.reversed_entry_id:
+                document_type = "02"
+            
+            if document_type: 
+                self.generate_document_digital(document_type)
         return res
 
-    def generate_document_digital(self):
-        if self.is_digitalized:
-            raise UserError(_("The document has already been digitalized."))
-        document_type = self.env.context.get('document_type')
-        end_number, start_number = self.query_numbering()
-        document_number = self.get_last_document_number(document_type)
+    def generate_document_digital(self, document_type):
+        series = ""
+
+        if self.journal_id.series_correlative_sequence_id:
+            if self.journal_id.sequence_id and self.journal_id.sequence_id.prefix:
+                series = re.sub(r'[^a-zA-Z0-9]', '', self.journal_id.sequence_id.prefix)
+            else:
+                raise UserError(_("The selected series is not configured"))
+            
+        end_number, start_number = self.query_numbering(series)
+        document_number = self.get_last_document_number(document_type, series)
         document_number = str(document_number + 1)
 
         if document_number == start_number:
-            self.assign_numbering(end_number, start_number)
+            self.assign_numbering(end_number, start_number, series)
 
-        self.generate_document_data(document_number, document_type)
+        self.generate_document_data(document_number, document_type, series)
 
     def get_base_url(self):
         if self.company_id.url_tfhka:
@@ -102,8 +116,8 @@ class AccountMove(models.Model):
             _logger.error(_("Error connecting to the API: %(error)s") % {'error': e})
             raise UserError(_("Error connecting to the API: %(error)s") % {'error': e})
 
-    def generate_document_data(self, document_number, document_type):
-        document_identification = self.get_document_identification(document_type, document_number)
+    def generate_document_data(self, document_number, document_type, series):
+        document_identification = self.get_document_identification(document_type, document_number, series)
         seller = self.get_seller()
         buyer = self.get_buyer()
         totals, foreign_totals = self.get_totals()
@@ -133,9 +147,9 @@ class AccountMove(models.Model):
                 message_type='comment',
             )
 
-    def get_last_document_number(self, document_type):
+    def get_last_document_number(self, document_type, series):
         payload = {
-                    "serie": "",
+                    "serie": series,
                     "tipoDocumento": document_type,
                 }
         response = self.call_tfhka_api("ultimo_documento", payload)
@@ -146,13 +160,13 @@ class AccountMove(models.Model):
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def assign_numbering(self, end_number, start_number):
+    def assign_numbering(self, end_number, start_number, series):
         end = start_number + self.company_id.range_assignment_tfhka
         start_number += 1
         
         if start_number <= end_number:
             payload = {
-                        "serie": "",
+                        "serie": series,
                         "tipoDocumento": "01",
                         "numeroDocumentoInicio": start_number,
                         "numeroDocumentoFin": end
@@ -162,9 +176,9 @@ class AccountMove(models.Model):
             if response:
                 _logger.info("Numbering range successfully assigned.")
 
-    def query_numbering(self):
+    def query_numbering(self, series):
         payload={
-                "serie": "",
+                "serie": series,
                 "tipoDocumento": "",
                 "prefix": ""
             }
@@ -176,7 +190,7 @@ class AccountMove(models.Model):
             start_number = numbering.get("correlativo")
             return end_number, start_number
 
-    def get_document_identification(self, document_type, document_number):
+    def get_document_identification(self, document_type, document_number, series):
         for record in self:
             emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
             affected_invoice_number = ""
@@ -184,10 +198,19 @@ class AccountMove(models.Model):
             affected_invoice_amount = ""
             affected_invoice_comment = ""
             subsidiary = ""
+            affected_invoice_series = ""
 
             if record.debit_origin_id:
                 affected_invoice_number = record.debit_origin_id.name
+                prefix = record.debit_origin_id.journal_id.sequence_id.prefix
+
+                if affected_invoice_number.startswith(prefix):
+                    affected_invoice_number = affected_invoice_number[len(prefix):]
+
                 affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
+
+                if record.debit_origin_id.journal_id.series_correlative_sequence_id:
+                    affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
                 if record.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.debit_origin_id.amount_total)
@@ -200,7 +223,15 @@ class AccountMove(models.Model):
 
             if record.reversed_entry_id:
                 affected_invoice_number = record.reversed_entry_id.name
+                prefix = record.reversed_entry_id.journal_id.sequence_id.prefix
+
+                if affected_invoice_number.startswith(prefix):
+                    affected_invoice_number = affected_invoice_number[len(prefix):]
+                
                 affected_invoice_date = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
+
+                if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
+                    affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
                 if record.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.reversed_entry_id.amount_total)
@@ -224,7 +255,7 @@ class AccountMove(models.Model):
                 "numeroDocumento": document_number,
                 "numeroPlanillaImportacion": "",
                 "numeroExpedienteImportacion": "",
-                "serieFacturaAfectada": "",
+                "serieFacturaAfectada": affected_invoice_series,
                 "numeroFacturaAfectada": affected_invoice_number,
                 "fechaFacturaAfectada": affected_invoice_date,
                 "montoFacturaAfectada": affected_invoice_amount,
@@ -234,7 +265,7 @@ class AccountMove(models.Model):
                 "fechaVencimiento": due_date,
                 "horaEmision": emission_time,
                 "tipoDePago": self.get_payment_type(),
-                "serie": "",
+                "serie": series,
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
                 "moneda": record.currency_id.name,
@@ -574,20 +605,3 @@ class AccountMove(models.Model):
             payment_info["tipoCambio"] = str(round(foreign_rate, 2))
 
         return payment_info
-
-    @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized', 'move_type')
-    def _compute_visibility_button(self):
-        for record in self:
-            record.show_digital_invoice = True
-            record.show_digital_debit_note = True
-            record.show_digital_credit_note = True
-            
-            if record.state == "posted" and not record.is_digitalized and record.company_id.invoice_digital_tfhka:
-                if record.move_type == "out_refund" and record.reversed_entry_id and record.reversed_entry_id.is_digitalized:
-                    record.show_digital_credit_note = False
-
-                elif record.debit_origin_id and record.debit_origin_id.is_digitalized:
-                    record.show_digital_debit_note = False
-
-                elif record.move_type == "out_invoice" and not record.debit_origin_id:
-                    record.show_digital_invoice = False
