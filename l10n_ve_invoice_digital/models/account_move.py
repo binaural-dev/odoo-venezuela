@@ -22,9 +22,7 @@ class AccountMove(models.Model):
 
     def action_post(self):
         res = super(AccountMove, self).action_post()
-        if self.company_id.invoice_digital_tfhka:
-            if self.is_digitalized:
-                return res
+        if self.company_id.invoice_digital_tfhka and not self.is_digitalized:
             
             for record in self:
                 if record.name == '/':
