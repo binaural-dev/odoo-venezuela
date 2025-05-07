@@ -1,5 +1,5 @@
 <odoo>
-    <record id="pos_config_view_form_inherit" model="ir.ui.view">
+    <record id="pos_config_view_form_inherit_pos" model="ir.ui.view">
         <field name="name">pos.config.form.inherit</field>
         <field name="model">pos.config</field>
         <field name="inherit_id" ref="pos_iot.pos_iot_config_view_form" />

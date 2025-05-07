@@ -39,6 +39,6 @@
         "wizard/stock_picking_self_consumption_alert_views.xml",
     ],
     "application": True,
-    "auto_install": True,
+    "auto_install": False,
     "pre_init_hook": "pre_init_hook",
 }
