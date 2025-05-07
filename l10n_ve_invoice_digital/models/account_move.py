@@ -146,6 +146,9 @@ class AccountMove(models.Model):
                 body=_("Document successfully digitized"),  
                 message_type='comment',
             )
+            num_control_tfhka = response.get("resultado").get("numeroControl")
+            self.correlative = num_control_tfhka
+            return
 
     def get_last_document_number(self, document_type, series):
         payload = {
@@ -204,7 +207,7 @@ class AccountMove(models.Model):
                 affected_invoice_number = record.debit_origin_id.name
                 prefix = record.debit_origin_id.journal_id.sequence_id.prefix
 
-                if affected_invoice_number.startswith(prefix):
+                if prefix and affected_invoice_number.startswith(prefix):
                     affected_invoice_number = affected_invoice_number[len(prefix):]
 
                 affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
@@ -225,7 +228,7 @@ class AccountMove(models.Model):
                 affected_invoice_number = record.reversed_entry_id.name
                 prefix = record.reversed_entry_id.journal_id.sequence_id.prefix
 
-                if affected_invoice_number.startswith(prefix):
+                if prefix and affected_invoice_number.startswith(prefix):
                     affected_invoice_number = affected_invoice_number[len(prefix):]
                 
                 affected_invoice_date = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
