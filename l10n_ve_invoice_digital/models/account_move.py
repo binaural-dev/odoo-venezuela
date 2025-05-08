@@ -58,7 +58,7 @@ class AccountMove(models.Model):
     def generate_document_digital(self, document_type):
         series = ""
 
-        if self.journal_id.series_correlative_sequence_id:
+        if self.company_id.group_sales_invoicing_series and self.journal_id.series_correlative_sequence_id:
             if self.journal_id.sequence_id and self.journal_id.sequence_id.prefix:
                 series = re.sub(r'[^a-zA-Z0-9]', '', self.journal_id.sequence_id.prefix)
             else:
@@ -122,7 +122,8 @@ class AccountMove(models.Model):
         buyer = self.get_buyer()
         totals, foreign_totals = self.get_totals()
         details_items = self.get_item_details()
-
+        additional_information = self.get_additional_information()
+        
         payload = {
             "documentoElectronico": {
                 "encabezado": {
@@ -133,11 +134,14 @@ class AccountMove(models.Model):
                 "detallesItems": details_items,
             }
         }
+
         if seller:
             payload["documentoElectronico"]["encabezado"]["vendedor"] = seller
         if foreign_totals:
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
-
+        if additional_information:
+            payload["documentoElectronico"]["infoAdicional"] = additional_information
+        _logger.info(f"Esto contiene: {payload}")
         response = self.call_tfhka_api("emision", payload)
 
         if response:
@@ -250,6 +254,9 @@ class AccountMove(models.Model):
                     subsidiary = record.account_analytic_id.code
                 else:
                     raise UserError(_("The selected subsidiary does not contain a reference"))
+
+            if not record.invoice_date:
+                raise UserError(_("The invoice date is not defined."))
 
             emission_date = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
             due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
@@ -608,3 +615,14 @@ class AccountMove(models.Model):
             payment_info["tipoCambio"] = str(round(foreign_rate, 2))
 
         return payment_info
+
+    def get_additional_information(self):
+        additional_information = []
+        for record in self:
+            if record.guide_number:
+                additional_information.append({
+                    "campo": "numeroGuia",
+                    "valor": str(record.guide_number),
+                })
+
+        return additional_information

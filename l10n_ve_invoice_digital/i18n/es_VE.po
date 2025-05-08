@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250409\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-05 13:27+0000\n"
-"PO-Revision-Date: 2025-05-05 13:27+0000\n"
+"POT-Creation-Date: 2025-05-08 15:42+0000\n"
+"PO-Revision-Date: 2025-05-08 15:42+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -281,6 +281,28 @@ msgstr ""
 #, python-format
 msgid "The URL is not configured in the company settings."
 msgstr "La URL no está configurada en los ajustes de la empresa."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#, python-format
+msgid "The document has already been digitalized."
+msgstr "El documento ya ha sido digitalizado."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "The invoice date is not defined."
+msgstr "La fecha de factura no está definida."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "The selected series is not configured"
+msgstr "La serie seleccionada no está configurada"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
