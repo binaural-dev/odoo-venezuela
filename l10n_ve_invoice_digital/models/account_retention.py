@@ -150,12 +150,18 @@ class AccountRetention(models.Model):
             emission_date = record.date_accounting.strftime("%d/%m/%Y") if record.date_accounting else ""
             affected_invoice_number = ""
             subsidiary = ""
-            
+
             for line in record.retention_line_ids:
                 if line.move_id.debit_origin_id:
                     affected_invoice_number = line.move_id.debit_origin_id.name
+                    prefix = line.move_id.debit_origin_id.journal_id.sequence_id.prefix
+
                 if line.move_id.reversed_entry_id:
                     affected_invoice_number = line.move_id.reversed_entry_id.name
+                    prefix = line.move_id.reversed_entry_id.journal_id.sequence_id.prefix
+
+                if prefix and affected_invoice_number.startswith(prefix):
+                    affected_invoice_number = affected_invoice_number[len(prefix):]
 
             if self.company_id.subsidiary:
                 if record.account_analytic_id and record.account_analytic_id.code:
@@ -172,7 +178,7 @@ class AccountRetention(models.Model):
                 "serie": "",
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": record.company_currency_id.name,
+                "moneda": self.company_id.currency_id.name,
             }
     
     def get_subject_retention(self):
@@ -248,16 +254,21 @@ class AccountRetention(models.Model):
         for record in self:
             for line in record.retention_line_ids:
                 tipo_documento = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
-                
+                document_number_ret = line.move_id.name
+                prefix = line.move_id.journal_id.sequence_id.prefix
+
+                if prefix and document_number_ret.startswith(prefix):
+                    document_number_ret = document_number_ret[len(prefix):]
+
                 retention_data = {
                     "numeroLinea": str(counter), 
                     "fechaDocumento": line.date_accounting.strftime("%d/%m/%Y"), 
                     "tipoDocumento": tipo_documento,
-                    "numeroDocumento": line.move_id.name,
+                    "numeroDocumento": document_number_ret,
                     "numeroControl": line.move_id.correlative,
                     "montoTotal": str(round(line.invoice_total, 2)),  
                     "baseImponible": str(round(line.invoice_amount, 2)),
-                    "moneda": line.company_currency_id.name,
+                    "moneda": self.company_id.currency_id.name,
                     "retenido": str(round(line.retention_amount, 2)),
                 }
 

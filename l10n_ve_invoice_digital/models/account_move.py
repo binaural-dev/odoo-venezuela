@@ -20,42 +20,17 @@ class AccountMove(models.Model):
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
 
-    def action_post(self):
-        res = super(AccountMove, self).action_post()
-        if self.company_id.invoice_digital_tfhka and not self.is_digitalized:
-            
-            for record in self:
-                if record.name == '/':
-                    last_invoice = self.env['account.move'].search(
-                        [
-                            ('move_type', 'in', ['out_invoice', 'out_refund']),
-                            ('name', '!=', '/')
-                        ], order='create_date desc', limit=1
-                    )
-                    if not last_invoice.name:
-                        continue
-                    if not last_invoice.is_digitalized:
-                        selection_dict = dict(last_invoice._fields['move_type'].selection)
-                        move_type_name = selection_dict.get(last_invoice.move_type)
-                        raise ValidationError(
-                            _("The %(move_type_name)s %(invoice_name)s has not been digitalized yet.\n"
-                                "Please complete the digitalization process before proceeding.") % {
-                                'move_type_name': move_type_name,
-                                'invoice_name': last_invoice.name
-                            }
-                        )
-            document_type = ""
+    def generate_document_digital(self):
+        document_type = ""
 
-            if self.move_type == "out_invoice":
-                document_type = "03" if self.debit_origin_id else "01"
-            elif self.move_type == "out_refund" and self.reversed_entry_id:
-                document_type = "02"
-            
-            if document_type: 
-                self.generate_document_digital(document_type)
-        return res
+        if self.move_type == "out_invoice":
+            document_type = "03" if self.debit_origin_id else "01"
+        elif self.move_type == "out_refund" and self.reversed_entry_id:
+            document_type = "02"
+        
+        if not document_type: 
+            return
 
-    def generate_document_digital(self, document_type):
         series = ""
 
         if self.company_id.group_sales_invoicing_series and self.journal_id.series_correlative_sequence_id:
@@ -240,7 +215,7 @@ class AccountMove(models.Model):
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
-                if record.currency_id.name == "VEF":
+                if self.company_id.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.reversed_entry_id.amount_total)
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
@@ -278,14 +253,14 @@ class AccountMove(models.Model):
                 "serie": series,
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": record.currency_id.name,
+                "moneda": self.company_id.currency_id.name,
                 "transaccionId": "",
                 "urlPdf": ""
             }
 
     def get_totals(self):
         for record in self:
-            currency = record.currency_id.name
+            currency = self.company_id.currency_id.name
             totalIGTF = 0
             totalIGTF_VES = 0
             tax_totals = record.tax_totals
@@ -394,7 +369,7 @@ class AccountMove(models.Model):
 
             if amounts_foreign:
                 foreign_totals = {
-                    "moneda": record.currency_id.name,
+                    "moneda": self.company_id.currency_foreign_id.name,
                     "tipoCambio": str(record.foreign_rate),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
