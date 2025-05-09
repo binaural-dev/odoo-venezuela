@@ -1253,3 +1253,21 @@ msgstr "Informe de Detalles de Facturas de Cuentas"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "to"
 msgstr "Hasta"
+
+#. module: account
+#. odoo-python
+#: code:addons/account/models/account_move.py:0
+#: code:addons/account/models/account_move.py:0
+#: model:ir.model.fields.selection,name:account.selection__account_payment__reconciled_invoices_type__credit_note
+#: model:ir.ui.menu,name:account.menu_action_move_in_refund_type
+#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.report_invoice_document
+#, python-format
+msgid "Credit Note"
+msgstr "Notas de Crédito"
+
+#. module: account
+#: model:ir.ui.menu,name:account.menu_action_account_payments_receivable
+msgid "Collections"
+msgstr "Cobranzas"
