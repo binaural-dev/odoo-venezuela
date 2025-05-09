@@ -1,17 +1,11 @@
-from odoo import api, models
+from odoo import api, models,fields
 
 class AccountDebitNote(models.TransientModel):
     _inherit = 'account.debit.note'
+    filter_enabled = fields.Boolean(string='Filter Enabled', compute='_compute_filter_enabled')
     
-
-    @api.onchange('journal_type')
-    def _onchange_journal_filter_by_config(self):
-
+    @api.depends('journal_type')
+    def _compute_filter_enabled(self):
         config = self.env['ir.config_parameter'].sudo()
-        filter_enabled = config.get_param('account.move.auto_select_debit_note_journal') == 'True'
-
-        if filter_enabled:
-            nd_journal = self.env['account.journal'].search([('is_debit', '=', 'True')], limit=1)
-            if nd_journal:
-                self.journal_id = nd_journal.id
-          
+        for record in self:
+            record.filter_enabled = config.get_param('account.move.auto_select_debit_note_journal') == 'True'
