@@ -1,0 +1,8 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="binaural_pos_mf.ReprintInvoiceButton">
+        <div class="control-button btn btn-light rounded-0 fw-bolder" t-on-click="_onClick" >
+            <i class="fa fa-check-square-o"></i>
+            <span>Reprint Document</span>
+        </div>
+    </t>
+</templates>
