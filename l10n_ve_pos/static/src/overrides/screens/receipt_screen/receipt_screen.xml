@@ -1,0 +1,15 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.ReceiptScreen" t-inherit="point_of_sale.ReceiptScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[@class='d-flex flex-column m-4']" position="replace">
+        </xpath>
+        <xpath expr="//div[hasclass('top-content-center')]" position="replace">
+            <div class="top-content-center flex-grow-1">
+                <h1 class="mb-0">
+                    <t t-out="orderAmountPlusTip" /> / <t t-out="env.utils.formatForeignCurrency(pos.get_order().get_foreign_total_with_tax())" />
+                </h1>
+            </div>
+        </xpath>
+        <xpath expr="//div[@class='pos-receipt-container d-flex flex-grow-1 flex-lg-grow-0 user-select-none justify-content-center bg-200 text-center overflow-hidden'][1]" position="replace">
+        </xpath>
+    </t>
+</templates>

@@ -1,0 +1,8 @@
+
+<templates id="template" xml:space="preserve">
+    <t t-name="PartnerListScreen" t-inherit="point_of_sale.PartnerListScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table[hasclass('partner-list')]/thead/tr/th[1]" position="after">
+            <th>Document</th>
+        </xpath>
+    </t>
+</templates>

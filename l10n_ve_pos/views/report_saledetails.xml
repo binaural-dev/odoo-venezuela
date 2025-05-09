@@ -1,0 +1,99 @@
+
+<odoo>
+    <data>
+        <template id="report_saledetails" inherit_id="point_of_sale.report_saledetails">
+            <xpath expr="//div[@class='page']" position="replace">
+                <div class="page">
+                    <div class="text-center">
+                        <h2>Sales Details</h2>
+
+                        <t t-if="date_start and date_stop">
+                            <strong><t t-out="date_start" t-options="{'widget': 'datetime'}"/> - <t t-out="date_stop" t-options="{'widget': 'datetime'}"/></strong>
+                        </t>
+                    </div>
+
+                    <h3>Payments</h3>
+                    <table  class="table table-sm">
+                        <thead><tr>
+                            <th>Name</th>
+                            <th>Total</th>
+                            <th>Foreign Total</th>
+                        </tr></thead>
+                        <tbody>
+                            <tr t-foreach='payments' t-as='payment' t-key='payment_index'> <!-- or payment.id for the key -->
+                            <td><t t-out="payment['name']" /></td>
+                            <td><t t-out="payment['total']" t-options='{"widget": "monetary", "display_currency": currency}' /></td>
+                            <td><t t-out="payment['f_total']" t-options='{"widget": "monetary", "display_currency": foreign_currency}'/></td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <br/>
+
+                    <strong>Total: <t t-out='total_paid' t-options='{"widget": "monetary", "display_currency": currency}'/></strong>
+                    <br/>
+                    <strong>Foreign Total: <t t-out='foreign_total_paid' t-options='{"widget": "monetary", "display_currency": foreign_currency}'/></strong>
+
+                    <br/>
+                    <br/>
+                    <br/>
+
+                    <h3>Taxes</h3>
+                    <table  class="table table-sm">
+                        <thead><tr>
+                            <th>Name</th>
+                            <th>Tax Amount</th>
+                            <th>Base Amount</th>
+                        </tr></thead>
+                        <tbody>
+                        <tr t-foreach='taxes' t-as='tax'>
+                            <td><t t-out="tax['name']" /></td>
+                            <td><t t-out="tax['tax_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                            <td><t t-out="tax['base_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+
+                    <br/>
+                    <br/>
+                    <br/>
+
+                    <!-- Orderlines -->
+                    <h3>Products</h3>
+                    <table  class="table table-sm">
+                        <thead><tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price Unit</th>
+                        </tr></thead>
+                        <tbody>
+                        <tr t-foreach='products' t-as='line'>
+                            <t t-set="internal_reference" t-value="line['code'] and '[%s] ' % line['code'] or ''" />
+                            <td><t t-out="internal_reference" /><t t-out="line['product_name']" /></td>
+                            <td>
+                                <t t-out="line['quantity']" />
+                                <t t-if='line["uom"] != "Units"'>
+                                    <t t-out='line["uom"]' /> 
+                                </t>
+                            </td>
+                            <td>
+                                <t t-out='line["price_unit"]' t-options='{"widget": "monetary", "display_currency": currency}' />
+                            <t t-if='line["discount"] != 0'>
+                                Disc: <t t-out='line["discount"]' />%
+                            </t>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </xpath>
+            <xpath expr="//div[@t-if='opening_note or closing_note']" position="replace">
+            </xpath>
+            <xpath expr="//t[@id='closing_session']" position="replace">
+            </xpath>
+            <xpath expr="//t[@id='invoices']" position='replace'>
+            </xpath>
+        </template>
+    </data>
+</odoo>

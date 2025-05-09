@@ -1,0 +1,11 @@
+
+<templates id="template" xml:space="preserve">
+
+    <t t-name="l10n_ve_pos.FullRefundButton">
+        <div class="control-button btn btn-light rounded-0 fw-bolder" t-on-click="() => this.click()">
+            <i class="fa fa-check-square-o"></i>
+            <span>Full refund</span>
+        </div>
+    </t>
+
+</templates>
