@@ -1,0 +1,17 @@
+<odoo>
+    <data>
+        <record id="view_account_debit_note_inherit" model="ir.ui.view">
+            <field name="name">account.debit.note.form.inherit</field>
+            <field name="model">account.debit.note</field>
+            <field name="inherit_id" ref="account_debit_note.view_account_debit_note"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='journal_id']" position="before">
+                    <field name="filter_enabled" invisible='1'/>
+                </xpath>
+                <xpath expr="//field[@name='journal_id']" position="attributes">
+                    <attribute name="domain">[('is_debit', '=', True)] if filter_enabled else [('type', '=', journal_type)]</attribute>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
