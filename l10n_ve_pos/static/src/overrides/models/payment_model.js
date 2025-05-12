@@ -36,7 +36,7 @@ patch(Payment.prototype, {
 				this.set_foreign_amount(this.order.get_foreign_due(), true);
 				return res;
 			}
-			this.foreign_amount = amount * this.pos.foreign_currency.rate;
+			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
 		}
 		return res;
 	},
@@ -45,6 +45,8 @@ patch(Payment.prototype, {
 		if (!only) {
 			if (this.pos.currency.name == "VEF") {
 				if (this.payment_method.is_foreign_currency) {
+					this.amount=this.foreign_amount / this.pos.foreign_currency.rate
+					return;
 				}
 				this.amount = amount / this.order.get_conversion_rate();
 			}
