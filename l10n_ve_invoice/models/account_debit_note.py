@@ -6,6 +6,7 @@ class AccountDebitNote(models.TransientModel):
     
     @api.depends('journal_type')
     def _compute_filter_enabled(self):
-        config = self.company_id.auto_select_debit_note_journal
+        move = self.env['account.move'].browse(self.env.context.get('active_id'))
+        config = move.company_id.auto_select_debit_note_journal
         for record in self:
             record.filter_enabled = config
