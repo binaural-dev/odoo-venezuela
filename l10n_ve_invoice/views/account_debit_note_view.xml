@@ -10,6 +10,7 @@
                 </xpath>
                 <xpath expr="//field[@name='journal_id']" position="attributes">
                     <attribute name="domain">[('is_debit', '=', True)] if filter_enabled else [('type', '=', journal_type)]</attribute>
+                    <attribute name='required'>1</attribute>
                 </xpath>
             </field>
         </record>
