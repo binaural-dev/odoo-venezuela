@@ -31,10 +31,9 @@ class AccountMove(models.Model):
     )
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
-        for record in self:
-            for line in record.invoice_line_ids:
-                if line.price_unit <= 0:
-                    raise ValidationError(("Una factura no puede tener una linea con precio en cero"))
+        for line in self.filtered(lambda m: m.is_invoice(include_receipts=True)).mapped("invoice_line_ids"):
+            if line.price_unit <= 0:
+                raise ValidationError(("Una factura no puede tener una linea con precio en cero"))
 
     def action_post(self):
         for record in self:
