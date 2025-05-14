@@ -395,12 +395,14 @@ class AccountMove(models.Model):
             "IVA 16%": "G",
             "IVA 31%": "A",
             "Exento": "E",
+            "IVA 0%": "E",
         }
         tax_rate = {
             "IVA 8%": "8.0",
             "IVA 16%": "16.0",
             "IVA 31%": "31.0",
             "Exento": "0.0",
+            "IVA 0%": "0.0",
             "3.0 %": "3.0"
         }
         for record in self:
