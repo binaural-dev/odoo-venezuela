@@ -178,7 +178,7 @@ class AccountRetention(models.Model):
                 "serie": "",
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": self.company_id.currency_id.name,
+                "moneda": record.company_id.currency_id.name,
             }
     
     def get_subject_retention(self):
@@ -268,7 +268,7 @@ class AccountRetention(models.Model):
                     "numeroControl": line.move_id.correlative,
                     "montoTotal": str(round(line.invoice_total, 2)),  
                     "baseImponible": str(round(line.invoice_amount, 2)),
-                    "moneda": self.company_id.currency_id.name,
+                    "moneda": record.company_id.currency_id.name,
                     "retenido": str(round(line.retention_amount, 2)),
                 }
 

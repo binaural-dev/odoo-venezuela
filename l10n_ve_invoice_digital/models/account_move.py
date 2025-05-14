@@ -194,7 +194,7 @@ class AccountMove(models.Model):
                 if record.debit_origin_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
-                if record.currency_id.name == "VEF":
+                if record.company_id.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.debit_origin_id.amount_total)
                 else:
                     tax_totals = record.debit_origin_id.tax_totals
@@ -215,7 +215,7 @@ class AccountMove(models.Model):
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
-                if self.company_id.currency_id.name == "VEF":
+                if record.company_id.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.reversed_entry_id.amount_total)
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
@@ -253,14 +253,14 @@ class AccountMove(models.Model):
                 "serie": series,
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": self.company_id.currency_id.name,
+                "moneda": record.company_id.currency_id.name,
                 "transaccionId": "",
                 "urlPdf": ""
             }
 
     def get_totals(self):
         for record in self:
-            currency = self.company_id.currency_id.name
+            currency = record.company_id.currency_id.name
             totalIGTF = 0
             totalIGTF_VES = 0
             tax_totals = record.tax_totals
@@ -369,7 +369,7 @@ class AccountMove(models.Model):
 
             if amounts_foreign:
                 foreign_totals = {
-                    "moneda": self.company_id.currency_foreign_id.name,
+                    "moneda": record.company_id.currency_foreign_id.name,
                     "tipoCambio": str(record.foreign_rate),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
