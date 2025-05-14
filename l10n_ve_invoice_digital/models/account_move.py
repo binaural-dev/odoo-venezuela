@@ -276,7 +276,7 @@ class AccountMove(models.Model):
                         tax_totals.get('subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Excento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -285,7 +285,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Excento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
@@ -303,7 +303,7 @@ class AccountMove(models.Model):
                         tax_totals.get('subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Excento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -312,7 +312,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Excento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts_foreign["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
@@ -327,7 +327,7 @@ class AccountMove(models.Model):
                         tax_totals.get('foreign_subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Excento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -336,7 +336,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Excento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts["subtotal"] = str(round(tax_totals.get("foreign_amount_untaxed", 0), 2))
