@@ -181,7 +181,8 @@ class AccountMove(models.Model):
             affected_invoice_comment = ""
             subsidiary = ""
             affected_invoice_series = ""
-
+            prefix = ""
+            
             if record.debit_origin_id:
                 affected_invoice_number = record.debit_origin_id.name
                 prefix = record.debit_origin_id.journal_id.sequence_id.prefix
