@@ -182,7 +182,7 @@ class AccountMove(models.Model):
             subsidiary = ""
             affected_invoice_series = ""
             prefix = ""
-            
+
             if record.debit_origin_id:
                 affected_invoice_number = record.debit_origin_id.name
                 prefix = record.debit_origin_id.journal_id.sequence_id.prefix
@@ -254,7 +254,7 @@ class AccountMove(models.Model):
                 "serie": series,
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": record.company_id.currency_id.name,
+                "moneda": "VEF",
                 "transaccionId": "",
                 "urlPdf": ""
             }
@@ -461,17 +461,31 @@ class AccountMove(models.Model):
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
+                if record.company_id.currency_id.name == "VEF":
+                    unit_price = round(line.price_unit, 2)
+                    unit_price_discount = round(line.price_unit * (line.discount / 10), 2)
+                    discount_amount = round((line.price_unit * (line.discount / 100)) * line.quantity, 2)
+                    item_price = round(line.price_subtotal, 2)
+                    price_before_discount = round(line.price_unit * line.quantity, 2)
+
+                else:
+                        unit_price = round(line.foreign_price, 2)
+                        unit_price_discount = round(line.foreign_price * (line.discount / 10), 2)
+                        discount_amount = round((line.foreign_price * (line.discount / 100)) * line.quantity, 2)
+                        item_price = round(line.foreign_subtotal, 2)
+                        price_before_discount = round(line.foreign_price * line.quantity, 2)
+
                 item_details.append({
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
                     "descripcion": line.product_id.name,
                     "cantidad": str(line.quantity),
-                    "precioUnitario": str(round(line.price_unit, 2)),
-                    "precioUnitarioDescuento": str(round(line.price_unit * (line.discount / 100), 2)),
-                    "descuentoMonto": str(round((line.price_unit * (line.discount / 100)) * line.quantity, 2)),
-                    "precioItem": str(round(line.price_subtotal, 2)),
-                    "precioAntesDescuento": str(round(line.price_unit * line.quantity, 2)),
+                    "precioUnitario": str(unit_price),
+                    "precioUnitarioDescuento": str(unit_price_discount),
+                    "descuentoMonto": str(discount_amount),
+                    "precioItem": str(item_price),
+                    "precioAntesDescuento": str(price_before_discount),
                     "codigoImpuesto": tax_mapping[tax_rate],
                     "tasaIVA": str(round(line.tax_ids.amount, 2)),
                     "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
