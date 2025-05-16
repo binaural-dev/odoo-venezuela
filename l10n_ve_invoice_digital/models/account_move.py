@@ -475,6 +475,9 @@ class AccountMove(models.Model):
                         item_price = round(line.foreign_subtotal, 2)
                         price_before_discount = round(line.foreign_price * line.quantity, 2)
 
+                vat = round(item_price * line.tax_ids.amount / 100, 2)
+                total_item_value = round(item_price + vat, 2)
+
                 item_details.append({
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
@@ -488,8 +491,8 @@ class AccountMove(models.Model):
                     "precioAntesDescuento": str(price_before_discount),
                     "codigoImpuesto": tax_mapping[tax_rate],
                     "tasaIVA": str(round(line.tax_ids.amount, 2)),
-                    "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
-                    "valorTotalItem": str(round(line.price_subtotal, 2)),
+                    "valorIVA": str(vat),
+                    "valorTotalItem": str(total_item_value),
                 })
                 line_number += 1
         return item_details

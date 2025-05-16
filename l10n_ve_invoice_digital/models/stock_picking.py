@@ -178,7 +178,7 @@ class StockPicking(models.Model):
                 "serie": "",
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": record.sale_id.currency_id.name,
+                "moneda": "VEF",
                 "transaccionId": "",
                 "urlPdf": ""
             }
@@ -196,19 +196,29 @@ class StockPicking(models.Model):
                 }
                 taxes = line.tax_id.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
-
+                
+                if record.sale_id.currency_id.name == "VEF":
+                    unit_price = round(line.price_unit, 2)
+                    item_price = round(line.price_total, 2)
+                else:
+                    unit_price = round(line.foreign_price, 2)
+                    item_price = round(line.foreign_subtotal, 2)
+                    
+                vat = round(item_price * line.tax_id.amount / 100, 2)
+                total_item_value = round(item_price + vat, 2)
+                        
                 item_details.append({
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
                     "descripcion": line.product_id.name,
                     "cantidad": str(line.product_uom_qty),
-                    "precioUnitario": str(round(line.price_unit, 2)),
-                    "precioItem": str(round(line.price_total, 2)),
+                    "precioUnitario": str(unit_price),
+                    "precioItem": str(item_price),
                     "codigoImpuesto": tax_mapping[tax_rate],
                     "tasaIVA": str(round(line.tax_id.amount, 2)),
-                    "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
-                    "valorTotalItem": str(round(line.price_total, 2)),
+                    "valorIVA": str(vat),
+                    "valorTotalItem": str(total_item_value),
                 })
                 line_number += 1
         return item_details
@@ -281,7 +291,7 @@ class StockPicking(models.Model):
             product_origin = "Nacional e Importado" if len(product_origin_set) > 1 else (product_origin_set.pop() if product_origin_set else "Sin origen definido")
             weight = f"{record.shipping_weight:.2f} {record.weight_uom_name}" if record.shipping_weight else "Sin peso"
             description = re.sub(r'<.*?>', '', str(record.note)) if record.note else "Sin descripción"
-            destination = record.partner_id.contact_address_complete or "no definida"
+            # destination = record.partner_id.contact_address_complete or "no definida"
 
             return {
                 "esGuiaDespacho": "1",
@@ -290,7 +300,7 @@ class StockPicking(models.Model):
                 "tipoProducto": "Sin especificar",
                 "origenProducto": product_origin,
                 "pesoOVolumenTotal": weight,
-                "destinoProducto": destination,
+                # "destinoProducto": destination,
             }
 
     def _compute_visibility_button(self):
