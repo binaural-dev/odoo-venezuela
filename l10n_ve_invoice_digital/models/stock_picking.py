@@ -291,7 +291,6 @@ class StockPicking(models.Model):
             product_origin = "Nacional e Importado" if len(product_origin_set) > 1 else (product_origin_set.pop() if product_origin_set else "Sin origen definido")
             weight = f"{record.shipping_weight:.2f} {record.weight_uom_name}" if record.shipping_weight else "Sin peso"
             description = re.sub(r'<.*?>', '', str(record.note)) if record.note else "Sin descripción"
-            # destination = record.partner_id.contact_address_complete or "no definida"
 
             return {
                 "esGuiaDespacho": "1",
@@ -300,7 +299,6 @@ class StockPicking(models.Model):
                 "tipoProducto": "Sin especificar",
                 "origenProducto": product_origin,
                 "pesoOVolumenTotal": weight,
-                # "destinoProducto": destination,
             }
 
     def _compute_visibility_button(self):
