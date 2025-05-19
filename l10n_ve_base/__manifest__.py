@@ -9,7 +9,7 @@
     "category": "Technical",
     "version": "17.0.0.0.3",
     "depends": ["base", "web"],
-    "auto_install": True,
+    "auto_install": False,
     "data": ["security/ir.model.access.csv", "views/res_config_settings_views.xml"],
     "assets": {
         "web.assets_backend": [

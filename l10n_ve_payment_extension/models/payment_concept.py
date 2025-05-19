@@ -20,7 +20,8 @@ class PaymentConcept(models.Model):
             type_person_id = []
             for line in record.line_payment_concept_ids:
                 if line.type_person_id.id in type_person_id:
-                    raise UserError(_("The type of person cannot be repeated."))
+                    continue
+                    # raise UserError(_("The type of person cannot be repeated."))
                 else:
                     type_person_id.append(line.type_person_id.id)
 
