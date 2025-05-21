@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-16 15:00+0000\n"
-"PO-Revision-Date: 2025-04-16 15:00+0000\n"
+"POT-Creation-Date: 2025-05-21 00:22+0000\n"
+"PO-Revision-Date: 2025-05-21 00:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -56,7 +56,8 @@ msgid ""
 "<span>Assists the user in selecting the appropriate journals when applying a"
 " debit note.</span>"
 msgstr ""
-"<span>Asiste al usuario en la elección de los diarios adecuados al aplicar una nota de débito.</span>"
+"<span>Asiste al usuario en la elección de los diarios adecuados al aplicar "
+"una nota de débito.</span>"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
@@ -199,6 +200,25 @@ msgid "Add Debit Note wizard"
 msgstr "Asistente para agregar nota de débito"
 
 #. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#, python-format
+msgid "An invoice already exists with the Control Number: %s"
+msgstr "Ya existe una factura con el Número de Control: %s"
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#, python-format
+msgid "An invoice cannot have a line with a price of zero"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__auto_select_debit_note_journal
+msgid "Auto Select Debit Note Journal"
+msgstr ""
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "BORRADOR"
 msgstr ""
@@ -210,6 +230,8 @@ msgstr "Libro de Compras"
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #, python-format
@@ -238,6 +260,7 @@ msgstr "Configuración de Facturación: General"
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid ""
@@ -288,6 +311,11 @@ msgstr "Nombre"
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "FACTURA"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_debit_note__filter_enabled
+msgid "Filter Enabled"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -517,6 +545,7 @@ msgstr "Mostrar total en USD en forma libre"
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid ""
 "The correlative must be unique per journal when using a contingency journal"
@@ -526,6 +555,7 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid "The sale's series sequence must be in the selected journal."
@@ -556,6 +586,7 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid "You can not add more than %s products to the invoice."
