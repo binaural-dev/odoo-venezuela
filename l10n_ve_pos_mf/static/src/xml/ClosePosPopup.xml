@@ -1,0 +1,14 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
+        <xpath expr="//footer[hasclass('footer')]" position="inside">
+            <button 
+                class="button btn btn-lg btn-secondary" 
+                t-on-click="generate_report_z" 
+                title="Generate report Z to close Report Z">Report Z</button>
+            <button 
+                class="button btn btn-lg btn-secondary" 
+                t-on-click="generate_report_x" 
+                title="Generate report X">Report X</button>
+        </xpath>
+    </t>
+</templates>

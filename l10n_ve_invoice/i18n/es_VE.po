@@ -556,3 +556,10 @@ msgstr "Notas de Crédito"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
 msgid "Debit note"
 msgstr "Notas de Débito"
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#, python-format
+msgid "An invoice cannot have a line with a price of zero"
+msgstr "Una factura no puede tener una linea con precio en cero"

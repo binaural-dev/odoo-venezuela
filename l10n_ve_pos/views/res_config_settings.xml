@@ -1,0 +1,177 @@
+<odoo>
+    <data>
+        <record id="res_config_settings_l10n_ve_pos" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.rate</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
+            <field name="arch" type="xml">
+                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                    <block title="Configuration POS: Point of Sale" string="POS Configuration"
+                        name="l10n_ve_pos_block">
+                        <div class="col-12 col-lg-6 o_setting_box"
+                            id="l10n_ve_pos_div_pos_unreconcile_moves">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_unreconcile_moves" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_unreconcile_moves" />
+                                <div class="text-muted">
+                                    It is allowed to break reconciliation of payments associated
+                                    with the POS
+                                    if the session it corresponds to is open
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box"
+                                id="l10n_ve_pos_div_pos_config_id">
+                                <div class="o_setting_left_pane" />
+                                <div class="o_setting_right_pane">
+                                    <div class="row flex-row flex-nowrap mt8 align-items-center">
+                                        <label class="col text-nowrap ml8 flex-nowrap"
+                                            string="Point of Sale" for="pos_config_id" />
+                                        <field name="pos_config_id" class="w-50"
+                                            options="{'no_open': True, 'no_create': True}"
+                                            title="Settings on this page will apply to this point of sale." />
+                                        <button name="action_pos_config_create_new" type="object"
+                                            string="+ New Shop"
+                                            class="col btn-link ms-2 text-nowrap"
+                                            style="line-height: 0.5;" />
+                                    </div>
+                                    <div class="o_view_nocontent" invisible="pos_config_id">
+                                        <div class="o_nocontent_help">
+                                            <p class="o_view_nocontent_empty_folder">No Point of
+                                                Sale
+                                                selected</p>
+                                            <p>Please create/select a Point of Sale above to show
+                                                the
+                                                configuration options.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box"
+                                id="l10n_ve_pos_div_pos_search_cne">
+                                <div class="o_setting_left_pane">
+                                    <field name="pos_search_cne" />
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="pos_search_cne" />
+                                    <div class="text-muted">
+                                        Search clients by vat number in CNE database
+                                    </div>
+                                </div>
+                                <div class="col-12 col-lg-6 o_setting_box"
+                                    id="l10n_ve_pos_div_pos_move_to_draft">
+                                    <div class="o_setting_left_pane">
+                                        <field name="pos_move_to_draft" />
+                                    </div>
+                                    <div class="o_setting_right_pane">
+                                        <label for="pos_move_to_draft" />
+                                        <div class="text-muted">
+                                            Change state to draft in account moves from POS
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-lg-6 o_setting_box"
+                                        id="l10n_ve_pos_div_pos_show_just_products_with_available_qty">
+                                        <div class="o_setting_left_pane">
+                                            <field name="pos_show_just_products_with_available_qty" />
+                                        </div>
+                                        <div class="o_setting_right_pane">
+                                            <label for="pos_show_just_products_with_available_qty" />
+                                            <p class="text-muted">
+                                                Deletes automatically products without free qty on
+                                                POS
+                                            </p>
+                                        </div>
+                                        <div class="col-12 col-lg-6 o_setting_box"
+                                            id="l10n_ve_pos_div_sell_kit_from_another_store">
+                                            <div class="o_setting_left_pane">
+                                                <field name="sell_kit_from_another_store" />
+                                            </div>
+                                            <div class="o_setting_right_pane">
+                                                <div>
+                                                    <label for="sell_kit_from_another_store" />
+                                                    <div class="text-muted">
+                                                        Allows you to sell kits whose products are
+                                                        not in the main
+                                                        warehouse of the box.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-lg-6 o_setting_box"
+                                                id="l10n_ve_pos_div_activate_barcode_strict_mode">
+                                                <div class="o_setting_left_pane">
+                                                    <field name="activate_barcode_strict_mode" />
+                                                </div>
+                                                <div class="o_setting_right_pane">
+                                                    <div>
+                                                        <label for="activate_barcode_strict_mode" />
+                                                        <div class="text-muted">
+                                                            Activate product entry with barcode in
+                                                            strict mode
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 col-lg-6 o_setting_box"
+                                                    id="l10n_ve_pos_div_amount_to_zero">
+                                                    <div class="o_setting_left_pane">
+                                                        <field name="amount_to_zero" />
+                                                    </div>
+                                                    <div class="o_setting_right_pane">
+                                                        <label for="amount_to_zero"
+                                                            string="Amount to zero" />
+                                                        <div class="text-muted">
+                                                            Do not allow sales less than
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12 col-lg-6 o_setting_box"
+                                                        id="l10n_ve_pos_div_pos_show_free_qty">
+                                                        <div class="o_setting_left_pane">
+                                                            <field name="pos_show_free_qty" />
+                                                        </div>
+                                                        <div class="o_setting_right_pane">
+                                                            <label for="pos_show_free_qty" />
+                                                            <div class="text-muted">
+                                                                Show free quantity on POS
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12 col-lg-6 o_setting_box"
+                                                            id="l10n_ve_pos_div_pos_pos_show_free_qty_on_warehouse"
+                                                            invisible="not pos_show_free_qty">
+                                                            <div class="o_setting_left_pane">
+                                                                <field
+                                                                    name="pos_show_free_qty_on_warehouse" />
+                                                            </div>
+                                                            <div class="o_setting_right_pane">
+                                                                <label
+                                                                    for="pos_show_free_qty_on_warehouse" />
+                                                                <div class="text-muted">
+                                                                    Show quantites from warehouse of
+                                                                    TPV
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </block>
+                </xpath>
+            </field>
+        </record>
+        <record id="pos_config_view_form_inherit" model="ir.ui.view">
+            <field name="name">pos.config.form.inherit</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//setting[@id='auto_printing'][1]" position="replace"></xpath>
+                <xpath expr="//block[@id='pos_connected_devices_section'][1]/setting[3]"
+                    position="replace">
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

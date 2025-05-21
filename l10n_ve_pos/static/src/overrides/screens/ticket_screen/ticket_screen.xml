@@ -1,0 +1,17 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+        <xpath expr="//div[@class='buttons d-flex gap-2'][1]/button[@class='highlight btn btn-lg btn-primary']" position="replace">
+        </xpath>
+        <xpath expr="//OrderWidget" position="attributes">
+            <attribute name="conversion_rate">_selectedSyncedOrder.get_conversion_rate()</attribute>
+            <attribute name="foreign_total">env.utils.formatForeignCurrency(_selectedSyncedOrder.get_foreign_total_with_tax())</attribute>
+            <attribute name="quantity_products">_selectedSyncedOrder.get_qty_products()</attribute>
+            <attribute name="foreign_tax">
+!env.utils.floatIsZero(_selectedSyncedOrder.get_foreign_total_tax()) and env.utils.formatForeignCurrency(_selectedSyncedOrder.get_foreign_total_tax()) or ''
+            </attribute>
+        </xpath>
+        <xpath expr="//div[@class='control-buttons d-flex flex-wrap border-bottom overflow-hidden bg-300'][1]" position="inside">
+             <FullRefundButton order="_selectedSyncedOrder" ticket_screen="this"/>
+        </xpath>
+    </t>
+</templates>

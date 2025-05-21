@@ -1,0 +1,14 @@
+
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension" owl="1">
+        <xpath expr="//img[hasclass('pos-logo')]" position="replace">
+            <div t-if="!ui.isSmall" class="pos-branding d-flex justify-content-start h-100 p-0 my-0 text-start">
+                <img class="pos-logo h-75 ms-3 me-auto align-self-center" t-on-click="() => debug.toggleWidget()" src="/web/static/img/logo.png" alt="Logo" />
+                <div class="pt-1 ms-2 align-self-center">
+            |
+                </div>
+                <img class="pos-logo h-50 ms-3 me-auto align-self-center" src="/l10n_ve_pos/static/src/img/binaural.png" alt="Logo" />
+            </div>
+        </xpath>
+    </t>
+</templates>
