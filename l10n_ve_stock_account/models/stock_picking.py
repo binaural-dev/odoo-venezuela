@@ -1052,7 +1052,6 @@ class StockPicking(models.Model):
                 picking.partner_required = True
             else:
                 picking.partner_required = False
-        _logger.warning(f"partner_required: {self.partner_required}")
 
     @api.onchange('location_dest_id', 'partner_required')
     def _change_required_partner_id(self):
