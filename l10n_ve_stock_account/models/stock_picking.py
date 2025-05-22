@@ -1092,6 +1092,13 @@ class StockPicking(models.Model):
         for picking in self:
             if picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_consignment').id and picking.is_dispatch_guide and picking.is_consignment: 
                 picking.partner_required = True
+            else:
+                picking.partner_required = False
+
+    @api.onchange('location_dest_id', 'partner_required')
+    def _change_required_partner_id(self):
+        for picking in self:
+            if picking.partner_required: 
                 contact = self.env['res.partner'].search([('id', '=', picking.location_dest_id.partner_id.id)], limit=1)
                 if contact:
                     picking.partner_id = contact.id

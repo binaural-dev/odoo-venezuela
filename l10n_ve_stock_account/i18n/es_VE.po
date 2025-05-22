@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-29 18:58+0000\n"
-"PO-Revision-Date: 2025-04-29 18:58+0000\n"
+"POT-Creation-Date: 2025-05-21 18:21+0000\n"
+"PO-Revision-Date: 2025-05-21 18:21+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -183,6 +183,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_location.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_location.py:0
 #, python-format
 msgid "A consignation warehouse must have an assigned customer."
 msgstr "Un almacén de consignación debe tener un cliente asignado."
@@ -208,6 +209,15 @@ msgid "Alert"
 msgstr "Alerta"
 
 #. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
+#, python-format
+msgid ""
+"All selected pickings must have the same invoice type to create a single "
+"invoice."
+msgstr ""
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__allowed_reason_ids
 msgid "Allowed Reasons"
 msgstr "Razones Permitidas"
@@ -215,7 +225,7 @@ msgstr "Razones Permitidas"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_location__partner_id
 msgid "Assigned Customer"
-msgstr "Cliente:"
+msgstr "Cliente"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
@@ -241,6 +251,7 @@ msgstr "Cancelada"
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
+#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid "Cannot sell more than the available consignation stock for product %s."
 msgstr ""
@@ -249,6 +260,7 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
 #: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
 #, python-format
 msgid "Cannot sell more than the available consignation stock."
@@ -595,6 +607,7 @@ msgstr "Facturada"
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_count
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_ids
 #, python-format
@@ -664,6 +677,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/res_company.py:0
+#: code:addons/l10n_ve_stock_account/models/res_company.py:0
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_company__invoice_cron_type__last_business_day
 #, python-format
 msgid "Last Business Day"
@@ -671,6 +685,7 @@ msgstr "Último día hábil del mes"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/res_company.py:0
 #: code:addons/l10n_ve_stock_account/models/res_company.py:0
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_company__invoice_cron_type__last_day
 #, python-format
@@ -705,6 +720,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
+#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid ""
 "No consignation warehouse found. \n"
@@ -717,6 +733,7 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid ""
@@ -740,6 +757,7 @@ msgstr "Una factura para todas las guías de despacho"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_location.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_location.py:0
 #, python-format
 msgid ""
@@ -803,6 +821,9 @@ msgstr "Guías de Despacho"
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "Please configure the journal from settings"
 msgstr "Por favor configure el diario desde la configuración"
@@ -812,12 +833,16 @@ msgstr "Por favor configure el diario desde la configuración"
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "Please configure the journal from the settings."
 msgstr "Por favor configure el diario desde la configuración."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "Please select single type transfer"
@@ -1005,6 +1030,7 @@ msgstr "Mostrar otras causas Motivo de transferencia"
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid ""
 "The 'Transfer Reason' field is mandatory when 'Operation Code' is "
@@ -1015,6 +1041,7 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid ""
@@ -1033,6 +1060,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
+#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid ""
 "The product %s is not available in the customer's consignation location."
@@ -1043,6 +1071,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
+#: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
 #, python-format
 msgid "The product is not available in the customer's consignation location."
 msgstr ""
@@ -1051,12 +1080,14 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_warehouse.py:0
+#: code:addons/l10n_ve_stock_account/models/stock_warehouse.py:0
 #, python-format
 msgid "There can only be one consignation warehouse."
 msgstr "Solo puede haber un almacén de consignación."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "This guide has at least one posted invoice, please check your invoice."
@@ -1159,6 +1190,30 @@ msgstr "Almacén"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
+#: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
+#, python-format
+msgid "You can only create invoices for not internal dispatch guides."
+msgstr "No puedes crear facturas para guías de despacho internas."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
+#: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
+#, python-format
+msgid "You can only create invoices for pickings in the 'To Invoice' state."
+msgstr "Solamente puedes crear facturas para guías de despacho con el estado 'Por facturar'."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
+#: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
+#, python-format
+msgid "You can only create invoices for pickings with the same partner."
+msgstr "Solamente se pueden crear facturas para guías de despacho con el mismo cliente"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "You cannot create an invoice from this picking for this state."
@@ -1166,6 +1221,7 @@ msgstr "No puede crear una factura de estos picking por el estado."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/ir_actions_report.py:0
 #: code:addons/l10n_ve_stock_account/models/ir_actions_report.py:0
 #, python-format
 msgid "You cannot download a freeform from a vendor bill."
