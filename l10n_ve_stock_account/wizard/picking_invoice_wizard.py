@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 import logging
 
@@ -25,12 +25,12 @@ class PickingInvoiceWizard(models.TransientModel):
         picking_id_check_state = picking_ids.filtered(lambda x: x.state != 'done')
 
         if picking_id_check_state: 
-            raise UserError("You can only create invoices for pickings in the 'To Invoice' state.")
+            raise UserError(_("You can only create invoices for pickings in the 'To Invoice' state."))
         partner_id = picking_ids.mapped("partner_id")
         if len(partner_id) == 1:
             pass
         else:
-            raise UserError("You can only create invoices for pickings with the same partner.")
+            raise UserError(_("You can only create invoices for pickings with the same partner."))
         
         status_set = set()
 
@@ -44,11 +44,11 @@ class PickingInvoiceWizard(models.TransientModel):
             elif picking.show_create_customer_credit:
                 status_set.add('customer_credit')
             else: 
-                raise UserError("You can only create invoices for not internal dispatch guides.")
+                raise UserError(_("You can only create invoices for not internal dispatch guides."))
 
         _logger.warning("Status set: %s", status_set) 
         if len(status_set) > 1:
-            raise UserError("All selected pickings must have the same invoice type to create a single invoice.")
+            raise UserError(_("All selected pickings must have the same invoice type to create a single invoice."))
             
         if list(status_set)[0] == 'invoice':
             father_picking = picking_ids[0]
@@ -59,12 +59,12 @@ class PickingInvoiceWizard(models.TransientModel):
         picking_ids = self.env["stock.picking"].browse(active_ids)
         picking_id_check_state = picking_ids.filtered(lambda x: x.state_guide_dispatch != 'to_invoice')
         if picking_id_check_state: 
-            raise UserError("You can only create invoices for pickings in the 'To Invoice' state.")
+            raise UserError(_("You can only create invoices for pickings in the 'To Invoice' state."))
         partner_id = picking_ids.mapped("partner_id")
         if len(partner_id) == 1:
             pass
         else:
-            raise UserError("You can only create invoices for pickings with the same partner.")
+            raise UserError(_("You can only create invoices for pickings with the same partner."))
 
         for picking in picking_ids:
             if picking.show_create_bill:
@@ -76,7 +76,7 @@ class PickingInvoiceWizard(models.TransientModel):
             elif picking.show_create_customer_credit():
                 picking.create_customer_credit()
             else: 
-                raise UserError("You can only create invoices for not internal dispatch guides.")
+                raise UserError(_("You can only create invoices for not internal dispatch guides."))
 
     @api.model
     def default_get(self, fields):

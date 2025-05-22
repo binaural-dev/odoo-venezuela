@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-03 18:01+0000\n"
-"PO-Revision-Date: 2025-05-03 18:01+0000\n"
+"POT-Creation-Date: 2025-05-21 22:53+0000\n"
+"PO-Revision-Date: 2025-05-21 22:53+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -22,6 +22,7 @@ msgstr "'Etiqueta de Cajas- %s' % (object.name)"
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/product_product.py:0
 #: code:addons/l10n_ve_stock/models/product_product.py:0
 #, python-format
 msgid "- Barcode \"%s\" already assigned to product(s): %s"
@@ -45,6 +46,7 @@ msgstr ""
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/product_product.py:0
 #: code:addons/l10n_ve_stock/models/product_product.py:0
 #, python-format
 msgid "A packaging already uses the barcode"
@@ -126,7 +128,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__partner_id
 msgid "Assigned Customer"
-msgstr "Cliente:"
+msgstr "Cliente"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_attachment_count
@@ -135,6 +137,7 @@ msgstr "Nº de archivos adjuntos"
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/product_product.py:0
 #: code:addons/l10n_ve_stock/models/product_product.py:0
 #, python-format
 msgid ""
@@ -204,6 +207,13 @@ msgstr "Fecha:"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Delivery Orders"
+msgstr "Órdenes de Despacho"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
@@ -339,6 +349,13 @@ msgstr ""
 "                                transferir/vender."
 
 #. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Internal Transfers"
+msgstr "Traslados internos"
+
+#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_location
 msgid "Inventory Locations"
 msgstr "Ubicaciones de inventario"
@@ -362,6 +379,11 @@ msgstr "Es Ubicación Física"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__limit_product_qty_out
 msgid "Limit Product Qty Out"
 msgstr "Guía de Despacho"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__limit_product_qty_out
+msgid "Limit stock picking product lines"
+msgstr "Guía de despacho"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__liters_per_unit
@@ -474,6 +496,13 @@ msgid "PICKS"
 msgstr ""
 
 #. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Pack"
+msgstr "Empaquetar"
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.packaging_picking_item
 msgid "Package"
 msgstr "Cajas"
@@ -506,6 +535,13 @@ msgid "Physical Locations"
 msgstr "Ubicaciones Físicas"
 
 #. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Pick"
+msgstr "Elegir"
+
+#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking_type
 msgid "Picking Type"
 msgstr "Tipo de recolección"
@@ -534,6 +570,7 @@ msgstr "Precio sin impuestos"
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
 #: code:addons/l10n_ve_stock/models/product_template.py:0
 #, python-format
 msgid "Price cannot be negative."
@@ -587,12 +624,19 @@ msgstr "Cantidad"
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quant
 msgid "Quants"
-msgstr "Cantidades"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Rango:"
 msgstr ""
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Receipts"
+msgstr "Recepciones"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__reception_date
@@ -675,6 +719,17 @@ msgstr "La Disponibilidad del Producto para la Venta."
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
+#: code:addons/l10n_ve_stock/models/product_template.py:0
+#, python-format
+msgid "The name contains a character that is not allowed for registration."
+msgstr ""
+"El nombre contiene al menos un carácter que no está permitido para el "
+"registro"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_location.py:0
 #: code:addons/l10n_ve_stock/models/stock_location.py:0
 #, python-format
 msgid "The priority must be greater than 0."
@@ -688,6 +743,7 @@ msgstr ""
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
 #: code:addons/l10n_ve_stock/models/product_template.py:0
 #, python-format
 msgid "This product must have only one tax."
@@ -778,12 +834,15 @@ msgstr "Historial de comunicación de la web"
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_product.py:0
+#: code:addons/l10n_ve_stock/models/product_product.py:0
 #, python-format
 msgid "You can't create products"
 msgstr "No puedes crear productos"
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #, python-format
@@ -793,6 +852,7 @@ msgstr "No puedes agregar productos a transferencias de tipo envío"
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #, python-format
 msgid "You cannot make transfers larger than the demand"
 msgstr "No puedes hacer transferencias mayores que la demanda"
@@ -800,12 +860,14 @@ msgstr "No puedes hacer transferencias mayores que la demanda"
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #, python-format
 msgid "You cannot make transfers larger than the reserved quantity"
 msgstr "No puedes hacer transferencias mayores que la cantidad reservada"
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #, python-format
 msgid "You do not have permission to make shipment-type transfers"
@@ -818,6 +880,7 @@ msgstr "plantilla de producto de cantidad de corrección"
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #, python-format
 msgid "does not have results from other pickings"
