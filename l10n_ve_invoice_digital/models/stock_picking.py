@@ -245,8 +245,12 @@ class StockPicking(models.Model):
     def get_buyer(self):
         for record in self:
             if record.partner_id:
+                partner = record.partner_id
+                if partner.parent_id:
+                    partner = record.partner_id.parent_id
+
                 partner_data = {}
-                vat = record.partner_id.vat.upper()
+                vat = partner.vat.upper()
 
                 if vat[0].isalpha(): 
                     partner_data["tipoIdentificacion"] = vat[0]
@@ -255,23 +259,23 @@ class StockPicking(models.Model):
                     partner_data["tipoIdentificacion"] = ""
                     partner_data["numeroIdentificacion"] = vat
 
-                if record.partner_id.prefix_vat:
-                    partner_data["tipoIdentificacion"] = record.partner_id.prefix_vat
+                if partner.prefix_vat:
+                    partner_data["tipoIdentificacion"] = partner.prefix_vat
 
                 partner_data["numeroIdentificacion"] = partner_data["numeroIdentificacion"].replace("-", "").replace(".", "")
-                partner_data["razonSocial"] = record.partner_id.name
-                partner_data["direccion"] = record.partner_id.contact_address_complete or "no definida"
-                partner_data["pais"] = record.partner_id.country_code
-                partner_data["telefono"] = record.partner_id.mobile or record.partner_id.phone
-                partner_data["correo"]= record.partner_id.email
+                partner_data["razonSocial"] = partner.name
+                partner_data["direccion"] = partner.contact_address_complete or "no definida"
+                partner_data["pais"] = partner.country_code
+                partner_data["telefono"] = partner.mobile or partner.phone
+                partner_data["correo"]= partner.email
 
-                if not record.partner_id.country_code:
+                if not partner.country_code:
                     raise UserError(_("The 'Country' field of the Customer cannot be empty for digitalization."))
 
-                if not (record.partner_id.mobile or record.partner_id.phone):
+                if not (partner.mobile or partner.phone):
                     raise UserError(_("The 'Mobile' field of the Customer cannot be empty for digitalization."))
 
-                if not record.partner_id.email:
+                if not partner.email:
                     raise UserError(_("The 'Email' field of the Customer cannot be empty for digitalization."))
 
                 return {
