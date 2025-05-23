@@ -136,12 +136,13 @@ class StockPicking(models.Model):
         if response:
             approves = False
             for numbering in response.get("numeraciones", []):
+                current_series = (numbering.get("serie") or "").upper()
                 if series != "":
-                    if numbering.get("serie") == series:
+                    if current_series == series.upper():
                         end_number = numbering.get("hasta")
                         start_number = numbering.get("correlativo")
                 else:
-                    if numbering.get("serie") == "NO APLICA":
+                    if current_series == "NO APLICA":
                         end_number = numbering.get("hasta")
                         start_number = numbering.get("correlativo")
                 
