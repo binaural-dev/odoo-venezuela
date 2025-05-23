@@ -4,7 +4,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.11",
+    "version": "17.0.0.0.12",
     "depends": [
         "base",
         "account",
