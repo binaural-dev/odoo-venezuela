@@ -13,7 +13,6 @@ class EndPoints():
     BASE_ENDPOINTS = {
         "emision": "/Emision",
         "ultimo_documento": "/UltimoDocumento",
-        "asignar_numeraciones": "/AsignarNumeraciones",
         "consulta_numeraciones": "/ConsultaNumeraciones",
     }
 
@@ -26,19 +25,16 @@ class StockPicking(models.Model):
 
     def button_validate(self):
         res = super(StockPicking, self).button_validate()
-        if self.company_id.invoice_digital_tfhka and not self.is_digitalized and self.dispatch_guide_controls:
+        if self.company_id.invoice_digital_tfhka and not self.is_digitalized and (self.dispatch_guide_controls or self.is_dispatch_guide):
             self.generate_document_digital() 
         return res
 
     def generate_document_digital(self):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized.")) 
-        end_number, start_number = self.query_numbering()
+        self.query_numbering()
         document_number = self.get_last_document_number(DOCUMENT_TYPE)
         document_number = str(document_number + 1)
-
-        if document_number == start_number:
-            self.assign_numbering(end_number, start_number)
 
         self.generate_document_data(document_number, DOCUMENT_TYPE)
 
@@ -90,6 +86,7 @@ class StockPicking(models.Model):
         buyer = self.get_buyer()
         details_items = self.get_item_details()
         dispatch_guide = self.get_dispatch_guide()
+        additional_information = self.get_additional_information()
 
         payload = {
             "documentoElectronico": {
@@ -101,6 +98,9 @@ class StockPicking(models.Model):
                 'guiaDespacho': dispatch_guide,
             }
         }
+
+        if additional_information:
+            payload["documentoElectronico"]["infoAdicional"] = additional_information
 
         response = self.call_tfhka_api("emision", payload)
 
@@ -125,41 +125,42 @@ class StockPicking(models.Model):
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def assign_numbering(self, end_number, start_number):
-        end = start_number + self.company_id.range_assignment_tfhka
-        start_number += 1
-        
-        if start_number <= end_number:
-            payload = {
-                        "serie": "",
-                        "tipoDocumento": "01",
-                        "numeroDocumentoInicio": start_number,
-                        "numeroDocumentoFin": end
-                    }
-            response = self.call_tfhka_api("asignar_numeraciones", payload)
-            
-            if response:
-                _logger.info("Numbering range successfully assigned.")
-
-    def query_numbering(self):
+    def query_numbering(self, series=""):
         payload={
-                "serie": "",
+                "serie": series,
                 "tipoDocumento": "",
                 "prefix": ""
             }
         response = self.call_tfhka_api("consulta_numeraciones", payload)
 
         if response:
-            numbering = response["numeraciones"][0]
-            end_number = numbering.get("hasta")
-            start_number = numbering.get("correlativo")
-            return end_number, start_number
+            approves = False
+            for numbering in response.get("numeraciones", []):
+                if series != "":
+                    if numbering.get("serie") == series:
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                else:
+                    if numbering.get("serie") == "NO APLICA":
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                
+                if int(start_number) < int(end_number):
+                    approves = True
+                    break
+
+            if approves:
+                return
+
+            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
     def get_document_identification(self, document_type, document_number):
         for record in self:
-            emission_time = record.sale_id.date_order.strftime("%I:%M:%S %p").lower() if record.sale_id.date_order else ""
-            emission_date = record.sale_id.date_order.strftime("%d/%m/%Y") if record.sale_id.date_order else ""
-            due_date = record.sale_id.validity_date.strftime("%d/%m/%Y") if record.sale_id.validity_date else ""
+            now = fields.Datetime.now()
+            emission_time = now.strftime("%I:%M:%S %p").lower()
+            emission_date = now.strftime("%d/%m/%Y")
+            due_date = record.date_deadline.strftime("%d/%m/%Y") if record.date_deadline else emission_date
+
             subsidiary = ""
 
             if self.company_id.subsidiary:
@@ -187,40 +188,56 @@ class StockPicking(models.Model):
         item_details = []
         line_number = 1
         for record in self:
-            for line in record.sale_id.order_line:
-                tax_mapping = {
-                    0.0: "E",
-                    8.0: "R",
-                    16.0: "G",
-                    31.0: "A",
-                }
-                taxes = line.tax_id.filtered(lambda t: t.amount)
-                tax_rate = taxes[0].amount if taxes else 0.0
-                
-                if record.sale_id.currency_id.name == "VEF":
-                    unit_price = round(line.price_unit, 2)
-                    item_price = round(line.price_total, 2)
-                else:
-                    unit_price = round(line.foreign_price, 2)
-                    item_price = round(line.foreign_subtotal, 2)
+            if record.sale_id and record.transfer_reason_id.code == "sale":
+                for line in record.sale_id.order_line:
+                    tax_mapping = {
+                        0.0: "E",
+                        8.0: "R",
+                        16.0: "G",
+                        31.0: "A",
+                    }
+                    taxes = line.tax_id.filtered(lambda t: t.amount)
+                    tax_rate = taxes[0].amount if taxes else 0.0
                     
-                vat = round(item_price * line.tax_id.amount / 100, 2)
-                total_item_value = round(item_price + vat, 2)
+                    if record.sale_id.currency_id.name == "VEF":
+                        unit_price = round(line.price_unit, 2)
+                        item_price = round(line.price_total, 2)
+                    else:
+                        unit_price = round(line.foreign_price, 2)
+                        item_price = round(line.foreign_subtotal, 2)
                         
-                item_details.append({
-                    "numeroLinea": str(line_number),
-                    "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
-                    "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                    "descripcion": line.product_id.name,
-                    "cantidad": str(line.product_uom_qty),
-                    "precioUnitario": str(unit_price),
-                    "precioItem": str(item_price),
-                    "codigoImpuesto": tax_mapping[tax_rate],
-                    "tasaIVA": str(round(line.tax_id.amount, 2)),
-                    "valorIVA": str(vat),
-                    "valorTotalItem": str(total_item_value),
-                })
-                line_number += 1
+                    vat = round(item_price * line.tax_id.amount / 100, 2)
+                    total_item_value = round(item_price + vat, 2)
+                            
+                    item_details.append({
+                        "numeroLinea": str(line_number),
+                        "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
+                        "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
+                        "descripcion": line.product_id.name,
+                        "cantidad": str(line.product_uom_qty),
+                        "precioUnitario": str(unit_price),
+                        "precioItem": str(item_price),
+                        "codigoImpuesto": tax_mapping[tax_rate],
+                        "tasaIVA": str(round(line.tax_id.amount, 2)),
+                        "valorIVA": str(vat),
+                        "valorTotalItem": str(total_item_value),
+                    })
+                    line_number += 1
+            else:
+                for line in record.move_ids_without_package:
+                    item_details.append({
+                        "numeroLinea": str(line_number),
+                        "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
+                        "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
+                        "descripcion": line.product_id.name,
+                        "cantidad": str(line.product_uom_qty),
+                        "precioUnitario": "0",
+                        "precioItem": "0",
+                        "tasaIVA": "0",
+                        "valorIVA": "0",
+                        "valorTotalItem": "0",
+                    })
+                    line_number += 1
         return item_details
 
     def get_buyer(self):
@@ -291,15 +308,29 @@ class StockPicking(models.Model):
             product_origin = "Nacional e Importado" if len(product_origin_set) > 1 else (product_origin_set.pop() if product_origin_set else "Sin origen definido")
             weight = f"{record.shipping_weight:.2f} {record.weight_uom_name}" if record.shipping_weight else "Sin peso"
             description = re.sub(r'<.*?>', '', str(record.note)) if record.note else "Sin descripción"
+            if record.transfer_reason_id.code == "other_causes":
+                transfer_reason = record.other_causes_transfer_reason
+            else:
+                transfer_reason = record.transfer_reason_id.name
 
             return {
                 "esGuiaDespacho": "1",
-                "motivoTraslado": record.transfer_reason_id.name,
+                "motivoTraslado": transfer_reason,
                 "descripcionServicio": description,
                 "tipoProducto": "Sin especificar",
                 "origenProducto": product_origin,
                 "pesoOVolumenTotal": weight,
             }
+
+    def get_additional_information(self):
+        additional_information = []
+        for record in self:
+            if record.partner_id:
+                additional_information.append({
+                    "campo": "direccionEntrega",
+                    "valor": record.partner_id.contact_address_complete or "no definida",
+                })
+        return additional_information
 
     def _compute_visibility_button(self):
         for record in self:

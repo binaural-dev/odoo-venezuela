@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250409\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-08 15:42+0000\n"
-"PO-Revision-Date: 2025-05-08 15:42+0000\n"
+"POT-Creation-Date: 2025-05-23 14:40+0000\n"
+"PO-Revision-Date: 2025-05-23 14:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -233,17 +233,6 @@ msgstr "La respuesta de la API de TFHKA no contiene 'token'."
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
-#, python-format
-msgid ""
-"The %(move_type_name)s %(invoice_name)s has not been digitalized yet.\n"
-"Please complete the digitalization process before proceeding."
-msgstr ""
-"La %(move_type_name)s %(invoice_name)s no ha sido digitalizado aún.\n"
-"Por favor, complete el proceso de digitalización antes de continuar."
-
-#. module: l10n_ve_invoice_digital
-#. odoo-python
-#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
 #: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
@@ -296,6 +285,16 @@ msgstr "El documento ya ha sido digitalizado."
 #, python-format
 msgid "The invoice date is not defined."
 msgstr "La fecha de factura no está definida."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#, python-format
+msgid "The numbering range is exhausted. Please contact the administrator."
+msgstr ""
+"El rango de numeración está agotado. Por favor, contacte al administrador."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python

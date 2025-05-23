@@ -11,7 +11,6 @@ class EndPoints():
     BASE_ENDPOINTS = {
         "emision": "/Emision",
         "ultimo_documento": "/UltimoDocumento",
-        "asignar_numeraciones": "/AsignarNumeraciones",
         "consulta_numeraciones": "/ConsultaNumeraciones",
     }
 
@@ -39,12 +38,9 @@ class AccountMove(models.Model):
             else:
                 raise UserError(_("The selected series is not configured"))
             
-        end_number, start_number = self.query_numbering(series)
+        self.query_numbering(series)
         document_number = self.get_last_document_number(document_type, series)
         document_number = str(document_number + 1)
-
-        if document_number == start_number:
-            self.assign_numbering(end_number, start_number, series)
 
         self.generate_document_data(document_number, document_type, series)
 
@@ -116,7 +112,6 @@ class AccountMove(models.Model):
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
         if additional_information:
             payload["documentoElectronico"]["infoAdicional"] = additional_information
-        _logger.info(f"Esto contiene: {payload}")
         response = self.call_tfhka_api("emision", payload)
 
         if response:
@@ -142,22 +137,6 @@ class AccountMove(models.Model):
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def assign_numbering(self, end_number, start_number, series):
-        end = start_number + self.company_id.range_assignment_tfhka
-        start_number += 1
-        
-        if start_number <= end_number:
-            payload = {
-                        "serie": series,
-                        "tipoDocumento": "01",
-                        "numeroDocumentoInicio": start_number,
-                        "numeroDocumentoFin": end
-                    }
-            response = self.call_tfhka_api("asignar_numeraciones", payload)
-            
-            if response:
-                _logger.info("Numbering range successfully assigned.")
-
     def query_numbering(self, series):
         payload={
                 "serie": series,
@@ -167,10 +146,25 @@ class AccountMove(models.Model):
         response = self.call_tfhka_api("consulta_numeraciones", payload)
 
         if response:
-            numbering = response["numeraciones"][0]
-            end_number = numbering.get("hasta")
-            start_number = numbering.get("correlativo")
-            return end_number, start_number
+            approves = False
+            for numbering in response.get("numeraciones", []):
+                if series != "":
+                    if numbering.get("serie") == series:
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                else:
+                    if numbering.get("serie") == "NO APLICA":
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+
+                if int(start_number) < int(end_number):
+                    approves = True
+                    break
+
+            if approves:
+                return
+
+            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
     def get_document_identification(self, document_type, document_number, series):
         for record in self:

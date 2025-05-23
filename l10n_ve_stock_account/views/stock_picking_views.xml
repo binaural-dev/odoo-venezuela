@@ -41,7 +41,7 @@
                 <field name="is_consignment" invisible="1" />
                 <field 
                     name="is_dispatch_guide"
-                    invisible="operation_code != 'internal'"
+                    invisible="operation_code != 'internal' and operation_code != 'outgoing'"
                     readonly="state == 'done' or is_consignment" />
                 <field name="is_consignment_readonly" invisible="1"/>
                 <field 
@@ -49,13 +49,21 @@
                     invisible="operation_code != 'internal'"
                     readonly="state == 'done' or is_consignment_readonly"
                     required="operation_code == 'internal'" />
-                <field name="is_consignment" />
-                <field name="allowed_reason_ids" invisible="1" />
-                <field name="is_donation" invisible="1" />
+                <field name="other_causes_transfer_reason" invisible="1"/>
+                <field name="show_other_causes_transfer_reason" invisible="1"/>
                 <field 
                     name="transfer_reason_id"
                     invisible="operation_code != 'outgoing'"
                     readonly="is_donation or state == 'done'"/>
+                <field 
+                    name="other_causes_transfer_reason"
+                    invisible="not show_other_causes_transfer_reason"
+                    readonly="state == 'done' or is_consignment_readonly"
+                    required="operation_code == 'outgoing' and show_other_causes_transfer_reason" />
+                    
+                <field name="is_consignment" />
+                <field name="allowed_reason_ids" invisible="1" />
+                <field name="is_donation" invisible="1" />
                 <field 
                     name="guide_number"
                     readonly="1"

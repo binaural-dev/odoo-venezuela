@@ -10,7 +10,6 @@ class EndPoints():
     BASE_ENDPOINTS = {
         "emision": "/Emision",
         "ultimo_documento": "/UltimoDocumento",
-        "asignar_numeraciones": "/AsignarNumeraciones",
         "consulta_numeraciones": "/ConsultaNumeraciones",
     }
 
@@ -69,12 +68,9 @@ class AccountRetention(models.Model):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized."))
         document_type = self.env.context.get('document_type')
-        end_number, start_number = self.query_numbering()
+        self.query_numbering()
         document_number = self.get_last_document_number(document_type)
         document_number = str(document_number + 1)
-
-        if document_number == start_number:
-            self.assign_numbering(end_number, start_number)
 
         self.generate_document_data(document_number, document_type)
     
@@ -114,35 +110,34 @@ class AccountRetention(models.Model):
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def assign_numbering(self, end_number, start_number):
-        end = start_number + self.company_id.range_assignment_tfhka
-        start_number += 1
-        
-        if start_number <= end_number:
-            payload = {
-                        "serie": "",
-                        "tipoDocumento": "05",
-                        "numeroDocumentoInicio": start_number,
-                        "numeroDocumentoFin": end
-                    }
-            response = self.call_tfhka_api("asignar_numeraciones", payload)
-            
-            if response:
-                _logger.info("Numbering range successfully assigned.")
-
-    def query_numbering(self):
+    def query_numbering(self, series=""):
         payload={
-                "serie": "",
+                "serie": series,
                 "tipoDocumento": "",
                 "prefix": ""
             }
         response = self.call_tfhka_api("consulta_numeraciones", payload)
 
         if response:
-            numbering = response["numeraciones"][0]
-            end_number = numbering.get("hasta")
-            start_number = numbering.get("correlativo")
-            return end_number, start_number
+            approves = False
+            for numbering in response.get("numeraciones", []):
+                if series != "":
+                    if numbering.get("serie") == series:
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                else:
+                    if numbering.get("serie") == "NO APLICA":
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                
+                if int(start_number) < int(end_number):
+                    approves = True
+                    break
+
+            if approves:
+                return
+
+            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
     def get_document_identification(self, document_type, document_number):
         for record in self:
@@ -279,10 +274,12 @@ class AccountRetention(models.Model):
                     retention_data["retenidoIVA"] = str(round(line.related_percentage_tax_base, 2))
 
                 if document_type == "06":
-                    for concept_line in line.payment_concept_id.line_payment_concept_ids:
-                        if record.partner_id.type_person_id.id == concept_line.id:
-                            retention_data["CodigoConcepto"] = concept_line.code
-                            retention_data["porcentaje"] = str(round(line.related_percentage_fees, 2))
+                    type_person = line.payment_concept_id.line_payment_concept_ids.filtered(lambda x: x.type_person_id.id == record.partner_id.type_person_id.id)
+                    code = type_person.code if type_person else ""
+                    if code:
+                        retention_data["CodigoConcepto"] = code
+
+                    retention_data["porcentaje"] = str(round(line.related_percentage_fees, 2))
 
                 retention_details.append(retention_data)
                 counter += 1
