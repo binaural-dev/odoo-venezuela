@@ -59,7 +59,6 @@
             </xpath>
 
             <button name="button_draft" position="attributes">
-                <!-- <attribute name="invisible">1</attribute> -->
                 <attribute name="invisible">move_type in ['out_invoice', 'out_refund']</attribute>
             </button>
 
