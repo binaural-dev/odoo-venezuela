@@ -19,7 +19,7 @@
         <!-- Transfer between warehouses -->
         <record id="transfer_reason_transfer_between_warehouses" model="transfer.reason">
             <field name="name">Traslado entre almacenes propio</field>
-            <field name="code">internal_transfer</field>
+            <field name="code">transfer</field>
             <field name="active">True</field>
         </record>
 
