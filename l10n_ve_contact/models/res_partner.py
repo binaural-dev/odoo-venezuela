@@ -26,7 +26,7 @@ class ResPartner(models.Model):
 
     street2 = fields.Char(tracking=True)
 
-    country_id = fields.Many2one(tracking=True)
+    country_id = fields.Many2one(tracking=True, default= lambda self: self.env.ref("base.ve"))
 
     state_id = fields.Many2one(tracking=True)
 
