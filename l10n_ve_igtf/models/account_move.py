@@ -143,8 +143,8 @@ class AccountMove(models.Model):
 
         for reverse_credit in reverse_move_credit:
             if (
-                payment_credit.is_igtf
-                and payment_credit.is_igtf_on_foreign_exchange
+
+                payment_credit.is_igtf_on_foreign_exchange
                 and reverse_credit
                 and reverse_credit.bi_igtf > 0
             ):
@@ -160,8 +160,8 @@ class AccountMove(models.Model):
 
         for reverse_debit in reverse_move_debit:
             if (
-                payment_debit.is_igtf
-                and payment_debit.is_igtf_on_foreign_exchange
+                
+                payment_debit.is_igtf_on_foreign_exchange
                 and reverse_debit
                 and reverse_debit.bi_igtf > 0
             ):
