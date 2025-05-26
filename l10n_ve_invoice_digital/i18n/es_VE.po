@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250409\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-23 14:40+0000\n"
-"PO-Revision-Date: 2025-05-23 14:40+0000\n"
+"POT-Creation-Date: 2025-05-26 14:04+0000\n"
+"PO-Revision-Date: 2025-05-26 14:04+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -71,10 +71,9 @@ msgstr "Digitalizado"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
-#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
-msgid "Document successfully digitized"
-msgstr "Documento digitalizado exitosamente"
+msgid "Document successfully digitized on %(date)s"
+msgstr "Documento digitalizado exitosamente el %(date)s"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -278,6 +277,13 @@ msgstr "La URL no está configurada en los ajustes de la empresa."
 #, python-format
 msgid "The document has already been digitalized."
 msgstr "El documento ya ha sido digitalizado."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "The expiration date cannot be less than the digitization date."
+msgstr "La fecha de vencimiento no puede ser menor a la fecha de digitalización."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python

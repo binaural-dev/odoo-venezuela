@@ -1,5 +1,6 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
+from pytz import timezone
 import logging
 import requests
 import json
@@ -116,8 +117,9 @@ class AccountMove(models.Model):
 
         if response:
             self.is_digitalized = True
+            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             self.message_post(
-                body=_("Document successfully digitized"),  
+                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
                 message_type='comment',
             )
             num_control_tfhka = response.get("resultado").get("numeroControl")
@@ -168,7 +170,14 @@ class AccountMove(models.Model):
 
     def get_document_identification(self, document_type, document_number, series):
         for record in self:
-            emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
+            now = fields.Datetime.now()
+            emission_time = now.astimezone(timezone(record.env.user.tz)).strftime("%I:%M:%S %p").lower()
+            emission_date = now.strftime("%d/%m/%Y")
+            if record.invoice_date_due.strftime("%d/%m/%Y") >= emission_date:
+                due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else emission_date
+            else:
+                raise ValidationError(_("The expiration date cannot be less than the digitization date."))
+            
             affected_invoice_number = ""
             affected_invoice_date = ""
             affected_invoice_amount = ""
@@ -228,8 +237,6 @@ class AccountMove(models.Model):
             if not record.invoice_date:
                 raise UserError(_("The invoice date is not defined."))
 
-            emission_date = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
-            due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
             return {
                 "tipoDocumento": document_type,
                 "numeroDocumento": document_number,

@@ -1,5 +1,6 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
+from pytz import timezone
 import logging
 import requests
 import json
@@ -141,8 +142,9 @@ class AccountRetention(models.Model):
 
     def get_document_identification(self, document_type, document_number):
         for record in self:
-            emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
-            emission_date = record.date_accounting.strftime("%d/%m/%Y") if record.date_accounting else ""
+            now = fields.Datetime.now()
+            emission_time = now.astimezone(timezone(record.env.user.tz)).strftime("%I:%M:%S %p").lower()
+            emission_date = now.strftime("%d/%m/%Y")
             affected_invoice_number = ""
             subsidiary = ""
 

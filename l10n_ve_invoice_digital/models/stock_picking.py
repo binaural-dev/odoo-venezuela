@@ -1,5 +1,6 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
+from pytz import timezone
 import logging
 import requests
 import re
@@ -159,7 +160,7 @@ class StockPicking(models.Model):
     def get_document_identification(self, document_type, document_number):
         for record in self:
             now = fields.Datetime.now()
-            emission_time = now.strftime("%I:%M:%S %p").lower()
+            emission_time = now.astimezone(timezone(record.env.user.tz)).strftime("%I:%M:%S %p").lower()
             emission_date = now.strftime("%d/%m/%Y")
             due_date = record.date_deadline.strftime("%d/%m/%Y") if record.date_deadline else emission_date
 
