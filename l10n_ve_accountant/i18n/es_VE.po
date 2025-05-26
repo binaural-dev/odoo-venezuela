@@ -241,7 +241,6 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_accountant.model_res_company
 msgid "Companies"
 msgstr "Empresas"
-msgstr "Empresas"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__company_id
@@ -292,7 +291,6 @@ msgstr "Creado en"
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_res_currency
 msgid "Currency"
-msgstr "Moneda"
 msgstr "Moneda"
 
 #. module: l10n_ve_accountant
