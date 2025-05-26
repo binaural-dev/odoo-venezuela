@@ -238,17 +238,17 @@ class AccountRetentionLine(models.Model):
             if not foreign_rate:
                 foreign_rate = 1
             if not base_currency_is_vef:
-                record.retention_amount = (
+                record.retention_amount = abs((
                     record.invoice_amount
                     * (record.related_percentage_tax_base / 100)
                     * (record.related_percentage_fees / 100)
-                ) - record.related_amount_subtract_fees / foreign_rate
+                ) - record.related_amount_subtract_fees / foreign_rate)
             else:
-                record.retention_amount = (
+                record.retention_amount = abs((
                     record.invoice_amount
                     * (record.related_percentage_tax_base / 100)
                     * (record.related_percentage_fees / 100)
-                ) - record.related_amount_subtract_fees
+                ) - record.related_amount_subtract_fees)
 
             record.foreign_retention_amount = (
                 record.foreign_invoice_amount
