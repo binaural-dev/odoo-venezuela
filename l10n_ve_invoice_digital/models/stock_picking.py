@@ -27,7 +27,7 @@ class StockPicking(models.Model):
     def button_validate(self):
         res = super(StockPicking, self).button_validate()
         for record in self:
-            if record.company_id.invoice_digital_tfhka and not record.is_digitalized and (record.dispatch_guide_controls or record.is_dispatch_guide):
+            if record.company_id.invoice_digital_tfhka and not record.is_digitalized and record.is_dispatch_guide and record.picking_type_id.code != "incoming":
                 record.generate_document_digital() 
         return res
 
@@ -203,36 +203,37 @@ class StockPicking(models.Model):
         line_number = 1
         for record in self:
             if record.sale_id and record.transfer_reason_id.code == "sale":
-                for line in record.sale_id.order_line:
+                for move_line in record.move_ids_without_package:
+                    sale_line = move_line.sale_line_id
+
                     tax_mapping = {
                         0.0: "E",
                         8.0: "R",
                         16.0: "G",
                         31.0: "A",
                     }
-                    taxes = line.tax_id.filtered(lambda t: t.amount)
+                    taxes = sale_line.tax_id.filtered(lambda t: t.amount)
                     tax_rate = taxes[0].amount if taxes else 0.0
                     
                     if record.sale_id.currency_id.name == "VEF":
-                        unit_price = round(line.price_unit, 2)
-                        item_price = round(line.price_total, 2)
+                        unit_price = round(sale_line.price_unit, 2)
                     else:
-                        unit_price = round(line.foreign_price, 2)
-                        item_price = round(line.foreign_subtotal, 2)
+                        unit_price = round(sale_line.foreign_price, 2)
                         
-                    vat = round(item_price * line.tax_id.amount / 100, 2)
+                    item_price = round(unit_price * move_line.quantity, 2)
+                    vat = round(item_price * sale_line.tax_id.amount / 100, 2)
                     total_item_value = round(item_price + vat, 2)
                             
                     item_details.append({
                         "numeroLinea": str(line_number),
-                        "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
-                        "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                        "descripcion": line.product_id.name,
-                        "cantidad": str(line.product_uom_qty),
+                        "codigoPLU": sale_line.product_id.barcode or sale_line.product_id.default_code or "",
+                        "indicadorBienoServicio": "2" if sale_line.product_id.type == 'service' else "1",
+                        "descripcion": sale_line.product_id.name,
+                        "cantidad": str(move_line.quantity),
                         "precioUnitario": str(unit_price),
                         "precioItem": str(item_price),
                         "codigoImpuesto": tax_mapping[tax_rate],
-                        "tasaIVA": str(round(line.tax_id.amount, 2)),
+                        "tasaIVA": str(round(sale_line.tax_id.amount, 2)),
                         "valorIVA": str(vat),
                         "valorTotalItem": str(total_item_value),
                     })
@@ -257,11 +258,14 @@ class StockPicking(models.Model):
     def get_buyer(self):
         for record in self:
             if record.partner_id:
-                partner = record.partner_id
+                partner = record.partner_id if record.partner_id else ""
                 if partner.parent_id:
                     partner = record.partner_id.parent_id
-
+                
                 partner_data = {}
+                if not partner.vat:
+                    raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
+
                 vat = partner.vat.upper()
 
                 if vat[0].isalpha(): 

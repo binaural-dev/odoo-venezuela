@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250409\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-26 14:04+0000\n"
-"PO-Revision-Date: 2025-05-26 14:04+0000\n"
+"POT-Creation-Date: 2025-05-30 18:04+0000\n"
+"PO-Revision-Date: 2025-05-30 18:04+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,11 +16,26 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.account_retention_alert_wizard
+msgid "Accept"
+msgstr "Aceptar"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_account_retention_alert_wizard
+msgid "Account Retention Post Alert"
+msgstr "Alerta posterior a retención de cuenta"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "Authentication error: %(message)s"
 msgstr "Error de autenticación: %(message)s"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.account_retention_alert_wizard
+msgid "Cancel"
+msgstr "Cancelar"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_company
@@ -51,6 +66,16 @@ msgid "Control Number"
 msgstr "Número de control"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Digital invoice (TFHKA)"
 msgstr "Factura digital (TFHKA)"
@@ -69,8 +94,15 @@ msgid "Digitized"
 msgstr "Digitalizado"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
 msgid "Document successfully digitized on %(date)s"
 msgstr "Documento digitalizado exitosamente el %(date)s"
@@ -171,6 +203,11 @@ msgid "HTTP error %(status_code)s: %(text)s"
 msgstr "Error HTTP %(status_code)s: %(text)s"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__invoice_digital_tfhka
 msgid "Invoice Digital"
 msgstr "Factura Digital"
@@ -186,6 +223,31 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__message
+msgid "Message"
+msgstr "Mensaje"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__move_id
+msgid "Move"
+msgstr ""
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_move_action_post_alert_wizard
+msgid "Move Action Post Alert"
+msgstr "Alerta al Postear Movimiento"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__password_tfhka
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Password"
@@ -197,19 +259,19 @@ msgid "Password Tfhka"
 msgstr "Contraseña Tfhka"
 
 #. module: l10n_ve_invoice_digital
-#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__range_assignment_tfhka
-msgid "Range Assignment"
-msgstr "Asignación de rango"
-
-#. module: l10n_ve_invoice_digital
-#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__range_assignment_tfhka
-msgid "Range Assignment Tfhka"
-msgstr "Asignación de rango Tfhka"
-
-#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_account_retention
 msgid "Retention"
 msgstr "Retención"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__sequence_validation_tfhka
+msgid "Sequence Validation"
+msgstr "Validación de secuencias"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__sequence_validation_tfhka
+msgid "Sequence Validation Tfhka"
+msgstr "Validación de secuencia Tfhka"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_stock_picking__show_digital_dispatch_guide
@@ -267,6 +329,16 @@ msgstr ""
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
 #: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
+msgid "The 'NIF' field of the Customer cannot be empty for digitalization."
+msgstr ""
+"El campo ‘NIF’ del Cliente no puede estar vacío para la digitalización."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#, python-format
 msgid "The URL is not configured in the company settings."
 msgstr "La URL no está configurada en los ajustes de la empresa."
 
@@ -280,10 +352,34 @@ msgstr "El documento ya ha sido digitalizado."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#, python-format
+msgid ""
+"The document sequence in Odoo (%s) does not match the sequence in The "
+"Factory (%s). Do you want to continue anyway?"
+msgstr ""
+"La secuencia de documentos en Odoo (%s) no coincide con la secuencia en The "
+"Factory (%s). ¿Desea continuar de todas formas?"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The document sequence in Odoo (%s) does not match the sequence in The "
+"Factory (%s).Please check your numbering settings."
+msgstr ""
+"La secuencia de documentos en Odoo (%s) no coincide con la secuencia en The "
+"Factory (%s). Verifique su configuración de numeración."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid "The expiration date cannot be less than the digitization date."
-msgstr "La fecha de vencimiento no puede ser menor a la fecha de digitalización."
+msgstr ""
+"La fecha de vencimiento no puede ser menor a la fecha de digitalización."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -355,6 +451,27 @@ msgstr "Nombre de Usuario"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__username_tfhka
 msgid "Username Tfhka"
 msgstr "Nombre de Usuario Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.account_retention_alert_wizard
+msgid "Validation"
+msgstr "Validación"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid "Validation of sequences between Odoo and The Factory"
+msgstr "Validación de secuencias entre Odoo y The Factory"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#, python-format
+msgid ""
+"Warning accepted: The difference in sequence between Odoo and The Factory is"
+" acknowledged and accepted."
+msgstr ""
+"Advertencia aceptada: Se reconoce y acepta la diferencia de secuencia entre "
+"Odoo y The Factory."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python

@@ -212,6 +212,9 @@ class AccountRetention(models.Model):
         for record in self:
             if record.partner_id:
                 partner_data = {}
+                if not record.partner_id.vat:
+                    raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
+
                 vat = record.partner_id.vat.upper()
 
                 if vat[0].isalpha(): 

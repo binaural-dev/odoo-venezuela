@@ -77,7 +77,7 @@ class StockPicking(models.Model):
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
-        default=False,
+        default=True,
         tracking=True,
         store=True,
         compute="_compute_is_dispatch_guide",
@@ -800,8 +800,8 @@ class StockPicking(models.Model):
             if picking.state != "done":
                 continue
 
-            if not picking.sale_id and not picking.operation_code == "internal":
-                continue
+            # if not picking.sale_id and not picking.operation_code == "internal":
+            #     continue
 
             if picking.document == "invoice":
                 continue
