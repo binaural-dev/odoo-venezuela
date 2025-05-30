@@ -8,50 +8,56 @@
             <xpath expr="//block[@name='l10n_ve_invoice_block']" position="inside">
                 <separator string="Digital invoice (TFHKA)" name="l10n_ve_invoice_digital_separator"/>
                 <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_max_product_invoice">
-                    <div class="o_setting_right_pane">
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label for="username_tfhka" class="col-form-label">Username</label>
-                                    <div class="col-sm-8">
-                                        <field name="username_tfhka" class="w-100"/>
-                                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="o_setting_right_pane">
+                                <label for="username_tfhka" class="col-form-label">Username</label>
+                                <div class="col-sm-8">
+                                    <field name="username_tfhka" class="w-100"/>
                                 </div>
-                                <div class="form-group">
-                                    <label for="password_tfhka" class="col-form-label">Password</label>
-                                    <div class="col-sm-8">
-                                        <field name="password_tfhka" password="True" class="w-100"/>
-                                    </div>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="password_tfhka" class="col-form-label">Password</label>
+                                <div class="col-sm-8">
+                                    <field name="password_tfhka" password="True" class="w-100"/>
                                 </div>
-                                <div class="form-group">
-                                    <label for="url_tfhka" class="col-form-label">URL</label>
-                                    <div class="col-sm-8">
-                                        <field name="url_tfhka" class="w-100"/>
-                                    </div>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="url_tfhka" class="col-form-label">URL</label>
+                                <div class="col-sm-8">
+                                    <field name="url_tfhka" class="w-100"/>
                                 </div>
-                                <div class="form-group">
-                                    <label for="range_assignment_tfhka" class="col-form-label">URL</label>
-                                    <div class="col-sm-8">
-                                        <field name="range_assignment_tfhka"/>
+                            </div>
+                            <div class="o_setting_left_pane">
+                                <field name="sequence_validation_tfhka"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="sequence_validation_tfhka"/>
+                                <div class="text-muted">
+                                    Validation of sequences between Odoo and The Factory
+                                </div>
+                                <div class="content-group">
+                                    <div class="mt16" invisible="not use_main_warehouse">
+                                        <field name="main_warehouse_id" class="oe_inline" required="use_main_warehouse"/>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-6" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; background-color: #f9f9f9; margin: auto; text-align: center;">
-                                <div class="form-group">
-                                    <label for="token_auth_tfhka" class="col-form-label">Token Auth</label>
-                                    <div class="col-sm-12" style="word-wrap: break-word;">
-                                        <field name="token_auth_tfhka" readonly="True" password="True" style="width: 100%;"/>
-                                    </div>
+                        </div>
+                        <div class="col-6" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; background-color: #f9f9f9; margin: auto; text-align: center;">
+                            <div class="form-group">
+                                <label for="token_auth_tfhka" class="col-form-label">Token Auth</label>
+                                <div class="col-sm-12" style="word-wrap: break-word;">
+                                    <field name="token_auth_tfhka" readonly="True" password="True" style="width: 100%;"/>
                                 </div>
-                                <div class="form-group">
-                                    <button name="action_generate_token_tfhka" 
-                                            type="object" 
-                                            string="Generate Token" 
-                                            class="btn-secondary ps-2 w-50" 
-                                            icon="fa-refresh" 
-                                            title="Generate Token for TFHKA."
-                                    />
-                                </div>
+                            </div>
+                            <div class="form-group">
+                                <button name="action_generate_token_tfhka" 
+                                        type="object" 
+                                        string="Generate Token" 
+                                        class="btn-secondary ps-2 w-50" 
+                                        icon="fa-refresh" 
+                                        title="Generate Token for TFHKA."
+                                />
                             </div>
                         </div>
                     </div>

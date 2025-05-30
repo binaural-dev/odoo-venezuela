@@ -36,7 +36,16 @@ class StockPicking(models.Model):
             raise UserError(_("The document has already been digitalized.")) 
         self.query_numbering()
         document_number = self.get_last_document_number(DOCUMENT_TYPE)
-        document_number = str(document_number + 1)
+        document_number = document_number + 1
+        sequence = self.env["ir.sequence"].sudo()
+        current_number = sequence.search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company_id.id)]
+        ).number_next_actual
+
+        if document_number != current_number and self.company_id.sequence_validation_tfhka:
+            raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
+
+        document_number = str(document_number)
 
         self.generate_document_data(document_number, DOCUMENT_TYPE)
 
@@ -109,8 +118,10 @@ class StockPicking(models.Model):
         if response:
             self.control_number_tfhka = response.get("resultado").get("numeroControl")
             self.is_digitalized = True
+            self._set_guide_number()
+            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             self.message_post(
-                body=_("Document successfully digitized"),  
+                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
                 message_type='comment',
             )
 
@@ -344,3 +355,11 @@ class StockPicking(models.Model):
             record.show_digital_dispatch_guide = True
             if record.company_id.invoice_digital_tfhka:
                 record.show_digital_dispatch_guide = False
+
+    def _set_guide_number(self):
+        for picking in self:
+            if picking.dispatch_guide_controls:
+                if not picking.company_id.invoice_digital_tfhka:
+                    picking.guide_number = picking.get_sequence_guide_num()
+                elif picking.is_digitalized:
+                    picking.guide_number = picking.get_sequence_guide_num()

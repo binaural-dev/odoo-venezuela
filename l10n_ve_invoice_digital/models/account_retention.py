@@ -17,7 +17,7 @@ class EndPoints():
 class AccountRetention(models.Model):
     _inherit = 'account.retention'
 
-    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False)
+    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
     show_digital_retention_iva = fields.Boolean(string="Show Digital Retention", compute="_compute_visibility_button", copy=False)
     show_digital_retention_islr = fields.Boolean(string="Show Digital Retention", compute="_compute_visibility_button", copy=False)
     control_number_tfhka = fields.Char(string="Control Number", copy=False)
@@ -71,11 +71,29 @@ class AccountRetention(models.Model):
         document_type = self.env.context.get('document_type')
         self.query_numbering()
         document_number = self.get_last_document_number(document_type)
-        document_number = str(document_number + 1)
+        document_number = document_number + 1
+        current_number = int(self.number[6:])
+        validation_sequence = self.env.context.get('account_retention_alert', False)
 
-        self.generate_document_data(document_number, document_type)
+        if document_number != current_number and not validation_sequence and self.company_id.sequence_validation_tfhka:
+            message = _("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s). Do you want to continue anyway?") % (current_number, document_number)
+            return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.retention.alert.wizard',
+            'view_mode': 'form',
+            'view_id': self.env.ref('l10n_ve_invoice_digital.account_retention_alert_wizard').id,
+            'target': 'new',
+            'context': {
+                'default_move_id': self.id,
+                'default_message': message,
+            }
+        }
+
+        document_number = str(document_number)
+
+        self.generate_document_data(document_number, document_type, validation_sequence)
     
-    def generate_document_data(self, document_number, document_type):
+    def generate_document_data(self, document_number, document_type, validation_sequence):
         document_identification = self.get_document_identification(document_type, document_number)
         subject_retention = self.get_subject_retention()
         total_retention = self.get_total_retention(document_type)
@@ -96,6 +114,17 @@ class AccountRetention(models.Model):
         if response:
             self.is_digitalized = True
             self.control_number_tfhka = response.get("resultado").get("numeroControl")
+            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
+            if validation_sequence:
+                self.message_post(
+                    body=_("Warning accepted: The difference in sequence between Odoo and The Factory is acknowledged and accepted."),  
+                    message_type='comment',
+                )
+            self.message_post(
+                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
+                message_type='comment',
+            )
+
             return
     
     def get_last_document_number(self, document_type):
