@@ -43,6 +43,7 @@ class AccountMove(models.Model):
         document_number = self.get_last_document_number(document_type, series)
         document_number = document_number + 1
         current_number = self.journal_id.refund_sequence_number_next if self.move_type == "out_refund" else self.journal_id.sequence_number_next
+
         if document_number != current_number and self.company_id.sequence_validation_tfhka:
             raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
 
