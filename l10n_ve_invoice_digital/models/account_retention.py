@@ -285,7 +285,7 @@ class AccountRetention(models.Model):
             for line in record.retention_line_ids:
                 tipo_documento = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
                 document_number_ret = line.move_id.name
-                prefix = line.move_id.journal_id.sequence_id.prefix
+                prefix = line.move_id.journal_id.refund_sequence_id.prefix if line.move_id.reversed_entry_id else line.move_id.journal_id.sequence_id.prefix
 
                 if prefix and document_number_ret.startswith(prefix):
                     document_number_ret = document_number_ret[len(prefix):]
