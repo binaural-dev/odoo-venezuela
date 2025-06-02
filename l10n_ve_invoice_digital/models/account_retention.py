@@ -185,7 +185,7 @@ class AccountRetention(models.Model):
 
                 if line.move_id.reversed_entry_id:
                     affected_invoice_number = line.move_id.reversed_entry_id.name
-                    prefix = line.move_id.reversed_entry_id.journal_id.refund_sequence_id.prefix
+                    prefix = line.move_id.reversed_entry_id.journal_id.sequence_id.prefix
 
                 if prefix and affected_invoice_number.startswith(prefix):
                     affected_invoice_number = affected_invoice_number[len(prefix):]
