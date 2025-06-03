@@ -227,7 +227,7 @@ class AccountRetentionLine(models.Model):
     def _compute_retention_amount(self):
         """
         This compute is used to get the retention amount from the payment concept of the partner
-        to generate the ISLR retention line.
+        to generate the ISLR retention lines.
         """
         base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
 
