@@ -836,16 +836,20 @@ class StockPicking(models.Model):
             "l10n_ve_stock_account.transfer_reason_consignment",
             raise_if_not_found=False,
         )
-
+        self_consumption_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_self_consumption",
+            raise_if_not_found=False,
+        )
         for picking in self:
-            if (
-                picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id
-            ):
-                picking.is_dispatch_guide = True
+            if picking.transfer_reason_id:
+                if self_consumption_reason and picking.transfer_reason_id.id == self_consumption_reason.id:
+                    picking.is_dispatch_guide = False
+                elif consignment_reason and picking.transfer_reason_id.id == consignment_reason.id:
+                    picking.is_dispatch_guide = True
+                else:
+                    picking.is_dispatch_guide = True
             else:
-                # This is necessary always should be return a value
-                picking.is_dispatch_guide = picking.is_dispatch_guide
+                picking.is_dispatch_guide = True
 
     @api.depends(
         "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
