@@ -970,13 +970,8 @@ class StockPicking(models.Model):
         for record in self:
             record.show_other_causes_transfer_reason = False
 
-            if record.transfer_reason_id:
-                if record.transfer_reason_id.code == "other_causes":
-                    record.show_other_causes_transfer_reason = True
-                if record.transfer_reason_id.code == "self_consumption":
-                    record.is_dispatch_guide = False
-                else:
-                    record.is_dispatch_guide = True
+            if record.transfer_reason_id and record.transfer_reason_id.code == "other_causes":
+                record.show_other_causes_transfer_reason = True
 
 
     # === CONSTRAINT METHODS ===#
