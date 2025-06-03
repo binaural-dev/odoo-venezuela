@@ -1,0 +1,12 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.OrderReceipt" t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('pos-receipt-amount')]" position="after">
+            <div class="pos-receipt-amount">
+                TOTAL
+                <span t-if="props.formatForeignCurrency" t-out="props.formatForeignCurrency(props.data.foreign_amount_total)" class="pos-receipt-right-align"/>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-receipt-taxes')]" position="replace">
+        </xpath>
+    </t>
+</templates>
