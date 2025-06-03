@@ -303,7 +303,7 @@ class AccountRetentionLine(models.Model):
         """
         Making sure that the foreign retention amount and foreign invoice amount are updated when
         the retention amount or the invoice amount are changed on the retention line of the
-        customer retentions.
+        customer retentions amounts.
 
         This is made to be triggered only when the foreign currency is NOT VEF, as this is the only
         case when the retention amount and the invoice amount are shown on the retention line,
