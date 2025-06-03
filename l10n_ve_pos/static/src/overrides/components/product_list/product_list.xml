@@ -1,0 +1,7 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.ProductsWidget" t-inherit="point_of_sale.ProductsWidget" t-inherit-mode="extension">
+        <xpath expr="//ProductCard" position="attributes">
+            <attribute name="qty_available">product.qty_available</attribute>
+        </xpath>
+    </t>
+</templates>

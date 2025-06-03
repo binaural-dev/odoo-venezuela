@@ -1,0 +1,29 @@
+<templates id="template" xml:space="preserve">
+    <t t-name="TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('control-buttons')]" position="inside">
+        <t t-if="_selectedSyncedOrder">
+                <t t-if="_selectedSyncedOrder &amp;&amp; _selectedSyncedOrder.get_total_with_tax() > 0">
+                    <ReprintInvoiceButton order="_selectedSyncedOrder" />
+                </t>
+            </t>
+        </xpath>
+        <xpath expr="//InvoiceButton[1]" position="replace"> 
+         </xpath> 
+         <xpath expr="//ReprintReceiptButton[1]" position="replace"> 
+         </xpath> 
+
+        <xpath expr="//div[hasclass('header-row')]" position="inside">
+            <div class="col">
+                <div class="col">N Invoice</div>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('order-row')]" position="inside">
+            <div class="col">
+                <t t-log="order"/>
+                <div><t t-esc="order.mf_invoice_number != 0 ? order.mf_invoice_number : ''  "></t></div>
+            </div>
+        </xpath>
+
+
+    </t>
+</templates>
