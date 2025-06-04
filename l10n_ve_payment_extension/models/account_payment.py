@@ -1,6 +1,8 @@
 from odoo import api, fields, models, Command
 from odoo.tools.float_utils import float_round
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
@@ -100,7 +102,8 @@ class AccountPayment(models.Model):
         """
         for payment in self:
             payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
-
+            _logger.warning("Los montos pagados son %s", payment.amount)
+            
     @api.depends("retention_line_ids")
     def _compute_retention_foreign_amount(self):
         for payment in self:
@@ -114,3 +117,4 @@ class AccountPayment(models.Model):
                     )
                 )
             )
+            _logger.warning("Los montos convertidos pagados son %s", payment.retention_foreign_amount)
