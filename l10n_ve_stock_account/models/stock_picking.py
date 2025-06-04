@@ -950,6 +950,7 @@ class StockPicking(models.Model):
                     ("type_delivery_step", "!=", "int"),
                     ("transfer_reason_id.code", "!=", "self_consumption"),
                     ("state_guide_dispatch", "=", "to_invoice"),
+                    ('sale_id.document', '!=', 'invoice')
                 ]
             )
         )
