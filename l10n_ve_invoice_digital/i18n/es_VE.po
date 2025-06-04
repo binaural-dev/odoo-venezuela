@@ -225,7 +225,7 @@ msgstr "Asiento contable"
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_uid
 msgid "Last Updated by"
-msgstr ""
+msgstr "Última actualización por"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_date
