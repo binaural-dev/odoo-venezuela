@@ -52,14 +52,3 @@ class SaleOrderLine(models.Model):
                 1 - (line.discount / 100.0)
             )
             line.foreign_subtotal = line_discount_price_unit * line.product_uom_qty
-
-    def _action_launch_stock_rule(self, previous_product_uom_qty=False):
-        """
-         We inherit this method to 
-         only propagate to super for the orders that really need a delivery.
-        """
-        deliverable = self.filtered(lambda l: l.order_id.document != 'invoice')
-        if deliverable:
-            return super(SaleOrder, deliverable)._action_launch_stock_rule(previous_product_uom_qty)
-        
-        return True 
