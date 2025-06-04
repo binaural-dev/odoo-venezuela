@@ -794,6 +794,8 @@ class AccountRetention(models.Model):
             )[:1] or False
             
             if line_to_reconcile:
+                _logger.warning("Reconciliando pago %s", line_to_reconcile.name)
+                _logger.warning("Reconciliando pago debito %s", line_to_reconcile.debit)
                 payment.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
             else:
                 raise UserError("No se puede hacer una retencion con este concepto de pago")

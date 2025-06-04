@@ -41,7 +41,6 @@ class AccountMove(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
         tracking=True,
@@ -50,7 +49,6 @@ class AccountMove(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
         store=True,
         readonly=False,
         index=True,
@@ -294,6 +292,7 @@ class AccountMove(models.Model):
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
             )
+
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
                 move.message_post(
@@ -615,6 +614,7 @@ class AccountMove(models.Model):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
         """
+
         self._compute_rate_for_documents(
             self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
             is_sale=True,
@@ -630,7 +630,6 @@ class AccountMove(models.Model):
         Compute the rate for a set of documents (either sale invoices or purchase invoices/moves).
         """
         Rate = self.env["res.currency.rate"]
-
         for move in documents:
             if move.manually_set_rate:
                 continue
@@ -639,6 +638,8 @@ class AccountMove(models.Model):
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            self.foreign_rate = rate_values.get("foreign_rate", 0)
+            
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
