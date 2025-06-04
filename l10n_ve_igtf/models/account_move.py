@@ -54,6 +54,7 @@ class AccountMove(models.Model):
 
     def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0):
         """This method can be used by ir.actions.server to update bi_igtf"""
+        _logger.warning("Este log es para probar si se calcula bien la tasa y el monto de las retenciones")
         for record in self:
             if not record.invoice_payments_widget:
                 record.bi_igtf = 0
@@ -85,8 +86,10 @@ class AccountMove(models.Model):
                         record.bi_igtf = initial_residual
                         continue
                     amount += bi_igtf
+                    _logger.warning("El monto calculado al momento de pagar es: %s", amount)
 
             record.bi_igtf = amount
+            _logger.warning("Tickets: %s", record.bi_igtf)
 
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
@@ -183,6 +186,7 @@ class AccountMove(models.Model):
 
     def js_assign_outstanding_line(self, line_id):
         amount_residual = self.amount_residual
+        _logger.warning("Monto residual: %s", amount_residual)
         res = super().js_assign_outstanding_line(line_id)
         self.recalculate_bi_igtf(
             line_id,
