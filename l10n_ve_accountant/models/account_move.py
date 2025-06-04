@@ -43,7 +43,6 @@ class AccountMove(models.Model):
         digits="Tasa",
         default=0.0,
         store=True,
-        readonly=False,
         tracking=True,
     )
     foreign_inverse_rate = fields.Float(
