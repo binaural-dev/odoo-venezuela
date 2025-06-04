@@ -737,7 +737,8 @@ class AccountRetention(models.Model):
                 if payment_type == "inbound"
                 else "account.account_payment_method_manual_out"
             )
-
+            _logger.warning(" tasa normal%s", line.move_id.foreign_rate)
+            _logger.warning("Tasa inversa%s", line.move_id.foreign_inverse_rate)
             payment_vals.append(
                 {
                     "state": "draft",
