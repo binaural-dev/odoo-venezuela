@@ -1,5 +1,6 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
+from pytz import timezone
 import logging
 import requests
 import re
@@ -13,7 +14,6 @@ class EndPoints():
     BASE_ENDPOINTS = {
         "emision": "/Emision",
         "ultimo_documento": "/UltimoDocumento",
-        "asignar_numeraciones": "/AsignarNumeraciones",
         "consulta_numeraciones": "/ConsultaNumeraciones",
     }
 
@@ -26,19 +26,26 @@ class StockPicking(models.Model):
 
     def button_validate(self):
         res = super(StockPicking, self).button_validate()
-        if self.company_id.invoice_digital_tfhka and not self.is_digitalized and self.dispatch_guide_controls:
-            self.generate_document_digital() 
+        for record in self:
+            if record.company_id.invoice_digital_tfhka and not record.is_digitalized and record.is_dispatch_guide and record.picking_type_id.code != "incoming":
+                record.generate_document_digital() 
         return res
 
     def generate_document_digital(self):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized.")) 
-        end_number, start_number = self.query_numbering()
+        self.query_numbering()
         document_number = self.get_last_document_number(DOCUMENT_TYPE)
-        document_number = str(document_number + 1)
+        document_number = document_number + 1
+        sequence = self.env["ir.sequence"].sudo()
+        current_number = sequence.search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company_id.id)]
+        ).number_next_actual
 
-        if document_number == start_number:
-            self.assign_numbering(end_number, start_number)
+        if document_number != current_number and self.company_id.sequence_validation_tfhka:
+            raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
+
+        document_number = str(document_number)
 
         self.generate_document_data(document_number, DOCUMENT_TYPE)
 
@@ -90,6 +97,7 @@ class StockPicking(models.Model):
         buyer = self.get_buyer()
         details_items = self.get_item_details()
         dispatch_guide = self.get_dispatch_guide()
+        additional_information = self.get_additional_information()
 
         payload = {
             "documentoElectronico": {
@@ -102,13 +110,18 @@ class StockPicking(models.Model):
             }
         }
 
+        if additional_information:
+            payload["documentoElectronico"]["infoAdicional"] = additional_information
+
         response = self.call_tfhka_api("emision", payload)
 
         if response:
             self.control_number_tfhka = response.get("resultado").get("numeroControl")
             self.is_digitalized = True
+            self._set_guide_number()
+            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             self.message_post(
-                body=_("Document successfully digitized"),  
+                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
                 message_type='comment',
             )
 
@@ -125,41 +138,43 @@ class StockPicking(models.Model):
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def assign_numbering(self, end_number, start_number):
-        end = start_number + self.company_id.range_assignment_tfhka
-        start_number += 1
-        
-        if start_number <= end_number:
-            payload = {
-                        "serie": "",
-                        "tipoDocumento": "01",
-                        "numeroDocumentoInicio": start_number,
-                        "numeroDocumentoFin": end
-                    }
-            response = self.call_tfhka_api("asignar_numeraciones", payload)
-            
-            if response:
-                _logger.info("Numbering range successfully assigned.")
-
-    def query_numbering(self):
+    def query_numbering(self, series=""):
         payload={
-                "serie": "",
+                "serie": series,
                 "tipoDocumento": "",
                 "prefix": ""
             }
         response = self.call_tfhka_api("consulta_numeraciones", payload)
 
         if response:
-            numbering = response["numeraciones"][0]
-            end_number = numbering.get("hasta")
-            start_number = numbering.get("correlativo")
-            return end_number, start_number
+            approves = False
+            for numbering in response.get("numeraciones", []):
+                current_series = (numbering.get("serie") or "").upper()
+                if series != "":
+                    if current_series == series.upper():
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                else:
+                    if current_series == "NO APLICA":
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                
+                if int(start_number) < int(end_number):
+                    approves = True
+                    break
+
+            if approves:
+                return
+
+            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
     def get_document_identification(self, document_type, document_number):
         for record in self:
-            emission_time = record.sale_id.date_order.strftime("%I:%M:%S %p").lower() if record.sale_id.date_order else ""
-            emission_date = record.sale_id.date_order.strftime("%d/%m/%Y") if record.sale_id.date_order else ""
-            due_date = record.sale_id.validity_date.strftime("%d/%m/%Y") if record.sale_id.validity_date else ""
+            now = fields.Datetime.now()
+            emission_time = now.astimezone(timezone(record.env.user.tz)).strftime("%I:%M:%S %p").lower()
+            emission_date = now.strftime("%d/%m/%Y")
+            due_date = record.date_deadline.strftime("%d/%m/%Y") if record.date_deadline else emission_date
+
             subsidiary = ""
 
             if self.company_id.subsidiary:
@@ -178,7 +193,7 @@ class StockPicking(models.Model):
                 "serie": "",
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": record.sale_id.currency_id.name,
+                "moneda": "VEF",
                 "transaccionId": "",
                 "urlPdf": ""
             }
@@ -187,37 +202,71 @@ class StockPicking(models.Model):
         item_details = []
         line_number = 1
         for record in self:
-            for line in record.sale_id.order_line:
-                tax_mapping = {
-                    0.0: "E",
-                    8.0: "R",
-                    16.0: "G",
-                    31.0: "A",
-                }
-                taxes = line.tax_id.filtered(lambda t: t.amount)
-                tax_rate = taxes[0].amount if taxes else 0.0
+            if record.sale_id and record.transfer_reason_id.code == "sale":
+                for move_line in record.move_ids_without_package:
+                    sale_line = move_line.sale_line_id
 
-                item_details.append({
-                    "numeroLinea": str(line_number),
-                    "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
-                    "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                    "descripcion": line.product_id.name,
-                    "cantidad": str(line.product_uom_qty),
-                    "precioUnitario": str(round(line.price_unit, 2)),
-                    "precioItem": str(round(line.price_total, 2)),
-                    "codigoImpuesto": tax_mapping[tax_rate],
-                    "tasaIVA": str(round(line.tax_id.amount, 2)),
-                    "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
-                    "valorTotalItem": str(round(line.price_total, 2)),
-                })
-                line_number += 1
+                    tax_mapping = {
+                        0.0: "E",
+                        8.0: "R",
+                        16.0: "G",
+                        31.0: "A",
+                    }
+                    taxes = sale_line.tax_id.filtered(lambda t: t.amount)
+                    tax_rate = taxes[0].amount if taxes else 0.0
+                    
+                    if record.sale_id.currency_id.name == "VEF":
+                        unit_price = round(sale_line.price_unit, 2)
+                    else:
+                        unit_price = round(sale_line.foreign_price, 2)
+                        
+                    item_price = round(unit_price * move_line.quantity, 2)
+                    vat = round(item_price * sale_line.tax_id.amount / 100, 2)
+                    total_item_value = round(item_price + vat, 2)
+                            
+                    item_details.append({
+                        "numeroLinea": str(line_number),
+                        "codigoPLU": sale_line.product_id.barcode or sale_line.product_id.default_code or "",
+                        "indicadorBienoServicio": "2" if sale_line.product_id.type == 'service' else "1",
+                        "descripcion": sale_line.product_id.name,
+                        "cantidad": str(move_line.quantity),
+                        "precioUnitario": str(unit_price),
+                        "precioItem": str(item_price),
+                        "codigoImpuesto": tax_mapping[tax_rate],
+                        "tasaIVA": str(round(sale_line.tax_id.amount, 2)),
+                        "valorIVA": str(vat),
+                        "valorTotalItem": str(total_item_value),
+                    })
+                    line_number += 1
+            else:
+                for line in record.move_ids_without_package:
+                    item_details.append({
+                        "numeroLinea": str(line_number),
+                        "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
+                        "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
+                        "descripcion": line.product_id.name,
+                        "cantidad": str(line.product_uom_qty),
+                        "precioUnitario": "0",
+                        "precioItem": "0",
+                        "tasaIVA": "0",
+                        "valorIVA": "0",
+                        "valorTotalItem": "0",
+                    })
+                    line_number += 1
         return item_details
 
     def get_buyer(self):
         for record in self:
             if record.partner_id:
+                partner = record.partner_id if record.partner_id else ""
+                if partner.parent_id:
+                    partner = record.partner_id.parent_id
+                
                 partner_data = {}
-                vat = record.partner_id.vat.upper()
+                if not partner.vat:
+                    raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
+
+                vat = partner.vat.upper()
 
                 if vat[0].isalpha(): 
                     partner_data["tipoIdentificacion"] = vat[0]
@@ -226,23 +275,23 @@ class StockPicking(models.Model):
                     partner_data["tipoIdentificacion"] = ""
                     partner_data["numeroIdentificacion"] = vat
 
-                if record.partner_id.prefix_vat:
-                    partner_data["tipoIdentificacion"] = record.partner_id.prefix_vat
+                if partner.prefix_vat:
+                    partner_data["tipoIdentificacion"] = partner.prefix_vat
 
                 partner_data["numeroIdentificacion"] = partner_data["numeroIdentificacion"].replace("-", "").replace(".", "")
-                partner_data["razonSocial"] = record.partner_id.name
-                partner_data["direccion"] = record.partner_id.contact_address_complete or "no definida"
-                partner_data["pais"] = record.partner_id.country_code
-                partner_data["telefono"] = record.partner_id.mobile or record.partner_id.phone
-                partner_data["correo"]= record.partner_id.email
+                partner_data["razonSocial"] = partner.name
+                partner_data["direccion"] = partner.contact_address_complete or "no definida"
+                partner_data["pais"] = partner.country_code
+                partner_data["telefono"] = partner.mobile or partner.phone
+                partner_data["correo"]= partner.email
 
-                if not record.partner_id.country_code:
+                if not partner.country_code:
                     raise UserError(_("The 'Country' field of the Customer cannot be empty for digitalization."))
 
-                if not (record.partner_id.mobile or record.partner_id.phone):
+                if not (partner.mobile or partner.phone):
                     raise UserError(_("The 'Mobile' field of the Customer cannot be empty for digitalization."))
 
-                if not record.partner_id.email:
+                if not partner.email:
                     raise UserError(_("The 'Email' field of the Customer cannot be empty for digitalization."))
 
                 return {
@@ -281,20 +330,40 @@ class StockPicking(models.Model):
             product_origin = "Nacional e Importado" if len(product_origin_set) > 1 else (product_origin_set.pop() if product_origin_set else "Sin origen definido")
             weight = f"{record.shipping_weight:.2f} {record.weight_uom_name}" if record.shipping_weight else "Sin peso"
             description = re.sub(r'<.*?>', '', str(record.note)) if record.note else "Sin descripción"
-            destination = record.partner_id.contact_address_complete or "no definida"
+            if record.transfer_reason_id.code == "other_causes":
+                transfer_reason = record.other_causes_transfer_reason
+            else:
+                transfer_reason = record.transfer_reason_id.name
 
             return {
                 "esGuiaDespacho": "1",
-                "motivoTraslado": record.transfer_reason_id.name,
+                "motivoTraslado": transfer_reason,
                 "descripcionServicio": description,
                 "tipoProducto": "Sin especificar",
                 "origenProducto": product_origin,
                 "pesoOVolumenTotal": weight,
-                "destinoProducto": destination,
             }
+
+    def get_additional_information(self):
+        additional_information = []
+        for record in self:
+            if record.partner_id:
+                additional_information.append({
+                    "campo": "direccionEntrega",
+                    "valor": record.partner_id.contact_address_complete or "no definida",
+                })
+        return additional_information
 
     def _compute_visibility_button(self):
         for record in self:
             record.show_digital_dispatch_guide = True
             if record.company_id.invoice_digital_tfhka:
                 record.show_digital_dispatch_guide = False
+
+    def _set_guide_number(self):
+        for picking in self:
+            if picking.dispatch_guide_controls:
+                if not picking.company_id.invoice_digital_tfhka:
+                    picking.guide_number = picking.get_sequence_guide_num()
+                elif picking.is_digitalized:
+                    picking.guide_number = picking.get_sequence_guide_num()

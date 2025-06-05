@@ -1,5 +1,6 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
+from pytz import timezone
 import logging
 import requests
 import json
@@ -11,7 +12,6 @@ class EndPoints():
     BASE_ENDPOINTS = {
         "emision": "/Emision",
         "ultimo_documento": "/UltimoDocumento",
-        "asignar_numeraciones": "/AsignarNumeraciones",
         "consulta_numeraciones": "/ConsultaNumeraciones",
     }
 
@@ -20,42 +20,17 @@ class AccountMove(models.Model):
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
 
-    def action_post(self):
-        res = super(AccountMove, self).action_post()
-        if self.company_id.invoice_digital_tfhka and not self.is_digitalized:
-            
-            for record in self:
-                if record.name == '/':
-                    last_invoice = self.env['account.move'].search(
-                        [
-                            ('move_type', 'in', ['out_invoice', 'out_refund']),
-                            ('name', '!=', '/')
-                        ], order='create_date desc', limit=1
-                    )
-                    if not last_invoice.name:
-                        continue
-                    if not last_invoice.is_digitalized:
-                        selection_dict = dict(last_invoice._fields['move_type'].selection)
-                        move_type_name = selection_dict.get(last_invoice.move_type)
-                        raise ValidationError(
-                            _("The %(move_type_name)s %(invoice_name)s has not been digitalized yet.\n"
-                                "Please complete the digitalization process before proceeding.") % {
-                                'move_type_name': move_type_name,
-                                'invoice_name': last_invoice.name
-                            }
-                        )
-            document_type = ""
+    def generate_document_digital(self):
+        document_type = ""
 
-            if self.move_type == "out_invoice":
-                document_type = "03" if self.debit_origin_id else "01"
-            elif self.move_type == "out_refund" and self.reversed_entry_id:
-                document_type = "02"
-            
-            if document_type: 
-                self.generate_document_digital(document_type)
-        return res
+        if self.move_type == "out_invoice":
+            document_type = "03" if self.debit_origin_id else "01"
+        elif self.move_type == "out_refund" and self.reversed_entry_id:
+            document_type = "02"
+        
+        if not document_type: 
+            return
 
-    def generate_document_digital(self, document_type):
         series = ""
 
         if self.company_id.group_sales_invoicing_series and self.journal_id.series_correlative_sequence_id:
@@ -64,12 +39,21 @@ class AccountMove(models.Model):
             else:
                 raise UserError(_("The selected series is not configured"))
             
-        end_number, start_number = self.query_numbering(series)
+        self.query_numbering(series)
         document_number = self.get_last_document_number(document_type, series)
-        document_number = str(document_number + 1)
+        document_number = document_number + 1
+        current_number = self.name
+        prefix = self.journal_id.refund_sequence_id.prefix if self.move_type == "out_refund" else self.journal_id.sequence_id.prefix
 
-        if document_number == start_number:
-            self.assign_numbering(end_number, start_number, series)
+        if prefix and current_number.startswith(prefix):
+            current_number = current_number[len(prefix):]
+
+        current_number = int(current_number)
+
+        if document_number != current_number and self.company_id.sequence_validation_tfhka:
+            raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
+
+        document_number = str(document_number)
 
         self.generate_document_data(document_number, document_type, series)
 
@@ -141,13 +125,13 @@ class AccountMove(models.Model):
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
         if additional_information:
             payload["documentoElectronico"]["infoAdicional"] = additional_information
-        _logger.info(f"Esto contiene: {payload}")
         response = self.call_tfhka_api("emision", payload)
 
         if response:
             self.is_digitalized = True
+            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             self.message_post(
-                body=_("Document successfully digitized"),  
+                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
                 message_type='comment',
             )
             num_control_tfhka = response.get("resultado").get("numeroControl")
@@ -167,22 +151,6 @@ class AccountMove(models.Model):
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def assign_numbering(self, end_number, start_number, series):
-        end = start_number + self.company_id.range_assignment_tfhka
-        start_number += 1
-        
-        if start_number <= end_number:
-            payload = {
-                        "serie": series,
-                        "tipoDocumento": "01",
-                        "numeroDocumentoInicio": start_number,
-                        "numeroDocumentoFin": end
-                    }
-            response = self.call_tfhka_api("asignar_numeraciones", payload)
-            
-            if response:
-                _logger.info("Numbering range successfully assigned.")
-
     def query_numbering(self, series):
         payload={
                 "serie": series,
@@ -192,20 +160,43 @@ class AccountMove(models.Model):
         response = self.call_tfhka_api("consulta_numeraciones", payload)
 
         if response:
-            numbering = response["numeraciones"][0]
-            end_number = numbering.get("hasta")
-            start_number = numbering.get("correlativo")
-            return end_number, start_number
+            approves = False
+            for numbering in response.get("numeraciones", []):
+                if series != "":
+                    if numbering.get("serie") == series:
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                else:
+                    if numbering.get("serie") == "NO APLICA":
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+
+                if int(start_number) < int(end_number):
+                    approves = True
+                    break
+
+            if approves:
+                return
+
+            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
     def get_document_identification(self, document_type, document_number, series):
         for record in self:
-            emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
+            now = fields.Datetime.now()
+            emission_time = now.astimezone(timezone(record.env.user.tz)).strftime("%I:%M:%S %p").lower()
+            emission_date = now.strftime("%d/%m/%Y")
+            if record.invoice_date_due.strftime("%d/%m/%Y") >= emission_date:
+                due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else emission_date
+            else:
+                raise ValidationError(_("The expiration date cannot be less than the digitization date."))
+            
             affected_invoice_number = ""
             affected_invoice_date = ""
             affected_invoice_amount = ""
             affected_invoice_comment = ""
             subsidiary = ""
             affected_invoice_series = ""
+            prefix = ""
 
             if record.debit_origin_id:
                 affected_invoice_number = record.debit_origin_id.name
@@ -219,7 +210,7 @@ class AccountMove(models.Model):
                 if record.debit_origin_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
-                if record.currency_id.name == "VEF":
+                if record.company_id.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.debit_origin_id.amount_total)
                 else:
                     tax_totals = record.debit_origin_id.tax_totals
@@ -240,7 +231,7 @@ class AccountMove(models.Model):
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
-                if record.currency_id.name == "VEF":
+                if record.company_id.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.reversed_entry_id.amount_total)
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
@@ -258,8 +249,6 @@ class AccountMove(models.Model):
             if not record.invoice_date:
                 raise UserError(_("The invoice date is not defined."))
 
-            emission_date = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
-            due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
             return {
                 "tipoDocumento": document_type,
                 "numeroDocumento": document_number,
@@ -278,14 +267,14 @@ class AccountMove(models.Model):
                 "serie": series,
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": record.currency_id.name,
+                "moneda": "VEF",
                 "transaccionId": "",
                 "urlPdf": ""
             }
 
     def get_totals(self):
         for record in self:
-            currency = record.currency_id.name
+            currency = record.company_id.currency_id.name
             totalIGTF = 0
             totalIGTF_VES = 0
             tax_totals = record.tax_totals
@@ -301,7 +290,7 @@ class AccountMove(models.Model):
                         tax_totals.get('subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -310,7 +299,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
@@ -328,7 +317,7 @@ class AccountMove(models.Model):
                         tax_totals.get('subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -337,7 +326,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts_foreign["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
@@ -352,7 +341,7 @@ class AccountMove(models.Model):
                         tax_totals.get('foreign_subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -361,7 +350,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts["subtotal"] = str(round(tax_totals.get("foreign_amount_untaxed", 0), 2))
@@ -394,7 +383,7 @@ class AccountMove(models.Model):
 
             if amounts_foreign:
                 foreign_totals = {
-                    "moneda": record.currency_id.name,
+                    "moneda": record.company_id.currency_foreign_id.name,
                     "tipoCambio": str(record.foreign_rate),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
@@ -420,12 +409,14 @@ class AccountMove(models.Model):
             "IVA 16%": "G",
             "IVA 31%": "A",
             "Exento": "E",
+            "IVA 0%": "E",
         }
         tax_rate = {
             "IVA 8%": "8.0",
             "IVA 16%": "16.0",
             "IVA 31%": "31.0",
             "Exento": "0.0",
+            "IVA 0%": "0.0",
             "3.0 %": "3.0"
         }
         for record in self:
@@ -483,21 +474,38 @@ class AccountMove(models.Model):
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
+                if record.company_id.currency_id.name == "VEF":
+                    unit_price = round(line.price_unit, 2)
+                    unit_price_discount = round(line.price_unit * (line.discount / 10), 2)
+                    discount_amount = round((line.price_unit * (line.discount / 100)) * line.quantity, 2)
+                    item_price = round(line.price_subtotal, 2)
+                    price_before_discount = round(line.price_unit * line.quantity, 2)
+
+                else:
+                        unit_price = round(line.foreign_price, 2)
+                        unit_price_discount = round(line.foreign_price * (line.discount / 10), 2)
+                        discount_amount = round((line.foreign_price * (line.discount / 100)) * line.quantity, 2)
+                        item_price = round(line.foreign_subtotal, 2)
+                        price_before_discount = round(line.foreign_price * line.quantity, 2)
+
+                vat = round(item_price * line.tax_ids.amount / 100, 2)
+                total_item_value = round(item_price + vat, 2)
+
                 item_details.append({
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
                     "descripcion": line.product_id.name,
                     "cantidad": str(line.quantity),
-                    "precioUnitario": str(round(line.price_unit, 2)),
-                    "precioUnitarioDescuento": str(round(line.price_unit * (line.discount / 100), 2)),
-                    "descuentoMonto": str(round((line.price_unit * (line.discount / 100)) * line.quantity, 2)),
-                    "precioItem": str(round(line.price_subtotal, 2)),
-                    "precioAntesDescuento": str(round(line.price_unit * line.quantity, 2)),
+                    "precioUnitario": str(unit_price),
+                    "precioUnitarioDescuento": str(unit_price_discount),
+                    "descuentoMonto": str(discount_amount),
+                    "precioItem": str(item_price),
+                    "precioAntesDescuento": str(price_before_discount),
                     "codigoImpuesto": tax_mapping[tax_rate],
                     "tasaIVA": str(round(line.tax_ids.amount, 2)),
-                    "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
-                    "valorTotalItem": str(round(line.price_subtotal, 2)),
+                    "valorIVA": str(vat),
+                    "valorTotalItem": str(total_item_value),
                 })
                 line_number += 1
         return item_details
@@ -517,6 +525,9 @@ class AccountMove(models.Model):
         for record in self:
             if record.partner_id:
                 partner_data = {}
+                if not record.partner_id.vat:
+                    raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
+
                 vat = record.partner_id.vat.upper()
 
                 if vat[0].isalpha(): 

@@ -1,5 +1,6 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
+from pytz import timezone
 import logging
 import requests
 import json
@@ -10,14 +11,13 @@ class EndPoints():
     BASE_ENDPOINTS = {
         "emision": "/Emision",
         "ultimo_documento": "/UltimoDocumento",
-        "asignar_numeraciones": "/AsignarNumeraciones",
         "consulta_numeraciones": "/ConsultaNumeraciones",
     }
 
 class AccountRetention(models.Model):
     _inherit = 'account.retention'
 
-    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False)
+    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
     show_digital_retention_iva = fields.Boolean(string="Show Digital Retention", compute="_compute_visibility_button", copy=False)
     show_digital_retention_islr = fields.Boolean(string="Show Digital Retention", compute="_compute_visibility_button", copy=False)
     control_number_tfhka = fields.Char(string="Control Number", copy=False)
@@ -69,16 +69,31 @@ class AccountRetention(models.Model):
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized."))
         document_type = self.env.context.get('document_type')
-        end_number, start_number = self.query_numbering()
+        self.query_numbering()
         document_number = self.get_last_document_number(document_type)
-        document_number = str(document_number + 1)
+        document_number = document_number + 1
+        current_number = int(self.number[6:])
+        validation_sequence = self.env.context.get('account_retention_alert', False)
 
-        if document_number == start_number:
-            self.assign_numbering(end_number, start_number)
+        if document_number != current_number and not validation_sequence and self.company_id.sequence_validation_tfhka:
+            message = _("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s). Do you want to continue anyway?") % (current_number, document_number)
+            return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.retention.alert.wizard',
+            'view_mode': 'form',
+            'view_id': self.env.ref('l10n_ve_invoice_digital.account_retention_alert_wizard').id,
+            'target': 'new',
+            'context': {
+                'default_move_id': self.id,
+                'default_message': message,
+            }
+        }
 
-        self.generate_document_data(document_number, document_type)
+        document_number = str(document_number)
+
+        self.generate_document_data(document_number, document_type, validation_sequence)
     
-    def generate_document_data(self, document_number, document_type):
+    def generate_document_data(self, document_number, document_type, validation_sequence):
         document_identification = self.get_document_identification(document_type, document_number)
         subject_retention = self.get_subject_retention()
         total_retention = self.get_total_retention(document_type)
@@ -99,6 +114,17 @@ class AccountRetention(models.Model):
         if response:
             self.is_digitalized = True
             self.control_number_tfhka = response.get("resultado").get("numeroControl")
+            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
+            if validation_sequence:
+                self.message_post(
+                    body=_("Warning accepted: The difference in sequence between Odoo and The Factory is acknowledged and accepted."),  
+                    message_type='comment',
+                )
+            self.message_post(
+                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
+                message_type='comment',
+            )
+
             return
     
     def get_last_document_number(self, document_type):
@@ -114,48 +140,55 @@ class AccountRetention(models.Model):
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def assign_numbering(self, end_number, start_number):
-        end = start_number + self.company_id.range_assignment_tfhka
-        start_number += 1
-        
-        if start_number <= end_number:
-            payload = {
-                        "serie": "",
-                        "tipoDocumento": "05",
-                        "numeroDocumentoInicio": start_number,
-                        "numeroDocumentoFin": end
-                    }
-            response = self.call_tfhka_api("asignar_numeraciones", payload)
-            
-            if response:
-                _logger.info("Numbering range successfully assigned.")
-
-    def query_numbering(self):
+    def query_numbering(self, series=""):
         payload={
-                "serie": "",
+                "serie": series,
                 "tipoDocumento": "",
                 "prefix": ""
             }
         response = self.call_tfhka_api("consulta_numeraciones", payload)
 
         if response:
-            numbering = response["numeraciones"][0]
-            end_number = numbering.get("hasta")
-            start_number = numbering.get("correlativo")
-            return end_number, start_number
+            approves = False
+            for numbering in response.get("numeraciones", []):
+                if series != "":
+                    if numbering.get("serie") == series:
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                else:
+                    if numbering.get("serie") == "NO APLICA":
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                
+                if int(start_number) < int(end_number):
+                    approves = True
+                    break
+
+            if approves:
+                return
+
+            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
     def get_document_identification(self, document_type, document_number):
         for record in self:
-            emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
-            emission_date = record.date_accounting.strftime("%d/%m/%Y") if record.date_accounting else ""
+            now = fields.Datetime.now()
+            emission_time = now.astimezone(timezone(record.env.user.tz)).strftime("%I:%M:%S %p").lower()
+            emission_date = now.strftime("%d/%m/%Y")
             affected_invoice_number = ""
             subsidiary = ""
-            
+
             for line in record.retention_line_ids:
+                prefix = ""
                 if line.move_id.debit_origin_id:
                     affected_invoice_number = line.move_id.debit_origin_id.name
+                    prefix = line.move_id.debit_origin_id.journal_id.sequence_id.prefix
+
                 if line.move_id.reversed_entry_id:
                     affected_invoice_number = line.move_id.reversed_entry_id.name
+                    prefix = line.move_id.reversed_entry_id.journal_id.sequence_id.prefix
+
+                if prefix and affected_invoice_number.startswith(prefix):
+                    affected_invoice_number = affected_invoice_number[len(prefix):]
 
             if self.company_id.subsidiary:
                 if record.account_analytic_id and record.account_analytic_id.code:
@@ -172,13 +205,16 @@ class AccountRetention(models.Model):
                 "serie": "",
                 "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": record.company_currency_id.name,
+                "moneda": record.company_id.currency_id.name,
             }
     
     def get_subject_retention(self):
         for record in self:
             if record.partner_id:
                 partner_data = {}
+                if not record.partner_id.vat:
+                    raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
+
                 vat = record.partner_id.vat.upper()
 
                 if vat[0].isalpha(): 
@@ -248,16 +284,21 @@ class AccountRetention(models.Model):
         for record in self:
             for line in record.retention_line_ids:
                 tipo_documento = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
-                
+                document_number_ret = line.move_id.name
+                prefix = line.move_id.journal_id.refund_sequence_id.prefix if line.move_id.reversed_entry_id else line.move_id.journal_id.sequence_id.prefix
+
+                if prefix and document_number_ret.startswith(prefix):
+                    document_number_ret = document_number_ret[len(prefix):]
+
                 retention_data = {
                     "numeroLinea": str(counter), 
                     "fechaDocumento": line.date_accounting.strftime("%d/%m/%Y"), 
                     "tipoDocumento": tipo_documento,
-                    "numeroDocumento": line.move_id.name,
+                    "numeroDocumento": document_number_ret,
                     "numeroControl": line.move_id.correlative,
                     "montoTotal": str(round(line.invoice_total, 2)),  
                     "baseImponible": str(round(line.invoice_amount, 2)),
-                    "moneda": line.company_currency_id.name,
+                    "moneda": record.company_id.currency_id.name,
                     "retenido": str(round(line.retention_amount, 2)),
                 }
 
@@ -267,10 +308,12 @@ class AccountRetention(models.Model):
                     retention_data["retenidoIVA"] = str(round(line.related_percentage_tax_base, 2))
 
                 if document_type == "06":
-                    for concept_line in line.payment_concept_id.line_payment_concept_ids:
-                        if record.partner_id.type_person_id.id == concept_line.id:
-                            retention_data["CodigoConcepto"] = concept_line.code
-                            retention_data["porcentaje"] = str(round(line.related_percentage_fees, 2))
+                    type_person = line.payment_concept_id.line_payment_concept_ids.filtered(lambda x: x.type_person_id.id == record.partner_id.type_person_id.id)
+                    code = type_person.code if type_person else ""
+                    if code:
+                        retention_data["CodigoConcepto"] = code
+
+                    retention_data["porcentaje"] = str(round(line.related_percentage_fees, 2))
 
                 retention_details.append(retention_data)
                 counter += 1

@@ -44,6 +44,8 @@ class StockPicking(models.Model):
     show_create_vendor_credit = fields.Boolean(compute="_compute_button_visibility")
     show_create_invoice_internal = fields.Boolean(compute="_compute_button_visibility")
 
+    show_other_causes_transfer_reason = fields.Boolean(compute="_compute_show_other_causes_transfer_reason")
+
     has_document = fields.Boolean(
         string="Has Document",
         compute="_compute_has_document",
@@ -59,6 +61,11 @@ class StockPicking(models.Model):
         tracking=True,
     )
 
+    other_causes_transfer_reason = fields.Char(
+        string="Reason for transfer for other reasons",
+        copy=False
+    )
+
     allowed_reason_ids = fields.Many2many(
         "transfer.reason",
         string="Allowed Reasons",
@@ -70,7 +77,7 @@ class StockPicking(models.Model):
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
-        default=False,
+        default=True,
         tracking=True,
         store=True,
         compute="_compute_is_dispatch_guide",
@@ -793,9 +800,6 @@ class StockPicking(models.Model):
             if picking.state != "done":
                 continue
 
-            if not picking.sale_id and not picking.operation_code == "internal":
-                continue
-
             if picking.document == "invoice":
                 continue
 
@@ -832,16 +836,20 @@ class StockPicking(models.Model):
             "l10n_ve_stock_account.transfer_reason_consignment",
             raise_if_not_found=False,
         )
-
+        self_consumption_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_self_consumption",
+            raise_if_not_found=False,
+        )
         for picking in self:
-            if (
-                picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id
-            ):
-                picking.is_dispatch_guide = True
+            if picking.transfer_reason_id:
+                if self_consumption_reason and picking.transfer_reason_id.id == self_consumption_reason.id:
+                    picking.is_dispatch_guide = False
+                elif consignment_reason and picking.transfer_reason_id.id == consignment_reason.id:
+                    picking.is_dispatch_guide = True
+                else:
+                    picking.is_dispatch_guide = True
             else:
-                # This is necessary always should be return a value
-                picking.is_dispatch_guide = picking.is_dispatch_guide
+                picking.is_dispatch_guide = True
 
     @api.depends(
         "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
@@ -857,6 +865,9 @@ class StockPicking(models.Model):
                 "export": "l10n_ve_stock_account.transfer_reason_export",
                 "self_consumption": "l10n_ve_stock_account.transfer_reason_self_consumption",
                 "consignment": "l10n_ve_stock_account.transfer_reason_consignment",
+                "repair_improvement": "l10n_ve_stock_account.transfer_reason_repair",
+                "external_storage": "l10n_ve_stock_account.transfer_reason_external_storage",
+                "other_causes": "l10n_ve_stock_account.transfer_reason_other_causes",
             }
 
             reasons = {
@@ -890,8 +901,18 @@ class StockPicking(models.Model):
             # Outgoing without sale
             elif is_outgoing and not has_sale:
                 self_consumption_reason = reasons.get("self_consumption")
+                other_causes = reasons.get("other_causes")
+                repair_improvement = reasons.get("repair_improvement")
+                external_storage = reasons.get("external_storage")
+
                 if self_consumption_reason:
                     allowed_reason_ids.append(self_consumption_reason.id)
+                if other_causes:
+                    allowed_reason_ids.append(other_causes.id)
+                if repair_improvement:
+                    allowed_reason_ids.append(repair_improvement.id)
+                if external_storage:
+                    allowed_reason_ids.append(external_storage.id)
 
             # Internal
             elif picking.operation_code == "internal":
@@ -900,6 +921,8 @@ class StockPicking(models.Model):
                 transfer_between_warehouses_reason = reasons.get(
                     "transfer_between_warehouses"
                 )
+                other_causes = reasons.get("other_causes")
+
                 warehouse = picking.location_dest_id.warehouse_id
 
                 # Consignments and internal transfers
@@ -908,6 +931,8 @@ class StockPicking(models.Model):
 
                 if transfer_between_warehouses_reason:
                     allowed_reason_ids.append(transfer_between_warehouses_reason.id)
+                if other_causes:
+                    allowed_reason_ids.append(other_causes.id)
 
                 if (
                     consignment_reason
@@ -939,6 +964,15 @@ class StockPicking(models.Model):
             #     if allowed_reason_ids
             #     else self.env["transfer.reason"]
             # )
+
+    @api.depends('transfer_reason_id')
+    def _compute_show_other_causes_transfer_reason(self):
+        for record in self:
+            record.show_other_causes_transfer_reason = False
+
+            if record.transfer_reason_id and record.transfer_reason_id.code == "other_causes":
+                record.show_other_causes_transfer_reason = True
+
 
     # === CONSTRAINT METHODS ===#
 
