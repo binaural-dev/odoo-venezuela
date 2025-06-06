@@ -103,7 +103,6 @@
                 ('state', '=', 'done'),
                 ('type_delivery_step', 'in', ['out', 'int']),
                 ('transfer_reason_id.code', '!=', 'self_consumption'),
-                ('sale_id.document', '!=', 'invoice'),
             '|',
                 ('type_delivery_step', '=', 'out'),
             '&amp;',

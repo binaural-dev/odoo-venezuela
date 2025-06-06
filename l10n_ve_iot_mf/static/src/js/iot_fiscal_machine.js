@@ -494,8 +494,4 @@ const fiscal_component = {
 
 };
 
-const fieldsRegistry = registry.category("view_widgets");
-
-if (!fieldsRegistry.contains("iot-mf-button")) {
-    fieldsRegistry.add("iot-mf-button", fiscal_component);
-}
+registry.category("view_widgets").add("iot-mf-button", fiscal_component);
