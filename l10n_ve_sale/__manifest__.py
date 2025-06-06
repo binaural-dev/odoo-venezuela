@@ -18,6 +18,7 @@
         "l10n_ve_contact",
         "l10n_ve_invoice",
         "l10n_ve_filter_partner",
+        "l10n_ve_stock",
     ],
     "data": [
         "security/ir.model.access.csv",
@@ -31,4 +32,5 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
+    "pre_init_hook": "pre_init_hook",
 }

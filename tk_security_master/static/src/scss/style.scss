@@ -1,0 +1,82 @@
+$dashboard-bg : #ffffff !default;
+
+.o_action_manager {
+    overflow: auto !important;
+}
+.tk__master_dash {
+    background: $dashboard-bg !important;
+    .tk-charts {
+      width: 100%;
+      height: 80vh;
+    }
+    .tk-os-chart {
+      width: 100%;
+      height: 50vh;
+    }
+    //d6ffe9
+    //d7f2ff
+    background: $dashboard-bg !important;
+    .p-32 {
+        padding: 32px!important;
+    }
+    .purple-bg {
+        background-color: #ecf2ff !important;
+        color: #5d87ff !important;
+    }
+    .warn-bg {
+        background-color: #fef5e5 !important;
+        color: #ffae1f !important;
+    }
+    .info-bg {
+        background-color: #e8f7ff !important;
+        color: #4abeff !important;
+    }
+    .danger-bg {
+        background-color: #fdede8 !important;
+        color: #fa896a !important;
+    }
+    .success-bg {
+        background-color: #e6fffa !important;
+        color: #17deba !important;
+    }
+    .active-bg {
+        background-color: #d6ffe9 !important;
+        color: #04c27a !important;
+    }
+    .terminate-bg {
+        background-color: #ffe9eb !important;
+        color: #fd4755 !important;
+    }
+    .all-bg {
+        background-color: #d7f2ff !important;
+        color: #2c9ee6 !important;
+    }
+    .tk-primary {
+        color: #2b3547 !important;
+        font-family: inherit;
+    }
+
+    .border-primary {
+        color: #8eafcf !important;
+    }
+    .card {
+        border: 0 !important;
+        .tk-card-body {
+            text-align: center;
+
+            .tk-st-1 {
+                margin-top: 8px;
+                font-size: 15px;
+            }
+             .tk-st-2 {
+                font-weight: 500;
+                font-size: 22px;
+            }
+        }
+    }
+    .card:hover {
+        transform: translateY(-5px) scale(1.005) translateZ(0);
+        box-shadow: 0 24px 36px rgba(0, 0, 0, 0.11), 0 24px 46px transparent;
+        cursor: pointer;
+    }
+}
