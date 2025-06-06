@@ -22,12 +22,8 @@
             <xpath expr="//form//group//group//field[@name='location_id'][2]" position="attributes">
                 <attribute name="readonly">order_is_consignment</attribute>
             </xpath>
-            <xpath expr="//field[@name='partner_id']" position="before">
-                <field name="partner_required" invisible='1'/>
-            </xpath>
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
-                <attribute name="required">partner_required</attribute> 
-                <attribute name="readonly">order_is_consignment or partner_required</attribute>
+                <attribute name="readonly">order_is_consignment</attribute>
             </xpath>
             <xpath expr="//form//header" position="inside">
                 <field name="dispatch_guide_controls" invisible="1" />
@@ -81,10 +77,18 @@
                 <button 
                     name="create_invoice" class="oe_highlight"
                     string="Create Invoice" type="object"
+<<<<<<< HEAD
+=======
+                    groups="l10n_ve_stock_account.group_stock_account"
+>>>>>>> odoo-venezuela/stg-pruebas
                     invisible="not show_create_invoice"/>
                 <button 
                     name="create_bill" class="oe_highlight"
                     string="Create Bill" type="object"
+<<<<<<< HEAD
+=======
+                    groups="l10n_ve_stock_account.group_stock_account"
+>>>>>>> odoo-venezuela/stg-pruebas
                     invisible="not show_create_bill"/>
                 <button 
                     name="create_customer_credit" class="oe_highlight"
@@ -108,4 +112,8 @@
                 action = records.action_create_multi_invoice_for_multi_transfer()
         </field>
     </record>
+<<<<<<< HEAD
 </odoo>
+=======
+</odoo>
+>>>>>>> odoo-venezuela/stg-pruebas

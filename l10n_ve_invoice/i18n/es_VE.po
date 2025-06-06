@@ -605,8 +605,23 @@ msgstr "Número de control"
 msgid "Credit Notes"
 msgstr "Notas de Crédito"
 
+#. module: account
+#: model:ir.actions.act_window,name:account.action_move_in_refund_type
+#: model:ir.actions.act_window,name:account.action_move_out_refund_type
+#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
+msgid "Credit Notes"
+msgstr "Notas de Crédito"
+
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
 msgid "Debit note"
 msgstr "Notas de Débito"
 
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#, python-format
+msgid "An invoice cannot have a line with a price of zero"
+msgstr "Una factura no puede tener una linea con precio en cero"

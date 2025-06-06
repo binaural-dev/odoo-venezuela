@@ -10,9 +10,5 @@
     "data": [
         "security/ir.model.access.csv",
     ],
-    # "assets": {
-    #     "web.assets_backend": [
-    #         "/l10n_ve_filter_partner/static/lib/js/*.js",
-    #     ],
-    # },
+   
 }
