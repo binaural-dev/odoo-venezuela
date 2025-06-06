@@ -1107,4 +1107,6 @@ class StockPicking(models.Model):
             if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
                 picking.state_guide_dispatch = 'emited'
         return super(StockPicking, self).button_validate()
-            
+    
+    def get_foreign_currency_is_vef(self):
+        return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
