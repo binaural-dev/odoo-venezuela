@@ -3,9 +3,9 @@
         <record id="res_config_settings_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">res.config.settings.l10n.ve.payment.extension</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
+            <field name="inherit_id" ref="base.res_config_settings_view_form" />
             <field name="arch" type="xml">
-                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                <xpath expr="//form" position="inside">
                     <block title="Payment Extension Settings" name="l10n_ve_payment_extension_journal_block">
                         <separator string="General Configuration" role="section"/>
                         <div class="col-12 col-lg-6 o_setting_box">

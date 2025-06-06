@@ -2,9 +2,9 @@
     <record id="res_config_settings_view_form_l10n_ve_stock" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.l10n.ve.stock</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
+        <field name="inherit_id" ref="base.res_config_settings_view_form" />
         <field name="arch" type="xml">
-            <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+            <xpath expr="//form" position="inside">
                 <block title="Stock Settings" name="l10n_ve_stock_block">
                     <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_group_product_available_quantity_on_sale">
                         <div class="o_setting_left_pane">

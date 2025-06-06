@@ -11,7 +11,6 @@
     # any module necessary for this one to work correctly
     "depends": [
         "base",
-        "l10n_ve_base",
         "l10n_ve_tax",
         "sale_management",
         "l10n_ve_rate",
