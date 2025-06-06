@@ -237,7 +237,13 @@
                                             t-out="line_values['total_with_tax']"
                                             t-options='{"widget": "float", "precision": o.get_digits()}' 
                                         />
-                                        <t t-out="o.company_id.currency_id.symbol"/>
+                                        <t t-if="o.get_foreign_currency_is_vef()">                                           
+                                            <t t-set="foreign_symbol" t-value="request.env.ref('base.VEF').symbol"/>
+                                            <t t-out="foreign_symbol"/>
+                                        </t>
+                                        <t t-else="">
+                                            <t t-out="o.company_id.currency_id.symbol"/>
+                                        </t>
                                     </td>
                                 </tr>
                             </t>
