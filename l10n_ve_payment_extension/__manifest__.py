@@ -10,6 +10,7 @@
     "version": "17.0.0.0.1",
     "depends": [
         "base",
+        "l10n_ve_base",
         "account",
         "l10n_ve_rate",
         "l10n_ve_accountant",

@@ -10,6 +10,7 @@
     "version": "17.0.0.0.1",
     "depends": [
         "stock",
+        "l10n_ve_base",
         "l10n_ve_tax",
         "product",
         "l10n_ve_rate",

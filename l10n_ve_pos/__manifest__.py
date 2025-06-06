@@ -12,6 +12,7 @@
     # any module necessary for this one to work correctly
     "depends": [
         "base",
+        "l10n_ve_base",
         "point_of_sale",
         "l10n_ve_rate",
         "l10n_ve_contact",

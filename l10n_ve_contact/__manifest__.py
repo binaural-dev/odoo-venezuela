@@ -8,7 +8,7 @@
     "website": "https://binauraldev.com/",
     "category": "Contacts/Contacts",
     "version": "17.0.0.0.2",
-    "depends": ["base", "contacts", "l10n_ve_rate", "l10n_ve_location"],
+    "depends": ["base", "contacts", "l10n_ve_rate", "l10n_ve_location", "l10n_ve_base"],
     "data": [
         "security/ir.model.access.csv",
         "views/res_partner.xml",

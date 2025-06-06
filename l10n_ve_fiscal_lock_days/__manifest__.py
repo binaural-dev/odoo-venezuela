@@ -8,6 +8,7 @@
     "version": "17.0.0.0.1",
     "depends": [
         "base",
+        "l10n_ve_base",
         "l10n_ve_accountant",
     ],
     "data": [
