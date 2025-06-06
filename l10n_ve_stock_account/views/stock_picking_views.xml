@@ -77,10 +77,12 @@
                 <button 
                     name="create_invoice" class="oe_highlight"
                     string="Create Invoice" type="object"
+                    groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
                 <button 
                     name="create_bill" class="oe_highlight"
                     string="Create Bill" type="object"
+                    groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_bill"/>
                 <button 
                     name="create_customer_credit" class="oe_highlight"

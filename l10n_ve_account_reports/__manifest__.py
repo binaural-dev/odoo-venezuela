@@ -16,4 +16,5 @@
         "data/menuitems.xml",
         "views/account_report_views.xml",
     ],
+    "pre_init_hook": "pre_init_hook",
 }
