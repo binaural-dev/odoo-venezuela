@@ -8,7 +8,6 @@
     "version": "17.0.0.0.1",
     "depends": [
         "base",
-        "account_accountant",
         "l10n_ve_accountant",
     ],
     "data": [

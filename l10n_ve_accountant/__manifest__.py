@@ -12,7 +12,6 @@
         "base",
         "web",
         "account",
-        "account_reports",
         "l10n_ve_tax",
         "l10n_ve_contact",
         "l10n_ve_rate",
