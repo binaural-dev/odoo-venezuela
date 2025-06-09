@@ -9,8 +9,8 @@
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="before">
                 <field name="config_deductible_tax" column_invisible="True"/>
                 <field name="move_type" column_invisible="True"/>
-                <field name="not_deductible_tax" optional="hide" 
-                invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax"/>
+                <field name="not_deductible_tax" optional="hide"
+                    attrs="{'invisible': ['|', ('move_type', 'not in', ['in_invoice', 'in_refund']), ('config_deductible_tax', '=', False)]}"/>
             </xpath>
         </field>
     </record>

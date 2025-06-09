@@ -5,7 +5,7 @@
         <field name="inherit_id" ref="l10n_ve_stock_account.l10n_ve_stock_account_account_move_form_view" />
         <field name="arch" type="xml">
             <xpath expr="//form//header//button[@name='print_invoice_free_form']" position="attributes">
-                <attribute name="invisible">(move_type not in ('out_invoice', 'out_refund')) or state != 'posted' or print_type != 'free' or correlative == False</attribute>
+                <attribute name="attrs">{'invisible': ['|', ('move_type', 'not in', ['out_invoice', 'out_refund']), '|', ('state', '!=', 'posted'), '|', ('print_type', '!=', 'free'), ('correlative', '=', False)]}</attribute>
             </xpath>
         </field>
     </record>

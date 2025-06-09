@@ -8,8 +8,7 @@
                 <xpath expr="//field[@name='partner_shipping_id']" position="after">
                     <field
                         name="generate_iva_retention"
-                        invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
-                    />
+                        attrs="{'invisible': [('move_type', 'not in', ['in_invoice', 'in_receipt', 'in_refund'])]}"/>
                     <field name="iva_voucher_number" readonly="1"/>
                     <field name="islr_voucher_number" readonly="1"/>
                     <field name="municipal_voucher_number" readonly="1"/>
@@ -89,7 +88,7 @@
                         <field
                             name="retention_islr_line_ids"
                             nolabel="1"
-                            readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'"
+                            attrs="{'readonly': ['|', ('move_type', 'not in', ['in_invoice', 'in_refund']), ('state', '!=', 'draft')]}"
                         >
                             <tree editable='bottom'>
                                 <!-- Invisible Fields -->
@@ -158,7 +157,7 @@
                         <field
                             name="retention_municipal_line_ids"
                             nolabel="1"
-                            readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'"
+                            attrs="{'readonly': ['|', ('move_type', 'not in', ['in_invoice', 'in_refund']), ('state', '!=', 'draft')]}"
                         >
                             <tree editable='bottom'>
                                 <field name="name" force_save="1" readonly="1"/>

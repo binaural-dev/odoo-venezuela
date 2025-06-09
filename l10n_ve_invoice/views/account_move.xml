@@ -11,30 +11,29 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//div[hasclass('oe_title')]/h1" position="attributes">
-                <attribute name="invisible">move_type not in ('in_invoice', 'in_refund',
-                    'in_receipt') and not posted_before and not is_contingency</attribute>
+                <attribute name="attrs">{'invisible': ['&', ('move_type', 'not in', ['in_invoice', 'in_refund', 'in_receipt']), '&', ('posted_before', '=', False), ('is_contingency', '=', False)]}</attribute>
             </xpath>
             <field name="name" position="attributes">
-                <attribute name="readonly">(move_type in ('out_invoice', 'out_refund') or not is_contingency) and state == 'posted'</attribute>
-		        <attribute name="required">move_type in ('in_invoice', 'in_refund', 'in_receipt') or is_contingency</attribute>
+                <attribute name="attrs">{'readonly': ['|', ('move_type', 'in', ['out_invoice', 'out_refund']), '&', ('is_contingency', '=', False), ('state', '=', 'posted')]}</attribute>
+                        <attribute name="attrs">{'required': ['|', ('move_type', 'in', ['in_invoice', 'in_refund', 'in_receipt']), ('is_contingency', '=', True)]}</attribute>
                 <attribute name="placeholder">JRNL/2016/00001</attribute>
             </field>
             <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
                 <div class="inline-block"></div>
                 <label for="correlative"
                     style="font-weight: bold;"
-                    invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund')" />
+                    attrs="{'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])]}"/>
 
                 <field name="correlative"
-                    invisible="move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']"
-                    readonly="(move_type in ['out_invoice', 'out_refund'] and not is_contingency) or state == 'posted'"
-                    required="move_type in ['in_invoice', 'in_refund']" />
+                    attrs="{'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],
+                            'readonly': ['|', ('move_type', 'in', ['out_invoice', 'out_refund']), '&', ('is_contingency', '=', False), ('state', '=', 'posted')],
+                            'required': [('move_type', 'in', ['in_invoice', 'in_refund'])]}" />
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_reception_date"
                     options="{'datepicker': {'warn_future': true}}"
-                    invisible="move_type not in ('out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt')"
-                    readonly="state == 'draft'" />
+                    attrs="{'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt'])],
+                            'readonly': [('state', '=', 'draft')]}" />
             </xpath>
             <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
                 <field name="invoice_origin" string="Nro de Pedido" />
@@ -44,7 +43,7 @@
                 <field name="is_debit_journal" readonly="1" invisible="1" />
             </xpath>
             <xpath expr="//page[@name='other_info']//field[@name='ref']" position="attributes">
-                <attribute name="readonly">move_type in ['out_refund', 'out_invoice'] and is_debit_journal</attribute>
+                <attribute name="attrs">{'readonly': ['&', ('move_type', 'in', ['out_refund', 'out_invoice']), ('is_debit_journal', '=', True)]}</attribute>
             </xpath>
             <button name="button_draft" position="attributes">
                 <attribute name="invisible">1</attribute>
@@ -61,11 +60,11 @@
 
             <button name="button_draft" position="attributes">
                 <!-- <attribute name="invisible">1</attribute> -->
-                <attribute name="invisible">move_type in ['out_invoice', 'out_refund']</attribute>
+                  <attribute name="attrs">{'invisible': [('move_type', 'in', ['out_invoice', 'out_refund'])]}</attribute>
             </button>
 
             <button name="button_cancel" position="attributes">
-                <attribute name="invisible">move_type in ['out_invoice', 'out_refund']</attribute>
+                  <attribute name="attrs">{'invisible': [('move_type', 'in', ['out_invoice', 'out_refund'])]}</attribute>
             </button>
 
         </field>

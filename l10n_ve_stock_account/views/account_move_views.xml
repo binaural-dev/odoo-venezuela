@@ -10,7 +10,7 @@
                 <button
                     name="print_invoice_free_form" string="Free Form"
                     type="object" class="o_btn_validate"
-                    invisible="(move_type not in ('out_invoice', 'out_refund')) or state != 'posted' or correlative == False"
+                    attrs="{'invisible': ['|', ('move_type', 'not in', ['out_invoice', 'out_refund']), '|', ('state', '!=', 'posted'), ('correlative', '=', False)]}"
                 />
             </xpath>
 
