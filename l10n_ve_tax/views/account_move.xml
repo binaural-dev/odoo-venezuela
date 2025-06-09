@@ -10,7 +10,7 @@
                 <field name="config_deductible_tax" column_invisible="True"/>
                 <field name="move_type" column_invisible="True"/>
                 <field name="not_deductible_tax" optional="hide"
-                    attrs="{'invisible': ['|', ('move_type', 'not in', ['in_invoice', 'in_refund']), ('config_deductible_tax', '=', False)]}"/>
+                invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax"/>
             </xpath>
         </field>
     </record>

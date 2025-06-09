@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <xpath expr="//header" position="after">
                 <field name="foreign_balance" invisible="1" />
-                <div class="alert alert-warning mb-0" role="alert" attrs="{'invisible': [('foreign_balance', '=', 0)]}">
+                <div class="alert alert-warning mb-0" role="alert" invisible="foreign_balance == 0">
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div>
             </xpath>
@@ -22,12 +22,12 @@
                     context="{'res_partner_search_mode': (context.get('default_move_type', 'entry') in ('out_invoice', 'out_refund', 'out_receipt') and 'customer') or (context.get('default_move_type', 'entry') in ('in_invoice', 'in_refund', 'in_receipt') and 'supplier') or False, 'show_address': 1, 'default_is_company': True}"
                     domain="[('type', '!=', 'private'), ('company_id', 'in', (False, company_id))]"
                     options="{&quot;always_reload&quot;: True, &quot;no_quick_create&quot;: True}"
-                    attrs="{'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'])]}"/>
+                    invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')" />
                 <field name="manually_set_rate" invisible="1" />
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="vat"
-                    attrs="{'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'])]}"/>
+                    invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')" />
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Foreign currency" name="foreign_currency">
@@ -46,18 +46,18 @@
                     </group>
                     <group colspan="4">
                         <group class="oe_subtotal_footer oe_right"
-                            attrs="{'invisible': ['|', ('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']), ('payment_state', '=', 'invoicing_legacy')]}">
+                            invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt') or payment_state == 'invoicing_legacy'">
                             <field name="tax_totals"
                                 widget="account-tax-foreign-totals-field"
                                 nolabel="1"
                                 colspan="2"
-                                attrs="{'readonly': ['|', ('state', '!=', 'draft'), '&', ('move_type', 'not in', ['in_invoice', 'in_refund']), ('quick_edit_mode', '=', False)]}"/>
+                                readonly="state != 'draft' or (move_type not in ('in_invoice', 'in_refund') and not quick_edit_mode)" />
                             <field name="invoice_payments_widget" colspan="2" nolabel="1"
                                 widget="payment" />
                             <field name="invoice_outstanding_credits_debits_widget"
                                 class="oe_invoice_outstanding_credits_debits"
                                 colspan="2" nolabel="1" widget="payment"
-                                attrs="{'invisible': [('state', '!=', 'posted')]}"/>
+                                invisible="state != 'posted'" />
                         </group>
                     </group>
                 </page>
@@ -113,7 +113,7 @@
             </xpath>
             <field name="payment_reference" position="after">
                 <field name="financial_document"
-                    attrs="{'invisible': [('move_type', 'not in', ['out_refund', 'out_invoice'])]}"/>
+                    invisible="move_type not in ('out_refund', 'out_invoice')" />
             </field>
         </field>
     </record>
