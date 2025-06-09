@@ -110,9 +110,3 @@ class ProductTemplate(models.Model):
         domain = [('free_qty', operator, value)]
         product_variant_query = self.env['product.product'].sudo()._search(domain)
         return [('product_variant_ids', 'in', product_variant_query)]
-
-    @api.constrains('name')
-    def _check_name(self):
-        for record in self:
-            if not re.match(r'^[a-zA-Z0-9 .,()-]+$', record.name):
-                raise ValidationError(_("The name contains a character that is not allowed for registration."))
