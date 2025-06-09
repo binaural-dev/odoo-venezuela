@@ -69,7 +69,7 @@ patch(PosStore.prototype, {
       let client = order.get_partner()
 
       invoice['partner_id']['vat'] = client.prefix_vat + client.vat
-      invoice['partner_id']['name'] = client.name
+      invoice['partner_id']['name'] = this.normalizeProductName(client.name)
       invoice['partner_id']['address'] = client.address || false
       invoice['partner_id']['phone'] = client.phone || false
     }
@@ -128,7 +128,7 @@ patch(PosStore.prototype, {
           price_unit: amount,
           discount: el.get_discount(),
           quantity: Math.abs(el.quantity),
-          name: el.product.display_name,
+          name: this.normalizeProductName(el.product.display_name),
           code: el.product.default_code,
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
@@ -147,6 +147,19 @@ patch(PosStore.prototype, {
     return invoice
   },
 
+  normalizeProductName(text) {
+    if (!text) return "";
+
+    const normalized = text.normalize("NFKD");
+    const noSpecialChars = normalized
+        .replace(/[\u0300-\u036f]/g, "")  
+        .replace(/[^\w\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    return noSpecialChars;
+  },
+  
   async print_out_invoice(data) {
     
     const fdm = this.useFiscalMachine();
