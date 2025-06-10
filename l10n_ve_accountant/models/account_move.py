@@ -51,7 +51,6 @@ class AccountMove(models.Model):
         digits=(16, 15),
         default=0.0,
         store=True,
-        readonly=False,
         index=True,
     )
 
