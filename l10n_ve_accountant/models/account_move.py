@@ -49,7 +49,6 @@ class AccountMove(models.Model):
         compute="_compute_rate",
         digits=(16, 15),
         store=True,
-        readonly=False,
         index=True,
     )
 
