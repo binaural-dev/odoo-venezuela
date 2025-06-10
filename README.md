@@ -168,6 +168,7 @@ Queremos dar un especial agradecimiento a las personas que han colaborado con es
 - Raiver Figueroa : [@raiver28](https://github.com/raiver28)
 - Manuel Guerrero : [@manuelgc1201](https://github.com/manuelgc1201)
 
+
 Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra forma han colaborado con nuestro equipo.
 
 ---
