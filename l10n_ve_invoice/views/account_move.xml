@@ -50,6 +50,7 @@
                 <attribute name="invisible">1</attribute>
                 <!-- <attribute name="invisible">state in ['posted', 'cancel'] and move_type in ['out_invoice', 'out_refund'] and is_debit_journal and not show_reset_to_draft_button</attribute> -->
             </button>
+            
             <xpath expr="//form//header" position="inside">
                 <button
                     name="action_debit_note_button" string="Debit note"
@@ -57,6 +58,16 @@
                     invisible="is_debit_journal"
                 />
             </xpath>
+
+            <button name="button_draft" position="attributes">
+                <!-- <attribute name="invisible">1</attribute> -->
+                <attribute name="invisible">move_type in ['out_invoice', 'out_refund']</attribute>
+            </button>
+
+            <button name="button_cancel" position="attributes">
+                <attribute name="invisible">move_type in ['out_invoice', 'out_refund']</attribute>
+            </button>
+
         </field>
     </record>
     <record id="view_account_move_od_journal_sequence" model="ir.ui.view">

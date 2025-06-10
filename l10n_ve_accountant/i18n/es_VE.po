@@ -5,7 +5,10 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250311\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-11 18:40+0000\n"
+"PO-Revision-Date: 2025-04-11 18:40+0000\n"
 "POT-Creation-Date: 2025-04-11 18:40+0000\n"
 "PO-Revision-Date: 2025-04-11 18:40+0000\n"
 "Last-Translator: \n"
@@ -35,9 +38,11 @@ msgstr ""
 msgid ""
 "<span class=\"o_form_label\" style=\"font-size: 14px; white-space: nowrap;\">\n"
 "                        Once confirmed, the system will generate the sequences and the document cannot be edited later. \n"
+"                        Once confirmed, the system will generate the sequences and the document cannot be edited later. \n"
 "                    </span>"
 msgstr ""
 "<span class=\"o_form_label\" style=\"font-size: 14px; white-space: nowrap;\">\n"
+"                        Una vez confirmado, el sistema generará las secuencias y el documento no podrá ser editado posteriormente. \n"
 "                        Una vez confirmado, el sistema generará las secuencias y el documento no podrá ser editado posteriormente. \n"
 "                    </span>"
 
@@ -141,6 +146,11 @@ msgid "Amount"
 msgstr ""
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__amount
+msgid "Amount"
+msgstr ""
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__amount_currency
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Amount in Currency"
@@ -190,6 +200,11 @@ msgstr "La moneda base es Bs"
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
 msgid "COMPROBANTE CONTABLE No."
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_invoice_document
+msgid "COPIA"
 msgstr ""
 
 #. module: l10n_ve_accountant
@@ -793,7 +808,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
 msgid "RIF"
-msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
+msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTNNIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
@@ -849,6 +864,11 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
 msgid "Rif:&amp;nbsp;"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_invoice_document
+msgid "SIN DERECHO A CRÉDITO FISCAL"
 msgstr ""
 
 #. module: l10n_ve_accountant
@@ -984,7 +1004,9 @@ msgid ""
 "The operation cannot be completed: Another entry with the same name already "
 "exists."
 msgstr ""
+""
 "La operación no se puede completar: Ya existe otro asiento con el mismo "
+""
 "nombre."
 
 #. module: l10n_ve_accountant
