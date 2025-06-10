@@ -23,6 +23,7 @@ Si encuentras un error o problema en los módulos, puedes:
 
 ### 2. Sugerir Mejoras o Nuevas Funcionalidades
 
+
 Si tienes ideas para mejorar la localización o deseas proponer nuevas funcionalidades:
 
 - Abre un _issue_ con el tipo "Mejora".
