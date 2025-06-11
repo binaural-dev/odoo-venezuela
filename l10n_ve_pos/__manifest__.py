@@ -28,7 +28,6 @@
         "views/res_config_settings.xml",
         "views/pos_payment_views.xml",
         "views/report_saledetails.xml",
-        "views/pos_config_view.xml",
         "security/res_group.xml",
         "wizard/payment_report.xml",
         "report/payment_report.xml",
