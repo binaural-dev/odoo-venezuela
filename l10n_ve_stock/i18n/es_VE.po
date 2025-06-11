@@ -655,15 +655,6 @@ msgstr "La Disponibilidad del Producto para la Venta."
 
 #. module: l10n_ve_stock
 #. odoo-python
-#: code:addons/l10n_ve_stock/models/product_template.py:0
-#, python-format
-msgid "The name contains a character that is not allowed for registration."
-msgstr ""
-"El nombre contiene al menos un carácter que no está permitido para el "
-"registro"
-
-#. module: l10n_ve_stock
-#. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_location.py:0
 #, python-format
 msgid "The priority must be greater than 0."
