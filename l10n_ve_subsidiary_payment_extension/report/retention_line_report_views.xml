@@ -1,0 +1,32 @@
+
+<odoo>
+    <data>
+        <record id="view_retention_line_report_search" model="ir.ui.view">
+            <field name="name">retention.line.report.search.with.subsidiary</field>
+            <field name="model">retention.line.report</field>
+            <field name="inherit_id" ref="l10n_ve_payment_extension.view_retention_line_report_search"/>
+            <field name="arch" type="xml">
+		<filter name="retention_date_accounting" position="after">
+		    <filter name="retention_line_account_analytic"
+                	    domain="[]"
+			    context="{'group_by' : 'account_analytic_id'}"/>
+		</filter>
+
+		<field name="type" position="after">
+		    <field name="account_analytic_id"/>
+		</field>
+	    </field>
+	</record>
+
+        <record id="view_retention_line_report_tree" model="ir.ui.view">
+            <field name="name">retention.line.report.tree.with.subsidiary</field>
+            <field name="model">retention.line.report</field>
+            <field name="inherit_id" ref="l10n_ve_payment_extension.view_retention_line_report_tree"/>
+            <field name="arch" type="xml">
+		<field name="partner" position="after">
+		    <field name="account_analytic_id"/>
+		</field>
+	    </field>
+	</record>
+    </data>
+</odoo>

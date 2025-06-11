@@ -1,0 +1,30 @@
+
+<odoo>
+    <data>
+        <record id="res_config_settings_l10n_ve_subsidiary" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.subsidiary</field>
+            <field name="model">res.config.settings</field>
+            <field name="priority" eval="101"/>
+            <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
+            <field name="arch" type="xml">
+                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                    <field name="group_analytic_accounting_related" invisible="1"/>
+                    <h2 invisible="not group_analytic_accounting_related">Subsidiary Configuration</h2>
+                    <div class="row mt16 o_settings_container" invisible="not group_analytic_accounting_related">
+                        <div class="col-12 col-lg-6 o_setting_box" name="l10n_ve_subsidiary_settings">
+                            <div class="o_setting_left_pane">
+                                <field name="subsidiary" widget="upgrade_boolean"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="subsidiary"/>
+                                <div class="text-muted">
+                                    Subsidiary (Quotation and Facture)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

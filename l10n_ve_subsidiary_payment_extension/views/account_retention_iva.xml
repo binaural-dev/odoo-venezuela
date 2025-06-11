@@ -1,0 +1,21 @@
+
+<odoo>
+    <data>
+
+		<record id="view_inherit_l10n_ve_subsidiary_retention" model="ir.ui.view">
+			<field name="name">account.retention.view.search.inherit</field>
+			<field name="model">account.retention</field>
+			<field name="inherit_id" ref="l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension"/>
+			<field name="arch" type="xml">
+				<search>
+					<field name="account_analytic_id" string="Sucursal"/>
+					<group string="Group by">
+						<filter name="account_analytic_id" string="Sucursal" context="{'group_by': 'account_analytic_id'}"/>
+					</group>
+					<filter name="account_analytic_id" string="Sucursal" domain="[('account_analytic_id', '!=' , False)]"/>
+				</search>
+			</field>
+		</record>
+
+    </data>
+</odoo>

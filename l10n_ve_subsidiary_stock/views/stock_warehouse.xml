@@ -1,0 +1,17 @@
+
+<odoo>
+
+    <record id="view_wareohouse" model="ir.ui.view">
+        <field name="name">view.stock.warehouse.l10n.ve.subsidiary.stock</field>
+        <field name="model">stock.warehouse</field>
+        <field name="inherit_id" ref="stock.view_warehouse"/>
+        <field name="arch" type="xml">
+            <field name="code" position="after">
+                <field name="company_subsidiary" invisible='1'/>   
+                <field name="subsidiary_id" invisible="not company_subsidiary"/>
+                <field name="inventory_account_id" invisible="not company_subsidiary"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_inh" model="ir.ui.view">
+        <field name="name">l10n.ve.subsidiary.view.users.form.inh</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="l10n_ve_subsidiary.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group/field[@name='subsidiary_id']" position="after">
+                <field 
+                    name="can_transfer_to_warehouses_without_branch" 
+                />
+            </xpath>
+        </field>
+    </record>
+</odoo>

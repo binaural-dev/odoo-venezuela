@@ -18,7 +18,7 @@
 
         <!-- Transfer between warehouses -->
         <record id="transfer_reason_transfer_between_warehouses" model="transfer.reason">
-            <field name="name">Traslado entre almacenes</field>
+            <field name="name">Traslado entre almacenes propio</field>
             <field name="code">transfer</field>
             <field name="active">True</field>
         </record>
@@ -44,6 +44,24 @@
             <field name="name">Consignación</field>
             <!-- <field name="name">Consignment</field> -->
             <field name="code">consignment</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="transfer_reason_repair" model="transfer.reason">
+            <field name="name">Reparación o perfeccionamiento</field>
+            <field name="code">repair_improvement</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="transfer_reason_external_storage" model="transfer.reason">
+            <field name="name">Traslado entre almacenes de otros</field>
+            <field name="code">external_storage</field>
+            <field name="active">True</field>
+        </record>
+        
+        <record id="transfer_reason_other_causes" model="transfer.reason">
+            <field name="name">Otras causas</field>
+            <field name="code">other_causes</field>
             <field name="active">True</field>
         </record>
     </data>

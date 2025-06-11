@@ -159,9 +159,13 @@ class AccountMove(models.Model):
                 invoice_print_type = move.company_id.invoice_print_type
             else:
                 invoice_print_type = None
-            
-            if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
-                
+
+            if "invoice_digital_tfhka" in move.company_id._fields:
+                invoice_digital_tfhka = move.company_id.invoice_digital_tfhka
+            else:
+                invoice_digital_tfhka = None
+
+            if move.is_valid_to_sequence() and invoice_print_type != "fiscal" and not invoice_digital_tfhka:
                 move.correlative = move.get_sequence()
                 
         return res
