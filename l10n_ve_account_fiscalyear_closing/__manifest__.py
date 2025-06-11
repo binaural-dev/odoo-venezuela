@@ -9,11 +9,15 @@
     "category": "Accounting/Localizations/Account Chart",
     "version": "17.0.0.0.0",
     "depends": [
-        "account_fiscal_year_closing",
+        "account",
         "l10n_ve_contact",
         "l10n_ve_rate",
     ],
     "data": [
+        "security/account_fiscalyear_closing_security.xml",
+        "views/account_fiscalyear_closing_views.xml",
+        "views/account_fiscalyear_closing_template_views.xml",
+        "views/account_move_views.xml",
         "views/account_fiscalyear_closing.xml",
         "views/account_fiscalyear_closing_template.xml",
     ],
