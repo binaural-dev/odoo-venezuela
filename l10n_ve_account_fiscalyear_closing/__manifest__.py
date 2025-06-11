@@ -18,8 +18,6 @@
         "views/account_fiscalyear_closing_views.xml",
         "views/account_fiscalyear_closing_template_views.xml",
         "views/account_move_views.xml",
-        "views/account_fiscalyear_closing.xml",
-        "views/account_fiscalyear_closing_template.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,

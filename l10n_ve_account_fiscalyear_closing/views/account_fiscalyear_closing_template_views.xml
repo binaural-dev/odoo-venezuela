@@ -45,6 +45,10 @@
                                         <field name="move_date" />
                                         <field name="journal_id" />
                                         <field name="sequence" />
+                                        <label for="l_map"/>
+                                        <div>
+                                            <field name="l_map"/>
+                                        </div>
                                     </group>
                                     <group>
                                         <field name="code" />

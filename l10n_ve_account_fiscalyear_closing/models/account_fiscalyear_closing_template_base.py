@@ -2,7 +2,7 @@
 # Copyright 2017 Tecnativa - Pedro M. Baeza
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class AccountFiscalyearClosingTemplate(models.Model):
@@ -53,6 +53,52 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
         default="last_ending",
         required=True,
     )
+    l_map = fields.Boolean(string="Load accounts")
+
+    @api.onchange("l_map")
+    def inchange_l_map(self):
+        accounts = (
+            self.env["account.account"].sudo().search(
+                [
+                    (
+                        "account_type",
+                        "in",
+                        [
+                            "income",
+                            "expense",
+                            "income_other",
+                            "expense_depreciation",
+                            "expense_direct_cost",
+                        ],
+                    ),
+                    ("company_id", "in", [self.env.company.id, False]),
+                ]
+            )
+        )
+        config_a = (
+            self.env["account.account"].sudo().search(
+                [
+                    ("account_type", "=", "equity_unaffected"),
+                    ("company_id", "in", [self.env.company.id, False]),
+                ],
+                limit=1,
+            )
+        )
+        maps = []
+        if self.l_map:
+            for a in accounts:
+                if len(a.code):
+                    vals = {
+                        "name": a.name,
+                        "src_accounts": a.code,
+                        "dest_account": config_a.code,
+                        "template_config_id": self.id,
+                    }
+                    maps.append((0, 0, vals))
+            if maps:
+                return {"value": {"mapping_ids": maps}}
+        else:
+            return {"value": {"mapping_ids": [(5, 0, 0)]}}
 
     _sql_constraints = [
         (
