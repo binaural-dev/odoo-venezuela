@@ -93,7 +93,6 @@ patch(PosStore.prototype, {
     if (lines.length > 0 && invoice['type'] == 'out_refund') {
       try {
         const response = await this.orm.call("pos.order", "get_order_by_uid", [[], lines[0].orderline.orderUid])
-        console.log("RESPONSE", response)
         if (!this.is_same_mf(response[0].fiscal_machine)) {
           return { "valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}` }
         }
@@ -143,7 +142,6 @@ patch(PosStore.prototype, {
       })
     }
     invoice["valid"] = true
-    console.log("INvoice", invoice)
     return invoice
   },
 
@@ -277,3 +275,4 @@ patch(PosStore.prototype, {
     return await super.push_single_order.apply(this, [order, opts]);
   },
 })
+
