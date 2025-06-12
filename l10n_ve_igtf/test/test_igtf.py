@@ -368,3 +368,34 @@ class TestIGTFBasic(IGTFTestCommon):
         )
 
         _logger.info("-----test_07_cancel_igtf_payment superado.-----------")
+
+    def test_08_two_usd_payments(self):
+        """La factura recibe dos pagos en USD con IGTF."""
+        invoice = self._create_invoice_usd(1000.0)
+        pct = self.company.igtf_percentage
+        rate_factor = 1 - pct / 100
+
+        pay1_amount = 600.0
+        pay1 = self._create_payment(amount=pay1_amount, is_igtf=True)
+
+        line1 = pay1.move_id.line_ids.filtered(
+            lambda l: l.account_id.account_type == "asset_receivable"
+        )
+        invoice.js_assign_outstanding_line(line1.id)
+
+        expected_residual1 = round(invoice.amount_total - pay1_amount * rate_factor, 2)
+        self.assertAlmostEqual(invoice.amount_residual, expected_residual1, 2)
+        self.assertAlmostEqual(pay1.igtf_amount, round(pay1_amount * pct / 100, 2), 2)
+
+        pay2_amount = round(invoice.amount_residual / rate_factor, 2)
+        pay2 = self._create_payment(amount=pay2_amount, is_igtf=True)
+
+        line2 = pay2.move_id.line_ids.filtered(
+            lambda l: l.account_id.account_type == "asset_receivable"
+        )
+        invoice.js_assign_outstanding_line(line2.id)
+
+        self.assertTrue(invoice.currency_id.is_zero(invoice.amount_residual))
+        self.assertIn(invoice.payment_state, ("paid", "in_payment"))
+
+        _logger.info("-----test_08_two_usd_payments superado.-----------")
