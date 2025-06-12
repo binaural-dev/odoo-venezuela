@@ -48,31 +48,8 @@ Si deseas colaborar directamente con código:
 
 Esta localización incluye los siguientes módulos, diseñados para cumplir con los requisitos específicos de la normativa venezolana:
 
-<<<<<<< HEAD
-1. **l10n_ve_accounting**
-
-   - Gestión contable adaptada a los estándares locales.
-   - Configuración de cuentas y planes contables venezolanos.
-
-2. **l10n_ve_tax**
-
-   - Manejo de impuestos nacionales como IVA, retenciones y contribuyentes especiales.
-
-3. **l10n_ve_rate**
-
-   - Gestión de tasas de cambio oficiales.
-
-4. **l10n_ve_invoice**
-
-   - Emisión de facturas adaptadas a los requisitos legales.
-   - Compatibilidad con reportes fiscales.
-
-5. **l10n_ve_location**
-
-   - Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos.
-=======
-- **l10n_ve_accounting**  
-   Gestión contable adaptada a los estándares locales. Incluye configuraciones específicas para cuentas y planes contables venezolanos, permitiendo cumplir con los requerimientos fiscales nacionales.
+- **l10n_ve_accounting**
+  Gestión contable adaptada a los estándares locales. Incluye configuraciones específicas para cuentas y planes contables venezolanos, permitiendo cumplir con los requerimientos fiscales nacionales.
 
 - **l10n_ve_tax**  
    Manejo de impuestos nacionales como IVA, retenciones y contribuyentes especiales. Asegura que los cálculos y reportes sean conformes con las leyes fiscales de Venezuela.
@@ -83,9 +60,8 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
 - **l10n_ve_invoice**  
    Emisión de facturas adaptadas a los requisitos legales. Incluye compatibilidad con reportes fiscales necesarios para cumplir con la normativa de facturación en Venezuela.
 
-- **l10n_ve_location**  
-   Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos. Permite una gestión geográfica más precisa de los datos de socios y clientes dentro de Odoo.
->>>>>>> odoo-venezuela/stg-pruebas
+- **l10n_ve_location**
+  Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos. Permite una gestión geográfica más precisa de los datos de socios y clientes dentro de Odoo.
 
 - **l10n_ve_currency_rate_live**  
    Actualización diaria automática de tasas BCV. Configuración por compañía, con un sistema de fallback en caso de que no se reciba la actualización oficial.
@@ -154,10 +130,6 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
 Estamos trabajando para mejorar continuamente esta localización. Entre nuestros próximos pasos están:
 
 1. **Runbot para pruebas en tiempo real**
-<<<<<<< HEAD
-
-=======
->>>>>>> odoo-venezuela/stg-pruebas
    - Configurar un _runbot_ accesible para que los usuarios puedan:
      - Probar las funcionalidades actuales.
      - Validar los desarrollos más recientes.
@@ -177,12 +149,7 @@ Esta localización se proporciona "tal cual", sin garantías de ningún tipo, ex
 
 ---
 
-<<<<<<< HEAD
-Queremos dar un especial agradecimiento a las personas que han colaborado con este proyecto a lo largo de todos estos años, algunos ya no
-forman parte directa de nuestro equipo pero han aportado a este proyecto y queremos hacer una valiosa mencion:
-=======
 Queremos dar un especial agradecimiento a las personas que han colaborado con este proyecto a lo largo de todos estos años, algunos ya no forman parte directa de nuestro equipo pero han aportado a este proyecto y queremos hacer una valiosa mención:
->>>>>>> odoo-venezuela/stg-pruebas
 
 - Daniela Gomez : [@DanielaGomezR93](https://github.com/DanielaGomezR93)
 - Anderson Armeya : [@andyengit](https://github.com/andyengit)
@@ -208,11 +175,4 @@ Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra for
 ---
 
 ¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.
-<<<<<<< HEAD
 
-
-
-
-
-=======
->>>>>>> odoo-venezuela/stg-pruebas

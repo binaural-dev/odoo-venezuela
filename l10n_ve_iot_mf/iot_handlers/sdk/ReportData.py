@@ -51,11 +51,6 @@ class ReportData(object):
             if len(trama) > 100:
                 try:
                     _arrayParameter = str(trama[1:-1]).split(chr(0x0A))  # (0X0A))
-                    print("array trama")
-                    print(_arrayParameter)
-                    print(len(_arrayParameter))
-                    print("trama")
-                    print(trama)
                     if len(_arrayParameter) == 31:
 
                         self._numberOfLastZReport = int(_arrayParameter[0])
@@ -246,3 +241,4 @@ class ReportData(object):
                         self._igtfRateTaxDevolution = Util().DoValueDouble(_arrayParameter[38])
                 except (ValueError):
                     return
+
