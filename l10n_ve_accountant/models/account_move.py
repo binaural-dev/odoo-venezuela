@@ -307,12 +307,12 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-
-        if 'name' in vals:
+        
+        if 'name' in vals and vals['name'] != "/":
             existing_record = self.search([('name', '=', vals['name']), ('id', '!=', self.id)], limit=1)
             if existing_record:
                 raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-
+            
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
