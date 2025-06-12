@@ -12,7 +12,6 @@ patch(ClosePosPopup.prototype, {
   },
   generate_report_x() {
     const fdm = this.pos.useFiscalMachine();
-    console.log(fdm)
     if (!fdm) return
     new Promise(async (resolve, reject) => {
       await fdm.action({
@@ -39,3 +38,4 @@ patch(ClosePosPopup.prototype, {
     })
   },
 })
+

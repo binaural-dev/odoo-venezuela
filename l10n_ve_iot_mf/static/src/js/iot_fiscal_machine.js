@@ -79,7 +79,7 @@ export class IoTFiscalMachineComponent extends Component {
    *                       Handlers
    *-------------------------------------------------------*/
   not_function() {
-    console.log("CLOWN, please set a function name")
+    // Placeholder for undefined actions
   }
   get_serial_machine() {
     if (!this.device) {
@@ -143,7 +143,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     this.iotDevice.addListener(({ value }) => {
       this.iotDevice.removeListener();
-      console.log(this.env.services.notification.add(value.message))
+      this.env.services.notification.add(value.message)
     });
 
     this.iotDevice.action({
@@ -321,7 +321,6 @@ export class IoTFiscalMachineComponent extends Component {
     }
 
     const request = await this.orm.call('account.move', 'check_report_z', [[], this.device.serial_machine])
-    console.log(request)
 
     if (!request) {
       this.notification.add(_t("Not are invoices to Report Z"), {
@@ -495,3 +494,4 @@ const fiscal_component = {
 };
 
 registry.category("view_widgets").add("iot-mf-button", fiscal_component);
+
