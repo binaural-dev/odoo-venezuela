@@ -1,4 +1,4 @@
-# Translation of Odoo Server.
+	# Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # 	* l10n_ve_invoice
 #
@@ -596,6 +596,14 @@ msgstr "No puede agregar más de %s productos a la factura."
 #: model:ir.actions.act_window,name:l10n_ve_invoice.ir_invoice_correlative
 msgid "control number"
 msgstr "Número de control"
+#. module: account
+#: model:ir.actions.act_window,name:account.action_move_in_refund_type
+#: model:ir.actions.act_window,name:account.action_move_out_refund_type
+#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
+#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
+msgid "Credit Notes"
+msgstr "Notas de Crédito"
 
 #. module: account
 #: model:ir.actions.act_window,name:account.action_move_in_refund_type
@@ -617,17 +625,3 @@ msgstr "Notas de Débito"
 #, python-format
 msgid "An invoice cannot have a line with a price of zero"
 msgstr "Una factura no puede tener una linea con precio en cero"
-#. module: account
-#: model:ir.actions.act_window,name:account.action_move_in_refund_type
-#: model:ir.actions.act_window,name:account.action_move_out_refund_type
-#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
-#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
-#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
-msgid "Credit Notes"
-msgstr "Notas de Crédito"
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
-msgid "Debit note"
-msgstr "Notas de Débito"
-
