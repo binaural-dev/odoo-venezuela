@@ -1,5 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountRetentionLine(models.Model):
@@ -250,11 +252,11 @@ class AccountRetentionLine(models.Model):
                     * (record.related_percentage_fees / 100)
                 ) - record.related_amount_subtract_fees
 
-            record.foreign_retention_amount = (
+            record.foreign_retention_amount = abs((
                 record.foreign_invoice_amount
                 * (record.related_percentage_tax_base / 100)
                 * (record.related_percentage_fees / 100)
-            ) - record.related_amount_subtract_fees
+            ) - record.related_amount_subtract_fees)
 
     @api.onchange("economic_activity_id", "move_id")
     def onchange_economic_activity_id(self):
