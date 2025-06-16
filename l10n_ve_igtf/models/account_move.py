@@ -55,6 +55,11 @@ class AccountMove(models.Model):
     def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0):
         """This method can be used by ir.actions.server to update bi_igtf"""
         for record in self:
+            if record.bi_igtf > 0 and any(
+            payment.get("account_payment_id", False) for payment in record.invoice_payments_widget.get("content", [])
+            if payment.get("account_payment_id", False)
+            ):
+                continue
             if not record.invoice_payments_widget:
                 record.bi_igtf = 0
                 continue

@@ -1,4 +1,5 @@
 from odoo import api, models, fields, _
+from odoo.tools.float_utils import float_is_zero
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -71,25 +72,41 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    @api.onchange("journal_id", "is_igtf", "currency_id","amount")
+    @api.onchange("journal_id", "is_igtf", "currency_id", "amount")
     def _compute_is_igtf(self):
         for payment in self:
-            amount_residual=payment.line_ids.mapped('move_id').amount_residual
-            result=amount_residual - payment.amount
-            payments = payment.line_ids.mapped('move_id').invoice_payments_widget
-            payments_with_usd = False
-            _logger.warning("result %s",result)
-            if payments:
-                payments_with_usd = payment.contains_payment_in_usd(payments['content'])
-            if (
-                payment.journal_id.is_igtf
-                and payment.is_igtf
-                and payment.currency_id.id == self.env.ref("base.USD").id
-                and (not payments_with_usd and result == 0)
-            ):
-                payment.is_igtf_on_foreign_exchange = True
+
+            payment.is_igtf_on_foreign_exchange = False
             
-            else:
+            if not (payment.journal_id.is_igtf and 
+                    payment.is_igtf and 
+                    payment.currency_id.id == self.env.ref("base.USD").id):
+                continue
+
+            invoices = payment.line_ids.mapped('move_id')
+            if not invoices:
+                continue
+
+            all_existing_payments = invoices._get_reconciled_payments()
+            usd_payments = all_existing_payments.filtered(
+                lambda p: p.currency_id.id == self.env.ref("base.USD").id
+            )
+
+            total_residual = sum(invoices.mapped('amount_residual'))
+            result = total_residual - payment.amount
+
+            is_first_usd_payment = len(usd_payments) == 0
+
+            if is_first_usd_payment:
+                payment.is_igtf_on_foreign_exchange = True
+                continue
+
+            if result > 0:
+                payment.is_igtf_on_foreign_exchange = True
+                continue
+
+            # Escenario 3: Pago posterior en USD que cierra la factura
+            if result == 0:
                 payment.is_igtf_on_foreign_exchange = False
 
     @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")

@@ -175,7 +175,6 @@ class IGTFTestCommon(TransactionCase):
         currency = currency or self.currency_usd
         journal = journal or self.bank_journal_usd
         pm_line = pm_line or self.pm_line_in_usd
-        _logger.info(f" esa mierda ess ==== {amount}")
         vals = {
             "payment_type": "inbound",
             "partner_type": "customer",
