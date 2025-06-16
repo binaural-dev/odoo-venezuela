@@ -23,7 +23,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
-        default=False,
         help="IGTF on Foreign Exchange?",
         store=True,
     )
@@ -75,13 +74,18 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     @api.onchange("journal_id", "is_igtf", "currency_id","amount")
     def _compute_is_igtf(self):
         for payment in self:
-            amount_residual = payment.line_ids.mapped('move_id').amount_residual
-            result=amount_residual-payment.amount
+            amount_residual=payment.line_ids.mapped('move_id').amount_residual
+            result=amount_residual - payment.amount
+            payments = payment.line_ids.mapped('move_id').invoice_payments_widget
+            payments_with_usd = False
+            _logger.warning("result %s",result)
+            if payments:
+                payments_with_usd = payment.contains_payment_in_usd(payments['content'])
             if (
                 payment.journal_id.is_igtf
                 and payment.is_igtf
                 and payment.currency_id.id == self.env.ref("base.USD").id
-                and abs(result) > 0.0001
+                and (not payments_with_usd and result == 0)
             ):
                 payment.is_igtf_on_foreign_exchange = True
             
@@ -147,4 +151,17 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     if payment.reconciled_bill_ids:
                         payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
         return res
+
+    def contains_payment_in_usd(self, content):
+        """
+        Checks if there is at least one dollar payment in the content.
+        :param content: List of dictionaries with payment information
+        :return: True if there are dollar payments, False otherwise
+        """
+        usd_currency = self.env.ref('base.USD')
+        for pago in content:
+            if pago.get('currency_id') == usd_currency.id:
+                return True
+        return False
+
 
