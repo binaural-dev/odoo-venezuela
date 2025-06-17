@@ -21,11 +21,14 @@ class TestIGTFBasic(IGTFTestCommon):
 
         ig_tf = round(invoice.amount_total *
                       self.company.igtf_percentage / 100, 2)
-        pay1 = self._create_payment(amount=invoice.amount_total, is_igtf=True)
+        pay1 = self._create_payment(amount=invoice.amount_total, is_igtf_on_foreign_exchange=True)
 
         line_to_match = pay1.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
         )
+        _logger.warning("line_to_match %s", line_to_match)
+        _logger.warning("state of line %s", line_to_match.parent_state)
+        _logger.warning("pay1 %s", pay1.state)
         invoice.js_assign_outstanding_line(line_to_match.id)
 
         self.assertAlmostEqual(invoice.amount_residual, ig_tf, 2)
@@ -63,7 +66,7 @@ class TestIGTFBasic(IGTFTestCommon):
         # ──────────────────────────────
         pay_usd = self._create_payment(
             amount=invoice.amount_total,
-            is_igtf=True,
+            is_igtf_on_foreign_exchange=True,
         )
 
         # Conciliar contra la factura
@@ -144,7 +147,7 @@ class TestIGTFBasic(IGTFTestCommon):
             journal=bank_journal_bs,
             fx_rate=usd_to_bsf,
             fx_rate_inv=bsf_to_usd,
-            is_igtf=False,
+            is_igtf_on_foreign_exchange=False,
             pm_line=pm_line_bs,
         )
 
@@ -176,7 +179,7 @@ class TestIGTFBasic(IGTFTestCommon):
 
         invoice = self._create_invoice_usd(500)
 
-        pay_zero = self._create_payment(amount=0.0, is_igtf=True)
+        pay_zero = self._create_payment(amount=0.0, is_igtf_on_foreign_exchange=True)
         self.assertEqual(pay_zero.igtf_amount, 0.0)
 
         igtf_line = pay_zero.move_id.line_ids.filtered(
@@ -211,7 +214,7 @@ class TestIGTFBasic(IGTFTestCommon):
                     "currency_id": self.currency_usd.id,
                     "journal_id": self.bank_journal.id,
                     "payment_method_line_id": self.pm_line_in_usd.id,
-                    "is_igtf": True,
+                    "is_igtf_on_foreign_exchange": True,
                     "date": fields.Date.today(),
                 }
             )
@@ -231,7 +234,7 @@ class TestIGTFBasic(IGTFTestCommon):
         rate_factor = 1 - pct / 100
 
         pay1_amount = 300.00
-        pay1 = self._create_payment(amount=pay1_amount, is_igtf=True)
+        pay1 = self._create_payment(amount=pay1_amount, is_igtf_on_foreign_exchange=True)
 
         line1 = pay1.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
@@ -250,7 +253,7 @@ class TestIGTFBasic(IGTFTestCommon):
             pay1_amount * pct / 100, 2), 2)
 
         pay2_amount = round(invoice.amount_residual / rate_factor, 2)
-        pay2 = self._create_payment(amount=pay2_amount, is_igtf=True)
+        pay2 = self._create_payment(amount=pay2_amount, is_igtf_on_foreign_exchange=True)
 
         line2 = pay2.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
@@ -292,7 +295,7 @@ class TestIGTFBasic(IGTFTestCommon):
         """
         invoice = self._create_invoice_usd(1000)
 
-        pay = self._create_payment(amount=500, is_igtf=True)
+        pay = self._create_payment(amount=500, is_igtf_on_foreign_exchange=True)
 
         pay_line = pay.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
@@ -335,7 +338,7 @@ class TestIGTFBasic(IGTFTestCommon):
         """
         invoice = self._create_invoice_usd(1000)
 
-        pay = self._create_payment(amount=1000, is_igtf=True)
+        pay = self._create_payment(amount=1000, is_igtf_on_foreign_exchange=True)
 
         pay_line = pay.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
@@ -376,7 +379,7 @@ class TestIGTFBasic(IGTFTestCommon):
         rate_factor = 1 - pct / 100
 
         pay1_amount = 600.0
-        pay1 = self._create_payment(amount=pay1_amount, is_igtf=True)
+        pay1 = self._create_payment(amount=pay1_amount, is_igtf_on_foreign_exchange=True)
 
         line1 = pay1.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
@@ -388,7 +391,7 @@ class TestIGTFBasic(IGTFTestCommon):
         self.assertAlmostEqual(pay1.igtf_amount, round(pay1_amount * pct / 100, 2), 2)
 
         pay2_amount = round(invoice.amount_residual / rate_factor, 2)
-        pay2 = self._create_payment(amount=pay2_amount, is_igtf=True)
+        pay2 = self._create_payment(amount=pay2_amount, is_igtf_on_foreign_exchange=True)
 
         line2 = pay2.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
