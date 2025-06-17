@@ -75,7 +75,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     @api.onchange("journal_id", "is_igtf", "currency_id", "amount")
     def _compute_is_igtf(self):
         for payment in self:
-
             payment.is_igtf_on_foreign_exchange = False
             
             if not (payment.journal_id.is_igtf and 
@@ -105,7 +104,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment.is_igtf_on_foreign_exchange = True
                 continue
 
-            # Escenario 3: Pago posterior en USD que cierra la factura
             if result == 0:
                 payment.is_igtf_on_foreign_exchange = False
 
@@ -168,17 +166,4 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     if payment.reconciled_bill_ids:
                         payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
         return res
-
-    def contains_payment_in_usd(self, content):
-        """
-        Checks if there is at least one dollar payment in the content.
-        :param content: List of dictionaries with payment information
-        :return: True if there are dollar payments, False otherwise
-        """
-        usd_currency = self.env.ref('base.USD')
-        for pago in content:
-            if pago.get('currency_id') == usd_currency.id:
-                return True
-        return False
-
 
