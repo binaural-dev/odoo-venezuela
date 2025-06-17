@@ -797,6 +797,11 @@ msgid "Posted"
 msgstr "Confirmada"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__other_causes_transfer_reason
+msgid "Reason for transfer for other reasons"
+msgstr "Motivo del traslado por otros motivos"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Precio"
 msgstr ""
@@ -959,6 +964,11 @@ msgid "Technical field to check if the related sale order has a document."
 msgstr ""
 "Campo técnico para verificar si el pedido de venta relacionado tiene un "
 "documento."
+
+#. module: l10n_ve_stock_accountAdd commentMore actions
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_other_causes_transfer_reason
+msgid "Show Other Causes Transfer Reason"
+msgstr "Mostrar otras causas Motivo de transferencia"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
