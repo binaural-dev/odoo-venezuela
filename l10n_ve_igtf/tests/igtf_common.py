@@ -46,7 +46,6 @@ class IGTFTestCommon(TransactionCase):
 
         self.company.write(
             {
-                "is_igtf": True,
                 "igtf_percentage": 3.0,
                 "customer_account_igtf_id": self.acc_igtf_cli.id,
             }
@@ -64,7 +63,7 @@ class IGTFTestCommon(TransactionCase):
                 "company_id": self.company.id,
             }
         )
-        self.bank_journal_usd.write({"is_igtf": True, "fiscal": True})
+        self.bank_journal_usd.write({"is_igtf": True})
 
         def get_or_create(code, acc_type, name, reconcile=False):
             acc = Account.search(
@@ -167,7 +166,7 @@ class IGTFTestCommon(TransactionCase):
         *,
         currency=None,
         journal=None,
-        is_igtf=False,
+        is_igtf_on_foreign_exchange=False,
         fx_rate=None,
         fx_rate_inv=None,
         pm_line=None,
@@ -183,7 +182,7 @@ class IGTFTestCommon(TransactionCase):
             "currency_id": currency.id,
             "journal_id": journal.id,
             "payment_method_line_id": pm_line.id,
-            "is_igtf": is_igtf,
+            "is_igtf_on_foreign_exchange": is_igtf_on_foreign_exchange,
             "date": fields.Date.today(),
         }
         if fx_rate:
