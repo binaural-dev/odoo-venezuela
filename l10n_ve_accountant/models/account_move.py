@@ -276,7 +276,13 @@ class AccountMove(models.Model):
         for vals in vals_list:
 
             if 'name' in vals and vals['name'] != "/":
-                existing_record = self.search([('name', '=', vals['name'])], limit=1)
+                
+                domain = [
+                    ('name', '=', vals['name']),
+                    ('partner_id', '=', vals.get('partner_id'))
+                ]
+                existing_record = self.search(domain, limit=1)
+                
                 if existing_record:
                     raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
 
@@ -307,12 +313,21 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-        
         if 'name' in vals and vals['name'] != "/":
-            existing_record = self.search([('name', '=', vals['name']), ('id', '!=', self.id)], limit=1)
-            if existing_record:
-                raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-            
+            for move in self:
+                partner_id = vals.get('partner_id', move.partner_id.id)
+                
+                domain = [
+                    ('name', '=', vals['name']),
+                    ('partner_id', '=', partner_id),
+                    ('id', '!=', move.id) 
+                ]
+                
+                existing_record = self.search(domain, limit=1)
+                
+                if existing_record:
+                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
+                
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
