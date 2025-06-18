@@ -892,18 +892,18 @@ class StockPicking(models.Model):
             #     else self.env["transfer.reason"]
             # )
 
-            @api.depends('transfer_reason_id')
-            def _compute_show_other_causes_transfer_reason(self):
-                for record in self:
-                    record.show_other_causes_transfer_reason = False
+    @api.depends('transfer_reason_id')
+    def _compute_show_other_causes_transfer_reason(self):
+        for record in self:
+            record.show_other_causes_transfer_reason = False
 
-                    if record.transfer_reason_id:
-                        if record.transfer_reason_id.code == "other_causes":
-                            record.show_other_causes_transfer_reason = True
-                        if record.transfer_reason_id.code == "self_consumption":
-                            record.is_dispatch_guide = False
-                        else:
-                            record.is_dispatch_guide = True
+            if record.transfer_reason_id:
+                if record.transfer_reason_id.code == "other_causes":
+                    record.show_other_causes_transfer_reason = True
+                if record.transfer_reason_id.code == "self_consumption":
+                    record.is_dispatch_guide = False
+                else:
+                    record.is_dispatch_guide = True
 
     # === CONSTRAINT METHODS ===#
 
