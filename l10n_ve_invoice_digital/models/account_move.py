@@ -42,12 +42,7 @@ class AccountMove(models.Model):
         self.query_numbering(series)
         document_number = self.get_last_document_number(document_type, series)
         document_number = document_number + 1
-        current_number = self.name
-        prefix = self.journal_id.refund_sequence_id.prefix if self.move_type == "out_refund" else self.journal_id.sequence_id.prefix
-
-        if prefix and current_number.startswith(prefix):
-            current_number = current_number[len(prefix):]
-
+        current_number = self.journal_id.sequence_number_next
         current_number = int(current_number)
 
         if document_number != current_number and self.company_id.sequence_validation_tfhka:
@@ -384,7 +379,7 @@ class AccountMove(models.Model):
             if amounts_foreign:
                 foreign_totals = {
                     "moneda": record.company_id.currency_foreign_id.name,
-                    "tipoCambio": str(record.foreign_rate),
+                    "tipoCambio": str(round(record.foreign_rate, 2)),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
                     "subtotal": amounts_foreign["subtotal"],
