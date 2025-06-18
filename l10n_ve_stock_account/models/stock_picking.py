@@ -949,6 +949,7 @@ class StockPicking(models.Model):
                     ("type_delivery_step", "!=", "int"),
                     ("transfer_reason_id.code", "!=", "self_consumption"),
                     ("state_guide_dispatch", "=", "to_invoice"),
+                    ('sale_id.document', '!=', 'invoice')
                 ]
             )
         )
@@ -972,3 +973,5 @@ class StockPicking(models.Model):
             result = result - timedelta(days=1)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
+    def get_foreign_currency_is_vef(self):
+        return self.env.company.currency_foreign_id == self.env.ref("base.VEF")

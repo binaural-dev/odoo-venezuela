@@ -1,5 +1,7 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError,UserError
+import re
+import unicodedata
 
 import logging
 
@@ -170,6 +172,7 @@ class AccountMoveInh(models.Model):
                     payment_lines.append(new_payment)
 
             _invoice_lines = []
+
             for line in data.invoice_line_ids:
                 price_vef = line.price_unit
                 if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
@@ -180,9 +183,9 @@ class AccountMoveInh(models.Model):
                         "price_unit": price_vef,
                         "quantity": line.quantity,
                         "code": False,
-                        "name": f"[{line.product_id.default_code}] {line.product_id.name}"
+                        "name": f"[{line.product_id.default_code}] {self._normalize_product_name(line.product_id.name)}"
                         if line.product_id
-                        else line.name,
+                        else self._normalize_product_name(line.name),
                     }
                 )
 
@@ -192,7 +195,7 @@ class AccountMoveInh(models.Model):
                 "iot_ip": data.iot_box.ip,
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
-                    "name": data.partner_id.name,
+                    "name": self._normalize_product_name(data.partner_id.name),
                     "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
                     "address": data.partner_id.street or False,
                     "phone": data.partner_id.phone or False,
@@ -285,9 +288,9 @@ class AccountMoveInh(models.Model):
                         "price_unit": price_vef,
                         "quantity": line.quantity,
                         "code": False,
-                        "name": f"[{line.product_id.default_code}] {line.product_id.name}"
+                        "name": f"[{line.product_id.default_code}] {self._normalize_product_name(line.product_id.name)}"
                         if line.product_id
-                        else line.name,
+                        else self._normalize_product_name(line.name),
                     }
                 )
 
@@ -297,7 +300,7 @@ class AccountMoveInh(models.Model):
                 "iot_ip": data.iot_box.ip,
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
-                    "name": data.partner_id.name,
+                    "name": self._normalize_product_name(data.partner_id.name),
                     "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
                     "address": data.partner_id.street or False,
                     "phone": data.partner_id.phone or False,
@@ -384,9 +387,9 @@ class AccountMoveInh(models.Model):
                         "price_unit": price_vef,
                         "quantity": line.quantity,
                         "code": False,
-                        "name": f"[{line.product_id.default_code}] {line.product_id.name}"
+                        "name": f"[{line.product_id.default_code}] {self._normalize_product_name(line.product_id.name)}"
                         if line.product_id
-                        else line.name,
+                        else self._normalize_product_name(line.name),
                     }
                 )
 
@@ -396,7 +399,7 @@ class AccountMoveInh(models.Model):
                 "iot_ip": data.iot_box.ip,
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
-                    "name": data.partner_id.name,
+                    "name": self._normalize_product_name(data.partner_id.name),
                     "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
                     "address": data.partner_id.street or False,
                     "phone": data.partner_id.phone or False,
@@ -418,3 +421,18 @@ class AccountMoveInh(models.Model):
     
     def print_debit_note(self, values):
         self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
+        
+
+    def _normalize_product_name(self, name):
+        if not name:
+            return ""
+        
+        normalized = unicodedata.normalize('NFKD', str(name))
+
+        no_accents = ''.join(c for c in normalized if not unicodedata.combining(c))
+        
+        cleaned = re.sub(r'[^\w\s]', ' ', no_accents)
+        
+        final_name = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        return final_name
