@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2023-TODAY TechKhedut (<https://www.techkhedut.com>)
+    Part of TechKhedut. See LICENSE file for full copyright and licensing details.
+-->
+<odoo>
+    <data>
+        <record id="user_audit_logged_form_view" model="ir.ui.view">
+            <field name="name">user.audit.logged.form.view</field>
+            <field name="model">user.sign.in.details</field>
+            <field name="arch" type="xml">
+                <form create="0">
+                    <header>
+                        <button name="terminate_user_active_session"
+                                type="object"
+                                icon="fa-ban"
+                                class="btn btn-danger"
+                                confirm="Are you want to sure ?"
+                                string="Terminate"
+                                invisible="status == 'inactive'">
+                        </button>
+                        <button class="oe_stat_button"
+                                type="object"
+                                name="action_view_user_logs"
+                                icon="fa-eye"
+                                groups="tk_security_master.t_k_security_master_user,tk_security_master.t_k_security_master_admin"
+                                string="Logs">
+                        </button>
+                        <field name="status" widget="statusbar"/>
+                    </header>
+                    <div class="alert alert-warning text-center" invisible="not is_bot" role="alert">
+                        <strong>Bot</strong> detected.
+                    </div>
+                    <div class="alert alert-success text-center" invisible="status != 'active'" role="alert">
+                      Session: <strong>alive</strong>.
+                    </div>
+                    <div class="alert alert-info text-center" invisible="status != 'inactive' or is_anonymous" role="alert">
+                      Session: <strong>terminated</strong>.
+                    </div>
+                    <div class="alert alert-danger text-center" invisible="not is_anonymous" role="alert">
+                      <strong>Anonymous</strong> login attempt detected.
+                    </div>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button"
+                                    type="object"
+                                    name="action_gmap_location"
+                                    icon="fa-location-arrow"
+                                    string="Map Location"
+                                    invisible="not latitude or not longitude">
+                            </button>
+                            <button class="oe_stat_button"
+                                    type="object"
+                                    name="action_view_user_logs"
+                                    icon="fa-eye"
+                                    groups="tk_security_master.t_k_security_master_user,tk_security_master.t_k_security_master_admin"
+                                    string="Logs">
+                            </button>
+                        </div>
+                        <h2>
+                            <field name="name" />
+                        </h2>
+                        <group>
+                            <group string="User">
+                                <field name="user_id" invisible="not user_id" readonly="1" force_save="1" />
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Tracking Device Details">
+                                <field name="ip_address"/>
+                                <field name="platform"/>
+                                <field name="other_platform" invisible="platform != 'Other'"/>
+                                <field name="platform_version"/>
+                                <field name="browser"/>
+                                <field name="other_browser" invisible="browser != 'Other'" />
+                                <field name="browser_version"/>
+                                <field name="isp"/>
+                            </group>
+                            <group string="Tracking Address Details">
+                                <field name="city" />
+                                <field name="region" />
+                                <field name="country" />
+                                <field name="timezone" />
+                                <field name="postal_code" />
+                                <field name="latitude" />
+                                <field name="longitude" />
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Logged In/Out Details">
+                                <field name="logged_datetime" />
+                                <field name="logout_datetime" />
+                                <field name="last_active_time" />
+                            </group>
+                            <group string="Other Details">
+                                <field name="is_bot" readonly="1" force_save="1"/>
+                                <field name="is_anonymous" readonly="1" force_save="1"/>
+                                <field name="session" readonly="1" force_save="1" />
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="user_audit_logged_tree_view" model="ir.ui.view">
+            <field name="name">user.audit.logged.tree.view</field>
+            <field name="model">user.sign.in.details</field>
+            <field name="arch" type="xml">
+                <tree decoration-success="status == 'active'" decoration-danger="status == 'inactive'">
+                    <field name="name" />
+                    <field name="user_id" />
+                    <field name="region" />
+                    <field name="country" />
+                    <field name="ip_address"/>
+                    <field name="platform"/>
+                    <field name="logged_datetime"/>
+                    <field name="logout_datetime"/>
+                    <field name="is_anonymous"/>
+                    <field name="is_bot"/>
+                    <field name="status" invisible="1"/>
+                    <field name="active" invisible="1"/>
+                    <button name="terminate_user_active_session" type='object' confirm="Are you sure you want to terminate session ?" title="Terminate Session" class="fa fa-fw fa-times-circle-o" invisible="not active" />
+                </tree>
+            </field>
+        </record>
+        <record id="user_audit_logged_search_view" model="ir.ui.view">
+            <field name="name">user.audit.logged.search.view</field>
+            <field name="model">user.sign.in.details</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="name" />
+                    <field name="user_id" />
+                    <field name="city" />
+                    <field name="region" />
+                    <field name="country" />
+                    <field name="timezone" />
+                    <field name="postal_code" />
+                    <field name="latitude"/>
+                    <field name="longitude"/>
+                    <field name="ip_address"/>
+                    <field name="platform"/>
+                    <field name="platform_version"/>
+                    <field name="browser"/>
+                    <field name="browser_version"/>
+                    <field name="isp"/>
+                    <field name="is_anonymous"/>
+                    <field name="is_bot"/>
+                    <field name="session"/>
+                    <filter string="Active" domain="[('active', '=', True)]" name="default_filter_active" />
+                    <filter string="Terminated" domain="[('active', '=', False)]" name="default_filter_terminate" />
+                    <separator/>
+                    <filter string="Anonymous Attempt" domain="[('is_anonymous', '=', True), ('active', '=', False)]" name="default_filter_anonymous" />
+                    <filter string="Bots Attempt" domain="[('is_bot', '=', True)]" name="default_filter_bot" />
+                    <separator/>
+                    <filter string="User" name="group_by_user" context="{'group_by':'user_id'}"/>
+                    <separator/>
+                    <filter string="Operating System" name="group_by_os" domain="[]" context="{'group_by':'platform'}"/>
+                    <filter string="Browser" name="group_by_browse" domain="[]" context="{'group_by':'browser'}"/>
+                    <separator/>
+                    <filter string="City" name="group_by_city" domain="[]" context="{'group_by':'city'}"/>
+                    <filter string="Region" name="group_by_region" domain="[]" context="{'group_by':'region'}"/>
+                    <filter string="Postal Code" name="group_by_postal_code" domain="[]" context="{'group_by':'postal_code'}"/>
+                    <filter string="Country" name="group_by_country" domain="[]" context="{'group_by':'country'}"/>
+                    <separator/>
+                    <filter string="Timezone" name="group_by_timezone" domain="[]" context="{'group_by':'timezone'}"/>
+                    <separator/>
+                    <searchpanel>
+                        <field name="user_id" select="multi" />
+                    </searchpanel>
+                </search>
+            </field>
+        </record>
+        <record id="action_user_audit_logged_view" model="ir.actions.act_window">
+            <field name="name">Users Sessions</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">user.sign.in.details</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

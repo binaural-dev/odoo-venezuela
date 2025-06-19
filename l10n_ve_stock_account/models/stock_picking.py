@@ -74,7 +74,6 @@ class StockPicking(models.Model):
         store=True,
         compute="_compute_is_dispatch_guide",
     )
-
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
@@ -974,3 +973,5 @@ class StockPicking(models.Model):
             result = result - timedelta(days=1)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
+    def get_foreign_currency_is_vef(self):
+        return self.env.company.currency_foreign_id == self.env.ref("base.VEF")

@@ -72,13 +72,16 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    @api.onchange("journal_id", "is_igtf", "currency_id")
+    @api.onchange("journal_id", "is_igtf", "currency_id","amount")
     def _compute_is_igtf(self):
         for payment in self:
+            amount_residual = payment.line_ids.mapped('move_id').amount_residual
+            result=amount_residual-payment.amount
             if (
                 payment.journal_id.is_igtf
                 and payment.is_igtf
                 and payment.currency_id.id == self.env.ref("base.USD").id
+                and abs(result) > 0.0001
             ):
                 payment.is_igtf_on_foreign_exchange = True
             

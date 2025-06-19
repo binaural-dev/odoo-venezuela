@@ -451,8 +451,8 @@ class PosSession(models.Model):
                 line.not_foreign_recalculate = True
                 line.foreign_debit = abs(payment.foreign_amount)
 
-        if account_payment.pos_payment_method_id.apply_one_cross_move:
-            self._create_cross_move_payment(res)
+        # if account_payment.pos_payment_method_id.apply_one_cross_move:
+        #     self._create_cross_move_payment(res)
         return res
 
     # def _create_cross_move_payment(self, move):

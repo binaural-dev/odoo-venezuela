@@ -1,0 +1,1517 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* tk_security_master
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-28 11:38+0000\n"
+"PO-Revision-Date: 2025-03-28 11:38+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/lib/index.js:0
+#, python-format
+msgid "%1 hidden"
+msgstr "%1 oculto"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/lib/index.js:0
+#, python-format
+msgid "%1 shown"
+msgstr "%1 mostrado"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "<strong>Anonymous</strong> login attempt detected."
+msgstr "Intento de inicio de sesión <strong>anónimo</strong> detectado."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "<strong>Bot</strong> detected."
+msgstr "Se detectó un <strong>bot</strong>."
+
+#. module: tk_security_master
+#: model:mail.template,body_html:tk_security_master.pwd_expire_warning_notification_users_seven_days
+msgid ""
+"<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"padding-top: 16px; background-color: #F1F1F1; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;\" class=\"o_selected_table\">\n"
+"                    <tbody>\n"
+"                        <tr>\n"
+"                            <td align=\"center\" class=\"o_selected_td\">\n"
+"                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"padding: 16px; background-color: white; color: #454748; border-collapse:separate;\">\n"
+"                                    <tbody>\n"
+"                                        <!-- HEADER -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\">\n"
+"                                                                <span style=\"font-size: 10px;\">Your Account</span>\n"
+"                                                                <br>\n"
+"                                                                <span style=\"font-size: 20px; font-weight: bold;\" t-out=\"object.name or ''\">\n"
+"                                                                </span>\n"
+"                                                            </td>\n"
+"                                                            <td valign=\"middle\" align=\"right\">\n"
+"                                                                <img t-attf-src=\"/logo.png?company={{ object.company_id.id }}\" style=\"padding: 0px; margin: 0px; height: auto; width: 80px;\" t-att-alt=\"object.company_id.name\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td colspan=\"2\" style=\"text-align:center;\">\n"
+"                                                                <hr width=\"100%\" style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin:16px 0px 16px 0px;\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                        <!-- CONTENT -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"top\" style=\"font-size: 13px;\">\n"
+"                                                                <div>\n"
+"                                                                    Dear <t t-out=\"object.name or ''\"></t>,\n"
+"                                                                    <br>\n"
+"                                                                    <br>\n"
+"                                                                        Your password will expire after <strong>7 days</strong>.\n"
+"                                                                    <br>\n"
+"                                                                    <p>\n"
+"                                                                        Please change it before <span style=\"color:#000;font-size:12px;margin-bottom: 2px;\" t-out=\"object.pwd_expire_date\"></span>.\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        To change your password click on <a style=\"color:#000;font-size:12px;margin-bottom: 2px;\" t-att-href=\"'/web/change_password?login=%s' % object.email\" target=\"_blank\">Change Password</a>. <br>\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        If you encounter any issues or need further assistance, contact our support team at\n"
+"                                                                        <t t-if=\"object.company_id.email\">\n"
+"                                                                            <a t-attf-href=\"'mailto:%s' % {{ object.company_id.email }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.company_id.email or ''\"></a>\n"
+"                                                                        </t> or <t t-out=\"object.company_id.phone or ''\"></t>.\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        Remember, your account security is our top priority. We appreciate your prompt attention to this matter.\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        Thank you!\n"
+"                                                                        <br>\n"
+"                                                                        <br>\n"
+"                                                                        <br>\n"
+"                                                                        Best regards,\n"
+"                                                                        <br>\n"
+"                                                                        Technical Team, <t t-out=\"object.company_id.name or ''\"></t>\n"
+"                                                                    </p>\n"
+"\n"
+"                                                                </div>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td style=\"text-align:center;\">\n"
+"                                                                <hr width=\"100%\" style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                        <!-- FOOTER -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; font-size: 11px; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\" align=\"left\">\n"
+"                                                                <t t-out=\"object.company_id.name or ''\"></t>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\" align=\"left\" style=\"opacity: 0.7;\">\n"
+"                                                                <t t-out=\"object.company_id.phone or ''\"></t>\n"
+"                                                                <t t-if=\"object.company_id.email\">\n"
+"                                                                    |\n"
+"                                                                    <a t-attf-href=\"'mailto:%s' % {{ object.company_id.email }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.company_id.email or ''\"></a>\n"
+"                                                                </t>\n"
+"                                                                <t t-if=\"object.company_id.website\">\n"
+"                                                                    |\n"
+"                                                                    <a t-attf-href=\"'%s' % {{ object.company_id.website }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.company_id.website or ''\"></a>\n"
+"                                                                </t>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                    </tbody>\n"
+"                                </table>\n"
+"                            </td>\n"
+"                        </tr>\n"
+"                    </tbody>\n"
+"                </table>\n"
+"\n"
+"            "
+msgstr ""
+
+#. module: tk_security_master
+#: model:mail.template,body_html:tk_security_master.pwd_expire_warning_notification_users_one_day
+msgid ""
+"<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"padding-top: 16px; background-color: #F1F1F1; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;\" class=\"o_selected_table\">\n"
+"                    <tbody>\n"
+"                        <tr>\n"
+"                            <td align=\"center\" class=\"o_selected_td\">\n"
+"                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"padding: 16px; background-color: white; color: #454748; border-collapse:separate;\">\n"
+"                                    <tbody>\n"
+"                                        <!-- HEADER -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\">\n"
+"                                                                <span style=\"font-size: 10px;\">Your Account</span>\n"
+"                                                                <br>\n"
+"                                                                <span style=\"font-size: 20px; font-weight: bold;\" t-out=\"object.name or ''\">\n"
+"                                                                </span>\n"
+"                                                            </td>\n"
+"                                                            <td valign=\"middle\" align=\"right\">\n"
+"                                                                <img t-attf-src=\"/logo.png?company={{ object.company_id.id }}\" style=\"padding: 0px; margin: 0px; height: auto; width: 80px;\" t-att-alt=\"object.company_id.name\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td colspan=\"2\" style=\"text-align:center;\">\n"
+"                                                                <hr width=\"100%\" style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin:16px 0px 16px 0px;\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                        <!-- CONTENT -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"top\" style=\"font-size: 13px;\">\n"
+"                                                                <div>\n"
+"                                                                    Dear <t t-out=\"object.name or ''\"></t>,\n"
+"                                                                    <br>\n"
+"                                                                    <br>\n"
+"                                                                    Your password will expire after <strong>7 days</strong>.\n"
+"                                                                    <br>\n"
+"                                                                    <p>\n"
+"                                                                        Please change it before <span style=\"color:#000;font-size:12px;margin-bottom: 2px;\" t-out=\"object.pwd_expire_date\"></span>.\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        To change your password click on <a style=\"color:#000;font-size:12px;margin-bottom: 2px;\" t-att-href=\"'/web/change_password?login=%s' % object.email\" target=\"_blank\">Change Password</a>. <br>\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        If you encounter any issues or need further assistance, contact our support team at\n"
+"                                                                        <t t-if=\"object.company_id.email\">\n"
+"                                                                            <a t-attf-href=\"'mailto:%s' % {{ object.company_id.email }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.company_id.email or ''\"></a>\n"
+"                                                                        </t> or <t t-out=\"object.company_id.phone or ''\"></t>.\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        Remember, your account security is our top priority. We appreciate your prompt attention to this matter.\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        Thank you!\n"
+"                                                                        <br>\n"
+"                                                                        <br>\n"
+"                                                                        <br>\n"
+"                                                                        Best regards,\n"
+"                                                                        <br>\n"
+"                                                                        Technical Team, <t t-out=\"object.company_id.name or ''\"></t>\n"
+"                                                                    </p>\n"
+"\n"
+"                                                                </div>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td style=\"text-align:center;\">\n"
+"                                                                <hr width=\"100%\" style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                        <!-- FOOTER -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; font-size: 11px; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\" align=\"left\">\n"
+"                                                                <t t-out=\"object.company_id.name or ''\"></t>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\" align=\"left\" style=\"opacity: 0.7;\">\n"
+"                                                                <t t-out=\"object.company_id.phone or ''\"></t>\n"
+"                                                                <t t-if=\"object.company_id.email\">\n"
+"                                                                    |\n"
+"                                                                    <a t-attf-href=\"'mailto:%s' % {{ object.company_id.email }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.company_id.email or ''\"></a>\n"
+"                                                                </t>\n"
+"                                                                <t t-if=\"object.company_id.website\">\n"
+"                                                                    |\n"
+"                                                                    <a t-attf-href=\"'%s' % {{ object.company_id.website }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.company_id.website or ''\"></a>\n"
+"                                                                </t>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                    </tbody>\n"
+"                                </table>\n"
+"                            </td>\n"
+"                        </tr>\n"
+"                    </tbody>\n"
+"                </table>\n"
+"            "
+msgstr ""
+
+#. module: tk_security_master
+#: model:mail.template,body_html:tk_security_master.login_user_alert_template
+msgid ""
+"<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"padding-top: 16px; background-color: #F1F1F1; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;\" class=\"o_selected_table\">\n"
+"                    <tbody>\n"
+"                        <tr>\n"
+"                            <td align=\"center\" class=\"o_selected_td\">\n"
+"                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"padding: 16px; background-color: white; color: #454748; border-collapse:separate;\">\n"
+"                                    <tbody>\n"
+"                                        <!-- HEADER -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\">\n"
+"                                                                <span style=\"font-size: 10px;\">Your Account</span>\n"
+"                                                                <br>\n"
+"                                                                <span style=\"font-size: 20px; font-weight: bold;\" t-out=\"object.user_id.name or ''\">\n"
+"                                                                </span>\n"
+"                                                            </td>\n"
+"                                                            <td valign=\"middle\" align=\"right\">\n"
+"                                                                <img t-attf-src=\"/logo.png?company={{ object.user_id.company_id.id }}\" style=\"padding: 0px; margin: 0px; height: auto; width: 80px;\" t-att-alt=\"object.user_id.company_id.name\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td colspan=\"2\" style=\"text-align:center;\">\n"
+"                                                                <hr width=\"100%\" style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin:16px 0px 16px 0px;\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                        <!-- CONTENT -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"top\" style=\"font-size: 13px;\">\n"
+"                                                                <div>\n"
+"                                                                    Dear <t t-out=\"object.user_id.name or ''\"></t>,\n"
+"                                                                    <br>\n"
+"                                                                    <br>\n"
+"                                                                    <t t-if=\"object.is_anonymous\">\n"
+"                                                                        We hope this email finds you well. Our system has detected a <strong style=\"color:red;\">new failed login attempt to your account</strong>, and we wanted to bring it to your attention to ensure the security of your account.\n"
+"                                                                    </t>\n"
+"                                                                    <t t-else=\"\">\n"
+"                                                                        We hope this email finds you well. Our system has detected a new login to your account, and we wanted to bring it to your attention to ensure the security of your account.\n"
+"                                                                    </t>\n"
+"                                                                    <br>\n"
+"                                                                    <br>\n"
+"                                                                    <h5 style=\"color:#000;font-size:14px;\">Details of the Login:</h5>\n"
+"                                                                    <hr>\n"
+"                                                                    <p style=\"\">\n"
+"                                                                        <span style=\"color:#95979d;font-size:12px\">Login Datetime: </span>\n"
+"                                                                        <span style=\"color:#222325\"> <t t-out=\"object.logged_datetime or ''\"></t></span>\n"
+"                                                                        <br>\n"
+"                                                                        <span style=\"color:#95979d;font-size:12px\">IP Address: </span>\n"
+"                                                                        <span style=\"color:#222325\"> <t t-out=\"object.ip_address or ''\"></t></span>\n"
+"                                                                        <br>\n"
+"                                                                        <span style=\"color:#95979d;font-size:12px\">Operating System: </span>\n"
+"                                                                        <span style=\"color:#222325\"> <t t-out=\"object.platform or ''\"></t></span>\n"
+"                                                                        <br>\n"
+"                                                                        <span style=\"color:#95979d;font-size:12px\">Browser: </span>\n"
+"                                                                        <span style=\"color:#222325\"> <t t-out=\"object.browser or ''\"></t></span>\n"
+"                                                                        <br>\n"
+"                                                                        <span style=\"color:#95979d;font-size:12px\">Approx Location Details: </span>\n"
+"                                                                        <span style=\"color:#222325\"> <t t-if=\"object.city\"><t t-out=\"object.city\"></t>, </t><t t-if=\"object.region\"><t t-out=\"object.region\"></t>, </t> <t t-if=\"object.country\"><t t-out=\"object.country\"></t></t></span>\n"
+"                                                                    </p>\n"
+"                                                                    <br>\n"
+"                                                                    <p style=\"margin-bottom:8px;\">If this login was authorized by you, you can disregard this email. However, if you did not initiate this login, we recommend taking the following actions immediately:</p>\n"
+"                                                                    <ol>\n"
+"                                                                        <li><h5 style=\"color:#000;font-size:12px;margin-bottom: 2px;\">Change Your Password:</h5> Update your password to a strong and unique combination of characters.</li>\n"
+"                                                                        <li><h5 style=\"color:#000;font-size:12px;margin-bottom: 2px;\">Review Account Activity:</h5> Check your account activity history for any unfamiliar or suspicious actions.</li>\n"
+"                                                                        <li><h5 style=\"color:#000;font-size:12px;margin-bottom: 2px;\">Enable Two-Factor Authentication (2FA):</h5> Add an extra layer of security to your account by enabling 2FA.</li>\n"
+"                                                                    </ol>\n"
+"                                                                    <br>\n"
+"                                                                    <p>\n"
+"                                                                        To change your password click on <a t-att-href=\"'/web/reset_password?login=%s' % object.user_id.email\" target=\"_blank\">Reset Password</a>.\n"
+"                                                                        If you encounter any issues or need further assistance, contact our support team at\n"
+"                                                                        <t t-if=\"object.user_id.company_id.email\">\n"
+"                                                                            <a t-attf-href=\"'mailto:%s' % {{ object.user_id.company_id.email }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.user_id.company_id.email or ''\"></a>\n"
+"                                                                        </t> or <t t-out=\"object.user_id.company_id.phone or ''\"></t>.\n"
+"                                                                    </p>\n"
+"                                                                    <br>\n"
+"                                                                    <p>\n"
+"                                                                        Remember, your account security is our top priority. We appreciate your prompt attention to this matter.\n"
+"                                                                    </p>\n"
+"                                                                    <p>\n"
+"                                                                        Thank you for choosing  <t t-out=\"object.user_id.company_id.name or ''\"></t>!\n"
+"                                                                        <br>\n"
+"                                                                        <br>\n"
+"                                                                        <br>\n"
+"                                                                        Best regards,\n"
+"                                                                        <br>\n"
+"                                                                        Technical Team, <t t-out=\"object.user_id.company_id.name or ''\"></t>\n"
+"                                                                    </p>\n"
+"\n"
+"                                                                </div>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td style=\"text-align:center;\">\n"
+"                                                                <hr width=\"100%\" style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;\">\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                        <!-- FOOTER -->\n"
+"                                        <tr>\n"
+"                                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; font-size: 11px; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                                                    <tbody>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\" align=\"left\">\n"
+"                                                                <t t-out=\"object.user_id.company_id.name or ''\"></t>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                        <tr>\n"
+"                                                            <td valign=\"middle\" align=\"left\" style=\"opacity: 0.7;\">\n"
+"                                                                <t t-out=\"object.user_id.company_id.phone or ''\"></t>\n"
+"                                                                <t t-if=\"object.user_id.company_id.email\">\n"
+"                                                                    |\n"
+"                                                                    <a t-attf-href=\"'mailto:%s' % {{ object.user_id.company_id.email }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.user_id.company_id.email or ''\"></a>\n"
+"                                                                </t>\n"
+"                                                                <t t-if=\"object.user_id.company_id.website\">\n"
+"                                                                    |\n"
+"                                                                    <a t-attf-href=\"'%s' % {{ object.user_id.company_id.website }}\" style=\"text-decoration:none; color: #454748;\" t-out=\"object.user_id.company_id.website or ''\"></a>\n"
+"                                                                </t>\n"
+"                                                            </td>\n"
+"                                                        </tr>\n"
+"                                                    </tbody>\n"
+"                                                </table>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                    </tbody>\n"
+"                                </table>\n"
+"                            </td>\n"
+"                        </tr>\n"
+"                        <!-- POWERED BY -->\n"
+"                        <tr>\n"
+"                            <td align=\"center\" style=\"min-width: 590px;\" class=\"o_selected_td\">\n"
+"                                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: #F1F1F1; color: #454748; padding: 8px; border-collapse:separate;\">\n"
+"                                    <tbody>\n"
+"                                        <tr>\n"
+"                                            <td style=\"text-align: center; font-size: 13px;\">\n"
+"                                                Powered by\n"
+"                                                <a target=\"_blank\" href=\"#\" style=\"color: #875A7B;\"><t t-out=\"object.user_id.company_id.name or ''\"></t>\n"
+"                                                </a>\n"
+"                                            </td>\n"
+"                                        </tr>\n"
+"                                    </tbody>\n"
+"                                </table>\n"
+"                            </td>\n"
+"                        </tr>\n"
+"                    </tbody>\n"
+"                </table>\n"
+"            "
+msgstr ""
+
+#. module: tk_security_master
+#: model:ir.module.category,description:tk_security_master.module_tk_security_master
+msgid "Access rights for TK Security Master"
+msgstr "Derechos de acceso para TK Security Master"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__action_type
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
+msgid "Action"
+msgstr "Acción"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__active
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__status__active
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Active"
+msgstr "Activo"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "Active Sessions"
+msgstr "Sesiones activas"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "Active Sessions by Locations"
+msgstr "Sesiones activas por ubicaciones"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "Active Sessions by Operating System"
+msgstr "Sesiones activas por sistema operativo"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/models/user_audit.py:0
+#, python-format
+msgid "Activity Logs"
+msgstr "Registros de actividad"
+
+#. module: tk_security_master
+#: model:res.groups,name:tk_security_master.t_k_security_master_admin
+msgid "Administrator"
+msgstr "Administrador"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__auto_delete_log_days
+msgid "After How many days."
+msgstr "Después de cuántos días."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "After How many days:"
+msgstr "Después de cuántos días:"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "After maximum retry disable login up to cooldown time."
+msgstr "Después del máximo de reintentos, deshabilitar el inicio de sesión hasta el tiempo de espera."
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "All Sessions"
+msgstr "Todas las sesiones"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__android
+msgid "Android"
+msgstr "Android"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Anonymous Attempt"
+msgstr "Intento anónimo"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__is_anonymous
+msgid "Anonymous User"
+msgstr "Usuario anónimo"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
+msgid "Are you sure you want to terminate all sessions ?"
+msgstr "¿Está seguro de que desea terminar todas las sesiones?"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_tree_view
+msgid "Are you sure you want to terminate session ?"
+msgstr "¿Está seguro de que desea terminar la sesión?"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Are you want to sure ?"
+msgstr "¿Está seguro?"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Auto Delete tag"
+msgstr "Etiqueta de eliminación automática"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Auto Terminate Inactive Session?"
+msgstr "¿Terminar automáticamente la sesión inactiva?"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Auto delete logs after above set days."
+msgstr "Eliminar automáticamente los registros después de los días establecidos."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Auto expire password after above set days."
+msgstr "Expirar automáticamente la contraseña después de los días establecidos."
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__auto_session_terminate
+msgid "Auto terminate inactive session ?"
+msgstr "¿Terminar automáticamente la sesión inactiva?"
+
+#. module: tk_security_master
+#: model:ir.model,name:tk_security_master.model_base
+msgid "Base"
+msgstr "Base"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Bots Attempt"
+msgstr "Intento de bots"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__browser
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Browser"
+msgstr "Navegador"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__browser_version
+msgid "Browser Version"
+msgstr "Versión del navegador"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "Browser Wise Active Sessions"
+msgstr "Sesiones activas por navegador"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.change_pwd_url
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
+msgid "Change Password"
+msgstr "Cambiar contraseña"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__chrome
+#, python-format
+msgid "Chrome"
+msgstr "Chrome"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__city
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "City"
+msgstr "Ciudad"
+
+#. module: tk_security_master
+#: model:ir.model,name:tk_security_master.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: tk_security_master
+#: model:ir.ui.menu,name:tk_security_master.menu_security_master_configurations
+msgid "Configurations"
+msgstr "Configuraciones"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
+msgid "Confirm New Password"
+msgstr "Confirmar nueva contraseña"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/controllers/backend.py:0
+#, python-format
+msgid "Confirm password is required"
+msgstr "Se requiere confirmar la contraseña"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__country
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Country"
+msgstr "País"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__create_log
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit__action_type__create
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
+msgid "Create"
+msgstr "Crear"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_users__tu_create_logs
+msgid "Create Logs ?"
+msgstr "¿Crear registros?"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__create_uid
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__create_uid
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__create_uid
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__create_date
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__create_date
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__create_date
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__create_date
+msgid "Created on"
+msgstr "Creado el"
+
+#. module: tk_security_master
+#: model:ir.ui.menu,name:tk_security_master.menu_tk_master_pro_dashboard
+msgid "Dashboard"
+msgstr "Tablero"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_tree_view
+msgid "Date"
+msgstr "Fecha"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__delete_log
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit__action_type__delete
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
+msgid "Delete"
+msgstr "Eliminar"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_users__tu_delete_logs
+msgid "Delete Logs ?"
+msgstr "¿Eliminar registros?"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__display_name
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__display_name
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__display_name
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: tk_security_master
+#: model:ir.actions.act_window,name:tk_security_master.action_do_not_track_models_view
+#: model:ir.ui.menu,name:tk_security_master.menu_do_not_track_models
+msgid "Do Not Track Models"
+msgstr "No rastrear modelos"
+
+#. module: tk_security_master
+#: model:ir.model,name:tk_security_master.model_do_not_track_models
+msgid "Do not track models"
+msgstr "No rastrear modelos"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__chromiumedge
+#, python-format
+msgid "Edge"
+msgstr "Edge"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Email Notification sent to user email once login"
+msgstr "Notificación por correo electrónico enviada al correo del usuario una vez que inicia sesión"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/controllers/backend.py:0
+#, python-format
+msgid "Email is required"
+msgstr "Se requiere correo electrónico"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Enable auto delete after reaching the limit time."
+msgstr "Habilitar eliminación automática después de alcanzar el tiempo límite."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Enable auto delete log of Read actions."
+msgstr "Habilitar eliminación automática de registros de acciones de lectura."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Enable auto delete log of create actions."
+msgstr "Habilitar eliminación automática de registros de acciones de creación."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Enable auto delete log of delete actions."
+msgstr "Habilitar eliminación automática de registros de acciones de eliminación."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Enable auto delete log of update actions."
+msgstr "Habilitar eliminación automática de registros de acciones de actualización."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Enable auto password expiration after reaching the limit time."
+msgstr "Habilitar expiración automática de contraseñas después de alcanzar el tiempo límite."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Enable auto terminate inactive user session"
+msgstr "Habilitar terminación automática de sesiones de usuario inactivas"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__pwd_expire_days
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Expiry Days"
+msgstr "Días de expiración"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/models/res_config_settings.py:0
+#, python-format
+msgid "Expiry Days cannot be less than 0."
+msgstr "Los días de expiración no pueden ser menores a 0."
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__firefox
+#, python-format
+msgid "Firefox"
+msgstr "Firefox"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/lib/index.js:0
+#, python-format
+msgid "From %1"
+msgstr "Desde %1"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/lib/index.js:0
+#, python-format
+msgid "From %1 to %2"
+msgstr "Desde %1 hasta %2"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
+msgid "Go Back to Login"
+msgstr "Volver al inicio de sesión"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__id
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__id
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__id
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__id
+msgid "ID"
+msgstr "ID"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__ip_address
+msgid "IP Address"
+msgstr "Dirección IP"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__isp
+msgid "ISP Providers"
+msgstr "Proveedores de ISP"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Inactive Session Terminate"
+msgstr "Terminar sesión inactiva"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Inactive Session Terminate Timeout"
+msgstr "Tiempo de espera para terminar sesión inactiva"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/controllers/backend.py:0
+#, python-format
+msgid "Invalid username or old password"
+msgstr "Nombre de usuario o contraseña anterior inválidos"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.do_not_track_models_form_view
+msgid "Ir Model"
+msgstr "Modelo Ir"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__is_bot
+msgid "Is Bot"
+msgstr "Es Bot"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__enable_auto_delete
+msgid "Is Enable Auto delete tag?"
+msgstr "¿Está habilitada la etiqueta de eliminación automática?"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__login_alert
+msgid "Is Login Alert?"
+msgstr "¿Es alerta de inicio de sesión?"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_users__pwd_expire
+msgid "Is Password Expired ?"
+msgstr "¿La contraseña ha expirado?"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__last_active_time
+msgid "Last Active Time"
+msgstr "Última hora activa"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_users__pwd_update_datetime
+msgid "Last Update Datetime"
+msgstr "Última fecha y hora de actualización"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__write_uid
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__write_uid
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__write_uid
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__write_date
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__write_date
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__write_date
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__write_date
+msgid "Last Updated on"
+msgstr "Última actualización el"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__latitude
+msgid "Latitude"
+msgstr "Latitud"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__linux
+msgid "Linux"
+msgstr "Linux"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/models/user_audit.py:0
+#, python-format
+msgid "Location coordinates required"
+msgstr "Se requieren coordenadas de ubicación"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__logged_datetime
+msgid "Logged Datetime"
+msgstr "Fecha y hora de inicio de sesión"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Logged In/Out Details"
+msgstr "Detalles de inicio/cierre de sesión"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Login Alert"
+msgstr "Alerta de inicio de sesión"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__login_cooldown
+msgid "Login CoolDown"
+msgstr "Tiempo de espera para inicio de sesión"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Login Cooldown Time"
+msgstr "Tiempo de espera para reintentar inicio de sesión"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__login_max_attempts
+msgid "Login Max Attempts"
+msgstr "Máximo de intentos de inicio de sesión"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Login Security"
+msgstr "Seguridad de inicio de sesión"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Login retry maximum attempt"
+msgstr "Máximo de intentos de reintento de inicio de sesión"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__logout_datetime
+msgid "Logout Datetime"
+msgstr "Fecha y hora de cierre de sesión"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Logs"
+msgstr "Registros"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__user_audit_log_ids
+msgid "Logs Details"
+msgstr "Detalles de registros"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__longitude
+msgid "Longitude"
+msgstr "Longitud"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__mac_os
+msgid "Mac OS"
+msgstr "Mac OS"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Map Location"
+msgstr "Ubicación en el mapa"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Maximum Number of Retry"
+msgstr "Número máximo de reintentos"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_do_not_track_models__res_model
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
+msgid "Model"
+msgstr "Modelo"
+
+#. module: tk_security_master
+#: model:ir.model.constraint,message:tk_security_master.constraint_do_not_track_models_model_uniq
+msgid "Model Already Exist"
+msgstr "El modelo ya existe"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
+msgid "N/A Records"
+msgstr "Registros N/D"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit_logs__operation_type__new
+msgid "New Add"
+msgstr "Nuevo agregado"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
+msgid "New Password"
+msgstr "Nueva contraseña"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__new_value
+msgid "New Value"
+msgstr "Nuevo valor"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/controllers/backend.py:0
+#, python-format
+msgid "New password is required"
+msgstr "Se requiere una nueva contraseña"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "No. of Retry"
+msgstr "Número de reintentos"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__platform_version
+msgid "OS Version"
+msgstr "Versión del sistema operativo"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
+msgid "Old Password"
+msgstr "Contraseña anterior"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/controllers/backend.py:0
+#, python-format
+msgid "Old password is required"
+msgstr "Se requiere la contraseña anterior"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_form_view
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_tree_view
+msgid "Open Record"
+msgstr "Abrir registro"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__opera
+#, python-format
+msgid "Opera"
+msgstr "Opera"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__platform
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Operating System"
+msgstr "Sistema Operativo"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__operation_type
+msgid "Operation Type"
+msgstr "Tipo de Operación"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__other
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__other
+msgid "Other"
+msgstr "Otro"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__other_browser
+msgid "Other Browser"
+msgstr "Otro Navegador"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Other Details"
+msgstr "Otros Detalles"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__other_platform
+msgid "Other Operating System"
+msgstr "Otro Sistema Operativo"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "Others"
+msgstr "Otros"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__pwd_expire
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Password Expire Policy"
+msgstr "Política de Expiración de Contraseña"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Password Expire Policy?"
+msgstr "¿Política de Expiración de Contraseña?"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_users__pwd_expire_date
+msgid "Password Expiry Date"
+msgstr "Fecha de Expiración de Contraseña"
+
+#. module: tk_security_master
+#: model:mail.template,name:tk_security_master.pwd_expire_warning_notification_users_one_day
+msgid "Password Expiry Notification: 1 day"
+msgstr "Notificación de Expiración de Contraseña: 1 día"
+
+#. module: tk_security_master
+#: model:mail.template,name:tk_security_master.pwd_expire_warning_notification_users_seven_days
+msgid "Password Expiry Notification: 7 days"
+msgstr "Notificación de Expiración de Contraseña: 7 días"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/controllers/backend.py:0
+#, python-format
+msgid "Password does not match"
+msgstr "La contraseña no coincide"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__postal_code
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Postal Code"
+msgstr "Código Postal"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/lib/index.js:0
+#, python-format
+msgid "Press ENTER to toggle"
+msgstr "Presione ENTER para alternar"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__previous_value
+msgid "Previous Value"
+msgstr "Valor Anterior"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__read_log
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit__action_type__read
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
+msgid "Read"
+msgstr "Leer"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_users__tu_read_logs
+msgid "Read Logs ?"
+msgstr "¿Leer Registros?"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__title
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_form_view
+msgid "Record Details"
+msgstr "Detalles del registro"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__res_id
+msgid "Record IDs"
+msgstr "IDs de registro"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__region
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Region"
+msgstr "Región"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit_logs__operation_type__remove
+msgid "Removed"
+msgstr "Eliminado"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__res_model
+msgid "Res Model"
+msgstr "Modelo de recurso"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__browser__safari
+#, python-format
+msgid "Safari"
+msgstr "Safari"
+
+#. module: tk_security_master
+#: model:ir.actions.client,name:tk_security_master.action_tk_secu_pro_master_dashboard
+#: model:ir.module.category,name:tk_security_master.module_tk_security_master
+#: model:ir.ui.menu,name:tk_security_master.main_menu_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "Security Master"
+msgstr "Maestro de seguridad"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__name
+msgid "Sequence"
+msgstr "Secuencia"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__session
+msgid "Session ID"
+msgstr "ID de sesión"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__session_timeout
+msgid "Session Timeout"
+msgstr "Tiempo de espera de la sesión"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Session: <strong>alive</strong>."
+msgstr "Sesión: <strong>activa</strong>."
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Session: <strong>terminated</strong>."
+msgstr "Sesión: <strong>terminada</strong>."
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_users__user_session_ids
+#: model:ir.ui.menu,name:tk_security_master.menu_user_sessions_details
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
+msgid "Sessions"
+msgstr "Sesiones"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "Sessions Details"
+msgstr "Detalles de sesiones"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__status
+msgid "Status"
+msgstr "Estado"
+
+#. module: tk_security_master
+#: model:ir.actions.server,name:tk_security_master.action_auto_delete_log_ir_actions_server
+msgid "TK Security Master: Delete log"
+msgstr "TK Security Master: Eliminar registro"
+
+#. module: tk_security_master
+#: model:ir.actions.server,name:tk_security_master.action_terminate_inactive_session_time_out_ir_actions_server
+msgid "TK Security Master: Inactive Session Terminate"
+msgstr "TK Security Master: Terminar sesión inactiva"
+
+#. module: tk_security_master
+#: model:ir.actions.server,name:tk_security_master.action_check_password_expiry_status_of_users_ir_actions_server
+msgid "TK Security Master: Password Expiry Status"
+msgstr "Estado de caducidad de la contraseña de TK Security Master"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Terminate"
+msgstr "Terminar"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
+msgid "Terminate All Sessions"
+msgstr "Terminar todas las sesiones"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_tree_view
+msgid "Terminate Session"
+msgstr "Terminar sesión"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__status__inactive
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Terminated"
+msgstr "Terminado"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "Terminated Sessions"
+msgstr "Sesiones terminadas"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__timezone
+msgid "TimeZone"
+msgstr "Zona horaria"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+msgid "Timezone"
+msgstr "Zona horaria"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__name
+msgid "Title"
+msgstr "Título"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/lib/index.js:0
+#, python-format
+msgid "To %1"
+msgstr "A %1"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Tracking Address Details"
+msgstr "Detalles de dirección de seguimiento"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+msgid "Tracking Device Details"
+msgstr "Detalles del dispositivo de seguimiento"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_config_settings__update_log
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit__action_type__update
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_audit_logs__operation_type__update
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
+msgid "Update"
+msgstr "Actualizar"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_res_users__tu_update_logs
+msgid "Update Logs ?"
+msgstr "¿Actualizar registros?"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__res_url
+msgid "Url"
+msgstr "Url"
+
+#. module: tk_security_master
+#: model:ir.model,name:tk_security_master.model_res_users
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__user_id
+#: model:ir.model.fields,field_description:tk_security_master.field_user_sign_in_details__user_id
+#: model:res.groups,name:tk_security_master.t_k_security_master_user
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_form_view
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_logged_search_view
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_search_view
+msgid "User"
+msgstr "Usuario"
+
+#. module: tk_security_master
+#: model:ir.model,name:tk_security_master.model_user_audit
+msgid "User Actions Logs Details"
+msgstr "Detalles de registros de acciones de usuario"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit_logs__user_audit_id
+msgid "User Audit"
+msgstr "Auditoría de usuario"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_form_view
+msgid "User Details"
+msgstr "Detalles del usuario"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "User Login Alert ?"
+msgstr "¿Alerta de inicio de sesión del usuario?"
+
+#. module: tk_security_master
+#: model:ir.model,name:tk_security_master.model_user_audit_logs
+msgid "User Logs"
+msgstr "Registros de usuario"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
+msgid "User Logs Tracking Details"
+msgstr "Detalles de seguimiento de registros de usuario"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_user_inherit_view_form
+msgid "User Session Details"
+msgstr "Detalles de la sesión del usuario"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__user_session_id
+msgid "User Sessions"
+msgstr "Sesiones de usuario"
+
+#. module: tk_security_master
+#: model:ir.model,name:tk_security_master.model_user_sign_in_details
+msgid "User Sign In Details"
+msgstr "Detalles de inicio de sesión del usuario"
+
+#. module: tk_security_master
+#: model:ir.model,name:tk_security_master.model_change_password_user
+msgid "User, Change Password Wizard"
+msgstr "Usuario, asistente de cambio de contraseña"
+
+#. module: tk_security_master
+#: model:ir.actions.act_window,name:tk_security_master.action_user_audit_view
+msgid "Users Audit Logs"
+msgstr "Registros de auditoría de usuarios"
+
+#. module: tk_security_master
+#: model:ir.actions.act_window,name:tk_security_master.action_user_audit_logged_view
+msgid "Users Sessions"
+msgstr "Sesiones de usuarios"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.user_audit_form_view
+msgid "Value Logs"
+msgstr "Registros de valores"
+
+#. module: tk_security_master
+#: model:ir.model.fields,field_description:tk_security_master.field_user_audit__view_type
+msgid "View"
+msgstr "Vista"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/models/user_audit.py:0
+#, python-format
+msgid "View Logs"
+msgstr "Ver registros"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__windows
+msgid "Windows"
+msgstr "Windows"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_change_pwd_user
+msgid "Your Email"
+msgstr "Tu correo electrónico"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/controllers/backend.py:0
+#, python-format
+msgid "Your password is expired."
+msgstr "Tu contraseña ha expirado."
+
+#. module: tk_security_master
+#: model:mail.template,subject:tk_security_master.pwd_expire_warning_notification_users_one_day
+msgid "Your password will expire after 1 day"
+msgstr "Tu contraseña expirará después de 1 día"
+
+#. module: tk_security_master
+#: model:mail.template,subject:tk_security_master.pwd_expire_warning_notification_users_seven_days
+msgid "Your password will expire after 7 days"
+msgstr "Tu contraseña expirará después de 7 días"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/lib/map.js:0
+#, python-format
+msgid "Zoom level changed to %1"
+msgstr "El nivel de zoom cambió a %1"
+
+#. module: tk_security_master
+#: model:mail.template,name:tk_security_master.login_user_alert_template
+#: model:mail.template,subject:tk_security_master.login_user_alert_template
+msgid "[Alert] New Login Detected - Take Action Now"
+msgstr "[Alerta] Nuevo inicio de sesión detectado - Actúe ahora"
+
+#. module: tk_security_master
+#: model:ir.model.fields.selection,name:tk_security_master.selection__user_sign_in_details__platform__ios
+msgid "iOS"
+msgstr "iOS"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "in Days"
+msgstr "en días"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "in Minutes"
+msgstr "en minutos"
+
+#. module: tk_security_master
+#: model_terms:ir.ui.view,arch_db:tk_security_master.tk_security_master_res_config_settings_view_form
+msgid "in Seconds"
+msgstr "en segundos"
+
+#. module: tk_security_master
+#. odoo-javascript
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#: code:addons/tk_security_master/static/src/xml/dashboard.xml:0
+#, python-format
+msgid "users"
+msgstr "usuarios"
+
+#. module: tk_security_master
+#. odoo-python
+#: code:addons/tk_security_master/models/user_audit.py:0
+#, python-format
+msgid "you can't delete your own session"
+msgstr "no puedes eliminar tu propia sesión"

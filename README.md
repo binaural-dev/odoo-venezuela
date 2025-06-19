@@ -48,8 +48,8 @@ Si deseas colaborar directamente con código:
 
 Esta localización incluye los siguientes módulos, diseñados para cumplir con los requisitos específicos de la normativa venezolana:
 
-- **l10n_ve_accounting**  
-   Gestión contable adaptada a los estándares locales. Incluye configuraciones específicas para cuentas y planes contables venezolanos, permitiendo cumplir con los requerimientos fiscales nacionales.
+- **l10n_ve_accounting**
+  Gestión contable adaptada a los estándares locales. Incluye configuraciones específicas para cuentas y planes contables venezolanos, permitiendo cumplir con los requerimientos fiscales nacionales.
 
 - **l10n_ve_tax**  
    Manejo de impuestos nacionales como IVA, retenciones y contribuyentes especiales. Asegura que los cálculos y reportes sean conformes con las leyes fiscales de Venezuela.
@@ -60,8 +60,8 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
 - **l10n_ve_invoice**  
    Emisión de facturas adaptadas a los requisitos legales. Incluye compatibilidad con reportes fiscales necesarios para cumplir con la normativa de facturación en Venezuela.
 
-- **l10n_ve_location**  
-   Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos. Permite una gestión geográfica más precisa de los datos de socios y clientes dentro de Odoo.
+- **l10n_ve_location**
+  Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos. Permite una gestión geográfica más precisa de los datos de socios y clientes dentro de Odoo.
 
 - **l10n_ve_currency_rate_live**  
    Actualización diaria automática de tasas BCV. Configuración por compañía, con un sistema de fallback en caso de que no se reciba la actualización oficial.
@@ -136,6 +136,7 @@ Estamos trabajando para mejorar continuamente esta localización. Entre nuestros
      - Detectar errores antes de integrarlos en producción.
 
 2. **Expansión de funcionalidades**
+
    - Incorporación de reportes más detallados.
    - Automatización de procesos administrativos y fiscales.
 
@@ -168,8 +169,10 @@ Queremos dar un especial agradecimiento a las personas que han colaborado con es
 - Raiver Figueroa : [@raiver28](https://github.com/raiver28)
 - Manuel Guerrero : [@manuelgc1201](https://github.com/manuelgc1201)
 
+
 Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra forma han colaborado con nuestro equipo.
 
 ---
 
 ¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.
+
