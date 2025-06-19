@@ -8,6 +8,7 @@
     "depends": [
         "base",
         "account",
+        "l10n_ve_igtf",
         "account_debit_note",
         "l10n_ve_invoice",
         "l10n_ve_iot_mf",
