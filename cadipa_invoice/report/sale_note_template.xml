@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template 
+        id="template_invoice_sale_note_binaural_invoice" 
+        inherit_id="binaural_invoice.template_invoice_sale_note_binaural_invoice">
+        <xpath expr="//img[1]" position="attributes">
+            <attribute name="style">{'widget': 'image', 'style': 'max-width: 300px'}</attribute>
+        </xpath>
+    </template>
+</odoo>

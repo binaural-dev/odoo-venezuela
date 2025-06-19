@@ -1,0 +1,65 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* cadipa_farming
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20241019\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-10-23 18:14+0000\n"
+"PO-Revision-Date: 2024-10-23 18:14+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: cadipa_farming
+#: model:ir.model.fields,field_description:cadipa_farming.field_stock_lot__attachment_id
+msgid "Attached Document"
+msgstr ""
+
+#. module: cadipa_farming
+#: model:ir.model.fields,field_description:cadipa_farming.field_stock_lot__attachment_url
+#: model:ir.model.fields,field_description:cadipa_farming.field_stock_lot__attachment_url2
+msgid "Attachment URL"
+msgstr ""
+
+#. module: cadipa_farming
+#: model:ir.model.fields,field_description:cadipa_farming.field_stock_lot__file_data
+msgid "File Data"
+msgstr "Documento"
+
+#. module: cadipa_farming
+#: model:ir.model.fields,field_description:cadipa_farming.field_stock_lot__file_name
+msgid "File Name"
+msgstr ""
+
+#. module: cadipa_farming
+#: model:ir.model,name:cadipa_farming.model_stock_lot
+msgid "Lot/Serial"
+msgstr "Lote/Número de serie"
+
+#. module: cadipa_farming
+#: model:ir.model.fields,field_description:cadipa_farming.field_stock_lot__qr_image
+msgid "QR Code"
+msgstr "Codigo QR"
+
+#. module: cadipa_farming
+#: model:ir.model.fields,field_description:cadipa_farming.field_stock_lot__base_url
+msgid "URL"
+msgstr ""
+
+#. module: cadipa_farming
+#. odoo-python
+#: code:addons/cadipa_farming/models/stock_lot.py:0
+#, python-format
+msgid "You cannot edit the document after creation."
+msgstr "No puede editar el documento después de su creación."
+
+
+#. module: cadipa_farming
+#: model:res.groups,name:cadipa_farming.group_edit_document_lot
+msgid "Allow changing document associated with lot"
+msgstr "Permitir cambiar documento asociado a lote"

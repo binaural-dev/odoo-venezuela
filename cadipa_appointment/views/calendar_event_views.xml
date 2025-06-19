@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+
+    <record id="calendar.action_calendar_event" model="ir.actions.act_window">
+        <field name="name">Appointment</field>
+        <field name="res_model">calendar.event</field>
+        <field name="view_mode">calendar,tree,form,gantt</field>
+        <field name="view_id" ref="calendar.view_calendar_event_calendar"/>
+        <field name="search_view_id" ref="calendar.view_calendar_event_search"/>
+        <field name="help" type="html">
+          <p class="o_view_nocontent_smiling_face">
+            No meetings found. Let's schedule one!
+          </p><p>
+            The calendar is shared between employees and fully integrated with
+            other applications such as the employee leaves or the business
+            opportunities.
+          </p>
+        </field>
+    </record>
+
+    <record id="calendar_event_view_gantt" model="ir.ui.view">
+        <field name="name">calendar.event.gantt</field>
+        <field name="model">calendar.event</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+                          <!-- js_class="cadipa_gantt"   -->
+          <gantt
+                date_start="start"
+                date_stop="stop"
+                collapse_first_level="1"
+                color="appointment_type_id"
+                default_group_by="appointment_type_id"
+                default_scale="day"
+                precision="{'day':'hour'}"
+                string="Appoinment"
+            />
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="cadipa_reservation_calendar" name="Cadipa Reservation Calendar">
+        <t t-call="website.layout">
+            
+            <div class="o_calendar_cadipa">
+                <button id="test">asdasd</button>
+                <div id="content-reservation-calendar">
+                    
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>
