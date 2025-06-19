@@ -66,6 +66,8 @@ class AccountRetention(models.Model):
             raise UserError(_("Error connecting to the API: %(error)s") % {'error': e})
 
     def generate_document_digital(self):
+        if not self.company_id.invoice_digital_tfhka:
+            return
         if self.is_digitalized:
             raise UserError(_("The document has already been digitalized."))
         document_type = self.env.context.get('document_type')
