@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="agro_animal_lot_cadipa" name="AnimalCadipa" inherit_id="binaural_farming_website.agro_animal_lot">
+        <xpath expr="//div[@style='display: flex;']/div" position="after">
+            <div style="flex: 1;">
+                <label>
+                    <t t-if="lot.qr_image and lot.file_data">
+                        <span t-field="lot.qr_image" 
+                              t-options='{"widget": "image", "style": "width: 210px; height: auto;"}'/>
+                        <p style="text-align: center;">
+                            <strong>Escanear Certificado</strong>
+                        </p>
+                    </t>
+                    <t t-else="">
+                        -
+                    </t>
+                </label>
+            </div>
+        </xpath>
+    </template>
+</odoo>

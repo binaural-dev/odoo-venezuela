@@ -1,0 +1,77 @@
+.timesheet {
+    display: flex;
+    background: #eee;
+    position: relative;
+}
+
+.timesheet__col {
+    width: 14%;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.timesheet__col-time {
+    width: 120px;
+    max-height: 100px;
+    font-size: 20px;
+    text-align: right;
+    background: white;
+}
+
+.timesheet__col-current {
+background: #FBFAFA;
+}
+
+.timesheet__block-header {
+    width: 100%;
+    max-height: max-content;
+    min-height: 3em;
+    /* max-height: 100px; */
+    font-size: 24px;
+    padding: 0.1em 0.3em;
+    background: white;
+    box-sizing: border-box;
+    /* border-top: 1px solid #ccc; */
+    border-color:  #ccc;
+    /* border-right: 1px solid #ccc; */
+}
+
+.timesheet__block {
+    width: 100%;
+    height: 100px;
+    /* max-height: 100px; */
+    min-height: 3em;
+    font-size: 24px;
+    padding: 0.1em 0.3em;
+    box-sizing: border-box;
+    border-top: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+}
+
+.timesheet__block:first-child {
+    border-top: 0;
+    text-align: center;
+    line-height: 3em;
+    /* background: white; */
+}
+
+.current-time-line {
+    height: 1px;
+    background: red;
+    width: calc(100% - 60px);
+    position: absolute;
+    left: 60px;
+}
+
+.schedule {
+    width: calc(14% - 1em);
+    height: 150px;
+    position: absolute;
+    top: 340px;
+    margin-left: 0.3em;
+    color: white;
+    font-size: 0.8em;
+    padding: 0.2em;
+    box-sizing: border-box;
+}
+

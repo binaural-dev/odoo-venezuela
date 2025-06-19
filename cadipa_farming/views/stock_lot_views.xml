@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="binaural_farming_view_form_stock_production_lot_cadipa" model="ir.ui.view">
+        <field name="name">binaural.farming.view.form.stock.production.lot.cadipa</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="binaural_farming.binaural_farming_view_form_stock_production_lot" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='lot_race_id']" position="before">
+                <field name="file_data" />
+                <field name="attachment_url" invisible="1" />
+                <field name="attachment_id" invisible="1" />
+                <field name="qr_image" widget="image" style="width: 100px; height: 100px"
+                    invisible="not file_data" />
+                <field name="base_url" invisible="1" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

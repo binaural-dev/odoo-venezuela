@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="member_list_cadipa_beneficiario_complejo" inherit_id="binaural_socios_reportes.member_list">
+        <xpath expr="//h5[1]" position="replace">
+            <h5 style="text-align:center">Beneficiarios</h5>
+        </xpath>
+
+        <xpath expr="//tr[@class='cltt'][1]/td[1]" position="replace">
+            <td style="text-align: left" class="" rowspan="1" colspan="">Cantidad de beneficiarios: <t t-out="qty"/></td>
+        </xpath>
+    </template>
+
+</odoo>

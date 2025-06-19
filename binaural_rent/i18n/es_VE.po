@@ -1,0 +1,31 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_rent
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230725\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-08-24 14:23+0000\n"
+"PO-Revision-Date: 2023-08-24 14:23+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_rent
+#: model:ir.model,name:binaural_rent.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: binaural_rent
+#. odoo-python
+#: code:addons/binaural_rent/models/sale_order.py:0
+#, python-format
+msgid ""
+"The rental cannot be confirmed as there is a schedule conflict with the "
+"rental. "
+msgstr ""
+"El alquiler no puede ser confirmado ya que hay un conflicto de horario con el alquiler"

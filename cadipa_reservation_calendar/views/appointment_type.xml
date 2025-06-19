@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="appointment_type_view_form_inherit_cadipa" model="ir.ui.view">
+        <field name="name">appointment.type.view.form.cadipa</field>
+        <field name="model">appointment.type</field>
+        <field name="inherit_id" ref="appointment.appointment_type_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='question_ids'][1]/tree/field[@name='question_required']" position="after">
+                <field name="show_in_calendar"/>
+            </xpath>
+
+            <xpath expr="//field[@name='question_ids'][1]/form[1]//field[@name='question_required']" position="after">
+                <field name="show_in_calendar"/>
+            </xpath>
+            
+        </field>
+    </record>
+
+</odoo>
