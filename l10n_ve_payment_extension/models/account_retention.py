@@ -571,6 +571,10 @@ class AccountRetention(models.Model):
 
     def action_post(self):
         today = datetime.now()
+        
+        self.payment_ids.write({"date": self.date_accounting})
+        self._reconcile_all_payments()
+        
         for retention in self:
             if (
                 retention.type in ["out_invoice", "out_refund", "out_debit"]
@@ -593,8 +597,6 @@ class AccountRetention(models.Model):
                 retention._set_sequence()
                 self.set_voucher_number_in_invoice(move_ids, retention)
 
-        self.payment_ids.write({"date": self.date_accounting})
-        self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
     def set_voucher_number_in_invoice(self, move, retention):
