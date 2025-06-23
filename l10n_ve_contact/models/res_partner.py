@@ -33,7 +33,7 @@ class ResPartner(models.Model):
     city_id = fields.Many2one(tracking=True)
 
     municipality = fields.Many2one(tracking=True)
-
+    
     parish_id = fields.Many2one(tracking=True)
 
     zip = fields.Char(tracking=True)
@@ -41,6 +41,9 @@ class ResPartner(models.Model):
     def _default_company_id(self):
         company_id = self.env.company.id
         return company_id
+
+    subscriber_number = fields.Char()
+    associate_zone = fields.Char() 
 
     prefix_vat = fields.Selection(
         [
