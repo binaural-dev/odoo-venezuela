@@ -88,7 +88,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
             all_existing_payments = invoices._get_reconciled_payments()
             usd_payments = all_existing_payments.filtered(
-                lambda p: p.currency_id.id == self.env.ref("base.USD").id
+                lambda p: p.currency_id.id == self.env.ref("base.USD").id and p.is_igtf_on_foreign_exchange
             )
 
             total_residual = sum(invoices.mapped('amount_residual'))
