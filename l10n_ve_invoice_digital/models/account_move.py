@@ -19,6 +19,7 @@ class AccountMove(models.Model):
     _inherit = 'account.move'
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
+    show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_invisible_check", copy=False)
 
     def generate_document_digital(self):
         if not self.company_id.invoice_digital_tfhka:
@@ -45,15 +46,7 @@ class AccountMove(models.Model):
         self.query_numbering(series)
         document_number = self.get_last_document_number(document_type, series)
         document_number = document_number + 1
-        current_number = self.name
-        prefix = self.journal_id.refund_sequence_id.prefix if self.move_type == "out_refund" else self.journal_id.sequence_id.prefix
-
-        if prefix and current_number.startswith(prefix):
-            current_number = current_number[len(prefix):]
-        try:
-            current_number = int(current_number)
-        except (ValueError, TypeError):
-            raise UserError(_("Invalid format: '%s'") % current_number)
+        current_number = self.sequence_number
 
         if document_number != current_number and self.company_id.sequence_validation_tfhka:
             raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
@@ -190,27 +183,29 @@ class AccountMove(models.Model):
     def get_document_identification(self, document_type, document_number, series):
         for record in self:
             now = fields.Datetime.now()
-            emission_time = now.astimezone(timezone(record.env.user.tz)).strftime("%I:%M:%S %p").lower()
-            emission_date = now.strftime("%d/%m/%Y")
-            if record.invoice_date_due.strftime("%d/%m/%Y") >= emission_date:
-                due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else emission_date
+            user_tz = timezone(record.env.user.tz)
+            emission_time = now.astimezone(user_tz).strftime("%I:%M:%S %p").lower()
+            emission_date = now.astimezone(user_tz).date()
+            due_date_obj = record.invoice_date_due
+
+            if due_date_obj:
+                if due_date_obj >= emission_date:
+                    due_date = due_date_obj.strftime("%d/%m/%Y")
+                else:
+                    raise ValidationError(_("The expiration date cannot be less than the digitization date."))
             else:
-                raise ValidationError(_("The expiration date cannot be less than the digitization date."))
+                due_date = emission_date.strftime("%d/%m/%Y")
             
+            emission_date = emission_date.strftime("%d/%m/%Y")
             affected_invoice_number = ""
             affected_invoice_date = ""
             affected_invoice_amount = ""
             affected_invoice_comment = ""
             subsidiary = ""
             affected_invoice_series = ""
-            prefix = ""
 
             if record.debit_origin_id:
-                affected_invoice_number = record.debit_origin_id.name
-                prefix = record.debit_origin_id.journal_id.sequence_id.prefix
-
-                if prefix and affected_invoice_number.startswith(prefix):
-                    affected_invoice_number = affected_invoice_number[len(prefix):]
+                affected_invoice_number = str(record.debit_origin_id.sequence_number)
 
                 affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
 
@@ -227,11 +222,7 @@ class AccountMove(models.Model):
                 affected_invoice_comment = part[1].strip()
 
             if record.reversed_entry_id:
-                affected_invoice_number = record.reversed_entry_id.name
-                prefix = record.reversed_entry_id.journal_id.sequence_id.prefix
-
-                if prefix and affected_invoice_number.startswith(prefix):
-                    affected_invoice_number = affected_invoice_number[len(prefix):]
+                affected_invoice_number = str(record.reversed_entry_id.sequence_number)
                 
                 affected_invoice_date = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
 
@@ -644,3 +635,19 @@ class AccountMove(models.Model):
                 })
 
         return additional_information
+    
+    @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
+    def _compute_invisible_check(self):
+        for record in self:
+            self.show_digital_invoice = True
+            if record.is_digitalized:
+                continue
+            if record.state != "posted":
+                continue
+            if record.debit_origin_id or record.reversed_entry_id:
+                continue
+            if record.move_type != "out_invoice":
+                continue
+            if not self.company_id.invoice_digital_tfhka:
+                continue
+            record.show_digital_invoice = False
