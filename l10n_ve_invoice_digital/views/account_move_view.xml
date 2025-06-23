@@ -8,6 +8,11 @@
             <xpath expr="//button[@name='button_draft']" position="attributes">
                 <attribute name="invisible">not show_reset_to_draft_button or is_digitalized</attribute>
             </xpath>
+            <xpath expr="//header" position="inside">
+                <field name="show_digital_invoice" invisible="1"/>
+                <button name="generate_document_digital" string="Generate Digital Invoice" type="object" 
+                        invisible="show_digital_invoice"/>
+            </xpath>
             <xpath expr="//group[@id='header_right_group']/label[1]" position="before">
                 <field name="is_digitalized" string="Digitized" invisible="move_type not in ['out_invoice', 'out_refund']" readonly="True"/>
             </xpath>
