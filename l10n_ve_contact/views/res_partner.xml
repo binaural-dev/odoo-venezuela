@@ -2,14 +2,14 @@
     <record id="res_partner_l10n_ve_form_contacts" model="ir.ui.view">
         <field name="name">res_partner_l10n_ve_form_contacts</field>
         <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="inherit_id" ref="base.view_partner_form" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='vat']" position="replace">
             </xpath>
             <xpath expr="//h1/field[1]" position="before">
                 <group>
-                    <field name="prefix_vat" nolabel="1"/>
-                    <field name="vat" required="1" nolabel="1" placeholder="CI/RIF: 12345678"/>
+                    <field name="prefix_vat" nolabel="1" />
+                    <field name="vat" required="1" nolabel="1" placeholder="CI/RIF: 12345678" />
                 </group>
             </xpath>
             <xpath expr="//field[@name='street']" position="attributes">
@@ -20,9 +20,17 @@
             </xpath>
             <xpath expr="//field[@name='state_id']" position="attributes">
                 <attribute name="required">1</attribute>
-            </xpath> 
+            </xpath>
             <xpath expr="//field[@name='zip']" position="attributes">
                 <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//div[@name='partner_address_country']/.." position="after">
+                <field name="subscriber_number" readonly="1" placeholder="Subscriber Number">
+                    <attribute name="readonly">1</attribute>
+                </field>
+                <field name="associate_zone" readonly="1" placeholder="Associate">
+                    <attribute name="readonly">1</attribute>
+                </field>
             </xpath>
         </field>
     </record>
