@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250606\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-23 15:40+0000\n"
-"PO-Revision-Date: 2025-06-23 15:40+0000\n"
+"POT-Creation-Date: 2025-03-27 17:11+0000\n"
+"PO-Revision-Date: 2025-03-27 17:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -56,17 +56,6 @@ msgstr ""
 #, python-format
 msgid "A partner with the same email already exists."
 msgstr "Ya existe un usuario con el mismo correo electrónico."
-
-#. module: l10n_ve_contact
-#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_partner_l10n_ve_form_contacts
-msgid "Associate"
-msgstr "Socio"
-
-#. module: l10n_ve_contact
-#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__associate_zone
-#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__associate_zone
-msgid "Associate Zone"
-msgstr "Socio"
 
 #. module: l10n_ve_contact
 #: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_partner_l10n_ve_form_contacts
@@ -186,13 +175,6 @@ msgstr "Calle"
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__street2
 msgid "Street2"
 msgstr "Calle"
-
-#. module: l10n_ve_contact
-#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__subscriber_number
-#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__subscriber_number
-#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_partner_l10n_ve_form_contacts
-msgid "Subscriber Number"
-msgstr "Nùmero de abonado"
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_account_position_id
