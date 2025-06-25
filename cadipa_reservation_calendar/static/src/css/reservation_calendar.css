@@ -41,11 +41,13 @@ background: #FBFAFA;
     height: 100px;
     /* max-height: 100px; */
     min-height: 3em;
-    font-size: 24px;
+    font-size: 18px;
     padding: 0.1em 0.3em;
     box-sizing: border-box;
     border-top: 1px solid #ccc;
     border-right: 1px solid #ccc;
+    position: relative;
+    overflow: hidden;
 }
 
 .timesheet__block:first-child {
@@ -64,14 +66,18 @@ background: #FBFAFA;
 }
 
 .schedule {
-    width: calc(14% - 1em);
-    height: 150px;
     position: absolute;
-    top: 340px;
-    margin-left: 0.3em;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0.2em;
+    box-sizing: border-box; 
     color: white;
     font-size: 0.8em;
-    padding: 0.2em;
-    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
-

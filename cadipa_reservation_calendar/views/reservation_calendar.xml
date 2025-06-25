@@ -1,16 +1,69 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
 
-    <template id="cadipa_reservation_calendar" name="Cadipa Reservation Calendar">
-        <t t-call="website.layout">
-            
-            <div class="o_calendar_cadipa">
-                <button id="test">asdasd</button>
-                <div id="content-reservation-calendar">
-                    
+<template id="cadipa_reservation_calendar"
+          name="Cadipa Reservation Calendar">
+    <t t-call="website.layout">
+        <!-- ① Título de la página -->
+        <t t-set="title">Reservas</t>
+
+        <!-- ② Contenedor principal -->
+        <div class="o_calendar_cadipa">
+
+            <!-- Filtros de cancha -->
+            <div class="mb-3">
+                <button class="btn btn-link p-0 bg-primary text-white"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#court-list"
+                        aria-expanded="true"
+                        aria-controls="court-list">
+                    Mostrar/Ocultar Áreas
+                </button>
+
+                <div id="court-list" class="collapse show mt-2">
+                    <t t-foreach="reservation_zones"
+                       t-as="zone"
+                       t-key="zone.id">
+                        <label class="d-block">
+                            <input type="checkbox"
+                                   class="court-chk me-1"
+                                   t-att-value="zone.id"/>
+                            <t t-esc="zone.name"/>
+                        </label>
+                    </t>
                 </div>
             </div>
-        </t>
-    </template>
+
+            <!-- Navegación de fechas -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <button type="button" class="btn btn-light" id="btn-prev-day">
+                    <i class="fa fa-chevron-left"/>
+                </button>
+                <div class="input-group" style="width: 200px;">
+                    <input type="text" class="form-control text-center"
+                           id="calendarDatePicker" readonly="readonly"/>
+                    <button class="btn btn-outline-secondary" type="button"
+                            id="btn-open-datepicker">
+                        <i class="fa fa-calendar"/>
+                    </button>
+                </div>
+                <button type="button" class="btn btn-light" id="btn-next-day">
+                    <i class="fa fa-chevron-right"/>
+                </button>
+            </div>
+
+            <!-- Calendario -->
+            <div id="content-reservation-calendar"></div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="reservationDetailsModal" tabindex="-1"
+             aria-labelledby="reservationDetailsModalLabel" aria-hidden="true">
+            …
+        </div>
+    </t>
+</template>
+
 
 </odoo>
