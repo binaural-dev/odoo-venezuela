@@ -42,9 +42,6 @@ class ResPartner(models.Model):
         company_id = self.env.company.id
         return company_id
 
-    subscriber_number = fields.Char()
-    associate_zone = fields.Char() 
-
     prefix_vat = fields.Selection(
         [
             ("V", "V"),
