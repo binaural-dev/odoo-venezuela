@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "17.0.0.0.1",
+    "version": "17.0.0.0.2",
     "depends": [
         "stock",
         "l10n_ve_tax",
@@ -33,4 +33,5 @@
         "wizard/stock_quantity_history.xml",
     ],
     "application": True,
+    "pre_init_hook": "pre_init_hook",
 }

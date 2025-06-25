@@ -7,4 +7,4 @@ class TaxUnit(models.Model):
 
     name = fields.Char(string="Description", help="Tax Unit Description", required=True, store=True)
     value = fields.Float(help="Tax unit value", required=True, store=True)
-    status = fields.Boolean(default=True, string="Active?", store=True)
+    status = fields.Boolean(default=False, string="Active?", store=True)

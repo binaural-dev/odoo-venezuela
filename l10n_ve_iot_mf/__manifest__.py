@@ -8,7 +8,7 @@
     """,
     "license": "LGPL-3",
     "category": "Accounting",
-    "version": "17.0.0.0.6",
+    "version": "17.0.0.0.7",
     "author": "binaural-dev",
     "website": "https://binauraldev.com",
     "depends": [
@@ -35,4 +35,5 @@
     "installable": True,
     "application": False,
     "auto_install": False,
+    "pre_init_hook": "pre_init_hook"
 }
