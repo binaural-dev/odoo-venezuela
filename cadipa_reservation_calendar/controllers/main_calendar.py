@@ -11,7 +11,6 @@ from odoo.http import request
 from odoo.osv import expression
 
 
-_logger = logging.getLogger(__name__)
 FIELDSRESERVATION = ["name", "product_id"]
 FIELDSRESERVATIONMADE = [
     "start",
@@ -29,49 +28,61 @@ FIELDSRESERVATIONMADE = [
 class MainCalendar(http.Controller):
 
     @http.route(
-        [
-            "/reservation_calendar",
-        ],
-        type="http",
-        auth="public",
-        website=True,
+    "/reservation_calendar",
+    type="http",
+    auth="public",
+    website=True,
     )
     def website_reservation_calendar(self, **kw):
+        reservation_zones = request.env["appointment.type"].sudo().search([("active", "=", True)])
         return request.render(
             "cadipa_reservation_calendar.cadipa_reservation_calendar",
-            {},
-        )
-
-    @http.route("/get_reservations", type="json", auth="public")
-    def get_reservations_info(self):
-        data = {"status": 200, "msg": _("Success")}
-        reservations = False
-        try:
-            reservations = request.env["appointment.type"].sudo().search_read(
-                domain=self._domain_reservation(), fields=FIELDSRESERVATION, order="id asc"
-            )
-        except Exception as e:
-            data.update(
-                {
-                    "status": 400,
-                    "msg": str(e),
-                }
-            )
-        data.update(
             {
-                "reservation": reservations,
+                'reservation_zones': reservation_zones
             }
         )
-        return data
 
-    @http.route("/get_reservations_made", type="json", auth="public")
-    def get_reservations_made(self):
+
+    @http.route('/get_reservations', type='json', auth='public', website=True)
+    def get_reservations_info(self, court_ids=None, date=None, **kw): # 'date' se recibe pero NO se usa para filtrar las zonas aquí
+        """
+        court_ids arrives as a list of strings or None.
+        This function returns the selected zones, regardless of their reservations for the date.
+        """
+        try:
+            ids = [int(x) for x in court_ids] if court_ids else None
+            final_appointment_type_domain = self._domain_appointment_type_base(ids)
+
+            reservations = request.env['appointment.type'].sudo().search_read(
+                domain=final_appointment_type_domain,
+                fields=FIELDSRESERVATION,
+                order='id asc'
+            )
+            return {'status': 200, 'reservation': reservations}
+        except Exception as e:
+            return {'status': 400, 'msg': str(e), 'reservation': []}
+
+    def _domain_appointment_type_base(self, ids=None):
+        domain = [
+            ('product_id', '!=', False),
+            ('active', '=', True),
+        ]
+        if ids:
+            domain.append(('id', 'in', ids))
+        return domain
+
+
+
+    @http.route("/get_reservations_made", type="json", auth="public", website=True)
+    def get_reservations_made(self, date=None, **kw):
         data = {"status": 200, "msg": _("Success")}
-        reservations = False
         reservation_list = []
         try:
+            domain_for_events = self._domain_reservation_made(date=date)
+
             reservations = request.env["calendar.event"].sudo().search(
-                domain=self._domain_reservation_made(), order="appointment_type_id asc"
+                domain=domain_for_events,
+                order="appointment_type_id asc"
             )
             for res in reservations:
                 res_dict = self._info_partner_with_reservation(res)
@@ -110,25 +121,31 @@ class MainCalendar(http.Controller):
         website_id = request.env["website"].sudo().get_current_website()
         return website_id.company_id
 
-    def _domain_reservation(self):
-        domain = [("product_id", "!=", False), ("active", "=", True), ("is_published", "=", True)]
-        return domain
+    def _domain_reservation_made(self, date=None): # 'date' se usa para filtrar los eventos por día
+        search_date = None
+        if date:
+            try:
+                search_date = datetime.strptime(date, '%Y-%m-%d').date()
+            except ValueError:
+                search_date = datetime.now().date()
+        else:
+            search_date = datetime.now().date()
 
-    def _domain_reservation_made(self):
+
         user = request.env.user
         user_tz = pytz.timezone(user.tz or "UTC")
-        current_datetime = pytz.utc.localize(fields.Datetime.now()).astimezone(user_tz)
-        init_today = current_datetime.replace(hour=0, minute=0, second=0)
-        end_today = current_datetime.replace(hour=23, minute=59, second=59)
 
-        init_today_utc = init_today.astimezone(pytz.utc)
-        end_today_utc = end_today.astimezone(pytz.utc)
+        init_of_day_local = user_tz.localize(datetime(search_date.year, search_date.month, search_date.day, 0, 0, 0))
+        end_of_day_local = user_tz.localize(datetime(search_date.year, search_date.month, search_date.day, 23, 59, 59))
+
+        init_of_day_utc = init_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
+        end_of_day_utc = end_of_day_local.astimezone(pytz.utc).replace(tzinfo=None)
 
         domain = [
             ("appointment_type_id.product_id", "!=", False),
             ("active", "=", True),
-            ("start", ">=", init_today_utc),
-            ("stop", "<=", end_today_utc),
+            ("start", ">=", init_of_day_utc),
+            ("stop", "<=", end_of_day_utc),
             (
                 "categ_ids",
                 "in",
@@ -136,6 +153,7 @@ class MainCalendar(http.Controller):
             ),
         ]
         return domain
+        
 
     def _info_partner_with_reservation(self, reservation):
         partner_id = {}
@@ -161,25 +179,23 @@ class MainCalendar(http.Controller):
         question = reservation.appointment_type_id.question_ids.filtered(
             lambda q: q.show_in_calendar
         )
-        
+
         pattern = re.compile(r'<li>(.*?)</li>', re.IGNORECASE)
-        matches = pattern.findall(reservation.description)
-        
+        matches = pattern.findall(reservation.description or '')
+        description_output = "\n".join(matches)
+
         answer = ""
         if reservation.description and question:
-            pattern = re.compile(r'<li>(.*?)</li>', re.IGNORECASE)
-            matches = pattern.findall(reservation.description)
-            
-            for match in matches:
+            for match in matches: # Use the already found matches
                 if question.name in match:
                     answer = match.replace(f"{question.name}: ", '')
                     break
-
         partner = {
             "start": start_time_12h,
-            "start_date": reservation.start.date(),
+            "start_date": reservation.start.date().isoformat(),
             "stop": stop_time_12h,
-            "stop_date": reservation.stop.date(),
+            "stop_date": reservation.stop.date().isoformat(),
+            "description": description_output,
             "appointment_type_id": {
                 "id": reservation.appointment_type_id.id,
                 "name": reservation.appointment_type_id.name,
@@ -189,7 +205,7 @@ class MainCalendar(http.Controller):
                 "name": reservation.appointment_type_id.product_id.name,
             },
             "invoice": invoice,
-            "categ_ids": {"id": reservation.categ_ids[0].id, "name": reservation.categ_ids[0].name},
+            "categ_ids": {"id": reservation.categ_ids[0].id, "name": reservation.categ_ids[0].name} if reservation.categ_ids else {},
             "responsible": {"id": reservation.partner_id.id, "name": reservation.partner_id.name},
             "partner_id": partner_id,
             "message": {

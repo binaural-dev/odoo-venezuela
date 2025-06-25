@@ -1,10 +1,12 @@
 .timesheet {
     display: flex;
     background: #eee;
-    position: relative;
+    flex-wrap: nowrap;
+    min-width: max-content
 }
 
 .timesheet__col {
+    position: relative;
     width: 14%;
     display: flex;
     flex-wrap: wrap;
@@ -19,40 +21,36 @@
 }
 
 .timesheet__col-current {
-background: #FBFAFA;
-}
-
-.timesheet__block-header {
-    width: 100%;
-    max-height: max-content;
-    min-height: 3em;
-    /* max-height: 100px; */
-    font-size: 24px;
-    padding: 0.1em 0.3em;
-    background: white;
-    box-sizing: border-box;
-    /* border-top: 1px solid #ccc; */
-    border-color:  #ccc;
-    /* border-right: 1px solid #ccc; */
+background: #e6e0e0;
 }
 
 .timesheet__block {
     width: 100%;
-    height: 100px;
-    /* max-height: 100px; */
-    min-height: 3em;
-    font-size: 24px;
+    min-height: 100px;
+    font-size: 18px;
     padding: 0.1em 0.3em;
     box-sizing: border-box;
     border-top: 1px solid #ccc;
     border-right: 1px solid #ccc;
+    position: relative;
+    overflow: hidden;
 }
+
+.timesheet__block-header {
+    width: 100%;
+    padding: 0.2em;
+    font-size: 22px;
+    background:#fff;
+    box-sizing: border-box;
+    text-align:center;
+    white-space: normal;
+}
+
 
 .timesheet__block:first-child {
     border-top: 0;
     text-align: center;
     line-height: 3em;
-    /* background: white; */
 }
 
 .current-time-line {
@@ -64,14 +62,45 @@ background: #FBFAFA;
 }
 
 .schedule {
-    width: calc(14% - 1em);
-    height: 150px;
     position: absolute;
-    top: 340px;
-    margin-left: 0.3em;
-    color: white;
-    font-size: 0.8em;
+    left: 0;
+    width: 100%;
     padding: 0.2em;
     box-sizing: border-box;
+    color: #fff;
+    font-size: 0.8em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 2px solid #f9f9f9;
+}
+.timesheet-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
+.timesheet__col,
+.timesheet__col-time {
+    width: 120px;
+}
+
+.content-reservation-calendar{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.toolbar-calendar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+.toolbar-calendar .btn,
+.toolbar-calendar .input-group {
+    flex-shrink: 0;
+}
