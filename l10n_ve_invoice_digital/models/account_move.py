@@ -1,8 +1,10 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
+from pytz import timezone
 import logging
 import requests
 import json
+import re
 
 _logger = logging.getLogger(__name__)
 
@@ -10,7 +12,6 @@ class EndPoints():
     BASE_ENDPOINTS = {
         "emision": "/Emision",
         "ultimo_documento": "/UltimoDocumento",
-        "asignar_numeraciones": "/AsignarNumeraciones",
         "consulta_numeraciones": "/ConsultaNumeraciones",
     }
 
@@ -18,46 +19,41 @@ class AccountMove(models.Model):
     _inherit = 'account.move'
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
-    show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_visibility_button", copy=False)
-    show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_visibility_button", copy=False)
-    show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_visibility_button", copy=False)
+    show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_invisible_check", copy=False)
 
-    def action_post(self):
-        res = super(AccountMove, self).action_post()
-        for record in self:
-            if record.name == '/':
-                last_invoice = self.env['account.move'].search(
-                    [
-                        ('move_type', 'in', ['out_invoice', 'out_refund']),
-                        ('name', '!=', '/')
-                    ], order='create_date desc', limit=1
-                )
-                if not last_invoice.name:
-                    continue
-                if not last_invoice.is_digitalized:
-                    selection_dict = dict(last_invoice._fields['move_type'].selection)
-                    move_type_name = selection_dict.get(last_invoice.move_type)
-                    raise ValidationError(
-                        _("The %(move_type_name)s %(invoice_name)s has not been digitalized yet.\n"
-                            "Please complete the digitalization process before proceeding.") % {
-                            'move_type_name': move_type_name,
-                            'invoice_name': last_invoice.name
-                        }
-                    )
-        return res
+    def generate_document_digital(self):
+        if not self.company_id.invoice_digital_tfhka:
+            return
+        
+        document_type = ""
 
-    def generate_document_digtal(self):
-        if self.is_digitalized:
-            raise UserError(_("The document has already been digitalized."))
-        document_type = self.env.context.get('document_type')
-        end_number, start_number = self.query_numbering()
-        document_number = self.get_last_document_number(document_type)
-        document_number = str(document_number + 1)
+        if self.move_type == "out_invoice":
+            document_type = "03" if self.debit_origin_id else "01"
+        elif self.move_type == "out_refund" and self.reversed_entry_id:
+            document_type = "02"
+        
+        if not document_type: 
+            return
 
-        if document_number == start_number:
-            self.assign_numbering(end_number, start_number)
+        series = ""
 
-        self.generate_document_data(document_number, document_type)
+        if self.company_id.group_sales_invoicing_series and self.journal_id.series_correlative_sequence_id:
+            if self.journal_id.sequence_id and self.journal_id.sequence_id.prefix:
+                series = re.sub(r'[^a-zA-Z0-9]', '', self.journal_id.sequence_id.prefix)
+            else:
+                raise UserError(_("The selected series is not configured"))
+            
+        self.query_numbering(series)
+        document_number = self.get_last_document_number(document_type, series)
+        document_number = document_number + 1
+        current_number = self.sequence_number
+
+        if document_number != current_number and self.company_id.sequence_validation_tfhka:
+            raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
+
+        document_number = str(document_number)
+
+        self.generate_document_data(document_number, document_type, series)
 
     def get_base_url(self):
         if self.company_id.url_tfhka:
@@ -87,10 +83,10 @@ class AccountMove(models.Model):
                 if data.get("codigo") == "200":
                     return data
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
-                    return 1
+                    return 0
                 else:
-                    _logger.error(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
-                    raise UserError(_("Error in the API response: %(message)s") % {'message': data.get('mensaje')})
+                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
+                    raise UserError(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()
@@ -102,13 +98,14 @@ class AccountMove(models.Model):
             _logger.error(_("Error connecting to the API: %(error)s") % {'error': e})
             raise UserError(_("Error connecting to the API: %(error)s") % {'error': e})
 
-    def generate_document_data(self, document_number, document_type):
-        document_identification = self.get_document_identification(document_type, document_number)
+    def generate_document_data(self, document_number, document_type, series):
+        document_identification = self.get_document_identification(document_type, document_number, series)
         seller = self.get_seller()
         buyer = self.get_buyer()
         totals, foreign_totals = self.get_totals()
         details_items = self.get_item_details()
-
+        additional_information = self.get_additional_information()
+        
         payload = {
             "documentoElectronico": {
                 "encabezado": {
@@ -119,76 +116,103 @@ class AccountMove(models.Model):
                 "detallesItems": details_items,
             }
         }
+
         if seller:
             payload["documentoElectronico"]["encabezado"]["vendedor"] = seller
         if foreign_totals:
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
-
+        if additional_information:
+            payload["documentoElectronico"]["infoAdicional"] = additional_information
         response = self.call_tfhka_api("emision", payload)
 
         if response:
             self.is_digitalized = True
+            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             self.message_post(
-                body=_("Document successfully digitized"),  
+                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
                 message_type='comment',
             )
+            num_control_tfhka = response.get("resultado").get("numeroControl")
+            self.correlative = num_control_tfhka
+            return
 
-    def get_last_document_number(self, document_type):
+    def get_last_document_number(self, document_type, series):
         payload = {
-                    "serie": "",
+                    "serie": series,
                     "tipoDocumento": document_type,
                 }
         response = self.call_tfhka_api("ultimo_documento", payload)
         
-        if response == 1:
+        if response == 0:
             return response
         else:
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def assign_numbering(self, end_number, start_number):
-        end = start_number + self.company_id.range_assignment_tfhka
-        start_number += 1
-        
-        if start_number <= end_number:
-            payload = {
-                        "serie": "",
-                        "tipoDocumento": "01",
-                        "numeroDocumentoInicio": start_number,
-                        "numeroDocumentoFin": end
-                    }
-            response = self.call_tfhka_api("asignar_numeraciones", payload)
-            
-            if response:
-                _logger.info("Numbering range successfully assigned.")
-
-    def query_numbering(self):
+    def query_numbering(self, series):
         payload={
-                "serie": "",
+                "serie": series,
                 "tipoDocumento": "",
                 "prefix": ""
             }
         response = self.call_tfhka_api("consulta_numeraciones", payload)
 
         if response:
-            numbering = response["numeraciones"][0]
-            end_number = numbering.get("hasta")
-            start_number = numbering.get("correlativo")
-            return end_number, start_number
+            approves = False
+            for numbering in response.get("numeraciones", []):
+                end_number = 0
+                start_number = 0
+                if series != "":
+                    if numbering.get("serie") == series:
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
+                else:
+                    if numbering.get("serie") == "NO APLICA":
+                        end_number = numbering.get("hasta")
+                        start_number = numbering.get("correlativo")
 
-    def get_document_identification(self, document_type, document_number):
+                if int(start_number) < int(end_number):
+                    approves = True
+                    break
+
+            if approves:
+                return
+
+            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
+
+    def get_document_identification(self, document_type, document_number, series):
         for record in self:
-            emission_time = record.create_date.strftime("%I:%M:%S %p").lower()
+            now = fields.Datetime.now()
+            user_tz = timezone(record.env.user.tz)
+            emission_time = now.astimezone(user_tz).strftime("%I:%M:%S %p").lower()
+            emission_date = now.astimezone(user_tz).date()
+            due_date_obj = record.invoice_date_due
+
+            if due_date_obj:
+                if due_date_obj >= emission_date:
+                    due_date = due_date_obj.strftime("%d/%m/%Y")
+                else:
+                    raise ValidationError(_("The expiration date cannot be less than the digitization date."))
+            else:
+                due_date = emission_date.strftime("%d/%m/%Y")
+            
+            emission_date = emission_date.strftime("%d/%m/%Y")
             affected_invoice_number = ""
             affected_invoice_date = ""
             affected_invoice_amount = ""
             affected_invoice_comment = ""
+            subsidiary = ""
+            affected_invoice_series = ""
 
             if record.debit_origin_id:
-                affected_invoice_number = record.debit_origin_id.name
+                affected_invoice_number = str(record.debit_origin_id.sequence_number)
+
                 affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
 
-                if record.currency_id.name == "VEF":
+                if record.debit_origin_id.journal_id.series_correlative_sequence_id:
+                    affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
+
+                if record.company_id.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.debit_origin_id.amount_total)
                 else:
                     tax_totals = record.debit_origin_id.tax_totals
@@ -198,10 +222,14 @@ class AccountMove(models.Model):
                 affected_invoice_comment = part[1].strip()
 
             if record.reversed_entry_id:
-                affected_invoice_number = record.reversed_entry_id.name
+                affected_invoice_number = str(record.reversed_entry_id.sequence_number)
+                
                 affected_invoice_date = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
 
-                if record.currency_id.name == "VEF":
+                if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
+                    affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
+
+                if record.company_id.currency_id.name == "VEF":
                     affected_invoice_amount = str(record.reversed_entry_id.amount_total)
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
@@ -210,14 +238,21 @@ class AccountMove(models.Model):
                 part = record.ref.split(',')
                 affected_invoice_comment = part[1].strip()
 
-            emission_date = record.invoice_date.strftime("%d/%m/%Y") if record.invoice_date else ""
-            due_date = record.invoice_date_due.strftime("%d/%m/%Y") if record.invoice_date_due else ""
+            if self.company_id.subsidiary:
+                if record.account_analytic_id and record.account_analytic_id.code:
+                    subsidiary = record.account_analytic_id.code
+                else:
+                    raise UserError(_("The selected subsidiary does not contain a reference"))
+
+            if not record.invoice_date:
+                raise UserError(_("The invoice date is not defined."))
+
             return {
                 "tipoDocumento": document_type,
                 "numeroDocumento": document_number,
                 "numeroPlanillaImportacion": "",
                 "numeroExpedienteImportacion": "",
-                "serieFacturaAfectada": "",
+                "serieFacturaAfectada": affected_invoice_series,
                 "numeroFacturaAfectada": affected_invoice_number,
                 "fechaFacturaAfectada": affected_invoice_date,
                 "montoFacturaAfectada": affected_invoice_amount,
@@ -227,17 +262,17 @@ class AccountMove(models.Model):
                 "fechaVencimiento": due_date,
                 "horaEmision": emission_time,
                 "tipoDePago": self.get_payment_type(),
-                "serie": "",
-                "sucursal": "",
+                "serie": series,
+                "sucursal": subsidiary,
                 "tipoDeVenta": "Interna",
-                "moneda": record.currency_id.name,
+                "moneda": "VEF",
                 "transaccionId": "",
                 "urlPdf": ""
             }
 
     def get_totals(self):
         for record in self:
-            currency = record.currency_id.name
+            currency = record.company_id.currency_id.name
             totalIGTF = 0
             totalIGTF_VES = 0
             tax_totals = record.tax_totals
@@ -253,7 +288,7 @@ class AccountMove(models.Model):
                         tax_totals.get('subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -262,7 +297,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
@@ -280,7 +315,7 @@ class AccountMove(models.Model):
                         tax_totals.get('subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -289,7 +324,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts_foreign["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
@@ -304,7 +339,7 @@ class AccountMove(models.Model):
                         tax_totals.get('foreign_subtotal', 0) - 
                         next(
                             (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"), 0
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
                         ), 2
                     )
                 )
@@ -313,7 +348,7 @@ class AccountMove(models.Model):
                         next((
                             group.get('tax_group_base_amount', 0) 
                             for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') == "Exento"
+                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
                         ), 0), 2)
                 )
                 amounts["subtotal"] = str(round(tax_totals.get("foreign_amount_untaxed", 0), 2))
@@ -346,8 +381,8 @@ class AccountMove(models.Model):
 
             if amounts_foreign:
                 foreign_totals = {
-                    "moneda": record.currency_id.name,
-                    "tipoCambio": str(record.foreign_rate),
+                    "moneda": record.company_id.currency_foreign_id.name,
+                    "tipoCambio": str(round(record.foreign_rate, 2)),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
                     "subtotal": amounts_foreign["subtotal"],
@@ -372,12 +407,14 @@ class AccountMove(models.Model):
             "IVA 16%": "G",
             "IVA 31%": "A",
             "Exento": "E",
+            "IVA 0%": "E",
         }
         tax_rate = {
             "IVA 8%": "8.0",
             "IVA 16%": "16.0",
             "IVA 31%": "31.0",
             "Exento": "0.0",
+            "IVA 0%": "0.0",
             "3.0 %": "3.0"
         }
         for record in self:
@@ -435,21 +472,38 @@ class AccountMove(models.Model):
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
+                if record.company_id.currency_id.name == "VEF":
+                    unit_price = round(line.price_unit, 2)
+                    unit_price_discount = round(line.price_unit * (line.discount / 10), 2)
+                    discount_amount = round((line.price_unit * (line.discount / 100)) * line.quantity, 2)
+                    item_price = round(line.price_subtotal, 2)
+                    price_before_discount = round(line.price_unit * line.quantity, 2)
+
+                else:
+                        unit_price = round(line.foreign_price, 2)
+                        unit_price_discount = round(line.foreign_price * (line.discount / 10), 2)
+                        discount_amount = round((line.foreign_price * (line.discount / 100)) * line.quantity, 2)
+                        item_price = round(line.foreign_subtotal, 2)
+                        price_before_discount = round(line.foreign_price * line.quantity, 2)
+
+                vat = round(item_price * line.tax_ids.amount / 100, 2)
+                total_item_value = round(item_price + vat, 2)
+
                 item_details.append({
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
                     "descripcion": line.product_id.name,
                     "cantidad": str(line.quantity),
-                    "precioUnitario": str(round(line.price_unit, 2)),
-                    "precioUnitarioDescuento": str(round(line.price_unit * (line.discount / 100), 2)),
-                    "descuentoMonto": str(round((line.price_unit * (line.discount / 100)) * line.quantity, 2)),
-                    "precioItem": str(round(line.price_subtotal, 2)),
-                    "precioAntesDescuento": str(round(line.price_unit * line.quantity, 2)),
+                    "precioUnitario": str(unit_price),
+                    "precioUnitarioDescuento": str(unit_price_discount),
+                    "descuentoMonto": str(discount_amount),
+                    "precioItem": str(item_price),
+                    "precioAntesDescuento": str(price_before_discount),
                     "codigoImpuesto": tax_mapping[tax_rate],
                     "tasaIVA": str(round(line.tax_ids.amount, 2)),
-                    "valorIVA": str(round(line.price_total - line.price_subtotal, 2)),
-                    "valorTotalItem": str(round(line.price_subtotal, 2)),
+                    "valorIVA": str(vat),
+                    "valorTotalItem": str(total_item_value),
                 })
                 line_number += 1
         return item_details
@@ -469,6 +523,9 @@ class AccountMove(models.Model):
         for record in self:
             if record.partner_id:
                 partner_data = {}
+                if not record.partner_id.vat:
+                    raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
+
                 vat = record.partner_id.vat.upper()
 
                 if vat[0].isalpha(): 
@@ -568,18 +625,29 @@ class AccountMove(models.Model):
 
         return payment_info
 
-    @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized', 'move_type')
-    def _compute_visibility_button(self):
+    def get_additional_information(self):
+        additional_information = []
         for record in self:
-            record.show_digital_invoice = True
-            record.show_digital_debit_note = True
-            record.show_digital_credit_note = True
-            if record.state == "posted":
-                if record.move_type == "out_refund" and record.reversed_entry_id and record.reversed_entry_id.is_digitalized and not record.is_digitalized:
-                    record.show_digital_credit_note = False
+            if record.guide_number:
+                additional_information.append({
+                    "campo": "numeroGuia",
+                    "valor": str(record.guide_number),
+                })
 
-                elif record.debit_origin_id and record.debit_origin_id.is_digitalized and not record.is_digitalized:
-                    record.show_digital_debit_note = False
-
-                elif record.move_type == "out_invoice" and not record.debit_origin_id and not record.is_digitalized:
-                    record.show_digital_invoice = False
+        return additional_information
+    
+    @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
+    def _compute_invisible_check(self):
+        for record in self:
+            self.show_digital_invoice = True
+            if record.is_digitalized:
+                continue
+            if record.state != "posted":
+                continue
+            if record.debit_origin_id or record.reversed_entry_id:
+                continue
+            if record.move_type != "out_invoice":
+                continue
+            if not self.company_id.invoice_digital_tfhka:
+                continue
+            record.show_digital_invoice = False

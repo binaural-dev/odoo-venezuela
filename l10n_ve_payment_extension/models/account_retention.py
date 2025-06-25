@@ -13,6 +13,7 @@ _logger = logging.getLogger(__name__)
 
 class AccountRetention(models.Model):
     _name = "account.retention"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _description = "Retention"
     _check_company_auto = True
 
@@ -51,6 +52,7 @@ class AccountRetention(models.Model):
         index=True,
         default="draft",
         help="Status of the withholding voucher",
+        tracking=True,
     )
     type_retention = fields.Selection(
         [
@@ -82,6 +84,7 @@ class AccountRetention(models.Model):
         required=True,
         states={"draft": [("readonly", False)]},
         help="Social reason",
+        tracking=True,
     )
     number = fields.Char("Voucher Number")
     correlative = fields.Char(readonly=True)
