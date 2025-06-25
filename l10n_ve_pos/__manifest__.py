@@ -8,7 +8,7 @@
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "17.0.0.0.1",
+    "version": "17.0.0.0.2",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -28,13 +28,13 @@
         "views/res_config_settings.xml",
         "views/pos_payment_views.xml",
         "views/report_saledetails.xml",
-        "views/pos_config_view.xml",
         "security/res_group.xml",
         "wizard/payment_report.xml",
         "report/payment_report.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
+    "pre_init_hook": "pre_init_hook",
     "assets": {
         "point_of_sale._assets_pos": [
             "l10n_ve_pos/static/src/**/**",

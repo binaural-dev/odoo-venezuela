@@ -4,9 +4,13 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="pos_iot.res_config_view_form_inherit_pos_iot" />
         <field name="arch" type="xml">
-            <xpath expr="//div[hasclass('pos_iot_config')]" position="replace">
+            <xpath expr="//div[hasclass('pos_iot_config')]" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
-            <xpath expr="//setting[@id='is_order_printer'][1]" position="replace"></xpath>
+           
+            <xpath expr="//setting[@id='is_order_printer'][1]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
         </field>
     </record>
     <!-- <record id="res_config_view_form_inherit_pos_iot_custom" model="ir.ui.view">

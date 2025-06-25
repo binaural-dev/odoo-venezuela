@@ -54,6 +54,7 @@ patch(DebugWidget.prototype, {
 
   },
   logger() {
-    console.log(this)
+    // Intentionally left blank for potential future debugging
   }
 })
+
