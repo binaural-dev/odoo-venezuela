@@ -1,15 +1,14 @@
 {
     "name": "Cadipa Calendario de Reservas",
-    "summary": """
-        Modulo para Agregar el calendio de reservas.
-    """,
+    "summary": "Módulo para agregar el calendario de reservas.",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
-    "category": "",
+    "category": "Website/Website",
     "version": "17.0.1.0.2",
     "depends": [
-        "website", "appointment",
+        "website",
+        "appointment",
     ],
     "data": [
         "views/reservation_calendar.xml",
