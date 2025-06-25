@@ -43,7 +43,6 @@ class MainCalendar(http.Controller):
         )
 
 
-    # --- RUTA PARA OBTENER LOS TIPOS DE CITA (ZONAS/CANCHAS) ---
     @http.route('/get_reservations', type='json', auth='public', website=True)
     def get_reservations_info(self, court_ids=None, date=None, **kw): # 'date' se recibe pero NO se usa para filtrar las zonas aquí
         """
@@ -180,25 +179,23 @@ class MainCalendar(http.Controller):
         question = reservation.appointment_type_id.question_ids.filtered(
             lambda q: q.show_in_calendar
         )
-        
+
         pattern = re.compile(r'<li>(.*?)</li>', re.IGNORECASE)
-        matches = pattern.findall(reservation.description)
-        
+        matches = pattern.findall(reservation.description or '')
+        description_output = "\n".join(matches)
+
         answer = ""
         if reservation.description and question:
-            pattern = re.compile(r'<li>(.*?)</li>', re.IGNORECASE)
-            matches = pattern.findall(reservation.description)
-            
-            for match in matches:
+            for match in matches: # Use the already found matches
                 if question.name in match:
                     answer = match.replace(f"{question.name}: ", '')
                     break
         partner = {
             "start": start_time_12h,
-            "start_date": reservation.start.date(),
+            "start_date": reservation.start.date().isoformat(),
             "stop": stop_time_12h,
-            "stop_date": reservation.stop.date(),
-            "description": matches,
+            "stop_date": reservation.stop.date().isoformat(),
+            "description": description_output,
             "appointment_type_id": {
                 "id": reservation.appointment_type_id.id,
                 "name": reservation.appointment_type_id.name,
@@ -208,7 +205,7 @@ class MainCalendar(http.Controller):
                 "name": reservation.appointment_type_id.product_id.name,
             },
             "invoice": invoice,
-            "categ_ids": {"id": reservation.categ_ids[0].id, "name": reservation.categ_ids[0].name},
+            "categ_ids": {"id": reservation.categ_ids[0].id, "name": reservation.categ_ids[0].name} if reservation.categ_ids else {},
             "responsible": {"id": reservation.partner_id.id, "name": reservation.partner_id.name},
             "partner_id": partner_id,
             "message": {
