@@ -1,0 +1,6 @@
+merge_protections:
+  - name: Require a review from approvers team
+    description: This rule requires someone from the approver's team to approve the PR
+    if: []
+    success_conditions:
+      - approved-reviews-by = @probadores
