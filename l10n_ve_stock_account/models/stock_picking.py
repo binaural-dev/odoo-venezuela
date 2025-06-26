@@ -977,17 +977,8 @@ class StockPicking(models.Model):
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
     def alert_views(self, id_company):
-
-        user_company = self.env.user.company_id.id
-        
+     
         company_ids = [int(cid) for cid in str(id_company).split(',') if cid.strip().isdigit()]
-
-        selected_company = (
-            company_ids[0] if len(company_ids) == 1
-            else user_company if len(company_ids) > 1 and user_company in company_ids
-            else company_ids[0] if len(company_ids) > 1
-            else None
-        )        
         
         pickings_combined = (
             self.env["stock.picking"]
@@ -999,7 +990,7 @@ class StockPicking(models.Model):
                     ("transfer_reason_id.code", "!=", "self_consumption"),
                     ("state_guide_dispatch", "=", "to_invoice"),
                     ('sale_id.document', '!=', 'invoice'),
-                    ('company_id','=', selected_company)
+                    ('company_id','in', company_ids)
                 ]
             )
         )
