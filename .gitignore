@@ -52,4 +52,4 @@ setup/win32/static/postgresql*.exe
 docker-compose.yml
 .env
 
-pyrightconfig.json
+pyrightconfig.json!.mergify.yml
