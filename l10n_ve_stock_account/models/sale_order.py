@@ -64,7 +64,7 @@ class SaleOrder(models.Model):
                 order.compute_document = order._default_document()
             order.document = order.compute_document or order._default_document()
 
-    @api.depends()
+    @api.depends("show_document", "state")
     def _compute_show_document(self):
         for order in self:
             order.show_document = False
