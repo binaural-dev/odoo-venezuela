@@ -15,7 +15,7 @@
 .timesheet__col-time {
     width: 120px;
     max-height: 100px;
-    font-size: 20px;
+    font-size: 15px;
     text-align: right;
     background: white;
 }
@@ -85,7 +85,7 @@ background: #e6e0e0;
 
 .timesheet__col,
 .timesheet__col-time {
-    width: 120px;
+    width: 160px;
 }
 
 .content-reservation-calendar{
