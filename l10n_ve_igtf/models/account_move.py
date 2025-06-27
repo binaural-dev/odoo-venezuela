@@ -72,8 +72,9 @@ class AccountMove(models.Model):
                 if payment_id and payment_id.is_igtf_on_foreign_exchange:
                     payment_id = line.move_id.payment_id
                     bi_igtf = payment_id.get_bi_igtf()
-                    if initial_residual < bi_igtf:
-                        record.bi_igtf = initial_residual
+                    if initial_residual <= bi_igtf:
+                        record.bi_igtf += bi_igtf
+                        bi_igtf = 0
                         continue
                     record.bi_igtf += bi_igtf
                     continue
@@ -91,7 +92,6 @@ class AccountMove(models.Model):
                         continue
                     amount += bi_igtf
 
-            record.bi_igtf = amount
 
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
