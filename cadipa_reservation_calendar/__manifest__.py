@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Website/Website",
-    "version": "17.0.1.0.2",
+    "version": "17.0.1.0.3",
     "depends": [
         "website",
         "appointment",
