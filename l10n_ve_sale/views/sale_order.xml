@@ -83,7 +83,8 @@
                     groups="!l10n_ve_sale.create_invoice_sale_order_group" />
             </xpath>
 
-            <xpath expr="//sheet//group[1]//div[3]" position="replace">
+            <xpath expr="//field[@name='show_update_pricelist']" position="after">
+				<label for="pricelist_id" groups="product.group_product_pricelist" invisible="not has_active_pricelist"/>
                 <field name="pricelist_id" invisible="1" />
                 <div groups="l10n_ve_sale.pricelist_sale_order_group" class="o_row">
                     <field name="pricelist_id" readonly="1"
@@ -95,6 +96,7 @@
                         confirm="This will update all unit prices based on the currently set pricelist."
                         invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']" />
                 </div>
+                            
                 <div groups="!l10n_ve_sale.pricelist_sale_order_group" class="o_row">
                     <field name="pricelist_id" options="{'no_open':True,'no_create': True}" />
                     <button name="action_update_prices" type="object"
@@ -106,6 +108,13 @@
                 </div>
             </xpath>
 
+			<xpath expr="//group[@name='order_details']/div[@groups='product.group_product_pricelist']" position="attributes">
+				<attribute name="invisible">1</attribute>
+			</xpath>
+			<xpath expr="//sheet//group[@name='order_details']/label[@for='pricelist_id'][2]" position="attributes">
+				<attribute name="invisible">1</attribute>
+			</xpath>
+            
             <field name="payment_term_id" position="replace">
                 <field name="payment_term_id" options="{'no_open':True,'no_create': True}"
                     groups="!l10n_ve_sale.payment_terms_sale_order_group" />
