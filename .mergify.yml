@@ -3,4 +3,4 @@ merge_protections:
     description: This rule requires someone from the approver's team to approve the PR
     if: []
     success_conditions:
-      - approved-reviews-by = @aprobadores
+      - approved-reviews-by = @probadores
