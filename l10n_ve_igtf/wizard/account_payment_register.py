@@ -77,7 +77,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
             payment.is_igtf_on_foreign_exchange = False
             
-            if not (payment.journal_id.is_igtf and 
+            if not (payment.journal_id.is_igtf and
                     payment.is_igtf and 
                     payment.currency_id.id == self.env.ref("base.USD").id):
                 continue
@@ -92,20 +92,20 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             )
 
             total_residual = sum(invoices.mapped('amount_residual'))
-            result = total_residual - payment.amount
-
+            total_invoice = sum(invoices.mapped('amount_total'))
+            bi_igtf = sum(invoices.mapped('bi_igtf'))
+            igtf_constraint_ok = (bi_igtf + payment.amount) <= total_invoice
             is_first_usd_payment = len(usd_payments) == 0
-
+            residual_after_payment = total_residual - payment.amount
             if is_first_usd_payment:
-                payment.is_igtf_on_foreign_exchange = True
+                payment.is_igtf_on_foreign_exchange = igtf_constraint_ok
                 continue
-
-            if result > 0:
-                payment.is_igtf_on_foreign_exchange = True
+            elif residual_after_payment > 0:
+                payment.is_igtf_on_foreign_exchange = igtf_constraint_ok
                 continue
-
-            if result == 0:
+            else:
                 payment.is_igtf_on_foreign_exchange = False
+                continue
 
     @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
     def _compute_igtf_amount(self):
