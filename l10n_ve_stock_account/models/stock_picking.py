@@ -976,7 +976,10 @@ class StockPicking(models.Model):
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
-    def alert_views(self):
+    def alert_views(self, id_company):
+     
+        company_ids = [int(cid) for cid in str(id_company).split(',') if cid.strip().isdigit()]
+        
         pickings_combined = (
             self.env["stock.picking"]
             .sudo()
@@ -986,7 +989,8 @@ class StockPicking(models.Model):
                     ("type_delivery_step", "!=", "int"),
                     ("transfer_reason_id.code", "!=", "self_consumption"),
                     ("state_guide_dispatch", "=", "to_invoice"),
-                    ('sale_id.document', '!=', 'invoice')
+                    ('sale_id.document', '!=', 'invoice'),
+                    ('company_id','in', company_ids)
                 ]
             )
         )
@@ -1010,5 +1014,6 @@ class StockPicking(models.Model):
             result = result - timedelta(days=1)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
+    
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
