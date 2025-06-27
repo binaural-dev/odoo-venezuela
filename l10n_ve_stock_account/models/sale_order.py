@@ -151,18 +151,7 @@ class SaleOrder(models.Model):
                             % line.product_id.name
                         )
 
-                    stock_available = self.env["stock.quant"].read_group(
-                        domain=[
-                            ("product_id", "=", line.product_id.id),
-                            ("location_id.partner_id", "=", order.partner_id.id),
-                            ("location_id.usage", "=", "internal"),
-                        ],
-                        fields=["quantity:sum"],
-                        groupby=[],
-                    )
-                    total_stock = stock_available[0]["quantity"] if stock_available else 0
-
-                    if line.product_uom_qty > total_stock:
+                    if line.product_uom_qty > line.free_qty_today:
                         raise ValidationError(
                             _(
                                 "Cannot sell more than the available consignation stock for product %s."
