@@ -616,7 +616,7 @@ class AccountMove(models.Model):
             "descripcion": payment.concept if payment.concept else "N/A",
             "fecha": item.get("date").strftime("%d/%m/%Y") if item.get("date") else "",
             "forma": payment_method,
-            "monto": str(item.get("amount")),
+            "monto": str(round(item.get("amount"), 2)),
             "moneda": currency,
         }
 
