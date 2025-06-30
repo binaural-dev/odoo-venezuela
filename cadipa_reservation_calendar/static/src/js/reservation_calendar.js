@@ -53,7 +53,19 @@ const websiteReservationCalendar = publicWidget.Widget.extend({
     $('#modalCourtName').text(courtName);
     $('#modalPartnerName').text(partnerName);
     $('#modalReservationTime').text(`${startTime} - ${stopTime}`);
-    $('#modalDescription').text(description);
+    let formattedDescription = '';
+        if (description) {
+            const lines = description.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            if (lines.length > 0) {
+                formattedDescription = '<ul>' + lines.map(line => `<li>${line}</li>`).join('') + '</ul>';
+            } else {
+                formattedDescription = `<p>${description}</p>`;
+            }
+        } else {
+            formattedDescription = '<p>No hay descripción disponible.</p>';
+        }
+
+        $('#modalDescription').html(formattedDescription);
 
     $('#reservationDetailsModal').modal('show');
   },

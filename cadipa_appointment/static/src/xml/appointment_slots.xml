@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="appointment.slots_list" t-inherit-mode="extension">
+        <xpath expr="//span[contains(text(), 'Select a time')]" position="replace">
+            <span>Selecciona uno o más horarios disponibles</span>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_slots_list')]" position="replace">
+            <div>
+                <div class="mt-3 text-center">
+                    <button type="button" id="cadipaConfirmSlotsBtn"
+                            class="btn btn-primary d-none">
+                        Confirmar selección (<span id="cadipaSelectedSlotsCount">0</span>)
+                    </button>
+                </div>
+                <div class="o_slots_list row px-0" id="cadipaSlotsList">
+                    <t t-foreach="slots" t-as="slot" t-key="slot_index">
+                        <div t-attf-class="col-6 mt-2 #{slot_index % 2 == 0 ? 'pe-1' : 'ps-1'}">
+                            <button type="button"
+                                    class="o_slot_hours o_cadipa_slot_selectable btn btn-outline-primary d-flex align-items-center justify-content-center w-100 border"
+                                    t-att-data-slot-date="slot['slot_date']"
+                                    t-attf-data-url-parameters="#{slot['url_parameters']}&amp;#{commonUrlParams}"
+                                    t-out="slot['hours']"/>
+                        </div>
+                    </t>
+                </div>
+
+                <div class="mt-3 text-center">
+                    <button type="button" id="cadipaConfirmSlotsBtn"
+                            class="btn btn-primary d-none">
+                        Confirmar selección (<span id="cadipaSelectedSlotsCount">0</span>)
+                    </button>
+                </div>
+            </div>
+        </xpath>
+    </t>
+</templates>

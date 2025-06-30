@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="appointment_form_multi_slots"
+              inherit_id="appointment.appointment_form"
+              name="Appointment form: hidden multi_slots">
+        <xpath expr="//form[@class='appointment_submit_form']" position="inside">
+            <input t-if="multi_slots_json"
+                   type="hidden" name="multi_slots"
+                   t-att-value="multi_slots_json"/>
+        </xpath>
+    </template>
+
+    <template id="appointment_meeting_date_time_locale"
+              inherit_id="appointment.appointment_meeting_date"
+              name="Appointment: meeting date time locale">
+        <xpath expr="//span[@t-out='time_locale']" position="replace">
+            <span t-out="time_locale"/>
+        </xpath>
+    </template>
+</odoo>
