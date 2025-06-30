@@ -613,7 +613,7 @@ class AccountMove(models.Model):
 
     def build_payment_info(self, item, payment, currency, payment_method, foreign_rate):
         payment_info = {
-            "descripcion": payment.concept,
+            "descripcion": payment.concept if payment.concept else "N/A",
             "fecha": item.get("date").strftime("%d/%m/%Y") if item.get("date") else "",
             "forma": payment_method,
             "monto": str(item.get("amount")),
