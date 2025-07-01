@@ -40,10 +40,7 @@ class ResPartner(models.Model):
 
     def _default_company_id(self):
         company_id = self.env.company.id
-        return company_id
-
-    subscriber_number = fields.Char()
-    associate_zone = fields.Char() 
+        return company_id 
 
     prefix_vat = fields.Selection(
         [
