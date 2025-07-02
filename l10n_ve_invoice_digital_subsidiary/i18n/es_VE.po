@@ -1,0 +1,40 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_invoice_digital_subsidiary
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20250409\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-07-02 13:15+0000\n"
+"PO-Revision-Date: 2025-07-02 13:15+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_invoice_digital_subsidiary
+#: model:ir.model,name:l10n_ve_invoice_digital_subsidiary.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_invoice_digital_subsidiary
+#: model:ir.model,name:l10n_ve_invoice_digital_subsidiary.model_account_retention
+msgid "Retention"
+msgstr "Retención"
+
+#. module: l10n_ve_invoice_digital_subsidiary
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital_subsidiary/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital_subsidiary/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital_subsidiary/models/stock_picking.py:0
+#, python-format
+msgid "The selected subsidiary does not contain a reference"
+msgstr "La sucursal seleccionada no contiene referencia"
+
+#. module: l10n_ve_invoice_digital_subsidiary
+#: model:ir.model,name:l10n_ve_invoice_digital_subsidiary.model_stock_picking
+msgid "Transfer"
+msgstr "Transferir "

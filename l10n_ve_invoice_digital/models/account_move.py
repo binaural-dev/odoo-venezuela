@@ -203,7 +203,6 @@ class AccountMove(models.Model):
             affected_invoice_date = ""
             affected_invoice_amount = ""
             affected_invoice_comment = ""
-            subsidiary = ""
             affected_invoice_series = ""
 
             if record.debit_origin_id:
@@ -240,12 +239,6 @@ class AccountMove(models.Model):
                 part = record.ref.split(',')
                 affected_invoice_comment = part[1].strip()
 
-            if self.company_id.subsidiary:
-                if record.account_analytic_id and record.account_analytic_id.code:
-                    subsidiary = record.account_analytic_id.code
-                else:
-                    raise UserError(_("The selected subsidiary does not contain a reference"))
-
             if not record.invoice_date:
                 raise UserError(_("The invoice date is not defined."))
 
@@ -265,7 +258,7 @@ class AccountMove(models.Model):
                 "horaEmision": emission_time,
                 "tipoDePago": self.get_payment_type(),
                 "serie": series,
-                "sucursal": subsidiary,
+                "sucursal": "",
                 "tipoDeVenta": "Interna",
                 "moneda": "VEF",
                 "transaccionId": "",
