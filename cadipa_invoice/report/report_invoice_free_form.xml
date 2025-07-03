@@ -18,7 +18,6 @@
         <div class="row mt-0 pt-0 mb-5 pb-5">
             <div class="header">
                 <div class="col-12 d-flex justify-content-end ms-0 ps-0 me-4 pe-5">
-                    <span style="margin-right: 1rem;"><t t-out="'- ' + o.correlative.split('-')[1] if '-' in o.correlative else o.correlative"/></span>
                 </div>
             </div>
         </div>
@@ -39,7 +38,7 @@
                         <br/>
                         <span t-if="o.partner_id.vat"><strong>RIF:</strong> <t t-out="o.partner_id.prefix_vat + '-' + o.partner_id.vat"/></span>
                         <br/>
-                        <span t-if="o.partner_id.phone"><strong>Tlf:</strong> <t t-ou="o.partner_id.phone"/><br/></span>                        
+                        <span t-if="o.partner_id.phone"><strong>Tlf:</strong> <t t-out="o.partner_id.phone"/><br/></span>                        
                         <span t-if="o.action_number"><strong>Nro. de suscripción:</strong> <t t-out="o.action_number"/></span>
                     </div>
                     <div class="col-auto col-1 mw-100 mb-1">
@@ -179,13 +178,6 @@
             <div class="footer"> 
 
                 <div id="second_page" style="margin-top: 20em">
-                    <div class="row mt-0 pt-0 mb-5 pb-5">
-                        <!-- <div class="header"> -->
-                            <div class="col-12 d-flex justify-content-end ms-0 ps-0 me-4 pe-5">
-                                <span style="margin-right: 1rem;"><t t-out="'- ' + o.correlative.split('-')[1] if '-' in o.correlative else o.correlative"/></span>
-                            </div>
-                        <!-- </div> -->
-                    </div>
                     <div id="informations" class="row mt-4 mb-4">
                         <div class="col-auto col-6 mw-100 mb-2">
                             <span><strong>Razón Social:</strong> <t t-out="o.partner_id.name"/></span>

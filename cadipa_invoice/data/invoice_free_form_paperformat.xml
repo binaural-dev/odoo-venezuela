@@ -7,7 +7,7 @@
             <field name="format">A4</field>
             <field name="orientation">Portrait</field>
             <field name="margin_top">20</field>
-            <field name="margin_bottom">133</field>
+            <field name="margin_bottom">112</field>
             <field name="margin_left">10</field>
             <field name="margin_right">10</field>
             <field name="header_spacing">3</field>
