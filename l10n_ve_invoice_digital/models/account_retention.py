@@ -304,7 +304,7 @@ class AccountRetention(models.Model):
                     type_person = line.payment_concept_id.line_payment_concept_ids.filtered(lambda x: x.type_person_id.id == record.partner_id.type_person_id.id)
                     code = type_person.code if type_person else ""
                     if code:
-                        retention_data["CodigoConcepto"] = code
+                        retention_data["CodigoConcepto"] = code.zfill(3)
 
                     retention_data["porcentaje"] = str(round(line.related_percentage_fees, 2))
 
