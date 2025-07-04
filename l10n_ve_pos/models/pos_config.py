@@ -31,6 +31,9 @@ class PosConfig(models.Model):
     )
     pos_search_cne = fields.Boolean(related="company_id.pos_search_cne")
     amount_to_zero = fields.Boolean("Amount to zero")
+    allow_sales_on_order = fields.Boolean(
+        "Allow sales on order",
+    )
     activate_barcode_strict_mode = fields.Boolean(
         help="Activate product entry with barcode in strict mode"
     )
