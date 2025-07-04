@@ -9,6 +9,8 @@ from odoo import fields
 from dateutil.relativedelta import relativedelta
 import json, pytz, logging
 from babel.dates import format_datetime
+from odoo import Command, exceptions, http, fields, _
+
 _logger = logging.getLogger(__name__)
 
 
@@ -99,61 +101,136 @@ class AppointmentControllerMulti(AppointmentController):
         return resp
 
     
-
     @route(['/appointment/<int:appointment_type_id>/submit'],
-       auth='public', type='http', website=True, methods=['POST'], priority=400)
+       auth='public', website=True, type='http', methods=['POST'], priority=400)
     def appointment_form_submit(self, appointment_type_id, multi_slots=None, **post):
+
+        # ── normal flow without multi-slots ─────────────────────────
         if not multi_slots:
             return super().appointment_form_submit(appointment_type_id, **post)
 
-        slots = sorted((_parse_slot(q) for q in json.loads(multi_slots)), key=lambda s: s[0])
+        # ── parsing and group ───────────────────────────────
+        slots = sorted((_parse_slot(q) for q in json.loads(multi_slots)),
+                    key=lambda s: s[0])
 
         time_ranges = []
-        range_start, duration_first = slots[0][0], slots[0][1]
-        range_end = range_start + relativedelta(hours=duration_first)
-        total_hours = duration_first
-
+        current_start, current_duration = slots[0][0], slots[0][1]
+        current_end = current_start + relativedelta(hours=current_duration)
+        total_hours = current_duration
         for slot_start, slot_duration, _ in slots[1:]:
-            next_end = slot_start + relativedelta(hours=slot_duration)
+            slot_end = slot_start + relativedelta(hours=slot_duration)
             total_hours += slot_duration
-            if slot_start == range_end:
-                range_end = next_end
+            if slot_start == current_end:
+                current_end = slot_end
             else:
-                time_ranges.append((range_start, range_end))
-                range_start, range_end = slot_start, next_end
-        time_ranges.append((range_start, range_end))
+                time_ranges.append((current_start, current_end))
+                current_start, current_end = slot_start, slot_end
+        time_ranges.append((current_start, current_end))
+        ranges = time_ranges
 
-        timezone = pytz.timezone(request.session.get('timezone', post.get('appointment_tz', 'UTC')))
-        locale = request.env.context.get('lang', 'es_ES')
+        tz_name = request.session.get('timezone', post.get('appointment_tz', 'UTC'))
+        tz      = pytz.timezone(tz_name)
+        location     = request.env.context.get('lang', 'es_ES')
 
-        date_str = format_datetime(time_ranges[0][0].astimezone(timezone),
-                                "EEE d MMM y", tzinfo=timezone, locale=locale)
-        hours_str = ", ".join(
-            f"{start.strftime('%H:%M')} – {end.strftime('%H:%M')}"
-            for start, end in time_ranges
-        )
+        date_str  = format_datetime(ranges[0][0], "EEE d MMM y", locale=location, tzinfo=tz)
+        hours_str = ", ".join(f"{s.strftime('%H:%M')} – {e.strftime('%H:%M')}" for s, e in ranges)
         time_locale_str = f"{date_str} {hours_str}"
 
+        customer   = request.env['res.partner'].sudo().browse(int(post.get('customer_id')))
+        product_id = post.get('product_id')
+        created_ev = request.env['calendar.event']
+        first_token = None
 
-        redir = None
-        for start, end in time_ranges:
-            single_duration = (end - start).total_seconds() / 3600.0
-            single_post = post.copy()
-            single_post.update({
-                'datetime_str': fields.Datetime.to_string(start),
-                'duration': single_duration,
-                'duration_str': single_duration,
+        appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
+        staff_user       = request.env['res.users'].sudo().browse(int(post.get('staff_user_id')))
+        booking_vals     = []
+
+        for st_local, en_local in ranges:
+            st_utc = tz.localize(st_local).astimezone(pytz.utc).replace(tzinfo=None)
+            en_utc = tz.localize(en_local).astimezone(pytz.utc).replace(tzinfo=None)
+            single_dur = (en_local - st_local).total_seconds() / 3600.0
+
+            ev = self._handle_appointment_form_submission(
+                appointment_type   = appointment_type,
+                date_start         = st_utc,
+                date_end           = en_utc,
+                duration           = single_dur,
+                description        = '',
+                answer_input_values= [],
+                name               = post.get('name'),
+                customer           = customer,
+                appointment_invite = None,
+                product_id         = product_id,
+                guests             = None,
+                staff_user         = staff_user,
+                asked_capacity     = int(post.get('asked_capacity', 1)),
+                booking_line_values= booking_vals,
+                create_invoice     = False
+            )
+
+            if ev:
+                if not first_token:
+                    first_token = ev.access_token
+                else:
+                    ev.write({'access_token': first_token})
+                created_ev |= ev
+
+        # ── single invoice with multiple lines ─────────────────────────
+        if created_ev and product_id:
+            created_ev.sudo().create_invoices({
+                'product_id': product_id,
+                'duration'  : total_hours
             })
-            redir = super().appointment_form_submit(appointment_type_id, **single_post)
 
-        if redir and redir.location:
-            parsed_url = url_parse(redir.location)
-            query_params = parsed_url.decode_query()
-            query_params.update({
+        if first_token:
+            query = {
+                'partner_id'  : customer.id,
+                'state'       : 'new',
                 'duration_str': total_hours,
-                'time_locale': time_locale_str,
-            })
-            new_url = url_unparse(parsed_url._replace(query=url_encode(query_params)))
-            redir.location = new_url
+                'time_locale' : time_locale_str,
+            }
+            return request.redirect(
+                url_unparse(('', '', f'/calendar/view/{first_token}', url_encode(query), ''))
+            )
 
-        return redir
+        # fallback
+        return request.redirect('/appointment/booking_error')
+
+    def _handle_appointment_form_submission(
+        self, appointment_type,
+        date_start, date_end, duration,
+        description, answer_input_values, name, customer, appointment_invite,
+        product_id, guests=None,
+        staff_user=None, asked_capacity=1, booking_line_values=None,
+        create_invoice=False):
+
+        staff_user = staff_user and staff_user.exists() or None
+        organizer  = staff_user or appointment_type.create_uid
+
+        event = request.env['calendar.event'].with_context(
+            mail_notify_author  = True,
+            mail_create_nolog   = True,
+            mail_create_nosubscribe = True,
+            allowed_company_ids = self._get_allowed_companies(organizer).ids,
+        ).sudo().create({
+            'appointment_answer_input_ids': [
+                Command.create(vals) for vals in answer_input_values
+            ],
+            **appointment_type._prepare_calendar_event_values(
+                asked_capacity, booking_line_values, description, duration,
+                appointment_invite or request.env['appointment.invite'],
+                guests, name, customer, staff_user,
+                date_start, date_end
+            )
+        })
+
+        event.attendee_ids.write({'state': 'accepted'})
+
+        # invoice only if explicitly requested
+        if create_invoice and product_id:
+            event.sudo().create_invoices({
+                'product_id': product_id,
+                'duration'  : duration
+            })
+
+        return event

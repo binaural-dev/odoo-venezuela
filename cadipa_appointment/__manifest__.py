@@ -7,6 +7,7 @@
     "website": "https://binauraldev.com/",
     "category": "Appointment",
     "depends": [
+        "appointment_account_payment",
         "binaural_appointment",
         "web",
         "web_gantt",
