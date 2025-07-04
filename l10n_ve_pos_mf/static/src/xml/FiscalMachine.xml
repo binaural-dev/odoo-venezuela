@@ -1,27 +1,36 @@
 <templates id="template" xml:space="preserve">
     <t t-name="binaural_pos_mf.FiscalMachinePopup">
-        <div class="popup">
-            <header class="title drag-handle">
-                <t t-esc="props.title" />
-            </header>
-            <main class="body">
-                <div class="fdm-reports">
-                    <div t-on-click="report_z" class="button">
+                <div class="popup-container">
+            <div class="popup-header drag-handle">
+                <h3><i class="fas fa-chart-bar me-2"></i>Reportes Financieros</h3>
+            </div>
+            
+            <div class="popup-body">
+                <div class="report-grid">
+                    <div class="report-btn" t-on-click="report_z">
+                        <i class="fas fa-file-invoice-dollar"></i>
                         Reporte Z
                     </div>
-                    <div t-on-click="report_x" class="button">
+                    <div class="report-btn active" t-on-click="report_x">
+                        <i class="fas fa-chart-pie"></i>
                         Reporte X
                     </div>
                 </div>
-            </main>
-            <footer class="footer cash-move">
-                <div class="button confirm highlight dynamic-size" t-on-click="confirm">
-                    Confirm
+                
+                <div class="report-btn" style="margin-top: 15px;">
+                    <i class="fas fa-file-export"></i>
+                    Exportar a PDF
                 </div>
-                <div class="button cancel" t-on-click="cancel">
-                    <t t-esc="props.cancelText" />
-                </div>
-            </footer>
+            </div>
+            
+            <div class="popup-footer">
+                <button class="btn-confirm" t-on-click="confirm">
+                    <i class="fas fa-check-circle me-2"></i>Confirmar
+                </button>
+                <button class="btn-cancel" t-on-click="cancel">
+                    <i class="fas fa-times-circle me-2"></i>Cancelar
+                </button>
+            </div>
         </div>
     </t>
 </templates>

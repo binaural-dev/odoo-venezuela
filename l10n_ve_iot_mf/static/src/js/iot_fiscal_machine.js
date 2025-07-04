@@ -73,6 +73,8 @@ export class IoTFiscalMachineComponent extends Component {
     this.dialog.add(IoTConnectionErrorDialog, { href: url });
   }
   get iotDevice() {
+    console.log("Getting device");
+    console.log(this.device);
     return this.device
   }
   /*--------------------------------------------------------
@@ -86,6 +88,7 @@ export class IoTFiscalMachineComponent extends Component {
       this.showFailedConnection()
       return
     }
+    console.log("Getting de fiscal machine serial");
 
     this.iotDevice.addListener(({ value }) => {
       this.iotDevice.removeListener();
