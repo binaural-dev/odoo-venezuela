@@ -1,12 +1,13 @@
 {
     "name": "Cadipa Reservas",
     "summary": "Modulo para personalizaciones de reservas de CADIPA",
-    "version": "17.0.1.0.1",
+    "version": "17.0.1.0.3",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Appointment",
     "depends": [
+        "appointment_account_payment",
         "binaural_appointment",
         "web",
         "web_gantt",
