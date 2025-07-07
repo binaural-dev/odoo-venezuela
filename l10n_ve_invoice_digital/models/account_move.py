@@ -377,6 +377,8 @@ class AccountMove(models.Model):
             payment_forms = self.get_payment_methods()
 
             if payment_forms:
+                if len(payment_forms) > 5:
+                    raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
                 totals["formasPago"] = payment_forms
 
             if amounts_foreign:
@@ -588,7 +590,7 @@ class AccountMove(models.Model):
                             continue
                         
                         payment_info = self.build_payment_info(item, payment, currency, payment_method, record.foreign_rate)
-                        payment_data.append(payment_info)                    
+                        payment_data.append(payment_info)
                     return payment_data
             return False
         except Exception as e:

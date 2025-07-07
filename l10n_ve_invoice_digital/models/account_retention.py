@@ -301,8 +301,7 @@ class AccountRetention(models.Model):
                     retention_data["retenidoIVA"] = str(round(line.related_percentage_tax_base, 2))
 
                 if document_type == "06":
-                    type_person = line.payment_concept_id.line_payment_concept_ids.filtered(lambda x: x.type_person_id.id == record.partner_id.type_person_id.id)
-                    code = type_person.code if type_person else ""
+                    code = line.code
                     if code:
                         retention_data["CodigoConcepto"] = code
 
