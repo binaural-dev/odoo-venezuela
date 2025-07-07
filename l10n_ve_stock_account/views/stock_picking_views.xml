@@ -106,6 +106,14 @@
                     invisible="not show_create_vendor_credit"/>
             </xpath>
         </field>
+    <record id="stock_picking_form_view_remove_create_bill" model="ir.ui.view">
+        <field name="name">stock.picking.form.view.remove.create.bill</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="l10n_ve_stock_account.stock_picking_form_view_inherited"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='create_bill']" position="replace"/>
+        </field>
+    </record>
     </record>
     <!-- ### ACTIONS SERVERS ### -->
     <record id="action_create_invoice_for_multi_transfer" model="ir.actions.server">
