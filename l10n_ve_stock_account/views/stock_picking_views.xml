@@ -106,6 +106,7 @@
                     invisible="not show_create_vendor_credit"/>
             </xpath>
         </field>
+    </record>
     <record id="stock_picking_form_view_remove_create_bill" model="ir.ui.view">
         <field name="name">stock.picking.form.view.remove.create.bill</field>
         <field name="model">stock.picking</field>
@@ -113,7 +114,6 @@
         <field name="arch" type="xml">
             <xpath expr="//button[@name='create_bill']" position="replace"/>
         </field>
-    </record>
     </record>
     <!-- ### ACTIONS SERVERS ### -->
     <record id="action_create_invoice_for_multi_transfer" model="ir.actions.server">
