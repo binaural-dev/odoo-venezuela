@@ -73,7 +73,6 @@
                 <field name="operation_code" invisible="1"/>
                 <field name="is_return" invisible="1"/>
                 <field name="show_create_invoice" invisible="1"/>
-                <field name="show_create_bill" invisible="1"/>
                 <field name="show_create_customer_credit" invisible="1"/>
                 <field name="show_create_vendor_credit" invisible="1"/>
                 <field name="show_create_invoice_internal" invisible="1"/>
@@ -92,11 +91,6 @@
                     groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
                 <button 
-                    name="create_bill" class="oe_highlight"
-                    string="Create Bill" type="object"
-                    groups="l10n_ve_stock_account.group_stock_account"
-                    invisible="not show_create_bill"/>
-                <button 
                     name="create_customer_credit" class="oe_highlight"
                     string="Create Credit Note" type="object"
                     invisible="not show_create_customer_credit"/>
@@ -105,14 +99,6 @@
                     string="Create Vendor Credit" type="object"
                     invisible="not show_create_vendor_credit"/>
             </xpath>
-        </field>
-    </record>
-    <record id="stock_picking_form_view_remove_create_bill" model="ir.ui.view">
-        <field name="name">stock.picking.form.view.remove.create.bill</field>
-        <field name="model">stock.picking</field>
-        <field name="inherit_id" ref="l10n_ve_stock_account.stock_picking_form_view_inherited"/>
-        <field name="arch" type="xml">
-            <xpath expr="//button[@name='create_bill']" position="replace"/>
         </field>
     </record>
     <!-- ### ACTIONS SERVERS ### -->
