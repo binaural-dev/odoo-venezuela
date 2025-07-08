@@ -1,13 +1,12 @@
 <odoo>
-    <!-- noupdate="1" -->
-    <data >
+    <data noupdate="1">
         <record id="invoice_free_form_paperformat_cadipa_invoice" model="report.paperformat">
             <field name="name">Free Form Paperformat Cadipa</field>
             <field name="default" eval="True"/>
             <field name="format">A4</field>
             <field name="orientation">Portrait</field>
-            <field name="margin_top">20</field>
-            <field name="margin_bottom">112</field>
+            <field name="margin_top">22</field>
+            <field name="margin_bottom">108</field>
             <field name="margin_left">10</field>
             <field name="margin_right">10</field>
             <field name="header_spacing">3</field>
