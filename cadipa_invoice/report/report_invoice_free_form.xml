@@ -42,7 +42,7 @@
                         <span t-if="o.action_number"><strong>Nro. de suscripción:</strong> <t t-out="o.action_number"/></span>
                     </div>
                     <div class="col-auto col-1 mw-100 mb-1">                        
-                        <t t-if="o.move_type == 'out_invoice'">
+                        <t t-if="o.move_type == 'out_invoice' and not o.journal_id.is_debit">
                             <span><strong>Nro. Factura: </strong><t t-if="o.name != '/'" t-out="o.name"/></span>
                             <br/>
                             <p><strong>Fecha: </strong> <t t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
@@ -56,7 +56,15 @@
                             <br/>
                             <span><strong>Fecha de la Factura: </strong><t t-out="o.reversed_entry_id.invoice_date"/></span>
                             <br/>
-                            <span><strong>Total Facturado: </strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
+                        </t>
+                        <t t-if="o.journal_id.is_debit">
+                            <span><strong>Nota de Débito Nro.: </strong><t t-if="o.name != '/'" t-out="o.name"/></span>
+                            <br/>
+                            <span><strong>Factura afectada: </strong><t t-out="o.debit_origin_id.name"/></span>
+                            <br/>
+                            <span><strong>Número de Control: </strong><t t-out="o.debit_origin_id.correlative"/></span>
+                            <br/>
+                            <span><strong>Fecha de la Factura: </strong><t t-out="o.debit_origin_id.invoice_date"/></span>
                             <br/>
                         </t>    
                     </div>
@@ -198,7 +206,7 @@
                             <span t-if="o.action_number"><strong>Nro. de suscripción:</strong> <t t-out="o.action_number"/></span>
                         </div>
                         <div class="col-auto col-1 mw-100 mb-1">
-                            <t t-if="o.move_type == 'out_invoice'">
+                            <t t-if="o.move_type == 'out_invoice' and not o.journal_id.is_debit">
                                 <span><strong>Nro. Factura: </strong><t t-if="o.name != '/'" t-out="o.name"/></span>
                                 <br/>
                                 <p><strong>Fecha: </strong> <t t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
@@ -212,7 +220,15 @@
                                 <br/>
                                 <span><strong>Fecha de la Factura: </strong><t t-out="o.reversed_entry_id.invoice_date"/></span>
                                 <br/>
-                                <span><strong>Total Facturado: </strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
+                            </t>
+                            <t t-if="o.journal_id.is_debit">
+                                <span><strong>Nota de Débito Nro.: </strong><t t-if="o.name != '/'" t-out="o.name"/></span>
+                                <br/>
+                                <span><strong>Factura afectada: </strong><t t-out="o.debit_origin_id.name"/></span>
+                                <br/>
+                                <span><strong>Número de Control: </strong><t t-out="o.debit_origin_id.correlative"/></span>
+                                <br/>
+                                <span><strong>Fecha de la Factura: </strong><t t-out="o.debit_origin_id.invoice_date"/></span>
                                 <br/>
                             </t>    
                         </div>
