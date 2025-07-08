@@ -41,23 +41,24 @@
                         <span t-if="o.partner_id.phone"><strong>Tlf:</strong> <t t-out="o.partner_id.phone"/><br/></span>                        
                         <span t-if="o.action_number"><strong>Nro. de suscripción:</strong> <t t-out="o.action_number"/></span>
                     </div>
-                    <div class="col-auto col-1 mw-100 mb-1">
-                        <span><strong>NRO. FACTURA:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
-
-                        <t t-if="o.move_type == 'out_refund'">
+                    <div class="col-auto col-1 mw-100 mb-1">                        
+                        <t t-if="o.move_type == 'out_invoice'">
+                            <span><strong>Nro. Factura: </strong><t t-if="o.name != '/'" t-out="o.name"/></span>
                             <br/>
-                            <span><strong>Factura afectada:</strong><t t-out="o.reversed_entry_id.name"/></span>
-                            <br/>
-                            <span><strong>Número de Control:</strong><t t-out="o.reversed_entry_id.correlative"/></span>
-                            <br/>
-                            <span><strong>Fecha de la Factura:</strong><t t-out="o.reversed_entry_id.invoice_date"/></span>
-                            <br/>
-                            <span><strong>Total Facturado:</strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
-                            <br/>
+                            <p><strong>Fecha: </strong> <t t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
                         </t>
-                        <p><strong>Fecha:</strong> <t t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
-                        
-                    
+                        <t t-if="o.move_type == 'out_refund'">
+                            <span><strong>Nota de Crédito Nro.: </strong><t t-if="o.name != '/'" t-out="o.name"/></span>
+                            <br/>
+                            <span><strong>Factura afectada: </strong><t t-out="o.reversed_entry_id.name"/></span>
+                            <br/>
+                            <span><strong>Número de Control: </strong><t t-out="o.reversed_entry_id.correlative"/></span>
+                            <br/>
+                            <span><strong>Fecha de la Factura: </strong><t t-out="o.reversed_entry_id.invoice_date"/></span>
+                            <br/>
+                            <span><strong>Total Facturado: </strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
+                            <br/>
+                        </t>    
                     </div>
                 </div>
 
@@ -197,22 +198,23 @@
                             <span t-if="o.action_number"><strong>Nro. de suscripción:</strong> <t t-out="o.action_number"/></span>
                         </div>
                         <div class="col-auto col-1 mw-100 mb-1">
-                            <span><strong>NRO. FACTURA:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
-    
-                            <t t-if="o.move_type == 'out_refund'">
+                            <t t-if="o.move_type == 'out_invoice'">
+                                <span><strong>Nro. Factura: </strong><t t-if="o.name != '/'" t-out="o.name"/></span>
                                 <br/>
-                                <span><strong>Factura afectada:</strong><t t-out="o.reversed_entry_id.name"/></span>
-                                <br/>
-                                <span><strong>Número de Control:</strong><t t-out="o.reversed_entry_id.correlative"/></span>
-                                <br/>
-                                <span><strong>Fecha de la Factura:</strong><t t-out="o.reversed_entry_id.invoice_date"/></span>
-                                <br/>
-                                <span><strong>Total Facturado:</strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
-                                <br/>
+                                <p><strong>Fecha: </strong> <t t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
                             </t>
-                            <p><strong>Fecha:</strong> <t t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
-                            
-                        
+                            <t t-if="o.move_type == 'out_refund'">
+                                <span><strong>Nota de Crédito Nro.: </strong><t t-if="o.name != '/'" t-out="o.name"/></span>
+                                <br/>
+                                <span><strong>Factura afectada: </strong><t t-out="o.reversed_entry_id.name"/></span>
+                                <br/>
+                                <span><strong>Número de Control: </strong><t t-out="o.reversed_entry_id.correlative"/></span>
+                                <br/>
+                                <span><strong>Fecha de la Factura: </strong><t t-out="o.reversed_entry_id.invoice_date"/></span>
+                                <br/>
+                                <span><strong>Total Facturado: </strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
+                                <br/>
+                            </t>    
                         </div>
                     </div>
     
