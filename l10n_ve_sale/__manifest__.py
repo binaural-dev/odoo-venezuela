@@ -7,7 +7,11 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
+<<<<<<< HEAD
     "version": "17.0.1.1.13",
+=======
+    "version": "17.0.1.1.15",
+>>>>>>> fd71c10 (HOTFIX #8360: l10n_ve_sale)
     # any module necessary for this one to work correctly
     "depends": [
         "base",
