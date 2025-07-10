@@ -8,10 +8,6 @@
     "depends": [
         "base",
         "account",
-<<<<<<< HEAD
-        "l10n_ve_invoice",
-        "l10n_ve_iot_mf",
-=======
         "l10n_ve_igtf",
         "account_debit_note",
         "l10n_ve_invoice",
@@ -20,16 +16,11 @@
         "l10n_ve_payment_extension",
         "binaural_subsidiary",
         "stock",
->>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
     ],
     
     "images": ["static/description/icon.png"],
     "application": True,
     "data": [
-<<<<<<< HEAD
-        "views/res_config_settings.xml",
-        "views/account_move_view.xml",
-=======
         "security/ir.model.access.csv",
         "views/res_config_settings.xml",
         "views/account_move_view.xml",
@@ -37,6 +28,5 @@
         "views/account_retention_islr.xml",
         "views/stock_picking.xml",
         "wizard/account_retention_alert_views.xml",
->>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
     ],
 }
