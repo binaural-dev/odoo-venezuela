@@ -11,8 +11,11 @@ class AccountPaymentIgtf(models.Model):
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         help="IGTF on Foreign Exchange?",
+<<<<<<< HEAD
         compute="_compute_is_igtf",
         store=True,
+=======
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
     )
 
     igtf_percentage = fields.Float(
@@ -38,18 +41,25 @@ class AccountPaymentIgtf(models.Model):
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
 
+<<<<<<< HEAD
     @api.depends("amount","igtf_amount")
+=======
+    @api.depends("amount", "igtf_amount")
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
     def _compute_amount_with_igtf(self):
         for payment in self:
             if not payment.amount_with_igtf:
                 payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
+<<<<<<< HEAD
     @api.depends("journal_id")
     def _compute_is_igtf(self):
         for payment in self:
             if payment.journal_id.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
 
+=======
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
     @api.depends("amount")
     def _compute_igtf_amount(self):
         for payment in self:
@@ -72,8 +82,12 @@ class AccountPaymentIgtf(models.Model):
         """
 
         vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(
+<<<<<<< HEAD
             write_off_line_vals,
             force_balance
+=======
+            write_off_line_vals, force_balance
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
         )
 
         if self.igtf_percentage:
@@ -101,10 +115,14 @@ class AccountPaymentIgtf(models.Model):
             return
 
         for payment in self:
+<<<<<<< HEAD
             if (
                 payment.igtf_amount
                 and payment.is_igtf_on_foreign_exchange
             ):
+=======
+            if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
                 if payment.payment_type == "inbound":
                     vals_igtf = [
                         x for x in vals if x["account_id"] == igtf_account]

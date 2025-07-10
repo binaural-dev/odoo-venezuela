@@ -37,14 +37,24 @@
                 <field name="is_consignment" invisible="1" />
                 <field 
                     name="is_dispatch_guide"
+<<<<<<< HEAD
                     invisible="operation_code != 'internal'"
                     readonly="state == 'done' or is_consignment" />
+=======
+                    invisible="operation_code != 'internal' and operation_code != 'outgoing'"
+                    readonly="1" />
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
                 <field name="is_consignment_readonly" invisible="1"/>
                 <field 
                     name="transfer_reason_id"
                     invisible="operation_code != 'internal'"
                     readonly="state == 'done' or is_consignment_readonly"
                     required="operation_code == 'internal'" />
+<<<<<<< HEAD
+=======
+                <field name="other_causes_transfer_reason" invisible="1"/>
+                <field name="show_other_causes_transfer_reason" invisible="1"/>
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
                 <field name="is_consignment" />
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="is_donation" invisible="1" />
@@ -52,6 +62,19 @@
                     name="transfer_reason_id"
                     invisible="operation_code != 'outgoing'"
                     readonly="is_donation or state == 'done'"/>
+<<<<<<< HEAD
+=======
+                <field
+                    name="other_causes_transfer_reason"
+                    invisible="not show_other_causes_transfer_reason"
+                    readonly="state == 'done' or is_consignment_readonly"
+                    required="operation_code == 'outgoing' and show_other_causes_transfer_reason" />
+                    
+                <field name="is_consignment" />
+                <field name="allowed_reason_ids" invisible="1" />
+                <field name="is_donation" invisible="1" />
+                <field name="dispatch_guide_controls" invisible="1" />
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
                 <field 
                     name="guide_number"
                     readonly="1"

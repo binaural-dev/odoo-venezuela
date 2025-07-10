@@ -13,6 +13,7 @@ class ResCompany(models.Model):
     password_tfhka = fields.Char()
     url_tfhka = fields.Char()
     token_auth_tfhka = fields.Char()
+<<<<<<< HEAD
     range_assignment_tfhka = fields.Integer()
 
     invoice_print_type = fields.Selection(
@@ -22,6 +23,10 @@ class ResCompany(models.Model):
             ('digital', 'Factura Digital'),
         ],
     )        
+=======
+    invoice_digital_tfhka = fields.Boolean()
+    sequence_validation_tfhka = fields.Boolean(default=True)
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
     
     def generate_token_tfhka(self):
         self.ensure_one()

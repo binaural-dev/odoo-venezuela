@@ -88,7 +88,13 @@ class SaleOrder(models.Model):
     mobile = fields.Char(related="partner_id.mobile")
 
     @api.model
+<<<<<<< HEAD
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
+=======
+    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None, **kwargs):
+        if 'load' in kwargs:
+            del kwargs['load']
+>>>>>>> 710f656381dbee1faec49a534a47c6a7ef5b7282
         context = self.with_context(active_test=False)
         return super(SaleOrder, context).search_read(
             domain, fields, offset, limit, order

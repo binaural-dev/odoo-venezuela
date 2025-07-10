@@ -13,6 +13,7 @@ _logger = logging.getLogger(__name__)
 
 class AccountRetention(models.Model):
     _name = "account.retention"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _description = "Retention"
     _check_company_auto = True
 
@@ -51,6 +52,7 @@ class AccountRetention(models.Model):
         index=True,
         default="draft",
         help="Status of the withholding voucher",
+        tracking=True,
     )
     type_retention = fields.Selection(
         [
@@ -82,6 +84,7 @@ class AccountRetention(models.Model):
         required=True,
         states={"draft": [("readonly", False)]},
         help="Social reason",
+        tracking=True,
     )
     number = fields.Char("Voucher Number")
     correlative = fields.Char(readonly=True)
@@ -571,6 +574,10 @@ class AccountRetention(models.Model):
 
     def action_post(self):
         today = datetime.now()
+        
+        self.payment_ids.write({"date": self.date_accounting})
+        self._reconcile_all_payments()
+        
         for retention in self:
             if (
                 retention.type in ["out_invoice", "out_refund", "out_debit"]
@@ -593,8 +600,6 @@ class AccountRetention(models.Model):
                 retention._set_sequence()
                 self.set_voucher_number_in_invoice(move_ids, retention)
 
-        self.payment_ids.write({"date": self.date_accounting})
-        self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
     def set_voucher_number_in_invoice(self, move, retention):
