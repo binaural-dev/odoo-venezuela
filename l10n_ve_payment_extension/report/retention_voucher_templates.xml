@@ -118,22 +118,25 @@
         <!--Line Retention: Description-->
         <div style="margin-top:20px;font-size:12px !important;" class="container">
             <div style="border-top:1px solid black; border-bottom:1px solid black" class="row text-center">
-                <div class="" style="width:7%">
+                <div class="" style="width:6%">
                     <span>Fecha Factura</span>
                 </div>
-                <div class="" style="width:7%">
+                <div class="" style="width:6%">
                     <span>Número de Factura</span>
                 </div>
-                <div class="" style="width:7%">
+                <div class="" style="width:6%">
                     <span>Nro de Control Factura</span>
                 </div>
-                <div class="" style="width:7%">
+                <div class="" style="width:6%">
                     <span>Nota de Débito</span>
                 </div>
-                <div class="" style="width:7%">
+                <div class="" style="width:6%">
                     <span>Nota de Crédito</span>
                 </div>
-                <div class="" style="width:7%">
+                <div class="" style="width:6%">
+                    <span>Tipo de Transacción</span>
+                </div>
+                <div class="" style="width:6%">
                     <span>Factura afectada</span>
                 </div>
                 <div class="" style="width:7%">
@@ -179,7 +182,7 @@
                 <t t-foreach="retention.retention_line_ids" t-as="line">
                     <div class="row">
                         <!-- Fecha Factura-->
-                        <div class="" style="width:7%;">
+                        <div class="" style="width:6%;">
                             <t t-if="line.move_id.invoice_date">
                                 <span t-esc="line.move_id.invoice_date.strftime('%d/%m/%Y')"/>
                             </t>
@@ -189,7 +192,7 @@
                         </div>
 
                         <!--Número de Factura -->
-                        <div class="" style="width:7%;">
+                        <div class="" style="width:6%;">
                             <t t-if="line.move_id.move_type in ['out_invoice','out_contingence', 'in_invoice']">
                                 <span t-esc="line.move_id.name"/>
                             </t>
@@ -199,11 +202,11 @@
                         </div>
 
                         <!--Nro de Control Factura -->
-                        <div class="" style="width:7%;">
+                        <div class="" style="width:6%;">
                             <span t-esc="line.move_id.correlative or '--'"/>
                         </div>
                         <!--Nota de Débito -->
-                        <div class="" style="width:7%">
+                        <div class="" style="width:6%">
                             <t t-if="line.move_id.move_type == 'out_debit'">
                                 <span t-esc="line.move_id.name"/>
                             </t>
@@ -212,7 +215,7 @@
                             </t>
                         </div>
                         <!--Nota de Crédito -->
-                        <div class="" style="width:7%;">
+                        <div class="" style="width:6%;">
                             <t t-if="line.move_id.move_type in ('out_refund', 'in_refund')">
                                 <span t-esc="line.move_id.name"/>
                             </t>
@@ -220,8 +223,30 @@
                                 <span>--</span>
                             </t>
                         </div>
+                        <div class="" style="width:6%;">
+                            <t t-if="line.move_id.move_type in ('out_invoice','in_invoice') and line.move_id.state == 'posted'">
+                                <t t-if="line.move_id.journal_id.is_debit">
+                                    <span>02-REG</span>
+                                </t>
+                                <t t-else="">
+                                    <span>01-REG</span>
+                                </t>
+                            </t>
+                            <t t-elif="line.move_id.move_type in ('out_debit','in_debit') and line.move_id.state == 'posted'">
+                                <span>02-REG</span>
+                            </t>
+                            <t t-elif="line.move_id.move_type in ('out_refund','in_refund') and move.state == 'posted'">
+                                <span>03-REG</span>
+                            </t>
+                            <t t-elif="line.move_id.move_type in ('out_refund','out_debit','out_invoice','in_refund','in_debit','in_invoice') and line.move_id.state in ('cancel')">
+                                <span>03-ANU</span>
+                            </t>
+                            <t t-else="">
+                                <span>--</span>
+                            </t>
+                        </div>
                         <!-- Factura afectada -->
-                        <div class="" style="width:7%;">
+                        <div class="" style="width:6%;">
                             <t t-if="line.move_id.move_type in ('in_refund', 'out_refund') and line.move_id.reversed_entry_id">
                                 <span t-esc="line.move_id.reversed_entry_id.name"/>
                             </t>

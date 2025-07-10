@@ -43,6 +43,8 @@ class StockPicking(models.Model):
     show_create_vendor_credit = fields.Boolean(compute="_compute_button_visibility")
     show_create_invoice_internal = fields.Boolean(compute="_compute_button_visibility")
 
+    show_other_causes_transfer_reason = fields.Boolean(compute="_compute_show_other_causes_transfer_reason")
+
     has_document = fields.Boolean(
         string="Has Document",
         compute="_compute_has_document",
@@ -58,6 +60,11 @@ class StockPicking(models.Model):
         tracking=True,
     )
 
+    other_causes_transfer_reason = fields.Char(
+        string="Reason for transfer for other reasons",
+        copy=False
+    )
+
     allowed_reason_ids = fields.Many2many(
         "transfer.reason",
         string="Allowed Reasons",
@@ -69,7 +76,7 @@ class StockPicking(models.Model):
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
-        default=False,
+        default=True,
         tracking=True,
         store=True,
         compute="_compute_is_dispatch_guide",
@@ -721,8 +728,8 @@ class StockPicking(models.Model):
             if picking.state != "done":
                 continue
 
-            if not picking.sale_id and not picking.operation_code == "internal":
-                continue
+            # if not picking.sale_id and not picking.operation_code == "internal":
+            #     continue
 
             if picking.document == "invoice":
                 continue
@@ -785,6 +792,9 @@ class StockPicking(models.Model):
                 "export": "l10n_ve_stock_account.transfer_reason_export",
                 "self_consumption": "l10n_ve_stock_account.transfer_reason_self_consumption",
                 "consignment": "l10n_ve_stock_account.transfer_reason_consignment",
+                "repair_improvement": "l10n_ve_stock_account.transfer_reason_repair",
+                "external_storage": "l10n_ve_stock_account.transfer_reason_external_storage",
+                "other_causes": "l10n_ve_stock_account.transfer_reason_other_causes",
             }
 
             reasons = {
@@ -818,9 +828,19 @@ class StockPicking(models.Model):
             # Outgoing without sale
             elif is_outgoing and not has_sale:
                 self_consumption_reason = reasons.get("self_consumption")
+                other_causes = reasons.get("other_causes")
+                repair_improvement = reasons.get("repair_improvement")
+                external_storage = reasons.get("external_storage")
+
                 if self_consumption_reason:
                     allowed_reason_ids.append(self_consumption_reason.id)
-
+                if other_causes:
+                    allowed_reason_ids.append(other_causes.id)
+                if repair_improvement:
+                    allowed_reason_ids.append(repair_improvement.id)
+                if external_storage:
+                    allowed_reason_ids.append(external_storage.id)
+                
             # Internal
             elif picking.operation_code == "internal":
 
@@ -828,6 +848,8 @@ class StockPicking(models.Model):
                 transfer_between_warehouses_reason = reasons.get(
                     "transfer_between_warehouses"
                 )
+                other_causes = reasons.get("other_causes")
+
                 warehouse = picking.location_dest_id.warehouse_id
 
                 # Consignments and internal transfers
@@ -836,6 +858,8 @@ class StockPicking(models.Model):
 
                 if transfer_between_warehouses_reason:
                     allowed_reason_ids.append(transfer_between_warehouses_reason.id)
+                if other_causes:
+                    allowed_reason_ids.append(other_causes.id)
 
                 if (
                     consignment_reason
@@ -867,6 +891,19 @@ class StockPicking(models.Model):
             #     if allowed_reason_ids
             #     else self.env["transfer.reason"]
             # )
+
+    @api.depends('transfer_reason_id')
+    def _compute_show_other_causes_transfer_reason(self):
+        for record in self:
+            record.show_other_causes_transfer_reason = False
+
+            if record.transfer_reason_id:
+                if record.transfer_reason_id.code == "other_causes":
+                    record.show_other_causes_transfer_reason = True
+                if record.transfer_reason_id.code == "self_consumption":
+                    record.is_dispatch_guide = False
+                else:
+                    record.is_dispatch_guide = True
 
     # === CONSTRAINT METHODS ===#
 
@@ -939,7 +976,10 @@ class StockPicking(models.Model):
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
-    def alert_views(self):
+    def alert_views(self, id_company):
+     
+        company_ids = [int(cid) for cid in str(id_company).split(',') if cid.strip().isdigit()]
+        
         pickings_combined = (
             self.env["stock.picking"]
             .sudo()
@@ -949,7 +989,8 @@ class StockPicking(models.Model):
                     ("type_delivery_step", "!=", "int"),
                     ("transfer_reason_id.code", "!=", "self_consumption"),
                     ("state_guide_dispatch", "=", "to_invoice"),
-                    ('sale_id.document', '!=', 'invoice')
+                    ('sale_id.document', '!=', 'invoice'),
+                    ('company_id','in', company_ids)
                 ]
             )
         )
@@ -973,5 +1014,6 @@ class StockPicking(models.Model):
             result = result - timedelta(days=1)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
+    
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
