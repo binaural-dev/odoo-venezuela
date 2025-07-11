@@ -20,6 +20,8 @@ class AccountMove(models.Model):
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
     show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_invisible_check", copy=False)
+    show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
+    show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
     def generate_document_digital(self):
         if not self.company_id.invoice_digital_tfhka:
@@ -201,7 +203,6 @@ class AccountMove(models.Model):
             affected_invoice_date = ""
             affected_invoice_amount = ""
             affected_invoice_comment = ""
-            subsidiary = ""
             affected_invoice_series = ""
 
             if record.debit_origin_id:
@@ -238,12 +239,6 @@ class AccountMove(models.Model):
                 part = record.ref.split(',')
                 affected_invoice_comment = part[1].strip()
 
-            if self.company_id.subsidiary:
-                if record.account_analytic_id and record.account_analytic_id.code:
-                    subsidiary = record.account_analytic_id.code
-                else:
-                    raise UserError(_("The selected subsidiary does not contain a reference"))
-
             if not record.invoice_date:
                 raise UserError(_("The invoice date is not defined."))
 
@@ -263,7 +258,7 @@ class AccountMove(models.Model):
                 "horaEmision": emission_time,
                 "tipoDePago": self.get_payment_type(),
                 "serie": series,
-                "sucursal": subsidiary,
+                "sucursal": "",
                 "tipoDeVenta": "Interna",
                 "moneda": "VEF",
                 "transaccionId": "",
@@ -615,10 +610,10 @@ class AccountMove(models.Model):
 
     def build_payment_info(self, item, payment, currency, payment_method, foreign_rate):
         payment_info = {
-            "descripcion": payment.concept,
+            "descripcion": payment.concept if payment.concept else "N/A",
             "fecha": item.get("date").strftime("%d/%m/%Y") if item.get("date") else "",
             "forma": payment_method,
-            "monto": str(item.get("amount")),
+            "monto": str(round(item.get("amount"), 2)),
             "moneda": currency,
         }
 
@@ -641,15 +636,27 @@ class AccountMove(models.Model):
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):
         for record in self:
-            self.show_digital_invoice = True
-            if record.is_digitalized:
+            record.show_digital_invoice = True
+            record.show_digital_debit_note = True
+            record.show_digital_credit_note = True
+
+            if record.state != "posted" or record.is_digitalized or not self.company_id.invoice_digital_tfhka:
                 continue
-            if record.state != "posted":
-                continue
-            if record.debit_origin_id or record.reversed_entry_id:
-                continue
-            if record.move_type != "out_invoice":
-                continue
-            if not self.company_id.invoice_digital_tfhka:
-                continue
-            record.show_digital_invoice = False
+
+            if (
+                record.reversed_entry_id
+                and record.reversed_entry_id.is_digitalized
+            ):
+                record.show_digital_credit_note = False
+
+            elif (
+                record.debit_origin_id
+                and record.debit_origin_id.is_digitalized
+            ):
+                record.show_digital_debit_note = False
+
+            elif (
+                record.move_type == "out_invoice"
+                and not record.debit_origin_id
+            ):
+                record.show_digital_invoice = False

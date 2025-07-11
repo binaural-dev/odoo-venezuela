@@ -177,7 +177,6 @@ class AccountRetention(models.Model):
             emission_time = now.astimezone(timezone(record.env.user.tz)).strftime("%I:%M:%S %p").lower()
             emission_date = now.strftime("%d/%m/%Y")
             affected_invoice_number = ""
-            subsidiary = ""
 
             for line in record.retention_line_ids:
                 prefix = ""
@@ -187,12 +186,6 @@ class AccountRetention(models.Model):
                 if line.move_id.reversed_entry_id:
                     affected_invoice_number = str(line.move_id.reversed_entry_id.sequence_number)
 
-            if self.company_id.subsidiary:
-                if record.account_analytic_id and record.account_analytic_id.code:
-                    subsidiary = record.account_analytic_id.code
-                else:
-                    raise UserError(_("The selected subsidiary does not contain a reference"))
-
             return {
                 "tipoDocumento": document_type,
                 "numeroDocumento": document_number,
@@ -200,7 +193,7 @@ class AccountRetention(models.Model):
                 "fechaEmision": emission_date,
                 "horaEmision": emission_time,
                 "serie": "",
-                "sucursal": subsidiary,
+                "sucursal": "",
                 "tipoDeVenta": "Interna",
                 "moneda": record.company_id.currency_id.name,
             }
@@ -303,7 +296,7 @@ class AccountRetention(models.Model):
                 if document_type == "06":
                     code = line.code
                     if code:
-                        retention_data["CodigoConcepto"] = code
+                        retention_data["CodigoConcepto"] = code.zfill(3)
 
                     retention_data["porcentaje"] = str(round(line.related_percentage_fees, 2))
 

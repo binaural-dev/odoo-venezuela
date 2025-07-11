@@ -176,6 +176,16 @@ msgstr "Error procesando la respuesta de la API de TFHKA."
 
 #. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Credit Note"
+msgstr "Generar Nota de Crédito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Debit Note"
+msgstr "Generar Nota de Débito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
 msgid "Generate Digital Invoice"
 msgstr "Generar Factura Digital"
 
@@ -291,6 +301,20 @@ msgid "Show Digital Invoice"
 msgstr "Mostrar Factura Digital"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_credit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__show_digital_credit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_credit_note
+msgid "Show Digital Note Credit"
+msgstr "Mostrar Nota de Crédito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_debit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__show_digital_debit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_debit_note
+msgid "Show Digital Note Debit"
+msgstr "Mostrar Nota de Débito Digital"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__show_digital_retention_islr
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__show_digital_retention_iva
 msgid "Show Digital Retention"
@@ -353,6 +377,20 @@ msgstr ""
 #, python-format
 msgid "The URL is not configured in the company settings."
 msgstr "La URL no está configurada en los ajustes de la empresa."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#, python-format
+msgid "The credit note %s has not been digitized"
+msgstr "La Nota de Crédito %s no ha sido digitalizada"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#, python-format
+msgid "The debit note %s has not been digitized"
+msgstr "La Nota de Débito %s no ha sido digitalizada"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
