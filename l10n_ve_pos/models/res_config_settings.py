@@ -17,6 +17,12 @@ class ResConfigSettings(models.TransientModel):
     amount_to_zero = fields.Boolean(
         related="pos_config_id.amount_to_zero", readonly=False
     )
+
+    allow_sales_on_order = fields.Boolean(
+        related="pos_config_id.allow_sales_on_order",
+        readonly=False
+    )
+
     pos_show_just_products_with_available_qty = fields.Boolean(
         related="company_id.pos_show_just_products_with_available_qty", readonly=False
     )
