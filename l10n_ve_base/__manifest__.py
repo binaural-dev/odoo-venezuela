@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.0.0.3",
+    "version": "17.0.0.0.4",
     "depends": ["base", "web"],
     "auto_install": False,
     "data": ["security/ir.model.access.csv", "views/res_config_settings_views.xml"],
