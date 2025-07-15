@@ -472,14 +472,12 @@ class WizardStockBookReport(models.TransientModel):
                 "field": "incoming_total",
                 "format": "number",
                 "size": 20,
-                "format": "number",
             },
             {
                 "name": "SALIDAS",
                 "field": "outgoing_total",
                 "format": "number",
                 "size": 15,
-                "format": "number",
             },
             {
                 "name": "RETIROS",
