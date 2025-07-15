@@ -199,7 +199,7 @@ class WizardStockBookReport(models.TransientModel):
                 stock_move.stock_move_id.picking_id
                 and stock_move.stock_move_id.picking_id.transfer_reason_id.code
                 == "self_consumption"
-                and not quantity_done >= 0
+                and quantity_done < 0
             ):
                 product_movements[product_id]["stock_move_id"] = stock_move_id
                 product_movements[product_id]["self_consumption"] += quantity_done
