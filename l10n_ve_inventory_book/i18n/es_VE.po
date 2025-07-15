@@ -103,7 +103,7 @@ msgstr "Moneda"
 #. module: l10n_ve_inventory_book
 #: model:ir.model.fields,field_description:l10n_ve_inventory_book.field_res_company__display_consumables
 msgid "Display Consumables"
-msgstr ""
+msgstr "Mostrar Consumibles"
 
 #. module: l10n_ve_inventory_book
 #: model:ir.model.fields,field_description:l10n_ve_inventory_book.field_res_config_settings__display_consumables
@@ -155,7 +155,7 @@ msgstr "Ctd Entrante"
 #. module: l10n_ve_inventory_book
 #: model:ir.model.fields,help:l10n_ve_inventory_book.field_transfer_reason__active
 msgid "Indicates whether the transfer reason is active or archived."
-msgstr ""
+msgstr "Indica si el motivo de transferencia está activo o archivado."
 
 #. module: l10n_ve_inventory_book
 #: model:ir.model.fields,field_description:l10n_ve_inventory_book.field_wizard_stock_book_report__date_from
