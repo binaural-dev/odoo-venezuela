@@ -56,7 +56,7 @@ class WizardStockBookReport(models.TransientModel):
 
     currency_system = fields.Boolean(string="Report in currency system", default=False)
 
-    include_products_with_no_movements_in_the_month = fields.Boolean(default=False, string="Include products with no movements in the month",help="Include products with no movements in the month in the inventory book")
+    include_products_with_no_movements_in_the_month = fields.Boolean(default=False, string="Include products with no movements in the month", help="Include products with no movements in the month in the inventory book")
 
     incoming_qty = fields.Float(default=0.0)
 
