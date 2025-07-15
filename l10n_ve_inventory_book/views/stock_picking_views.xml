@@ -1,0 +1,16 @@
+<odoo>
+    <record id="stock_picking_form_view_l10n_ve_inventory_book" model="ir.ui.view">
+        <field name="name">stock.picking.form.view.l10n.ve.inventory_book</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="allowed_reason_ids" invisible="1" />
+                <field name="is_donation" />
+                <field name="operation_code" />
+                <field name="sale_id" />
+                <field name="transfer_reason_id" readonly="is_donation or state == 'done'" />
+            </xpath>
+        </field>
+    </record>
+</odoo>
