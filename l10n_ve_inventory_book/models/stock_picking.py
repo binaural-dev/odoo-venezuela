@@ -48,29 +48,16 @@ class StockPicking(models.Model):
             is_return = picking.return_id
             has_sale = bool(picking.sale_id)
 
-            _logger.info(
-                "is_outgoing: %s, has_sale: %s, reasons: %s",
-                is_outgoing,
-                has_sale,
-                reason_refs,
-            )
-
             # Outgoing with sale
             if is_outgoing and has_sale:
                 donation_reason = reasons.get("donation")
                 sale_reason = reasons.get("sale")
                 export_reason = reasons.get("export")
 
-                _logger.info("entryyy")
-
-                _logger.info(f"donation_reason: {donation_reason}")
-                _logger.info(f"picking.is_donation: {picking.is_donation}")
-
                 ## Donations
                 if picking.is_donation and donation_reason:
                     allowed_reason_ids.append(donation_reason.id)
 
-                    _logger.debug("Transfer reason set to donation")
                     picking.transfer_reason_id = donation_reason.id
 
                 ## Without Donations
