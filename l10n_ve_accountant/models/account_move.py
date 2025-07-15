@@ -359,15 +359,7 @@ class AccountMove(models.Model):
                     and self.env.company.unique_tax
                 ):
                     raise ValidationError(_("This product must have only one tax."))
-
-    @api.constrains("currency_id")
-    def _check_currency_id(self):
-        for move in self.filtered(lambda m: m.is_invoice(include_receipts=True)):
-            if move.currency_id.id != self.env.company.currency_id.id:
-                raise ValidationError(
-                    _("You cannot place a currency other than the base of the system.")
-                )
-
+                
     def legacy_compute_line_ids_foreign_debit_and_credit(self):
         """
         This method is used to compute the foreign debit and foreign credit of the line_ids field
