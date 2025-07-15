@@ -389,7 +389,7 @@ class WizardStockBookReport(models.TransientModel):
             "stock": movements["old_stock"] + movements["total_stock_qty_product"],
             "old_stock_bs": movements["old_stock_total"],
             "self_con": (
-                movements["self_consumption"] if movements["self_consumption"] >= 0 else movements["self_consumption"] *-1
+                movements["self_consumption"] if movements["self_consumption"] >= 0 else movements["self_consumption"] * -1
             ),
             "self_consumption_total": (
                 movements["self_consumption_total"]
