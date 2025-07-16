@@ -36,6 +36,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("journal_id","currency_id")
     def _compute_check_igtf(self):
+        """ Check if the company is a ordinary contributor"""
         for payment in self:
             payment.is_igtf = False
             if payment.currency_id.id == self.env.ref("base.USD").id and payment.journal_id.currency_id.id == self.env.ref("base.USD").id:
@@ -57,6 +58,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("is_igtf")
     def _compute_igtf_percentage(self):
+        """ Compute the igtf percetage defined in the company"""
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
 
@@ -69,46 +71,30 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("amount", "is_igtf", "igtf_amount")
     def _compute_amount_with_igtf(self):
+        """Compute the amount with igtf of the payment"""
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    @api.onchange("journal_id", "is_igtf", "currency_id", "amount")
+    @api.onchange("journal_id", "is_igtf", "currency_id","amount")
     def _compute_is_igtf(self):
+        """Compute if the current payment apply igtf """
         for payment in self:
-            payment.is_igtf_on_foreign_exchange = False
-            
-            if not (payment.journal_id.is_igtf and
-                    payment.is_igtf and 
-                    payment.currency_id.id == self.env.ref("base.USD").id):
-                continue
+            if (
+                payment.journal_id.is_igtf
+                and payment.is_igtf
+                and payment.currency_id.id == self.env.ref("base.USD").id
+            ):
+                _logger.warning("Igtf en true")
 
-            invoices = payment.line_ids.mapped('move_id')
-            if not invoices:
-                continue
+                payment.is_igtf_on_foreign_exchange = True
 
-            all_existing_payments = invoices._get_reconciled_payments()
-            usd_payments = all_existing_payments.filtered(
-                lambda p: p.currency_id.id == self.env.ref("base.USD").id and p.is_igtf_on_foreign_exchange
-            )
-
-            total_residual = sum(invoices.mapped('amount_residual'))
-            total_invoice = sum(invoices.mapped('amount_total'))
-            bi_igtf = sum(invoices.mapped('bi_igtf'))
-            igtf_constraint_ok = (bi_igtf + payment.amount) <= total_invoice
-            is_first_usd_payment = len(usd_payments) == 0
-            residual_after_payment = total_residual - payment.amount
-            if is_first_usd_payment:
-                payment.is_igtf_on_foreign_exchange = igtf_constraint_ok
-                continue
-            elif residual_after_payment > 0:
-                payment.is_igtf_on_foreign_exchange = igtf_constraint_ok
-                continue
             else:
+                _logger.warning("Igtf en false")
                 payment.is_igtf_on_foreign_exchange = False
-                continue
 
     @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
     def _compute_igtf_amount(self):
+        """Compute the igtf amount of the payment"""
         for payment in self:
             payment.igtf_amount = 0.0
             if (
