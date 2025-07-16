@@ -26,7 +26,7 @@
         "data/ir_cron.xml",
         "report/report_sale_document.xml",
         "views/res_config_settings.xml",
-        "views/sale_order.xml",
+        # "views/sale_order.xml",
         "views/product_pricelist_item_views.xml",
         "views/menuitems.xml",
     ],
