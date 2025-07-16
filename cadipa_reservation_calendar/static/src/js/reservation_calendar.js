@@ -207,7 +207,7 @@ _searchReservationsPartners: async function() {
 
       let hoursCol  = '<div class="timesheet__col timesheet__col-time">';
       let hourKeys  = [];
-      for (let h = +open; h <= +close; h++) {
+      for (let h = +open; h < +close; h++) {
         const key   = h.toString().padStart(2, '0');
         const ampm  = h < 12 ? 'am' : 'pm';
         const show  = (h % 12 || 12) + ':00 ' + ampm;
