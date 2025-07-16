@@ -221,7 +221,7 @@ _searchReservationsPartners: async function() {
     _BuildColumnsWithReservationZone: async function (zones, hourKeys) {
     const partners = await this._searchReservationsPartners();
     const { open, close } = await jsonrpc('/get_opening_and_closing_time');
-    const minutesTotal = (close - open) * 60;
+    const minutesTotal = ((+close + 1) - open) * 60;
     let html = '';
 
     zones.forEach(zone => {
