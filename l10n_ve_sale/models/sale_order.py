@@ -277,7 +277,7 @@ class SaleOrder(models.Model):
 
         res = super()._get_invoiceable_lines(final)
         limit = self.company_id.max_product_invoice
-        res = res.filtered(lambda line: line.invoiced == False)
+
         if len(res) <= limit:
             return res
         return res[:limit]
