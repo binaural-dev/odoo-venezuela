@@ -472,14 +472,14 @@ class StockPicking(models.Model):
     # === METHODS ===#
 
     def group_products(self, product_list):
-                grouped_products = {}
-                for _, _, product in product_list:
-                    product_id = product['product_id']
-                    if product_id in grouped_products:
-                        grouped_products[product_id]['quantity'] += product['quantity']
-                    else:
-                        grouped_products[product_id] = product
-                return [(0, 0, product) for product in grouped_products.values()]
+        grouped_products = {}
+        for _, _, product in product_list:
+            product_id = product['product_id']
+            if product_id in grouped_products:
+                grouped_products[product_id]['quantity'] += product['quantity']
+            else:
+                grouped_products[product_id] = product
+        return [(0, 0, product) for product in grouped_products.values()]
 
     def get_digits(self):
         return self.env.ref("base.VEF").decimal_places
