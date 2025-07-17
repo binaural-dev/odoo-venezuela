@@ -453,7 +453,7 @@ class StockPicking(models.Model):
                     },
                 )
                 invoice_line_list.append(vals)
-                invoice_line_list = self.group_products(invoice_line_list)
+        invoice_line_list = self.group_products(invoice_line_list)
         return invoice_line_list
     
     # === OVERRIDES ===#
