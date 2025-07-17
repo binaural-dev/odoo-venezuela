@@ -84,12 +84,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and payment.is_igtf
                 and payment.currency_id.id == self.env.ref("base.USD").id
             ):
-                _logger.warning("Igtf en true")
 
                 payment.is_igtf_on_foreign_exchange = True
 
             else:
-                _logger.warning("Igtf en false")
                 payment.is_igtf_on_foreign_exchange = False
 
     @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
