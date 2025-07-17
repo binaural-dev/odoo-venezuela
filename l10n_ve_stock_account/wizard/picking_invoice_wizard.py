@@ -19,7 +19,6 @@ class PickingInvoiceWizard(models.TransientModel):
                 self.multiple_invoice()
     
     def unique_invoice(self):
-        _logger.warning("Unique invoice selected")
         active_ids = self._context.get("active_ids")
         picking_ids = self.env["stock.picking"].browse(active_ids)
         picking_id_check_state = picking_ids.filtered(lambda x: x.state != 'done')
@@ -46,7 +45,6 @@ class PickingInvoiceWizard(models.TransientModel):
             else: 
                 raise UserError(_("You can only create invoices for not internal dispatch guides."))
 
-        _logger.warning("Status set: %s", status_set) 
         if len(status_set) > 1:
             raise UserError(_("All selected pickings must have the same invoice type to create a single invoice."))
             
@@ -73,7 +71,7 @@ class PickingInvoiceWizard(models.TransientModel):
                 picking.create_invoice()
             elif picking.show_create_vendor_credit:
                 picking.create_vendor_credit()
-            elif picking.show_create_customer_credit():
+            elif picking.show_create_customer_credit:
                 picking.create_customer_credit()
             else: 
                 raise UserError(_("You can only create invoices for not internal dispatch guides."))

@@ -158,7 +158,6 @@ class StockPicking(models.Model):
             origin_name = '/'.join(pickings.mapped('name'))
             
             origins_invoice = '/'.join([self._get_origin_name(picking) for picking in pickings])
-            _logger.warning(origins_invoice)
             invoice = self.env["account.move"].create(
                 {
                     "move_type": "out_invoice",
@@ -453,7 +452,8 @@ class StockPicking(models.Model):
                     },
                 )
                 invoice_line_list.append(vals)
-                invoice_line_list = self.group_products(invoice_line_list)
+        
+        invoice_line_list = self.group_products(invoice_line_list)
         return invoice_line_list
     
     # === OVERRIDES ===#
