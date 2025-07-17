@@ -73,7 +73,7 @@ class PickingInvoiceWizard(models.TransientModel):
                 picking.create_invoice()
             elif picking.show_create_vendor_credit:
                 picking.create_vendor_credit()
-            elif picking.show_create_customer_credit():
+            elif picking.show_create_customer_credit:
                 picking.create_customer_credit()
             else: 
                 raise UserError(_("You can only create invoices for not internal dispatch guides."))
