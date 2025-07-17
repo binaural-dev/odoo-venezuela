@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250311\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-05-21 22:53+0000\n"
 "PO-Revision-Date: 2025-05-21 22:53+0000\n"
@@ -129,7 +129,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__partner_id
 msgid "Assigned Customer"
 msgstr "Cliente"
-
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_attachment_count
 msgid "Attachment Count"
@@ -176,7 +175,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_category__company_id
@@ -396,6 +395,11 @@ msgstr "Litros por unidad"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__main_warehouse_id
 msgid "Main Warehouse"
 msgstr "Almacén Principal"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid "Maximum quantity of products to be sold per stock picking."
+msgstr "Máxima cantidad de líneas de productos por guía de despacho."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_error
@@ -692,6 +696,11 @@ msgid "Stock Move"
 msgstr "Movimiento de stock"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__limit_product_qty_out
+msgid "Stock Picking"
+msgstr "Guía de despacho"
+
+#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quantity_history
 msgid "Stock Quantity History"
 msgstr "Historial de cantidad de existencias "
@@ -726,6 +735,12 @@ msgid "The priority must be greater than 0."
 msgstr "La prioridad debe ser mayor que 0."
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__partner_id
+msgid "This location is assigned to a specific customer for consignation."
+msgstr ""
+"Esta ubicación está asignada a un cliente específico para consignación."
+
+#. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_template.py:0
 #: code:addons/l10n_ve_stock/models/product_template.py:0
@@ -741,7 +756,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Traslado"
+msgstr "Transferir "
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__type_delivery_step
@@ -762,6 +777,15 @@ msgstr "Tipo de actividad excepcional registrada"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Ultimo Costo"
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
+msgid ""
+"Upon confirmation, the system will generate the number of sequences of "
+"shipping guides."
+msgstr ""
+"Al confirmar esta operación, se generará automáticamente el número de "
+"secuencia de la guía de despacho correspondiente"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__use_free_qty_odoo
