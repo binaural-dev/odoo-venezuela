@@ -1101,7 +1101,6 @@ class StockPicking(models.Model):
             if picking.partner_required: 
                 contact = self.env['res.partner'].search([('id', '=', picking.location_dest_id.partner_id.id)], limit=1)
                 if contact:
-                    picking.partner_required = True
                     picking.partner_id = contact.id
                 else:
                     picking.partner_id = None
