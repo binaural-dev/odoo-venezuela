@@ -684,7 +684,7 @@ class StockPicking(models.Model):
                     record.show_create_vendor_credit = record.is_return
 
                 if record.operation_code == "outgoing":
-                    record.show_create_invoice = record.is_return == False and record.sale_id.document != "invoice"
+                    record.show_create_invoice = not record.is_return and record.sale_id.document != "invoice"
                     record.show_create_customer_credit = record.is_return
 
                 if record.operation_code == "internal" and record.is_consignment:
