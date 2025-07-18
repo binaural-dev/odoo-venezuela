@@ -22,8 +22,12 @@
             <xpath expr="//form//group//group//field[@name='location_id'][2]" position="attributes">
                 <attribute name="readonly">order_is_consignment</attribute>
             </xpath>
+            <xpath expr="//field[@name='partner_id']" position="before">
+                <field name="partner_required" invisible='1'/>
+            </xpath>
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
-                <attribute name="readonly">order_is_consignment</attribute>
+                <attribute name="required">partner_required</attribute> 
+                <attribute name="readonly">order_is_consignment or partner_required</attribute>
             </xpath>
             <xpath expr="//form//header" position="inside">
                 <field name="dispatch_guide_controls" invisible="1" />

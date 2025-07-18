@@ -82,6 +82,8 @@ class StockPicking(models.Model):
         store=True,
         compute="_compute_is_dispatch_guide",
     )
+    partner_required = fields.Boolean(compute='_compute_partner_required', store=True)
+    
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
@@ -1083,11 +1085,10 @@ class StockPicking(models.Model):
             result = result - timedelta(days=1)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
-    
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
-    @api.onchange('location_dest_id', 'is_dispatch_guide', 'is_consignment', 'transfer_reason_id')
-    def _change_required_partner_id(self):
+    @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
+    def _compute_partner_required(self):
         for picking in self:
             if picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_consignment').id and picking.is_dispatch_guide and picking.is_consignment: 
                 picking.partner_required = True
@@ -1103,15 +1104,7 @@ class StockPicking(models.Model):
                     picking.partner_id = contact.id
                 else:
                     picking.partner_id = None
-                    picking.partner_required = True
             else:
                 picking.partner_id = None
                 picking.partner_required = False
-    
-    def button_validate(self):
-        
-        for picking in self:
-            if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
-                picking.state_guide_dispatch = 'emited'
-        return super(StockPicking, self).button_validate()
             

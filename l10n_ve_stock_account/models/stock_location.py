@@ -12,7 +12,7 @@ class StockLocation(models.Model):
     partner_id = fields.Many2one(
         "res.partner",
         string="Assigned Customer",
-        help="This location is assigned to a specific customer for consignation.",
+        help="This location is assigned to a specific customer for consignation.", tracking=True
     )
 
     is_consignation_warehouse = fields.Boolean(
