@@ -14,3 +14,4 @@ class ResCompany(models.Model):
     show_tag_on_usd_invoice = fields.Boolean(default=True)
     show_column_default_code_free_form = fields.Boolean(default=True)
     auto_select_debit_note_journal = fields.Boolean(default=False) 
+    confirm_invoice_with_current_date = fields.Boolean(default=False)

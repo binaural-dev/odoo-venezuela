@@ -35,8 +35,18 @@ class AccountMove(models.Model):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
                 raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
+    @api.onchange("move_type")
+    def _onchange_move_type(self):
+        self.invoice_date = False if self.move_type == "out_invoice" else fields.Date.today()
+
     def action_post(self):
         for record in self:
+            if record.move_type == 'out_invoice':
+                if record.company_id.confirm_invoice_with_current_date and not record.invoice_date:
+                    record.invoice_date = fields.Date.context_today(record)
+                elif not record.invoice_date:
+                    raise ValidationError(_("You must set the invoice date before posting the invoice."))
+
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
 
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
