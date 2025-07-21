@@ -36,6 +36,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("journal_id","currency_id")
     def _compute_check_igtf(self):
+        """ Check if the company is a ordinary contributor"""
         for payment in self:
             payment.is_igtf = False
             if payment.currency_id.id == self.env.ref("base.USD").id and payment.journal_id.currency_id.id == self.env.ref("base.USD").id:
@@ -57,6 +58,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("is_igtf")
     def _compute_igtf_percentage(self):
+        """ Compute the igtf percetage defined in the company"""
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
 
@@ -69,27 +71,28 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("amount", "is_igtf", "igtf_amount")
     def _compute_amount_with_igtf(self):
+        """Compute the amount with igtf of the payment"""
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
     @api.onchange("journal_id", "is_igtf", "currency_id","amount")
     def _compute_is_igtf(self):
+        """Compute if the current payment apply igtf """
         for payment in self:
-            amount_residual = payment.line_ids.mapped('move_id').amount_residual
-            result=amount_residual-payment.amount
             if (
                 payment.journal_id.is_igtf
                 and payment.is_igtf
                 and payment.currency_id.id == self.env.ref("base.USD").id
-                and abs(result) > 0.0001
             ):
+
                 payment.is_igtf_on_foreign_exchange = True
-            
+
             else:
                 payment.is_igtf_on_foreign_exchange = False
 
     @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
     def _compute_igtf_amount(self):
+        """Compute the igtf amount of the payment"""
         for payment in self:
             payment.igtf_amount = 0.0
             if (
