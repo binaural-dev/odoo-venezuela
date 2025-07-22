@@ -25,6 +25,9 @@ class AccountMove(models.Model):
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
+    display_date_warning = fields.Boolean(
+        compute="_compute_display_date_warning")
+
     is_debit_journal = fields.Boolean(
         compute="_compute_is_debit_journal",
         store=True
@@ -160,6 +163,14 @@ class AccountMove(models.Model):
                 if term_date and term_date >= fields.Date.today():
                     invoice.next_installment_date = term_date
                     break
+    
+    @api.depends("invoice_date", "state")
+    def _compute_display_date_warning(self):
+        today = fields.Date.context_today(self)
+        for move in self:
+            move.display_date_warning = bool(
+                move.invoice_date and move.state == "draft" and move.invoice_date < today
+            )
 
     def _post(self, soft=True):
         res = super()._post(soft)
