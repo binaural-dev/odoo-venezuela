@@ -4,10 +4,10 @@
     <record id="res_config_settings_cadipa_appointment" model="ir.ui.view">
         <field name="name">res.config.settings.cadipa.appointment</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate"/>
+        <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
         <field name="arch" type="xml">
-            <xpath expr="//setting[1]" position="after">
-                <h2>Cadipa Appoinment Configuration</h2>
+            <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                <block title="Configuración de Reservas">
                 <div class="row mt16 o_settings_container" name="cadipa_appointment_settings">
                     <div class="col-12 col-lg-6 o_setting_box">
                         <div class="o_setting_left_pane">
@@ -38,6 +38,7 @@
                         </div>
                     </div>
                 </div>
+                </block>
             </xpath>
         </field>
     </record>
