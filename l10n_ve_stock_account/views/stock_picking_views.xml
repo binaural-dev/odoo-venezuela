@@ -73,7 +73,7 @@
                 <field name="operation_code" invisible="1"/>
                 <field name="is_return" invisible="1"/>
                 <field name="show_create_invoice" invisible="1"/>
-                <field name="show_create_bill" invisible="1"/>
+                <!-- <field name="show_create_bill" invisible="1"/> -->
                 <field name="show_create_customer_credit" invisible="1"/>
                 <field name="show_create_vendor_credit" invisible="1"/>
                 <field name="show_create_invoice_internal" invisible="1"/>
@@ -91,11 +91,11 @@
                     string="Create Invoice" type="object"
                     groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
-                <button 
+                <!-- <button 
                     name="create_bill" class="oe_highlight"
                     string="Create Bill" type="object"
                     groups="l10n_ve_stock_account.group_stock_account"
-                    invisible="not show_create_bill"/>
+                    invisible="not show_create_bill"/> -->
                 <button 
                     name="create_customer_credit" class="oe_highlight"
                     string="Create Credit Note" type="object"
