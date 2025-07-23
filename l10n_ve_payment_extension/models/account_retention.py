@@ -430,6 +430,7 @@ class AccountRetention(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
+        res._set_sequence()
         res._create_payments_from_retention_lines()
         return res
 
@@ -579,7 +580,6 @@ class AccountRetention(models.Model):
         self._reconcile_all_payments()
         
         for retention in self:
-            
             if not re.fullmatch(r"\d{14}", retention.number):
                 raise ValidationError(_("The number must be exactly 14 numeric digits."))
             
@@ -648,7 +648,7 @@ class AccountRetention(models.Model):
                 {
                     "name": "Numero de control retenciones IVA",
                     "code": "retention.iva.control.number",
-                    "padding": 5,
+                    "padding": 8,
                 }
             )
         return sequence
