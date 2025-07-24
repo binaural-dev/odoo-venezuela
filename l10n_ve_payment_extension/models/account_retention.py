@@ -580,8 +580,12 @@ class AccountRetention(models.Model):
         self._reconcile_all_payments()
         
         for retention in self:
-            if not re.fullmatch(r"\d{14}", retention.number):
-                raise ValidationError(_("The number must be exactly 14 numeric digits."))
+            if retention.type_retention == "islr":
+                if not re.fullmatch(r"\d{11}", retention.number):
+                    raise ValidationError(_("The number must be exactly 11 numeric digits."))
+            elif retention.type_retention == 'iva':
+                if not re.fullmatch(r"\d{14}", retention.number):
+                    raise ValidationError(_("The number must be exactly 14 numeric digits."))
             
             if (
                 retention.type in ["out_invoice", "out_refund", "out_debit"]
