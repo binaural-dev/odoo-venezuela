@@ -46,5 +46,26 @@
             <field name="code">consignment</field>
             <field name="active">True</field>
         </record>
+
+        <!-- Repair -->
+        <record id="transfer_reason_repair" model="transfer.reason">
+            <field name="name">Reparación o perfeccionamiento</field>
+            <field name="code">repair_improvement</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- External Storage -->
+        <record id="transfer_reason_external_storage" model="transfer.reason">
+            <field name="name">Traslado entre almacenes de otros</field>
+            <field name="code">external_storage</field>
+            <field name="active">True</field>
+        </record>
+        
+        <!-- Other Causes -->
+        <record id="transfer_reason_other_causes" model="transfer.reason">
+            <field name="name">Otras causas</field>
+            <field name="code">other_causes</field>
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>
