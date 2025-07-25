@@ -388,6 +388,14 @@ msgid "Is Debit Journal"
 msgstr "Es un diario de débito"
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__invoice_date
+msgid "Invoice/Bill Date"
+msgstr "Fecha de factura"
+
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
 msgid ""
 "It allow enable the invoicing sequences by\n"
