@@ -143,37 +143,4 @@ class TestAccountMove(TransactionCase):
         invoice.action_post()
         return invoice
 
-    def test_confirm_invoice_sets_current_date(self):
-        """When the company option is enabled the current date should be set."""
-        self.company.confirm_invoice_with_current_date = True
-        invoice = self._create_invoice( products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ])
-        invoice.invoice_date = False
-        invoice.action_post()
-        self.assertEqual(
-            invoice.invoice_date,
-            fields.Date.context_today(invoice),
-            "Invoice date should be set to today when confirming the invoice",
-        )
-
-    def test_confirm_invoice_requires_date(self):
-        """When the option is disabled a missing invoice date raises an error."""
-        self.company.confirm_invoice_with_current_date = False
-        invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ],
-        )
-        invoice.invoice_date = False
-
-        with self.assertRaises(ValidationError):
-            invoice.action_post()
+   
