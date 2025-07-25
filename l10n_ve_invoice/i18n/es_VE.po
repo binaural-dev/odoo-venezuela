@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250522\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-22 18:18+0000\n"
-"PO-Revision-Date: 2025-07-22 18:18+0000\n"
+"POT-Creation-Date: 2025-07-25 18:47+0000\n"
+"PO-Revision-Date: 2025-07-25 18:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -49,13 +49,6 @@ msgid ""
 "<span><strong>CONTRIBUYENTE FORMAL</strong></span>\n"
 "                                <br/>"
 msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
-msgid ""
-"<span>Assigns the current date when confirming the customer invoice.</span>"
-msgstr ""
-"<span>Asigna la fecha actual al confirmar la factura de cliente.</span>"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
@@ -264,16 +257,6 @@ msgid "Configuration Invoice: General"
 msgstr "Configuración de Facturación: General"
 
 #. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__confirm_invoice_with_current_date
-msgid "Confirm Customer Invoice With Current Date"
-msgstr "Asignar fecha al confirmar factura de cliente"
-
-#. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__confirm_invoice_with_current_date
-msgid "Confirm Invoice With Current Date"
-msgstr ""
-
-#. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
@@ -383,13 +366,6 @@ msgstr "Indica cuando una factura fue recibida por el cliente o la compañía"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
 msgid "Invoice Configuration"
 msgstr "Configuración de Facturación"
-
-#. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__invoice_date
-msgid "Invoice/Bill Date"
-msgstr "Fecha de factura"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__is_contingency
@@ -614,13 +590,6 @@ msgstr ""
 #, python-format
 msgid "You can not add more than %s products to the invoice."
 msgstr "No puede agregar más de %s productos a la factura."
-
-#. module: l10n_ve_invoice
-#. odoo-python
-#: code:addons/l10n_ve_invoice/models/account_move.py:0
-#, python-format
-msgid "You must set the invoice date before posting the invoice."
-msgstr "Debes agregar una fecha a la factura antes de confirmar."
 
 #. module: l10n_ve_invoice
 #: model:ir.actions.act_window,name:l10n_ve_invoice.ir_invoice_correlative
