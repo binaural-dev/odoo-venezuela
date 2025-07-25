@@ -44,14 +44,7 @@ class AccountMove(models.Model):
 
     def action_post(self):
         for record in self:
-            if record.move_type == 'out_invoice':
-                if record.company_id.confirm_invoice_with_current_date and not record.invoice_date:
-                    record.invoice_date = fields.Date.context_today(record)
-                elif not record.invoice_date:
-                    raise ValidationError(_("You must set the invoice date before posting the invoice."))
-
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
-
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 
             invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])

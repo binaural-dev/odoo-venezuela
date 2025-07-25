@@ -29,11 +29,6 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.auto_select_debit_note_journal", 
         readonly=False
     )
-    
-    confirm_invoice_with_current_date = fields.Boolean(
-        string="Confirm Customer Invoice With Current Date",
-        readonly=False,
-        related='company_id.confirm_invoice_with_current_date')
 
     @api.onchange("group_sales_invoicing_series")
     def onchange_group_sales_invoicing_series(self):
