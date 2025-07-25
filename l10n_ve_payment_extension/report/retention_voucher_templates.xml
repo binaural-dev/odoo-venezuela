@@ -4,8 +4,13 @@
         <div class="container" style="font-size:12px !important;">
             <div class="row">
                 <div class="col-3">
-                    <img style="max-height:100px;width:200px;float:left" t-if="res_company.logo"
-                         t-att-src="image_data_uri(res_company.logo)"/>
+                    <t t-if="res_company.logo">
+                        <img style="max-height:100px;width:200px;float:left"
+                             t-att-src="image_data_uri(res_company.logo)"/>
+                    </t>
+                    <t t-else="">
+                        <div style="max-height:100px;width:200px;float:left"></div>
+                    </t>
                 </div>
                 <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8" style="text-align: left;">
@@ -470,8 +475,13 @@
         <div class="container" style="font-size:12px !important;">
             <div class="row">
                 <div class="col-4">
-                    <img style="max-height:100px;width:200px;float:left" t-if="res_company.logo"
-                         t-att-src="image_data_uri(res_company.logo)"/>
+                    <t t-if="res_company.logo">
+                        <img style="max-height:100px;width:200px;float:left"
+                             t-att-src="image_data_uri(res_company.logo)"/>
+                    </t>
+                    <t t-else="">
+                        <div style="max-height:100px;width:200px;float:left"></div>
+                    </t>
                 </div>
                 <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8">
@@ -788,7 +798,7 @@
     <template id="retention_voucher_template">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="retention">
-                <t t-call="web.internal_layout">
+                <t t-call="web.basic_layout">
                     <div class="page">
                         <t t-if="retention.type_retention == 'iva'">
                             <t t-call="l10n_ve_payment_extension.report_iva_customer"/>
