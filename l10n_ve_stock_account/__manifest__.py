@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "17.0.0.0.21",
+    "version": "17.0.0.1.0",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_invoice",
@@ -16,6 +16,7 @@
         "web",
     ],
     "data": [
+        "security/res_groups.xml",
         "security/ir.model.access.csv",
         "security/res_groups.xml",
         "data/dispatch_guide_paperformat.xml",
@@ -23,6 +24,7 @@
         "data/ir_sequence.xml",
         "data/transfer_reason.xml",
         "views/account_move_views.xml",
+        "wizard/picking_invoice_wizard.xml",
         "views/stock_picking_guide_dispatch_views.xml",
         "views/stock_move_line_consignation_views.xml",
         "views/stock_picking_views.xml",
@@ -36,7 +38,6 @@
         "report/dispatch_guide.xml",
         "report/dispatch_guide_template.xml",
         "report/report_invoice_free_form.xml",
-        "wizard/picking_invoice_wizard.xml",
         "wizard/stock_picking_self_consumption_alert_views.xml",
     ],
     "application": True,
