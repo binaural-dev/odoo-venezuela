@@ -74,17 +74,6 @@
                             </div>
                         </div>
                         </div>
-                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_invoice_div_auto_select_debit_note_journal">
-                        <div class="o_setting_left_pane">
-                            <field name="confirm_invoice_with_current_date" class="oe_inline"/>
-                        </div>
-                        <div class="o_setting_right_pane">
-                            <label for="confirm_invoice_with_current_date" class="oe_inline"/>
-                            <div class="text-muted">
-                                <span>Assigns the current date when confirming the customer invoice.</span>
-                            </div>
-                        </div>
-                        </div>
                     </block>
                 </xpath>
             </field>
