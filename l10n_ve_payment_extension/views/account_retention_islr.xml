@@ -34,7 +34,7 @@
                                 invisible="not type"
                                 readonly="state in ['emitted', 'cancel']" />
                             <field name="date_accounting" select="1"
-                                readonly="state in ['emitted', 'cancel']" />
+                                readonly="state in ['emitted', 'cancel']" required='1' />
                             <field name="number" force_save="1"
                                 readonly="type == 'in_invoice' or state in ['emitted', 'cancel']"
                                 required="type == 'out_invoice'" />
