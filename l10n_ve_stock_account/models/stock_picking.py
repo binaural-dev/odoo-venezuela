@@ -697,7 +697,10 @@ class StockPicking(models.Model):
         for picking in self:
             picking = picking.with_company(picking.company_id)
 
-            if picking.picking_type_id and picking.state in ["draft", "confirmed"]:
+            if not (picking.picking_type_id and picking.state in ["draft", "confirmed"]):
+                continue
+
+            if not picking.location_id:
                 if picking.sale_id and picking.sale_id.is_consignation:
                     location_id = (
                         self.env["stock.location"]
@@ -719,14 +722,11 @@ class StockPicking(models.Model):
                     _customerloc, location_id = self.env[
                         "stock.warehouse"
                     ]._get_partner_locations()
+                picking.location_id = location_id
 
+            if not picking.location_dest_id:
                 if picking.picking_type_id.default_location_dest_id:
-                    location_dest_id = (
-                        picking.picking_type_id.default_location_dest_id.id
-                    )
-                elif picking.partner_id:
-                    location_dest_id = picking.partner_id.property_stock_customer.id
-                else:
+                    location_dest_id = picking.picking_type_id.default_location_dest_id.id
                     location_dest_id, _supplierloc = self.env[
                         "stock.warehouse"
                     ]._get_partner_locations()
@@ -1089,22 +1089,52 @@ class StockPicking(models.Model):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):
+        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
         for picking in self:
-            if picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_consignment').id and picking.is_dispatch_guide and picking.is_consignment: 
-                picking.partner_required = True
-            else:
-                picking.partner_required = False
+            picking.partner_required = (
+                picking.transfer_reason_id.id == consignment_reason.id
+                and picking.is_dispatch_guide
+                and picking.is_consignment
+            )
+            picking._assign_partner_from_location()
+
+    @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
+    def _compute_partner_required(self):
+        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
+        for picking in self:
+            picking.partner_required = (
+                picking.transfer_reason_id.id == consignment_reason.id
+                and picking.is_dispatch_guide
+                and picking.is_consignment
+            )
+            picking._assign_partner_from_location()
 
     @api.onchange('location_dest_id', 'partner_required')
     def _change_required_partner_id(self):
         for picking in self:
-            if picking.partner_required: 
-                contact = self.env['res.partner'].search([('id', '=', picking.location_dest_id.partner_id.id)], limit=1)
-                if contact:
-                    picking.partner_id = contact.id
-                else:
-                    picking.partner_id = None
+            picking._assign_partner_from_location()
+
+
+    def _assign_partner_from_location(self):
+        """Set partner_id from the destination location when required."""
+        for picking in self:
+            if picking.partner_required:
+                partner = picking.location_dest_id.partner_id
+                picking.partner_id = partner.id if partner else False
             else:
-                picking.partner_id = None
-                picking.partner_required = False
+                picking.partner_id = False
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._assign_partner_from_location()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        if any(k in vals for k in [
+            'location_dest_id', 'transfer_reason_id',
+            'is_consignment', 'is_dispatch_guide', 'partner_required']):
+            self._assign_partner_from_location()
+        return res
             
