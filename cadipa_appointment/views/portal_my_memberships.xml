@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_memberships" name="Memberships List">
+        <t t-call="portal.portal_layout">
+            <div class="container">
+
+
+                <t t-set="breadcrumbs_searchbar" t-value="True" />
+                <div class="container">
+                    <t t-call="portal.portal_breadcrumbs"></t>
+
+                </div>
+
+                <t t-set="title">Memberships</t>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">Membresías / Suscripciones</h1>
+                </div>
+
+                <t t-if="not has_memberships">
+                    <div class="card border-0 shadow-sm mb-5">
+                        <div class="card-body text-center py-5">
+                            <div class="alert alert-warning text-center mb-3">
+                                Actualmente no tienes ninguna membresía activa, selecciona una de
+                                las siguientes opciones para volverte miembro:
+                            </div>
+                            <div class="mt-5">
+                                <h4 class="h4 mb-4">Membresías Disponibles</h4>
+
+                                <div class="row">
+                                    <t t-foreach="available_memberships" t-as="plan">
+                                        <div class="col-md-4 mb-4">
+                                            <div class="card h-100">
+                                                <img
+                                                    t-att-src="'/cadipa_appointment/static/img/membership_card.png'"
+                                                    class="card-img-top"
+                                                    t-att-alt="plan.membership_type_plan.name"
+                                                    style="height: 180px; object-fit: cover;"
+                                                    t-att-onerror="'this.src=\'/web/static/img/placeholder.png\''" />
+
+                                                <div class="card-body">
+                                                    <h5 class="card-title"
+                                                        t-esc="plan.membership_type_plan.name" />
+                                                    <p class="card-text text-muted"
+                                                        t-esc="plan.membership_type_plan.description or 'Membresía premium'" />
+                                                </div>
+
+                                                <div class="card-footer bg-white">
+                                                    <button class="btn btn-primary w-100">
+                                                        <i class="fa fa-check me-2"></i> Seleccionar
+                                                        membresía </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-foreach="memberships" t-as="membership">
+                    <div class="card mb-4 shadow-sm">
+                        <div
+                            class="card-header py-3 d-flex justify-content-between align-items-center bg-light">
+                            <h2 class="h5 mb-0"> Membresía #<span t-esc="membership.number" />
+                            </h2>
+                            <span
+                                t-att-class="'badge ' + { 'active': 'bg-success', 'canceled': 'bg-danger', 'pending': 'bg-warning' }.get(membership.state, 'bg-info')">
+                                <t t-esc="{
+                                    'active': 'Activa',
+                                    'canceled': 'Cancelada',
+                                    'pending': 'Pendiente'
+                                }.get(membership.state, membership.state)" />
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h3 class="h6 text-muted mb-1">Tipo de membresía</h3>
+                                        <p class="mb-0">
+                                            <i class="fa fa-id-card-o me-2 text-primary"></i>
+                                            <span t-esc="membership.membership_type_plan.name" />
+                                        </p>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <h3 class="h6 text-muted mb-1">Propietario</h3>
+                                        <p class="mb-0">
+                                            <i class="fa fa-user me-2 text-primary"></i>
+                                            <span t-esc="membership.owner_id.name" />
+                                        </p>
+                                    </div>
+                                    <div class="d-flex align-items-center text-primary"
+                                        style="cursor: pointer;">
+                                        <span class="fw-medium me-1">Ir a la sección de pagos</span>
+                                        <i class="fa fa-arrow-right fa-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h3 class="h6 text-muted mb-1">Fecha de inicio</h3>
+                                        <p class="mb-0">
+                                            <i class="fa fa-calendar me-2 text-primary"></i>
+                                            <span t-esc="membership.owner_id.start_date.strftime('%d/%m/%Y') if membership.owner_id.start_date else ''" />
+                                        </p>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <h3 class="h6 text-muted mb-1">Fecha de
+                                            cancelación/suspensión</h3>
+                                        <p class="mb-0">
+                                            <i class="fa fa-calendar me-2 text-primary"></i>
+                                            <span t-esc="membership.owner_id.end_date_partner.strftime('%d/%m/%Y') if membership.owner_id.end_date_partner else ''" />
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 d-flex justify-content-end">
+                                <a t-att-href="'/my/memberships/' + str(membership.id)"
+                                    class="btn btn-primary me-2">
+                                    <i class="fa fa-eye me-1"></i> Ver invitados </a>
+                                <!-- Botón para abrir el modal de confirmación -->
+                                <button type="button"
+                                    class="btn btn-danger me-2"
+                                    data-bs-toggle="modal"
+                                    t-att-data-bs-target="'#cancelModal' + str(membership.id)">
+                                    <i class="fa fa-times-circle me-1"></i> Solicitar cancelación </button>
+
+                                <!-- Modal de confirmación -->
+                                <div t-att-id="'cancelModal' + str(membership.id)"
+                                    class="modal fade" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirmar cancelación</h5>
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>¿Estás seguro que deseas solicitar la cancelación
+                                                    de la membresía?</p>
+                                                <p class="text-danger">Esta acción no se puede
+                                                    deshacer.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Cancelar</button>
+                                                <a
+                                                    t-att-href="'/my/memberships/cancel/' + str(membership.id)"
+                                                    class="btn btn-danger">
+                                                    Confirmar solicitud
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <div t-if="pager" class="mt-4">
+                    <t t-call="portal.pager" />
+                </div>
+            </div>
+
+            <style>
+                .badge {
+                font-size: 0.9rem;
+                padding: 0.5em 0.8em;
+                border-radius: 20px;
+                text-transform: capitalize;
+                }
+                .h6.text-muted {
+                font-size: 0.85rem;
+                letter-spacing: 0.5px;
+                }
+            </style>
+        </t>
+    </template>
+
+
+    <template id="portal_my_home_menu_memberships" name="Portal layout : memberships menu entries"
+        inherit_id="portal.portal_breadcrumbs" priority="50">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'memberships'"
+                t-attf-class="breadcrumb-item #{'active ' if not memberships else ''}">
+                Membresías
+            </li>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,31 @@
+<odoo>
+    <!-- Heredamos la vista original y agregamos el bloque de membresías -->
+    <template id="portal_my_home_membership" name="Show memberships" inherit_id="portal.portal_my_home" customize_show="True" priority="90">
+        <xpath expr="//div[@id='portal_common_category']" position="after">
+            <div class="o_portal_category row g-2 mt-3" id="portal_membership_category">
+                <t t-call="cadipa_appointment.portal_my_memberships">
+                </t>
+            </div>
+        </xpath>
+    </template>
+
+
+	<template id="portal_my_memberships" name="My Memberships">
+        <!-- Estructura de la tabla de membresías -->
+        <div class="o_portal_my_memberships my-4">
+            <t t-call="portal.portal_docs_entry" t-if="False"/>
+                        <t t-call="portal.portal_docs_entry">
+                            <t t-set="icon" t-value="'/cadipa_appointment/static/img/members.svg'"/>
+                            <t t-set="title">Your Memberships</t>
+                            <t t-set="text">Configure or add Your Memberships</t>
+                            <t t-set="url" t-value="'/my/memberships'"/>
+                            <t t-set="config_card" t-value="True"/>
+                        </t>
+            <div t-if="pager" class="o_portal_pager d-flex justify-content-center my-3">
+                <t t-call="portal.pager"/>
+            </div>
+        </div>
+    </template>
+
+    
+</odoo>
