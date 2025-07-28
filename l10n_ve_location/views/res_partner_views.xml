@@ -35,16 +35,30 @@
 						class="o_address_state" 
 						placeholder="Municipality"
 						domain="[('state_id', '=', state_id)]"
-						required="1"
+						required="type not in ['contact']"
 					/>
 					<field 
 						name="parish_id" 
 						class="o_address_state"
 						placeholder="Parish"
-						required="1"
+						required="type not in ['contact']"
 					/>
 				</xpath>
-
+				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='country_id']" position="attributes">
+						<attribute name="required">type not in ['contact']</attribute>
+				</xpath>
+				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street']" position="attributes">
+						<attribute name="required">type not in ['contact']</attribute>
+				</xpath>
+				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='zip']" position="attributes">
+						<attribute name="required">type not in ['contact']</attribute>
+				</xpath>
+				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='state_id']" position="attributes">
+						<attribute name="required">type not in ['contact']</attribute>
+				</xpath>
+				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city_id']" position="attributes">
+						<attribute name="required">type not in ['contact']</attribute>
+				</xpath>
 			</field>
 			
 		</record>

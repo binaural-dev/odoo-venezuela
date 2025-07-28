@@ -46,10 +46,12 @@
 
             <xpath expr="//button[@name='button_validate'][2]" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_validate_inventory_transfers_button</attribute>
+                <attribute name='confirm'>Upon confirmation, the system will generate the number of sequences of shipping guides.</attribute>
             </xpath>
 
             <xpath expr="//button[@name='button_validate'][1]" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_validate_inventory_transfers_button</attribute>
+                <attribute name='confirm'>Upon confirmation, the system will generate the number of sequences of shipping guides.</attribute>
             </xpath>
 
             <xpath expr="//button[@name='action_cancel'][1]" position="attributes">
