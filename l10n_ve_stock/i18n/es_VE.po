@@ -129,7 +129,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__partner_id
 msgid "Assigned Customer"
 msgstr "Cliente"
-
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_attachment_count
 msgid "Attachment Count"
