@@ -42,7 +42,7 @@
                                                     <h5 class="card-title"
                                                         t-esc="plan.membership_type_plan.name" />
                                                     <p class="card-text text-muted"
-                                                        t-esc="plan.membership_type_plan.description or 'Membresía premium'" />
+                                                        t-esc="plan.membership_type_plan.description or ''" />
                                                 </div>
 
                                                 <div class="card-footer bg-white">
