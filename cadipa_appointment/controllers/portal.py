@@ -26,7 +26,7 @@ class CadipaCustomerPortal(CustomerPortal):
             ('id', '=', partner.action_number.id)
         ])
         
-        all_memberships = request.env['action.partner'].search([])
+        all_memberships = request.env['membership.type.plan'].search([])
         
         membership_count = len(user_memberships)
         pager = portal_pager(
