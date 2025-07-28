@@ -168,7 +168,7 @@ msgstr ""
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid "Close"
-msgstr ""
+msgstr "Cerrar"
 
 #. module: cadipa_appointment
 #: model:ir.model,name:cadipa_appointment.model_res_company
@@ -188,7 +188,8 @@ msgstr ""
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_my_memberships
 msgid "Configure or add Your Memberships"
-msgstr ""
+msgstr "Configura o agrega tus membresías"
+
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
@@ -213,7 +214,7 @@ msgstr ""
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #, python-format
 msgid "Create"
-msgstr ""
+msgstr "Crear"
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
@@ -237,7 +238,7 @@ msgstr ""
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid "Memberships"
-msgstr ""
+msgstr "Membresías"
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
@@ -296,7 +297,7 @@ msgstr ""
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_my_memberships
 msgid "Your Memberships"
-msgstr ""
+msgstr "Tus Membresías"
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships

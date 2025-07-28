@@ -141,7 +141,7 @@
                                             </div>
                                             <div class="modal-body">
                                                 <p>¿Estás seguro que deseas solicitar la cancelación
-                                                    de la membresía <strong t-esc="membership" />?</p>
+                                                    de la membresía?</p>
                                                 <p class="text-danger">Esta acción no se puede
                                                     deshacer.</p>
                                             </div>
