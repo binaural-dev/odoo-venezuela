@@ -22,15 +22,12 @@ class CadipaCustomerPortal(CustomerPortal):
         values = self._prepare_portal_layout_values()
         partner = request.env.user
         
-        # 1. Obtener membresías del usuario
         user_memberships = request.env['action.partner'].search([
             ('id', '=', partner.action_number.id)
         ])
         
-        # 2. Obtener todas las membresías disponibles (ajusta el dominio según tu modelo)
-        all_memberships = request.env['action.partner'].search([])  # Cambia 'membership.plan' por tu modelo real
+        all_memberships = request.env['action.partner'].search([])
         
-        # Configurar paginación solo para membresías del usuario
         membership_count = len(user_memberships)
         pager = portal_pager(
             url="/my/memberships",
@@ -39,7 +36,6 @@ class CadipaCustomerPortal(CustomerPortal):
             step=self._items_per_page
         )
         
-        # Actualizar valores para la plantilla
         values.update({
             'memberships': user_memberships,
             'available_memberships': all_memberships,
@@ -58,13 +54,10 @@ class CadipaCustomerPortal(CustomerPortal):
         :param membership_id: ID de la membresía a cancelar (parte de la ruta)
         :return: Redirección a la página de membresías con mensaje
         """
-        # Obtener la membresía y verificar pertenencia
         membership = request.env['action.partner'].sudo().browse(membership_id)
         try:
-            # Llamar a la función de cancelación directamente
             membership.cancel_membership()
             
-            # Registrar en el historial
             membership.message_post(
                 body=f"Solicitud de cancelación enviada por {request.env.user.name}",
                 subject="Solicitud de cancelación",
@@ -74,6 +67,4 @@ class CadipaCustomerPortal(CustomerPortal):
             return request.redirect('/my/memberships?success=1')
                 
         except Exception as e:
-            # Registrar error y mostrar mensaje
-            _logger.error(f"Error al cancelar membresía {membership_id}: {str(e)}")
             return request.redirect(f'/my/memberships?error=1&error_message={str(e)}')
