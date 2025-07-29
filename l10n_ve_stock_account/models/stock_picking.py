@@ -735,7 +735,7 @@ class StockPicking(models.Model):
                 picking.location_dest_id = location_dest_id
 
     @api.depends(
-        "invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return"
+        "invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return", "sale_id.document" 
     )
     def _compute_button_visibility(self):
         for record in self:
@@ -755,11 +755,11 @@ class StockPicking(models.Model):
                     record.show_create_vendor_credit = record.is_return
 
                 if record.operation_code == "outgoing":
-                    record.show_create_invoice = not record.is_return
+                    record.show_create_invoice = not record.is_return and record.sale_id.document != "invoice"
                     record.show_create_customer_credit = record.is_return
 
                 if record.operation_code == "internal" and record.is_consignment:
-                    record.show_create_invoice_internal = True
+                    record.show_create_invoice_internal = True            
 
     def _compute_invoice_count(self):
         for picking_id in self:
