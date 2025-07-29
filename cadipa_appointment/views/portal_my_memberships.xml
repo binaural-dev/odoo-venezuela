@@ -34,15 +34,15 @@
                                                 <img
                                                     t-att-src="'/cadipa_appointment/static/img/membership_card.png'"
                                                     class="card-img-top"
-                                                    t-att-alt="plan.membership_type_plan.name"
+                                                    t-att-alt="plan.name"
                                                     style="height: 180px; object-fit: cover;"
                                                     t-att-onerror="'this.src=\'/web/static/img/placeholder.png\''" />
 
                                                 <div class="card-body">
                                                     <h5 class="card-title"
-                                                        t-esc="plan.membership_type_plan.name" />
+                                                        t-esc="plan.name" />
                                                     <p class="card-text text-muted"
-                                                        t-esc="plan.membership_type_plan.description or ''" />
+                                                        t-esc="plan.description or ''" />
                                                 </div>
 
                                                 <div class="card-footer bg-white">
