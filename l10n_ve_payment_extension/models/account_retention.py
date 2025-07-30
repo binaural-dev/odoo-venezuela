@@ -576,10 +576,7 @@ class AccountRetention(models.Model):
     def action_post(self):
         today = datetime.now()
         for retention in self:
-            if retention.type_retention == "islr":
-                if not re.fullmatch(r"\d{11}", retention.number):
-                    raise ValidationError(_("ISLR retention: Number must be exactly 11 numeric digits."))
-            elif retention.type_retention == 'iva':
+            if retention.type_retention == 'iva':
                 if not re.fullmatch(r"\d{14}", retention.number):
                     raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
             
