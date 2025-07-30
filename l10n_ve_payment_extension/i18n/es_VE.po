@@ -2932,3 +2932,13 @@ msgstr "Impuesto retenido"
 #, python-format
 msgid "the percentage may not exceed 100% on the payment concept line"
 msgstr "El porcentaje no puede exceder el 100% en la linea de pago."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "No registered lines found in the move to reconcile."
+msgstr "No existen líneas registradas en el movimiento"
