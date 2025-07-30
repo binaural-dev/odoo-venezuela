@@ -17,13 +17,17 @@
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='location_id']" position="after">
-                <field name="order_is_consignment" invisible="1"/>
+                <field name="order_is_consignment" invisible="1"/> 
             </xpath>
             <xpath expr="//form//group//group//field[@name='location_id'][2]" position="attributes">
-                <attribute name="readonly">order_is_consignment</attribute>
+                <attribute name="readonly">order_is_consignment or state== 'done'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="before">
+                <field name="partner_required" invisible='1'/>
             </xpath>
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
-                <attribute name="readonly">order_is_consignment</attribute>
+                <attribute name="required">partner_required</attribute> 
+                <attribute name="readonly">order_is_consignment or partner_required</attribute>
             </xpath>
             <xpath expr="//form//header" position="inside">
                 <field name="dispatch_guide_controls" invisible="1" />
@@ -52,6 +56,14 @@
                     name="transfer_reason_id"
                     invisible="operation_code != 'outgoing'"
                     readonly="is_donation or state == 'done'"/>
+                <field
+                    name="other_causes_transfer_reason"
+                    invisible="not show_other_causes_transfer_reason"
+                    readonly="state == 'done' or is_consignment_readonly"
+                    required="operation_code == 'outgoing' and show_other_causes_transfer_reason" />
+                <field name="allowed_reason_ids" invisible="1" />
+                <field name="is_donation" invisible="1" />
+                <field name="dispatch_guide_controls" invisible="1" />
                 <field 
                     name="guide_number"
                     readonly="1"
