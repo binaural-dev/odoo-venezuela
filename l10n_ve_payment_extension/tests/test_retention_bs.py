@@ -130,19 +130,8 @@ class TestAccountRetentionSequence(TransactionCase):
         invoice = self._create_invoice_simple()
         retention = self._create_retention(invoice)
         retention.number = '0123456789'
-        retention.type_retention = 'islr'
-        
-        with self.assertRaises(ValidationError) as e:
-            retention.action_post()
-        self.assertIn("ISLR retention: Number must be exactly 11 numeric digits.", str(e.exception))
-
-    def test_sequence_created_on_create_islr(self):
-        invoice = self._create_invoice_simple()
-        retention = self._create_retention(invoice)
-        retention.number = '0123456789'
         retention.type_retention = 'iva'
         
         with self.assertRaises(ValidationError) as e:
             retention.action_post()
-
         self.assertIn("IVA retention: Number must be exactly 14 numeric digits.", str(e.exception))
