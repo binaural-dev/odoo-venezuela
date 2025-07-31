@@ -20,6 +20,8 @@ class AccountMove(models.Model):
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
     show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_invisible_check", copy=False)
+    show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
+    show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
     def generate_document_digital(self):
         if not self.company_id.invoice_digital_tfhka:
@@ -201,7 +203,6 @@ class AccountMove(models.Model):
             affected_invoice_date = ""
             affected_invoice_amount = ""
             affected_invoice_comment = ""
-            subsidiary = ""
             affected_invoice_series = ""
 
             if record.debit_origin_id:
@@ -238,12 +239,6 @@ class AccountMove(models.Model):
                 part = record.ref.split(',')
                 affected_invoice_comment = part[1].strip()
 
-            if self.company_id.subsidiary:
-                if record.account_analytic_id and record.account_analytic_id.code:
-                    subsidiary = record.account_analytic_id.code
-                else:
-                    raise UserError(_("The selected subsidiary does not contain a reference"))
-
             if not record.invoice_date:
                 raise UserError(_("The invoice date is not defined."))
 
@@ -263,7 +258,7 @@ class AccountMove(models.Model):
                 "horaEmision": emission_time,
                 "tipoDePago": self.get_payment_type(),
                 "serie": series,
-                "sucursal": subsidiary,
+                "sucursal": "",
                 "tipoDeVenta": "Interna",
                 "moneda": "VEF",
                 "transaccionId": "",
@@ -377,6 +372,8 @@ class AccountMove(models.Model):
             payment_forms = self.get_payment_methods()
 
             if payment_forms:
+                if len(payment_forms) > 5:
+                    raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
                 totals["formasPago"] = payment_forms
 
             if amounts_foreign:
@@ -580,15 +577,14 @@ class AccountMove(models.Model):
                 content_data = record.invoice_payments_widget.get("content", [])
                 if content_data:
                     for item in content_data:
-                        payment_method = self.get_payment_method(item)
-                        currency = self.get_currency(item.get('currency_id'))
                         payment = self.get_payment(item.get('account_payment_id'))
+                        payment_method = self.get_payment_method(item)
 
                         if not payment:
                             continue
                         
-                        payment_info = self.build_payment_info(item, payment, currency, payment_method, record.foreign_rate)
-                        payment_data.append(payment_info)                    
+                        payment_info = self.build_payment_info(payment, payment_method)
+                        payment_data.append(payment_info)
                     return payment_data
             return False
         except Exception as e:
@@ -611,17 +607,19 @@ class AccountMove(models.Model):
     def get_payment(self, account_payment_id):
         return self.env['account.payment'].search([('id', '=', account_payment_id)])
 
-    def build_payment_info(self, item, payment, currency, payment_method, foreign_rate):
+    def build_payment_info(self, payment, payment_method):
+        payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
+        currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
         payment_info = {
-            "descripcion": payment.concept,
-            "fecha": item.get("date").strftime("%d/%m/%Y") if item.get("date") else "",
+            "descripcion": payment_id.concept if payment_id.concept else "N/A",
+            "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
             "forma": payment_method,
-            "monto": str(item.get("amount")),
+            "monto": str(round(payment_id.amount, 2)),
             "moneda": currency,
         }
 
         if currency != "VES":
-            payment_info["tipoCambio"] = str(round(foreign_rate, 2))
+            payment_info["tipoCambio"] = str(round(payment_id.foreign_rate, 2))
 
         return payment_info
 
@@ -639,15 +637,27 @@ class AccountMove(models.Model):
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):
         for record in self:
-            self.show_digital_invoice = True
-            if record.is_digitalized:
+            record.show_digital_invoice = True
+            record.show_digital_debit_note = True
+            record.show_digital_credit_note = True
+
+            if record.state != "posted" or record.is_digitalized or not self.company_id.invoice_digital_tfhka:
                 continue
-            if record.state != "posted":
-                continue
-            if record.debit_origin_id or record.reversed_entry_id:
-                continue
-            if record.move_type != "out_invoice":
-                continue
-            if not self.company_id.invoice_digital_tfhka:
-                continue
-            record.show_digital_invoice = False
+
+            if (
+                record.reversed_entry_id
+                and record.reversed_entry_id.is_digitalized
+            ):
+                record.show_digital_credit_note = False
+
+            elif (
+                record.debit_origin_id
+                and record.debit_origin_id.is_digitalized
+            ):
+                record.show_digital_debit_note = False
+
+            elif (
+                record.move_type == "out_invoice"
+                and not record.debit_origin_id
+            ):
+                record.show_digital_invoice = False

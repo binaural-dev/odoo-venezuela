@@ -4,7 +4,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.0",
+    "version": "17.0.0.0.1",
     "depends": [
         "base",
         "account",
@@ -14,7 +14,6 @@
         "l10n_ve_iot_mf",
         "l10n_ve_stock_account",
         "l10n_ve_payment_extension",
-        "binaural_subsidiary",
         "stock",
     ],
     

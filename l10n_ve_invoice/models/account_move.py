@@ -40,7 +40,10 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
-        self.invoice_date = False if self.move_type == "out_invoice" else fields.Date.today()
+        if self.move_type == "out_invoice":
+            self.invoice_date = False
+        elif not self.invoice_date:
+            self.invoice_date = fields.Date.today()
 
     def action_post(self):
         for record in self:
