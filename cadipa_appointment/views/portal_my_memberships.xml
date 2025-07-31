@@ -66,12 +66,12 @@
                             <h2 class="h5 mb-0"> Membresía #<span t-out="membership.number" />
                             </h2>
                             <span
-                                t-att-class="'badge ' + { 'active': 'bg-success', 'canceled': 'bg-danger', 'pending': 'bg-warning' }.get(membership.state, 'bg-info')">
+                                t-att-class="'badge ' + { 'active': 'bg-success', 'canceled': 'bg-danger', 'suspended': 'bg-warning' }.get(membership.state, 'bg-info')">
                                 <t
                                     t-out="{
                                     'active': 'Activa',
                                     'canceled': 'Cancelada',
-                                    'pending': 'Pendiente'
+                                    'suspended': 'Suspendida',
                                 }.get(membership.state, membership.state)" />
                             </span>
                         </div>
