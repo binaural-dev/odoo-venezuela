@@ -2942,3 +2942,14 @@ msgstr "El porcentaje no puede exceder el 100% en la linea de pago."
 #, python-format
 msgid "No registered lines found in the move to reconcile."
 msgstr "No existen líneas registradas en el movimiento"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Account reports"
+msgstr "Reportes contables"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_patent_columns_extra
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__hide_patent_columns_extra
+msgid "Hide extra columns in Patent Municipal Report related to advances"
+msgstr "Ocultar columnas adicionales en el reporte de Patente Municipal relacionadas con anticipos"
