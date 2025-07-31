@@ -1,0 +1,13 @@
+<odoo>
+
+    <record id="binaural_club_socios_form_res_partner" model="ir.ui.view">
+        <field name="name">binaural_club_socios_form_res_partner</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//group/group/div" position="after">
+                <field name="guest_type" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

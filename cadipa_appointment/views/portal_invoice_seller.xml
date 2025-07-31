@@ -1,5 +1,4 @@
 <odoo>
-    <!-- Heredamos la vista original y agregamos el bloque de membresías -->
     <template id="portal_my_home_membership" name="Show memberships" inherit_id="portal.portal_my_home" customize_show="True" priority="90">
         <xpath expr="//div[@id='portal_common_category']" position="after">
             <div class="o_portal_category row g-2 mt-3" id="portal_membership_category">
@@ -11,7 +10,6 @@
 
 
 	<template id="portal_my_memberships" name="My Memberships">
-        <!-- Estructura de la tabla de membresías -->
         <div class="o_portal_my_memberships my-4">
             <t t-call="portal.portal_docs_entry" t-if="False"/>
                         <t t-call="portal.portal_docs_entry">

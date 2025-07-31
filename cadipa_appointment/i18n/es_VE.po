@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250526\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-28 13:52+0000\n"
-"PO-Revision-Date: 2025-07-28 13:52+0000\n"
+"POT-Creation-Date: 2025-07-31 13:03+0000\n"
+"PO-Revision-Date: 2025-07-31 13:03+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -110,6 +110,13 @@ msgstr ""
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid ""
+"<i class=\"fa fa-arrow-left me-1\"/>\n"
+"                                                            Cancelar"
+msgstr "<i class=\"fa fa-arrow-left me-1\"/> Cancelar"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
 "<i class=\"fa fa-check me-2\"/> Seleccionar\n"
 "                                                        membresía"
 msgstr ""
@@ -121,7 +128,33 @@ msgstr ""
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
+"<i class=\"fa fa-plus me-1\"/> Agregar\n"
+"                                                        invitado"
+msgstr "<i class=\"fa fa-plus me-1\"/> Agregar invitado"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
+"<i class=\"fa fa-save me-1\"/> Guardar\n"
+"                                                            invitado"
+msgstr "<i class=\"fa fa-save me-1\"/> Guardar invitado"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid "<i class=\"fa fa-times-circle me-1\"/> Solicitar cancelación"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
+"<i class=\"fa fa-trash\"/>\n"
+"                                                                        Eliminar"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "<option value=\"\">Seleccione...</option>"
 msgstr ""
 
 #. module: cadipa_appointment
@@ -133,9 +166,19 @@ msgstr ""
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Acción"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid ""
 "Actualmente no tienes ninguna membresía activa, selecciona una de\n"
 "                                las siguientes opciones para volverte miembro:"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Agregar nuevo invitado"
 msgstr ""
 
 #. module: cadipa_appointment
@@ -166,6 +209,21 @@ msgid "Cancelar"
 msgstr ""
 
 #. module: cadipa_appointment
+#: model:ir.model.fields.selection,name:cadipa_appointment.selection__res_partner__guest_state__canceled
+msgid "Canceled"
+msgstr "Cancelado"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Cerrar"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Clasificación"
+msgstr ""
+
+#. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid "Close"
 msgstr "Cerrar"
@@ -190,6 +248,12 @@ msgstr ""
 msgid "Configure or add Your Memberships"
 msgstr "Configura o agrega tus membresías"
 
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
+"Confirmar\n"
+"                                                                    eliminación"
+msgstr ""
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
@@ -210,6 +274,16 @@ msgid "Confirmar solicitud"
 msgstr ""
 
 #. module: cadipa_appointment
+#: model:ir.model.fields.selection,name:cadipa_appointment.selection__res_partner__guest_state__confirmed
+msgid "Confirmed"
+msgstr "Confirmado"
+
+#. module: cadipa_appointment
+#: model:ir.model,name:cadipa_appointment.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: cadipa_appointment
 #. odoo-javascript
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #, python-format
@@ -218,9 +292,51 @@ msgstr "Crear"
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Dirección"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Documento"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Ej: 12345678"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Ej:04148861290"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Eliminar"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid ""
 "Esta acción no se puede\n"
 "                                                    deshacer."
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Estado"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model:ir.model.fields.selection,name:cadipa_appointment.selection__res_partner__guest_type__family
+msgid "Family"
+msgstr "Familia"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
+"Fecha de\n"
+"                                                            nacimiento"
 msgstr ""
 
 #. module: cadipa_appointment
@@ -233,6 +349,40 @@ msgstr ""
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid "Fecha de inicio"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model:ir.model.fields.selection,name:cadipa_appointment.selection__res_partner__guest_type__guest
+msgid "Guest"
+msgstr "Invitado"
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_partner__guest_state
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_users__guest_state
+msgid "Guest State"
+msgstr "Estado del invitado"
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_partner__guest_type
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_users__guest_type
+msgid "Guest Type"
+msgstr "Tipo de invitado"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Identificación"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Invitados de la membresía #"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
+"Limite mensual para registro de\n"
+"                                                            invitados:"
 msgstr ""
 
 #. module: cadipa_appointment
@@ -261,6 +411,26 @@ msgid "Membresías Disponibles"
 msgstr ""
 
 #. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Nombre"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Nombre completo"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Nombre y apellido"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model:ir.model.fields.selection,name:cadipa_appointment.selection__res_partner__guest_state__pending
+msgid "Pending"
+msgstr "Pendiente"
+
+#. module: cadipa_appointment
 #. odoo-javascript
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #, python-format
@@ -280,6 +450,11 @@ msgid "Selecciona uno o más horarios disponibles"
 msgstr ""
 
 #. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Teléfono"
+msgstr ""
+
+#. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
 msgid ""
 "The open hour will affect the calendar event gantt view to show just hours "
@@ -291,7 +466,26 @@ msgstr ""
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
+"Tipo de\n"
+"                                                                beneficiario"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
+"Tipo de\n"
+"                                                                documento"
+msgstr "Tipo de documento"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid "Tipo de membresía"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid "Urbanización ..."
 msgstr ""
 
 #. module: cadipa_appointment
@@ -302,6 +496,13 @@ msgstr "Tus Membresías"
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
 msgid ""
+"¿Estás seguro que deseas eliminar\n"
+"                                                                este invitado?"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.portal_memberships
+msgid ""
 "¿Estás seguro que deseas solicitar la cancelación\n"
-"                                                    de la membresía"
+"                                                    de la membresía?"
 msgstr ""
