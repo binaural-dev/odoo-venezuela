@@ -96,6 +96,7 @@ class AccountRetention(models.Model):
     date_accounting = fields.Date(
         "Accounting Date",
         states={"draft": [("readonly", False)]},
+        default=fields.Date.context_today,
         help=(
             "Date of arrival of the document and date to be used to make the accounting record."
             " Keep blank to use current date."
@@ -430,7 +431,6 @@ class AccountRetention(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
-        res._set_sequence()
         res._create_payments_from_retention_lines()
         return res
 
