@@ -1,7 +1,7 @@
 {
     "name": "Cadipa Reservas",
     "summary": "Modulo para personalizaciones de reservas de CADIPA",
-    "version": "17.0.1.0.6",
+    "version": "17.0.1.0.7",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
