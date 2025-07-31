@@ -84,7 +84,7 @@
             </xpath>
 
             <xpath expr="//field[@name='show_update_pricelist']" position="after">
-				<label for="pricelist_id" groups="product.group_product_pricelist" invisible="not has_active_pricelist"/>
+				<label for="pricelist_id" groups="product.group_product_pricelist"/>
                 <field name="pricelist_id" invisible="1" />
                 <div groups="l10n_ve_sale.pricelist_sale_order_group" class="o_row">
                     <field name="pricelist_id" readonly="1"

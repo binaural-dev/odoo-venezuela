@@ -14,7 +14,6 @@
         "l10n_ve_iot_mf",
         "l10n_ve_stock_account",
         "l10n_ve_payment_extension",
-        "binaural_subsidiary",
         "stock",
     ],
     

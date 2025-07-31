@@ -25,6 +25,9 @@ class AccountMove(models.Model):
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
+    display_date_warning = fields.Boolean(
+        compute="_compute_display_date_warning")
+
     is_debit_journal = fields.Boolean(
         compute="_compute_is_debit_journal",
         store=True
@@ -35,10 +38,16 @@ class AccountMove(models.Model):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
                 raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
+    @api.onchange("move_type")
+    def _onchange_move_type(self):
+        if self.move_type == "out_invoice":
+            self.invoice_date = False
+        elif not self.invoice_date:
+            self.invoice_date = fields.Date.today()
+
     def action_post(self):
         for record in self:
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
-
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 
             invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])
@@ -150,6 +159,14 @@ class AccountMove(models.Model):
                 if term_date and term_date >= fields.Date.today():
                     invoice.next_installment_date = term_date
                     break
+    
+    @api.depends("invoice_date", "state")
+    def _compute_display_date_warning(self):
+        today = fields.Date.context_today(self)
+        for move in self:
+            move.display_date_warning = bool(
+                move.invoice_date and move.state == "draft" and move.invoice_date < today
+            )
 
     def _post(self, soft=True):
         res = super()._post(soft)

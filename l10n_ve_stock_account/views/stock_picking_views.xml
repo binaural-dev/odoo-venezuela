@@ -63,6 +63,7 @@
                 <field name="is_consignment" />
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="is_donation" invisible="1" />
+                <field name="dispatch_guide_controls" invisible="1" />
                 <field 
                     name="guide_number"
                     readonly="1"

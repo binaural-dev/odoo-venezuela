@@ -579,6 +579,10 @@ class AccountRetention(models.Model):
         self._reconcile_all_payments()
         
         for retention in self:
+            
+            if not re.fullmatch(r"\d{14}", retention.number):
+                raise ValidationError(_("The number must be exactly 14 numeric digits."))
+            
             if (
                 retention.type in ["out_invoice", "out_refund", "out_debit"]
                 and not retention.number
@@ -899,6 +903,6 @@ class AccountRetention(models.Model):
     @api.constrains("number", "type")
     def _check_number(self):
         for record in self:
-            if record.type == "out_invoice" and record.number:
+            if record.type == "out_invoice" and record.number and record.state != 'draft':
                 if not re.fullmatch(r"\d{14}", record.number):
                     raise ValidationError(_("The number must be exactly 14 numeric digits."))
