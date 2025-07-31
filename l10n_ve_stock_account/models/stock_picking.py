@@ -1136,7 +1136,15 @@ class StockPicking(models.Model):
         for picking in self:
             picking._assign_partner_from_location()
 
-
+    def button_validate(self):
+        '''Override to set the state_guide_dispatch to 'emited' when the transfer reason is 'transfer_between_warehouses' 
+        and the operational_code is internal
+        '''
+        for picking in self:
+            if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
+                picking.state_guide_dispatch = 'emited'
+        return super(StockPicking, self).button_validate()
+    
     def _assign_partner_from_location(self):
         """Set partner_id from the destination location when required."""
         for picking in self:
