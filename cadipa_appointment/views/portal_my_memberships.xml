@@ -40,9 +40,9 @@
 
                                                 <div class="card-body">
                                                     <h5 class="card-title"
-                                                        t-esc="plan.name" />
+                                                        t-out="plan.name" />
                                                     <p class="card-text text-muted"
-                                                        t-esc="plan.description or ''" />
+                                                        t-out="plan.description or ''" />
                                                 </div>
 
                                                 <div class="card-footer bg-white">
@@ -63,11 +63,12 @@
                     <div class="card mb-4 shadow-sm">
                         <div
                             class="card-header py-3 d-flex justify-content-between align-items-center bg-light">
-                            <h2 class="h5 mb-0"> Membresía #<span t-esc="membership.number" />
+                            <h2 class="h5 mb-0"> Membresía #<span t-out="membership.number" />
                             </h2>
                             <span
                                 t-att-class="'badge ' + { 'active': 'bg-success', 'canceled': 'bg-danger', 'pending': 'bg-warning' }.get(membership.state, 'bg-info')">
-                                <t t-esc="{
+                                <t
+                                    t-out="{
                                     'active': 'Activa',
                                     'canceled': 'Cancelada',
                                     'pending': 'Pendiente'
@@ -81,7 +82,7 @@
                                         <h3 class="h6 text-muted mb-1">Tipo de membresía</h3>
                                         <p class="mb-0">
                                             <i class="fa fa-id-card-o me-2 text-primary"></i>
-                                            <span t-esc="membership.membership_type_plan.name" />
+                                            <span t-out="membership.membership_type_plan.name" />
                                         </p>
                                     </div>
 
@@ -89,7 +90,7 @@
                                         <h3 class="h6 text-muted mb-1">Propietario</h3>
                                         <p class="mb-0">
                                             <i class="fa fa-user me-2 text-primary"></i>
-                                            <span t-esc="membership.owner_id.name" />
+                                            <span t-out="membership.owner_id.name" />
                                         </p>
                                     </div>
                                     <div class="d-flex align-items-center text-primary"
@@ -103,7 +104,8 @@
                                         <h3 class="h6 text-muted mb-1">Fecha de inicio</h3>
                                         <p class="mb-0">
                                             <i class="fa fa-calendar me-2 text-primary"></i>
-                                            <span t-esc="membership.owner_id.start_date.strftime('%d/%m/%Y') if membership.owner_id.start_date else ''" />
+                                            <span
+                                                t-out="membership.owner_id.start_date.strftime('%d/%m/%Y') if membership.owner_id.start_date else ''" />
                                         </p>
                                     </div>
 
@@ -112,24 +114,279 @@
                                             cancelación/suspensión</h3>
                                         <p class="mb-0">
                                             <i class="fa fa-calendar me-2 text-primary"></i>
-                                            <span t-esc="membership.owner_id.end_date_partner.strftime('%d/%m/%Y') if membership.owner_id.end_date_partner else ''" />
+                                            <span
+                                                t-out="membership.owner_id.end_date_partner.strftime('%d/%m/%Y') if membership.owner_id.end_date_partner else ''" />
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mt-3 d-flex justify-content-end">
-                                <a t-att-href="'/my/memberships/' + str(membership.id)"
-                                    class="btn btn-primary me-2">
-                                    <i class="fa fa-eye me-1"></i> Ver invitados </a>
-                                <!-- Botón para abrir el modal de confirmación -->
+                                <button type="button"
+                                    class="btn btn-primary me-2"
+                                    data-bs-toggle="modal"
+                                    t-att-data-bs-target="'#guestsModal' + str(membership.id)">
+                                    <i class="fa fa-eye me-1"></i> Ver invitados </button>
                                 <button type="button"
                                     class="btn btn-danger me-2"
                                     data-bs-toggle="modal"
                                     t-att-data-bs-target="'#cancelModal' + str(membership.id)">
                                     <i class="fa fa-times-circle me-1"></i> Solicitar cancelación </button>
 
-                                <!-- Modal de confirmación -->
+                                <div t-att-id="'guestsModal' + str(membership.id)"
+                                    class="modal fade" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog modal-lg" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Invitados de la membresía #<span
+                                                        t-out="membership.number" /></h5>
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="d-flex justify-content-end mb-3">
+                                                    <button class="btn btn-sm btn-success"
+                                                        data-bs-toggle="modal"
+                                                        t-att-data-bs-target="'#addGuestModal' + str(membership.id)">
+                                                        <i class="fa fa-plus me-1"></i> Agregar
+                                                        invitado </button>
+                                                </div>
+
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Nombre</th>
+                                                            <th>Documento</th>
+                                                            <th>Teléfono</th>
+                                                            <th>Estado</th>
+                                                            <th>Acción</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="guests" t-as="guest">
+                                                            <tr>
+                                                                <td t-out="guest.name" />
+                                                                <td t-out="guest.vat" />
+                                                                <td t-out="guest.phone" />
+                                                                <td>
+                                                                    <span
+                                                                        t-att-class="'badge ' + { 'confirmed': 'bg-success', 'canceled': 'bg-danger', 'pending': 'bg-warning' }.get(guest.guest_state, 'bg-info')">
+                                                                        <t
+                                                                            t-out="{'confirmed': 'Confirmado', 'canceled': 'Cancelada', 'pending': 'Pendiente'}.get(guest.guest_state, guest.guest_state)" />
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <a
+                                                                        t-att-href="'/my/memberships/delete_guest/' + str(guest.id)"
+                                                                        class="btn btn-sm btn-outline-danger"
+                                                                        onclick="return confirm('¿Estás seguro de eliminar este invitado?');">
+                                                                        <i class="fa fa-trash"></i>
+                                                                        Eliminar </a>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+
+
+                                                <div class="modal fade" id="confirmDeleteModal"
+                                                    tabindex="-1">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Confirmar
+                                                                    eliminación</h5>
+                                                                <button type="button"
+                                                                    class="btn-close"
+                                                                    data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                ¿Estás seguro que deseas eliminar
+                                                                este invitado?
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button"
+                                                                    class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Cancelar</button>
+                                                                <button type="button"
+                                                                    class="btn btn-danger"
+                                                                    id="confirmDeleteBtn">Eliminar</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="modal fade" id="confirmDeleteModal"
+                                                    tabindex="-1" role="dialog">
+                                                    <div class="modal-dialog" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Confirmar
+                                                                    eliminación</h5>
+                                                                <button type="button"
+                                                                    class="btn-close"
+                                                                    data-bs-dismiss="modal"
+                                                                    aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                ¿Estás seguro que deseas eliminar
+                                                                este invitado?
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button"
+                                                                    class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Cancelar</button>
+                                                                <button type="button"
+                                                                    class="btn btn-danger"
+                                                                    id="confirmDeleteBtn">Eliminar</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-danger"
+                                                    data-bs-dismiss="modal">Cerrar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div t-att-id="'addGuestModal' + str(membership.id)"
+                                    class="modal fade" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Agregar nuevo invitado</h5>
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <form
+                                                    t-att-action="'/my/memberships/add_guest/' + str(membership.id)"
+                                                    method="post">
+                                                    <input type="hidden" name="csrf_token"
+                                                        t-att-value="request.csrf_token()" />
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Nombre completo</label>
+                                                        <input type="text" class="form-control"
+                                                            name="name"
+                                                            placeholder="Nombre y apellido" />
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Tipo de
+                                                                documento</label>
+                                                            <select class="form-select"
+                                                                name="vat_prefix">
+                                                                <option value="">Seleccione...</option>
+                                                                <t t-foreach="vat_prefixes"
+                                                                    t-as="prefix">
+                                                                    <option t-att-value="prefix[0]"
+                                                                        t-out="prefix[1]" />
+                                                                </t>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Identificación</label>
+                                                            <input type="text" class="form-control"
+                                                                name="identification"
+                                                                placeholder="Ej: 12345678" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Fecha de
+                                                            nacimiento</label>
+                                                        <input type="date" class="form-control"
+                                                            name="birthdate" />
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Tipo de
+                                                                beneficiario</label>
+                                                            <select
+                                                                class="form-select guest-type-select"
+                                                                name="guest_type">
+                                                                <option value="">Seleccione...</option>
+                                                                <t t-foreach="guest_types"
+                                                                    t-as="guest_type">
+                                                                    <option
+                                                                        t-att-value="guest_type[0]"
+                                                                        t-out="guest_type[1]" />
+                                                                </t>
+                                                            </select>
+                                                        </div>
+                                                        <div
+                                                            class="col-md-6 mb-3 family-relation-field"
+                                                            style="display: none;">
+                                                            <label class="form-label">Clasificación</label>
+                                                            <select class="form-select"
+                                                                name="type_relation">
+                                                                <option value="">Seleccione...</option>
+                                                                <t t-foreach="type_relations"
+                                                                    t-as="relation">
+                                                                    <option
+                                                                        t-att-value="relation[0]"
+                                                                        t-out="relation[1]" />
+                                                                </t>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Teléfono</label>
+                                                        <input type="tel" class="form-control"
+                                                            name="phone"
+                                                            placeholder="Ej:04148861290" />
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Dirección</label>
+                                                        <input type="text" class="form-control"
+                                                            name="address"
+                                                            placeholder="Urbanización ..." />
+                                                    </div>
+
+                                                    <t
+                                                        t-if="membership.membership_type_plan.reservation_limit > 0">
+                                                        <div
+                                                            class="alert alert-warning text-center mb-3">
+                                                            Limite mensual para registro de
+                                                            invitados: <t
+                                                                t-out="membership.membership_type_plan.reservation_limit" />
+                                                        </div>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div
+                                                            class="alert alert-danger text-center mb-3">
+                                                            Limite mensual para registro de
+                                                            invitados: <t
+                                                                t-out="membership.membership_type_plan.reservation_limit" />
+                                                        </div>
+                                                    </t>
+                                                    <div class="modal-footer">
+                                                        <button type="button"
+                                                            class="btn btn-danger"
+                                                            data-bs-dismiss="modal"
+                                                            t-att-data-bs-target="'#guestsModal' + str(membership.id)"
+                                                            data-bs-toggle="modal">
+                                                            <i class="fa fa-arrow-left me-1"></i>
+                                                            Cancelar </button>
+                                                        <button type="submit"
+                                                            class="btn btn-primary">
+                                                            <i class="fa fa-save me-1"></i> Guardar
+                                                            invitado </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
                                 <div t-att-id="'cancelModal' + str(membership.id)"
                                     class="modal fade" tabindex="-1" role="dialog">
                                     <div class="modal-dialog" role="document">
