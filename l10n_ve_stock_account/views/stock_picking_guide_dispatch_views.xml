@@ -98,6 +98,6 @@
         />
         <field name="context">{'search_default_state_guide_dispatch_to_invoice': 1}</field>
         <field name="search_view_id" ref="stock_picking_guide_dispatch_view_search"/>
-        <field name="domain">['match_guide_dispatch_domain', '=', True]</field>
+        <field name="domain">[('match_guide_dispatch_domain','=',True)]</field>
     </record>
 </odoo>
