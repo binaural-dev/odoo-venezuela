@@ -98,18 +98,6 @@
         />
         <field name="context">{'search_default_state_guide_dispatch_to_invoice': 1}</field>
         <field name="search_view_id" ref="stock_picking_guide_dispatch_view_search"/>
-        <field name="domain">[
-            '&amp;',
-            '&amp;',
-            '&amp;',
-                ('state', '=', 'done'),
-                ('type_delivery_step', 'in', ['out', 'int']),
-                ('transfer_reason_id.code', '!=', 'self_consumption'),
-                ('sale_id.document', '!=', 'invoice'),
-            '|',
-                ('type_delivery_step', '=', 'out'),
-            '&amp;',
-                ('type_delivery_step', '=', 'int'),
-                ('is_dispatch_guide', '=', True)]</field>
+        <field name="domain">['match_guide_dispatch_domain', '=', True]</field>
     </record>
 </odoo>
