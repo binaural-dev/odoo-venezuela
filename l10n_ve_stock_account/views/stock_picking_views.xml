@@ -26,7 +26,7 @@
                 <field name="partner_required" invisible='1'/>
             </xpath>
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
-                <attribute name="required">partner_required</attribute> 
+                <attribute name="required">partner_required or is_dispatch_guide</attribute> 
                 <attribute name="readonly">order_is_consignment or partner_required</attribute>
             </xpath>
             <xpath expr="//form//header" position="inside">
