@@ -757,6 +757,8 @@ class StockPicking(models.Model):
                 picking.location_id = location_id
 
             if not picking.location_dest_id:
+                location_dest_id = None
+                location_id = None
                 if picking.picking_type_id.default_location_dest_id:
                     location_dest_id = picking.picking_type_id.default_location_dest_id.id
                     location_dest_id, _supplierloc = self.env[
