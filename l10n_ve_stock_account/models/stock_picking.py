@@ -28,6 +28,12 @@ class StockPicking(models.Model):
         copy=False,
     )
 
+    match_guide_dispatch_domain = fields.Boolean(
+        compute="_compute_match_guide_dispatch_domain",
+        store=True,
+    )
+
+
     state_guide_dispatch = fields.Selection(
         [
             ("to_invoice", "To Invoice"),
@@ -82,6 +88,8 @@ class StockPicking(models.Model):
         store=True,
         compute="_compute_is_dispatch_guide",
     )
+    partner_required = fields.Boolean(compute='_compute_partner_required', store=True)
+    
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
@@ -689,13 +697,42 @@ class StockPicking(models.Model):
             picking.order_is_consignment = (
                 picking.sale_id.is_consignation if picking.sale_id else False
             )
+    @api.depends(
+        "state",
+        "type_delivery_step",
+        "transfer_reason_id.code",
+        "sale_id.document",
+        "is_dispatch_guide",
+    )
+    def _compute_match_guide_dispatch_domain(self):
+        for picking in self:
+            cond_state = picking.state == "done"
+            cond_type = picking.type_delivery_step in ("out", "int")
+            cond_reason = (
+                picking.transfer_reason_id.code != "self_consumption"
+                if picking.transfer_reason_id
+                else True
+            )
+            cond_doc = (
+                picking.sale_id.document != "invoice" if picking.sale_id else True
+            )
+            cond_step = picking.type_delivery_step == "out" or (
+                picking.type_delivery_step == "int" and picking.is_dispatch_guide
+            )
+
+            picking.match_guide_dispatch_domain = all(
+                [cond_state, cond_type, cond_reason, cond_doc, cond_step]
+            )
 
     @api.depends("picking_type_id", "partner_id", "sale_id")
     def _compute_location_id(self):
         for picking in self:
             picking = picking.with_company(picking.company_id)
 
-            if picking.picking_type_id and picking.state in ["draft", "confirmed"]:
+            if not (picking.picking_type_id and picking.state in ["draft", "confirmed"]):
+                continue
+
+            if not picking.location_id:
                 if picking.sale_id and picking.sale_id.is_consignation:
                     location_id = (
                         self.env["stock.location"]
@@ -717,14 +754,11 @@ class StockPicking(models.Model):
                     _customerloc, location_id = self.env[
                         "stock.warehouse"
                     ]._get_partner_locations()
+                picking.location_id = location_id
 
+            if not picking.location_dest_id:
                 if picking.picking_type_id.default_location_dest_id:
-                    location_dest_id = (
-                        picking.picking_type_id.default_location_dest_id.id
-                    )
-                elif picking.partner_id:
-                    location_dest_id = picking.partner_id.property_stock_customer.id
-                else:
+                    location_dest_id = picking.picking_type_id.default_location_dest_id.id
                     location_dest_id, _supplierloc = self.env[
                         "stock.warehouse"
                     ]._get_partner_locations()
@@ -1083,35 +1117,53 @@ class StockPicking(models.Model):
             result = result - timedelta(days=1)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
-    
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
-    @api.onchange('location_dest_id', 'is_dispatch_guide', 'is_consignment', 'transfer_reason_id')
-    def _change_required_partner_id(self):
+
+    @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
+    def _compute_partner_required(self):
+        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
         for picking in self:
-            if picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_consignment').id and picking.is_dispatch_guide and picking.is_consignment: 
-                picking.partner_required = True
-            else:
-                picking.partner_required = False
+            picking.partner_required = (
+                picking.transfer_reason_id.id == consignment_reason.id
+                and picking.is_dispatch_guide
+                and picking.is_consignment
+            )
+            picking._assign_partner_from_location()
 
     @api.onchange('location_dest_id', 'partner_required')
     def _change_required_partner_id(self):
         for picking in self:
-            if picking.partner_required: 
-                contact = self.env['res.partner'].search([('id', '=', picking.location_dest_id.partner_id.id)], limit=1)
-                if contact:
-                    picking.partner_id = contact.id
-                else:
-                    picking.partner_id = None
-                    picking.partner_required = True
-            else:
-                picking.partner_id = None
-                picking.partner_required = False
-    
+            picking._assign_partner_from_location()
+
     def button_validate(self):
-        
+        '''Override to set the state_guide_dispatch to 'emited' when the transfer reason is 'transfer_between_warehouses' 
+        and the operational_code is internal
+        '''
         for picking in self:
             if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
                 picking.state_guide_dispatch = 'emited'
         return super(StockPicking, self).button_validate()
+    
+    def _assign_partner_from_location(self):
+        """Set partner_id from the destination location when required."""
+        for picking in self:
+            if picking.partner_required:
+                partner = picking.location_dest_id.partner_id
+                picking.partner_id = partner.id if partner else False
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._assign_partner_from_location()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        if self.partner_required:
+            if any(k in vals for k in [
+                'location_dest_id', 'transfer_reason_id',
+                'is_consignment', 'is_dispatch_guide', 'partner_required']):
+                self._assign_partner_from_location()
+        return res
             

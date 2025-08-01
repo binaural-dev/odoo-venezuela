@@ -96,6 +96,7 @@ class AccountRetention(models.Model):
     date_accounting = fields.Date(
         "Accounting Date",
         states={"draft": [("readonly", False)]},
+        default=fields.Date.context_today,
         help=(
             "Date of arrival of the document and date to be used to make the accounting record."
             " Keep blank to use current date."
@@ -575,15 +576,8 @@ class AccountRetention(models.Model):
 
     def action_post(self):
         today = datetime.now()
-        
-        self.payment_ids.write({"date": self.date_accounting})
-        self._reconcile_all_payments()
-        
         for retention in self:
-            if retention.type_retention == "islr":
-                if not re.fullmatch(r"\d{11}", retention.number):
-                    raise ValidationError(_("ISLR retention: Number must be exactly 11 numeric digits."))
-            elif retention.type_retention == 'iva':
+            if retention.type_retention == 'iva':
                 if not re.fullmatch(r"\d{14}", retention.number):
                     raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
             
@@ -608,6 +602,8 @@ class AccountRetention(models.Model):
                 retention._set_sequence()
                 self.set_voucher_number_in_invoice(move_ids, retention)
 
+        self.payment_ids.write({"date": self.date_accounting})
+        self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
     def set_voucher_number_in_invoice(self, move, retention):
@@ -802,32 +798,41 @@ class AccountRetention(models.Model):
 
         if payment.payment_type == "outbound":
             
-            line_to_reconcile = payment.move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == "liability_payable" and l.debit >= 0
-            )[:1] or False
-            
-            if line_to_reconcile:
-                payment.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
-            else:
-                raise UserError("No se puede hacer una retencion con este concepto de pago")
-            
+            lines = payment.move_id.line_ids.filtered(lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0)
+            if not lines:
+                raise ValidationError(_("No registered lines found in the move to reconcile."))
+            line_to_reconcile = lines[0]
+
+            payment.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
         
         elif payment.payment_type == "inbound":
-            line_to_reconcile = payment.move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == "liability_payable" and l.credit > 0
-            )[0]
+            
+            lines = payment.move_id.line_ids.filtered(lambda l: l.account_id.account_type == "liability_payable" and l.credit > 0)
+            if not lines:
+                raise ValidationError(_("No registered lines found in the move to reconcile."))
+            line_to_reconcile = lines[0]
+            
             payment.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
 
     def _reconcile_customer_payment(self, payment):
+        
         if payment.payment_type == "outbound":
-            line_to_reconcile = payment.move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == "asset_receivable" and l.debit > 0
-            )[0]
+            
+            lines = payment.move_id.line_ids.filtered(lambda l: l.account_id.account_type == "asset_receivable" and l.debit > 0)
+            
+            if not lines:
+                raise ValidationError(_("No registered lines found in the move to reconcile."))
+            line_to_reconcile = lines[0]
+            
             payment.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
+        
         elif payment.payment_type == "inbound":
-            line_to_reconcile = payment.move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == "asset_receivable" and l.credit > 0
-            )[0]
+            lines = payment.move_id.line_ids.filtered(lambda l: l.account_id.account_type == "asset_receivable" and l.credit > 0)
+            
+            if not lines:
+                raise ValidationError(_("No registered lines found in the move to reconcile."))
+            line_to_reconcile = lines[0]
+
             payment.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
 
     @api.model
