@@ -11,8 +11,8 @@
                         <setting name="l10n_ve_rate_setting">
                             <div class="content-group">
                                 <div class="row mt16">
-                                    <label for="currency_foreign_id" class="col-lg-6 o_light_label"/>
-                                    <field name="currency_foreign_id" options="{'no_create_edit': True, 'no_open': True}" />
+                                    <label for="foreign_currency_id" class="col-lg-6 o_light_label"/>
+                                    <field name="foreign_currency_id" options="{'no_create_edit': True, 'no_open': True}" />
                                 </div>
                                 <div class="mt8">
                                     <div class="text-muted">

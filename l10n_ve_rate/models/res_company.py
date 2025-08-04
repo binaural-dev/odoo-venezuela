@@ -9,16 +9,16 @@ _logger = logging.getLogger(__name__)
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    currency_foreign_id = fields.Many2one(
+    foreign_currency_id = fields.Many2one(
         "res.currency",
-        string="Currency Foreign",
-        help="Currency Foreign for the company"
+        string="Foreign Currency",
+        help="Foreign currency for the company",
     )
 
     def write(self, vals):
-        before_currency = self.currency_foreign_id
+        before_currency = self.foreign_currency_id
         res = super().write(vals)
-        if "currency_foreign_id" in vals and before_currency:
+        if "foreign_currency_id" in vals and before_currency:
             lines = self.env["account.move.line"].search(
                 [("foreign_currency_id", "=", before_currency.id)]
             )
