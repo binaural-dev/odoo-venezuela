@@ -198,7 +198,7 @@
 
                         <!--Número de Factura -->
                         <div class="" style="width:6%;">
-                            <t t-if="line.move_id.move_type in ['out_invoice','out_contingence', 'in_invoice']">
+                            <t t-if="line.move_id.move_type in ['out_invoice','out_contingence', 'in_invoice'] and not line.move_id.journal_id.is_debit">
                                 <span t-esc="line.move_id.name"/>
                             </t>
                             <t t-else="">
@@ -212,7 +212,7 @@
                         </div>
                         <!--Nota de Débito -->
                         <div class="" style="width:6%">
-                            <t t-if="line.move_id.move_type == 'out_debit'">
+                            <t t-if="line.move_id.journal_id.is_debit">
                                 <span t-esc="line.move_id.name"/>
                             </t>
                             <t t-else="">
@@ -240,7 +240,7 @@
                             <t t-elif="line.move_id.move_type in ('out_debit','in_debit') and line.move_id.state == 'posted'">
                                 <span>02-REG</span>
                             </t>
-                            <t t-elif="line.move_id.move_type in ('out_refund','in_refund') and move.state == 'posted'">
+                            <t t-elif="line.move_id.move_type in ('out_refund','in_refund') and line.move_id.state == 'posted'">
                                 <span>03-REG</span>
                             </t>
                             <t t-elif="line.move_id.move_type in ('out_refund','out_debit','out_invoice','in_refund','in_debit','in_invoice') and line.move_id.state in ('cancel')">
@@ -254,6 +254,9 @@
                         <div class="" style="width:6%;">
                             <t t-if="line.move_id.move_type in ('in_refund', 'out_refund') and line.move_id.reversed_entry_id">
                                 <span t-esc="line.move_id.reversed_entry_id.name"/>
+                            </t>
+                            <t t-elif="line.move_id.journal_id.is_debit">
+                                <span t-esc="line.move_id.debit_origin_id.name"/>
                             </t>
                             <t t-else="">
                                 <span>--</span>
