@@ -5,11 +5,11 @@
             <field name="name">City</field>
             <field name="model">res.country.city</field>
             <field name="arch" type="xml">
-                <tree>
+                <list>
                     <field name="country_id" />
                     <field name="state_id" />
                     <field name="name" />
-                </tree>
+                </list>
             </field>
         </record>
 
@@ -36,7 +36,7 @@
             <field name="res_model">res.country.city</field>
             <field name="type">ir.actions.act_window</field>
             <field name="binding_view_types">form</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
         </record>
     </data>
 </odoo>
