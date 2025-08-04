@@ -5,7 +5,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Technical",
-    "version": "17.0.0.0.0",
+    "version": "18.0.0.0.0",
     "depends": ["web"],
     "data": [
         "security/ir.model.access.csv",
