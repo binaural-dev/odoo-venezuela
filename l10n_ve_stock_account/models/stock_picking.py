@@ -876,9 +876,7 @@ class StockPicking(models.Model):
             location_dest_id = None
             location_id = None
             picking = picking.with_company(picking.company_id)
-            if not (
-                picking.picking_type_id and picking.state in ["draft", "confirmed"]
-            ):
+            if not (picking.picking_type_id and picking.state in ["draft", "confirmed"]):
                 continue
 
             if not picking.location_id:
@@ -907,9 +905,7 @@ class StockPicking(models.Model):
 
             if not picking.location_dest_id:
                 if picking.picking_type_id.default_location_dest_id:
-                    location_dest_id = (
-                        picking.picking_type_id.default_location_dest_id.id
-                    )
+                    location_dest_id = picking.picking_type_id.default_location_dest_id.id
                 else:
                     location_dest_id, _supplierloc = self.env[
                         "stock.warehouse"
