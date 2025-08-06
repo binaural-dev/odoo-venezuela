@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.tools.sql import column_exists, create_column
+from odoo.tools import formatLang
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -52,6 +53,57 @@ class AccountMove(models.Model):
         copy=False,
     )
 
+
+    #OVERRIDES ODOO COMPUTE METHOD
+    @api.depends('move_type', 'line_ids.amount_residual')
+    def _compute_payments_widget_reconciled_info(self):
+        for move in self:
+            payments_widget_vals = {'title': _('Less Payment'), 'outstanding': False, 'content': []}
+
+            if move.state == 'posted' and move.is_invoice(include_receipts=True):
+                reconciled_vals = []
+                reconciled_partials = move.sudo()._get_all_reconciled_invoice_partials()
+                for reconciled_partial in reconciled_partials:
+                    counterpart_line = reconciled_partial['aml']
+                    if counterpart_line.move_id.ref:
+                        reconciliation_ref = '%s (%s)' % (counterpart_line.move_id.name, counterpart_line.move_id.ref)
+                    else:
+                        reconciliation_ref = counterpart_line.move_id.name
+                    if counterpart_line.amount_currency and counterpart_line.currency_id != counterpart_line.company_id.currency_id:
+                        foreign_currency = counterpart_line.currency_id
+                    else:
+                        foreign_currency = False
+
+                    #-----------------BINAURAL--------------
+                    is_igtf = counterpart_line.payment_id.is_igtf_on_foreign_exchange
+                    #-----------------BINAURAL--------------
+
+                    reconciled_vals.append({
+                        'name': counterpart_line.name,
+                        'journal_name': counterpart_line.journal_id.name,
+                        'company_name': counterpart_line.journal_id.company_id.name if counterpart_line.journal_id.company_id != move.company_id else False,
+                        #-----------------BINAURAL--------------
+                        'amount': reconciled_partial['amount'] + move.amount_to_pay_igtf if is_igtf else reconciled_partial['amount'], 
+                        #-----------------BINAURAL--------------
+                        'currency_id': move.company_id.currency_id.id if reconciled_partial['is_exchange'] else reconciled_partial['currency'].id,
+                        'date': counterpart_line.date,
+                        'partial_id': reconciled_partial['partial_id'],
+                        'account_payment_id': counterpart_line.payment_id.id,
+                        'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
+                        'move_id': counterpart_line.move_id.id,
+                        'ref': reconciliation_ref,
+                        # these are necessary for the views to change depending on the values
+                        'is_exchange': reconciled_partial['is_exchange'],
+                        'amount_company_currency': formatLang(self.env, abs(counterpart_line.balance), currency_obj=counterpart_line.company_id.currency_id),
+                        'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency)
+                    })
+                payments_widget_vals['content'] = reconciled_vals
+
+            if payments_widget_vals['content']:
+                move.invoice_payments_widget = payments_widget_vals
+            else:
+                move.invoice_payments_widget = False
+
     def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0):
         """This method can be used by ir.actions.server to update bi_igtf"""
         for record in self:
@@ -72,10 +124,11 @@ class AccountMove(models.Model):
                 if payment_id and payment_id.is_igtf_on_foreign_exchange:
                     payment_id = line.move_id.payment_id
                     bi_igtf = payment_id.get_bi_igtf()
-                    if initial_residual < bi_igtf:
-                        record.bi_igtf = initial_residual
+                    if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
+                        record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                        bi_igtf = 0
                         continue
-                    record.bi_igtf += bi_igtf
+                    record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
                     continue
 
             for payment in payments:
@@ -87,11 +140,9 @@ class AccountMove(models.Model):
                 if payment_id.is_igtf_on_foreign_exchange:
                     bi_igtf = payment_id.get_bi_igtf()
                     if initial_residual < bi_igtf:
-                        record.bi_igtf = initial_residual
                         continue
                     amount += bi_igtf
 
-            record.bi_igtf = amount
 
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
@@ -188,7 +239,9 @@ class AccountMove(models.Model):
 
     def js_assign_outstanding_line(self, line_id):
         amount_residual = self.amount_residual
+        self = self.with_context(from_widget=True)
         res = super().js_assign_outstanding_line(line_id)
+
         self.recalculate_bi_igtf(
             line_id,
             initial_residual=amount_residual
@@ -212,7 +265,8 @@ class AccountMove(models.Model):
     )
     def _compute_amount_residual_igtf(self):
         for record in self:
-            record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
+            continue
+            # record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
 
     @api.depends(
         "bi_igtf",
