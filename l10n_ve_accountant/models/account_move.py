@@ -4,7 +4,8 @@ from collections import defaultdict
 from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import drop_index, float_compare, index_exists
+from odoo.tools import float_compare, index_exists
+from odoo.tools.sql import drop_index
 from odoo.tools.float_utils import float_round
 from odoo.tools.misc import formatLang
 
@@ -27,7 +28,7 @@ class AccountMove(models.Model):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.currency_foreign_id.id or False
+        return self.env.company.foreign_currency_id.id or False
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -65,21 +66,21 @@ class AccountMove(models.Model):
 
     financial_document = fields.Boolean(default=False, copy=False)
 
-    foreign_taxable_income = fields.Monetary(
-        help="Foreign Taxable Income of the invoice",
-        compute="_compute_foreign_taxable_income",
-        currency_field="foreign_currency_id",
-    )
+    # foreign_taxable_income = fields.Monetary(
+    #     help="Foreign Taxable Income of the invoice",
+    #     compute="_compute_foreign_taxable_income",
+    #     currency_field="foreign_currency_id",
+    # )
     total_taxed = fields.Many2one(
         "account.tax",
         help="Total Taxed of the invoice",
     )
-    foreign_total_billed = fields.Monetary(
-        help="Foreign Total Billed of the invoice",
-        compute="_compute_foreign_total_billed",
-        currency_field="foreign_currency_id",
-        store=True,
-    )
+    # foreign_total_billed = fields.Monetary(
+    #     help="Foreign Total Billed of the invoice",
+    #     compute="_compute_foreign_total_billed",
+    #     currency_field="foreign_currency_id",
+    #     store=True,
+    # )
 
     _sql_constraints = [
         (
@@ -96,15 +97,15 @@ class AccountMove(models.Model):
 
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
-    foreign_debit = fields.Monetary(
-        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
-    )
-    foreign_credit = fields.Monetary(
-        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
-    )
-    foreign_balance = fields.Monetary(
-        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
-    )
+    # foreign_debit = fields.Monetary(
+    #     compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    # )
+    # foreign_credit = fields.Monetary(
+    #     compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    # )
+    # foreign_balance = fields.Monetary(
+    #     compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    # )
     amount = fields.Float(tracking=True)
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -245,7 +246,7 @@ class AccountMove(models.Model):
             The view of the account move form with the foreign currency symbol added to the page
             title.
         """
-        foreign_currency_id = self.env.company.currency_foreign_id.id
+        foreign_currency_id = self.env.company.foreign_currency_id.id
 
         res = super().get_view(view_id, view_type, **options)
 
@@ -429,7 +430,7 @@ class AccountMove(models.Model):
             line_foreign_currency_id = [
                 line
                 for line in self.line_ids
-                if line.currency_id == self.env.company.currency_foreign_id
+                if line.currency_id == self.env.company.foreign_currency_id
             ]
 
             for line in self.line_ids.sorted(lambda l: l.tax_ids, reverse=True):
@@ -574,7 +575,7 @@ class AccountMove(models.Model):
 
         if (
             account_payable_or_receivable_line.currency_id
-            != self.env.company.currency_foreign_id
+            != self.env.company.foreign_currency_id
         ):
             if account_payable_or_receivable_line.debit > 0:
                 account_payable_or_receivable_line.foreign_debit = sum(

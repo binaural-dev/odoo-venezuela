@@ -192,7 +192,7 @@ class AccountMoveLine(models.Model):
                 continue
 
             if (
-                line.currency_id == line.company_id.currency_foreign_id
+                line.currency_id == line.company_id.foreign_currency_id
                 and line.amount_currency
             ):
                 line.foreign_debit = (
@@ -225,7 +225,7 @@ class AccountMoveLine(models.Model):
                 # 6 Case: Not Invoice
                 # In this case, we need to calculate the foreign debit and credit with rate
                 foreign_lines = line.move_id.line_ids.filtered(
-                    lambda l: l.currency_id == l.company_id.currency_foreign_id
+                    lambda l: l.currency_id == l.company_id.foreign_currency_id
                 )
                 currency_lines = line.move_id.line_ids.filtered(
                     lambda l: l.currency_id == l.company_id.currency_id
