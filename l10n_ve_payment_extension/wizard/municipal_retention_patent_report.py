@@ -48,17 +48,24 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         columns2 = [{"header": r} for r in columnas]
         currency_symbol = self.env.ref("base.VEF").symbol
         money_format = workbook.add_format({"num_format": '#,##0.00 "' + currency_symbol + '"'})
-        columns2[3].update({"format": money_format})
-        columns2[4].update({"format": money_format})
-        columns2[5].update({"format": money_format})
-        columns2[6].update({"format": money_format})
-        columns2[7].update({"format": money_format})
-        columns2[8].update({"format": money_format})
-        columns2[9].update({"format": money_format})
-        columns2[11].update({"format": money_format})
-        columns2[13].update({"format": money_format})
-        columns2[14].update({"format": money_format})
-        columns2[15].update({"format": money_format})
+        
+        
+        
+        for i, col in enumerate(columnas):
+            if col in [
+                "VENTAS BRUTAS (Factura + ND)",
+                "DEVOLUC. VENTAS (NC)",
+                "DSTOS. VENTAS (NC Financiera)",
+                "NOTAS DE DEBITO (ND financiera)",
+                "INGRESOS 100%",
+                "INGRESOS 90%",
+                "INGRESOS 10%",
+                "IMPUESTO",
+                "ANTICIPO PERIODO",
+                "IMPUESTO RESTANTE 10%",
+                "ANTICIPO 90%",
+            ]:
+                columns2[i].update({"format": money_format})
 
         domain = self._get_xlsx_file_domain()
 
@@ -99,12 +106,15 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         worksheet2.write_array_formula("D" + str(col2 + 1), f"=SUM(D2:D{col2})", money_format)
         worksheet2.write_array_formula("E" + str(col2 + 1), f"=SUM(E2:E{col2})", money_format)
         worksheet2.write_array_formula("H" + str(col2 + 1), f"=SUM(H2:H{col2})", money_format)
-        worksheet2.write_array_formula("I" + str(col2 + 1), f"=SUM(I2:I{col2})", money_format)
-        worksheet2.write_array_formula("J" + str(col2 + 1), f"=SUM(J2:J{col2})", money_format)
-        worksheet2.write_array_formula("L" + str(col2 + 1), f"=SUM(L2:L{col2})", money_format)
-        worksheet2.write_array_formula("N" + str(col2 + 1), f"=SUM(N2:N{col2})", money_format)
-        worksheet2.write_array_formula("O" + str(col2 + 1), f"=SUM(O2:O{col2})", money_format)
-        worksheet2.write_array_formula("P" + str(col2 + 1), f"=SUM(P2:P{col2})", money_format)
+        
+        
+        if not self.env.company.hide_patent_columns_extra:
+            worksheet2.write_array_formula("I" + str(col2 + 1), f"=SUM(I2:I{col2})", money_format)
+            worksheet2.write_array_formula("J" + str(col2 + 1), f"=SUM(J2:J{col2})", money_format)
+            worksheet2.write_array_formula("L" + str(col2 + 1), f"=SUM(L2:L{col2})", money_format)
+            worksheet2.write_array_formula("N" + str(col2 + 1), f"=SUM(N2:N{col2})", money_format)
+            worksheet2.write_array_formula("O" + str(col2 + 1), f"=SUM(O2:O{col2})", money_format)
+            worksheet2.write_array_formula("P" + str(col2 + 1), f"=SUM(P2:P{col2})", money_format)
 
         for line in range(2, col2 + 1):
             worksheet2.write_array_formula(f"C{line}", f"=D{line}/D{str(col2+1)}", money_format)
@@ -112,15 +122,17 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             worksheet2.write_array_formula(
                 f"H{line}", f"=D{line}-E{line}-F{line}+G{line}", money_format
             )
-            worksheet2.write_array_formula(f"G{line}", f"=G{str(col2+1)}*C{line}", money_format)
-            worksheet2.write_array_formula(f"I{line}", f"=H{line}*0.9", money_format)
-            worksheet2.write_array_formula(f"J{line}", f"=H{line}-I{line}", money_format)
-            worksheet2.write_array_formula(f"L{line}", f"=I{line}*K{line}/100", money_format)
-            worksheet2.write_array_formula(
-                f"N{line}", f"=IF(L{line}>M{line},L{line},M{line})", money_format
-            )
-            worksheet2.write_array_formula(f"O{line}", f"=J{line}*K{line}/1000", money_format)
-            worksheet2.write_formula(f"P{line}", f"=N{line}", money_format)
+
+            if not self.env.company.hide_patent_columns_extra:
+                worksheet2.write_array_formula(f"I{line}", f"=H{line}*0.9", money_format)
+                worksheet2.write_array_formula(f"J{line}", f"=H{line}-I{line}", money_format)
+                worksheet2.write_array_formula(f"L{line}", f"=H{line}*K{line}/100", money_format)
+                worksheet2.write_array_formula(f"N{line}", f"=IF(L{line}>M{line},L{line},M{line})", money_format)
+                worksheet2.write_array_formula(f"O{line}", f"=J{line}*K{line}/1000", money_format)
+                worksheet2.write_formula(f"P{line}", f"=N{line}", money_format)
+            else:
+                worksheet2.write_array_formula(f"J{line}", f"=H{line}*I{line}/100", money_format)
+                worksheet2.write_array_formula("J" + str(col2 + 1), f"=SUM(J2:J{col2})", money_format)   
 
         workbook.close()
         return result.getvalue()
@@ -191,6 +203,16 @@ class MunicipalRetentionPatentReport(models.TransientModel):
                 ("ANTICIPO 90%", 0.00),
             ]
         )
+        
+        if self.env.company.hide_patent_columns_extra:
+            for col_name in [
+                "INGRESOS 90%",
+                "INGRESOS 10%",
+                "ANTICIPO PERIODO",
+                "IMPUESTO RESTANTE 10%",
+                "ANTICIPO 90%",
+            ]:
+                cols.pop(col_name, None)
 
         numero = 1
         for line in groups.keys():
