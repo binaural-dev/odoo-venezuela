@@ -403,17 +403,28 @@ class StockPicking(models.Model):
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
         invoice_line_list = []
-        for move_id in self.move_ids_without_package:
-            price_unit = move_id.product_id.list_price
+        for order_line in self.sale_id.order_line:
             tax_ids = [(6, 0, [self.company_id.account_sale_tax_id.id])]
-            if move_id.sale_line_id:
+
+            if order_line.display_type:
+                move_id = order_line
+                vals_dict = {
+                    "name": move_id.name,
+                    "product_id": move_id.product_id.id,
+                    "price_unit": False,
+                    "tax_ids": tax_ids,
+                    "quantity": 0,
+                    "from_picking_line": from_picking_line,
+                    "display_type": move_id.display_type,
+                }
+            else:
+                move_id = self.move_ids_without_package.filtered(
+                    lambda m: m.sale_line_id and m.sale_line_id.id == order_line.id
+                )
+                move_id = move_id[0] if move_id else order_line
                 price_unit = move_id.sale_line_id.price_unit
                 tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
-
-            vals = (
-                0,
-                0,
-                {
+                vals_dict = {
                     "name": move_id.description_picking,
                     "product_id": move_id.product_id.id,
                     "price_unit": price_unit,
@@ -425,8 +436,8 @@ class StockPicking(models.Model):
                     "tax_ids": tax_ids,
                     "quantity": move_id.quantity,
                     "from_picking_line": from_picking_line,
-                },
-            )
+                }
+            vals = (0, 0, vals_dict)
             invoice_line_list.append(vals)
         return invoice_line_list
     
@@ -1166,4 +1177,4 @@ class StockPicking(models.Model):
                 'is_consignment', 'is_dispatch_guide', 'partner_required']):
                 self._assign_partner_from_location()
         return res
-            
+
