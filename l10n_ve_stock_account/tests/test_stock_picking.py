@@ -147,6 +147,28 @@ class TestStockPickingInvoice(TransactionCase):
         })
         return order
 
+    def create_purchase_order(self):
+        rate = 5.0
+        order = self.env['purchase.order'].create({
+            'partner_id': self.partner.id,
+        })
+
+        order_line_01 = self.env['purchase.order.line'].create({
+            'product_id': self.product.id,
+            'product_uom_qty': 2,
+            'price_unit': 100,
+            'taxes_id': [(6, 0, [self.tax_iva16.id])],
+            'order_id': order.id,
+            'currency_id': self.currency_vef.id,
+            'display_type': False,
+            'name': 'Test Product Line',
+        })
+
+        order.write({
+            'order_line': [order_line_01.id],
+        })
+        return order
+
     def test_01_generate_invoice_from_dispatch_guide(self):
         order = self.create_sale_order()
         order.action_confirm()
@@ -158,5 +180,18 @@ class TestStockPickingInvoice(TransactionCase):
         dispatch_guide.button_validate()
         
         invoice = dispatch_guide.create_invoice()
-        _logger.info(f"Dispatch guide invoice created: {invoice.invoice_line_ids}")
-        _logger.info("Dispatch guide invoice created successfully.")
+
+        self.assertTrue(len(invoice.invoice_line_ids) == len(order.order_line), "The invoice created from the sales order must have the same number of lines as the sales order.")
+        _logger.info("test_01_generate_invoice_from_dispatch_guide --- successfully.")
+
+    def test_02_generate_dispatch_guide_from_purchase_order(self):
+        order = self.create_purchase_order()
+        order.button_confirm()
+        dispatch_guide = order.picking_ids
+
+        for move in dispatch_guide.move_ids_without_package:
+            move.quantity = move.product_uom_qty
+
+        dispatch_guide.button_validate()
+        self.assertTrue(not dispatch_guide.guide_number, "The dispatch guide created from the purchase order must not contain a guide number.")
+        _logger.info("test_02_generate_dispatch_guide_from_purchase_order --- successfully.")
