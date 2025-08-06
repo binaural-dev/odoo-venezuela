@@ -12,12 +12,6 @@ _logger = logging.getLogger(__name__)
 class ProductProduct(models.Model):
     _inherit = "product.product"
 
-    lst_price = fields.Float(
-        'Sales Price', compute='_compute_product_lst_price',
-        digits='Product Price', inverse='_set_product_lst_price',
-        help="The sale price is managed from the product template. Click on the 'Configure Variants' button to set the extra attribute prices.")
-
-
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Variante del maldito Raiver e.e
@@ -249,29 +243,4 @@ class ProductProduct(models.Model):
             )
 
         return res
-    
-    @api.onchange('lst_price')
-    def _set_product_lst_price(self):
-        for product in self:
-            if self._context.get('uom'):
-                value = self.env['uom.uom'].browse(self._context['uom'])._compute_price(product.lst_price, product.uom_id)
-            else:
-                value = product.lst_price
-            value -= product.price_extra
-            product.write({'list_price': value})
-
-    @api.depends('list_price', 'price_extra')
-    @api.depends_context('uom')
-    def _compute_product_lst_price(self):
-        to_uom = None
-        if 'uom' in self._context:
-            to_uom = self.env['uom.uom'].browse(self._context['uom'])
-
-        for product in self:
-            if to_uom:
-                list_price = product.uom_id._compute_price(product.list_price, to_uom)
-            else:
-                list_price = product.list_price
-            product.lst_price = list_price + product.price_extra
-
 
