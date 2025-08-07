@@ -7,7 +7,8 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-@tagged('post_install', '-at_install', 'l10n_ve_stock_account')
+
+@tagged("post_install", "-at_install", "l10n_ve_stock_account")
 class TestStockPickingInvoice(TransactionCase):
     """Tests for generating invoices from sale orders in Venezuelan localization."""
 
@@ -23,70 +24,86 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-        self.partner = self.env['res.partner'].create({
-            'name': 'Cliente Prueba',
-            'vat': 'J12345678',
-            'prefix_vat': 'J',
-            'country_id': self.env.ref('base.ve').id,
-            'phone': '04141234567',
-            'email': 'cliente@prueba.com',
-            'street': 'Calle Falsa 123',
-        })
+        self.partner = self.env["res.partner"].create(
+            {
+                "name": "Cliente Prueba",
+                "vat": "J12345678",
+                "prefix_vat": "J",
+                "country_id": self.env.ref("base.ve").id,
+                "phone": "04141234567",
+                "email": "cliente@prueba.com",
+                "street": "Calle Falsa 123",
+            }
+        )
 
-        self.tax_group = self.env['account.tax.group'].create({
-            'name': 'IVA',
-            'sequence': 10,
-        })
+        self.tax_group = self.env["account.tax.group"].create(
+            {
+                "name": "IVA",
+                "sequence": 10,
+            }
+        )
 
         # Crear impuesto IVA 16%
-        self.tax_iva16 = self.env['account.tax'].create({
-            'name': 'IVA 16%',
-            'amount': 16,
-            'amount_type': 'percent',
-            'type_tax_use': 'sale',
-            'tax_group_id': self.tax_group.id,
-            'country_id': self.env.ref('base.ve').id,
-        })
+        self.tax_iva16 = self.env["account.tax"].create(
+            {
+                "name": "IVA 16%",
+                "amount": 16,
+                "amount_type": "percent",
+                "type_tax_use": "sale",
+                "tax_group_id": self.tax_group.id,
+                "country_id": self.env.ref("base.ve").id,
+            }
+        )
 
         # Crear el producto
-        self.product = self.env['product.product'].create({
-            'name': 'Producto Prueba',
-            'type': 'product',
-            'list_price': 100,
-            'barcode': '123456789',
-            'taxes_id': [(6, 0, [self.tax_iva16.id])],
-            'detailed_type': 'product',
-        })
-        
-        self.partner_a = self.env['res.partner'].create({
-            'name': 'Test Partner A',
-            'customer_rank': 1,
-        })
-        
-        sequence = self.env['ir.sequence'].create({
-            'name': 'Secuencia Factura',
-            'code': 'account.move',
-            'prefix': 'INV/',
-            'padding': 8,
-            "number_next_actual": 2,
-        })
-        refund_sequence = self.env['ir.sequence'].create({
-            'name': 'nota de credito',
-            'code': '',
-            'prefix': 'NC/',
-            'padding': 8,
-            "number_next_actual": 2,
-        })
+        self.product = self.env["product.product"].create(
+            {
+                "name": "Producto Prueba",
+                "type": "product",
+                "list_price": 100,
+                "barcode": "123456789",
+                "taxes_id": [(6, 0, [self.tax_iva16.id])],
+                "detailed_type": "product",
+            }
+        )
 
-        self.journal = self.env['account.journal'].create({
-            'name': 'Diario de Ventas',
-            'code': 'VEN',
-            'type': 'sale',
-            'sequence_id': sequence.id,
-            "refund_sequence_id": refund_sequence.id,
-            'company_id': self.env.company.id,
-            'is_contingency': False,
-            })
+        self.partner_a = self.env["res.partner"].create(
+            {
+                "name": "Test Partner A",
+                "customer_rank": 1,
+            }
+        )
+
+        sequence = self.env["ir.sequence"].create(
+            {
+                "name": "Secuencia Factura",
+                "code": "account.move",
+                "prefix": "INV/",
+                "padding": 8,
+                "number_next_actual": 2,
+            }
+        )
+        refund_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "nota de credito",
+                "code": "",
+                "prefix": "NC/",
+                "padding": 8,
+                "number_next_actual": 2,
+            }
+        )
+
+        self.journal = self.env["account.journal"].create(
+            {
+                "name": "Diario de Ventas",
+                "code": "VEN",
+                "type": "sale",
+                "sequence_id": sequence.id,
+                "refund_sequence_id": refund_sequence.id,
+                "company_id": self.env.company.id,
+                "is_contingency": False,
+            }
+        )
         self.company.write(
             {
                 "customer_journal_id": self.journal.id,
@@ -95,78 +112,94 @@ class TestStockPickingInvoice(TransactionCase):
 
     def create_sale_order(self):
         rate = 5.0
-        order = self.env['sale.order'].create({
-            'partner_id': self.partner.id,
-            'manually_set_rate': True,
-            'foreign_rate': rate,
-            'foreign_inverse_rate': 1 / rate,
-            'document': 'dispatch_guide',
-        })
+        order = self.env["sale.order"].create(
+            {
+                "partner_id": self.partner.id,
+                "manually_set_rate": True,
+                "foreign_rate": rate,
+                "foreign_inverse_rate": 1 / rate,
+                "document": "dispatch_guide",
+            }
+        )
 
-        order_line_01 = self.env['sale.order.line'].create({
-            'product_id': self.product.id,
-            'product_uom_qty': 2,
-            'price_unit': 100,
-            'tax_id': [(6, 0, [self.tax_iva16.id])],
-            'order_id': order.id,
-            'currency_id': self.currency_vef.id,
-            'foreign_currency_id': self.currency_usd.id,
-            'foreign_rate': rate,
-            'display_type': False,
-            'name': 'Test Product Line',
-        })
+        order_line_01 = self.env["sale.order.line"].create(
+            {
+                "product_id": self.product.id,
+                "product_uom_qty": 2,
+                "price_unit": 100,
+                "tax_id": [(6, 0, [self.tax_iva16.id])],
+                "order_id": order.id,
+                "currency_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_usd.id,
+                "foreign_rate": rate,
+                "display_type": False,
+                "name": "Test Product Line",
+            }
+        )
 
-        order_line_02 = self.env['sale.order.line'].create({
-            'product_id': False,
-            'product_uom_qty': 0,
-            'price_unit': 0,
-            'tax_id': [(6, 0, [self.tax_iva16.id])],
-            'order_id': order.id,
-            'currency_id': self.currency_vef.id,
-            'foreign_currency_id': self.currency_usd.id,
-            'foreign_rate': 0,
-            'display_type': 'line_section',
-            'name': 'Section Line',
-        })
+        order_line_02 = self.env["sale.order.line"].create(
+            {
+                "product_id": False,
+                "product_uom_qty": 0,
+                "price_unit": 0,
+                "tax_id": [(6, 0, [self.tax_iva16.id])],
+                "order_id": order.id,
+                "currency_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_usd.id,
+                "foreign_rate": 0,
+                "display_type": "line_section",
+                "name": "Section Line",
+            }
+        )
 
-        order_line_03 = self.env['sale.order.line'].create({
-            'product_id': False,
-            'product_uom_qty': 0,
-            'price_unit': 0,
-            'tax_id': [(6, 0, [self.tax_iva16.id])],
-            'order_id': order.id,
-            'currency_id': self.currency_vef.id,
-            'foreign_currency_id': self.currency_usd.id,
-            'foreign_rate': 0,
-            'display_type': 'line_note',
-            'name': 'Section Line',
-        })
+        order_line_03 = self.env["sale.order.line"].create(
+            {
+                "product_id": False,
+                "product_uom_qty": 0,
+                "price_unit": 0,
+                "tax_id": [(6, 0, [self.tax_iva16.id])],
+                "order_id": order.id,
+                "currency_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_usd.id,
+                "foreign_rate": 0,
+                "display_type": "line_note",
+                "name": "Section Line",
+            }
+        )
 
-        order.write({
-            'order_line': [order_line_01.id, order_line_02.id, order_line_03.id],
-        })
+        order.write(
+            {
+                "order_line": [order_line_01.id, order_line_02.id, order_line_03.id],
+            }
+        )
         return order
 
     def create_purchase_order(self):
         rate = 5.0
-        order = self.env['purchase.order'].create({
-            'partner_id': self.partner.id,
-        })
+        order = self.env["purchase.order"].create(
+            {
+                "partner_id": self.partner.id,
+            }
+        )
 
-        order_line_01 = self.env['purchase.order.line'].create({
-            'product_id': self.product.id,
-            'product_uom_qty': 2,
-            'price_unit': 100,
-            'taxes_id': [(6, 0, [self.tax_iva16.id])],
-            'order_id': order.id,
-            'currency_id': self.currency_vef.id,
-            'display_type': False,
-            'name': 'Test Product Line',
-        })
+        order_line_01 = self.env["purchase.order.line"].create(
+            {
+                "product_id": self.product.id,
+                "product_uom_qty": 2,
+                "price_unit": 100,
+                "taxes_id": [(6, 0, [self.tax_iva16.id])],
+                "order_id": order.id,
+                "currency_id": self.currency_vef.id,
+                "display_type": False,
+                "name": "Test Product Line",
+            }
+        )
 
-        order.write({
-            'order_line': [order_line_01.id],
-        })
+        order.write(
+            {
+                "order_line": [order_line_01.id],
+            }
+        )
         return order
 
     def test_01_generate_invoice_from_dispatch_guide(self):
@@ -178,10 +211,13 @@ class TestStockPickingInvoice(TransactionCase):
             move.quantity = move.product_uom_qty
 
         dispatch_guide.button_validate()
-        
+
         invoice = dispatch_guide.create_invoice()
 
-        self.assertTrue(len(invoice.invoice_line_ids) == len(order.order_line), "The invoice created from the sales order must have the same number of lines as the sales order.")
+        self.assertTrue(
+            len(invoice.invoice_line_ids) == len(order.order_line),
+            "The invoice created from the sales orders dispatch guide must have the same number of lines as the sales order.",
+        )
         _logger.info("test_01_generate_invoice_from_dispatch_guide --- successfully.")
 
     def test_02_generate_dispatch_guide_from_purchase_order(self):
@@ -193,5 +229,10 @@ class TestStockPickingInvoice(TransactionCase):
             move.quantity = move.product_uom_qty
 
         dispatch_guide.button_validate()
-        self.assertTrue(not dispatch_guide.guide_number, "The dispatch guide created from the purchase order must not contain a guide number.")
-        _logger.info("test_02_generate_dispatch_guide_from_purchase_order --- successfully.")
+        self.assertTrue(
+            not dispatch_guide.guide_number,
+            "The dispatch guide created from the purchase order must not contain a guide number.",
+        )
+        _logger.info(
+            "test_02_generate_dispatch_guide_from_purchase_order --- successfully."
+        )
