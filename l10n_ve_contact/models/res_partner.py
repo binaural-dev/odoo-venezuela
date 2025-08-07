@@ -26,7 +26,9 @@ class ResPartner(models.Model):
 
     street2 = fields.Char(tracking=True)
 
-    country_id = fields.Many2one(tracking=True, default= lambda self: self.env.ref("base.ve"))
+    country_id = fields.Many2one(
+        tracking=True, default=lambda self: self.env.ref("base.ve")
+    )
 
     state_id = fields.Many2one(tracking=True)
 
@@ -37,6 +39,8 @@ class ResPartner(models.Model):
     parish_id = fields.Many2one(tracking=True)
 
     zip = fields.Char(tracking=True)
+
+    identity_document = fields.Char("Identify Document")
 
     def _default_company_id(self):
         company_id = self.env.company.id
@@ -170,16 +174,26 @@ class ResPartner(models.Model):
     def _onchange_(self):
         """This function assign the name of the person by the vat number and the prefix of the vat number
         calling the function get_default_name_by_vat from binaural_cne_query
-    
+
         Args:
             prefix_vat (string): prefix of the vat number (V)
             vat (string): vat number of the person, this number is unique in Venezuela
         """
         if self.vat and not self.name and self.prefix_vat in ["V", "E"]:
             self._check_vat()
-            name, flag = binaural_cne_query.get_default_name_by_vat(self, self.prefix_vat, self.vat)
+            name, flag = binaural_cne_query.get_default_name_by_vat(
+                self, self.prefix_vat, self.vat
+            )
             if not flag:
                 return
             for record in self:
                 record.name = name
-    
+
+    @api.onchange("vat")
+    def _onchange_vat_(self):
+        """This function checks that if a VAT is being added and the identity_document field is empty,
+        the identity_document field is assigned the same value as the VAT.
+        """
+        for record in self:
+            if not record.identity_document:
+                record.identity_document = record.vat
