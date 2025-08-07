@@ -793,7 +793,7 @@ class StockPicking(models.Model):
             record.show_create_vendor_credit = False
             record.show_create_invoice_internal = False
 
-            if is_invoice_empty and is_done and is_to_invoice:
+            if is_invoice_empty and is_done and is_to_invoice and not record.purchase_id:
                 if record.operation_code == "incoming":
                     record.show_create_bill = not record.is_return
                     record.show_create_vendor_credit = record.is_return
@@ -835,12 +835,15 @@ class StockPicking(models.Model):
         for picking in self:
             picking.has_document = bool(picking.sale_id.document)
 
-    @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid")
+    @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid", "purchase_id")
     def _compute_dispatch_guide_controls(self):
         for picking in self:
             picking.dispatch_guide_controls = False
 
             if picking.state != "done":
+                continue
+
+            if picking.purchase_id:
                 continue
 
             # if not picking.sale_id and not picking.operation_code == "internal":
