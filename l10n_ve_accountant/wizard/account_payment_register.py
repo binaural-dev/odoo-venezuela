@@ -14,7 +14,7 @@ class AccountPaymentRegister(models.TransientModel):
             The id of the foreign currency of the company
 
         """
-        alternate_currency = self.env.company.currency_foreign_id.id
+        alternate_currency = self.env.company.foreign_currency_id.id
         if alternate_currency:
             return alternate_currency
         return False

@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "18.0.0.0.13",
+    "version": "18.0.0.0.0",
     "depends": [
         "base",
         "web",
@@ -31,7 +31,7 @@
         "views/account_payment.xml",
         "views/res_partner.xml",
         "views/res_currency_views.xml",
-        "views/ir_property.xml",
+        # "views/ir_property.xml",
         "views/res_company_views.xml",
         "views/tax_unit.xml",
         "views/res_config_settings_views.xml",
