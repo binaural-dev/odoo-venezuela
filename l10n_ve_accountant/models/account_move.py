@@ -411,7 +411,7 @@ class AccountMove(models.Model):
         is_invoice = self.is_invoice(include_receipts=True)
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
         # self.line_ids.update({"foreign_debit": 0, "foreign_credit": 0})
-        payment = self.payment_id
+        payment = self.origin_payment_id
 
         # If the move is a retention payment we need to use the retention_foreign_amount of the
         # payment to compute the foreign debit/credit.
@@ -892,7 +892,7 @@ class AccountMove(models.Model):
         return super().action_post()
 
     @api.depends(
-        "invoice_line_ids.compute_all_tax",
+        "invoice_line_ids",
         "invoice_line_ids.price_subtotal",
         "foreign_inverse_rate",
         "foreign_currency_id",
@@ -901,59 +901,59 @@ class AccountMove(models.Model):
     def _compute_needed_terms(self):
         res = super()._compute_needed_terms()
 
-        for invoice in self:
-            is_draft = invoice.id != invoice._origin.id
-            sign = 1 if invoice.is_inbound(include_receipts=True) else -1
-            if invoice.is_invoice(True) and invoice.invoice_line_ids:
-                invoice._compute_tax_totals()
-                if invoice.invoice_payment_term_id:
-                    if is_draft:
-                        tax_amount_currency = 0.0
-                        untaxed_amount_currency = 0.0
-                        for line in invoice.invoice_line_ids:
-                            untaxed_amount_currency += line.foreign_subtotal
-                            tax_amount_currency += (
-                                line.foreign_price_total - line.foreign_subtotal
-                            )
-                        untaxed_amount = untaxed_amount_currency
-                        tax_amount = tax_amount_currency
-                    else:
-                        tax_amount = (
-                            invoice.foreign_total_billed
-                            - invoice.foreign_taxable_income
-                        ) * sign
-                        untaxed_amount = (invoice.foreign_taxable_income) * sign
+        # for invoice in self:
+        #     is_draft = invoice.id != invoice._origin.id
+        #     sign = 1 if invoice.is_inbound(include_receipts=True) else -1
+        #     if invoice.is_invoice(True) and invoice.invoice_line_ids:
+        #         invoice._compute_tax_totals()
+        #         if invoice.invoice_payment_term_id:
+        #             if is_draft:
+        #                 tax_amount_currency = 0.0
+        #                 untaxed_amount_currency = 0.0
+        #                 for line in invoice.invoice_line_ids:
+        #                     untaxed_amount_currency += line.foreign_subtotal
+        #                     tax_amount_currency += (
+        #                         line.foreign_price_total - line.foreign_subtotal
+        #                     )
+        #                 untaxed_amount = untaxed_amount_currency
+        #                 tax_amount = tax_amount_currency
+        #             else:
+        #                 tax_amount = (
+        #                     invoice.foreign_total_billed
+        #                     - invoice.foreign_taxable_income
+        #                 ) * sign
+        #                 untaxed_amount = (invoice.foreign_taxable_income) * sign
 
-                    invoice_payment_terms = (
-                        invoice.invoice_payment_term_id._compute_terms(
-                            date_ref=invoice.invoice_date
-                            or invoice.date
-                            or fields.Date.context_today(invoice),
-                            currency=invoice.foreign_currency_id,
-                            tax_amount_currency=tax_amount,
-                            tax_amount=tax_amount,
-                            untaxed_amount_currency=untaxed_amount,
-                            untaxed_amount=untaxed_amount,
-                            company=invoice.company_id,
-                            sign=sign,
-                        )
-                    )
+        #             invoice_payment_terms = (
+        #                 invoice.invoice_payment_term_id._compute_terms(
+        #                     date_ref=invoice.invoice_date
+        #                     or invoice.date
+        #                     or fields.Date.context_today(invoice),
+        #                     currency=invoice.foreign_currency_id,
+        #                     tax_amount_currency=tax_amount,
+        #                     tax_amount=tax_amount,
+        #                     untaxed_amount_currency=untaxed_amount,
+        #                     untaxed_amount=untaxed_amount,
+        #                     company=invoice.company_id,
+        #                     sign=sign,
+        #                 )
+        #             )
 
-                    for term in invoice_payment_terms["line_ids"]:
-                        for key in list(invoice.needed_terms.keys()):
-                            if key["date_maturity"] == fields.Date.to_date(
-                                term.get("date")
-                            ):
-                                invoice.needed_terms[key] = {
-                                    **invoice.needed_terms[key],
-                                    "foreign_balance": term["company_amount"],
-                                }
-                else:
-                    for key in list(invoice.needed_terms.keys()):
-                        invoice.needed_terms[key] = {
-                            **invoice.needed_terms[key],
-                            "foreign_balance": sign * invoice.foreign_total_billed,
-                        }
+        #             for term in invoice_payment_terms["line_ids"]:
+        #                 for key in list(invoice.needed_terms.keys()):
+        #                     if key["date_maturity"] == fields.Date.to_date(
+        #                         term.get("date")
+        #                     ):
+        #                         invoice.needed_terms[key] = {
+        #                             **invoice.needed_terms[key],
+        #                             "foreign_balance": term["company_amount"],
+        #                         }
+        #         else:
+        #             for key in list(invoice.needed_terms.keys()):
+        #                 invoice.needed_terms[key] = {
+        #                     **invoice.needed_terms[key],
+        #                     "foreign_balance": sign * invoice.foreign_total_billed,
+        #                 }
         return res
 
     def button_draft(self):
