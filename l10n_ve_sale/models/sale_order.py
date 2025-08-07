@@ -273,14 +273,16 @@ class SaleOrder(models.Model):
 
     def _get_invoiceable_lines(self, final=False):
         if self._context.get("ignore_limit", False):
-            return super()._get_invoiceable_lines(final)
+            res = super()._get_invoiceable_lines(final)
 
         res = super()._get_invoiceable_lines(final)
         limit = self.company_id.max_product_invoice
+        if len(res) > limit:
+            res = res[:limit]
 
-        if len(res) <= limit:
-            return res
-        return res[:limit]
+        if not any(not line.display_type for line in res):
+            return self.env['sale.order.line']
+        return res
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         """
