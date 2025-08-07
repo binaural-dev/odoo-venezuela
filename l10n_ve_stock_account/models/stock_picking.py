@@ -738,8 +738,9 @@ class StockPicking(models.Model):
     @api.depends("picking_type_id", "partner_id", "sale_id")
     def _compute_location_id(self):
         for picking in self:
+            location_dest_id = None
+            location_id = None
             picking = picking.with_company(picking.company_id)
-
             if not (picking.picking_type_id and picking.state in ["draft", "confirmed"]):
                 continue
 
@@ -770,10 +771,10 @@ class StockPicking(models.Model):
             if not picking.location_dest_id:
                 if picking.picking_type_id.default_location_dest_id:
                     location_dest_id = picking.picking_type_id.default_location_dest_id.id
+                else:
                     location_dest_id, _supplierloc = self.env[
                         "stock.warehouse"
                     ]._get_partner_locations()
-
                 picking.location_id = location_id
                 picking.location_dest_id = location_dest_id
 
