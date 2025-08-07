@@ -1,5 +1,4 @@
 from odoo import api, models, fields, _
-from odoo.tools.float_utils import float_is_zero
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -24,7 +23,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
+        default=False,
         help="IGTF on Foreign Exchange?",
+        compute="_compute_is_igtf_journal",
         store=True,
     )
 
@@ -72,39 +73,20 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    @api.onchange("journal_id", "is_igtf", "currency_id", "amount")
+    @api.onchange("journal_id", "is_igtf", "currency_id","amount")
     def _compute_is_igtf(self):
         for payment in self:
-            payment.is_igtf_on_foreign_exchange = False
+            amount_residual = payment.line_ids.mapped('move_id').amount_residual
+            result=amount_residual-payment.amount
+            if (
+                payment.journal_id.is_igtf
+                and payment.is_igtf
+                and payment.currency_id.id == self.env.ref("base.USD").id
+                and abs(result) > 0.0001
+            ):
+                payment.is_igtf_on_foreign_exchange = True
             
-            if not (payment.journal_id.is_igtf and 
-                    payment.is_igtf and 
-                    payment.currency_id.id == self.env.ref("base.USD").id):
-                continue
-
-            invoices = payment.line_ids.mapped('move_id')
-            if not invoices:
-                continue
-
-            all_existing_payments = invoices._get_reconciled_payments()
-            usd_payments = all_existing_payments.filtered(
-                lambda p: p.currency_id.id == self.env.ref("base.USD").id and p.is_igtf_on_foreign_exchange
-            )
-
-            total_residual = sum(invoices.mapped('amount_residual'))
-            result = total_residual - payment.amount
-
-            is_first_usd_payment = len(usd_payments) == 0
-
-            if is_first_usd_payment:
-                payment.is_igtf_on_foreign_exchange = True
-                continue
-
-            if result > 0:
-                payment.is_igtf_on_foreign_exchange = True
-                continue
-
-            if result == 0:
+            else:
                 payment.is_igtf_on_foreign_exchange = False
 
     @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
@@ -146,6 +128,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         Returns:
             Payment: The created payment.
         """
+
         res = super(AccountPaymentRegisterIgtf, self)._create_payments()
         for payment in res:
             if (
@@ -166,4 +149,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     if payment.reconciled_bill_ids:
                         payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
         return res
+    
+    
+    @api.depends('journal_id')
+    def _compute_is_igtf_journal(self):
+        for record in self:
+            if record.journal_id.currency_id == self.env.ref("base.USD"):
+                record.is_igtf_on_foreign_exchange = True
 
