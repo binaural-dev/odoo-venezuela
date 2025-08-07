@@ -306,11 +306,17 @@ patch(Order.prototype, {
     if (this.pos.config.amount_to_zero) {
       let product_quantity_by_product = {};
       let products = [];
+      let allow_sales_on_order = false
       for (let line of lines) {
         let prd = this.pos.db.get_product_by_id(line.get_product().id);
 
         if (prd.type != "product") {
           continue;
+        }
+        
+        console.log("AKDASD PRODUCT", this.pos.config.allow_sales_on_order );
+        if (this.pos.config.allow_sales_on_order && prd.pos_sale_on_order){
+          allow_sales_on_order = true
         }
 
         if (product_quantity_by_product[prd.id] == undefined) {
@@ -324,6 +330,10 @@ patch(Order.prototype, {
         ) {
           products.push(prd.display_name);
         }
+      }
+
+      if (allow_sales_on_order){
+        return await super.pay(...arguments)
       }
 
       if (products.length > 0)
