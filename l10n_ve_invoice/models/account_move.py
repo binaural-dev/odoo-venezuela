@@ -54,6 +54,8 @@ class AccountMove(models.Model):
 
             if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
+            if record.invoice_date and record.date and record.date < record.invoice_date:
+                raise ValidationError(_("The accounting date cannot be earlier than the invoice date."))
         return super().action_post()
 
     @api.constrains("correlative", "is_contingency")
