@@ -96,15 +96,15 @@ class AccountMoveLine(models.Model):
             elif (
                 line.currency_id != line.company_id.currency_id
                 and not line.move_id.is_invoice(True)
-                and line.move_id.payment_id
+                and line.move_id.origin_payment_id
             ):
                 if (
-                    line.move_id.payment_id.foreign_inverse_rate != 0
+                    line.move_id.origin_payment_id.foreign_inverse_rate != 0
                     and line.amount_currency != 0
                 ):
                     line.balance = line.company_id.currency_id.round(
                         line.amount_currency
-                        / line.move_id.payment_id.foreign_inverse_rate
+                        / line.move_id.origin_payment_id.foreign_inverse_rate
                     )
                 else:
                     raise UserError(_("The rate should be greater than zero"))
@@ -192,7 +192,7 @@ class AccountMoveLine(models.Model):
                 continue
 
             if (
-                line.currency_id == line.company_id.currency_foreign_id
+                line.currency_id == line.company_id.foreign_currency_id
                 and line.amount_currency
             ):
                 line.foreign_debit = (
@@ -204,20 +204,20 @@ class AccountMoveLine(models.Model):
                 continue
 
             if (
-                line.move_id.payment_id
+                line.move_id.origin_payment_id
                 and "retention_foreign_amount" in self.env["account.payment"]._fields
-                and line.move_id.payment_id.is_retention
+                and line.move_id.origin_payment_id.is_retention
             ):
                 # 5 Case: Retention
                 # In this case, we need to set the foreign debit and credit of the retention
                 if not line.currency_id.is_zero(line.debit):
                     line.foreign_debit = (
-                        line.move_id.payment_id.retention_foreign_amount
+                        line.move_id.origin_payment_id.retention_foreign_amount
                     )
                     continue
                 if not line.currency_id.is_zero(line.credit):
                     line.foreign_credit = (
-                        line.move_id.payment_id.retention_foreign_amount
+                        line.move_id.origin_payment_id.retention_foreign_amount
                     )
                     continue
 
@@ -225,7 +225,7 @@ class AccountMoveLine(models.Model):
                 # 6 Case: Not Invoice
                 # In this case, we need to calculate the foreign debit and credit with rate
                 foreign_lines = line.move_id.line_ids.filtered(
-                    lambda l: l.currency_id == l.company_id.currency_foreign_id
+                    lambda l: l.currency_id == l.company_id.foreign_currency_id
                 )
                 currency_lines = line.move_id.line_ids.filtered(
                     lambda l: l.currency_id == l.company_id.currency_id
@@ -338,15 +338,15 @@ class AccountMoveLine(models.Model):
         """
 
         def is_payment(aml):
-            return aml.move_id.payment_id or aml.move_id.statement_line_id
+            return aml.move_id.origin_payment_id or aml.move_id.statement_line_id
 
         def get_odoo_rate(aml, other_aml, currency):
             if forced_rate := self._context.get("forced_rate_from_register_payment"):
                 return forced_rate
             if other_aml and not is_payment(aml) and is_payment(other_aml):
                 # >>>> Integra
-                if aml.move_id.payment_id:
-                    return aml.move_id.payment_id.foreign_inverse_rate
+                if aml.move_id.origin_payment_id:
+                    return aml.move_id.origin_payment_id.foreign_inverse_rate
                 # <<<< Integra
                 return get_accounting_rate(other_aml, currency)
             if aml.move_id.is_invoice(include_receipts=True):
@@ -442,48 +442,49 @@ class AccountMoveLine(models.Model):
                 }
             )
 
-    @api.depends(
-        "foreign_inverse_rate",
-        "foreign_currency_id",
-        "foreign_rate",
-        "foreign_price",
-    )
-    def _compute_all_tax(self):
-        res = super(AccountMoveLine, self)._compute_all_tax()
-        for line in self:
-            sign = line.move_id.direction_sign
+    #TODO:deprecated
+    # @api.depends(
+    #     "foreign_inverse_rate",
+    #     "foreign_currency_id",
+    #     "foreign_rate",
+    #     "foreign_price",
+    # )
+    # def _compute_all_tax(self):
+    #     res = super(AccountMoveLine, self)._compute_all_tax()
+    #     for line in self:
+    #         sign = line.move_id.direction_sign
 
-            if line.display_type == "product" and line.move_id.is_invoice(True):
-                amount_currency = sign * line.foreign_price * (1 - line.discount / 100)
-                handle_price_include = True
-                quantity = line.quantity
-            else:
-                amount_currency = (
-                    line.amount_currency * line.move_id.foreign_inverse_rate
-                )
-                handle_price_include = False
-                quantity = 1
+    #         if line.display_type == "product" and line.move_id.is_invoice(True):
+    #             amount_currency = sign * line.foreign_price * (1 - line.discount / 100)
+    #             handle_price_include = True
+    #             quantity = line.quantity
+    #         else:
+    #             amount_currency = (
+    #                 line.amount_currency * line.move_id.foreign_inverse_rate
+    #             )
+    #             handle_price_include = False
+    #             quantity = 1
 
-            compute_all_currency = line.tax_ids.compute_all(
-                amount_currency,
-                currency=line.foreign_currency_id,
-                quantity=quantity,
-                product=line.product_id,
-                partner=line.move_id.partner_id or line.partner_id,
-                is_refund=line.is_refund,
-                handle_price_include=handle_price_include,
-                include_caba_tags=line.move_id.always_tax_exigible,
-                fixed_multiplicator=sign,
-            )
+    #         compute_all_currency = line.tax_ids.compute_all(
+    #             amount_currency,
+    #             currency=line.foreign_currency_id,
+    #             quantity=quantity,
+    #             product=line.product_id,
+    #             partner=line.move_id.partner_id or line.partner_id,
+    #             is_refund=line.is_refund,
+    #             handle_price_include=handle_price_include,
+    #             include_caba_tags=line.move_id.always_tax_exigible,
+    #             fixed_multiplicator=sign,
+    #         )
 
-            for tax in compute_all_currency["taxes"]:
-                for key in list(line.compute_all_tax.keys()):
-                    if not key.get("tax_repartition_line_id", False):
-                        continue
+    #         for tax in compute_all_currency["taxes"]:
+    #             for key in list(line.compute_all_tax.keys()):
+    #                 if not key.get("tax_repartition_line_id", False):
+    #                     continue
 
-                    if tax["tax_repartition_line_id"] == key["tax_repartition_line_id"]:
-                        line.compute_all_tax[key]["foreign_balance"] = tax["amount"]
-        return res
+    #                 if tax["tax_repartition_line_id"] == key["tax_repartition_line_id"]:
+    #                     line.compute_all_tax[key]["foreign_balance"] = tax["amount"]
+    #     return res
 
     @api.onchange("quantity")
     def _onchange_quantity(self):
