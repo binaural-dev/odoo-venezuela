@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_l10n_ve_stock_report,wizard_stock_book_report,model_wizard_stock_book_report,,1,1,1,1
+access_transfer_reason,access_transfer_reason,model_transfer_reason,base.group_user,1,0,0,0
