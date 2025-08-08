@@ -42,7 +42,7 @@
                         <t groups="base.group_no_one">
                             <field name="foreign_inverse_rate" invisible="1" />
                         </t>
-                        <field name="foreign_rate" readonly="1" />
+                        <field name="foreign_rate" readonly="move_type not in ['in_invoice']" />
                     </group>
                     <group colspan="4">
                         <group class="oe_subtotal_footer oe_right"
