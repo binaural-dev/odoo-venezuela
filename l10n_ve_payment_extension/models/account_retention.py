@@ -576,10 +576,7 @@ class AccountRetention(models.Model):
     def action_post(self):
         today = datetime.now()
         for retention in self:
-            if retention.type_retention == 'iva':
-                if not re.fullmatch(r"\d{14}", retention.number):
-                    raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
-            
+                        
             if (
                 retention.type in ["out_invoice", "out_refund", "out_debit"]
                 and not retention.number
@@ -601,8 +598,12 @@ class AccountRetention(models.Model):
                 retention._set_sequence()
                 self.set_voucher_number_in_invoice(move_ids, retention)
 
+        if retention.type_retention == 'iva':
+            if not re.fullmatch(r"\d{14}", retention.number):
+                raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
+            
         self.payment_ids.write({"date": self.date_accounting})
-        self._reconcile_all_payments()
+        self._reconcile_all_payments()        
         self.write({"state": "emitted"})
 
     def set_voucher_number_in_invoice(self, move, retention):
