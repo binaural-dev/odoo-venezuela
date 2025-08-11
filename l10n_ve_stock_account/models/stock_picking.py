@@ -1131,11 +1131,16 @@ class StockPicking(models.Model):
         records._assign_partner_from_location()
         return records
 
+   
     def write(self, vals):
-        res = super().write(vals)
-        if any(k in vals for k in [
-            'location_dest_id', 'transfer_reason_id',
-            'is_consignment', 'is_dispatch_guide', 'partner_required']):
-            self._assign_partner_from_location()
+        res = super().write(vals)  
+        for rec in self:
+            if rec.partner_required:
+                if any(k in vals for k in [
+                    'location_dest_id', 'transfer_reason_id',
+                    'is_consignment', 'is_dispatch_guide', 'partner_required']):
+                    rec._assign_partner_from_location()
+        
         return res
-            
+
+
