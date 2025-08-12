@@ -23,7 +23,7 @@ class SaleOrder(models.Model):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.currency_foreign_id.id or False
+        return self.env.company.foreign_currency_id.id or False
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -149,7 +149,7 @@ class SaleOrder(models.Model):
         for move in self:
             move.foreign_total_billed = False
             if move.order_line:
-                move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
+                move.foreign_total_billed = move.tax_totals.get("foreign_amount_total")
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -174,7 +174,7 @@ class SaleOrder(models.Model):
             The view of the account move form with the foreign currency symbol added to the page title
         """
         foreign_currency_symbol = ""
-        foreign_currency_id = self.env.company.currency_foreign_id
+        foreign_currency_id = self.env.company.foreign_currency_id
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
