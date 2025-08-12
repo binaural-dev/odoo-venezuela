@@ -82,13 +82,15 @@
                     readonly="1"
                 />
             </xpath>
-            <xpath expr="//notebook/page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="attributes">
+            <xpath
+                expr="//notebook/page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']"
+                position="attributes">
                 <attribute name="readonly">1</attribute>
             </xpath>
             <xpath expr="//page/field[@name='line_ids']/list/field[@name='balance']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" />
-                <!-- <field
+                <field
                     name="foreign_debit"
                     optional="show"
                     sum="Total Foreign Debit"
@@ -103,7 +105,7 @@
                 <field name="foreign_debit_adjustment" optional="hide" />
                 <field name="foreign_credit_adjustment" optional="hide" />
                 <field name="foreign_balance" optional="hide" groups="base.group_no_one" />
-                <field name="foreign_rate" optional="hide" groups="base.group_no_one" /> -->
+                <field name="foreign_rate" optional="hide" groups="base.group_no_one" />
                 <field
                     name="foreign_inverse_rate"
                     groups="base.group_no_one"
@@ -125,13 +127,13 @@
             <xpath expr="//list/field[@name='amount_total_signed']" position="after">
                 <field name="foreign_rate" optional="show" />
                 <field name="foreign_currency_id" column_invisible="True" />
-                <!-- <field
+                <field
                     name="foreign_total_billed"
                     sum="Foreign Amount total"
                     widget="monetary"
                     options="{'currency_field': 'foreign_currency_id'}"
                     decoration-bf="1"
-                    optional="hide" /> -->
+                    optional="hide" />
             </xpath>
         </field>
     </record>
