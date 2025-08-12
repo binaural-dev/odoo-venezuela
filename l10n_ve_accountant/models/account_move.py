@@ -66,21 +66,21 @@ class AccountMove(models.Model):
 
     financial_document = fields.Boolean(default=False, copy=False)
 
-    # foreign_taxable_income = fields.Monetary(
-    #     help="Foreign Taxable Income of the invoice",
-    #     compute="_compute_foreign_taxable_income",
-    #     currency_field="foreign_currency_id",
-    # )
+    foreign_taxable_income = fields.Monetary(
+        help="Foreign Taxable Income of the invoice",
+        compute="_compute_foreign_taxable_income",
+        currency_field="foreign_currency_id",
+    )
     total_taxed = fields.Many2one(
         "account.tax",
         help="Total Taxed of the invoice",
     )
-    # foreign_total_billed = fields.Monetary(
-    #     help="Foreign Total Billed of the invoice",
-    #     compute="_compute_foreign_total_billed",
-    #     currency_field="foreign_currency_id",
-    #     store=True,
-    # )
+    foreign_total_billed = fields.Monetary(
+        help="Foreign Total Billed of the invoice",
+        compute="_compute_foreign_total_billed",
+        currency_field="foreign_currency_id",
+        store=True,
+    )
 
     _sql_constraints = [
         (
@@ -97,15 +97,15 @@ class AccountMove(models.Model):
 
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
-    # foreign_debit = fields.Monetary(
-    #     compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
-    # )
-    # foreign_credit = fields.Monetary(
-    #     compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
-    # )
-    # foreign_balance = fields.Monetary(
-    #     compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
-    # )
+    foreign_debit = fields.Monetary(
+        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    )
+    foreign_credit = fields.Monetary(
+        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    )
+    foreign_balance = fields.Monetary(
+        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    )
     amount = fields.Float(tracking=True)
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -662,7 +662,7 @@ class AccountMove(models.Model):
         for move in self:
             move.foreign_taxable_income = False
             if move.is_invoice() and move.invoice_line_ids:
-                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"]
+                move.foreign_taxable_income = move.tax_totals["base_amount_foreign_currency"]
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
@@ -677,21 +677,24 @@ class AccountMove(models.Model):
                 and move.tax_totals
             ):
                 continue
-            move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
+            move.foreign_total_billed = move.tax_totals["total_amount_foreign_currency"]
 
+    #override of base 
+    @api.depends_context('lang')
     @api.depends(
-        "invoice_line_ids.currency_rate",
-        "invoice_line_ids.tax_base_amount",
-        "invoice_line_ids.tax_line_id",
-        "invoice_line_ids.price_total",
-        "invoice_line_ids.price_subtotal",
-        "invoice_payment_term_id",
-        "partner_id",
-        "currency_id",
-        "foreign_rate",
+        'invoice_line_ids.currency_rate',
+        'invoice_line_ids.tax_base_amount',
+        'invoice_line_ids.tax_line_id',
+        'invoice_line_ids.price_total',
+        'invoice_line_ids.price_subtotal',
+        'invoice_payment_term_id',
+        'partner_id',
+        'currency_id',
+        'foreign_rate',
     )
     def _compute_tax_totals(self):
         return super()._compute_tax_totals()
+
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
