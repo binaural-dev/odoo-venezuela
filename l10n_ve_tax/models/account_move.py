@@ -6,24 +6,6 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):  
     _inherit = "account.move"
 
-    #override of test
-    @api.depends_context('lang')
-    @api.depends(
-        'invoice_line_ids.currency_rate',
-        'invoice_line_ids.tax_base_amount',
-        'invoice_line_ids.tax_line_id',
-        'invoice_line_ids.price_total',
-        'invoice_line_ids.price_subtotal',
-        'invoice_payment_term_id',
-        'partner_id',
-        'currency_id',
-        'foreign_rate',
-    )
-    def _compute_tax_totals(self):
-        """ Computed field used for custom widget's rendering.
-            Only set on invoices.
-        """
-        return super()._compute_tax_totals()
 
     #TODO:Funciones duplicadas de la logica de negocio de Odoo para el manejo de moneda foranea.
     #FUNCIONES FORANEAS
