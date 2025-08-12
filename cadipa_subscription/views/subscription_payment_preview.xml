@@ -1,90 +1,108 @@
 <odoo>
-<template id="subscription_payment_preview" name="Subscription Payment Preview">
-    <t t-call="website.layout">
-        <div id="wrap" class="oe_structure oe_empty">
+    <template id="subscription_payment_preview" name="Subscription Payment Preview">
+        <t t-call="website.layout">
             <div class="container mt-4 mb-5">
-                <div class="row justify-content-center">
+                <div class="row">
+                     <t t-set="breadcrumbs_searchbar" t-value="True" />
+                <div class="container">
+                    <t t-call="portal.portal_breadcrumbs"></t>
+
+                </div>
+
+                <t t-set="title">Memberships</t>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">Vista previa de suscripción</h1>
+                </div>
                     <!-- Main Content -->
-                    <div class="col-lg-8 col-md-10">
-                        <div class="card shadow-sm">
-                            <div class="card-body text-center py-5">
-                                <h1 class="display-5 mb-4">Vista previa de suscripción</h1>
-                                
-                                <div class="py-3">
-                                    <h3 class="mb-3">Cuota inicial</h3>
-                                    <h2 class="text-primary font-weight-bold">
-                                        <t t-out="plan"/> <small>USD</small>
-                                    </h2>
+                    <div class="col-12 col-md-8">
+                        <div class="card">
+                            <div class="card-body py-4">
+
+                                <!-- Línea con cuota inicial, producto e imagen -->
+                                <div
+                                    class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+                                    <div>
+                                        <h4 class="mb-1">Cuota inicial</h4>
+                                        <div class="d-flex align-items-center">
+                                            <t t-if="plan.initial_fee_product">
+                                                <img
+                                                    t-att-src="image_data_uri(plan.initial_fee_product.image_128)"
+                                                    class="rounded-circle me-2"
+                                                    width="40" height="40"
+                                                    alt="Producto" />
+                                                <span t-field="plan.initial_fee_product.name"
+                                                    class="text-muted" />
+                                            </t>
+                                            <t t-else="">
+                                                <span class="text-muted">No se ha especificado
+                                                    producto</span>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-primary mb-0">
+                                        <t t-esc="fee_price" />
+                                        <small>BS</small>
+                                    </h3>
                                 </div>
-                                
-                                <a href="#" class="btn btn-primary btn-lg mt-3 px-5">
-                                    Pagar ahora
-                                </a>
+
+                                <!-- Desglose de precios -->
+                                <div class="row border-bottom pb-3 mb-3">
+                                    <div class="col-6 text-muted">Subtotal</div>
+                                    <div class="col-6 text-end"><t t-esc="fee_price" /> BS</div>
+
+                                    <div class="col-6 text-muted mt-2">Impuesto</div>
+                                    <div class="col-6 text-end mt-2"><t t-esc="fee_price_tax " />
+                                        BS</div>
+                                </div>
+
+                                <!-- Total -->
+                                <div class="row fw-bold fs-5">
+                                    <div class="col-6">Total</div>
+                                    <div class="col-6 text-end text-primary"> <t
+                                            t-esc="total_price " /> BS </div>
+                                </div>
+
+                                <!-- Botón de pago -->
+                                <div class="text-center mt-4">
+    <form t-att-action="'/memberships/payment/process/' + str(plan.id)" method="POST">
+        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+        <button type="submit" class="btn btn-primary btn-lg px-5 py-2">
+            <i class="fa fa-credit-card me-2"></i>Pagar ahora
+        </button>
+    </form>
+</div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Plan Info Sidebar -->
-                    <div class="col-lg-4 col-md-10 mt-md-0 mt-4">
-                        <div class="card shadow-sm sticky-top" style="top: 20px;">
-                            <div class="card-header bg-light py-3">
-                                <h4 class="mb-0">Tu plan seleccionado</h4>
+
+                    <!-- Sidebar al estilo Odoo -->
+                    <div class="col-12 col-md-4 col-lg-3 offset-lg-1 mt-4 mt-md-0">
+                        <div class="o_appointment_details_column bg-light p-4">
+
+                            <div class="o_appointment_details_type d-flex mb-3">   
+                                <img
+                                                    t-att-src="image_data_uri(plan.initial_fee_product.image_128)"
+                                                    class="rounded-circle me-2"
+                                                    width="40" height="40"/>
+                                <h5 class="mb-1" t-out="membership.name" />
                             </div>
-                            <div class="card-body">
-                                <h3 class="h5 text-primary" t-out="plan"/>
-                                
-                                <hr/>
-                                
-                                <!-- <div t-if="plan.description">
-                                    <h5 class="text-muted mb-3">Qué incluye:</h5>
-                                    <p t-out="plan.description" class="text-muted"/>
-                                </div> -->
-                                
-                                <div class="mt-4" t-if="has_benefits">
-                                    <h5 class="text-muted mb-3">Beneficios:</h5>
-                                    <ul class="list-unstyled">
-                                        <li t-foreach="benefits" t-as="benefit" class="mb-2">
-                                            <i class="fa fa-check-circle text-success mr-2"/>
-                                            <span t-out="benefit.name"/>
-                                        </li>
-                                    </ul>
+
+                            <small class="text-uppercase text-muted">Detalles del plan</small>
+
+                            <div class="d-flex flex-column gap-1 mt-2">
+                                <div class="d-flex py-1 px-0 bg-transparent border-0">
+                                    <span> <b>Precio:</b> <t t-out="membership_price"/>BS</span>
                                 </div>
-                                
-                                <div class="alert alert-info mt-4" t-if="not has_benefits">
-                                    <i class="fa fa-info-circle mr-2"></i>
-                                    Este plan no tiene beneficios adicionales especificados
-                                </div>
+
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Estilos adicionales -->
-        <style>
-            .card {
-                border-radius: 10px;
-                border: none;
-            }
-            .card-header {
-                border-radius: 10px 10px 0 0 !important;
-            }
-            .btn-primary {
-                background-color: #3a7bd5;
-                border-color: #3a7bd5;
-                padding: 10px 30px;
-                font-weight: 500;
-                transition: all 0.3s;
-            }
-            .btn-primary:hover {
-                background-color: #2c5fb3;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            }
-        </style>
-    </t>
-</template>
-    
+
+        </t>
+    </template>
+
 
 </odoo>
