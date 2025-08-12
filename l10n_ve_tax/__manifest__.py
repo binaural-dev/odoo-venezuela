@@ -16,7 +16,8 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "assets": {
-        "web.assets_backend": ["l10n_ve_tax/static/src/components/**/*"],
-    },
+    #FIXME: Se comenta el componente debido a refactorización de componente base
+    # "assets": {
+    #     "web.assets_backend": ["l10n_ve_tax/static/src/components/**/*"],
+    # },
 }
