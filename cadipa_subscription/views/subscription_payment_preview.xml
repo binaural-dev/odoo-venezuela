@@ -1,0 +1,90 @@
+<odoo>
+<template id="subscription_payment_preview" name="Subscription Payment Preview">
+    <t t-call="website.layout">
+        <div id="wrap" class="oe_structure oe_empty">
+            <div class="container mt-4 mb-5">
+                <div class="row justify-content-center">
+                    <!-- Main Content -->
+                    <div class="col-lg-8 col-md-10">
+                        <div class="card shadow-sm">
+                            <div class="card-body text-center py-5">
+                                <h1 class="display-5 mb-4">Vista previa de suscripción</h1>
+                                
+                                <div class="py-3">
+                                    <h3 class="mb-3">Cuota inicial</h3>
+                                    <h2 class="text-primary font-weight-bold">
+                                        <t t-out="plan"/> <small>USD</small>
+                                    </h2>
+                                </div>
+                                
+                                <a href="#" class="btn btn-primary btn-lg mt-3 px-5">
+                                    Pagar ahora
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Plan Info Sidebar -->
+                    <div class="col-lg-4 col-md-10 mt-md-0 mt-4">
+                        <div class="card shadow-sm sticky-top" style="top: 20px;">
+                            <div class="card-header bg-light py-3">
+                                <h4 class="mb-0">Tu plan seleccionado</h4>
+                            </div>
+                            <div class="card-body">
+                                <h3 class="h5 text-primary" t-out="plan"/>
+                                
+                                <hr/>
+                                
+                                <!-- <div t-if="plan.description">
+                                    <h5 class="text-muted mb-3">Qué incluye:</h5>
+                                    <p t-out="plan.description" class="text-muted"/>
+                                </div> -->
+                                
+                                <div class="mt-4" t-if="has_benefits">
+                                    <h5 class="text-muted mb-3">Beneficios:</h5>
+                                    <ul class="list-unstyled">
+                                        <li t-foreach="benefits" t-as="benefit" class="mb-2">
+                                            <i class="fa fa-check-circle text-success mr-2"/>
+                                            <span t-out="benefit.name"/>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="alert alert-info mt-4" t-if="not has_benefits">
+                                    <i class="fa fa-info-circle mr-2"></i>
+                                    Este plan no tiene beneficios adicionales especificados
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estilos adicionales -->
+        <style>
+            .card {
+                border-radius: 10px;
+                border: none;
+            }
+            .card-header {
+                border-radius: 10px 10px 0 0 !important;
+            }
+            .btn-primary {
+                background-color: #3a7bd5;
+                border-color: #3a7bd5;
+                padding: 10px 30px;
+                font-weight: 500;
+                transition: all 0.3s;
+            }
+            .btn-primary:hover {
+                background-color: #2c5fb3;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+        </style>
+    </t>
+</template>
+    
+
+</odoo>

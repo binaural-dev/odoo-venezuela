@@ -16,7 +16,8 @@
     ],
     # always loaded
     "data": [
-        "views/sale_subscription_plan_views.xml"
+        "views/sale_subscription_plan_views.xml",
+        "views/subscription_payment_preview.xml"
     ],
     "images": ["static/description/icon.png"],
     "application": True,

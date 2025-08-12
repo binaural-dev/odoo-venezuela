@@ -23,12 +23,12 @@ class CadipaCustomerPortal(CustomerPortal):
         partner = request.env.user
         
         user_memberships = request.env['action.partner'].search([
-            ('id', '=', partner.action_number.id)
+            ('id', '=', partner.action_number.id),
         ])
 
         user_guests = user_memberships.beneficiary_partner_ids
         
-        all_memberships = request.env['membership.type.plan'].sudo().search([])
+        all_memberships = request.env['membership.type.plan'].sudo().search([('published', '=', True)])
         
         membership_count = len(user_memberships)
         pager = portal_pager(
@@ -146,7 +146,6 @@ class CadipaCustomerPortal(CustomerPortal):
         if request.env.user._is_public():
             return request.redirect("/web/signup")
         
-        # Verificar que el plan de membresía existe
         membership_plan = request.env['membership.type.plan'].sudo().browse(membership_plan_id)
         if not membership_plan.exists():
             return request.redirect('/my/memberships?error=plan_not_found')
@@ -170,7 +169,7 @@ class CadipaCustomerPortal(CustomerPortal):
         if missing_fields:
             return request.redirect(f'/my/memberships/additional_info/{membership_plan_id}?missing_fields={",".join(missing_fields)}')
         
-        return request.redirect('/shop/cart/update?product_id=%s&add_qty=1' % membership_plan.product_id.id)
+        return request.redirect(f'/memberships/payment/preview/{membership_plan.product_id.id}')
 
     @http.route(['/my/memberships/additional_info/<int:membership_plan_id>'], 
                 type='http', auth="user", website=True)
@@ -238,7 +237,7 @@ class CadipaCustomerPortal(CustomerPortal):
             if parish_id:
                 update_vals['parish_id'] = parish_id
             if zip_int:
-                update_vals['country_code'] = zip_int
+                update_vals['zip'] = zip_int
 
             # Escribe solo si hay algo que guardar
             if update_vals:
