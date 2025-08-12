@@ -62,7 +62,6 @@ class AccountTax(models.Model):
                 res_tax_group["tax_amount_foreign_currency"] = foreign_tax_group.get("tax_amount_currency", 0.0)
                 res_tax_group["base_amount_foreign_currency"] = foreign_tax_group.get("base_amount_currency", 0.0)
                 res_tax_group["display_base_amount_foreign_currency"] = foreign_tax_group.get("display_base_amount_currency", 0.0)
-        _logger.warning("res %s", res)
         return res
     @api.model
     def _prepare_foreign_base_line_for_taxes_computation(self, record, **kwargs):
