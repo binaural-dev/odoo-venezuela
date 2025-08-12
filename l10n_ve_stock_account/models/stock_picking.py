@@ -28,6 +28,12 @@ class StockPicking(models.Model):
         copy=False,
     )
 
+    match_guide_dispatch_domain = fields.Boolean(
+        compute="_compute_match_guide_dispatch_domain",
+        store=True,
+    )
+
+
     state_guide_dispatch = fields.Selection(
         [
             ("to_invoice", "To Invoice"),
@@ -397,17 +403,28 @@ class StockPicking(models.Model):
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
         invoice_line_list = []
-        for move_id in self.move_ids_without_package:
-            price_unit = move_id.product_id.list_price
+        for order_line in self.sale_id.order_line:
             tax_ids = [(6, 0, [self.company_id.account_sale_tax_id.id])]
-            if move_id.sale_line_id:
+
+            if order_line.display_type:
+                move_id = order_line
+                vals_dict = {
+                    "name": move_id.name,
+                    "product_id": move_id.product_id.id,
+                    "price_unit": False,
+                    "tax_ids": tax_ids,
+                    "quantity": 0,
+                    "from_picking_line": from_picking_line,
+                    "display_type": move_id.display_type,
+                }
+            else:
+                move_id = self.move_ids_without_package.filtered(
+                    lambda m: m.sale_line_id and m.sale_line_id.id == order_line.id
+                )
+                move_id = move_id[0] if move_id else order_line
                 price_unit = move_id.sale_line_id.price_unit
                 tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
-
-            vals = (
-                0,
-                0,
-                {
+                vals_dict = {
                     "name": move_id.description_picking,
                     "product_id": move_id.product_id.id,
                     "price_unit": price_unit,
@@ -419,8 +436,8 @@ class StockPicking(models.Model):
                     "tax_ids": tax_ids,
                     "quantity": move_id.quantity,
                     "from_picking_line": from_picking_line,
-                },
-            )
+                }
+            vals = (0, 0, vals_dict)
             invoice_line_list.append(vals)
         return invoice_line_list
     
@@ -691,6 +708,32 @@ class StockPicking(models.Model):
             picking.order_is_consignment = (
                 picking.sale_id.is_consignation if picking.sale_id else False
             )
+    @api.depends(
+        "state",
+        "type_delivery_step",
+        "transfer_reason_id.code",
+        "sale_id.document",
+        "is_dispatch_guide",
+    )
+    def _compute_match_guide_dispatch_domain(self):
+        for picking in self:
+            cond_state = picking.state == "done"
+            cond_type = picking.type_delivery_step in ("out", "int")
+            cond_reason = (
+                picking.transfer_reason_id.code != "self_consumption"
+                if picking.transfer_reason_id
+                else True
+            )
+            cond_doc = (
+                picking.sale_id.document != "invoice" if picking.sale_id else True
+            )
+            cond_step = picking.type_delivery_step == "out" or (
+                picking.type_delivery_step == "int" and picking.is_dispatch_guide
+            )
+
+            picking.match_guide_dispatch_domain = all(
+                [cond_state, cond_type, cond_reason, cond_doc, cond_step]
+            )
 
     @api.depends("picking_type_id", "partner_id", "sale_id")
     def _compute_location_id(self):
@@ -750,7 +793,7 @@ class StockPicking(models.Model):
             record.show_create_vendor_credit = False
             record.show_create_invoice_internal = False
 
-            if is_invoice_empty and is_done and is_to_invoice:
+            if is_invoice_empty and is_done and is_to_invoice and not record.purchase_id:
                 if record.operation_code == "incoming":
                     record.show_create_bill = not record.is_return
                     record.show_create_vendor_credit = record.is_return
@@ -792,12 +835,15 @@ class StockPicking(models.Model):
         for picking in self:
             picking.has_document = bool(picking.sale_id.document)
 
-    @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid")
+    @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid", "purchase_id")
     def _compute_dispatch_guide_controls(self):
         for picking in self:
             picking.dispatch_guide_controls = False
 
             if picking.state != "done":
+                continue
+
+            if picking.purchase_id:
                 continue
 
             # if not picking.sale_id and not picking.operation_code == "internal":
@@ -1088,16 +1134,6 @@ class StockPicking(models.Model):
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
-    @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
-    def _compute_partner_required(self):
-        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
-        for picking in self:
-            picking.partner_required = (
-                picking.transfer_reason_id.id == consignment_reason.id
-                and picking.is_dispatch_guide
-                and picking.is_consignment
-            )
-            picking._assign_partner_from_location()
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):
@@ -1115,15 +1151,21 @@ class StockPicking(models.Model):
         for picking in self:
             picking._assign_partner_from_location()
 
-
+    def button_validate(self):
+        '''Override to set the state_guide_dispatch to 'emited' when the transfer reason is 'transfer_between_warehouses' 
+        and the operational_code is internal
+        '''
+        for picking in self:
+            if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
+                picking.state_guide_dispatch = 'emited'
+        return super(StockPicking, self).button_validate()
+    
     def _assign_partner_from_location(self):
         """Set partner_id from the destination location when required."""
         for picking in self:
             if picking.partner_required:
                 partner = picking.location_dest_id.partner_id
                 picking.partner_id = partner.id if partner else False
-            else:
-                picking.partner_id = False
 
     @api.model_create_multi
     def create(self, vals_list):
