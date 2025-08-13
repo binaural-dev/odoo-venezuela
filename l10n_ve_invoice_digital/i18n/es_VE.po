@@ -492,6 +492,15 @@ msgstr ""
 "vincular la forma de pago correspondiente."
 
 #. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
+#, python-format
+msgid "The selected subsidiary does not contain a reference"
+msgstr "La sucursal seleccionada no contiene referencia"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__token_auth_tfhka
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Token Auth"
