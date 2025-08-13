@@ -27,5 +27,6 @@
         "views/account_retention_islr.xml",
         "views/stock_picking.xml",
         "wizard/account_retention_alert_views.xml",
+        "views/account_journal.xml",
     ],
 }
