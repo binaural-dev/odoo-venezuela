@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "17.0.0.1.2",
+    "version": "17.0.0.1.3",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_invoice",
@@ -28,7 +28,7 @@
         "views/stock_picking_guide_dispatch_views.xml",
         "views/stock_move_line_consignation_views.xml",
         "views/stock_picking_views.xml",
-        "views/sale_order_views.xml",
+        # "views/sale_order_views.xml",
         "views/res_partner_view.xml",
         "views/res_config_setting_views.xml",
         "views/stock_warehouse_views.xml",
