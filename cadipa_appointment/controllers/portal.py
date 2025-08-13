@@ -16,8 +16,6 @@ class CadipaCustomerPortal(CustomerPortal):
     @http.route(['/my/memberships', '/my/memberships/page/<int:page>'], 
             type='http', auth="public", website=True)
     def portal_my_memberships(self, page=1, **kw):
-        # if request.env.user._is_public():
-        #     return request.redirect("/web/signup")
 
         values = self._prepare_portal_layout_values()
         partner = request.env.user
@@ -142,7 +140,6 @@ class CadipaCustomerPortal(CustomerPortal):
 
     @http.route(['/my/memberships/select/<int:membership_plan_id>'], type='http', auth="public", website=True)
     def select_membership_plan(self, membership_plan_id, **kw):
-        # Verificar si el usuario está autenticado
         if request.env.user._is_public():
             return request.redirect("/web/signup")
         
@@ -211,7 +208,6 @@ class CadipaCustomerPortal(CustomerPortal):
         try:
             update_vals = {}
 
-            # Campos libres
             vat = (post.get('vat') or '').strip()
             street = (post.get('street') or '').strip()
             if vat:
@@ -221,8 +217,8 @@ class CadipaCustomerPortal(CustomerPortal):
 
             country_id = _clean_id('res.country', post.get('country_id'))
             state_id = _clean_id('res.country.state', post.get('state_id'))
-            city_id = _clean_id('res.country.city', post.get('city_id'))                        # tu modelo de ciudades
-            municipality_id = _clean_id('res.country.municipality', post.get('municipality_id'))# ajusta si tu modelo se llama distinto
+            city_id = _clean_id('res.country.city', post.get('city_id'))
+            municipality_id = _clean_id('res.country.municipality', post.get('municipality_id'))
             parish_id = _clean_id('res.country.parish', post.get('parish_id'))  
             zip_int = _to_int((post.get('zip') or '').strip())
 
@@ -233,20 +229,18 @@ class CadipaCustomerPortal(CustomerPortal):
             if city_id:
                 update_vals['city_id'] = city_id
             if municipality_id:
-                update_vals['municipality'] = municipality_id  # <-- corregido el nombre del campo
+                update_vals['municipality'] = municipality_id
             if parish_id:
                 update_vals['parish_id'] = parish_id
             if zip_int:
                 update_vals['zip'] = zip_int
 
-            # Escribe solo si hay algo que guardar
             if update_vals:
                 partner.sudo().write(update_vals)
 
             return request.redirect("/my/memberships")
 
         except Exception as e:
-            _logger.exception("Error saving additional info: %s", e)
             membership_plan_id = post.get('membership_plan_id') or ''
             suffix = f'/{membership_plan_id}' if membership_plan_id else ''
             return request.redirect(f'/my/memberships/additional_info{suffix}?error=1')
@@ -256,22 +250,19 @@ class CadipaCustomerPortal(CustomerPortal):
 
     @http.route('/cadipa/location/municipalities', type='http', auth='public', website=True, methods=['GET'])
     def cadipa_get_municipalities(self, **kw):
-        # 🔽 ahora por state_id
         state_id = kw.get('state_id') or request.params.get('state_id')
         state = request.env['res.country.state'].sudo().search([('id','=',state_id)])
 
-        Municipality = request.env['res.country.municipality'].sudo()   # <-- ajusta al modelo real
+        Municipality = request.env['res.country.municipality'].sudo()
         recs = Municipality.search([('state_id', '=', state.id)], order='name')
-        _logger.info(f'akkskakakak === {recs}')
         return Response(json.dumps([{'id': r.id, 'name': r.name} for r in recs]), content_type='application/json')
 
 
     @http.route('/cadipa/location/parishes', type='http', auth='public', website=True, methods=['GET'])
     def cadipa_get_parishes(self, **kw):
         municipality_id =int( kw.get('municipality_id') or request.params.get('municipality_id'))
-        Parish = request.env['res.country.parish'].sudo()               # <-- ajusta al modelo real
+        Parish = request.env['res.country.parish'].sudo()
         recs = Parish.search([('municipality_id', '=', municipality_id)], order='name')
-        _logger.info(f'parishhh === {recs}')
         return Response(json.dumps([{'id': r.id, 'name': r.name} for r in recs]), content_type='application/json')
     
     @http.route([
@@ -280,10 +271,6 @@ class CadipaCustomerPortal(CustomerPortal):
     ], type='http', auth='public', website=True, methods=['GET'])
     def cadipa_get_cities(self, country_id=None, **kw):
         state_id = kw.get('state_id') or request.params.get('state_id')
-        # try:
-        #     cid = int(cid)
-        # except Exception:
-        #     return Response(json.dumps([]), content_type='application/json')
         state = request.env['res.country.state'].sudo().search([('id','=',state_id)])
 
         City = request.env['res.country.city'].sudo()

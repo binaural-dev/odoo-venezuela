@@ -14,12 +14,10 @@
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1 class="h3 mb-0">Vista previa de suscripción</h1>
                 </div>
-                    <!-- Main Content -->
                     <div class="col-12 col-md-8">
                         <div class="card">
                             <div class="card-body py-4">
 
-                                <!-- Línea con cuota inicial, producto e imagen -->
                                 <div
                                     class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
                                     <div>
@@ -46,7 +44,6 @@
                                     </h3>
                                 </div>
 
-                                <!-- Desglose de precios -->
                                 <div class="row border-bottom pb-3 mb-3">
                                     <div class="col-6 text-muted">Subtotal</div>
                                     <div class="col-6 text-end"><t t-esc="fee_price" /> BS</div>
@@ -56,27 +53,24 @@
                                         BS</div>
                                 </div>
 
-                                <!-- Total -->
                                 <div class="row fw-bold fs-5">
                                     <div class="col-6">Total</div>
                                     <div class="col-6 text-end text-primary"> <t
                                             t-esc="total_price " /> BS </div>
                                 </div>
 
-                                <!-- Botón de pago -->
                                 <div class="text-center mt-4">
-    <form t-att-action="'/memberships/payment/process/' + str(plan.id)" method="POST">
-        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-        <button type="submit" class="btn btn-primary btn-lg px-5 py-2">
-            <i class="fa fa-credit-card me-2"></i>Pagar ahora
-        </button>
-    </form>
-</div>
+                                    <form t-att-action="'/memberships/payment/process/' + str(plan.id)+ '/'+ str(membership_id)" method="POST">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="btn btn-primary btn-lg px-5 py-2">
+                                            <i class="fa fa-credit-card me-2"></i>Pagar ahora
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Sidebar al estilo Odoo -->
                     <div class="col-12 col-md-4 col-lg-3 offset-lg-1 mt-4 mt-md-0">
                         <div class="o_appointment_details_column bg-light p-4">
 
