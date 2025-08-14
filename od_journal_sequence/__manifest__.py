@@ -4,7 +4,6 @@
     "name": "Journal Sequence For Odoo 18",
     "version": "18.0.0.0.0",
     "category": "Accounting",
-    "summary": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Odoo 17, Journal Sequence For Invoice",
     "summary": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Invoice",
     "description": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Invoice",
     "sequence": "1",
