@@ -12,6 +12,8 @@ _logger = logging.getLogger(__name__)
 class AccountFiscalyearClosingConfig(models.Model):
     _inherit = "account.fiscalyear.closing.config"
 
+    l_map = fields.Boolean(string="Load Accounts")
+    
     @api.onchange("l_map")
     def onchange_l_map(self):
         accounts = (
@@ -30,7 +32,7 @@ class AccountFiscalyearClosingConfig(models.Model):
                             "expense_direct_cost",
                         ],
                     ),
-                    ("company_id", "in", [self.env.company.id, False]),
+                    ("company_ids", "in", [self.env.company.id, False]),
                 ]
             )
         )
@@ -41,7 +43,7 @@ class AccountFiscalyearClosingConfig(models.Model):
             .search(
                 [
                     ("account_type", "=", "equity_unaffected"),
-                    ("company_id", "in", [self.env.company.id, False]),
+                    ("company_ids", "in", [self.env.company.id, False]),
                 ],
                 limit=1,
             )
@@ -66,7 +68,6 @@ class AccountFiscalyearClosingConfig(models.Model):
         else:
             return {"value": {"mapping_ids": [(5, 0, 0)]}}
 
-    l_map = fields.Boolean(string="Load Accounts")
 
     def move_prepare(self, move_lines, rate=0):
         self.ensure_one()
