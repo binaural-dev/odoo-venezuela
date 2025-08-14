@@ -47,6 +47,7 @@ class AccountPaymentIgtf(models.Model):
     @api.depends("journal_id")
     def _compute_is_igtf(self):
         for payment in self:
+            payment.is_igtf_on_foreign_exchange = False
             if payment.journal_id.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
 
