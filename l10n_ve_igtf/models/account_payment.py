@@ -11,8 +11,7 @@ class AccountPaymentIgtf(models.Model):
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         help="IGTF on Foreign Exchange?",
-        compute="_compute_is_igtf",
-        store=True,
+        # compute="_compute_igtf_on_foreign_exchange",
     )
 
     igtf_percentage = fields.Float(
@@ -32,23 +31,22 @@ class AccountPaymentIgtf(models.Model):
     amount_with_igtf = fields.Float(
         string="Amount with IGTF", compute="_compute_amount_with_igtf", store=True
     )
+    # @api.depends("journal_id")
+    # def _compute_igtf_on_foreign_exchange(self):
+    #     for record in self:
+    #         if record.journal_id.is_igtf:
+    #             record.is_igtf_on_foreign_exchange = True
 
     @api.depends("partner_id")
     def _compute_igtf_percentage(self):
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
 
-    @api.depends("amount","igtf_amount")
+    @api.depends("amount", "igtf_amount")
     def _compute_amount_with_igtf(self):
         for payment in self:
             if not payment.amount_with_igtf:
                 payment.amount_with_igtf = payment.amount + payment.igtf_amount
-
-    @api.depends("journal_id")
-    def _compute_is_igtf(self):
-        for payment in self:
-            if payment.journal_id.is_igtf:
-                payment.is_igtf_on_foreign_exchange = True
 
     @api.depends("amount")
     def _compute_igtf_amount(self):
@@ -72,14 +70,23 @@ class AccountPaymentIgtf(models.Model):
         """
 
         vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(
-            write_off_line_vals,
-            force_balance
+            write_off_line_vals, force_balance
         )
 
         if self.igtf_percentage:
             self._create_igtf_moves_in_payments(vals)
 
         return vals
+
+    def calculate_igtf_for_payment(self, invoice, payment_amount):
+        """
+        Calcula IGTF solo sobre el monto que se aplica a la deuda principal
+        """
+        # 1. Deuda principal pendiente (sin incluir IGTF)
+        principal_debt = invoice.amount_total - invoice.bi_igtf
+
+        principal_amount = min(payment_amount, principal_debt)
+        return principal_amount * 0.03
 
     def _create_igtf_moves_in_payments(self, vals):
         """Prepare values to create a new account.move.line for a payment.
@@ -101,30 +108,25 @@ class AccountPaymentIgtf(models.Model):
             return
 
         for payment in self:
-            if (
-                payment.igtf_amount
-                and payment.is_igtf_on_foreign_exchange
-            ):
+            move_id = (
+                self.env.context.get("active_id", False)
+            )
+            move = self.env["account.move"].browse(move_id)
+            if move:
+                payment.igtf_amount = payment.calculate_igtf_for_payment(move, payment.amount)
+            if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
                 if payment.payment_type == "inbound":
                     vals_igtf = [
                         x for x in vals if x["account_id"] == igtf_account]
 
                     if not vals_igtf:
                         payment._prepare_inbound_move_line_igtf_vals(vals)
-                    else:
-                        raise UserError(
-                            _("IGTF already exists in the move line values")
-                        )
 
                 if payment.payment_type == "outbound":
                     vals_igtf = [
                         x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
                         payment._prepare_outbound_move_line_igtf_vals(vals)
-                    else:
-                        raise UserError(
-                            _("IGTF already exists in the move line values")
-                        )
 
     def _create_inbound_move_line_igtf_vals(self, vals):
         """Create the igtf move line values for inbound payments

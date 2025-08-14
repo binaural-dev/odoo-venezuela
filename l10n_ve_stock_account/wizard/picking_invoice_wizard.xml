@@ -5,11 +5,24 @@
         <field name="model">picking.invoice.wizard</field>
         <field name="arch" type="xml">
             <form string="Generate Invoice For Multiple Picking">
-                <group col="4">
-                    <span>Invoice will generate for selected picking</span>
-                </group>
+                <sheet>
+                    <p>Invoice will generate for selected picking</p>
+                    <group>
+                        <group>
+                            <field name="invoice_type_selection" widget='radio'/>
+                        </group>
+                        <field name="pickings_ids">
+                            <tree>
+                                <field name='guide_number'/>
+                                <field name='partner_id'/>
+                                <field name='state_guide_dispatch'/>
+                                <field name='transfer_reason_id'/>
+                            </tree>
+                        </field>
+                    </group>
+                </sheet>
                 <footer>
-                    <button name="picking_multi_invoice" string="Create Invoice"
+                    <button name="picking_selection_invoice" string="Create Invoice"
                             type="object" class="oe_highlight"/>
                     <button string="Cancel" class="btn btn-default"
                             special="cancel"/>
