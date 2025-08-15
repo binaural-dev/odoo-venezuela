@@ -6,10 +6,10 @@
         <field name="model">stock.move.line</field>
         <field name="inherit_id" ref="stock.view_stock_move_line_detailed_operation_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
+            <xpath expr="//list" position="inside">
                 <field name="priority_location" optional="hide"/>
             </xpath>
-            <xpath expr="//tree" position="attributes">
+            <xpath expr="//list" position="attributes">
                 <attribute name="default_order">priority_location asc</attribute>
             </xpath>
         </field>
@@ -97,12 +97,12 @@
         </field>
     </record>
     <record id="stock.action_picking_tree_all" model="ir.actions.act_window">
-        <field name="view_mode">tree,kanban,form,calendar</field>
+        <field name="view_mode">list,kanban,form,calendar</field>
         <field 
                 name="view_ids" 
                 eval="[
                     (5, 0, 0), 
-                    (0, 0, {'view_mode': 'tree', 'view_id': ref('stock.vpicktree')}),
+                    (0, 0, {'view_mode': 'list', 'view_id': ref('stock.vpicktree')}),
                     (0, 0, {'view_mode': 'form', 'view_id': ref('stock.view_picking_form')}),
                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('stock.stock_picking_kanban')}),
                     (0, 0, {'view_mode': 'calendar', 'view_id': ref('stock.stock_picking_calendar')}),

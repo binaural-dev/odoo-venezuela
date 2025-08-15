@@ -473,7 +473,7 @@ class StockPicking(models.Model):
 
     def get_foreign_currency_is_vef(self):
 
-        res = self.company_id.currency_foreign_id == self.env.ref("base.VEF")
+        res = self.company_id.foreign_currency_id == self.env.ref("base.VEF")
         return res
 
     # === METHODS ===#
@@ -1119,7 +1119,7 @@ class StockPicking(models.Model):
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     def get_foreign_currency_is_vef(self):
-        return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
+        return self.env.company.foreign_currency_id == self.env.ref("base.VEF")
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):

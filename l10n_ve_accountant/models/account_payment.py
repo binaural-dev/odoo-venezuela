@@ -18,7 +18,7 @@ class AccountPayment(models.Model):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.currency_foreign_id.id or False
+        return self.env.company.foreign_currency_id.id or False
 
     foreign_currency_id = fields.Many2one(
         "res.currency", default=default_alternate_currency
