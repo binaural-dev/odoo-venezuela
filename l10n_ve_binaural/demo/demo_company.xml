@@ -12,7 +12,7 @@
         <field name="website">www.veexample.com</field>
     </record>
 
-    <record id="demo_company_ve" model="res.company">
+    <record id="demo_company_ve" model="res.company" noupdate="1">
         <field name="name">VE Company</field>
         <field name="partner_id" ref="partner_demo_company_ve"/>
     </record>
