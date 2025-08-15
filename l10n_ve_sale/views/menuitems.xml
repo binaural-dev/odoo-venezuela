@@ -4,6 +4,6 @@
         name="Price List Items"
         sequence="40"
         parent="sale.product_menu_catalog"
-        action="product_pricelist_item_tree_only_action"
+        action="product_pricelist_item_list_only_action"
         groups="group_view_pricelist_items" />
 </odoo>

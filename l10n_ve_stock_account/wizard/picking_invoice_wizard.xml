@@ -12,12 +12,12 @@
                             <field name="invoice_type_selection" widget='radio'/>
                         </group>
                         <field name="pickings_ids">
-                            <tree>
+                            <list>
                                 <field name='guide_number'/>
                                 <field name='partner_id'/>
                                 <field name='state_guide_dispatch'/>
                                 <field name='transfer_reason_id'/>
-                            </tree>
+                            </list>
                         </field>
                     </group>
                 </sheet>

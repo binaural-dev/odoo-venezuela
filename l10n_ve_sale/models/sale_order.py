@@ -23,7 +23,7 @@ class SaleOrder(models.Model):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.currency_foreign_id.id or False
+        return self.env.company.foreign_currency_id.id or False
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -149,7 +149,7 @@ class SaleOrder(models.Model):
         for move in self:
             move.foreign_total_billed = False
             if move.order_line:
-                move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
+                move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency")
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -174,7 +174,7 @@ class SaleOrder(models.Model):
             The view of the account move form with the foreign currency symbol added to the page title
         """
         foreign_currency_symbol = ""
-        foreign_currency_id = self.env.company.currency_foreign_id
+        foreign_currency_id = self.env.company.foreign_currency_id
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
@@ -201,6 +201,13 @@ class SaleOrder(models.Model):
         "foreign_rate",
     )
     def _compute_tax_totals(self):
+        # Adaptar el contexto para que el método de impuestos pueda recuperar el registro de la orden
+        for order in self:
+            ctx = self.env.context.copy()
+            ctx.update({'active_id': order.id, 'active_model': order._name})
+            order.with_context(ctx)._compute_tax_totals_base()
+
+    def _compute_tax_totals_base(self):
         return super()._compute_tax_totals()
 
     @api.depends("partner_id")
@@ -526,3 +533,10 @@ class SaleOrder(models.Model):
         )
         for order in orders:
             order.action_cancel()
+
+    @api.depends('order_line.price_subtotal', 'currency_id', 'company_id', 'payment_term_id')
+    def _compute_amounts(self):
+        for order in self:
+            order.amount_untaxed = order.tax_totals['base_amount_currency']
+            order.amount_tax = order.tax_totals['tax_amount_currency']
+            order.amount_total = order.tax_totals['total_amount_currency']

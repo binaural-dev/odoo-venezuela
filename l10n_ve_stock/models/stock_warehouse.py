@@ -56,7 +56,7 @@ class Warehouse(models.Model):
                 'use_existing_lots': True,
                 'default_location_src_id': self.lot_stock_id.id,
                 'default_location_dest_id': self.lot_stock_id.id,
-                'active': self.reception_steps != 'one_step' or self.delivery_steps != 'ship_only' or self.user_has_groups('stock.group_stock_multi_locations'),
+                'active': self.reception_steps != 'one_step' or self.delivery_steps != 'ship_only' or self.env.user.has_group('stock.group_stock_multi_locations'),
                 'sequence': max_sequence + 2,
                 'sequence_code': 'INT',
                 'company_id': self.company_id.id,

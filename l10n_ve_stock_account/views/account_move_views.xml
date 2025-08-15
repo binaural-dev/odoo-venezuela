@@ -23,62 +23,62 @@
             <!-- TODO: La línea entera debería estar bloqueada al `from_picking_line` ser True -->
             <!-- Esta manera es un poco rebuscada y no termina de ser del todo consistente -->
             <!-- ya que no garantiza que en otras vistas u otros campos no sean editables -->
-            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/tree"
+            <xpath expr="//page[@id='invoice_tab']/field[@name='invoice_line_ids']/list"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[1]" position="before">
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[1]" position="before">
                 <field name="from_picking_line" readonly="1" invisible="1"/>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='quantity']"
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='quantity']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='price_unit']"
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='price_unit']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='foreign_price']" position="attributes">
+            <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='foreign_price']" position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath> -->
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='account_id']"
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='account_id']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='name']"
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='name']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='product_id']"
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='product_id']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='discount']"
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='discount']"
                 position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
             <xpath
-                expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='not_deductible_tax']"
+                expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='not_deductible_tax']"
                 position="attributes">
                 <attribute name="readonly">{'readonly': [('from_picking_line', '=',True)]}</attribute>
             </xpath>
 
-            <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/tree[1]/field[@name='tax_ids']" position="attributes">
+            <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='tax_ids']" position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath> -->
 
         </field>
     </record>
     <record id="view_invoice_tree" model="ir.ui.view">
-        <field name="name">account.move.tree</field>
+        <field name="name">account.move.list</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_invoice_tree" />
         <field name="arch" type="xml">
