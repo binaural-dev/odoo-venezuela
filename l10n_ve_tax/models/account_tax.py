@@ -19,18 +19,21 @@ class AccountTax(models.Model):
         if not foreign_currency:
             raise ValidationError(_("No foreign currency configured in the company"))
 
+        ## Base currency
+        res = super()._get_tax_totals_summary(
+            base_lines, currency, company, cash_rounding
+        )
         # Obtener el registro de factura desde el contexto si está disponible
         active_model = self.env.context.get('active_model')
         active_id = self.env.context.get('active_id')
         _logger.warning("self.env.context : %s", self.env.context)
         _logger.warning("active_model : %s", active_model)
         _logger.warning("active_id : %s", active_id)
+        if not active_model or not active_id:
+            return res
         record = self.env[active_model].browse(active_id)
 
-        ## Base currency
-        res = super()._get_tax_totals_summary(
-            base_lines, currency, company, cash_rounding
-        )
+
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
         foreign_lines = []
