@@ -79,6 +79,6 @@ class ResCurrencyRate(models.Model):
         base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
             "base.USD", raise_if_not_found=False
         )
-        foreign_currency_id = self.env.company.currency_foreign_id.id or False
+        foreign_currency_id = self.env.company.foreign_currency_id.id or False
         inverse_rate = 1 / rate if foreign_currency_id == base_usd_id else rate
         return inverse_rate
