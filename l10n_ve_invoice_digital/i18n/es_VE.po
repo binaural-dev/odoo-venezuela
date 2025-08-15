@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250409\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250728\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-07 18:57+0000\n"
-"PO-Revision-Date: 2025-07-07 18:57+0000\n"
+"POT-Creation-Date: 2025-08-12 21:00+0000\n"
+"PO-Revision-Date: 2025-08-12 21:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -233,6 +233,11 @@ msgid "Invoice Digital Tfhka"
 msgstr "Factura Digital Tfhka"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_account_journal
+msgid "Journal"
+msgstr "Diario"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
@@ -272,6 +277,11 @@ msgstr "Contraseña"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__password_tfhka
 msgid "Password Tfhka"
 msgstr "Contraseña Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_journal__payment_method_code
+msgid "Payment Method Code"
+msgstr "Código de forma de pago"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_account_retention
@@ -471,6 +481,15 @@ msgstr ""
 #, python-format
 msgid "The selected series is not configured"
 msgstr "La serie seleccionada no está configurada"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_journal__payment_method_code
+msgid ""
+"This code identifies the payment method. It is used to digitize and "
+"link the corresponding payment method."
+msgstr ""
+"Este código identifica la forma de pago. Se utiliza para digitalizar y "
+"vincular la forma de pago correspondiente."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
