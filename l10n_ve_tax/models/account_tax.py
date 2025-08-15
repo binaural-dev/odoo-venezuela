@@ -25,7 +25,7 @@ class AccountTax(models.Model):
         _logger.warning("self.env.context : %s", self.env.context)
         _logger.warning("active_model : %s", active_model)
         _logger.warning("active_id : %s", active_id)
-        record = self.env[active_model].browse(active_id) if active_model and active_id else self.env['account.move']
+        record = self.env[active_model].browse(active_id)
 
         ## Base currency
         res = super()._get_tax_totals_summary(
@@ -50,13 +50,19 @@ class AccountTax(models.Model):
         if record._name == 'account.move':
             foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
         elif record._name in ('sale.order','purchase.order'):
+            company_id = (self.company_id or self.env.company)
             foreign_lines = [line._prepare_foreign_base_line_for_taxes_computation() for line in record.order_line]
+            self._add_tax_details_in_base_lines(foreign_lines, company_id)
+            _logger.warning("foreign_lines : %s", foreign_lines)
+            _logger.warning("company_id : %s", company_id)
+            self._round_base_lines_tax_details(foreign_lines, company_id)
         foreign_res = super()._get_tax_totals_summary(
             foreign_lines,
             foreign_currency,
             company,
             cash_rounding
         )
+        _logger.warning("foreign_res : %s", foreign_res)
         res['foreign_currency_id'] = foreign_res['currency_id']
         res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
         res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']

@@ -1,4 +1,7 @@
 from odoo import models
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
@@ -12,10 +15,11 @@ class PurchaseOrderLine(models.Model):
         """
         self.ensure_one()
         return self.env['account.tax']._prepare_foreign_base_line_for_taxes_computation(
+            self,
             price_unit=self.foreign_price,
             tax_ids=self.taxes_id,
             quantity=self.product_qty,
             partner_id=self.order_id.partner_id,
-            currency_id=self.order_id.currency_id or self.order_id.company_id.currency_id,
-            rate=getattr(self.order_id, 'currency_rate', 1.0),
+            currency_id=self.order_id.foreign_currency_id,
+            rate=self.foreign_inverse_rate,
         )

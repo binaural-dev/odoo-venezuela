@@ -149,7 +149,7 @@ class SaleOrder(models.Model):
         for move in self:
             move.foreign_total_billed = False
             if move.order_line:
-                move.foreign_total_billed = move.tax_totals.get("foreign_amount_total")
+                move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency")
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -533,3 +533,10 @@ class SaleOrder(models.Model):
         )
         for order in orders:
             order.action_cancel()
+
+    @api.depends('order_line.price_subtotal', 'currency_id', 'company_id', 'payment_term_id')
+    def _compute_amounts(self):
+        for order in self:
+            order.amount_untaxed = order.tax_totals['base_amount_currency']
+            order.amount_tax = order.tax_totals['tax_amount_currency']
+            order.amount_total = order.tax_totals['total_amount_currency']
