@@ -1,6 +1,6 @@
 <odoo>
-    <record id="product_pricelist_item_tree_view_from_product" model="ir.ui.view">
-        <field name="name">product.pricelist.item.tree</field>
+    <record id="product_pricelist_item_list_view_from_product" model="ir.ui.view">
+        <field name="name">product.pricelist.item.list</field>
         <field name="model">product.pricelist.item</field>
         <field name="inherit_id" ref="product.product_pricelist_item_tree_view_from_product" />
         <field name="arch" type="xml">
@@ -23,14 +23,14 @@
         </field>
     </record>
 
-    <record id="product_pricelist_item_tree_view" model="ir.ui.view">
-        <field name="name">product.pricelist.item.tree</field>
+    <record id="product_pricelist_item_list_view" model="ir.ui.view">
+        <field name="name">product.pricelist.item.list</field>
         <field name="model">product.pricelist.item</field>
         <field name="mode">primary</field>
         <field name="inherit_id" ref="product.product_pricelist_item_tree_view_from_product" />
         <field name="arch" type="xml">
-            <field name="name" position="replace">
-            </field>
+            <!-- <field name="name" position="replace">
+            </field> -->
             <field name="product_tmpl_id" position="attributes">
                 <attribute name="invisible">false</attribute>
             </field>
@@ -48,10 +48,10 @@
     </record>
 
 
-    <record id="product_pricelist_item_tree_only_action" model="ir.actions.act_window">
+    <record id="product_pricelist_item_list_only_action" model="ir.actions.act_window">
         <field name="name">Price List Items</field>
         <field name="res_model">product.pricelist.item</field>
-        <field name="view_mode">tree</field>
-        <field name="view_id" ref="product_pricelist_item_tree_view" />
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="product_pricelist_item_list_view" />
     </record>
 </odoo>
