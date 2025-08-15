@@ -1,7 +1,9 @@
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
-##REALIZAR CORRIDA DE PRUEBAS CUANDO SE HAYA MIGRADO L10N_VE_ACCOUNTANT A ODOO 18
+# Note: Run these tests after the l10n_ve_accountant module has been migrated to Odoo 18.
+# The functionality of account fiscal year closing depends on features provided by l10n_ve_accountant.
+# Ensure l10n_ve_accountant migration is complete and stable before executing these tests.
 @tagged("post_install", "-at_install", "l10n_ve_account_fiscalyear_closing")
 class TestAccountFiscalyearClosing(TransactionCase):
     def setUp(self):
