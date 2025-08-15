@@ -557,7 +557,7 @@ class StockPicking(models.Model):
         return {
             "name": _("Invoices"),
             "type": "ir.actions.act_window",
-            "view_mode": "tree,form",
+            "view_mode": "list,form",
             "res_model": "account.move",
             "domain": [("transfer_ids", "in", self.id)],
             "context": {"create": False},

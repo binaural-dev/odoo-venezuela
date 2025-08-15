@@ -14,7 +14,7 @@
         </field>
     </record>
     <record id="l10n_ve_stock_account_view_stock_location_tree" model="ir.ui.view">
-        <field name="name">l10n.ve.stock.account.view.stock.location.tree</field>
+        <field name="name">l10n.ve.stock.account.view.stock.location.list</field>
         <field name="model">stock.location</field>
         <field name="inherit_id" ref="stock.view_location_tree2"/>
         <field name="arch" type="xml">
