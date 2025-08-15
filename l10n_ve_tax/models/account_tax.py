@@ -19,29 +19,38 @@ class AccountTax(models.Model):
         if not foreign_currency:
             raise ValidationError(_("No foreign currency configured in the company"))
 
-       
-   
+        # Obtener el registro de factura desde el contexto si está disponible
+        active_model = self.env.context.get('active_model')
+        active_id = self.env.context.get('active_id')
+        _logger.warning("self.env.context : %s", self.env.context)
+        _logger.warning("active_model : %s", active_model)
+        _logger.warning("active_id : %s", active_id)
+        record = self.env[active_model].browse(active_id) if active_model and active_id else self.env['account.move']
+
         ## Base currency
         res = super()._get_tax_totals_summary(
             base_lines, currency, company, cash_rounding
         )
-        invoice = self.env['account.move'].search([])
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
-        has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
-        if has_discount:
-            base_without_discount = [line.copy() for line in base_lines if line]
-            for base_line in base_without_discount:
-                base_line["discount"] = 0
+        foreign_lines = []
+        # has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
+        # if has_discount:
+        #     base_without_discount = [line.copy() for line in base_lines if line]
+        #     for base_line in base_without_discount:
+        #         base_line["discount"] = 0
 
-            res_without_discount = super()._get_tax_totals_summary(
-                base_lines,
-                currency,
-                company,
-                cash_rounding
-            )
-        
-        foreign_lines,_foreign_tax_lines = invoice._get_rounded_foreign_base_and_tax_lines()
+        #     res_without_discount = super()._get_tax_totals_summary(
+        #         base_lines,
+        #         currency,
+        #         company,
+        #         cash_rounding
+        #     )
+        _logger.warning("record._name : %s", record._name)
+        if record._name == 'account.move':
+            foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
+        elif record._name in ('sale.order','purchase.order'):
+            foreign_lines = [line._prepare_foreign_base_line_for_taxes_computation() for line in record.order_line]
         foreign_res = super()._get_tax_totals_summary(
             foreign_lines,
             foreign_currency,
