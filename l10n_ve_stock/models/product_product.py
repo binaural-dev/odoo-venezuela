@@ -244,4 +244,3 @@ class ProductProduct(models.Model):
 
         return res
 
-
