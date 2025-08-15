@@ -399,8 +399,9 @@ class AccountMove(models.Model):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
                 
-        if 'journal_id' in vals:
-            old_journal_id = [move.journal_id.id for move in self]
+        if 'journal_id' in vals:    
+            for move in self:
+                old_journal_id = move.journal_id.id
         else:
             old_journal_id = None
 
