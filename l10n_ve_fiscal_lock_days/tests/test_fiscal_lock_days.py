@@ -13,7 +13,7 @@ class TestFiscalLockDays(TransactionCase):
         self.company = self.env.ref('base.main_company')
         self.company.tax_period = "fortnightly"
         self.company.lock_date_tax_validation = True
-        self.company.tax_lock_date = date(2025, 8, 16)  # Change according to the last day of the fiscal period shown by the logger, set it ONE day ahead.
+        self.company.tax_lock_date = date.today() + timedelta(days=15)  # Set lock date 15 days ahead of today for consistent test behavior.
         self.company.country_id = self.env.ref('base.ve')
         self.partner = self.env['res.partner'].create({'name': 'Test Partner'})
         self.journal = self.env['account.journal'].create({
