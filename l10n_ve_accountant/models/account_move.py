@@ -175,7 +175,7 @@ class AccountMove(models.Model):
         if not (old_income and new_income):
             return
         moves = self.filtered(lambda m: m.state == 'draft')
-
+        lines_to_update = None
         for move in moves:
             lines_to_update = move.line_ids.filtered(
                 lambda l: (l.display_type == 'product' and not l.tax_line_id 
