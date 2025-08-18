@@ -37,6 +37,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("journal_id","currency_id")
     def _compute_check_igtf(self):
+        """ Check if the company is a ordinary contributor"""
         for payment in self:
             payment.is_igtf = False
             if payment.currency_id.id == self.env.ref("base.USD").id and payment.journal_id.currency_id.id == self.env.ref("base.USD").id:
@@ -58,6 +59,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("is_igtf")
     def _compute_igtf_percentage(self):
+        """ Compute the igtf percetage defined in the company"""
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
 
@@ -70,18 +72,23 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("amount", "is_igtf", "igtf_amount")
     def _compute_amount_with_igtf(self):
+        """Compute the amount with igtf of the payment"""
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
     @api.onchange("journal_id", "is_igtf", "currency_id","amount")
     def _compute_is_igtf(self):
+        """Compute if the current payment apply igtf """
         for payment in self:
+
             amount_residual = payment.line_ids.mapped('move_id').amount_residual
             result=amount_residual-payment.amount
+
             if (
                 payment.journal_id.is_igtf
                 and payment.is_igtf
                 and payment.currency_id.id == self.env.ref("base.USD").id
+
                 and abs(result) > 0.0001
             ):
                 payment.is_igtf_on_foreign_exchange = True
@@ -91,7 +98,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
     def _compute_igtf_amount(self):
+        """Compute the igtf amount of the payment"""
         for payment in self:
+            id=self.env.context.get("active_id",False)
+            move_id=self.env['account.move'].browse(id)
+            _logger.warning("move_id %s",move_id)
             payment.igtf_amount = 0.0
             if (
                 payment.journal_id.is_igtf
@@ -101,7 +112,20 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment_amount = payment.amount
                 if payment.payment_difference < 0:
                     payment_amount = payment.amount + payment.payment_difference
-                payment.igtf_amount = payment_amount * (payment.igtf_percentage / 100)
+                payment.igtf_amount = payment.calculate_igtf_for_payment(
+                    move_id, payment_amount, payment.igtf_percentage
+                ) 
+
+    def calculate_igtf_for_payment(self, invoice, payment_amount, igtf_percentage):
+        """
+        Calcula IGTF solo sobre el monto que se aplica a la deuda principal
+        """
+        # 1. Deuda principal pendiente (sin incluir IGTF)
+        principal_debt = invoice.amount_total - invoice.bi_igtf
+
+        principal_amount = min(payment_amount, principal_debt)
+        igtf = principal_amount * (igtf_percentage / 100)
+        return max(igtf, 0.0)
 
     def _init_payments(self, to_process, edit_mode=False):
         """Create the payments from the wizard's values.
