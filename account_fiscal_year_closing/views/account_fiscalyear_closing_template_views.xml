@@ -2,14 +2,14 @@
 <!-- Copyright 2016 Antonio Espinosa <antonio.espinosa@tecnativa.com>
      License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl). -->
 <odoo>
-    <record id="view_account_fiscalyear_closing_template_tree" model="ir.ui.view">
+    <record id="view_account_fiscalyear_closing_template_list" model="ir.ui.view">
         <field name="model">account.fiscalyear.closing.template</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name" />
                 <field name="company_id" groups="base.group_multi_company" />
                 <field name="move_config_ids" />
-            </tree>
+            </list>
         </field>
     </record>
     <record id="view_account_fiscalyear_closing_template_form" model="ir.ui.view">
@@ -29,14 +29,14 @@
                     </group>
                     <label for="move_config_ids" string="Moves configuration" />
                     <field name="move_config_ids" nolabel="1">
-                        <tree>
+                        <list>
                             <field name="sequence" widget="handle" />
                             <field name="name" />
                             <field name="code" />
                             <!-- <field name="inverse" /> -->
                             <field name="move_type" />
                             <field name="journal_id" />
-                        </tree>
+                        </list>
                         <form>
                             <sheet>
                                 <group>
@@ -54,11 +54,11 @@
                                 </group>
                                 <label for="mapping_ids" string="Accounts mapping" />
                                 <field name="mapping_ids" nolabel="1">
-                                    <tree editable="bottom">
+                                    <list editable="bottom">
                                         <field name="name" />
                                         <field name="src_accounts" />
                                         <field name="dest_account" />
-                                    </tree>
+                                    </list>
                                 </field>
                                 <group
                                     name="accounts_closing_types"
@@ -71,10 +71,10 @@
                                     string="Accounts mapping"
                                 />
                                 <field name="closing_type_ids" nolabel="1">
-                                    <tree editable="bottom">
+                                    <list editable="bottom">
                                         <field name="account_type" />
                                         <field name="closing_type" />
-                                    </tree>
+                                    </list>
                                 </field>
                             </sheet>
                         </form>
@@ -90,7 +90,7 @@
         <field name="name">Closing templates</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">account.fiscalyear.closing.template</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
     <menuitem
         id="menu_account_fiscalyear_closing_configuration"
