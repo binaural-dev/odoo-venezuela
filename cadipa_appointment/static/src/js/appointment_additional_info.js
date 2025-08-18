@@ -10,13 +10,14 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
     'change .cadipa-state': '_onStateChange',
     'change #city_id': '_onCityChange',
     'change .cadipa-municipality': '_onMunicipalityChange',
-    'input .cadipa-zip': '_onZipInput',          // <-- solo números
+    'input .cadipa-zip': '_onZipInput',
+    'change #birthdate_input': '_validateBirthdate'
+
   },
 
   async start() {
     const res = await this._super(...arguments);
 
-    // cache
     this.$country = this.$('.cadipa-country');
     this.$state = this.$('.cadipa-state');
     this.$city = this.$('#city_id');
@@ -26,18 +27,16 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
 
     this.$wrapState = this.$('#wrap_state');
     this.$wrapCity = this.$('#wrap_city');
-    this.$wrapZip = this.$('#wrap_zip');         // <-- wrapper del zip
+    this.$wrapZip = this.$('#wrap_zip');
     this.$wrapMunicipality = this.$('#wrap_municipality');
     this.$wrapParish = this.$('#wrap_parish');
 
-    // presets (opcionales)
     this.presetCountry = String(this.$('#preset_country_id').val() || '');
     this.presetState = String(this.$('#preset_state_id').val() || '');
     this.presetCity = String(this.$('#preset_city_id').val() || '');
     this.presetMunicipality = String(this.$('#preset_municipality_id').val() || '');
     this.presetParish = String(this.$('#preset_parish_id').val() || '');
 
-    // estado inicial
     if (this.presetCountry && !this.$country.val()) this.$country.val(this.presetCountry);
     const countryId = this.$country.val();
     if (!countryId) {
@@ -54,16 +53,14 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
 
     const stateId = this.$state.val();
     if (stateId) {
-      // ciudades y municipios en paralelo
       const [hasCities, hasM] = await Promise.all([
         this._loadCities(stateId, this.presetCity).catch(() => false),
         this._loadMunicipalitiesByState(stateId, this.presetMunicipality).catch(() => false),
       ]);
       this._toggle(this.$wrapCity, hasCities);
-      this._toggle(this.$wrapZip, hasCities); // zip junto con ciudad
+      this._toggle(this.$wrapZip, hasCities);
       this._toggle(this.$wrapMunicipality, hasM);
 
-      // si ya hay municipio (por preset), intenta cargar parroquias
       await this._maybeLoadParishes();
     } else {
       this._hide(this.$wrapCity);
@@ -75,11 +72,46 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
     return res;
   },
 
-  // --- Eventos ---
+
+   _validateBirthdate: function(ev) {
+        const input = ev.currentTarget;
+        const birthdate = new Date(input.value);
+        const today = new Date();
+        
+        let age = today.getFullYear() - birthdate.getFullYear();
+        const monthDiff = today.getMonth() - birthdate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
+            age--;
+        }
+        
+        // Validar mayoría de edad
+        if (age < 18) {
+            input.setCustomValidity('Debes ser mayor de edad (18+ años)');
+            $(input).addClass('is-invalid');
+        } else {
+            input.setCustomValidity('');
+            $(input).removeClass('is-invalid');
+        }
+    },
+
+    _setupValidation: function() {
+        this.cache.$form.on('submit', (ev) => {
+            const birthdateInput = this.$('#birthdate_input')[0];
+            if (birthdateInput) {
+                this._validateBirthdate({currentTarget: birthdateInput});
+            }
+            
+            if (!this.cache.$form[0].checkValidity()) {
+                ev.preventDefault();
+                ev.stopPropagation();
+            }
+            this.cache.$form.addClass('was-validated');
+        });
+    },
   async _onCountryChange(ev) {
     const countryId = ev.currentTarget.value;
 
-    // reset inferiores
     this._fillOptions(this.$parish, [], 'Selecciona tu parroquia'); this._hide(this.$wrapParish);
     this._fillOptions(this.$municipality, [], 'Selecciona tu municipio'); this._hide(this.$wrapMunicipality);
     this._fillOptions(this.$city, [], 'Selecciona tu ciudad'); this._hide(this.$wrapCity);
@@ -96,7 +128,6 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
   async _onStateChange(ev) {
     const stateId = ev.currentTarget.value;
 
-    // reset inferiores
     this._fillOptions(this.$parish, [], 'Selecciona tu parroquia'); this._hide(this.$wrapParish);
     this._fillOptions(this.$municipality, [], 'Selecciona tu municipio'); this._hide(this.$wrapMunicipality);
     this._fillOptions(this.$city, [], 'Selecciona tu ciudad'); this._hide(this.$wrapCity);
@@ -104,33 +135,27 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
 
     if (!stateId) return;
 
-    // ciudades y municipios en paralelo
     const [hasCities, hasM] = await Promise.all([
       this._loadCities(stateId, null).catch(() => false),
       this._loadMunicipalitiesByState(stateId, null).catch(() => false),
     ]);
     this._toggle(this.$wrapCity, hasCities);
-    this._toggle(this.$wrapZip, hasCities); // zip junto con ciudad
+    this._toggle(this.$wrapZip, hasCities);
     this._toggle(this.$wrapMunicipality, hasM);
 
-    // si ya hay municipio seleccionado (por autofill/preset), carga parroquias
     await this._maybeLoadParishes();
   },
 
   async _onCityChange(/*ev*/) {
-    // municipios NO dependen de ciudad (en tu regla), así que solo manejamos parroquias y zip
     this._fillOptions(this.$parish, [], 'Selecciona tu parroquia'); this._hide(this.$wrapParish);
-    // zip se mantiene visible por depender del estado/ciudad; solo limpiar si cambias ciudad
     if (this.$zip && this.$zip.length) this.$zip.val('');
     await this._maybeLoadParishes();
   },
 
-  async _onMunicipalityChange(/*ev*/) {
-    // cuando cambia municipio, intentamos cargar parroquias
+  async _onMunicipalityChange() {
     await this._maybeLoadParishes();
   },
 
-  // zip: solo números
   _onZipInput(ev) {
     const clean = (ev.target.value || '').replace(/\D/g, '');
     if (ev.target.value !== clean) {
@@ -138,7 +163,6 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
     }
   },
 
-  // --- helper para parroquias ---
   async _maybeLoadParishes() {
     const municipalityId = this.$municipality.val();
     if (!municipalityId) {
@@ -152,7 +176,6 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
     return hasP;
   },
 
-  // --- helpers UI ---
   _show($el){ if ($el && $el.length) $el.removeClass('d-none'); },
   _hide($el){ if ($el && $el.length) $el.addClass('d-none'); },
   _toggle($el, cond){ cond ? this._show($el) : this._hide($el); },
@@ -169,7 +192,6 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
     $select.val(exists ? prev : '');
   },
 
-  // --- loaders (GET) ---
   async _loadStates(countryId, selectedId) {
     const resp = await fetch('/cadipa/location/states?country_id=' + countryId, { method: 'GET', credentials: 'same-origin' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -188,7 +210,6 @@ publicWidget.registry.cadipaAdditionalInfo = publicWidget.Widget.extend({
     return (data || []).length > 0;
   },
 
-  // Municipios por estado (no por ciudad)
   async _loadMunicipalitiesByState(stateId, selectedId) {
     const resp = await fetch('/cadipa/location/municipalities?state_id=' + stateId, { method: 'GET', credentials: 'same-origin' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);

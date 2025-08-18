@@ -28,6 +28,7 @@ class CadipaCustomerPortal(CustomerPortal):
         
         all_memberships = request.env['membership.type.plan'].sudo().search([('published', '=', True)])
         
+        
         membership_count = len(user_memberships)
         pager = portal_pager(
             url="/my/memberships",
@@ -152,6 +153,7 @@ class CadipaCustomerPortal(CustomerPortal):
         
         required_fields = {
             'vat': "Identificación",
+            'birthday': "Birthday",
             'street': "Dirección",
             'municipality': "Municipio",
             'parish_id': "Parroquia",
@@ -221,6 +223,7 @@ class CadipaCustomerPortal(CustomerPortal):
             municipality_id = _clean_id('res.country.municipality', post.get('municipality_id'))
             parish_id = _clean_id('res.country.parish', post.get('parish_id'))  
             zip_int = _to_int((post.get('zip') or '').strip())
+            birthday = post.get('birthdate')
 
             if country_id:
                 update_vals['country_id'] = country_id
@@ -234,6 +237,8 @@ class CadipaCustomerPortal(CustomerPortal):
                 update_vals['parish_id'] = parish_id
             if zip_int:
                 update_vals['zip'] = zip_int
+
+            update_vals['birthday'] = birthday
 
             if update_vals:
                 partner.sudo().write(update_vals)

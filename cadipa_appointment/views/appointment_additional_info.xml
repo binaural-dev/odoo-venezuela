@@ -38,6 +38,20 @@
                                             </div>
                                         </div>
                                     </t>
+                                    <t t-if="'Birthday' in missing_fields">
+                                        <div class="mb-3">
+                                            <label class="form-label">Fecha de nacimiento</label>
+                                            <input type="date" 
+                                                class="form-control" 
+                                                name="birthdate" 
+                                                id="birthdate_input"
+                                                t-att-value="partner.birthday or ''"
+                                            />
+                                            <div class="invalid-feedback">
+                                                Debes ser mayor de edad (18+ años) para continuar
+                                            </div>
+                                        </div>
+                                    </t>
 
                                     <t t-if="'Dirección' in missing_fields">
                                         <div class="mb-3">
@@ -97,10 +111,8 @@
                                     </div>
 
                                     <div class="row">
-                                        <!-- País -->
 
 
-                                        <!-- Municipio (se llena dinámicamente) -->
                                         <div class="mb-3 d-none" id="wrap_municipality">
                                             <label class="form-label">Municipio</label>
                                             <select class="form-select cadipa-municipality"
@@ -111,7 +123,6 @@
                                                 municipio</div>
                                         </div>
 
-                                        <!-- Parroquia (se llena dinámicamente) -->
                                         <div class="mb-3 d-none" id="wrap_parish">
                                             <label class="form-label">Parroquia</label>
                                             <select class="form-select cadipa-parish" id="parish_id"
