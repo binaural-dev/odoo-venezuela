@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="cadipa_sale_subscription_plan_view_form" model="ir.ui.view">
+            <field name="name">sale.subscription.plan.view.form</field>
+            <field name="model">sale.subscription.plan</field>
+            <field name="inherit_id" ref="sale_subscription.sale_subscription_plan_view_form" />
+
+            <field name="arch" type="xml">
+                <xpath expr="//group[@name='self_service']/field[@name='related_plan_id']"
+                    position="after">
+                    <field name="initial_fee_product" />
+                    <label for="activation_initial_percentage" />
+                    <div class="col-12">
+            <field name="activation_initial_percentage" class="oe_inline" style="width: 100px;"/>
+            <span>%</span>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

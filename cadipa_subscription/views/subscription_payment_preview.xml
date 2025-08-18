@@ -1,0 +1,102 @@
+<odoo>
+    <template id="subscription_payment_preview" name="Subscription Payment Preview">
+        <t t-call="website.layout">
+            <div class="container mt-4 mb-5">
+                <div class="row">
+                     <t t-set="breadcrumbs_searchbar" t-value="True" />
+                <div class="container">
+                    <t t-call="portal.portal_breadcrumbs"></t>
+
+                </div>
+
+                <t t-set="title">Memberships</t>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">Vista previa de suscripción</h1>
+                </div>
+                    <div class="col-12 col-md-8">
+                        <div class="card">
+                            <div class="card-body py-4">
+
+                                <div
+                                    class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+                                    <div>
+                                        <h4 class="mb-1">Cuota inicial</h4>
+                                        <div class="d-flex align-items-center">
+                                            <t t-if="plan.initial_fee_product">
+                                                <img
+                                                    t-att-src="image_data_uri(plan.initial_fee_product.image_128)"
+                                                    class="rounded-circle me-2"
+                                                    width="40" height="40"
+                                                    alt="Producto" />
+                                                <span t-field="plan.initial_fee_product.name"
+                                                    class="text-muted" />
+                                            </t>
+                                            <t t-else="">
+                                                <span class="text-muted">No se ha especificado
+                                                    producto</span>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-primary mb-0">
+                                        <t t-esc="fee_price" />
+                                        <small>BS</small>
+                                    </h3>
+                                </div>
+
+                                <div class="row border-bottom pb-3 mb-3">
+                                    <div class="col-6 text-muted">Subtotal</div>
+                                    <div class="col-6 text-end"><t t-esc="fee_price" /> BS</div>
+
+                                    <div class="col-6 text-muted mt-2">Impuesto</div>
+                                    <div class="col-6 text-end mt-2"><t t-esc="fee_price_tax " />
+                                        BS</div>
+                                </div>
+
+                                <div class="row fw-bold fs-5">
+                                    <div class="col-6">Total</div>
+                                    <div class="col-6 text-end text-primary"> <t
+                                            t-esc="total_price " /> BS </div>
+                                </div>
+
+                                <div class="text-center mt-4">
+                                    <form t-att-action="'/memberships/payment/process/' + str(plan.id)+ '/'+ str(membership_id)" method="POST">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="btn btn-primary btn-lg px-5 py-2">
+                                            <i class="fa fa-credit-card me-2"></i>Pagar ahora
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4 col-lg-3 offset-lg-1 mt-4 mt-md-0">
+                        <div class="o_appointment_details_column bg-light p-4">
+
+                            <div class="o_appointment_details_type d-flex mb-3">   
+                                <img
+                                                    t-att-src="image_data_uri(plan.initial_fee_product.image_128)"
+                                                    class="rounded-circle me-2"
+                                                    width="40" height="40"/>
+                                <h5 class="mb-1" t-out="membership.name" />
+                            </div>
+
+                            <small class="text-uppercase text-muted">Detalles del plan</small>
+
+                            <div class="d-flex flex-column gap-1 mt-2">
+                                <div class="d-flex py-1 px-0 bg-transparent border-0">
+                                    <span> <b>Precio:</b> <t t-out="membership_price"/>BS</span>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </t>
+    </template>
+
+
+</odoo>

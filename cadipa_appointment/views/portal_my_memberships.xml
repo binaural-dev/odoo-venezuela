@@ -31,12 +31,18 @@
                                     <t t-foreach="available_memberships" t-as="plan">
                                         <div class="col-md-4 mb-4">
                                             <div class="card h-100">
+                                                <t t-if="plan.product_id.image_1024">
+                                                    <img   t-att-src="image_data_uri(plan.product_id.image_1024)"/>
+                                                </t>
+                                                <t t-else="">
                                                 <img
                                                     t-att-src="'/cadipa_appointment/static/img/membership_card.png'"
                                                     class="card-img-top"
                                                     t-att-alt="plan.name"
                                                     style="height: 180px; object-fit: cover;"
                                                     t-att-onerror="'this.src=\'/web/static/img/placeholder.png\''" />
+                                                </t>
+
 
                                                 <div class="card-body">
                                                     <h5 class="card-title"
@@ -46,9 +52,10 @@
                                                 </div>
 
                                                 <div class="card-footer bg-white">
-                                                    <button class="btn btn-primary w-100">
-                                                        <i class="fa fa-check me-2"></i> Seleccionar
-                                                        membresía </button>
+                                                    <a class="btn btn-primary w-100" 
+                                                    t-att-href="'/my/memberships/select/' + str(plan.id)">
+                                                        <i class="fa fa-check me-2"></i> Seleccionar membresía
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>

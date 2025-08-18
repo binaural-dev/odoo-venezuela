@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="additional_info_form_view" name="Additional Information Form">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-info-circle me-2"></i> Información Adicional
+                                    Requerida </h4>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="alert alert-info mb-4">
+                                    <p>Para continuar con la compra de tu membresía <strong
+                                            t-out="membership_plan.name" />, necesitamos completar
+                                        la siguiente información:</p>
+                                </div>
+
+                                <form method="post" action="/my/memberships/save_additional_info"
+                                    class="needs-validation cadipa-additional-info"
+                                >
+                                    <input type="hidden" name="csrf_token"
+                                        t-att-value="request.csrf_token()" />
+                                    <input type="hidden" name="membership_plan_id"
+                                        t-att-value="membership_plan_id" />
+
+                                    <t t-if="'Identificación' in missing_fields">
+                                        <div class="mb-3">
+                                            <label class="form-label">Número de Identificación</label>
+                                            <input type="text" class="form-control" name="vat"
+                                                t-att-value="partner.vat or ''" />
+                                            <div class="invalid-feedback">
+                                                Por favor ingresa tu número de identificación
+                                            </div>
+                                        </div>
+                                    </t>
+                                    <t t-if="'Birthday' in missing_fields">
+                                        <div class="mb-3">
+                                            <label class="form-label">Fecha de nacimiento</label>
+                                            <input type="date" 
+                                                class="form-control" 
+                                                name="birthdate" 
+                                                id="birthdate_input"
+                                                t-att-value="partner.birthday or ''"
+                                            />
+                                            <div class="invalid-feedback">
+                                                Debes ser mayor de edad (18+ años) para continuar
+                                            </div>
+                                        </div>
+                                    </t>
+
+                                    <t t-if="'Dirección' in missing_fields">
+                                        <div class="mb-3">
+                                            <label class="form-label">Dirección Completa</label>
+                                            <textarea class="form-control" name="street" rows="2"
+                                                t-att-value="partner.street or ''"></textarea>
+                                            <div class="invalid-feedback">
+                                                Por favor ingresa tu dirección
+                                            </div>
+                                        </div>
+                                    </t>
+
+
+                                    <div class="row">
+                                        <t
+                                            t-if="'Pais' in missing_fields or 'País' in missing_fields">
+                                            <div class="mb-3">
+                                                <label class="form-label">País</label>
+                                                <select class="form-select cadipa-country"
+                                                    id="country_id" name="country_id">
+                                                    <option value="">Selecciona tu país</option>
+                                                    <t t-foreach="countries" t-as="country">
+                                                        <option t-att-value="country.id"
+                                                            t-att-selected="partner.country_id.id == country.id">
+                                                            <t t-out="country.name" />
+                                                        </option>
+                                                    </t>
+                                                </select>
+                                                <div class="invalid-feedback">Selecciona tu país</div>
+                                            </div>
+                                        </t>
+                                        <div class="mb-3 d-none" id="wrap_state">
+                                            <label class="form-label">Estado</label>
+                                            <select class="form-select cadipa-state" id="state_id"
+                                                name="state_id">
+                                                <option value="">Selecciona tu estado</option>
+                                            </select>
+                                            <div class="invalid-feedback">Selecciona tu estado</div>
+                                        </div>
+
+                                        <div class="row">
+                                        <div class="col-md-6 mb-3 d-none" id="wrap_city">
+                                            <label class="form-label">Ciudad</label>
+                                            <select class="form-select" id="city_id" name="city_id">
+                                                <option value="">Selecciona tu ciudad</option>
+                                            </select>
+                                            <div class="invalid-feedback">Selecciona tu ciudad</div>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3 d-none" id="wrap_zip">
+                                            <label class="form-label">Código Postal</label>
+                                            <input type="text" class="form-control cadipa-zip" id="zip_code" name="zip" maxlength="10" placeholder="Ej: 1010"/>
+                                            <div class="invalid-feedback">Ingresa un código postal válido</div>
+                                        </div>
+                                    </div>
+
+                                    </div>
+
+                                    <div class="row">
+
+
+                                        <div class="mb-3 d-none" id="wrap_municipality">
+                                            <label class="form-label">Municipio</label>
+                                            <select class="form-select cadipa-municipality"
+                                                id="municipality_id" name="municipality_id">
+                                                <option value="">Selecciona tu municipio</option>
+                                            </select>
+                                            <div class="invalid-feedback">Selecciona tu
+                                                municipio</div>
+                                        </div>
+
+                                        <div class="mb-3 d-none" id="wrap_parish">
+                                            <label class="form-label">Parroquia</label>
+                                            <select class="form-select cadipa-parish" id="parish_id"
+                                                name="parish_id">
+                                                <option value="">Selecciona tu parroquia</option>
+                                            </select>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                        <a t-att-href="'/my/memberships'"
+                                            class="btn btn-secondary me-md-2">
+                                            <i class="fa fa-arrow-left me-1"></i> Volver </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa fa-save me-1"></i> Guardar y Continuar </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                .form-control, .form-select {
+                border-radius: 0.375rem;
+                padding: 0.5rem 0.75rem;
+                }
+                .card {
+                border: none;
+                border-radius: 0.5rem;
+                }
+                .card-header {
+                border-radius: 0.5rem 0.5rem 0 0 !important;
+                }
+            </style>
+
+            <script>
+                // Validación de formulario
+                (function() {
+                'use strict';
+                const forms = document.querySelectorAll('.needs-validation');
+                Array.prototype.slice.call(forms)
+                .forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                }
+
+                form.classList.add('was-validated');
+                }, false);
+                });
+                })();
+            </script>
+        </t>
+    </template>
+
+</odoo>

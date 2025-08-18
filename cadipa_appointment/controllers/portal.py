@@ -1,7 +1,7 @@
 import logging
-
+import json
 from odoo import _, http, fields
-from odoo.http import request, route
+from odoo.http import request, route,Response
 from odoo.osv import expression
 from odoo.addons.sale.controllers.portal import CustomerPortal
 from odoo.addons.portal.controllers.portal import pager as portal_pager
@@ -14,19 +14,20 @@ _logger = logging.getLogger(__name__)
 class CadipaCustomerPortal(CustomerPortal):
 
     @http.route(['/my/memberships', '/my/memberships/page/<int:page>'], 
-            type='http', auth="user", website=True)
+            type='http', auth="public", website=True)
     def portal_my_memberships(self, page=1, **kw):
 
         values = self._prepare_portal_layout_values()
         partner = request.env.user
         
         user_memberships = request.env['action.partner'].search([
-            ('id', '=', partner.action_number.id)
+            ('id', '=', partner.action_number.id),
         ])
 
         user_guests = user_memberships.beneficiary_partner_ids
         
-        all_memberships = request.env['membership.type.plan'].search([])
+        all_memberships = request.env['membership.type.plan'].sudo().search([('published', '=', True)])
+        
         
         membership_count = len(user_memberships)
         pager = portal_pager(
@@ -136,3 +137,161 @@ class CadipaCustomerPortal(CustomerPortal):
         
         except Exception as e:
             return request.redirect(f'/my/memberships?error=1&error_message={str(e)}')
+        
+
+    @http.route(['/my/memberships/select/<int:membership_plan_id>'], type='http', auth="public", website=True)
+    def select_membership_plan(self, membership_plan_id, **kw):
+        if request.env.user._is_public():
+            return request.redirect("/web/signup")
+        
+        membership_plan = request.env['membership.type.plan'].sudo().browse(membership_plan_id)
+        if not membership_plan.exists():
+            return request.redirect('/my/memberships?error=plan_not_found')
+        
+        user = request.env.user
+        contact = user.partner_id
+        
+        required_fields = {
+            'vat': "Identificación",
+            'birthday': "Birthday",
+            'street': "Dirección",
+            'municipality': "Municipio",
+            'parish_id': "Parroquia",
+            'prefix_vat': "Prefijo",
+            'country_id': "Pais",
+            'city_id': "Ciudad",
+
+        }
+        
+        missing_fields = [name for field, name in required_fields.items() if not getattr(contact, field)]
+        
+        if missing_fields:
+            return request.redirect(f'/my/memberships/additional_info/{membership_plan_id}?missing_fields={",".join(missing_fields)}')
+        
+        return request.redirect(f'/memberships/payment/preview/{membership_plan.product_id.id}')
+
+    @http.route(['/my/memberships/additional_info/<int:membership_plan_id>'], 
+                type='http', auth="user", website=True)
+    def additional_info_form(self, membership_plan_id, **kw):
+        missing_fields = kw.get('missing_fields', '').split(',')
+        membership_plan = request.env['membership.type.plan'].sudo().browse(membership_plan_id)
+        
+        values = {
+            'membership_plan': membership_plan,
+            'missing_fields': missing_fields,
+            'page_name': 'additional_info',
+            'partner': request.env.user.partner_id,
+            'municipalities': request.env['res.country.state'].search([]),
+            'countries': request.env['res.country'].search([]),
+            'cities': request.env['res.country.city'].sudo().search([]),
+
+
+        }
+        
+        return request.render("cadipa_appointment.additional_info_form_view", values)
+    
+    @http.route('/my/memberships/save_additional_info', type='http', auth="user", website=True, methods=['POST'])
+    def save_additional_info(self, **post):
+        partner = request.env.user.partner_id
+
+        def _to_int(val):
+            try:
+                return int(val) if val not in (None, '', False) else None
+            except Exception:
+                return None
+
+        def _clean_id(model_name, raw_id):
+            rec_id = _to_int(raw_id)
+            if not rec_id:
+                return None
+            rec = request.env[model_name].sudo().browse(rec_id)
+            return rec.id if rec.exists() else None
+
+        try:
+            update_vals = {}
+
+            vat = (post.get('vat') or '').strip()
+            street = (post.get('street') or '').strip()
+            if vat:
+                update_vals['vat'] = vat
+            if street:
+                update_vals['street'] = street
+
+            country_id = _clean_id('res.country', post.get('country_id'))
+            state_id = _clean_id('res.country.state', post.get('state_id'))
+            city_id = _clean_id('res.country.city', post.get('city_id'))
+            municipality_id = _clean_id('res.country.municipality', post.get('municipality_id'))
+            parish_id = _clean_id('res.country.parish', post.get('parish_id'))  
+            zip_int = _to_int((post.get('zip') or '').strip())
+            birthday = post.get('birthdate')
+
+            if country_id:
+                update_vals['country_id'] = country_id
+            if state_id:
+                update_vals['state_id'] = state_id
+            if city_id:
+                update_vals['city_id'] = city_id
+            if municipality_id:
+                update_vals['municipality'] = municipality_id
+            if parish_id:
+                update_vals['parish_id'] = parish_id
+            if zip_int:
+                update_vals['zip'] = zip_int
+
+            update_vals['birthday'] = birthday
+
+            if update_vals:
+                partner.sudo().write(update_vals)
+
+            return request.redirect("/my/memberships")
+
+        except Exception as e:
+            membership_plan_id = post.get('membership_plan_id') or ''
+            suffix = f'/{membership_plan_id}' if membership_plan_id else ''
+            return request.redirect(f'/my/memberships/additional_info{suffix}?error=1')
+
+
+        
+
+    @http.route('/cadipa/location/municipalities', type='http', auth='public', website=True, methods=['GET'])
+    def cadipa_get_municipalities(self, **kw):
+        state_id = kw.get('state_id') or request.params.get('state_id')
+        state = request.env['res.country.state'].sudo().search([('id','=',state_id)])
+
+        Municipality = request.env['res.country.municipality'].sudo()
+        recs = Municipality.search([('state_id', '=', state.id)], order='name')
+        return Response(json.dumps([{'id': r.id, 'name': r.name} for r in recs]), content_type='application/json')
+
+
+    @http.route('/cadipa/location/parishes', type='http', auth='public', website=True, methods=['GET'])
+    def cadipa_get_parishes(self, **kw):
+        municipality_id =int( kw.get('municipality_id') or request.params.get('municipality_id'))
+        Parish = request.env['res.country.parish'].sudo()
+        recs = Parish.search([('municipality_id', '=', municipality_id)], order='name')
+        return Response(json.dumps([{'id': r.id, 'name': r.name} for r in recs]), content_type='application/json')
+    
+    @http.route([
+    '/cadipa/location/cities',
+    '/cadipa/location/cities/<int:country_id>',
+    ], type='http', auth='public', website=True, methods=['GET'])
+    def cadipa_get_cities(self, country_id=None, **kw):
+        state_id = kw.get('state_id') or request.params.get('state_id')
+        state = request.env['res.country.state'].sudo().search([('id','=',state_id)])
+
+        City = request.env['res.country.city'].sudo()
+        recs = City.search([('state_id', '=', state.id)], order='name')
+        data = [{'id': r.id, 'name': r.name} for r in recs]
+        return Response(json.dumps(data), content_type='application/json')
+
+    @http.route(['/cadipa/location/states'], type='http', auth='public', website=True, methods=['GET'])
+    def cadipa_get_states(self, **kw):
+        country_id = kw.get('country_id') or request.params.get('country_id')
+        try:
+            country_id = int(country_id)
+        except Exception:
+            return Response(json.dumps([]), content_type='application/json')
+
+        State = request.env['res.country.state'].sudo()
+        recs = State.search([('country_id', '=', country_id)], order='name')
+        data = [{'id': r.id, 'name': r.name} for r in recs]
+        return Response(json.dumps(data), content_type='application/json')
