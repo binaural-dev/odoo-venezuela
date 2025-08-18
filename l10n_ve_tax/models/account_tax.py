@@ -12,166 +12,148 @@ class AccountTax(models.Model):
     _inherit = "account.tax"
 
     @api.model
-    def _prepare_tax_totals(
-        self, base_lines, currency, tax_lines=None, is_company_currency_requested=False
+    def _get_tax_totals_summary(
+        self, base_lines, currency, company, cash_rounding=None
     ):
-        """
-        This function adds the alternate currency tax amounts to tax_totals.
-        In it, the parent function is executed 2 times, once for the original
-        currency and once for the alternate currency.
-
-        The data that is brought is not recalculated, that is, it comes from the lines of the entry
-        ------
-        Parameters: (Parameters inherited)
-            base_lines: list of dict
-            currency: res.currency
-        ------
-        Returns: (Return inherited)
-            dict: Now returns additionally:
-            "subtotal": float
-            "formatted_subtotal": str
-            "discount_amount": float
-            "foreign_subtotal": float
-            "foreign_formatted_subtotal": str
-            "formatted_discount_amount": str
-            "groups_by_foreign_subtotal": dict
-            "foreign_discount_amount": float
-            "foreign_formatted_discount_amount": str
-            "foreign_subtotals": list of dict
-            "foreign_amount_untaxed": float
-            "foreign_amount_total": float
-            "foreign_formatted_amount_untaxed": str
-            "foreign_formatted_amount_total": str
-        """
-        foreign_currency = self.env.company.currency_foreign_id or False
+        foreign_currency = self.env.company.foreign_currency_id or False
         if not foreign_currency:
             raise ValidationError(_("No foreign currency configured in the company"))
 
-        # Base Currency
-        res = super()._prepare_tax_totals(
-            base_lines,
-            currency,
-            tax_lines,
-            is_company_currency_requested=is_company_currency_requested,
+        ## Base currency
+        res = super()._get_tax_totals_summary(
+            base_lines, currency, company, cash_rounding
         )
+        # Obtener el registro de factura desde el contexto si está disponible
+        active_model = self.env.context.get('active_model')
+        active_id = self.env.context.get('active_id')
+        _logger.warning("self.env.context : %s", self.env.context)
+        _logger.warning("active_model : %s", active_model)
+        _logger.warning("active_id : %s", active_id)
+        if not active_model or not active_id:
+            return res
+        record = self.env[active_model].browse(active_id)
+
+
+        # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
-        has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
+        foreign_lines = []
+        # has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
+        # if has_discount:
+        #     base_without_discount = [line.copy() for line in base_lines if line]
+        #     for base_line in base_without_discount:
+        #         base_line["discount"] = 0
 
-        if has_discount:
-            base_without_discount = [line.copy() for line in base_lines if line]
-            for base_line in base_without_discount:
-                base_line["discount"] = 0
-
-            res_without_discount = super()._prepare_tax_totals(
-                base_without_discount,
-                currency,
-                tax_lines,
-                is_company_currency_requested=is_company_currency_requested,
-            )
-
-        foreign_base_lines, foreign_tax_lines = self.get_foreign_base_tax_lines(
-            base_lines, tax_lines, foreign_currency
-        )
-
-        # Foreign Currency
-        foreign_taxes = super()._prepare_tax_totals(
-            foreign_base_lines,
+        #     res_without_discount = super()._get_tax_totals_summary(
+        #         base_lines,
+        #         currency,
+        #         company,
+        #         cash_rounding
+        #     )
+        _logger.warning("record._name : %s", record._name)
+        if record._name == 'account.move':
+            foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
+        elif record._name in ('sale.order','purchase.order'):
+            company_id = (self.company_id or self.env.company)
+            foreign_lines = [line._prepare_foreign_base_line_for_taxes_computation() for line in record.order_line]
+            self._add_tax_details_in_base_lines(foreign_lines, company_id)
+            _logger.warning("foreign_lines : %s", foreign_lines)
+            _logger.warning("company_id : %s", company_id)
+            self._round_base_lines_tax_details(foreign_lines, company_id)
+        foreign_res = super()._get_tax_totals_summary(
+            foreign_lines,
             foreign_currency,
-            foreign_tax_lines,
-            is_company_currency_requested=is_company_currency_requested,
+            company,
+            cash_rounding
         )
+        _logger.warning("foreign_res : %s", foreign_res)
+        res['foreign_currency_id'] = foreign_res['currency_id']
+        res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
+        res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
+        res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
 
-        foreign_taxes_without_discount = foreign_taxes.copy()
-        if has_discount:
-            foreign_without_discount = [line.copy() for line in foreign_base_lines if line]
-            for foreign_base_line in foreign_without_discount:
-                foreign_base_line["discount"] = 0
+        for res_subtotal, foreign_subtotal in zip(res.get("subtotals", []), foreign_res.get("subtotals", [])):
+            res_subtotal["tax_amount_foreign_currency"] = foreign_subtotal.get("tax_amount_currency", 0.0)
+            res_subtotal["base_amount_foreign_currency"] = foreign_subtotal.get("base_amount_currency", 0.0)
+            res_subtotal["total_amount_foreign_currency"] = foreign_subtotal.get("total_amount_currency", 0.0)
 
-            foreign_taxes_without_discount = super()._prepare_tax_totals(
-                foreign_without_discount,
-                foreign_currency,
-                foreign_tax_lines,
-                is_company_currency_requested=is_company_currency_requested,
-            )
-
-        res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]
-        res["foreign_subtotals"] = foreign_taxes["subtotals"]
-        res["foreign_amount_untaxed"] = foreign_taxes["amount_untaxed"]
-        res["foreign_amount_total"] = foreign_taxes["amount_total"]
-        res["foreign_formatted_amount_untaxed"] = foreign_taxes["formatted_amount_untaxed"]
-        res["foreign_formatted_amount_total"] = foreign_taxes["formatted_amount_total"]
-
-        res["show_discount"] = self.env.company.show_discount_on_moves
-
-        res["subtotal"] = res_without_discount["amount_untaxed"]
-        res["formatted_subtotal"] = formatLang(self.env, res["subtotal"], currency_obj=currency)
-
-        res["foreign_subtotal"] = foreign_taxes_without_discount["amount_untaxed"]
-        res["foreign_formatted_subtotal"] = formatLang(
-            self.env, res["foreign_subtotal"], currency_obj=foreign_currency
-        )
-
-        res["discount_amount"] = res["amount_untaxed"] - res_without_discount["amount_untaxed"]
-        res["formatted_discount_amount"] = formatLang(
-            self.env, res["discount_amount"], currency_obj=currency
-        )
-        res["foreign_discount_amount"] = (
-            foreign_taxes["amount_untaxed"] - foreign_taxes_without_discount["amount_untaxed"]
-        )
-        res["foreign_formatted_discount_amount"] = formatLang(
-            self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
-        )
+            for res_tax_group, foreign_tax_group in zip(res_subtotal.get("tax_groups", []), foreign_subtotal.get("tax_groups", [])):
+                res_tax_group["tax_amount_foreign_currency"] = foreign_tax_group.get("tax_amount_currency", 0.0)
+                res_tax_group["base_amount_foreign_currency"] = foreign_tax_group.get("base_amount_currency", 0.0)
+                res_tax_group["display_base_amount_foreign_currency"] = foreign_tax_group.get("display_base_amount_currency", 0.0)
         return res
+    @api.model
+    def _prepare_foreign_base_line_for_taxes_computation(self, record, **kwargs):
+        """ Convert any representation of a business object ('record') into a base line being a python
+        dictionary that will be used to use the generic helpers for the taxes computation.
 
-    def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
-        foreign_base_lines = [line.copy() for line in base_lines if line]
-        foreign_tax_lines = None
-        if tax_lines:
-            foreign_tax_lines = [line.copy() for line in tax_lines if line]
-        taxes = []
-        for base_line in foreign_base_lines:
-            is_exists_foreign_price = "foreign_price" in base_line["record"]
+        The whole method is designed to ease the conversion from a business record.
+        For example, when passing either account.move.line, either sale.order.line or purchase.order.line,
+        providing explicitely a 'product_id' in kwargs is not necessary since all those records already have
+        an `product_id` field.
 
-            if is_exists_foreign_price:
-                base_line["price_unit"] = base_line["record"].foreign_price
-                base_line["price_subtotal"] = base_line["record"].foreign_subtotal
-                base_line["currency"] = currency
-            else:
-                base_line["price_unit"] = base_line["record"].price_unit
-                base_line["price_subtotal"] = base_line["record"].price_subtotal
-                base_line["currency"] = base_line["record"].currency_id
+        :param record:  A representation of a business object a.k.a a record or a dictionary.
+        :param kwargs:  The extra values to override some values that will be taken from the record.
+        :return:        A dictionary representing a base line.
+        """
+        def load(field, fallback, from_base_line=False):
+            return self._get_base_line_field_value_from_record(record, field, kwargs, fallback, from_base_line=from_base_line)
 
-            if base_line["taxes"]:
-                taxes.append(
-                    {
-                        "tax": base_line["taxes"][0],
-                        "price": base_line["price_unit"],
-                        "base": base_line["price_subtotal"],
-                    }
-                )
+        currency = (
+            load('foreign_currency_id', None)
+            or load('company_id', self.env['res.company'].foreign_currency_id)
+        )
 
-        tax_values_list = []
-        for base_line in foreign_base_lines:
-            tax_values_list += self._compute_taxes_for_single_line(base_line)[1]
+        return {
+            **kwargs,
+            'record': record,
+            'id': load('id', 0),
 
-        round_globally = self.env.company.tax_calculation_rounding_method == "round_globally"
+            # Basic fields:
+            'product_id': load('product_id', self.env['product.product']),
+            'product_uom_id': load('product_uom_id', self.env['uom.uom']),
+            'tax_ids': load('tax_ids', self.env['account.tax']),
+            'price_unit': load('price_unit', 0.0),
+            'quantity': load('quantity', 0.0),
+            'discount': load('discount', 0.0),
+            'currency_id': currency,
 
-        if foreign_tax_lines:
-            for tax_line in foreign_tax_lines:
-                tax_line["currency"] = currency
-                tax_line["tax_amount"] = 0.0
-                amount = 0.0
-                for tax in tax_values_list:
-                    if tax["tax_repartition_line"].id == tax_line["tax_repartition_line"].id:
-                        if not round_globally:
-                            amount += float_round(
-                                tax["amount"], precision_digits=currency.decimal_places
-                            )
-                        else:
-                            amount += tax["amount"]
+            # The special_mode for the taxes computation:
+            # - False for the normal behavior.
+            # - total_included to force all taxes to be price included.
+            # - total_excluded to force all taxes to be price excluded.
+            'special_mode': load('special_mode', False, from_base_line=True),
 
-                tax_line["tax_amount"] = float_round(
-                    amount, precision_digits=currency.decimal_places
-                )
+            # A special typing of base line for some custom behavior:
+            # - False for the normal behavior.
+            # - early_payment if the base line represent an early payment in mixed mode.
+            # - cash_rounding if the base line is a delta to round the business object for the cash rounding feature.
+            'special_type': load('special_type', False, from_base_line=True),
 
-        return foreign_base_lines, foreign_tax_lines
+            # All computation are managing the foreign currency and the local one.
+            # This is the rate to be applied when generating the tax details (see '_add_tax_details_in_base_line').
+            'rate': load('rate', 1.0),
+
+            # For all computation that are inferring a base amount in order to reach a total you know in advance, you have to force some
+            # base/tax amounts for the computation (E.g. down payment, combo products, global discounts etc).
+            'manual_tax_amounts': load('manual_tax_amounts', None, from_base_line=True),
+
+            # Add a function allowing to filter out some taxes during the evaluation. Those taxes can't be removed from the base_line
+            # when dealing with group of taxes to maintain a correct link between the child tax and its parent.
+            'filter_tax_function': load('filter_tax_function', None, from_base_line=True),
+
+            # ===== Accounting stuff =====
+
+            # The sign of the business object regarding its accounting balance.
+            'sign': load('sign', 1.0),
+
+            # If the document is a refund or not to know which repartition lines must be used.
+            'is_refund': load('is_refund', False),
+
+            # If the tags must be inverted or not.
+            'tax_tag_invert': load('tax_tag_invert', False),
+
+            # Extra fields for tax lines generation:
+            'partner_id': load('partner_id', self.env['res.partner']),
+            'account_id': load('account_id', self.env['account.account']),
+            'analytic_distribution': load('analytic_distribution', None),
+        }

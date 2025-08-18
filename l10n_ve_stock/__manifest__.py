@@ -10,7 +10,6 @@
     "version": "18.0.0.0.4",
     "depends": [
         "stock",
-        "l10n_ve_tax",
         "product",
         "l10n_ve_rate",
         "stock_delivery",
