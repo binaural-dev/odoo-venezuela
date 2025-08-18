@@ -149,7 +149,7 @@ class SaleOrder(models.Model):
         for move in self:
             move.foreign_total_billed = False
             if move.order_line:
-                move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency")
+                move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):

@@ -674,7 +674,7 @@ class AccountMove(models.Model):
                 and move.tax_totals
             ):
                 continue
-            move.foreign_total_billed = move.tax_totals["total_amount_foreign_currency"]
+            move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
 
     #override of base 
     @api.depends_context('lang')
