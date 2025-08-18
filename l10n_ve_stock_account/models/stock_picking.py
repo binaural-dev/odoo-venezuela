@@ -37,6 +37,8 @@ class StockPicking(models.Model):
         ],
         default="to_invoice",
     )
+    optional_internal_movement_guidance = fields.Boolean(related='company_id.optional_internal_movement_guidance')
+    reasons_optional_guide_dispatch = fields.Boolean(compute="_compute_reasons_optional_guide")
 
     show_create_invoice = fields.Boolean(compute="_compute_button_visibility")
     show_create_bill = fields.Boolean(compute="_compute_button_visibility")
@@ -80,12 +82,23 @@ class StockPicking(models.Model):
         default=True,
         tracking=True,
         store=True,
+        readonly=False,
         compute="_compute_is_dispatch_guide",
     )
+
     partner_required = fields.Boolean(compute='_compute_partner_required', store=True)
     
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
+
+    @api.depends("transfer_reason_id")
+    def _compute_reasons_optional_guide(self):
+        consignment_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
+            raise_if_not_found=False,
+        ).id
+        for rec in self:
+            rec.reasons_optional_guide_dispatch = True if consignment_reason == rec.transfer_reason_id.id and rec.optional_internal_movement_guidance and rec.operation_code in ['internal'] else False
 
     def action_open_invoice_wizard(self):
         return {
@@ -832,22 +845,22 @@ class StockPicking(models.Model):
             else:
                 picking.is_consignment = False
 
-    @api.depends("transfer_reason_id")
+    @api.depends("transfer_reason_id", 'optional_internal_movement_guidance')
     def _compute_is_dispatch_guide(self):
         consignment_reason = self.env.ref(
             "l10n_ve_stock_account.transfer_reason_consignment",
             raise_if_not_found=False,
         )
-
+        
         for picking in self:
+
+            picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
             if (
                 picking.transfer_reason_id
                 and picking.transfer_reason_id.id == consignment_reason.id
             ):
                 picking.is_dispatch_guide = True
-            else:
-                # This is necessary always should be return a value
-                picking.is_dispatch_guide = picking.is_dispatch_guide
+           
 
     @api.depends(
         "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
@@ -969,12 +982,14 @@ class StockPicking(models.Model):
             record.show_other_causes_transfer_reason = False
 
             if record.transfer_reason_id:
+
+                record.is_dispatch_guide = False if record.is_dispatch_guide is None else record.is_dispatch_guide
+
                 if record.transfer_reason_id.code == "other_causes":
                     record.show_other_causes_transfer_reason = True
                 if record.transfer_reason_id.code == "self_consumption":
                     record.is_dispatch_guide = False
-                else:
-                    record.is_dispatch_guide = True
+            
 
     # === CONSTRAINT METHODS ===#
 
