@@ -889,3 +889,8 @@ msgstr "No tiene resultados de otros pickings"
 #: model:ir.actions.report,name:l10n_ve_stock.inventory_valuation_report
 msgid "inventory Valuation"
 msgstr "Valoración de inventario"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid "Dispatch Guide"
+msgstr "Configuración de guía de despacho"
