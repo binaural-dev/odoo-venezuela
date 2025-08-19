@@ -8,7 +8,7 @@ class PosConfig(models.Model):
     _inherit = "pos.config"
 
     foreign_currency_id = fields.Many2one(
-        "res.currency", related="company_id.currency_foreign_id"
+        "res.currency", related="company_id.foreign_currency_id"
     )
 
     foreign_inverse_rate = fields.Float(

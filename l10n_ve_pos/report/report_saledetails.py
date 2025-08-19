@@ -152,7 +152,7 @@ class ReportSaleDetails(models.AbstractModel):
             "foreign_total_paid": user_currency.round(f_total),
             "payments": payments,
             "currency": self.env.company.currency_id,
-            "foreign_currency": self.env.company.currency_foreign_id,
+            "foreign_currency": self.env.company.foreign_currency_id,
             "company_name": self.env.company.name,
             "taxes": list(taxes.values()),
             "products": sorted(

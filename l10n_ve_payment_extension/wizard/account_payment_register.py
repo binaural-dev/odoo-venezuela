@@ -10,7 +10,7 @@ class AccountPaymentRegister(models.TransientModel):
         "res.currency", default=lambda self: self.env.company.currency_id
     )
     foreign_currency_id = fields.Many2one(
-        "res.currency", default=lambda self: self.env.company.currency_foreign_id
+        "res.currency", default=lambda self: self.env.company.foreign_currency_id
     )
 
     is_out_invoice = fields.Boolean()

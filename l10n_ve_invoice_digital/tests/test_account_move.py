@@ -24,7 +24,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "currency_foreign_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_vef.id,
                 "invoice_digital_tfhka": True,
             }
         )
