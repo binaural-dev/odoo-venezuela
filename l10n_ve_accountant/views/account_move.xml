@@ -5,10 +5,10 @@
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="arch" type="xml">
             <xpath expr="//header" position="after">
-                <field name="foreign_balance" invisible="1" />
+                <!-- <field name="foreign_balance" invisible="1" />
                 <div class="alert alert-warning mb-0" role="alert" invisible="foreign_balance == 0">
                     Warning: This account move has a foreign balance of <field
-                        name="foreign_balance" />. </div>
+                        name="foreign_balance" />. </div> -->
             </xpath>
             <xpath expr="//header/button[@name='button_cancel']" position="after">
                 <button name="action_update_account_id" string="Update account lines" type="object"
@@ -62,11 +62,11 @@
                     </group>
                 </page>
             </xpath>
-            <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_unit']"
+            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="after">
                 <field name="foreign_price" readonly="move_type != 'in_invoice'" />
             </xpath>
-            <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']"
+            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_subtotal']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field name="foreign_subtotal"
@@ -82,10 +82,12 @@
                     readonly="1"
                 />
             </xpath>
-            <xpath expr="//notebook/page/field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="attributes">
+            <xpath
+                expr="//notebook/page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']"
+                position="attributes">
                 <attribute name="readonly">1</attribute>
             </xpath>
-            <xpath expr="//page/field[@name='line_ids']/tree/field[@name='balance']"
+            <xpath expr="//page/field[@name='line_ids']/list/field[@name='balance']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field
@@ -118,21 +120,12 @@
         </field>
     </record>
     <record id="view_account_tree_inherit_binaural_accountant" model="ir.ui.view">
-        <field name="name">view.account.tree.inherit.binaural.accountant</field>
+        <field name="name">view.account.list.inherit.binaural.accountant</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_tree" />
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='amount_total_signed']" position="after">
+            <xpath expr="//list/field[@name='amount_total_signed']" position="after">
                 <field name="foreign_rate" optional="show" />
-            </xpath>
-        </field>
-    </record>
-    <record id="view_invoice_tree" model="ir.ui.view">
-        <field name="name">account.move.tree</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_invoice_tree" />
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='amount_total_signed']" position="after">
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field
                     name="foreign_total_billed"
@@ -144,4 +137,14 @@
             </xpath>
         </field>
     </record>
+    <!-- <record id="view_invoice_tree" model="ir.ui.view">
+        <field name="name">account.move.list</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='amount_total_signed']" position="after">
+               
+            </xpath>
+        </field>
+    </record> -->
 </odoo>

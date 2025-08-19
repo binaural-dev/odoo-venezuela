@@ -205,7 +205,7 @@ class RetentionIslrReport(models.TransientModel):
         return retention_ids
 
     def _get_retention_islr_excel_rows(self, table_rows, row_idx, current_company=False):
-        is_vef_currency = self.env.ref("base.VEF").id == self.env.company.currency_foreign_id.id
+        is_vef_currency = self.env.ref("base.VEF").id == self.env.company.foreign_currency_id.id
 
         retention_ids = self._get_retention_ids(current_company)
         

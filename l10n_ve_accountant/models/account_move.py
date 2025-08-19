@@ -4,7 +4,8 @@ from collections import defaultdict
 from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import drop_index, float_compare, index_exists
+from odoo.tools import float_compare, index_exists
+from odoo.tools.sql import drop_index
 from odoo.tools.float_utils import float_round
 from odoo.tools.misc import formatLang
 
@@ -27,7 +28,7 @@ class AccountMove(models.Model):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.currency_foreign_id.id or False
+        return self.env.company.foreign_currency_id.id or False
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -245,7 +246,7 @@ class AccountMove(models.Model):
             The view of the account move form with the foreign currency symbol added to the page
             title.
         """
-        foreign_currency_id = self.env.company.currency_foreign_id.id
+        foreign_currency_id = self.env.company.foreign_currency_id.id
 
         res = super().get_view(view_id, view_type, **options)
 
@@ -410,7 +411,7 @@ class AccountMove(models.Model):
         is_invoice = self.is_invoice(include_receipts=True)
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
         # self.line_ids.update({"foreign_debit": 0, "foreign_credit": 0})
-        payment = self.payment_id
+        payment = self.origin_payment_id
 
         # If the move is a retention payment we need to use the retention_foreign_amount of the
         # payment to compute the foreign debit/credit.
@@ -429,7 +430,7 @@ class AccountMove(models.Model):
             line_foreign_currency_id = [
                 line
                 for line in self.line_ids
-                if line.currency_id == self.env.company.currency_foreign_id
+                if line.currency_id == self.env.company.foreign_currency_id
             ]
 
             for line in self.line_ids.sorted(lambda l: l.tax_ids, reverse=True):
@@ -531,12 +532,9 @@ class AccountMove(models.Model):
                         balance_amount = line.foreign_debit
                         if balance == "credit":
                             balance_amount = line.foreign_credit
-                        tax_amount = line.tax_ids._compute_amount(
-                            float_round(
-                                balance_amount,
-                                precision_rounding=line.foreign_currency_id.rounding,
-                            ),
-                            balance_amount,
+                        tax_amount = line.tax_ids._get_tax_details(
+                            line.price_unit,
+                            line.quantity,
                         )
                         if (
                             self.env.company.tax_calculation_rounding_method
@@ -574,7 +572,7 @@ class AccountMove(models.Model):
 
         if (
             account_payable_or_receivable_line.currency_id
-            != self.env.company.currency_foreign_id
+            != self.env.company.foreign_currency_id
         ):
             if account_payable_or_receivable_line.debit > 0:
                 account_payable_or_receivable_line.foreign_debit = sum(
@@ -661,7 +659,7 @@ class AccountMove(models.Model):
         for move in self:
             move.foreign_taxable_income = False
             if move.is_invoice() and move.invoice_line_ids:
-                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"]
+                move.foreign_taxable_income = move.tax_totals["base_amount_foreign_currency"]
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
@@ -676,21 +674,33 @@ class AccountMove(models.Model):
                 and move.tax_totals
             ):
                 continue
-            move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
+            move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
 
+    #override of base 
+    @api.depends_context('lang')
     @api.depends(
-        "invoice_line_ids.currency_rate",
-        "invoice_line_ids.tax_base_amount",
-        "invoice_line_ids.tax_line_id",
-        "invoice_line_ids.price_total",
-        "invoice_line_ids.price_subtotal",
-        "invoice_payment_term_id",
-        "partner_id",
-        "currency_id",
-        "foreign_rate",
+        'invoice_line_ids.currency_rate',
+        'invoice_line_ids.tax_base_amount',
+        'invoice_line_ids.tax_line_id',
+        'invoice_line_ids.price_total',
+        'invoice_line_ids.price_subtotal',
+        'invoice_payment_term_id',
+        'partner_id',
+        'currency_id',
+        'foreign_rate',
     )
     def _compute_tax_totals(self):
+        # Adaptar el contexto para que el método de impuestos pueda recuperar el registro de factura
+        for move in self:
+            # Pasar el id de la factura al contexto para que lo use account.tax
+            ctx = self.env.context.copy()
+            ctx.update({'active_id': move.id, 'active_model': move._name})
+            move.with_context(ctx)._compute_tax_totals_base()
+
+    def _compute_tax_totals_base(self):
+        # Llamada original al super
         return super()._compute_tax_totals()
+
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -891,7 +901,7 @@ class AccountMove(models.Model):
         return super().action_post()
 
     @api.depends(
-        "invoice_line_ids.compute_all_tax",
+        "invoice_line_ids",
         "invoice_line_ids.price_subtotal",
         "foreign_inverse_rate",
         "foreign_currency_id",
