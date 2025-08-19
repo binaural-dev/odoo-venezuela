@@ -44,13 +44,25 @@
                 <attribute name="groups">!l10n_ve_stock.group_hide_print_button_for_inventory_transfers</attribute>
             </xpath>
 
+            <xpath expr="//form/header/button[@name='do_print_picking']" position="before">
+                <field name="picking_type_code" invisible="1"/>
+                <button name="button_validate" type="object"
+                        string="Validate"
+                        class="oe_highlight"
+                        groups="!l10n_ve_stock.group_hide_validate_inventory_transfers_button"
+                        invisible="state in ('confirmed', 'done', 'cancel') or picking_type_code != 'incoming'"
+                        data-hotkey="v"/>
+            </xpath>
+
             <xpath expr="//button[@name='button_validate'][2]" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_validate_inventory_transfers_button</attribute>
+                <attribute name="invisible">state in ('waiting', 'assigned', 'done', 'cancel') or picking_type_code == 'incoming'</attribute>
                 <attribute name='confirm'>Upon confirmation, the system will generate the number of sequences of shipping guides.</attribute>
             </xpath>
 
             <xpath expr="//button[@name='button_validate'][1]" position="attributes">
                 <attribute name="groups">!l10n_ve_stock.group_hide_validate_inventory_transfers_button</attribute>
+                <attribute name="invisible">state in ('draft', 'confirmed', 'done', 'cancel') or picking_type_code == 'incoming'</attribute>
                 <attribute name='confirm'>Upon confirmation, the system will generate the number of sequences of shipping guides.</attribute>
             </xpath>
 
