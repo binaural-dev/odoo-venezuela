@@ -37,7 +37,7 @@ class ReportPaymentPos(models.AbstractModel):
         show_categories = data.get("show_categories")
 
         currency = self.env.company.currency_id
-        foreign_currency = self.env.company.currency_foreign_id
+        foreign_currency = self.env.company.foreign_currency_id
 
         def get_payment_info(payments):
             return {

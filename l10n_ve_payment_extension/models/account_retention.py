@@ -23,7 +23,7 @@ class AccountRetention(models.Model):
     )
     foreign_currency_id = fields.Many2one(
         "res.currency",
-        default=lambda self: self.env.company.currency_foreign_id.id,
+        default=lambda self: self.env.company.foreign_currency_id.id,
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
