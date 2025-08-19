@@ -33,7 +33,7 @@ class TestStockPickingApiCalls(TransactionCase):
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "currency_foreign_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_vef.id,
                 "url_tfhka": "https://fake-api.com",
                 "token_auth_tfhka": "fake-token",
                 "group_sales_invoicing_series": True,
