@@ -81,4 +81,23 @@ patch(ProductScreen.prototype, {
     }
     return await super._setValue(val);
   },
+  //Inherit
+  get productsToDisplay() {
+
+    let list = super.productsToDisplay
+    
+    // Filtrar productos si la configuración lo requiere
+    if (!this.pos.config.pos_show_just_products_with_available_qty) {
+      return list;
+    }
+
+    list = list.filter(product => {
+      if (product.type === 'service' || product.type === 'consu') {
+        return true;
+      }
+      return product.qty_available > 0;
+    });
+
+    return list;
+  },
 });
