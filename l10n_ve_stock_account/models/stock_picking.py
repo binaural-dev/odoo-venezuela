@@ -192,24 +192,38 @@ class StockPicking(models.Model):
         """
         self._validate_one_invoice_posted()
         for picking_id in self:
+            invoice = None
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
-                customer_journal_id = self.env.company.customer_journal_id or False
-                if not customer_journal_id:
-                    raise UserError(_("Please configure the journal from settings"))
+                if picking_id.sale_id:
+                    invoice =picking_id.sale_id._create_invoices(final=True)
+                    invoice.write(
+                        {
+                            "narration": picking_id.name,
+                            "partner_id": picking_id.partner_id.id,
+                            "payment_reference": picking_id.name,
+                            "transfer_ids": self,
+                            "from_picking": True,
+                            "fiscal_position_id": picking_id.sale_id.fiscal_position_id.id if picking_id.sale_id.fiscal_position_id else False,
+                        }
+                    )
+                else:
+                    customer_journal_id = self.env.company.customer_journal_id or False
+                    if not customer_journal_id:
+                        raise UserError(_("Please configure the journal from settings"))
 
-                invoice_line_list = picking_id._get_invoice_lines_for_invoice(
-                    from_picking_line=True
-                )
-                origin_name = self._get_origin_name(picking_id)
-                invoice = self.env["account.move"].create(
+                    invoice_line_list = picking_id._get_invoice_lines_for_invoice(
+                        from_picking_line=True
+                    )
+                    origin_name = self._get_origin_name(picking_id)
+                    invoice = self.env["account.move"].create(
                     {
                         "move_type": "out_invoice",
                         "invoice_origin": origin_name, 
                         "invoice_user_id": current_user,
                         "narration": picking_id.name,
                         "partner_id": picking_id.partner_id.id,
-                        "currency_id": picking_id.env.user.company_id.currency_id.id,
+                        "currency_id": self.env.user.company_id.currency_id.id,
                         "journal_id": int(customer_journal_id),
                         "payment_reference": picking_id.name,
                         "picking_ids": picking_id,
@@ -217,10 +231,11 @@ class StockPicking(models.Model):
                         "transfer_ids": self,
                         "from_picking": True,
                     }
-                )
-            picking_id.write({"state_guide_dispatch": "invoiced"})
-            picking_id._update_order_sale_invoiced()
-        return invoice
+                    )
+            if invoice:
+                picking_id.write({"state_guide_dispatch": "invoiced"})
+                picking_id._update_order_sale_invoiced()
+                return invoice
 
     def create_bill(self):
         """This is the function for creating vendor bill
