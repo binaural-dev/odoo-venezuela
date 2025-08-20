@@ -8,5 +8,8 @@
             </attribute>
             <attribute name="quantity_products">currentOrder.get_qty_products()</attribute>
         </xpath>
+        <xpath expr="//ProductCard" position="attributes">
+            <attribute name="qty_available">product.qty_available</attribute>
+        </xpath>
     </t>
 </templates>
