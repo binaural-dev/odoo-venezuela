@@ -125,6 +125,71 @@ class AccountMove(models.Model):
             move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
             move.foreign_balance = move.foreign_debit - move.foreign_credit
 
+
+    def _get_journal_income_account(self, journal):
+        """
+            Retrieve the default income account associated with a given journal.
+            This method checks for specific income-related fields on the journal record
+            in the following order:
+              1. `revenue_account_id` (if defined, often used in custom/localized modules)
+              2. `income_account_id` (if defined, also seen in some localizations)
+              3. `default_account_id` (standard Odoo default account for the journal)
+
+            The first non-false value found will be returned.
+
+            :param journal: An `account.journal` record.
+            :return: An `account.account` record representing the journal's income account,
+                     or False if none is set.
+        """
+        return(
+            getattr(journal, 'revenue_account_id', False) or getattr(journal,'income_account_id', False) or journal.default_account_id
+        )
+
+    def _update_invoice_lines_with_new_journal(self, old_journal_id, new_journal_id):
+        """
+            Update income lines on draft invoices when the journal is changed.
+
+            This method:
+              1. Retrieves the old and new journals from their IDs.
+              2. Gets the default income accounts for each journal using `_get_journal_income_account()`.
+              3. Filters the current recordset (`self`) to include only draft moves.
+              4. For each move, selects invoice lines that:
+                 - Have `display_type` equal to 'product'
+                 - Are not tax lines (`tax_line_id` is False)
+                 - Use the old journal's income account
+              5. Updates the account of those lines to the new journal's income account.
+              6. Runs `_sync_dynamic_lines` to recompute related dynamic lines 
+                 (e.g., taxes, rounding) after the account change.
+
+            :param old_journal_id: ID of the journal currently assigned to the move.
+            :type old_journal_id: int
+            :param new_journal_id: ID of the new journal to assign.
+            :type new_journal_id: int
+            :return: None
+        """
+        old_journal = self.env['account.journal'].browse(old_journal_id)
+        new_journal = self.env['account.journal'].browse(new_journal_id)
+
+        old_income = self._get_journal_income_account(old_journal)
+        new_income = self._get_journal_income_account(new_journal)
+        if not (old_income and new_income):
+            return
+        moves = self.filtered(lambda m: m.state == 'draft')
+        lines_to_update = None
+        for move in moves:
+            lines_to_update = move.line_ids.filtered(
+                lambda l: (l.display_type == 'product' and not l.tax_line_id 
+                    and l.account_id.id == old_income.id )
+            )
+        
+        if lines_to_update:
+            for line in lines_to_update:
+                line.write({'account_id': new_income.id})
+        if moves: 
+            container = {'records': moves}
+            moves._sync_dynamic_lines(container)
+
+
     @api.depends("invoice_line_ids", "tax_totals")
     def _compute_detailed_amounts(self):
         for record in self:
@@ -312,6 +377,8 @@ class AccountMove(models.Model):
         """
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
+
+        if vals has 'journal_id' inside, then call _update_invoice_lines_with_new_journal to update the line_ids to update the account_id.
         """
         if 'name' in vals and vals['name'] != "/":
             for move in self:
@@ -331,6 +398,14 @@ class AccountMove(models.Model):
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
+                
+        if 'journal_id' in vals:    
+            for move in self:
+                old_journal_id = move.journal_id.id
+        else:
+            old_journal_id = None
+
+            
         res = super().write(vals)
         for move in self:
             if (
@@ -344,6 +419,10 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
+            new_journal_id = move.journal_id.id
+            if old_journal_id and new_journal_id and old_journal_id != new_journal_id:
+                if move.is_invoice(include_receipts=True) and move.move_type in ('out_invoice', 'out_refund', 'out_receipt'):
+                        move._update_invoice_lines_with_new_journal(old_journal_id, new_journal_id)
         return res
 
     @api.constrains("invoice_line_ids")
