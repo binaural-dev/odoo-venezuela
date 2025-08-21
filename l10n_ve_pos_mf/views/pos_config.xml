@@ -8,10 +8,6 @@
                 position="replace">
             </xpath>
             <xpath expr="//div[@class='row'][2]" position="replace"></xpath>
-            <xpath expr="//div[@class='row'][1]/field[@name='iface_printer_id']"
-                position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
             <xpath expr="//div[@name='row_scale']" position="after">
                 <div class="row">
                     <label string="Fiscal Data Module" for="iface_fiscal_data_module"
