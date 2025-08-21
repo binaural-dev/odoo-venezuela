@@ -33,6 +33,7 @@ class StockPicking(models.Model):
         store=True,
     )
 
+    ofman
 
     state_guide_dispatch = fields.Selection(
         [
