@@ -64,6 +64,18 @@ class PosSession(models.Model):
             "warehouse": self.config_id.picking_type_id.warehouse_id.id,
         }
         return params
+    
+    def _loader_params_res_company(self):
+        return {
+            'search_params': {
+                'domain': [('id', '=', self.company_id.id)],
+                'fields': [
+                    'currency_id', 'email', 'street', 'website', 'company_registry', 'vat', 'name', 'phone', 'partner_id',
+                    'country_id', 'state_id', 'tax_calculation_rounding_method', 'nomenclature_id', 'point_of_sale_use_ticket_qr_code',
+                    'point_of_sale_ticket_unique_code', 'account_fiscal_country_id',
+                ],
+            }
+        }
 
     # def _get_pos_ui_product_product(self, params):
     #     self = self.with_context(**params["context"])
@@ -79,35 +91,35 @@ class PosSession(models.Model):
     #     self._process_pos_ui_product_product(products)
     #     return products
 
-    def _loader_params_res_country_city(self):
-        return {"search_params": {"domain": [], "fields": ["name", "id"]}}
+    # def _loader_params_res_country_city(self):
+    #     return {"search_params": {"domain": [], "fields": ["name", "id"]}}
 
-    def _get_pos_ui_res_country_city(self, params):
-        return self.env["res.country.city"].search_read(**params["search_params"])
+    # def _get_pos_ui_res_country_city(self, params):
+    #     return self.env["res.country.city"].search_read(**params["search_params"])
 
-    def _pos_ui_models_to_load(self):
-        result = super()._pos_ui_models_to_load()
-        if "res.country.city" not in result:
-            result.append("res.country.city")
-        return result
+    # def _pos_ui_models_to_load(self):
+    #     result = super()._pos_ui_models_to_load()
+    #     if "res.country.city" not in result:
+    #         result.append("res.country.city")
+    #     return result
 
-    def get_pos_ui_product_product_by_params(self, custom_search_params):
-        """
-        :param custom_search_params: a dictionary containing params of a search_read()
-        """
-        params = self._loader_params_product_product()
-        self = self.with_context(**params['context'])
-        # custom_search_params will take priority
-        params["search_params"] = {**params["search_params"], **custom_search_params}
-        products = (
-            self.env["product.product"]
-            .with_context(active_test=False)
-            .search_read(**params["search_params"])
-        )
-        products = self._sort_available_products(products)
-        if len(products) > 0:
-            self._process_pos_ui_product_product(products)
-        return products
+    # def get_pos_ui_product_product_by_params(self, custom_search_params):
+    #     """
+    #     :param custom_search_params: a dictionary containing params of a search_read()
+    #     """
+    #     params = self._loader_params_product_product()
+    #     self = self.with_context(**params['context'])
+    #     # custom_search_params will take priority
+    #     params["search_params"] = {**params["search_params"], **custom_search_params}
+    #     products = (
+    #         self.env["product.product"]
+    #         .with_context(active_test=False)
+    #         .search_read(**params["search_params"])
+    #     )
+    #     products = self._sort_available_products(products)
+    #     if len(products) > 0:
+    #         self._process_pos_ui_product_product(products)
+    #     return products
 
     def _sort_available_products(self, products):
         if not self.env.company.pos_show_just_products_with_available_qty:
@@ -747,16 +759,3 @@ class PosSession(models.Model):
                 line.foreign_debit = abs(foreign_amount)
                 if other_line.foreign_credit != line.foreign_debit:
                     other_line.foreign_credit = abs(line.foreign_debit)
-
-    #@override
-    def _loader_params_res_company(self):
-        return {
-            'search_params': {
-                'domain': [('id', '=', self.company_id.id)],
-                'fields': [
-                    'currency_id', 'email', 'street', 'website', 'company_registry', 'vat', 'name', 'phone', 'partner_id',
-                    'country_id', 'state_id', 'tax_calculation_rounding_method', 'nomenclature_id', 'point_of_sale_use_ticket_qr_code',
-                    'point_of_sale_ticket_unique_code', 'account_fiscal_country_id',
-                ],
-            }
-        }
