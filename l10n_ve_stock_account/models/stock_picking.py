@@ -43,6 +43,9 @@ class StockPicking(models.Model):
         ],
         default="to_invoice",
     )
+    document = fields.Selection(
+        related="sale_id.document")
+    
     optional_internal_movement_guidance = fields.Boolean(related='company_id.optional_internal_movement_guidance')
     reasons_optional_guide_dispatch = fields.Boolean(compute="_compute_reasons_optional_guide")
 
@@ -902,7 +905,11 @@ class StockPicking(models.Model):
         for picking in self:
 
             picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
-            if (
+            if picking.document == "invoice":
+                picking.is_dispatch_guide = False
+                continue
+
+            elif (
                 picking.transfer_reason_id
                 and picking.transfer_reason_id.id == consignment_reason.id
             ):
