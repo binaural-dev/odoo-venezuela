@@ -22,3 +22,8 @@ class ResPartner(models.Model):
         if partner.get("city_id", False):
             partner["city_id"] = int(partner["city_id"])
         return super().create_from_ui(partner)
+    @api.model
+    def _load_pos_data_fields(self, config_id):
+        res = super()._load_pos_data_fields(config_id)
+        res += ['city_id']
+        return res
