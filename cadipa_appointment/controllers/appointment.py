@@ -140,9 +140,8 @@ class AppointmentControllerMulti(AppointmentController):
         product_id = post.get('product_id')
         created_ev = request.env['calendar.event']
         first_token = None
-
         appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
-        staff_user       = request.env['res.users'].sudo().browse(int(post.get('staff_user_id')))
+        staff_user       = request.env['res.users'].sudo().browse(post.get('staff_user_id')) if post.get('staff_user_id') else None
         booking_vals     = []
 
         for st_local, en_local in ranges:
