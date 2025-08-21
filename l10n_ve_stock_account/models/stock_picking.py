@@ -793,7 +793,7 @@ class StockPicking(models.Model):
             record.show_create_vendor_credit = False
             record.show_create_invoice_internal = False
 
-            if is_invoice_empty and is_done and is_to_invoice and not record.purchase_id:
+            if is_invoice_empty and is_done and is_to_invoice and record.picking_type_code != "incoming":
                 if record.operation_code == "incoming":
                     record.show_create_bill = not record.is_return
                     record.show_create_vendor_credit = record.is_return
@@ -835,7 +835,7 @@ class StockPicking(models.Model):
         for picking in self:
             picking.has_document = bool(picking.sale_id.document)
 
-    @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid", "purchase_id")
+    @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid", "picking_type_code")
     def _compute_dispatch_guide_controls(self):
         for picking in self:
             picking.dispatch_guide_controls = False
@@ -843,7 +843,7 @@ class StockPicking(models.Model):
             if picking.state != "done":
                 continue
 
-            if picking.purchase_id:
+            if picking.picking_type_code == "incoming":
                 continue
 
             # if not picking.sale_id and not picking.operation_code == "internal":
@@ -1173,12 +1173,16 @@ class StockPicking(models.Model):
         records._assign_partner_from_location()
         return records
 
+   
     def write(self, vals):
-        res = super().write(vals)
-        if self.partner_required:
-            if any(k in vals for k in [
-                'location_dest_id', 'transfer_reason_id',
-                'is_consignment', 'is_dispatch_guide', 'partner_required']):
-                self._assign_partner_from_location()
+        res = super().write(vals)  
+        for rec in self:
+            if rec.partner_required:
+                if any(k in vals for k in [
+                    'location_dest_id', 'transfer_reason_id',
+                    'is_consignment', 'is_dispatch_guide', 'partner_required']):
+                    rec._assign_partner_from_location()
+        
         return res
+
 
