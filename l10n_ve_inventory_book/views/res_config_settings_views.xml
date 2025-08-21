@@ -1,0 +1,29 @@
+<odoo>
+	<record id="res_config_settings_view_form_l10n_ve_inventory_book" model="ir.ui.view">
+		<field name="name">res.config.settings.view.form.l10n.ve.inventory.book</field>
+		<field name="model">res.config.settings</field>
+		<field name="priority" eval="100"/>
+		<field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
+		<field name="arch" type="xml">
+			
+            <xpath expr="//form" position="inside">
+				<h2>inventory Book Settings</h2>
+			    <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-6 o_setting_box" name="l10n_ve_inventory_book_settings">
+                        <div class="o_setting_left_pane">
+                            <field name="display_consumables" />
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="display_consumables"/>
+                            <div class="text-muted">
+                                <strong>When marked:</strong> Displays consumables in the inventory book<br/>
+                                <strong>When unchecked:</strong> Consumable products will not be displayed in the inventory book
+                            </div>
+                        </div>
+                    </div>
+                </div>
+			</xpath>
+
+		</field>
+	</record>
+</odoo>
