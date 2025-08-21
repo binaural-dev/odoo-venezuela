@@ -1,7 +1,7 @@
 {
     "name": "Cadipa Reservas",
     "summary": "Modulo para personalizaciones de reservas de CADIPA",
-    "version": "17.0.1.0.8",
+    "version": "17.0.1.0.9",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
@@ -16,14 +16,7 @@
     ],
     "data": [
         "views/res_config_settings.xml",
-        "views/res_partner.xml",
         "views/calendar_event_views.xml",
-        "views/appointment_templates_appointments.xml",
-        "views/appointment_form_hidden_fields.xml",
-        "views/appointment_templates_validation.xml",
-        "views/portal_invoice_seller.xml",
-        "views/portal_my_memberships.xml",
-        "views/appointment_additional_info.xml"
 
     ],
     "images": [
@@ -31,9 +24,6 @@
     ],
     "assets": {
         "web.assets_frontend": [
-            "cadipa_appointment/static/src/xml/appointment_slots.xml",
-            "cadipa_appointment/static/src/js/appointment_slot.js",
-            "cadipa_appointment/static/src/js/appointment_additional_info.js",
             "cadipa_appointment/static/src/js/guest_form.js",
         ],
     },
