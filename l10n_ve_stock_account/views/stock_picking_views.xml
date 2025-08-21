@@ -39,7 +39,7 @@
             </xpath>
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="is_consignment" invisible="1" />
-
+                <field name="document" invisible="1"/>
                 <field name="optional_internal_movement_guidance" invisible="1"/>
                 <field name="reasons_optional_guide_dispatch" invisible="1"/>
                 <field name="transfer_reason_id" invisible="1" />
