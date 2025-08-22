@@ -1,0 +1,29 @@
+<odoo>
+
+    <record id="view_payment_method_tfhka_tree" model="ir.ui.view">
+        <field name="name">payment.method.tfhka.tree</field>
+        <field name="model">payment.method.tfhka</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="code"/>
+                <field name="description"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_payment_method_tfhka_form" model="ir.ui.view">
+        <field name="name">payment.method.tfhka.form</field>
+        <field name="model">payment.method.tfhka</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="code"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

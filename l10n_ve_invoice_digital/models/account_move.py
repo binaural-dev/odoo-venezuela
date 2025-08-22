@@ -374,6 +374,8 @@ class AccountMove(models.Model):
             if payment_forms:
                 if len(payment_forms) > 5:
                     raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
+                if any(not method.get('forma') for method in payment_forms):
+                    raise ValidationError(_("The payment method code is not configured in the journal."))
                 totals["formasPago"] = payment_forms
 
             if amounts_foreign:
@@ -600,32 +602,11 @@ class AccountMove(models.Model):
     def build_payment_info(self, payment):
         payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
         currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
-        payment_method_code = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else "03"
-        payment_method = {
-            "01": "Depósito en cuenta",
-            "02": "Pago Móvil",
-            "03": "Transferencia de fondos",
-            "04": "Orden de Pago",
-            "05": "Tarjeta de Débito",
-            "06": "Tarjeta de crédito (Nacional o Internacional)",
-            "07": "Cheques con cláusula \"NO NEGOCIABLE\", \"INTRANSFERIBLES\", etc. (art. 5°, inc. g) de la ley",
-            "08": "Efectivo Moneda Curso Legal",
-            "09": "Efectivo Divisas",
-            "10": "Medios de pago usados en comercio Exterior",
-            "11": "Transferencias – Comercio exterior",
-            "12": "Cheques bancarios - Comercio exterior",
-            "13": "Orden de pago simple - Comercio exterior",
-            "14": "Orden de pago documentario - Comercio exterior",
-            "15": "Remesa simple - Comercio exterior",
-            "16": "Remesa documentaria - Comercio exterior",
-            "17": "Carta de crédito simple - Comercio exterior",
-            "18": "Carta de crédito documentario - Comercio exterior",
-            "99": "Otros medios de pago"
-        }
+        payment_method = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else False
         payment_info = {
-            "descripcion": payment_method[payment_method_code],
+            "descripcion": payment_method.description if payment_method else "",
             "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
-            "forma": payment_method_code,
+            "forma": payment_method.code if payment_method else "",
             "monto": str(round(payment_id.amount, 2)),
             "moneda": currency,
         }
