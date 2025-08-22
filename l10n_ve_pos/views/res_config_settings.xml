@@ -123,6 +123,17 @@
                                                             Do not allow sales less than
                                                         </div>
                                                     </div>
+                                                    <div class="col-12 col-lg-6 o_setting_box" invisible="not amount_to_zero">
+                                                        <div class="o_setting_left_pane">
+                                                            <field name="allow_sales_on_order"/>
+                                                        </div>
+                                                        <div class="o_setting_right_pane">
+                                                            <label for="allow_sales_on_order" string="Allow sales on order"/>
+                                                            <div class="text-muted">
+                                                                allows sales on order without having the product available 
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                     <div class="col-12 col-lg-6 o_setting_box"
                                                         id="l10n_ve_pos_div_pos_show_free_qty">
                                                         <div class="o_setting_left_pane">
