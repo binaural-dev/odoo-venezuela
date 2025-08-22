@@ -39,10 +39,16 @@
             </xpath>
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="is_consignment" invisible="1" />
+                <field name="document" invisible="1"/>
+                <field name="optional_internal_movement_guidance" invisible="1"/>
+                <field name="reasons_optional_guide_dispatch" invisible="1"/>
+                <field name="transfer_reason_id" invisible="1" />
                 <field 
                     name="is_dispatch_guide"
-                    invisible="operation_code != 'internal' and operation_code != 'outgoing'"
-                    readonly="1" />
+                    invisible="operation_code not in ['internal','outgoing']" force_save="1"
+                    readonly="not reasons_optional_guide_dispatch or state == 'done'"/>
+
+
                 <field name="is_consignment_readonly" invisible="1"/>
                 <field 
                     name="transfer_reason_id"
@@ -108,6 +114,41 @@
                     invisible="not show_create_vendor_credit"/>
             </xpath>
         </field>
+    </record>
+
+    <record id="stock_view_picking_form" model="ir.ui.view">
+        <field name="name">stock.view.picking.form</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="l10n_ve_stock.view_picking_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//button[@name='button_validate'][1]" position="attributes">
+                
+                <attribute name="invisible">True</attribute>
+
+            </xpath>
+
+            <xpath expr="//button[@name='button_validate'][2]" position="attributes">
+
+                <attribute name="invisible">True</attribute>
+
+
+            </xpath>
+
+            <xpath expr="//button[@name='button_validate'][2]" position="after">
+                <field name="is_dispatch_guide" invisible="1"/>
+                <button name="button_validate" string="Validate" type="object" class="oe_highlight" groups="!l10n_ve_stock.group_hide_validate_inventory_transfers_button" data-hotkey="v" invisible="state in ('draft', 'confirmed', 'done', 'cancel') or not is_dispatch_guide" confirm="Upon confirmation, the system will generate the number of sequences of shipping guides."/>
+                <button name="button_validate" string="Validate" type="object" class="oe_highlight" groups="!l10n_ve_stock.group_hide_validate_inventory_transfers_button" data-hotkey="v" invisible="state in ('draft', 'confirmed', 'done', 'cancel') or  is_dispatch_guide" />
+
+                <button name="button_validate" string="Validate" type="object" groups="!l10n_ve_stock.group_hide_validate_inventory_transfers_button" class="o_btn_validate" data-hotkey="v" invisible="state in ('waiting', 'assigned', 'done', 'cancel') or not is_dispatch_guide" confirm="Upon confirmation, the system will generate the number of sequences of shipping guides."/>
+                <button name="button_validate" string="Validate" type="object" groups="!l10n_ve_stock.group_hide_validate_inventory_transfers_button" class="o_btn_validate" data-hotkey="v" invisible="state in ('waiting', 'assigned', 'done', 'cancel') or is_dispatch_guide" />
+
+
+            </xpath>
+
+           
+        </field>
+
     </record>
     <!-- ### ACTIONS SERVERS ### -->
     <record id="action_create_invoice_for_multi_transfer" model="ir.actions.server">
