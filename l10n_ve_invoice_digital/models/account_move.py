@@ -601,8 +601,29 @@ class AccountMove(models.Model):
         payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
         currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
         payment_method_code = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else "03"
+        payment_method = {
+            "01": "Depósito en cuenta",
+            "02": "Pago Móvil",
+            "03": "Transferencia de fondos",
+            "04": "Orden de Pago",
+            "05": "Tarjeta de Débito",
+            "06": "Tarjeta de crédito (Nacional o Internacional)",
+            "07": "Cheques con cláusula \"NO NEGOCIABLE\", \"INTRANSFERIBLES\", etc. (art. 5°, inc. g) de la ley",
+            "08": "Efectivo Moneda Curso Legal",
+            "09": "Efectivo Divisas",
+            "10": "Medios de pago usados en comercio Exterior",
+            "11": "Transferencias – Comercio exterior",
+            "12": "Cheques bancarios - Comercio exterior",
+            "13": "Orden de pago simple - Comercio exterior",
+            "14": "Orden de pago documentario - Comercio exterior",
+            "15": "Remesa simple - Comercio exterior",
+            "16": "Remesa documentaria - Comercio exterior",
+            "17": "Carta de crédito simple - Comercio exterior",
+            "18": "Carta de crédito documentario - Comercio exterior",
+            "99": "Otros medios de pago"
+        }
         payment_info = {
-            "descripcion": payment_id.concept if payment_id.concept else "N/A",
+            "descripcion": payment_method[payment_method_code],
             "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
             "forma": payment_method_code,
             "monto": str(round(payment_id.amount, 2)),
