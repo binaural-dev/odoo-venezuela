@@ -16,10 +16,11 @@
         "l10n_ve_payment_extension",
         "stock",
     ],
-    
+
     "images": ["static/description/icon.png"],
     "application": True,
     "data": [
+        "data/payment_method_data_tfhka.xml",
         "security/ir.model.access.csv",
         "views/res_config_settings.xml",
         "views/account_move_view.xml",
@@ -28,5 +29,6 @@
         "views/stock_picking.xml",
         "wizard/account_retention_alert_views.xml",
         "views/account_journal.xml",
+        "views/payment_method_tfhka.xml",
     ],
 }
