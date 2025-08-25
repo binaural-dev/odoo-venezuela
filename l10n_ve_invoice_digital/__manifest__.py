@@ -4,9 +4,8 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.1",
+    "version": "17.0.0.0.4",
     "depends": [
-        "base",
         "account",
         "l10n_ve_igtf",
         "account_debit_note",
@@ -16,10 +15,11 @@
         "l10n_ve_payment_extension",
         "stock",
     ],
-    
+
     "images": ["static/description/icon.png"],
     "application": True,
     "data": [
+        "data/payment_method_data_tfhka.xml",
         "security/ir.model.access.csv",
         "views/res_config_settings.xml",
         "views/account_move_view.xml",
@@ -27,5 +27,7 @@
         "views/account_retention_islr.xml",
         "views/stock_picking.xml",
         "wizard/account_retention_alert_views.xml",
+        "views/account_journal.xml",
+        "views/payment_method_tfhka.xml",
     ],
 }
