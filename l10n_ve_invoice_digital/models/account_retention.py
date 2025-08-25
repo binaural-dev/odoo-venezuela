@@ -73,7 +73,13 @@ class AccountRetention(models.Model):
         document_type = self.env.context.get('document_type')
         self.query_numbering()
         document_number = self.get_last_document_number(document_type)
-        document_number = document_number + 1
+        
+        document_number_str = str(document_number)
+        if len(document_number_str) > 6:
+            document_number = int(document_number_str[6:]) + 1
+        else:
+            document_number = int(document_number_str) + 1
+
         current_number = int(self.number[6:])
         validation_sequence = self.env.context.get('account_retention_alert', False)
 
@@ -91,7 +97,7 @@ class AccountRetention(models.Model):
             }
         }
 
-        document_number = str(document_number)
+        document_number = str(self.number)
 
         self.generate_document_data(document_number, document_type, validation_sequence)
     
