@@ -21,7 +21,7 @@
                 <xpath expr="//notebook" position="inside">
                     <page name="iva_retention" string="IVA Retentions">
                         <field name="retention_iva_line_ids" nolabel="1" readonly="1">
-                            <tree editable='bottom'>
+                            <list editable='bottom'>
                                 <!-- Invisible Fields -->
                                 <field name="invoice_type" column_invisible="True"/>
                                 <field name="company_currency_id" column_invisible="True"/>
@@ -82,7 +82,7 @@
                                 />
                                 <field name="foreign_currency_rate" optional="hide"/>
                                 <field name="state"/>
-                            </tree>
+                            </list>
                         </field>
                     </page>
                     <page name="islr_retention" string="ISLR Retentions">
@@ -91,7 +91,7 @@
                             nolabel="1"
                             readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'"
                         >
-                            <tree editable='bottom'>
+                            <list editable='bottom'>
                                 <!-- Invisible Fields -->
                                 <field name="invoice_type" column_invisible="True"/>
                                 <field name="company_currency_id" column_invisible="True"/>
@@ -151,7 +151,7 @@
                                     column_invisible="parent.base_currency_is_vef"
                                 />
                                 <field name="state"/>
-                            </tree>
+                            </list>
                         </field>
                     </page>
                     <page name="municipal_retention" string="Municipal Retentions">
@@ -160,7 +160,7 @@
                             nolabel="1"
                             readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'"
                         >
-                            <tree editable='bottom'>
+                            <list editable='bottom'>
                                 <field name="name" force_save="1" readonly="1"/>
                                 <field name="economic_activity_id" force_save="1"/>
                                 <field name="aliquot" readonly="1" force_save="1"/>
@@ -213,7 +213,7 @@
                                 />
                                 <field name="foreign_currency_rate" force_save="1" readonly="1" optional="hide"/>
                                 <field name="state" force_save="1"/>
-                            </tree>
+                            </list>
                         </field>
                     </page>
                 </xpath>

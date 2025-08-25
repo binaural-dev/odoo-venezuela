@@ -20,7 +20,7 @@ class PosPayment(models.Model):
     @api.depends()
     def _compute_foreign_currency_id(self):
         for record in self:
-            record.foreign_currency_id = record.env.company.currency_foreign_id
+            record.foreign_currency_id = record.env.company.foreign_currency_id
 
     def _export_for_ui(self, payment):
         res = super()._export_for_ui(payment)

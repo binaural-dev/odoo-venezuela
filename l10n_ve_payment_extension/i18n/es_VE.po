@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250522\n"
+"Project-Id-Version: Odoo Server 18.0+e-20250814\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-25 16:00+0000\n"
-"PO-Revision-Date: 2025-07-25 16:00+0000\n"
+"POT-Creation-Date: 2025-08-25 12:41+0000\n"
+"PO-Revision-Date: 2025-08-25 12:41+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -377,6 +377,11 @@ msgid "ARCV Voucher"
 msgstr "Comprobante ARCV"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Account reports"
+msgstr "Reportes contables"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__date_accounting
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__date_accounting
 msgid "Accounting Date"
@@ -608,7 +613,7 @@ msgstr "Referencia del Comprobante"
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__company_id
@@ -650,7 +655,7 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_partner
@@ -1112,6 +1117,14 @@ msgid "Has Message"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_patent_columns_extra
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__hide_patent_columns_extra
+msgid "Hide extra columns in Patent Municipal Report related to advances"
+msgstr ""
+"Ocultar columnas adicionales en el reporte de Patente Municipal relacionadas"
+" con anticipos"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__id
@@ -1184,13 +1197,6 @@ msgstr "Retención de ISLR para Proveedor"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
 msgid "ISLR Retentions"
 msgstr "Retenciones de ISLR"
-
-#. module: l10n_ve_payment_extension
-#. odoo-python
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-#, python-format
-msgid "ISLR retention: Number must be exactly 11 numeric digits."
-msgstr "Retención ISLR: El número debe tener exactamente 11 dígitos numéricos."
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__iva_amount
@@ -1447,6 +1453,15 @@ msgstr "Enero"
 #: model:ir.model,name:l10n_ve_payment_extension.model_account_journal
 msgid "Journal"
 msgstr "Diario"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"Journal '%(journal)s' must have accounts configured and a payment method "
+"line for '%(method)s'."
+msgstr ""
+"El diario '%(journal)s' debe tener cuentas configuradas y una línea de método de pago para '%(method)s'."
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_account_move
@@ -1721,11 +1736,6 @@ msgid "Name"
 msgstr "Nombre"
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_calendar_event_id
-msgid "Next Activity Calendar Event"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_date_deadline
 msgid "Next Activity Deadline"
 msgstr ""
@@ -1746,6 +1756,12 @@ msgstr ""
 #, python-format
 msgid "No data to export"
 msgstr "No hay datos para exportar"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "No registered lines found in the move to reconcile."
+msgstr "No existen líneas registradas en el movimiento"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -1849,6 +1865,11 @@ msgstr "Parroquia"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__partner
 msgid "Partner"
 msgstr "Proveedor"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_payment_register
+msgid "Pay"
+msgstr "Pagar"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__payment_ids
@@ -1975,11 +1996,6 @@ msgid "Rate accumulated?"
 msgstr "¿Tarifa Acumulada?"
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__rating_ids
-msgid "Ratings"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__raw_aliquot
 msgid "Raw Aliquot"
 msgstr "Alícuota Bruta"
@@ -1995,11 +2011,6 @@ msgid "Recibido por:"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model,name:l10n_ve_payment_extension.model_account_payment_register
-msgid "Register Payment"
-msgstr "Registrar pago"
-
-#. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_withholding_type.py:0
 #, python-format
@@ -2009,7 +2020,7 @@ msgstr "Recordar usar (,) como separador decimal"
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_ir_actions_report
 msgid "Report Action"
-msgstr "Reportar acción"
+msgstr "Acción de reporte"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__report
@@ -2046,7 +2057,7 @@ msgstr "Tarifa Retenida"
 #: model:ir.ui.menu,name:l10n_ve_payment_extension.retention_configuration
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_tree_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_list_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_tree_l10n_ve_payment_extension
 #, python-format
@@ -2093,15 +2104,15 @@ msgstr "Linea de Retención"
 #. module: l10n_ve_payment_extension
 #: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_line_report
 #: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_line_report
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_list
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_search
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_tree
 msgid "Retention Line Report"
 msgstr "Reporte de Retenciones"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_line_ids
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_account_retention_line_form_l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_account_retention_line_tree_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_account_retention_line_list_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension
@@ -2449,6 +2460,12 @@ msgstr ""
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "The company must have a journal configured for retentions."
+msgstr "La compañía debe tener un diario configurado para retenciones."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #, python-format
 msgid "The company must have a journal for ISLR supplier retention."
@@ -2635,18 +2652,18 @@ msgid "Total IVA"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_tree
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_list
 msgid "Total IVA Amount"
 msgstr "Monto Total IVA"
 
 #. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_tree
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_list
 msgid "Total Invoice Amount"
 msgstr "Total Factura"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__total_retention_amount
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_tree
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_list
 msgid "Total Retention Amount"
 msgstr "Total Retenido"
 

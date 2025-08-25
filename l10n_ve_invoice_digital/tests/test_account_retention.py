@@ -20,7 +20,7 @@ class TestAccumulatedRate(TransactionCase):
         self.company.write(
             {
                 'currency_id': self.currency.id,
-                'currency_foreign_id': self.foreign_currency.id, 
+                'foreign_currency_id': self.foreign_currency.id, 
                 "username_tfhka": "usuario_prueba",
                 "password_tfhka": "clave_prueba",
                 "url_tfhka": "https://api.tfhka.com",

@@ -6,14 +6,14 @@
             <field name="name">view.fees.retention.tree</field>
             <field name="model">fees.retention</field>
             <field name="arch" type="xml">
-                <tree>
+                <list>
                     <field name="name" />   
                     <field name="percentage" />
                     <field name="apply_subtracting" />                
                     <field name="accumulated_rate" />                
                     <field name="tax_unit_ids" />                
                     <field name="status" />                              
-                </tree>
+                </list>
             </field>
         </record>
 
@@ -41,13 +41,13 @@
                         </group>
                         <group>
                             <field name="accumulated_rate_ids" invisible="not accumulated_rate">
-                                <tree editable="bottom" string="Accumulated fees">
+                                <list editable="bottom" string="Accumulated fees">
                                     <field name="name"/>
                                     <field name="start"/>
                                     <field name="stop" />
                                     <field name="percentage" />
                                     <field name="subtract_ut" />
-                                </tree>
+                                </list>
                             </field>
                         </group>
                     </sheet>

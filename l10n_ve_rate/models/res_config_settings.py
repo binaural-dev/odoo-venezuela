@@ -20,7 +20,7 @@ class ResConfigSettings(models.TransientModel):
     )
 
     @api.constrains("foreign_currency_id")
-    def _check_currency_foreign_id(self):
+    def _check_foreign_currency_id(self):
         self = self.with_company(self.company_id)
         for rec in self:
             if "currency_id" in rec._fields and rec.currency_id == rec.foreign_currency_id:
@@ -29,7 +29,7 @@ class ResConfigSettings(models.TransientModel):
                 )
 
     @api.onchange("foreign_currency_id")
-    def currency_foreign_id_onchange_(self):
+    def foreign_currency_id_onchange_(self):
         self = self.with_company(self.company_id)
         for rec in self:
             if "currency_id" in rec._fields and rec.currency_id == rec.foreign_currency_id:

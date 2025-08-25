@@ -6,51 +6,38 @@ import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { registry } from "@web/core/registry";
 
 import { TaxTotalsComponent } from "@account/components/tax_totals/tax_totals";
-
+import { patch } from "@web/core/utils/patch";
 const { Component, onPatched, onWillUpdateProps, useRef, toRaw, useState } = owl;
 
-
-export class TaxTotalsComponents extends TaxTotalsComponent {
-  get currencyId() {
-    return this.props.record.data.foreign_currency_id;
-  }
-
+patch(TaxTotalsComponent.prototype, {
   formatData(props) {
     let totals = JSON.parse(JSON.stringify(toRaw(props.record.data[this.props.name])));
     if (!totals) {
       return;
     }
+    const foreignCurrencyFmtOpts = { currencyId: props.record.data.foreign_currency_id && props.record.data.foreign_currency_id[0] };
     const currencyFmtOpts = { currencyId: props.record.data.currency_id && props.record.data.currency_id[0] };
-
-    let amount_untaxed = totals.amount_untaxed;
-    let amount_tax = 0;
-    let subtotals = [];
-    for (let subtotal_title of totals.subtotals_order) {
-      let amount_total = amount_untaxed + amount_tax;
-      subtotals.push({
-        'name': subtotal_title,
-        'amount': amount_total,
-        'formatted_amount': formatMonetary(amount_total, currencyFmtOpts),
-      });
-      let group = totals.groups_by_subtotal[subtotal_title];
-      for (let i in group) {
-        amount_tax = amount_tax + group[i].tax_group_amount;
+    if (totals.subtotals && Array.isArray(totals.subtotals)) {
+      for (let subtotal of totals.subtotals) {
+        subtotal.formatted_base_amount_foreign_currency = formatMonetary(subtotal.base_amount_foreign_currency, foreignCurrencyFmtOpts);
+        subtotal.formatted_base_amount_currency = formatMonetary(subtotal.base_amount_currency, currencyFmtOpts);
+        if (subtotal.tax_groups && Array.isArray(subtotal.tax_groups)) {
+          for (let taxGroup of subtotal.tax_groups) {
+            taxGroup.formatted_tax_amount_foreign_currency = formatMonetary(taxGroup.tax_amount_foreign_currency, foreignCurrencyFmtOpts);
+            taxGroup.formatted_base_amount_foreign_currency = formatMonetary(taxGroup.base_amount_foreign_currency, foreignCurrencyFmtOpts);
+            taxGroup.formatted_tax_amount_currency = formatMonetary(taxGroup.tax_amount_currency, currencyFmtOpts);
+            taxGroup.formatted_base_amount_currency = formatMonetary(taxGroup.base_amount_currency, currencyFmtOpts);
+          }
+        }
       }
     }
-    totals.subtotals = subtotals;
-    let rounding_amount = totals.display_rounding && totals.rounding_amount || 0;
-    let amount_total = amount_untaxed + amount_tax + rounding_amount;
-    totals.amount_total = amount_total;
-    totals.formatted_amount_total = formatMonetary(amount_total, currencyFmtOpts);
-    for (let group_name of Object.keys(totals.groups_by_subtotal)) {
-      let group = totals.groups_by_subtotal[group_name];
-      for (let key in group) {
-        group[key].formatted_tax_group_amount = formatMonetary(group[key].tax_group_amount, currencyFmtOpts);
-        group[key].formatted_tax_group_base_amount = formatMonetary(group[key].tax_group_base_amount, currencyFmtOpts);
-      }
-    }
+    totals.formatted_total_amount_foreign_currency = formatMonetary(totals.total_amount_foreign_currency, foreignCurrencyFmtOpts);
+    totals.formatted_total_amount_currency = formatMonetary(totals.total_amount_currency, currencyFmtOpts);
     this.totals = totals;
+    return totals;
   }
+});
+export class TaxTotalsComponents extends TaxTotalsComponent {
 }
 TaxTotalsComponents.template = "l10n_ve_tax.TaxForeignTotalsField";
 TaxTotalsComponents.props = {

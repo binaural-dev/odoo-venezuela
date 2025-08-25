@@ -23,7 +23,7 @@ class AccountRetention(models.Model):
     )
     foreign_currency_id = fields.Many2one(
         "res.currency",
-        default=lambda self: self.env.company.currency_foreign_id.id,
+        default=lambda self: self.env.company.foreign_currency_id.id,
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
@@ -454,6 +454,9 @@ class AccountRetention(models.Model):
         set of retention lines that have the same invoice.
         """
         for retention in self:
+            journal_retention =  self.env.company.iva_supplier_retention_journal_id.id if retention.type == 'in_invoice' else self.env.company.iva_customer_retention_journal_id.id
+            if not journal_retention:
+                raise UserError(_("The company must have a journal configured for retentions."))
             if any(retention.payment_ids) or retention.type_retention != "iva":
                 continue
             payment_vals = {
@@ -462,6 +465,7 @@ class AccountRetention(models.Model):
                 "payment_type_retention": "iva",
                 "is_retention": True,
                 "currency_id": self.env.user.company_id.currency_id.id,
+                'journal_id': journal_retention,
             }
 
             def account_retention_line_empty_recordset():
@@ -475,6 +479,33 @@ class AccountRetention(models.Model):
                 self._create_payments_for_iva_customer(
                     payment_vals, account_retention_line_empty_recordset
                 )
+
+    def _get_payment_method_line(self, journal_id, payment_method):
+        """Retrieve a payment method line or raise a helpful error.
+
+        Parameters
+        ----------
+        journal_id: int
+            Journal on which the payment will be created.
+        payment_method: recordset
+            Payment method to look for.
+        """
+        method_line = self.env["account.payment.method.line"].search(
+            [
+                ("payment_method_id", "=", payment_method.id),
+                ("journal_id", "=", journal_id),
+            ],
+            limit=1,
+        )
+        journal = self.env["account.journal"].browse(journal_id)
+        if not method_line or not method_line.payment_account_id:
+            raise UserError(
+                _(
+                    "Journal '%(journal)s' must have accounts configured and a payment method line for '%(method)s'."
+                )
+                % {"journal": journal.display_name, "method": payment_method.name}
+            )
+        return method_line
 
     def _create_payments_for_iva_supplier(
         self, payment_vals, account_retention_line_empty_recordset
@@ -499,9 +530,11 @@ class AccountRetention(models.Model):
             in_invoices_dict[line.move_id] += line
 
         for lines in in_refunds_dict.values():
-            payment_vals["payment_method_id"] = (
-                self.env.ref("account.account_payment_method_manual_in").id,
+            manual_in = self.env.ref("account.account_payment_method_manual_in")
+            method_line =  self._get_payment_method_line(
+                payment_vals["journal_id"], manual_in
             )
+            payment_vals["payment_method_line_id"] = method_line.id
             payment_vals["payment_type"] = "inbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
@@ -511,9 +544,11 @@ class AccountRetention(models.Model):
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
         for lines in in_invoices_dict.values():
-            payment_vals["payment_method_id"] = (
-                self.env.ref("account.account_payment_method_manual_out").id,
+            manual_out = self.env.ref("account.account_payment_method_manual_out")
+            method_line = self._get_payment_method_line(
+                payment_vals["journal_id"], manual_out
             )
+            payment_vals["payment_method_line_id"] = method_line.id
             payment_vals["payment_type"] = "outbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
@@ -546,9 +581,11 @@ class AccountRetention(models.Model):
             out_invoices_dict[line.move_id] += line
 
         for lines in out_refunds_dict.values():
-            payment_vals["payment_method_id"] = (
-                self.env.ref("account.account_payment_method_manual_out").id,
+            manual_out = self.env.ref("account.account_payment_method_manual_out")
+            method_line = self._get_payment_method_line(
+                payment_vals["journal_id"], manual_out
             )
+            payment_vals["payment_method_line_id"] = method_line.id
             payment_vals["payment_type"] = "outbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
@@ -558,9 +595,11 @@ class AccountRetention(models.Model):
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
         for lines in out_invoices_dict.values():
-            payment_vals["payment_method_id"] = (
-                self.env.ref("account.account_payment_method_manual_in").id,
+            manual_in = self.env.ref("account.account_payment_method_manual_in")
+            method_line = self._get_payment_method_line(
+                payment_vals["journal_id"], manual_in
             )
+            payment_vals["payment_method_line_id"] = method_line.id
             payment_vals["payment_type"] = "inbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
@@ -576,10 +615,6 @@ class AccountRetention(models.Model):
     def action_post(self):
         today = datetime.now()
         for retention in self:
-            if retention.type_retention == 'iva':
-                if not re.fullmatch(r"\d{14}", retention.number):
-                    raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
-            
             if (
                 retention.type in ["out_invoice", "out_refund", "out_debit"]
                 and not retention.number
@@ -596,13 +631,14 @@ class AccountRetention(models.Model):
             if not retention.payment_ids:
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
-
+            retention._reconcile_all_payments()
             if retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._set_sequence()
                 self.set_voucher_number_in_invoice(move_ids, retention)
-
+        if retention.type_retention == 'iva':
+            if not re.fullmatch(r"\d{14}", retention.number):
+                raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))            
         self.payment_ids.write({"date": self.date_accounting})
-        self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
     def set_voucher_number_in_invoice(self, move, retention):
@@ -745,6 +781,8 @@ class AccountRetention(models.Model):
                 if payment_type == "inbound"
                 else "account.account_payment_method_manual_out"
             )
+            payment_method = self.env.ref(payment_method_ref)
+            method_line = self._get_payment_method_line(journal_id, payment_method)
 
             payment_vals.append(
                 {
@@ -754,7 +792,7 @@ class AccountRetention(models.Model):
                     "partner_id": line.move_id.partner_id.id,
                     "journal_id": journal_id,
                     "payment_type_retention": self.type_retention,
-                    "payment_method_id": self.env.ref(payment_method_ref).id,
+                    "payment_method_line_id": method_line.id,
                     "is_retention": True,
                     "foreign_rate": line.move_id.foreign_rate,
                     "foreign_inverse_rate": line.move_id.foreign_inverse_rate,
@@ -796,7 +834,6 @@ class AccountRetention(models.Model):
     def _reconcile_supplier_payment(self, payment):
 
         if payment.payment_type == "outbound":
-            
             lines = payment.move_id.line_ids.filtered(lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0)
             if not lines:
                 raise ValidationError(_("No registered lines found in the move to reconcile."))
@@ -858,34 +895,29 @@ class AccountRetention(models.Model):
         ).mapped("tax_ids")
         if not any(tax_ids):
             raise UserError(_("The invoice %s has no tax."), invoice_id.number)
-
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []
-        subtotals_name = invoice_id.tax_totals["subtotals"][0]["name"]
-        tax_groups = zip(
-            invoice_id.tax_totals["groups_by_subtotal"][subtotals_name],
-            invoice_id.tax_totals["groups_by_foreign_subtotal"][subtotals_name],
-        )
-        for tax_group, foreign_tax_group in tax_groups:
-            taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["tax_group_id"])
+        tax_groups = invoice_id.tax_totals["subtotals"][0]["tax_groups"]
+        for tax_group in tax_groups:
+            taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["id"])
             if not taxes:
                 continue
             tax = taxes[0]
-            retention_amount = tax_group["tax_group_amount"] * (withholding_amount / 100)
+            retention_amount = tax_group["tax_amount"] * (withholding_amount / 100)
             line_data = {
                 "name": _("Iva Retention"),
                 "invoice_type": invoice_id.move_type,
                 "move_id": invoice_id.id,
                 "payment_id": payment.id if payment else None,
                 "aliquot": tax.amount,
-                "iva_amount": tax_group["tax_group_amount"],
-                "invoice_total": invoice_id.tax_totals["amount_total"],
+                "iva_amount": tax_group["tax_amount"],
+                "invoice_total": invoice_id.tax_totals["total_amount_currency"],
                 "related_percentage_tax_base": withholding_amount,
-                "invoice_amount": tax_group["tax_group_base_amount"],
+                "invoice_amount": tax_group["base_amount"],
                 "foreign_currency_rate": invoice_id.foreign_rate,
-                "foreign_invoice_amount": foreign_tax_group["tax_group_base_amount"],
-                "foreign_iva_amount": foreign_tax_group["tax_group_amount"],
-                "foreign_invoice_total": invoice_id.tax_totals["foreign_amount_total"],
+                "foreign_invoice_amount": tax_group["base_amount_foreign_currency"],
+                "foreign_iva_amount": tax_group["tax_amount_foreign_currency"],
+                "foreign_invoice_total": invoice_id.tax_totals["total_amount_foreign_currency"],
             }
             if invoice_id.move_type == "out_invoice":
                 line_data["retention_amount"] = 0.0

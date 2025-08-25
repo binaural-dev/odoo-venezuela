@@ -28,7 +28,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "invoice_digital_tfhka": True,
                 "sequence_validation_tfhka": True,
                 "currency_id": self.currency_usd.id,
-                "currency_foreign_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_vef.id,
             }
         )
         

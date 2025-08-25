@@ -10,7 +10,7 @@ class AccountPaymentRegister(models.TransientModel):
         "res.currency", default=lambda self: self.env.company.currency_id
     )
     foreign_currency_id = fields.Many2one(
-        "res.currency", default=lambda self: self.env.company.currency_foreign_id
+        "res.currency", default=lambda self: self.env.company.foreign_currency_id
     )
 
     is_out_invoice = fields.Boolean()
@@ -211,3 +211,13 @@ class AccountPaymentRegister(models.TransientModel):
             }
         )
         return retention
+    
+    @api.depends('can_edit_wizard', 'can_group_payments', 'group_payment', 'edit_retention_fields', 'payment_difference')
+    def _compute_show_payment_difference(self):
+        for wizard in self:
+            wizard.show_payment_difference = (
+                not wizard.edit_retention_fields
+                or wizard.payment_difference == 0.0
+                or not wizard.can_edit_wizard
+                or (wizard.can_group_payments and not wizard.group_payment)
+            )
