@@ -1,17 +1,17 @@
 <odoo>
     <data>
-        <record id="view_economic_activity_tree_l10n_ve_payment_extension" model="ir.ui.view">
-            <field name="name">view.economic.activity.tree.l10n.ve.payment.extension</field>
+        <record id="view_economic_activity_list_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.activity.list.l10n.ve.payment.extension</field>
             <field name="model">economic.activity</field>
             <field name="arch" type="xml">
-                <tree>
+                <list>
                     <field name="name" />
                     <field name="branch_id" />
                     <field name="municipality_id" />
                     <field name="aliquot" />
                     <field name="minimum_monthly" />
                     <field name="minimum_annual" />
-                </tree>
+                </list>
             </field>
         </record>
 

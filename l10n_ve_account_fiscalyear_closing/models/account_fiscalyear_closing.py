@@ -187,7 +187,7 @@ class AccountFiscalyearClosing(models.Model):
         )
         currencies = {
             "bsd_id": self.env.ref("base.VEF"),
-            "foreign_currency": self.env.company.currency_foreign_id,
+            "foreign_currency": self.env.company.foreign_currency_id,
         }
 
         for closing in self:

@@ -1,14 +1,14 @@
 <odoo>
     <data>
-        <record id="view_account_retention_line_tree_l10n_ve_payment_extension" model="ir.ui.view">
-            <field name="name">views.account.retention.line.tree.l10n.ve.payment.extension</field>
+        <record id="view_account_retention_line_list_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">views.account.retention.line.list.l10n.ve.payment.extension</field>
             <field name="model">account.retention.line</field>
-            <field name="type">tree</field>
+            <field name="type">list</field>
             <field name="arch" type="xml">
-                <tree string="Retention Lines">
+                <list string="Retention Lines">
                     <field name="name"/>
                     <field name="payment_id" />
-                </tree>
+                </list>
             </field>
         </record>
         <record id="view_account_retention_line_form_l10n_ve_payment_extension" model="ir.ui.view">

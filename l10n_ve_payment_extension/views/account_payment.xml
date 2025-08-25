@@ -12,12 +12,12 @@
                     <notebook invisible="not is_retention">
                         <page name="retention_lines" string="Retention lines">
                             <field name="retention_line_ids" nolabel="1">
-                                <tree editable="bottom">
+                                <list editable="bottom">
                                     <field name="name"/>
                                     <field name="move_id"/>
                                     <field name="payment_concept_id"/>
                                     <field name="invoice_amount"/>
-                                </tree>
+                                </list>
                             </field>
                         </page>
                     </notebook>

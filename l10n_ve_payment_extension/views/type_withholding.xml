@@ -2,15 +2,15 @@
 
     <data>
 
-        <record id="view_type_withholding_tree_l10n_ve_payment_extension" model="ir.ui.view">
+        <record id="view_type_withholding_list_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">IVA Retention</field>
             <field name="model">account.withholding.type</field>
             <field name="arch" type="xml">
-                    <tree>
+                    <list>
                         <field name="name" required="1" />
                         <field name="value" required="1" />
                         <field name="state" />
-                    </tree>
+                    </list>
                 </field>
         </record>
 
@@ -30,8 +30,8 @@
                 <field name="res_model">account.withholding.type</field>
                 <field name="type">ir.actions.act_window</field>
                 <field name="binding_view_types">form</field>
-                <field name="view_mode">tree,form</field>
-                <field name="view_id" ref="view_type_withholding_tree_l10n_ve_payment_extension" />
+                <field name="view_mode">list,form</field>
+                <field name="view_id" ref="view_type_withholding_list_l10n_ve_payment_extension" />
                 <field name="context">{"search_default_state":True}</field>
         </record>
     
