@@ -13,7 +13,7 @@ class PaymentMethod(models.Model):
     @api.constrains('code')
     def _check_code(self):
         for record in self:
-            code = self.env['payment.method.tfhka'].search([('id', '=', record.code)], limit=1)
+            code = self.env['payment.method.tfhka'].search([('code', '=', record.code), ('id', '!=', record.id)], limit=1)
             if code:
                 raise ValidationError(_("The payment method code already exists"))
             
