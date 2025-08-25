@@ -1,5 +1,9 @@
 from odoo import api, fields, models, Command
 from odoo.tools.float_utils import float_round
+from odoo.exceptions import UserError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountPayment(models.Model):
@@ -83,7 +87,6 @@ class AccountPayment(models.Model):
 
             vals_to_change = {"name": move_name}
             move.write(vals_to_change)
-            move.line_ids.write(vals_to_change)
         return res
 
     def unlink(self):

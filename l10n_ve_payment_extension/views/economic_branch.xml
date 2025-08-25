@@ -2,14 +2,14 @@
 
     <data>
 
-        <record id="view_economic_branch_tree_l10n_ve_payment_extension" model="ir.ui.view">
-            <field name="name">view.economic.branch.tree.l10n.ve.payment.extension</field>
+        <record id="view_economic_branch_list_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.branch.list.l10n.ve.payment.extension</field>
             <field name="model">economic.branch</field>
             <field name="arch" type="xml">
-                <tree>
+                <list>
                     <field name="name" />
                     <field name="status" />
-                </tree>
+                </list>
             </field>
         </record>
 
