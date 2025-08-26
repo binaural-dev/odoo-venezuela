@@ -59,6 +59,12 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="o_setting_left_pane">
+                                <field name="digitalization_with_payment_tfhka"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="digitalization_with_payment_tfhka"/>
+                            </div>
                         </div>
                         <div class="col-6" style="border: 1px solid #ddd; padding: 15px; border-radius: 5px; background-color: #f9f9f9; margin: auto; text-align: center;">
                             <div class="form-group">
