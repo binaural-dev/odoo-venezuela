@@ -196,7 +196,7 @@ class StockPicking(models.Model):
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
                 if picking_id.sale_id:
-                    invoice =picking_id.sale_id._create_invoices(final=True)
+                    invoice = picking_id.sale_id._create_invoices(final=True)
                     invoice.write(
                         {
                             "narration": picking_id.name,
