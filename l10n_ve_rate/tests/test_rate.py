@@ -2,6 +2,8 @@ from odoo.tests import TransactionCase, tagged
 from odoo import fields
 import logging
 _logger = logging.getLogger(__name__)
+
+
 @tagged('post_install', '-at_install', 'l10n_ve_rate')
 class TestResCurrencyRate(TransactionCase):
     def setUp(self):
