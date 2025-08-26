@@ -15,6 +15,7 @@ class ResCompany(models.Model):
     token_auth_tfhka = fields.Char()
     invoice_digital_tfhka = fields.Boolean()
     sequence_validation_tfhka = fields.Boolean(default=True)
+    digitalization_with_payment_tfhka = fields.Boolean(default=False)
     
     def generate_token_tfhka(self):
         self.ensure_one()
