@@ -33,7 +33,7 @@ class ResCompany(models.Model):
     )
 
     optional_internal_movement_guidance = fields.Boolean(
-        "Internal picking with dispatched guidance ptional",
+        "Internal picking with dispatched guidance optional",
         default=False
     )
     invoice_cron_time = fields.Float(required=True, default=18.0)

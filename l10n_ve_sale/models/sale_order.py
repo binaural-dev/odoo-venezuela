@@ -280,7 +280,7 @@ class SaleOrder(models.Model):
         if len(res) > limit:
             res = res[:limit]
 
-        if not any(not line.display_type for line in res):
+        if all(line.display_type for line in res):
             return self.env['sale.order.line']
         return res
 

@@ -5,7 +5,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.2",
+    "version": "18.0.0.0.2",
     "depends": ["base", "contacts"],
     "data": [
         "security/ir.model.access.csv",
