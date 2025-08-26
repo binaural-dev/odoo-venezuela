@@ -14,7 +14,6 @@
         "binaural_appointment",
     ],
     "data": [
-        # "views/portal_my_memberships.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
