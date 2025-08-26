@@ -175,7 +175,7 @@ class AccountMove(models.Model):
         if not (old_income and new_income):
             return
         moves = self.filtered(lambda m: m.state == 'draft')
-
+        lines_to_update = None
         for move in moves:
             lines_to_update = move.line_ids.filtered(
                 lambda l: (l.display_type == 'product' and not l.tax_line_id 
@@ -399,8 +399,9 @@ class AccountMove(models.Model):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
                 
-        if 'journal_id' in vals:
-            old_journal_id = [move.journal_id.id for move in self]
+        if 'journal_id' in vals:    
+            for move in self:
+                old_journal_id = move.journal_id.id
         else:
             old_journal_id = None
 
