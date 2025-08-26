@@ -88,7 +88,7 @@ class AccountPaymentIgtf(models.Model):
         principal_debt = invoice.amount_total - invoice.bi_igtf
 
         principal_amount = min(payment_amount, principal_debt)
-        return principal_amount * 0.03
+        return principal_amount * (self.env.company.igtf_percentage / 100)
 
     def _create_igtf_moves_in_payments(self, vals):
         """Prepare values to create a new account.move.line for a payment.
