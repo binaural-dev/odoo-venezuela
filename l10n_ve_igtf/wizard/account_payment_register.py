@@ -80,8 +80,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     def _compute_is_igtf(self):
         """Compute if the current payment apply igtf """
         for payment in self:
+
             amount_residual = payment.line_ids.mapped('move_id').amount_residual
-            result=amount_residual-payment.amount
+            result = amount_residual - payment.amount
+
             if (
                 payment.journal_id.is_igtf
                 and payment.is_igtf
@@ -175,6 +177,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     @api.depends('journal_id')
     def _compute_is_igtf_journal(self):
         for record in self:
-            if record.journal_id.currency_id == self.env.ref("base.USD"):
+            if record.journal_id.currency_id and record.journal_id.currency_id == self.env.ref("base.USD"):
                 record.is_igtf_on_foreign_exchange = True
 

@@ -52,6 +52,7 @@ class AccountPaymentIgtf(models.Model):
     @api.depends("journal_id")
     def _compute_is_igtf(self):
         for payment in self:
+            payment.is_igtf_on_foreign_exchange = False
             if payment.journal_id.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
 
@@ -290,7 +291,7 @@ class AccountPaymentIgtf(models.Model):
     @api.depends('journal_id')
     def _compute_is_igtf_journal(self):
         for record in self:
-            if record.journal_id.currency_id == self.env.ref("base.USD"):
+            if record.journal_id.currency_id and record.journal_id.currency_id == self.env.ref("base.USD"):
                 record.is_igtf_on_foreign_exchange = True
             else:
                 record.is_igtf_on_foreign_exchange = False
