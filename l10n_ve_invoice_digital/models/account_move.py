@@ -577,29 +577,18 @@ class AccountMove(models.Model):
                 content_data = record.invoice_payments_widget.get("content", [])
                 if content_data:
                     for item in content_data:
-                        payment_method = self.get_payment_method(item)
-                        currency = self.get_currency(item.get('currency_id'))
                         payment = self.get_payment(item.get('account_payment_id'))
 
                         if not payment:
                             continue
                         
-                        payment_info = self.build_payment_info(item, payment, currency, payment_method, record.foreign_rate)
+                        payment_info = self.build_payment_info(payment)
                         payment_data.append(payment_info)
                     return payment_data
             return False
         except Exception as e:
             _logger.error(f"Error processing payment methods: {e}")
             return False
-
-    def get_payment_method(self, item):
-        if item.get("payment_method_name") == "Efectivo":
-            return "08" if self.get_currency(item.get('currency_id')) == "VES" else "09"
-        elif item.get("payment_method_name") == "Transferencia":
-            return "03"
-        elif item.get("payment_method_name") == "Manual":
-            return "99"
-        return ""
 
     def get_currency(self, currency_id):
         currency_data = self.env['res.currency'].search([('id', '=', currency_id)])
@@ -608,17 +597,20 @@ class AccountMove(models.Model):
     def get_payment(self, account_payment_id):
         return self.env['account.payment'].search([('id', '=', account_payment_id)])
 
-    def build_payment_info(self, item, payment, currency, payment_method, foreign_rate):
+    def build_payment_info(self, payment):
+        payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
+        currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
+        payment_method_code = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else "03"
         payment_info = {
-            "descripcion": payment.concept if payment.concept else "N/A",
-            "fecha": item.get("date").strftime("%d/%m/%Y") if item.get("date") else "",
-            "forma": payment_method,
-            "monto": str(round(item.get("amount"), 2)),
+            "descripcion": payment_id.concept if payment_id.concept else "N/A",
+            "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
+            "forma": payment_method_code,
+            "monto": str(round(payment_id.amount, 2)),
             "moneda": currency,
         }
 
         if currency != "VES":
-            payment_info["tipoCambio"] = str(round(foreign_rate, 2))
+            payment_info["tipoCambio"] = str(round(payment_id.foreign_rate, 2))
 
         return payment_info
 
