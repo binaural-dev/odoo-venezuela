@@ -11,7 +11,8 @@ class AccountPaymentIgtf(models.Model):
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         help="IGTF on Foreign Exchange?",
-        # compute="_compute_igtf_on_foreign_exchange",
+        compute="_compute_is_igtf",
+        store=True,
     )
 
     igtf_percentage = fields.Float(
@@ -42,11 +43,18 @@ class AccountPaymentIgtf(models.Model):
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
 
-    @api.depends("amount", "igtf_amount")
+    @api.depends("amount","igtf_amount")
     def _compute_amount_with_igtf(self):
         for payment in self:
             if not payment.amount_with_igtf:
                 payment.amount_with_igtf = payment.amount + payment.igtf_amount
+
+    @api.depends("journal_id")
+    def _compute_is_igtf(self):
+        for payment in self:
+            payment.is_igtf_on_foreign_exchange = False
+            if payment.journal_id.is_igtf:
+                payment.is_igtf_on_foreign_exchange = True
 
     @api.depends("amount")
     def _compute_igtf_amount(self):
@@ -70,7 +78,8 @@ class AccountPaymentIgtf(models.Model):
         """
 
         vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(
-            write_off_line_vals, force_balance
+            write_off_line_vals,
+            force_balance
         )
 
         if self.igtf_percentage:
@@ -86,7 +95,7 @@ class AccountPaymentIgtf(models.Model):
         principal_debt = invoice.amount_total - invoice.bi_igtf
 
         principal_amount = min(payment_amount, principal_debt)
-        return principal_amount * 0.03
+        return principal_amount * (self.env.company.igtf_percentage / 100)
 
     def _create_igtf_moves_in_payments(self, vals):
         """Prepare values to create a new account.move.line for a payment.
@@ -286,3 +295,11 @@ class AccountPaymentIgtf(models.Model):
             amount_without_difference = amount_without_difference * self.foreign_rate
 
         return amount_without_difference
+
+    @api.depends('journal_id')
+    def _compute_is_igtf_journal(self):
+        for record in self:
+            if record.journal_id.currency_id and record.journal_id.currency_id == self.env.ref("base.USD"):
+                record.is_igtf_on_foreign_exchange = True
+            else:
+                record.is_igtf_on_foreign_exchange = False
