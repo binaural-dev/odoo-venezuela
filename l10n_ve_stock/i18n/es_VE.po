@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250728\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 20:17+0000\n"
-"PO-Revision-Date: 2025-03-27 20:17+0000\n"
+"POT-Creation-Date: 2025-08-12 15:10+0000\n"
+"PO-Revision-Date: 2025-08-12 15:10+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -168,7 +168,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_category__company_id
@@ -199,6 +199,13 @@ msgstr "Fecha:"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Delivery Orders"
+msgstr "Órdenes de Despacho"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
@@ -334,6 +341,13 @@ msgstr ""
 "                                transferir/vender."
 
 #. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Internal Transfers"
+msgstr "Traslados internos"
+
+#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_location
 msgid "Inventory Locations"
 msgstr "Ubicaciones de inventario"
@@ -354,6 +368,16 @@ msgid "Is Physical Location"
 msgstr "Es Ubicación Física"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__limit_product_qty_out
+msgid "Limit Product Qty Out"
+msgstr "Guía de Despacho"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__limit_product_qty_out
+msgid "Limit stock picking product lines"
+msgstr "Guía de despacho"
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__liters_per_unit
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__liters_per_unit
 msgid "Liters Per Unit"
@@ -364,6 +388,11 @@ msgstr "Litros por unidad"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__main_warehouse_id
 msgid "Main Warehouse"
 msgstr "Almacén Principal"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid "Maximum quantity of products to be sold per stock picking."
+msgstr "Máxima cantidad de líneas de productos por guía de despacho."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_error
@@ -459,6 +488,13 @@ msgid "PICKS"
 msgstr ""
 
 #. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Pack"
+msgstr "Empaquetar"
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.packaging_picking_item
 msgid "Package"
 msgstr "Cajas"
@@ -479,6 +515,11 @@ msgid "Packs Count"
 msgstr "Cantidad de Packs"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__partner_id
+msgid "Partner"
+msgstr "Cliente"
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__physical_location_id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__physical_location_id
 msgid "Physical Location"
@@ -489,6 +530,13 @@ msgstr "Ubicacion Física"
 #: model:ir.ui.menu,name:l10n_ve_stock.menu_stock_quant
 msgid "Physical Locations"
 msgstr "Ubicaciones Físicas"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Pick"
+msgstr "Elegir"
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking_type
@@ -572,12 +620,24 @@ msgstr "Cantidad"
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quant
 msgid "Quants"
-msgstr "Cantidades"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Rango:"
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__rating_ids
+msgid "Ratings"
+msgstr ""
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
+#, python-format
+msgid "Receipts"
+msgstr "Recepciones"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__reception_date
@@ -675,7 +735,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Traslado"
+msgstr "Transferir "
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__type_delivery_step
@@ -696,6 +756,15 @@ msgstr "Tipo de actividad excepcional registrada"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Ultimo Costo"
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
+msgid ""
+"Upon confirmation, the system will generate the number of sequences of "
+"shipping guides."
+msgstr ""
+"Al confirmar esta operación, se generará automáticamente el número de "
+"secuencia de la guía de despacho correspondiente"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__use_free_qty_odoo
@@ -724,6 +793,16 @@ msgstr "Usuario"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "VALOR DEL INVENTARIO A PARTIR DE UNA FECHA"
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
+msgid "Validate"
+msgstr "Validar"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_warehouse
+msgid "Warehouse"
+msgstr "Almacén"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__warehouse_search_id

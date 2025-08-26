@@ -1,8 +1,13 @@
 <odoo>
   <template id="l10n_ve_stock_account.l10n_ve_stock_account_alert" name="Alert Banner" inherit_id="web.layout" active="True">
     <xpath expr="//body" position="inside">
+
+      <t t-set="result" t-value="request.httprequest.cookies"/>
+      <t t-set="company_id_str" t-value="result.get('cids', '')"/>           
+      
       <t t-set="env" t-value="request.env(context=ctx)" />
-      <t t-set="result" t-value="env['stock.picking'].sudo().alert_views()"/>
+      <t t-set="result" t-value="env['stock.picking'].sudo().alert_views(company_id_str)"/>
+
       <div>
         <span id="oe_neutralize_banner"
           t-if="result"

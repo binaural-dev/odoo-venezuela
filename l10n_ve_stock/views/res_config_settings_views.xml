@@ -67,6 +67,17 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_validate_without_product_quantity">
+                        <div class="o_setting_left_pane">
+                            <field name="limit_product_qty_out" />
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="limit_product_qty_out" />
+                            <div class="text-muted">
+                               Maximum quantity of products to be sold per stock picking.
+                            </div>
+                        </div>
+                    </div>
                 </block>
             </xpath>
         </field>

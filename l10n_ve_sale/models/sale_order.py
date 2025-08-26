@@ -88,7 +88,9 @@ class SaleOrder(models.Model):
     mobile = fields.Char(related="partner_id.mobile")
 
     @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
+    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None, **kwargs):
+        if 'load' in kwargs:
+            del kwargs['load']
         context = self.with_context(active_test=False)
         return super(SaleOrder, context).search_read(
             domain, fields, offset, limit, order
@@ -275,10 +277,12 @@ class SaleOrder(models.Model):
 
         res = super()._get_invoiceable_lines(final)
         limit = self.company_id.max_product_invoice
-        res = res.filtered(lambda line: line.invoiced == False)
-        if len(res) <= limit:
-            return res
-        return res[:limit]
+        if len(res) > limit:
+            res = res[:limit]
+
+        if not any(not line.display_type for line in res):
+            return self.env['sale.order.line']
+        return res
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         """
@@ -488,7 +492,32 @@ class SaleOrder(models.Model):
 
         self._block_valid_confirm()
 
-        return super().action_confirm()
+
+        res = super().action_confirm()
+        product_limit = self.env.company.limit_product_qty_out
+        for sale in self:
+            picking = sale.picking_ids
+            if product_limit > 0:
+                picking_moves = picking.move_ids_without_package
+                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
+                picking_vals = {
+                    key: (value[0] if isinstance(value, tuple) else value)
+                    for key, value in picking_vals[0].items()
+                }
+                picking_vals['origin'] = picking.origin
+                picking_vals['partner_id'] = picking.partner_id.id
+                picking_vals['user_id'] = picking.user_id.id
+                
+                list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
+                picking.move_ids_without_package = list_pickings_moves[0]
+                
+                for list_moves in list_pickings_moves[1:]:
+                    picking_vals["move_ids_without_package"] = list_moves
+                    new_picking = self.env['stock.picking'].create(picking_vals)
+                
+
+                
+        return res
 
     def cancel_order_after_date(self):
         orders = self.search(
