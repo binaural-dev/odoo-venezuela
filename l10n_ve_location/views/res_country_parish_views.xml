@@ -1,15 +1,15 @@
 <odoo>
   <data>
-    <!-- TREE -->
+    <!-- LIST -->
     <record id="view_res_country_parish_tree" model="ir.ui.view">
       <field name="name">res.country.parish.tree</field>
       <field name="model">res.country.parish</field>
       <field name="arch" type="xml">
-        <tree string="Parishes">
+        <list string="Parishes">
           <field name="name"/>
           <field name="code"/>
           <field name="municipality_id"/>
-        </tree>
+        </list>
       </field>
     </record>
 
@@ -34,7 +34,7 @@
     <record id="action_res_country_parish" model="ir.actions.act_window">
       <field name="name">Parish</field>
       <field name="res_model">res.country.parish</field>
-      <field name="view_mode">tree,form</field>
+      <field name="view_mode">list,form</field>
     </record>
   </data>
 </odoo>

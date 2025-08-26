@@ -6,7 +6,7 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="before">
+            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="before">
                 <field name="config_deductible_tax" column_invisible="True"/>
                 <field name="move_type" column_invisible="True"/>
                 <field name="not_deductible_tax" optional="hide" 
