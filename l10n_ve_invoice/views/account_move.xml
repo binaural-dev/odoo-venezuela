@@ -59,14 +59,18 @@
                 />
             </xpath>
 
+             <xpath expr="//header" position="after">
+                <field name="display_date_warning" invisible="1"/>
+                <div class="alert alert-warning mb-0" role="alert" invisible="not display_date_warning">
+                    Note: the invoice date is prior to the current date.
+                </div>
+            </xpath>
+
             <button name="button_draft" position="attributes">
                 <!-- <attribute name="invisible">1</attribute> -->
-                <attribute name="invisible">move_type in ['out_invoice', 'out_refund']</attribute>
+                <attribute name="invisible">move_type in ['out_invoice', 'out_refund'] or state == 'draft'</attribute>
             </button>
 
-            <button name="button_cancel" position="attributes">
-                <attribute name="invisible">move_type in ['out_invoice', 'out_refund']</attribute>
-            </button>
 
         </field>
     </record>
