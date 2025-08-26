@@ -65,6 +65,34 @@
                     </div>
                 </div>
             </xpath>
+
+            
         </field>
     </record>
+
+    <record id="res_config_settings_view_form_stock_inherit" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.stock_inherit</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock" />
+        <field name="arch" type="xml">
+            <xpath expr="//div[@id='l10n_ve_stock_block_limit_product_qty_out']" position="after">
+                <div  class="col-12 col-lg-6 o_setting_box" id="l10n_ve_stock_optional_internal_movement_guidance">
+                    <div class="o_setting_left_pane">
+                        <field name="optional_internal_movement_guidance" class="oe_inline"/>
+
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="optional_internal_movement_guidance"/>
+                        <div class="text-muted">
+                            Apply only if transfer reason:"Transfer between warehouses" is selected.
+                        </div>
+                        
+                    </div>
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+
+
 </odoo>

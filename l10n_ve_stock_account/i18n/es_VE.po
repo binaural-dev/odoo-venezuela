@@ -1226,3 +1226,29 @@ msgstr "No puede crear una factura de estos picking por el estado."
 #, python-format
 msgid "You cannot download a freeform from a vendor bill."
 msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_view_picking_form
+msgid "Validate"
+msgstr "Validar"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__optional_internal_movement_guidance
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__optional_internal_movement_guidance
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__optional_internal_movement_guidance
+msgid "Internal picking with dispatched guidance ptional"
+msgstr "Traslado interno con guía de despacho opcional"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_view_picking_form
+msgid ""
+"Upon confirmation, the system will generate the number of sequences of "
+"shipping guides."
+msgstr ""
+"Al confirmar esta operación, se generará automáticamente el número de "
+"secuencia de la guía de despacho correspondiente"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_stock_inherit
+msgid "Apply only if transfer reason:\"Transfer between warehouses\" is selected."
+msgstr "Aplica unicamente si Motivo de traslado: \"Traslado entre almacenes\" está seleccionado."
