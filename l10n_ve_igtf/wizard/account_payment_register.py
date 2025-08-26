@@ -82,7 +82,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
 
             amount_residual = payment.line_ids.mapped('move_id').amount_residual
-            result=amount_residual-payment.amount
+            result = amount_residual - payment.amount
 
             if (
                 payment.journal_id.is_igtf
