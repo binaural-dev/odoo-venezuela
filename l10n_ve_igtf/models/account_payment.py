@@ -95,7 +95,7 @@ class AccountPaymentIgtf(models.Model):
         principal_debt = invoice.amount_total - invoice.bi_igtf
 
         principal_amount = min(payment_amount, principal_debt)
-        return principal_amount * 0.03
+        return principal_amount * (self.env.company.igtf_percentage / 100)
 
     def _create_igtf_moves_in_payments(self, vals):
         """Prepare values to create a new account.move.line for a payment.
@@ -117,12 +117,13 @@ class AccountPaymentIgtf(models.Model):
             return
 
         for payment in self:
-
-            if (
-                payment.igtf_amount
-                and payment.is_igtf_on_foreign_exchange
-            ):
-
+            move_id = (
+                self.env.context.get("active_id", False)
+            )
+            move = self.env["account.move"].browse(move_id)
+            if move:
+                payment.igtf_amount = payment.calculate_igtf_for_payment(move, payment.amount)
+            if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
 
