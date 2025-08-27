@@ -48,7 +48,6 @@ class TestAccountMove(TransactionCase):
             'company': self.env['res.company'].create({
                 'name': 'Test Company',
                 'currency_id': self.env.ref('base.VEF').id,
-                'confirm_invoice_with_current_date': False,
             }),
         }
         sequence = self.env['ir.sequence'].create({
