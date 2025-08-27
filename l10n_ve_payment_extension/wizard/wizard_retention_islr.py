@@ -164,9 +164,11 @@ class RetentionIslrReport(models.TransientModel):
 
         fpi = datetime.strptime(pi, "%Y-%m-%d")
 
-        new_row["Número factura"] = ret_line_id.move_id.name[-10:] if len(ret_line_id.move_id.name) > 10 else ret_line_id.move_id.name
+        invoice_number = ret_line_id.move_id.name.replace('-', '')
+        new_row["Número factura"] = invoice_number[-10:] if len(invoice_number) > 10 else invoice_number
 
-        new_row["Control Número"] = ret_line_id.move_id.correlative
+        control_number = ret_line_id.move_id.correlative.replace('-', '')
+        new_row["Control Número"] = control_number[-10:] if len(control_number) > 10 else control_number
 
         new_row["Fecha Operación"] = fpi.strftime("%d/%m/%Y")
 
