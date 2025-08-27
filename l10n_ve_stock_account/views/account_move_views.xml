@@ -15,7 +15,6 @@
             </xpath>
 
             <xpath expr="//field[@name='ref']" position="after">
-                <field name="picking_ids" readonly="1"  widget='many2many_tags'/>
                 <field name="guide_number"/>
                 <field name="free_form_copy_number" readonly="1" />
                 <field name="transfer_ids" widget="many2many_tags" invisible="1" />
@@ -85,8 +84,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='correlative']" position="after">
                 <field
-                    name="picking_ids"
-                    widget="many2many_tags"
+                    name="guide_number"
                     string='Guide Number'
                     optional="hide" />
             </xpath>

@@ -43,6 +43,8 @@ class AccountTax(models.Model):
         base_igtf = 0
         foreign_base_igtf = 0
         is_igtf_suggested = False
+        invoice_payments_widget = False
+        payments_igtf = False
 
         for base_line in base_lines:
             type_model = base_line["record"]._name
@@ -81,8 +83,14 @@ class AccountTax(models.Model):
 
         if invoice.bi_igtf:
             is_igtf_suggested = False
-            base_igtf = invoice.bi_igtf
-            foreign_base_igtf = invoice.bi_igtf * rate
+            amount_to_igtf = (
+                self.process_payments_to_igtf(invoice)
+                if self._context.get("from_widget")
+                else invoice.bi_igtf if invoice.bi_igtf <= invoice.amount_total else invoice.amount_total
+            )
+
+            base_igtf = amount_to_igtf
+            foreign_base_igtf = base_igtf * rate
             if invoice.bi_igtf == res.get("amount_total"):
                 foreign_base_igtf = res.get("foreign_amount_total")
 
@@ -117,6 +125,7 @@ class AccountTax(models.Model):
 
         res["igtf"]["igtf_base_amount"] = igtf_base_amount
         res["igtf"]["igtf_amount"] = igtf_amount
+
         res["igtf"]["foreign_igtf_amount"] = foreign_igtf_amount
         res["igtf"]["foreign_igtf_base_amount"] = foreign_igtf_base_amount
 
@@ -149,4 +158,30 @@ class AccountTax(models.Model):
         res["igtf"]["is_igtf_suggested"] = is_igtf_suggested
 
         return res
+
+    def process_payments_to_igtf(self,invoice):
+        invoice_payments_widget = invoice.invoice_payments_widget
+        content = invoice_payments_widget.get("content", False)
+
+        if not content:
+            return 0
+
+        payments_id = [
+            payment['account_payment_id']
+            for payment in content
+            if 'account_payment_id' in payment
+        ]
+
+        payments = self.env["account.payment"].browse(payments_id)
+
+        payments_igtf = payments.filtered(lambda p: p.is_igtf_on_foreign_exchange)
+
+        amount_to_igtf = [
+            payment["amount"]
+            for payment in content
+            if 'account_payment_id' in payment and payment['account_payment_id'] in payments_igtf.ids
+        ]
+        total_amount_to_igtf = sum(amount_to_igtf)  # Calcular la suma de los montos
+
+        return total_amount_to_igtf
 
