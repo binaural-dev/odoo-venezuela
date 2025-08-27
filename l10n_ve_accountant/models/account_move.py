@@ -936,6 +936,7 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
+    # TO-DO: Modify the digital invoicing module (l10n_ve_invoice digital) if this wizard is deleted
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
