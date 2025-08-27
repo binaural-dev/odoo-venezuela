@@ -23,11 +23,6 @@ class AccountMove(models.Model):
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
-    def action_post(self):
-        if not self.company_id.digitalization_with_payment_tfhka:
-            self.generate_document_digital()
-        return super(AccountMove, self).action_post()
-
     def generate_document_digital(self):
         if not self.company_id.invoice_digital_tfhka:
             return
