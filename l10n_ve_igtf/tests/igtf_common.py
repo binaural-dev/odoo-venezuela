@@ -95,12 +95,12 @@ class IGTFTestCommon(TransactionCase):
             "13600", "asset_current", "Anticipo Proveedores", reconcile=True
         )
 
-        self.company.write(
-            {
-                "advance_customer_account_id": self.advance_cust_acc.id,
-                "advance_supplier_account_id": self.advance_supp_acc.id,
-            }
-        )
+        # self.company.write(
+        #     {
+        #         "advance_customer_account_id": self.advance_cust_acc.id,
+        #         "advance_supplier_account_id": self.advance_supp_acc.id,
+        #     }
+        # )
 
         # -------- Método de pago manual inbound -----------------------
         manual_in = self.env.ref("account.account_payment_method_manual_in")
@@ -157,7 +157,7 @@ class IGTFTestCommon(TransactionCase):
                 "invoice_line_ids": [line],
             }
         )
-        inv.action_post()
+        _logger.info("Invoice %s created", inv.correlative)
         return inv
 
     def _create_payment(
