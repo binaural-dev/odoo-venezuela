@@ -529,10 +529,9 @@ msgstr "La serie seleccionada no está configurada"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_journal__payment_method_code
-#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_payment_method_tfhka__code
 msgid ""
-"This code identifies the payment method. It is used to digitize and link the"
-" corresponding payment method."
+"This code identifies the payment method. It is used to digitize and "
+"link the corresponding payment method."
 msgstr ""
 "Este código identifica la forma de pago. Se utiliza para digitalizar y "
 "vincular la forma de pago correspondiente."

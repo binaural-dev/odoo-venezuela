@@ -6,7 +6,6 @@
     "category": "Accounting/Accounting",
     "version": "17.0.0.0.6",
     "depends": [
-        "base",
         "account",
         "l10n_ve_igtf",
         "account_debit_note",
