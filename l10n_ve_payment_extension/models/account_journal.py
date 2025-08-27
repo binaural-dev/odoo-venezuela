@@ -8,6 +8,6 @@ class AccountJournal(models.Model):
         domain=(
             "[('deprecated', '=', False), ('company_id', '=', company_id),"
             "'|',('account_type', '=', default_account_type),"
-            "('account_type', 'in', ('asset_current', 'liability_current'))]"
+            "('account_type', 'in', ('income', 'income_other') if type == 'sale' else ('expense', 'expense_depreciation', 'expense_direct_cost') if type == 'purchase' else ('asset_current', 'liability_current'))]"
         )
     )

@@ -13,15 +13,8 @@ class ResCompany(models.Model):
     password_tfhka = fields.Char()
     url_tfhka = fields.Char()
     token_auth_tfhka = fields.Char()
-    range_assignment_tfhka = fields.Integer()
-
-    invoice_print_type = fields.Selection(
-        selection=[
-            ('free', 'Forma Libre'),
-            ('fiscal', 'Máquina Fiscal'),
-            ('digital', 'Factura Digital'),
-        ],
-    )        
+    invoice_digital_tfhka = fields.Boolean()
+    sequence_validation_tfhka = fields.Boolean(default=True)
     
     def generate_token_tfhka(self):
         self.ensure_one()
