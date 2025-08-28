@@ -242,6 +242,11 @@ class AccountMove(models.Model):
             if not record.invoice_date:
                 raise UserError(_("The invoice date is not defined."))
 
+            currency_tfhka = record.company_id.currency_foreign_id.code_tfhka
+
+            if record.company_id.currency_id.name == 'VEF' or record.company_id.currency_id.name == 'VES':
+                currency_tfhka = record.company_id.currency_id.code_tfhka
+
             return {
                 "tipoDocumento": document_type,
                 "numeroDocumento": document_number,
@@ -260,7 +265,7 @@ class AccountMove(models.Model):
                 "serie": series,
                 "sucursal": "",
                 "tipoDeVenta": "Interna",
-                "moneda": "VEF",
+                "moneda": currency_tfhka,
                 "transaccionId": "",
                 "urlPdf": ""
             }
@@ -604,6 +609,10 @@ class AccountMove(models.Model):
         payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
         currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
         payment_method = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else False
+        if currency == "VEF" or currency == "VES":
+            currency = self.company_id.currency_foreign_id.code_tfhka
+            if self.company_id.currency_id.name == 'VEF' or self.company_id.currency_id.name == 'VES':
+                currency = self.company_id.currency_id.code_tfhka
         payment_info = {
             "descripcion": payment_method.description if payment_method else "",
             "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
