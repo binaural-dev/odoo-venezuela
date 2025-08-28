@@ -28,11 +28,7 @@ class TestIGTFBasic(IGTFTestCommon):
         line_to_match = pay1.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
         )
-        _logger.warning("line_to_match %s", line_to_match)
-        _logger.warning("state of line %s", line_to_match.parent_state)
-        _logger.warning("pay1 %s", pay1.state)
         invoice.js_assign_outstanding_line(line_to_match.id)
-
         self.assertAlmostEqual(invoice.amount_residual, ig_tf, 2)
 
         usd_to_bsf = 35
@@ -343,20 +339,18 @@ class TestIGTFBasic(IGTFTestCommon):
         estado original (sin pagos, bi_igtf = 0).
         """
         invoice = self._create_invoice_usd(1000)
-        _logger.info("Factura creada %s", invoice.amount)
+
         invoice.with_context(move_action_post_alert=True).action_post()
 
         pay = self._create_payment(amount=1000, is_igtf_on_foreign_exchange=True)
-        _logger.info("Pago creado %s", pay.amount)
 
         pay_line = pay.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
-        )
+        )   
         invoice.js_assign_outstanding_line(pay_line.id)
-        ig_tf = round(invoice.amount *
+        ig_tf = round(invoice.amount_total *
                       self.company.igtf_percentage / 100, 2)
-        _logger.info("IGTF calculado %s", invoice.amount_to_pay_igtf)
-        self.assertAlmostEqual(invoice.amount_residual_igtf, ig_tf, 2)
+        self.assertAlmostEqual(invoice.amount_residual, ig_tf, 2)
 
         # --- 2️⃣ Revertir pago ----------------------------------------
         pay.action_draft()

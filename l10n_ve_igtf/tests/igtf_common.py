@@ -131,9 +131,16 @@ class IGTFTestCommon(TransactionCase):
                 "property_account_income_id": self.acc_income.id,
             }
         )
+        self.tax_iva_exent = self.env['account.tax'].create({
+            'name': 'IVA exento',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'company_id': self.company.id,
+        })
 
         self.invoice = self._create_invoice_usd(1000.0)
-
+        
     # ------------------------------------------------------------------
     # UTILITY: creates a customer invoice in USD for the given amount
 
@@ -144,6 +151,7 @@ class IGTFTestCommon(TransactionCase):
                 "product_id": self.product.id,
                 "quantity": 1,
                 "price_unit": amount,
+                "tax_ids": [(6, 0, [self.tax_iva_exent.id])],
             }
         )
         inv = self.env["account.move"].create(
@@ -157,7 +165,6 @@ class IGTFTestCommon(TransactionCase):
                 "invoice_line_ids": [line],
             }
         )
-        _logger.info("Invoice %s created", inv.correlative)
         return inv
 
     def _create_payment(
