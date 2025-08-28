@@ -282,7 +282,7 @@ class AccountMove(models.Model):
             amounts = {}
             amounts_foreign = {}
 
-            if currency == "VEF":
+            if currency == "VEF" or currency == "VES":
                 amounts["montoGravadoTotal"] = str(
                     round(
                         tax_totals.get('subtotal', 0) - 
@@ -308,6 +308,7 @@ class AccountMove(models.Model):
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
                 
                 taxes_subtotal = self.get_tax_subtotals(currency)
+                currency = record.company_id.currency_id.code_tfhka
 
             else:
                 amounts_foreign["montoGravadoTotal"] = str(
@@ -359,6 +360,7 @@ class AccountMove(models.Model):
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("foreign_discount_amount", 0), 2)))
                 
                 taxes_subtotal, taxes_subtotal_foreign = self.get_tax_subtotals(currency)
+                currency = record.company_id.currency_foreign_id.code_tfhka
 
             totals = {
                 "nroItems": str(len(record.invoice_line_ids)),
@@ -385,7 +387,7 @@ class AccountMove(models.Model):
 
             if amounts_foreign:
                 foreign_totals = {
-                    "moneda": record.company_id.currency_foreign_id.name,
+                    "moneda": currency,
                     "tipoCambio": str(round(record.foreign_rate, 2)),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
