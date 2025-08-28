@@ -2,15 +2,15 @@
 
     <data>
 
-        <record id="view_signature_config_tree_l10n_ve_payment_extension" model="ir.ui.view">
-            <field name="name">view.signature.config.tree.l10n.ve.payment.extension</field>
+        <record id="view_signature_config_list_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.signature.config.list.l10n.ve.payment.extension</field>
             <field name="model">signature.config</field>
             <field name="arch" type="xml">
-                <tree>
+                <list>
                     <field name="email" />
                     <field name="active" />
                     <field name="company_id"/>
-                </tree>
+                </list>
             </field>
         </record>
 
@@ -46,7 +46,7 @@
             <field name="res_model">signature.config</field>
             <field name="type">ir.actions.act_window</field>
             <field name="binding_view_types">form</field>
-            <field name="view_mode">tree,kanban,form</field>
+            <field name="view_mode">list,kanban,form</field>
             <field name="context">{"search_default_active":True}</field>
         </record>
     
