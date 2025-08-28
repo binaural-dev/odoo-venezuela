@@ -2,7 +2,6 @@ import logging
 import re
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-import traceback
 from collections import defaultdict
 
 _logger = logging.getLogger(__name__)
