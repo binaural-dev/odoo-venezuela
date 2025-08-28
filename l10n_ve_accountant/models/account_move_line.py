@@ -71,6 +71,10 @@ class AccountMoveLine(models.Model):
         help="When setted, this field will be used to fill the foreign credit field",
     )
 
+    config_deductible_tax = fields.Boolean(related='company_id.config_deductible_tax')
+
+    not_deductible_tax = fields.Boolean(default=False)
+    
     @api.onchange("amount_currency", "currency_id")
     def _inverse_amount_currency(self):
         for line in self:

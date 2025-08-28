@@ -14,6 +14,12 @@
                 <button name="action_update_account_id" string="Update account lines" type="object"
                     groups="base.group_no_one" />
             </xpath>
+            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="before">
+                <field name="config_deductible_tax" column_invisible="True"/>
+                <field name="move_type" column_invisible="True"/>
+                <field name="not_deductible_tax" optional="hide" 
+                invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax"/>
+            </xpath>
             <xpath expr="//button[@name='action_reverse']" position="attributes">
                 <attribute name="string">Add Credit Note</attribute>
             </xpath>

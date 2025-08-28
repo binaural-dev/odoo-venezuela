@@ -81,6 +81,7 @@ class AccountTax(models.Model):
                 res_tax_group["base_amount_foreign_currency"] = foreign_tax_group.get("base_amount_currency", 0.0)
                 res_tax_group["display_base_amount_foreign_currency"] = foreign_tax_group.get("display_base_amount_currency", 0.0)
         return res
+    
     @api.model
     def _prepare_foreign_base_line_for_taxes_computation(self, record, **kwargs):
         """ Convert any representation of a business object ('record') into a base line being a python
@@ -100,8 +101,8 @@ class AccountTax(models.Model):
 
         currency = (
             load('foreign_currency_id', None)
-            or load('company_id', self.env['res.company'].foreign_currency_id)
-        )
+            or self.env.company.foreign_currency_id)
+    
 
         return {
             **kwargs,
