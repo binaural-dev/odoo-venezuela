@@ -348,7 +348,7 @@ class AccountMove(models.Model):
                 ]
                 existing_record = self.search(domain, limit=1)
                 
-                if existing_record:
+                if existing_record and existing_record.move_type in ("out_invoice","out_refund"):
                     raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
 
         moves = super().create(vals_list)
