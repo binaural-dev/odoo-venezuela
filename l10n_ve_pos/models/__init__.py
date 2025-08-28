@@ -3,10 +3,12 @@ from . import pos_config
 from . import res_partner
 from . import pos_payment_method
 from . import pos_order
+from . import pos_order_line
 from . import res_config_settings
 from . import res_company
 from . import pos_payment
 from . import account_move
 from . import stock_picking
 from . import product_product
+from . import res_currency
 from . import account_partial_reconcile
