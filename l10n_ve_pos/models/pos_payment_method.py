@@ -23,6 +23,6 @@ class PosPaymentMethod(models.Model):
             if record.split_transactions:
                 raise ValidationError(
                     _(
-                        "No puedes seleccionar 'Aplicar un único asiento de ajuste' si esta marcada la opción de 'Identificar cliente'."
+                        "You cannot select 'Apply a single adjustment entry' if the 'Identify customer' option is enabled."
                     )
                 )
