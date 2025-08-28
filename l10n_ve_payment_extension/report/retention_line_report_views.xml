@@ -14,14 +14,14 @@
 			</search>
 		</field>
 	</record>
-	<record id="view_retention_line_report_tree" model="ir.ui.view">
-		<field name="name">retention.line.report.tree</field>
+	<record id="view_retention_line_report_list" model="ir.ui.view">
+		<field name="name">retention.line.report.list</field>
 		<field name="model">retention.line.report</field>
 		<field name="arch" type="xml">
-			<tree string="Retention Line Report">
+			<list string="Retention Line Report">
 				<field name="number_count"/>
 				<field name="year"/>
-				<field name="month"/>
+				<field name="month"/>	
 				<field name="voucher"/>
 				<field name="vat"/>
 				<field name="partner"/>
@@ -40,7 +40,7 @@
 				<!-- Invisible fields -->
 				<field name="type" column_invisible="True"/>
 				<field name="state" column_invisible="True"/>
-			</tree>
+			</list>
 		</field>
 	</record>
 	<record id="action_retention_line_report" model="ir.actions.act_window">

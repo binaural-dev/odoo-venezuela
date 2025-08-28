@@ -181,20 +181,21 @@ class AccountRetentionLine(models.Model):
                 if record.move_id.partner_id.type_person_id.id == line.type_person_id.id:
                     # compare the type_person_id of the partner with the type_person_id of the
                     # payment concept and set the related fields.
-                    record.invoice_total = record.move_id.tax_totals["amount_total"]
-                    record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
+                    move = record.move_id._origin or record.move_id
+                    record.invoice_total = move.tax_totals["total_amount"]
+                    record.foreign_invoice_total = move.tax_totals["total_amount_foreign_currency"]
                     record.related_pay_from = line.pay_from
                     record.related_percentage_tax_base = line.percentage_tax_base
                     record.related_percentage_fees = line.tariff_id.percentage
                     record.related_amount_subtract_fees = line.tariff_id.amount_subtract
-                    record.foreign_currency_rate = record.move_id.foreign_rate
+                    record.foreign_currency_rate = move.foreign_rate
 
                     if not record.retention_id or record.retention_id.type == "in_invoice":
                         # We don't want this fields to be computed when the retention is
                         # created from a customer invoice since they are filled by the user.
-                        record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
-                        record.foreign_invoice_amount = record.move_id.tax_totals[
-                            "foreign_amount_untaxed"
+                        record.invoice_amount = move.tax_totals["base_amount"]
+                        record.foreign_invoice_amount = move.tax_totals[
+                            "base_amount_foreign_currency"
                         ]
 
     @api.depends("invoice_amount", "foreign_invoice_amount")
@@ -358,8 +359,7 @@ class AccountRetentionLine(models.Model):
                     "retention_amount": line.foreign_retention_amount
                     * (1 / line.move_id.foreign_rate)
                 }
-            )
-
+            ) 
     @api.constrains(
         "retention_amount",
         "invoice_total",
