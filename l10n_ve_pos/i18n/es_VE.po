@@ -117,7 +117,7 @@ msgstr "Monto Total"
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__apply_one_cross_move
 msgid "Apply One Cross Move"
-msgstr "Aplicar un único asiento de ajuste"
+msgstr "Aplicar un único asiento de ajuste(PDV)"
 
 #. module: l10n_ve_pos
 #: model:res.groups,name:l10n_ve_pos.group_authorized_discount_pos
@@ -230,12 +230,12 @@ msgstr "Creado en"
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__cross_account_journal
 msgid "Cross Account Journal"
-msgstr "Diario de Cruce de Cuentas"
+msgstr "Diario de Cruce de Cuentas Bancarias"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__cross_journal
 msgid "Cross Journal"
-msgstr "Diario afectado de banco o efectivo"
+msgstr "Diario afectado de tipo Banco"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__foreign_currency_id
