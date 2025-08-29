@@ -1,6 +1,9 @@
 from . import res_company
 from . import account_move
 from . import account_move_line
+from . import purchase_order_line
+from . import sale_order_line
+from . import account_tax
 from . import account_partial_reconcile
 from . import account_payment
 from . import account_invoice_report
@@ -9,5 +12,6 @@ from . import account_bank_statement_line
 from . import account_payment_term
 from . import tax_unit
 from . import res_currency
+from . import res_config_settings
 
 # from . import account_journal # ESTA HERENCIA NO SE IMPORTARÁ PORQUE ESTÁ GENERANDO ERROR, AL SOLUCIONAR, VOLVER A AGREGAR EN EN IMPORT
