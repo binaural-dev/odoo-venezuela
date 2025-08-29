@@ -29,3 +29,11 @@ class ResCompany(models.Model):
                     )
                 )
         return res
+
+    @api.constrains("foreign_currency_id", "currency_id")
+    def _check_foreign_currency_id(self):
+        for rec in self:
+            if "currency_id" in rec._fields and rec.currency_id == rec.foreign_currency_id:
+                raise UserError(
+                    _("The currency foreign must be different from the currency of the company")
+                )
