@@ -14,22 +14,26 @@
 							<field name="country_id" placeholder="País" class="o_col"/>
 							<field name="zip" placeholder="C.P" class="o_col"/>
 						</div>
-						<field name="state_id" placeholder="Estado"/>
-						<field name="city_id" placeholder="Ciudad" required='1'/>
+						<div class="o_row">
+							<field name="state_id" placeholder="Estado"/>
+							<field name="city_id" placeholder="Ciudad" required='1'/>	
+						</div>
 						<field name="city" invisible='1'/>
-						<field 
-							name="municipality" 
-							class="o_address_state" 
-							placeholder="Municipality"
-							domain="[('state_id', '=', state_id)]"
-							required="1"
-						/>
-						<field 
-							name="parish_id" 
-							class="o_address_state"
-							placeholder="Parroquia"
-							required="1"
-						/>
+						<div class="o_row">
+							<field 
+								name="municipality" 
+								class="o_address_state" 
+								placeholder="Municipality"
+								domain="[('state_id', '=', state_id)]"
+								required="1"
+							/>
+							<field 
+								name="parish_id" 
+								class="o_address_state"
+								placeholder="Parroquia"
+								required="1"
+							/>
+						</div>
 					</div>
 				</xpath>
 
