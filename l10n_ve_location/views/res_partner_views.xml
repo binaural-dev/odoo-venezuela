@@ -5,29 +5,37 @@
 			<field name="model">res.partner</field>
 			<field name="inherit_id" ref="base.view_partner_form" />
 			<field name="arch" type="xml">
-				<field name="city" position="replace">
-					<field name="city_id" placeholder="Ciudad" required="1"/>
-					<field name="city" invisible="1" />
-				</field>
+
+				<xpath expr="//form/sheet/group[1]/group[1]/div[@class='o_address_format']" position="replace">
+					<div class=''>
+						<field name="street" placeholder='Calle'/>
+						<field name="street2" placeholder='Calle 2'/>
+						<div class="o_row">
+							<field name="country_id" placeholder="País" class="o_col"/>
+							<field name="zip" placeholder="C.P" class="o_col"/>
+						</div>
+						<field name="state_id" placeholder="Estado"/>
+						<field name="city_id" placeholder="Ciudad" required='1'/>
+						<field name="city" invisible='1'/>
+						<field 
+							name="municipality" 
+							class="o_address_state" 
+							placeholder="Municipality"
+							domain="[('state_id', '=', state_id)]"
+							required="1"
+						/>
+						<field 
+							name="parish_id" 
+							class="o_address_state"
+							placeholder="Parroquia"
+							required="1"
+						/>
+					</div>
+				</xpath>
 
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city']" position="replace">
 					<field name="city_id" placeholder="Ciudad" />
 					<field name="city" invisible="1" />
-				</xpath>
-				<xpath expr="//sheet/group/group/div/field[@name='street2']" position="after">
-					<field 
-						name="municipality" 
-						class="o_address_state" 
-						placeholder="Municipality"
-						domain="[('state_id', '=', state_id)]"
-						required="1"
-					/>
-					<field 
-						name="parish_id" 
-						class="o_address_state"
-						placeholder="Parroquia"
-						required="1"
-					/>
 				</xpath>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street2']" position="after">
 					<field 
