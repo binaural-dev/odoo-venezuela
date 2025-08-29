@@ -55,7 +55,6 @@ class AccountPaymentRegister(models.TransientModel):
                 payment.foreign_rate
             )
             total_amount_residual_in_wizard_currency = 0
-            _logger.warning( payment._get_total_amounts_to_pay(batch_results))
             payment.amount = total_amount_residual_in_wizard_currency
 
     @api.onchange("payment_date")
