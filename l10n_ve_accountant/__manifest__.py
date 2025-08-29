@@ -1,21 +1,23 @@
 {
     "name": "Venezuela - Contabilidad",
     "summary": """
-       Módulo de Contabilidad Venezuela
+        Módulo de Contabilidad Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "18.0.0.0.0",
+    "version": "18.0.0.0.1",
     "depends": [
         "base",
         "web",
         "account",
         "account_reports",
-        "l10n_ve_tax",
-        "l10n_ve_contact",
+        "purchase", 
+        "sale", 
+        "l10n_ve_base", 
         "l10n_ve_rate",
+        "l10n_ve_contact",
     ],
     "data": [
         "security/res_groups.xml",
@@ -48,6 +50,9 @@
         "wizard/move_action_post_alert_views.xml",
     ],
     "images": ["static/description/icon.png"],
+    "assets": {
+        "web.assets_backend": ["l10n_ve_accountant/static/src/components/**/*"],
+    },
     "application": True,
     "pre_init_hook": "pre_init_hook"
 }

@@ -1,4 +1,5 @@
 import inspect
+from contextlib import ExitStack, contextmanager
 from odoo import api, fields, models, Command, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError, ValidationError
@@ -71,6 +72,10 @@ class AccountMoveLine(models.Model):
         help="When setted, this field will be used to fill the foreign credit field",
     )
 
+    config_deductible_tax = fields.Boolean(related='company_id.config_deductible_tax')
+
+    not_deductible_tax = fields.Boolean(default=False)
+    
     @api.onchange("amount_currency", "currency_id")
     def _inverse_amount_currency(self):
         for line in self:
@@ -163,15 +168,19 @@ class AccountMoveLine(models.Model):
                 continue
 
             if line.display_type in ("payment_term", "tax"):
+                _logger.warning("line.foreign_balance of tax line %s", line.foreign_balance)
+                _logger.warning("line id %s",line.id)
                 line.foreign_debit = (
                     abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
                 )
                 line.foreign_credit = (
                     abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
                 )
-                # 1 Case: Payment Term 
-                # In this case, we don't want to calculate the foreign debit and credit
+                _logger.warning("line.foreign_debit of tax line %s", line.foreign_debit)
+                _logger.warning("line.foreign_credit of tax line %s", line.foreign_credit)
                 continue
+                # 1 Case: Payment Term
+                # In this case, we don't want to calculate the foreign debit and credit
 
             if line.display_type in ("line_section", "line_note"):
                 line.foreign_debit = line.foreign_credit = 0.0
@@ -250,12 +259,13 @@ class AccountMoveLine(models.Model):
                 line.foreign_credit = abs(amount) if amount > 0 else 0.0
                 continue
 
-            line.foreign_debit = (
-                abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-            )
-            line.foreign_credit = (
-                abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-            )
+            # line.foreign_debit = (
+            #     abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
+            # )
+            # line.foreign_credit = (
+            #     abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
+            # )
+
 
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
@@ -271,18 +281,15 @@ class AccountMoveLine(models.Model):
                 abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
             )
 
-    # @api.depends("foreign_rate", "balance")
-    # def _compute_amount_currency(self):
-    #     _logger.warning(
-    #         "Source code: %s", inspect.getsource(super()_compute_amount_currency)
-    #     )
-    #     res = super()._compute_amount_currency()
-    #     # for line in self:
-    #     #     if line.amount_currency is False:
-    #     #         line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
-    #     #     if line.currency_id == line.company_id.currency_id:
-    #     #         line.amount_currency = line.balance
-    #     return res
+    @api.depends("foreign_rate", "balance")
+    def _compute_amount_currency(self):
+        res = super()._compute_amount_currency()
+        for line in self:
+            if line.amount_currency is False:
+                line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
+            if line.currency_id == line.company_id.currency_id:
+                line.amount_currency = line.balance
+        return res
 
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
@@ -441,50 +448,6 @@ class AccountMoveLine(models.Model):
                     "foreign_credit": abs(line.foreign_credit),
                 }
             )
-
-    #TODO:deprecated
-    # @api.depends(
-    #     "foreign_inverse_rate",
-    #     "foreign_currency_id",
-    #     "foreign_rate",
-    #     "foreign_price",
-    # )
-    # def _compute_all_tax(self):
-    #     res = super(AccountMoveLine, self)._compute_all_tax()
-    #     for line in self:
-    #         sign = line.move_id.direction_sign
-
-    #         if line.display_type == "product" and line.move_id.is_invoice(True):
-    #             amount_currency = sign * line.foreign_price * (1 - line.discount / 100)
-    #             handle_price_include = True
-    #             quantity = line.quantity
-    #         else:
-    #             amount_currency = (
-    #                 line.amount_currency * line.move_id.foreign_inverse_rate
-    #             )
-    #             handle_price_include = False
-    #             quantity = 1
-
-    #         compute_all_currency = line.tax_ids.compute_all(
-    #             amount_currency,
-    #             currency=line.foreign_currency_id,
-    #             quantity=quantity,
-    #             product=line.product_id,
-    #             partner=line.move_id.partner_id or line.partner_id,
-    #             is_refund=line.is_refund,
-    #             handle_price_include=handle_price_include,
-    #             include_caba_tags=line.move_id.always_tax_exigible,
-    #             fixed_multiplicator=sign,
-    #         )
-
-    #         for tax in compute_all_currency["taxes"]:
-    #             for key in list(line.compute_all_tax.keys()):
-    #                 if not key.get("tax_repartition_line_id", False):
-    #                     continue
-
-    #                 if tax["tax_repartition_line_id"] == key["tax_repartition_line_id"]:
-    #                     line.compute_all_tax[key]["foreign_balance"] = tax["amount"]
-    #     return res
 
     @api.onchange("quantity")
     def _onchange_quantity(self):
