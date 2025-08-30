@@ -110,7 +110,8 @@ class AccountTax(models.Model):
             'quantity': load('quantity', 0.0),
             'discount': load('discount', 0.0),
             'currency_id': currency,
-
+            'deferred_start_date': self._get_base_line_field_value_from_record(record, 'deferred_start_date', kwargs, False),
+            'deferred_end_date': self._get_base_line_field_value_from_record(record, 'deferred_end_date', kwargs, False),
             # The special_mode for the taxes computation:
             # - False for the normal behavior.
             # - total_included to force all taxes to be price included.
