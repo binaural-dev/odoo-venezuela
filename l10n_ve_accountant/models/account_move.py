@@ -988,7 +988,7 @@ class AccountMove(models.Model):
                     raise ValidationError(_("All added lines must indicate the product."))
     #TODO:Funciones duplicadas de la logica de negocio de Odoo para el manejo de moneda foranea.
     #FUNCIONES FORANEAS
-    def get_rounded_foreign_base_and_tax_lines(self, round_from_tax_lines=True):
+    def _get_rounded_foreign_base_and_tax_lines(self, round_from_tax_lines=True):
         """ Small helper to extract the base and tax lines for the taxes computation from the current move.
         This is a duplicate of Odoo's logic for handling foreign currency.
 
@@ -1105,47 +1105,6 @@ class AccountMove(models.Model):
             rate=rate,
         )
     #FIN DE FUNCIONES FORANEAS
-
-    def get_rounded_foreign_base_and_tax_lines(self, round_from_tax_lines=True):
-        """ Small helper to extract the base and tax lines for the taxes computation from the current move.
-        The move could be stored or not and could have some features generating extra journal items acting as
-        base lines for the taxes computation (e.g. epd, rounding lines).
-
-        :param round_from_tax_lines:    Indicate if the manual tax amounts of tax journal items should be kept or not.
-                                        It only works when the move is stored.
-        :return:                        A tuple <base_lines, tax_lines> for the taxes computation.
-        """
-        self.ensure_one()
-        AccountTax = self.env['account.tax']
-        is_invoice = self.is_invoice(include_receipts=True)
-
-        # Select base lines of type 'product', using foreign fields if applicable
-        if self.id or not is_invoice:
-            base_amls = self.line_ids.filtered(lambda line: line.display_type == 'product')
-        else:
-            base_amls = self.invoice_line_ids.filtered(lambda line: line.display_type == 'product')
-        # Use the foreign function to prepare product-type base lines
-        base_lines = [self._prepare_product_foreign_base_line_for_taxes_computation(line) for line in base_amls]
-
-        tax_lines = []
-        if self.id:
-            # The move is stored, add discount and rounding lines using foreign functions
-            epd_amls = self.line_ids.filtered(lambda line: line.display_type == 'epd')
-            base_lines += [self._prepare_epd_foreign_base_line_for_taxes_computation(line) for line in epd_amls]
-            cash_rounding_amls = self.line_ids \
-                .filtered(lambda line: line.display_type == 'rounding' and not line.tax_repartition_line_id)
-            base_lines += [self._prepare_cash_rounding_foreign_base_line_for_taxes_computation(line) for line in cash_rounding_amls]
-            AccountTax._add_tax_details_in_base_lines(base_lines, self.company_id)
-            tax_amls = self.line_ids.filtered('tax_repartition_line_id')
-            tax_lines = [self._prepare_tax_line_for_taxes_computation(tax_line) for tax_line in tax_amls]
-            AccountTax._round_base_lines_tax_details(base_lines, self.company_id, tax_lines=tax_lines if round_from_tax_lines else [])
-        else:
-            # The move is not stored yet, so only invoice lines exist
-            base_lines += self._prepare_epd_base_lines_for_taxes_computation_from_base_lines(base_amls)
-            AccountTax._add_tax_details_in_base_lines(base_lines, self.company_id)
-            AccountTax._round_base_lines_tax_details(base_lines, self.company_id)
-        return base_lines, tax_lines
-
 # Unbalanced Lines Synchronization
     @contextmanager
     def _sync_tax_lines(self, container):
@@ -1274,7 +1233,7 @@ class AccountMove(models.Model):
                 continue
 
             base_lines_values, tax_lines_values = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_from_tax_lines)
-            foreign_lines_values, foreign_tax_lines_values = move.get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=round_from_tax_lines)
+            foreign_lines_values, foreign_tax_lines_values = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=round_from_tax_lines)
             AccountTax._add_accounting_data_in_base_lines_tax_details(base_lines_values, move.company_id, include_caba_tags=move.always_tax_exigible)
             AccountTax._add_accounting_data_in_base_lines_tax_details(foreign_lines_values, move.company_id, include_caba_tags=move.always_tax_exigible)
             tax_results = AccountTax._prepare_tax_lines(base_lines_values, move.company_id, tax_lines=tax_lines_values)
