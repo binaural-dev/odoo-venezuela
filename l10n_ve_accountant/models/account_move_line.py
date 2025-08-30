@@ -168,16 +168,12 @@ class AccountMoveLine(models.Model):
                 continue
 
             if line.display_type in ("payment_term", "tax"):
-                _logger.warning("line.foreign_balance of tax line %s", line.foreign_balance)
-                _logger.warning("line id %s",line.id)
                 line.foreign_debit = (
                     abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
                 )
                 line.foreign_credit = (
                     abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
                 )
-                _logger.warning("line.foreign_debit of tax line %s", line.foreign_debit)
-                _logger.warning("line.foreign_credit of tax line %s", line.foreign_credit)
                 continue
                 # 1 Case: Payment Term
                 # In this case, we don't want to calculate the foreign debit and credit
