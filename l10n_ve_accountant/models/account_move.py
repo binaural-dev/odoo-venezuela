@@ -1226,6 +1226,9 @@ class AccountMove(models.Model):
                     and any(line[field] for line in changed_lines for field in ('amount_currency', 'balance'))
                 ):
                     continue
+            elif any_line := get_changed_lines(move_base_lines_values_before, base_lines, fields=['tax_ids']):
+                any_line = any(any_line)
+                round_from_tax_lines = any_field_has_changed(move_tax_lines_values_before, tax_lines)
             elif any(line not in base_lines for line, values in move_base_lines_values_before.items() if values['tax_ids']):
                 # Removed a base line affecting the taxes.
                 round_from_tax_lines = any_field_has_changed(move_tax_lines_values_before, tax_lines)
@@ -1241,7 +1244,6 @@ class AccountMove(models.Model):
             for base_line, to_update in tax_results['base_lines_to_update']:
                 line = base_line['record']
                 if is_write_needed(line, to_update):
-                    # Buscar el foreign_balance en foreign_tax_results
                     foreign_base_update = None
                     for f_base_line, f_to_update in foreign_tax_results.get('base_lines_to_update', []):
                         if f_base_line['record'].id == line.id:
@@ -1256,13 +1258,11 @@ class AccountMove(models.Model):
                 to_delete.append(tax_line_vals['record'].id)
 
             for tax_line_vals in tax_results['tax_lines_to_add']:
-                # Buscar el foreign_balance en foreign_tax_results tax_lines_to_add
                 foreign_balance = tax_line_vals['amount_currency']
                 for f_tax_line_vals in foreign_tax_results.get('tax_lines_to_add', []):
-                    # Coincidencia por tax_repartition_line_id y account_id
                     if (
                         f_tax_line_vals.get('tax_repartition_line_id') == tax_line_vals.get('tax_repartition_line_id') and
-                        f_tax_line_vals.get('account_id') == tax_line_vals.get('account_id')
+                        f_tax_line_vals.get('account_id')  == tax_line_vals.get('account_id')
                     ):
                         foreign_balance = f_tax_line_vals.get('amount_currency', foreign_balance)
                         break
@@ -1275,12 +1275,21 @@ class AccountMove(models.Model):
 
             for tax_line_vals, grouping_key, to_update in tax_results['tax_lines_to_update']:
                 line = tax_line_vals['record']
-                # Buscar el foreign_balance en foreign_tax_results tax_lines_to_update
                 foreign_tax_update = None
                 for f_tax_line_vals, f_grouping_key, f_to_update in foreign_tax_results.get('tax_lines_to_update', []):
                     if f_tax_line_vals['record'].id == line.id:
                         foreign_tax_update = f_to_update
                         break
+
+                if not foreign_tax_update:
+                    for f_tax_line_vals in foreign_tax_results.get('tax_lines_to_add', []):
+                        if (
+                            f_tax_line_vals.get('tax_repartition_line_id') == tax_line_vals.get('tax_repartition_line_id').id and
+                            f_tax_line_vals.get('account_id') == tax_line_vals.get('account_id').id
+                        ):
+                            foreign_tax_update = f_tax_line_vals
+                            break
+
                 if is_write_needed(line, to_update):
                     if foreign_tax_update:
                         to_update['foreign_balance'] = foreign_tax_update.get('amount_currency', 0)
