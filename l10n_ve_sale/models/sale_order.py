@@ -139,7 +139,7 @@ class SaleOrder(models.Model):
         for move in self:
             move.foreign_taxable_income = False
             if move.order_line:
-                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"]
+                move.foreign_taxable_income = move.tax_totals["base_amount_foreign_currency"]
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):

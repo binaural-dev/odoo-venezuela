@@ -317,7 +317,7 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-        if 'name' in vals and vals['name'] != "/":
+        if "name" in vals and vals["name"] != "/" and vals["name"]:
             for move in self:
                 partner_id = vals.get('partner_id', move.partner_id.id)
                 
