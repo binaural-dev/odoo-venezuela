@@ -141,7 +141,7 @@ class AppointmentControllerMulti(AppointmentController):
         created_ev = request.env['calendar.event']
         first_token = None
         appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
-        staff_user       = request.env['res.users'].sudo().browse(post.get('staff_user_id')) if post.get('staff_user_id') else None
+        staff_user       = request.env.user
         booking_vals     = []
 
         for st_local, en_local in ranges:
@@ -205,7 +205,6 @@ class AppointmentControllerMulti(AppointmentController):
 
         staff_user = staff_user and staff_user.exists() or None
         organizer  = staff_user or appointment_type.create_uid
-
         event = request.env['calendar.event'].with_context(
             mail_notify_author  = True,
             mail_create_nolog   = True,
