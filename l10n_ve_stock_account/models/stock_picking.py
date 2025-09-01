@@ -918,7 +918,7 @@ class StockPicking(models.Model):
         other_causes_reason =  self.env.ref(
             "l10n_ve_stock_account.transfer_reason_other_causes",
             raise_if_not_found=False,
-        ).id
+        )
         
         for picking in self:
 
