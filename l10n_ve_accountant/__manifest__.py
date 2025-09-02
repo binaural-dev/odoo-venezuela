@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.0.0.14",
+    "version": "17.0.0.0.15",
     "depends": [
         "base",
         "web",
@@ -49,5 +49,6 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "pre_init_hook": "pre_init_hook"
+    "pre_init_hook": "pre_init_hook",
+    "post_init_hook": "post_init_hook"
 }
