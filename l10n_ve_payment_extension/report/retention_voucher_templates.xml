@@ -4,8 +4,13 @@
         <div class="container" style="font-size:12px !important;">
             <div class="row">
                 <div class="col-3">
-                    <img style="max-height:100px;width:200px;float:left" t-if="res_company.logo"
-                         t-att-src="image_data_uri(res_company.logo)"/>
+                    <t t-if="res_company.logo">
+                        <img style="max-height:100px;width:200px;float:left"
+                             t-att-src="image_data_uri(res_company.logo)"/>
+                    </t>
+                    <t t-else="">
+                        <div style="max-height:100px;width:200px;float:left"></div>
+                    </t>
                 </div>
                 <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8" style="text-align: left;">
@@ -193,7 +198,7 @@
 
                         <!--Número de Factura -->
                         <div class="" style="width:6%;">
-                            <t t-if="line.move_id.move_type in ['out_invoice','out_contingence', 'in_invoice']">
+                            <t t-if="line.move_id.move_type in ['out_invoice','out_contingence', 'in_invoice'] and not line.move_id.journal_id.is_debit">
                                 <span t-esc="line.move_id.name"/>
                             </t>
                             <t t-else="">
@@ -207,7 +212,7 @@
                         </div>
                         <!--Nota de Débito -->
                         <div class="" style="width:6%">
-                            <t t-if="line.move_id.move_type == 'out_debit'">
+                            <t t-if="line.move_id.journal_id.is_debit">
                                 <span t-esc="line.move_id.name"/>
                             </t>
                             <t t-else="">
@@ -235,7 +240,7 @@
                             <t t-elif="line.move_id.move_type in ('out_debit','in_debit') and line.move_id.state == 'posted'">
                                 <span>02-REG</span>
                             </t>
-                            <t t-elif="line.move_id.move_type in ('out_refund','in_refund') and move.state == 'posted'">
+                            <t t-elif="line.move_id.move_type in ('out_refund','in_refund') and line.move_id.state == 'posted'">
                                 <span>03-REG</span>
                             </t>
                             <t t-elif="line.move_id.move_type in ('out_refund','out_debit','out_invoice','in_refund','in_debit','in_invoice') and line.move_id.state in ('cancel')">
@@ -249,6 +254,9 @@
                         <div class="" style="width:6%;">
                             <t t-if="line.move_id.move_type in ('in_refund', 'out_refund') and line.move_id.reversed_entry_id">
                                 <span t-esc="line.move_id.reversed_entry_id.name"/>
+                            </t>
+                            <t t-elif="line.move_id.journal_id.is_debit">
+                                <span t-esc="line.move_id.debit_origin_id.name"/>
                             </t>
                             <t t-else="">
                                 <span>--</span>
@@ -470,8 +478,13 @@
         <div class="container" style="font-size:12px !important;">
             <div class="row">
                 <div class="col-4">
-                    <img style="max-height:100px;width:200px;float:left" t-if="res_company.logo"
-                         t-att-src="image_data_uri(res_company.logo)"/>
+                    <t t-if="res_company.logo">
+                        <img style="max-height:100px;width:200px;float:left"
+                             t-att-src="image_data_uri(res_company.logo)"/>
+                    </t>
+                    <t t-else="">
+                        <div style="max-height:100px;width:200px;float:left"></div>
+                    </t>
                 </div>
                 <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8">
@@ -788,7 +801,7 @@
     <template id="retention_voucher_template">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="retention">
-                <t t-call="web.internal_layout">
+                <t t-call="web.basic_layout">
                     <div class="page">
                         <t t-if="retention.type_retention == 'iva'">
                             <t t-call="l10n_ve_payment_extension.report_iva_customer"/>

@@ -7,6 +7,7 @@ class StockLocation(models.Model):
     _inherit = ["stock.location", "mail.thread", "mail.activity.mixin"]
 
     priority = fields.Integer(string="Priority", default=10, tracking=True)
+    partner_id = fields.Many2one(tracking=True)
 
     @api.constrains("priority")
     def _check_priority(self):
