@@ -10,8 +10,8 @@
             <field name="margin_left">7</field>
             <field name="margin_right">7</field>
             <field name="header_line" eval="False" />
-            <field name="header_spacing">110</field>
-            <field name="dpi">90</field>
+            <field name="header_spacing">120</field>
+            <field name="dpi">100</field>
         </record>
     </data>
 </odoo>

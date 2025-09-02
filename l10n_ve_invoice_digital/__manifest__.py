@@ -4,9 +4,8 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.0",
+    "version": "17.0.0.0.3",
     "depends": [
-        "base",
         "account",
         "l10n_ve_igtf",
         "account_debit_note",
@@ -14,7 +13,6 @@
         "l10n_ve_iot_mf",
         "l10n_ve_stock_account",
         "l10n_ve_payment_extension",
-        "binaural_subsidiary",
         "stock",
     ],
     
@@ -28,5 +26,6 @@
         "views/account_retention_islr.xml",
         "views/stock_picking.xml",
         "wizard/account_retention_alert_views.xml",
+        "views/account_journal.xml",
     ],
 }
