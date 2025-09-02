@@ -10,8 +10,14 @@
             </xpath>
             <xpath expr="//header" position="inside">
                 <field name="show_digital_invoice" invisible="1"/>
+                <field name="show_digital_credit_note" invisible="1"/>
+                <field name="show_digital_debit_note" invisible="1"/>
                 <button name="generate_document_digital" string="Generate Digital Invoice" type="object" 
-                        invisible="show_digital_invoice"/>
+                    invisible="show_digital_invoice"/>
+                <button name="generate_document_digital" string="Generate Digital Credit Note" type="object" 
+                    invisible="show_digital_credit_note"/>
+                <button name="generate_document_digital" string="Generate Digital Debit Note" type="object" 
+                    invisible="show_digital_debit_note"/>            
             </xpath>
             <xpath expr="//group[@id='header_right_group']/label[1]" position="before">
                 <field name="is_digitalized" string="Digitized" invisible="move_type not in ['out_invoice', 'out_refund']" readonly="True"/>
