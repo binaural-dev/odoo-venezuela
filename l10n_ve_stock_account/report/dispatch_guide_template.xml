@@ -159,6 +159,7 @@
 
     <template id="dispatch_layout_body">
         <div class="container-fluid">
+            <t t-set="hide_price" t-value="o.company_id.hide_price_on_dispatch_guide"/>
             <div class="row">
                 <div class="col-12">
                     <table class="table table-bordered">
@@ -170,10 +171,10 @@
                                 <th class="text-center">Cant.</th>
                                 <th class="text-center">Unidad</th>
                                 <th class="text-center">Peso</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">Precio</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">Dscto.</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">Impuesto</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">Total</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal' and not hide_price">Precio</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal' and not hide_price">Dscto.</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal' and not hide_price">Impuesto</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal' and not hide_price">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -206,7 +207,7 @@
                                             t-out="(line.product_id.weight or 0) * (line.quantity or 0)" />
                                     </td>
                                     <!-- price -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                    <td class="text-center" t-if="o.operation_code != 'internal' and not hide_price">
                                         <t t-if="o.get_foreign_currency_is_vef()">
                                             <t t-out="line.sale_line_id.foreign_price or 0"
                                                 t-options='{"widget": "float", "precision": o.get_digits()}' />
@@ -217,11 +218,11 @@
                                         </t>
                                     </td>
                                     <!-- discount percentage -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                    <td class="text-center" t-if="o.operation_code != 'internal' and not hide_price">
                                         <t t-out="line_values['discount_percentage'] or 0" />%
                                     </td>
                                     <!-- tax percentage  -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                    <td class="text-center" t-if="o.operation_code != 'internal' and not hide_price">
                                         <t t-set="tax" t-value="line_values['tax_percentage'] or 0"/>
                                         <t t-if="tax != 0.0">
                                             <t t-out="tax"/>%
@@ -232,7 +233,7 @@
                                         
                                     </td>
                                     <!-- total -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                    <td class="text-center" t-if="o.operation_code != 'internal' and not hide_price">
                                         <t 
                                             t-out="line_values['total_with_tax']"
                                             t-options='{"widget": "float", "precision": o.get_digits()}' 

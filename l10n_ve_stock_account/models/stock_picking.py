@@ -43,6 +43,11 @@ class StockPicking(models.Model):
         ],
         default="to_invoice",
     )
+    document = fields.Selection(
+        related="sale_id.document")
+    
+    optional_internal_movement_guidance = fields.Boolean(related='company_id.optional_internal_movement_guidance')
+    reasons_optional_guide_dispatch = fields.Boolean(compute="_compute_reasons_optional_guide")
 
     show_create_invoice = fields.Boolean(compute="_compute_button_visibility")
     show_create_bill = fields.Boolean(compute="_compute_button_visibility")
@@ -86,12 +91,23 @@ class StockPicking(models.Model):
         default=True,
         tracking=True,
         store=True,
+        readonly=False,
         compute="_compute_is_dispatch_guide",
     )
+
     partner_required = fields.Boolean(compute='_compute_partner_required', store=True)
     
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
+
+    @api.depends("transfer_reason_id")
+    def _compute_reasons_optional_guide(self):
+        consignment_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
+            raise_if_not_found=False,
+        ).id
+        for rec in self:
+            rec.reasons_optional_guide_dispatch = True if consignment_reason == rec.transfer_reason_id.id and rec.optional_internal_movement_guidance and rec.operation_code in ['internal'] else False
 
     def action_open_invoice_wizard(self):
         return {
@@ -192,24 +208,38 @@ class StockPicking(models.Model):
         """
         self._validate_one_invoice_posted()
         for picking_id in self:
+            invoice = None
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
-                customer_journal_id = self.env.company.customer_journal_id or False
-                if not customer_journal_id:
-                    raise UserError(_("Please configure the journal from settings"))
+                if picking_id.sale_id:
+                    invoice = picking_id.sale_id._create_invoices(final=True)
+                    invoice.write(
+                        {
+                            "narration": picking_id.name,
+                            "partner_id": picking_id.partner_id.id,
+                            "payment_reference": picking_id.name,
+                            "transfer_ids": self,
+                            "from_picking": True,
+                            "fiscal_position_id": picking_id.sale_id.fiscal_position_id.id if picking_id.sale_id.fiscal_position_id else False,
+                        }
+                    )
+                else:
+                    customer_journal_id = self.env.company.customer_journal_id or False
+                    if not customer_journal_id:
+                        raise UserError(_("Please configure the journal from settings"))
 
-                invoice_line_list = picking_id._get_invoice_lines_for_invoice(
-                    from_picking_line=True
-                )
-                origin_name = self._get_origin_name(picking_id)
-                invoice = self.env["account.move"].create(
+                    invoice_line_list = picking_id._get_invoice_lines_for_invoice(
+                        from_picking_line=True
+                    )
+                    origin_name = self._get_origin_name(picking_id)
+                    invoice = self.env["account.move"].create(
                     {
                         "move_type": "out_invoice",
                         "invoice_origin": origin_name, 
                         "invoice_user_id": current_user,
                         "narration": picking_id.name,
                         "partner_id": picking_id.partner_id.id,
-                        "currency_id": picking_id.env.user.company_id.currency_id.id,
+                        "currency_id": self.env.user.company_id.currency_id.id,
                         "journal_id": int(customer_journal_id),
                         "payment_reference": picking_id.name,
                         "picking_ids": picking_id,
@@ -217,10 +247,11 @@ class StockPicking(models.Model):
                         "transfer_ids": self,
                         "from_picking": True,
                     }
-                )
-            picking_id.write({"state_guide_dispatch": "invoiced"})
-            picking_id._update_order_sale_invoiced()
-        return invoice
+                    )
+            if invoice:
+                picking_id.write({"state_guide_dispatch": "invoiced"})
+                picking_id._update_order_sale_invoiced()
+                return invoice
 
     def create_bill(self):
         """This is the function for creating vendor bill
@@ -879,22 +910,26 @@ class StockPicking(models.Model):
             else:
                 picking.is_consignment = False
 
-    @api.depends("transfer_reason_id")
+    @api.depends("transfer_reason_id", 'optional_internal_movement_guidance')
     def _compute_is_dispatch_guide(self):
         consignment_reason = self.env.ref(
             "l10n_ve_stock_account.transfer_reason_consignment",
             raise_if_not_found=False,
         )
-
+        
         for picking in self:
-            if (
+
+            picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
+            if picking.document == "invoice":
+                picking.is_dispatch_guide = False
+                continue
+
+            elif (
                 picking.transfer_reason_id
                 and picking.transfer_reason_id.id == consignment_reason.id
             ):
                 picking.is_dispatch_guide = True
-            else:
-                # This is necessary always should be return a value
-                picking.is_dispatch_guide = picking.is_dispatch_guide
+           
 
     @api.depends(
         "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
@@ -1016,12 +1051,14 @@ class StockPicking(models.Model):
             record.show_other_causes_transfer_reason = False
 
             if record.transfer_reason_id:
+
+                record.is_dispatch_guide = False if record.is_dispatch_guide is None else record.is_dispatch_guide
+
                 if record.transfer_reason_id.code == "other_causes":
                     record.show_other_causes_transfer_reason = True
                 if record.transfer_reason_id.code == "self_consumption":
                     record.is_dispatch_guide = False
-                else:
-                    record.is_dispatch_guide = True
+            
 
     # === CONSTRAINT METHODS ===#
 
