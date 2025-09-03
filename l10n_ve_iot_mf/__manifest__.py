@@ -1,6 +1,5 @@
 {
     "name": "Venezuela - IoT / Maquina Fiscal",
-    
     "summary": "Implementación de DLLs de The Factory HKA (VE) y desarrollos PnP para Internet of Things (IoT) y compatibilidad con Odoo.",
     "description": """
         Implementación de DLLs de The Factory HKA (VE) y desarrollos PnP para Internet of Things (IoT) y
@@ -35,5 +34,5 @@
     "installable": True,
     "application": False,
     "auto_install": False,
-    "pre_init_hook": "pre_init_hook"
+    "pre_init_hook": "pre_init_hook",
 }
