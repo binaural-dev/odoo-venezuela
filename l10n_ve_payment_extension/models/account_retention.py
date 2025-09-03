@@ -6,6 +6,7 @@ from ..utils.utils_retention import load_retention_lines, search_invoices_with_t
 from collections import defaultdict
 import json
 from odoo.tools.float_utils import float_round
+from decimal import Decimal, ROUND_HALF_UP
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -163,6 +164,22 @@ class AccountRetention(models.Model):
             " that the one that just has been deleted."
         )
     )
+
+    def round_2_decimals(self,value):
+        """
+        Rounds a numeric value to two decimal places using half-up rounding.
+
+        Args:
+            value (float or str or Decimal): The value to be rounded.
+
+        Returns:
+            float: The value rounded to two decimal places.
+
+        Example:
+            >>> round_2_decimals(2.345)
+            2.35
+        """
+        return float(Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
 
     @api.depends("type", "partner_id")
     def _compute_allowed_lines_move_ids(self):
@@ -924,9 +941,7 @@ class AccountRetention(models.Model):
                 line_data["foreign_retention_amount"] = 0.0
             else:
                 line_data["retention_amount"] = retention_amount
-                line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (
-                    withholding_amount / 100
-                )
+                line_data["foreign_retention_amount"] = self.round_2_decimals(line_data["foreign_iva_amount"] * (withholding_amount / 100)) #Acá siempre que la tercera posición decimal sea 5 o mayor se redondea hacia arriba.
             lines_data.append(line_data)
         return lines_data
 
