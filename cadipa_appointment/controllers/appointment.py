@@ -136,12 +136,16 @@ class AppointmentControllerMulti(AppointmentController):
         hours_str = ", ".join(f"{s.strftime('%H:%M')} – {e.strftime('%H:%M')}" for s, e in ranges)
         time_locale_str = f"{date_str} {hours_str}"
 
-        customer   = request.env['res.partner'].sudo().browse(int(post.get('customer_id')))
+        customer_id = post.get('customer_id')
+        customer   = request.env['res.partner'].sudo().browse(int(customer_id)) if customer_id else None
+        
         product_id = post.get('product_id')
         created_ev = request.env['calendar.event']
         first_token = None
         appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
         staff_user       = request.env.user
+        if not customer:
+            customer= staff_user.partner_id
         booking_vals     = []
 
         for st_local, en_local in ranges:
@@ -174,12 +178,18 @@ class AppointmentControllerMulti(AppointmentController):
                     ev.write({'access_token': first_token})
                 created_ev |= ev
 
+        
+        has_membership_active = customer.action_number.state == 'active' if customer.action_number else False
+
         # ── single invoice with multiple lines ─────────────────────────
-        if created_ev and product_id:
+        if created_ev and product_id and not has_membership_active:
             created_ev.sudo().create_invoices({
                 'product_id': product_id,
-                'duration'  : total_hours
+                'duration'  : total_hours,
+                'partner_id': customer.id,
             })
+            if not created_ev.invoice_ids.partner_id:
+                created_ev.invoice_ids.sudo().write({'partner_id': customer.id})
 
         if first_token:
             query = {
@@ -192,7 +202,6 @@ class AppointmentControllerMulti(AppointmentController):
                 url_unparse(('', '', f'/calendar/view/{first_token}', url_encode(query), ''))
             )
 
-        # fallback
         return request.redirect('/appointment/booking_error')
 
     def _handle_appointment_form_submission(
@@ -223,12 +232,13 @@ class AppointmentControllerMulti(AppointmentController):
         })
 
         event.attendee_ids.write({'state': 'accepted'})
-
+        has_membership_active = customer.action_number.state == 'active' if customer.action_number else False
         # invoice only if explicitly requested
-        if create_invoice and product_id:
+        if create_invoice and product_id and not has_membership_active:
             event.sudo().create_invoices({
                 'product_id': product_id,
-                'duration'  : duration
-            })
+                'duration'  : duration,
+                'partner_id': customer.id,
 
+            })
         return event
