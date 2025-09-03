@@ -929,7 +929,7 @@ class AccountRetention(models.Model):
                     (line_data["foreign_iva_amount"] * (withholding_amount / 100)),
                     precision_digits=invoice_id.company_id.foreign_currency_id.decimal_places,
                     rounding_method='HALF-UP'
-                ) #Acá siempre que la tercera posición decimal sea 5 o mayor se redondea hacia arriba.
+                ) #Acá siempre que la tercera posición decimal sea 5 o mayor se redondea hacia arriba. ATT DANIELA
             lines_data.append(line_data)
         return lines_data
 
