@@ -23,20 +23,20 @@
 
             <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" />
+                <field name="foreign_price" force_save="1" readonly="1"/>
             </xpath>
 
             <xpath
                 expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']"
                 position="after">
                 <field name="foreign_subtotal" />
-                <field name="foreign_rate" optional="hide" readonly="1"/>
+                <field name="foreign_rate" optional="hide" readonly="1" force_save="1"/>
                 <field
                     name="foreign_inverse_rate"
                     groups="base.group_no_one"
                     string="Foreign inverse rate"
                     optional="hide"
-                    readonly="1" />
+                    readonly="1" force_save="1"/>
             </xpath>
 
             <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='tax_id']" position="attributes">
@@ -51,9 +51,10 @@
                             name="foreign_inverse_rate"
                             invisible="1"
                             readonly="1"
+                            force_save="1"
                             string="Foreign inverse rate" />
-                        <field name="foreign_inverse_rate" groups="base.group_no_one" readonly="1"/>
-                        <field name="foreign_rate" readonly="1"/>
+                        <field name="foreign_inverse_rate" groups="base.group_no_one" readonly="1" force_save="1"/>
+                        <field name="foreign_rate" readonly="1" force_save="1"/>
                     </group>
                     <group class="oe_subtotal_footer oe_right" colspan="2" name="sale_total">
                         <field
