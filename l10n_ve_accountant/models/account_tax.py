@@ -15,8 +15,9 @@ class AccountTax(models.Model):
     def _get_tax_totals_summary(
         self, base_lines, currency, company, cash_rounding=None
     ):
-        foreign_currency = self.env.company.foreign_currency_id or False
-        if not foreign_currency:
+        foreign_currency_id = self.env.company.foreign_currency_id or False
+        currency_id = self.env.company.currency_id or False
+        if not foreign_currency_id:
             raise ValidationError(_("No foreign currency configured in the company"))
 
         ## Base currency
@@ -55,7 +56,7 @@ class AccountTax(models.Model):
             self._round_base_lines_tax_details(foreign_lines, company_id)
         foreign_res = super()._get_tax_totals_summary(
             foreign_lines,
-            foreign_currency,
+            foreign_currency_id,
             company,
             cash_rounding
         )
@@ -64,15 +65,114 @@ class AccountTax(models.Model):
         res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
         res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
 
+        # Moneda Base
+        res['formatted_base_amount_currency'] = formatLang(
+            env=self.env,
+            value=res.get('base_amount_currency', 0.0),
+            currency_obj=currency_id
+        )
+        res['formatted_tax_amount_currency'] = formatLang(
+            env=self.env,
+            value=res.get('tax_amount_currency', 0.0),
+            currency_obj=currency_id
+        )
+        res['formatted_total_amount_currency'] = formatLang(
+            env=self.env,
+            value=res.get('total_amount_currency', 0.0),
+            currency_obj=currency_id
+        )
+        # Foraneos
+        res['formatted_base_amount_foreign_currency'] = formatLang(
+            env=self.env,
+            value=res.get('base_amount_foreign_currency', 0.0),
+            currency_obj=foreign_currency_id
+        )
+        res['formatted_tax_amount_foreign_currency'] = formatLang(
+            env=self.env,
+            value=res.get('tax_amount_foreign_currency', 0.0),
+            currency_obj=foreign_currency_id
+        )
+        res['formatted_total_amount_foreign_currency'] = formatLang(
+            env=self.env,
+            value=res.get('total_amount_foreign_currency', 0.0),
+            currency_obj=foreign_currency_id
+        )
+
         for res_subtotal, foreign_subtotal in zip(res.get("subtotals", []), foreign_res.get("subtotals", [])):
             res_subtotal["tax_amount_foreign_currency"] = foreign_subtotal.get("tax_amount_currency", 0.0)
             res_subtotal["base_amount_foreign_currency"] = foreign_subtotal.get("base_amount_currency", 0.0)
             res_subtotal["total_amount_foreign_currency"] = foreign_subtotal.get("total_amount_currency", 0.0)
 
+            #Foraneo
+            res_subtotal['formatted_base_amount_foreign_currency'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('base_amount_foreign_currency', 0.0),
+                currency_obj=foreign_currency_id
+            )
+            res_subtotal['formatted_tax_amount_foreign_currency'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('tax_amount_foreign_currency', 0.0),
+                currency_obj=foreign_currency_id
+            )
+            res_subtotal['formatted_total_amount_foreign_currency'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('total_amount_foreign_currency', 0.0),
+                currency_obj=foreign_currency_id
+            )
+            #Base sistema
+            res_subtotal['formatted_base_amount_currency'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('base_amount_currency', 0.0),
+                currency_obj=currency_id
+            )
+            res_subtotal['formatted_tax_amount_currency'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('tax_amount_currency', 0.0),
+                currency_obj=currency_id
+            )
+            res_subtotal['formatted_total_amount_currency'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('total_amount_currency', 0.0),
+                currency_obj=currency_id
+            )
+
             for res_tax_group, foreign_tax_group in zip(res_subtotal.get("tax_groups", []), foreign_subtotal.get("tax_groups", [])):
                 res_tax_group["tax_amount_foreign_currency"] = foreign_tax_group.get("tax_amount_currency", 0.0)
                 res_tax_group["base_amount_foreign_currency"] = foreign_tax_group.get("base_amount_currency", 0.0)
                 res_tax_group["display_base_amount_foreign_currency"] = foreign_tax_group.get("display_base_amount_currency", 0.0)
+                # Moneda base
+                res_tax_group['formatted_base_amount_currency'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('base_amount_currency', 0.0),
+                    currency_obj=currency_id
+                )
+                res_tax_group['formatted_tax_amount_currency'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('tax_amount_currency', 0.0),
+                    currency_obj=currency_id
+                )
+                # Display
+                res_tax_group['formatted_display_base_amount_currency'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('display_base_amount_currency', 0.0),
+                    currency_obj=currency_id
+                )
+                # Foranea
+                res_tax_group['formatted_base_amount_foreign_currency'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('base_amount_foreign_currency', 0.0),
+                    currency_obj=foreign_currency_id
+                )
+                res_tax_group['formatted_tax_amount_foreign_currency'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('tax_amount_foreign_currency', 0.0),
+                    currency_obj=foreign_currency_id
+                )
+                res_tax_group['formatted_display_base_amount_foreign_currency'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('display_base_amount_foreign_currency', 0.0),
+                    currency_obj=foreign_currency_id
+                )
         return res
     
     @api.model
