@@ -16,6 +16,25 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move_line.py:0
+#, python-format
+msgid ""
+"\n"
+"                            <div>\n"
+"                                The user %s modified the tax on invoice %s:<br/><br/>\n"
+"                                %s ⟶ %s\n"
+"                            </div>\n"
+"                        "
+msgstr ""
+"\n"
+"                            <div>\n"
+"                                El usuario %s modificó el impuesto en la factura %s:<br/><br/>\n"
+"                                %s ⟶ %s\n"
+"                            </div>\n"
+"                        "
+
+#. module: l10n_ve_invoice
 #: model:ir.actions.report,print_report_name:l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice
 msgid ""
 "(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + "
@@ -308,6 +327,11 @@ msgstr "Advertencia de fecha en factura"
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__display_name
 msgid "Display Name"
 msgstr "Nombre"
+
+#. module: l10n_ve_invoice
+#: model:res.groups,name:l10n_ve_invoice.group_edit_invoice_tax_ids
+msgid "Edit Taxes on Invoice Lines"
+msgstr "Editar impuestos en líneas de factura"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
