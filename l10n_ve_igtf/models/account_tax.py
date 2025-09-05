@@ -115,7 +115,7 @@ class AccountTax(models.Model):
             igtf_base_amount * igtf_percentage, precision_rounding=currency.rounding
         )
         foreign_igtf_amount = float_round(
-            foreign_igtf_base_amount * igtf_percentage,
+            igtf_amount * rate,
             precision_rounding=foreign_currency.rounding,
         )
 
