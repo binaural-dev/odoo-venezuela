@@ -29,13 +29,6 @@ class TestAccountMove(TransactionCase):
             'type_tax_use': 'sale',
         })
 
-        self.tax_iva8 = self.env['account.tax'].create({
-            'name': 'IVA 8%',
-            'amount': 8,
-            'amount_type': 'percent',
-            'type_tax_use': 'sale',
-        })
-
         self.product = self.env['product.product'].create({
             'name': 'Producto Prueba',
             'type': 'service',
@@ -145,6 +138,7 @@ class TestAccountMove(TransactionCase):
         invoice = self.env["account.move"].create(invoice_vals)
 
         invoice.action_post()
+        return invoice
 
 
    
