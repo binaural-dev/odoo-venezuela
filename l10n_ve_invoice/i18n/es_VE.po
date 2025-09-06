@@ -16,6 +16,13 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_invoice
+#: model:ir.actions.report,print_report_name:l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice
+msgid ""
+"(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + "
+"'.pdf')"
+msgstr ""
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
 "<br/>\n"
