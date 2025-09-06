@@ -142,5 +142,3 @@ class TestAccountMove(TransactionCase):
 
         invoice.action_post()
         return invoice
-
-   
