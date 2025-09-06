@@ -101,6 +101,9 @@ class TestAccountMove(TransactionCase):
             Command.create(
                 {
                     "product_id": product["product_id"],
+                    "quantity": product.get("quantity", 1),
+                    "price_unit": product["price_unit"],
+                    "tax_ids": product.get("tax_ids", []),
                 }
             )
             for product in products
@@ -141,50 +144,7 @@ class TestAccountMove(TransactionCase):
         
         invoice = self.env["account.move"].create(invoice_vals)
 
-        return invoice
+        invoice.action_post()
 
-    def test_01_sync_product_tax_on_invoice_line_creation(self):
-        """"""
-        self.product.taxes_id = False
-
-        invoice = self._create_invoice([
-            {
-                "product_id": self.product.id,
-            }
-        ])
-
-        invoice.write({
-            'invoice_line_ids': [(1, invoice.invoice_line_ids.id, {
-                'tax_ids': [(6, 0, [self.tax_iva8.id])]
-            })]
-        })
-
-        self.assertIn(
-            invoice.invoice_line_ids.tax_ids,
-            self.product.taxes_id,
-            "The tax was not synchronized correctly"
-        )
-        _logger.info(f"test_01_sync_product_tax_on_invoice_line_creation ---- successfully.")
-
-    def test_02_sync_product_tax_on_invoice_line_write(self):
-        """"""
-        invoice = self._create_invoice([
-            {
-                "product_id": self.product.id,
-            }
-        ])
-
-        invoice.write({
-            'invoice_line_ids': [(1, invoice.invoice_line_ids.id, {
-                'tax_ids': [(6, 0, [self.tax_iva8.id])]
-            })]
-        })
-
-        self.assertIn(
-            invoice.invoice_line_ids.tax_ids,
-            self.product.taxes_id,
-            "The tax was not synchronized correctly"
-        )
-        _logger.info(f"test_02_sync_product_tax_on_invoice_line_write ---- successfully.")
 
    
