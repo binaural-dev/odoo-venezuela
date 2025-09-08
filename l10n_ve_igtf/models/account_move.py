@@ -107,6 +107,7 @@ class AccountMove(models.Model):
     def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0):
         """This method can be used by ir.actions.server to update bi_igtf"""
         for record in self:
+            move_id = record.id
             if record.bi_igtf > 0 and any(
             payment.get("account_payment_id", False) for payment in record.invoice_payments_widget.get("content", [])
             if payment.get("account_payment_id", False)
@@ -123,7 +124,7 @@ class AccountMove(models.Model):
                 payment_id = line.move_id.payment_id
                 if payment_id and payment_id.is_igtf_on_foreign_exchange:
                     payment_id = line.move_id.payment_id
-                    bi_igtf = payment_id.get_bi_igtf()
+                    bi_igtf = payment_id.get_bi_igtf(move_id)
                     if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
                         record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
                         bi_igtf = 0
@@ -138,7 +139,7 @@ class AccountMove(models.Model):
 
                 payment_id = record.env["account.payment"].browse([payment_id])
                 if payment_id.is_igtf_on_foreign_exchange:
-                    bi_igtf = payment_id.get_bi_igtf()
+                    bi_igtf = payment_id.get_bi_igtf(move_id)
                     if initial_residual < bi_igtf:
                         continue
                     amount += bi_igtf
