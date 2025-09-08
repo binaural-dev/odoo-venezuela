@@ -114,7 +114,7 @@ if (studioItem) {
 
         },
         async get_permision_user(){
-            let hasPermission = await this.user.hasGroup("binaural_hide_studio_menu.binaural_show_studio_menu");
+            let hasPermission = await this.user.hasGroup("l10n_binaural_hide_studio_menu.binaural_show_studio_menu");
             return hasPermission;
         }
 

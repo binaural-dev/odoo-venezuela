@@ -16,7 +16,7 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'binaural_hide_studio_menu/static/src/js/form_arch_parser.js',
+            'l10n_binaural_hide_studio_menu/static/src/js/form_arch_parser.js',
         ],
     },
     'installable': True,
