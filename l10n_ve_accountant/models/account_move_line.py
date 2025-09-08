@@ -58,6 +58,10 @@ class AccountMoveLine(models.Model):
         store=True,
         readonly=False
     )
+
+    total_foreign_debit = fields.Float()
+    total_foreign_credit = fields.Float()
+
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_balance",
@@ -73,6 +77,14 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign credit field",
     )
+    # @api.depends("foreign_debit", "foreign_credit")
+    def get_total_foreign_debit_credit(self,foreign_credit,foreign_debit):
+        for line in self:
+            line.total_foreign_debit += foreign_debit
+            line.total_foreign_credit += foreign_credit
+            _logger.info(f"omarrr {line.total_foreign_debit}")
+
+            _logger.info(f"daniii {line.total_foreign_credit}")
 
     
 
@@ -178,7 +190,10 @@ class AccountMoveLine(models.Model):
         "foreign_credit_adjustment",
     )
     def _compute_foreign_debit_credit(self):
+        foreign_debit = 0.0
+        foreign_credit = 0.0
         for line in self:
+            _logger.info(f"line.amount_currency === {line.amount_currency}")
             if line.not_foreign_recalculate:
                 if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                     self._calculate_from_adjustment(line)

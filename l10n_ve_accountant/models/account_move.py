@@ -173,6 +173,16 @@ class AccountMove(models.Model):
 
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
+    total_foreign_debit = fields.Float(compute="_compute_total_foreign_debit_credit")
+    total_foreign_credit = fields.Float(compute="_compute_total_foreign_debit_credit")
+
+    @api.depends("line_ids.total_foreign_credit", "line_ids.total_foreign_debit")
+    def _compute_total_foreign_debit_credit(self):
+        for move in self:
+            _logger.info(f"line === {move.line_ids.total_foreign_debit}")
+            move.total_foreign_debit = sum(move.line_ids.mapped("total_foreign_debit"))
+            move.total_foreign_credit = sum(move.line_ids.mapped("total_foreign_credit"))
+
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         context = self.with_context(active_test=False)
