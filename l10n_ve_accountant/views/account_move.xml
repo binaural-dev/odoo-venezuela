@@ -87,11 +87,20 @@
             </xpath>
             <xpath expr="//page/field[@name='line_ids']/tree/field[@name='balance']"
                 position="after">
+                    <field name="total_foreign_debit"/>
+                    <field name="total_foreign_debit"/>
+
+
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field
                     name="foreign_debit"
                     optional="show"
                     sum="Total Foreign Debit"
+                    readonly="1"
+                />
+                <field
+                    name="total_foreign_debit"
+                    optional="show"
                     readonly="1"
                 />
                 <field

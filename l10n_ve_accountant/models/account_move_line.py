@@ -48,13 +48,17 @@ class AccountMoveLine(models.Model):
     foreign_debit = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
-        store=True,
+        store=False,
     )
     foreign_credit = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
-        store=True,
+        store=False,
     )
+
+    total_foreign_debit = fields.Float()
+    total_foreign_credit = fields.Float()
+
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_balance",
@@ -70,6 +74,14 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign credit field",
     )
+    # @api.depends("foreign_debit", "foreign_credit")
+    def get_total_foreign_debit_credit(self,foreign_credit,foreign_debit):
+        for line in self:
+            line.total_foreign_debit += foreign_debit
+            line.total_foreign_credit += foreign_credit
+            _logger.info(f"omarrr {line.total_foreign_debit}")
+
+            _logger.info(f"daniii {line.total_foreign_credit}")
 
     @api.onchange("amount_currency", "currency_id")
     def _inverse_amount_currency(self):
@@ -158,8 +170,12 @@ class AccountMoveLine(models.Model):
         "foreign_credit_adjustment",
     )
     def _compute_foreign_debit_credit(self):
+        foreign_debit = 0.0
+        foreign_credit = 0.0
         for line in self:
+            _logger.info(f"line.amount_currency === {line.amount_currency}")
             if line.not_foreign_recalculate:
+                _logger.info("Skipping foreign debit/credit recalculation")
                 continue
 
             if line.display_type in ("payment_term", "tax"):
@@ -195,6 +211,8 @@ class AccountMoveLine(models.Model):
                 line.currency_id == line.company_id.currency_foreign_id
                 and line.amount_currency
             ):
+                _logger.info('test')
+                
                 line.foreign_debit = (
                     abs(line.amount_currency) if line.amount_currency > 0 else 0.0
                 )
@@ -208,6 +226,7 @@ class AccountMoveLine(models.Model):
                 and "retention_foreign_amount" in self.env["account.payment"]._fields
                 and line.move_id.payment_id.is_retention
             ):
+                
                 # 5 Case: Retention
                 # In this case, we need to set the foreign debit and credit of the retention
                 if not line.currency_id.is_zero(line.debit):
@@ -222,6 +241,10 @@ class AccountMoveLine(models.Model):
                     continue
 
             if not line.move_id.is_invoice(include_receipts=True):
+                _logger.info('test1')
+                line.total_foreign_debit = 0.00
+                line.total_foreign_credit = 0.00
+
                 # 6 Case: Not Invoice
                 # In this case, we need to calculate the foreign debit and credit with rate
                 foreign_lines = line.move_id.line_ids.filtered(
@@ -236,9 +259,21 @@ class AccountMoveLine(models.Model):
                     line.foreign_debit = abs(balance) if balance < 0 else 0.0
                     line.foreign_credit = abs(balance) if balance > 0 else 0.0
                     continue
-
+                
+                line_foreign_debit = line.debit * line.foreign_inverse_rate
+                line_foreign_credit = line.credit * line.foreign_inverse_rate
+                foreign_credit += line_foreign_credit
+                foreign_debit += line_foreign_debit
+                # line.get_total_foreign_debit_credit(foreign_credit, foreign_debit)
+                _logger.info(f"foreign_debit entrante === {foreign_debit}")
+                line.total_foreign_debit += foreign_debit
+                line.total_foreign_credit += foreign_credit
                 line.foreign_debit = line.debit * line.foreign_inverse_rate
                 line.foreign_credit = line.credit * line.foreign_inverse_rate
+                _logger.info(f"line.foreign_debit === {line.foreign_inverse_rate}")
+                _logger.info(f"line.credit === {line.credit}")
+                _logger.info(f"line.foreign_credit === {line.foreign_credit}")
+
                 continue
 
             if line.display_type == "product":
