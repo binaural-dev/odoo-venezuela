@@ -11,7 +11,7 @@ class AccountPaymentIgtf(models.Model):
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         help="IGTF on Foreign Exchange",
-        default=False,
+        compute="_compute_is_igtf",
         store=True,
     )
 
@@ -45,12 +45,12 @@ class AccountPaymentIgtf(models.Model):
             if not payment.amount_with_igtf:
                 payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    # @api.depends("journal_id")
-    # def _compute_is_igtf(self):
-    #     for payment in self:
-    #         payment.is_igtf_on_foreign_exchange = False
-    #         if payment.journal_id.is_igtf:
-    #             payment.is_igtf_on_foreign_exchange = True
+    @api.depends("journal_id")
+    def _compute_is_igtf(self):
+        for payment in self:
+            payment.is_igtf_on_foreign_exchange = False
+            if payment.journal_id.is_igtf:
+                payment.is_igtf_on_foreign_exchange = True
 
     @api.depends("amount")
     def _compute_igtf_amount(self):
