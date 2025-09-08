@@ -98,14 +98,12 @@ if (studioItem) {
                         
                         this.rootRef.el.classList.toggle("o_disabled", this.buttonDisabled);
 
-                        console.log(1)
                     }
                     
                 } else {
                     this.isLoading = true;
                     if (mode !== "new" && this.rootRef.el) {
                         this.rootRef.el.classList.toggle("o_disabled", this.buttonDisabled);
-                        console.log(2)
                     }
                     
                 }
