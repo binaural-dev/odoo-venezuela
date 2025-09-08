@@ -32,6 +32,7 @@ class AccountPaymentIgtf(models.Model):
     amount_with_igtf = fields.Float(
         string="Amount with IGTF", compute="_compute_amount_with_igtf", store=True
     )
+    amount_residual_from_payment = fields.Float()
 
     @api.depends("partner_id")
     def _compute_igtf_percentage(self):
@@ -278,13 +279,50 @@ class AccountPaymentIgtf(models.Model):
 
         return super(AccountPaymentIgtf, self).action_draft()
 
-    def get_bi_igtf(self):
-        self.ensure_one()
-        amount_without_difference = self.amount_with_igtf - self.igtf_amount
-        if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-            amount_without_difference = amount_without_difference * self.foreign_rate
+    def get_bi_igtf(self,move_id=None):
+        for record in self:        
+            amount_without_difference = record.amount_with_igtf - record.igtf_amount
+            if record.env.company.currency_id.id == record.env.ref("base.VEF").id:
+                amount_without_difference = amount_without_difference * record.foreign_rate
+            
+            amount = self.get_amount_residual_from_payment(move_id)
 
-        return amount_without_difference
+        return amount
+    
+    def get_amount_residual_from_payment(self,move_id):
+        for record in self:
+            residual_amount = 0.00
+            igtf_amount= record.igtf_amount
+
+            if record.reconciled_invoice_ids:
+                # payment_used_amount = record.get_used_payment_amount(payments)
+                payment_used_amount = record.get_used_payment_amount(record.reconciled_invoice_ids,move_id)
+                residual_amount = record.amount - payment_used_amount
+            else:
+                residual_amount = record.amount
+
+            record.amount_residual_from_payment = residual_amount
+            return record.amount_residual_from_payment - igtf_amount
+
+    def get_used_payment_amount(self, reconciled_ids,move_id):
+        payment_data = []  # Lista de diccionarios con {id_factura, monto}
+        for invoice in reconciled_ids:
+            payments = invoice.invoice_payments_widget.get("content", False)
+
+            for payment in payments:
+                payment_id = payment.get("account_payment_id", False)
+                if payment_id == self.id:
+                    payment_amount = payment.get("amount", 0.0)
+                    payment_data.append({
+                        "id": invoice.id,
+                        "amount": payment_amount
+                    })
+
+        # Sum amounts where the id is NOT in self.reconciled_invoice_ids
+        excluded_ids = move_id
+        total = sum(item["amount"] for item in payment_data if item["id"] != excluded_ids)
+
+        return total 
 
     @api.depends('journal_id')
     def _compute_is_igtf_journal(self):
