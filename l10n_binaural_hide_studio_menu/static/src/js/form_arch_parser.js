@@ -71,21 +71,20 @@ if (studioItem) {
                 this.hasPermission = hasPermission;
             });
 
+
             this.env.bus.addEventListener("studio_visibility_change", (ev) => {
                 this.isCustomVisible = ev.detail.visible;
-                
-                if (this.isCustomVisible) {
-                    if (this.rootRef.el.classList.contains("o_disabled") == false) {
-                        this.rootRef.el.classList.add("o_disabled");
-
-                    }
-                } else {
-                    if (this.rootRef.el.classList.contains("o_disabled")) {
-                        this.rootRef.el.classList.remove("o_disabled");
-
+                if (this.rootRef.el) { 
+                    if (this.isCustomVisible) {
+                        if (!this.rootRef.el.classList.contains("o_disabled")) {
+                            this.rootRef.el.classList.add("o_disabled");
+                        }
+                    } else {
+                        if (this.rootRef.el.classList.contains("o_disabled")) {
+                            this.rootRef.el.classList.remove("o_disabled");
+                        }
                     }
                 }
-
             });
 
             this.env.bus.addEventListener("ACTION_MANAGER:UI-UPDATED", (ev) => {
