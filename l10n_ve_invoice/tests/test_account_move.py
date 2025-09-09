@@ -48,7 +48,7 @@ class TestAccountMove(TransactionCase):
             'company': self.env['res.company'].create({
                 'name': 'Test Company',
                 'currency_id': self.env.ref('base.VEF').id,
-                'confirm_invoice_with_current_date': False,
+                # 'confirm_invoice_with_current_date': False,
             }),
         }
         sequence = self.env['ir.sequence'].create({
@@ -143,4 +143,137 @@ class TestAccountMove(TransactionCase):
         invoice.action_post()
         return invoice
 
-   
+    def test_zero_price_line_raises_validation_error(self):
+        """A normal line with price_unit=0 should raise a ValidationError."""
+        with self.assertRaises(ValidationError):
+            self._create_invoice(
+                [
+                    {
+                        "product_id": self.product.id,
+                        "quantity": 1,
+                        "price_unit": 0.0,
+                        "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                    }
+                ]
+            )
+        _logger.info("test-> test_zero_price_line_raises_validation_error [OK].")
+
+    def test_discount_product_allows_zero_price(self):
+        """If company.sale_discount_product_id exists, it should allow price <= 0 for that product."""
+
+        product_with_discount = self.env['product.product'].create({
+            'name': 'Producto Cero Precio',
+            'type': 'service',
+            'list_price': 0,
+            'barcode': '987654321',
+            'taxes_id': [(6, 0, [self.tax_iva16.id])],
+        })
+        self.env.company.sale_discount_product_id = product_with_discount
+
+        try:
+            inv = self._create_invoice([
+                {
+                    "product_id": product_with_discount.id,  
+                    "quantity": 1,
+                    "price_unit": -8.0,                      
+                    "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                },
+                {
+                    "product_id": self.product.id,
+                    "quantity": 1,
+                    "price_unit": 2.0,
+                    "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                }
+            ])
+        except ValidationError as e:
+            self.fail(f"ValidationError was raised but should not have been: {e}")
+
+        self.assertTrue(inv, "Invoice was not created correctly.")
+        self.assertTrue(any(
+            line.product_id.id == product_with_discount.id and line.price_unit == -8.0
+            for line in inv.invoice_line_ids
+        ), "Discount line with price_unit=-8.0 not found")
+        self.assertTrue(any(
+            line.product_id.id == self.product.id and line.price_unit == 2.0
+            for line in inv.invoice_line_ids
+        ), "Normal line with price_unit=2.0 not found")
+
+        _logger.info("test-> test_discount_product_allows_zero_price [OK].")
+
+
+    def test_negative_price_line_raises_validation_error(self):
+        """A normal line with price_unit < 0 should raise a ValidationError."""
+        with self.assertRaises(ValidationError):
+            self._create_invoice([{
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": -0.01,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            }])
+        
+        _logger.info("test-> test_negative_price_line_raises_validation_error [OK].")
+
+    def test_zero_price_other_product_still_raises(self):
+        discount_prod = self.env['product.product'].create({
+            'name': 'Prod Desc',
+            'type': 'service',
+            'list_price': 0,
+        })
+        self.env.company.sale_discount_product_id = discount_prod
+
+        with self.assertRaises(ValidationError):
+            self._create_invoice([{
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 0.0,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            }])
+        
+        _logger.info("test-> test_zero_price_other_product_still_raises [OK].")
+
+    def test_out_refund_with_zero_price_on_normal_product_raises(self):
+        inv = self._create_invoice([{
+            "product_id": self.product.id,
+            "quantity": 1,
+            "price_unit": 10.0,
+            "tax_ids": [(6, 0, [self.tax_iva16.id])],
+        }], move_type="out_invoice")
+
+        with self.assertRaises(ValidationError):
+            self._create_invoice([{
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 0.0,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            }], move_type="out_refund", reversed_entry_id=inv, ref="Refund test")
+
+        _logger.info("test-> test_out_refund_with_zero_price_on_normal_product_raises [OK].")
+
+    def test_write_changing_price_to_zero_raises(self):
+        self.env.company.sale_discount_product_id = False
+
+        move = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner_a.id,
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_date": fields.Date.today(),
+            "journal_id": self.journal.id,
+            "correlative": 1,
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 10.0,
+            })],
+        })
+
+        line = move.invoice_line_ids[0]
+
+        with self.assertRaises(ValidationError):
+            move.write({
+                "invoice_line_ids": [Command.update(line.id, {"price_unit": 0.0})]
+            })
+        _logger.info("test-> test_write_changing_price_to_zero_raises [OK].")
