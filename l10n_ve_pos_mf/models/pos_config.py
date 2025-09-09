@@ -30,8 +30,8 @@ class PosConfigInherit(models.Model):
                 config.iot_device_ids += config.iface_fiscal_data_module
 
     def open_ui(self):
-        # if not self.is_posbox or not self.iface_fiscal_data_module:
-        #     raise UserError(
-        #         _("Necesitas activar el IOT en la caja y asignarle una máquina fiscal.")
-        #     )
+        if not self.is_posbox or not self.iface_fiscal_data_module:
+            raise UserError(
+                _("Necesitas activar el IOT en la caja y asignarle una máquina fiscal.")
+            )
         return super().open_ui()
