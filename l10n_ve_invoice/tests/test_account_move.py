@@ -75,7 +75,67 @@ class TestAccountMove(TransactionCase):
             'company_id': self.env.company.id,
         })
 
-      
+    def _create_loyalty_reward_for_product(self, product):
+        """Crea una loyalty.reward mínima para el producto dado, resolviendo selection fields de forma segura."""
+        if 'loyalty.reward' not in self.env:
+            self.skipTest("El modelo loyalty.reward no está disponible en este entorno de pruebas.")
+
+        Reward = self.env['loyalty.reward']
+        vals = {'discount_line_product_id': product.id}
+
+        # Campos simples si existen
+        if 'name' in Reward._fields:
+            vals['name'] = 'Test Reward'
+
+        # reward_type (resolver selección de forma segura)
+        try:
+            reward_type_sel = Reward.fields_get(['reward_type']).get('reward_type', {}).get('selection', [])
+        except Exception:
+            reward_type_sel = []
+        if reward_type_sel:
+            codes = [c for c, _ in reward_type_sel]
+            vals['reward_type'] = 'discount' if 'discount' in codes else codes[0]
+
+        # discount_mode (resolver selección de forma segura)
+        try:
+            discount_mode_sel = Reward.fields_get(['discount_mode']).get('discount_mode', {}).get('selection', [])
+        except Exception:
+            discount_mode_sel = []
+        if discount_mode_sel:
+            codes = [c for c, _ in discount_mode_sel]
+            vals['discount_mode'] = 'fixed' if 'fixed' in codes else codes[0]
+
+        # discount (si existe)
+        if 'discount' in Reward._fields:
+            vals['discount'] = 10.0
+
+        # program_id si es requerido/está presente
+        if 'program_id' in Reward._fields and 'loyalty.program' in self.env:
+            Program = self.env['loyalty.program']
+            pvals = {}
+            if 'name' in Program._fields:
+                pvals['name'] = 'Test Program'
+
+            # program_type/applies_on si existen (resolver con fields_get)
+            try:
+                pt_sel = Program.fields_get(['program_type']).get('program_type', {}).get('selection', [])
+            except Exception:
+                pt_sel = []
+            if pt_sel:
+                pvals['program_type'] = pt_sel[0][0]
+
+            try:
+                ap_sel = Program.fields_get(['applies_on']).get('applies_on', {}).get('selection', [])
+            except Exception:
+                ap_sel = []
+            if ap_sel:
+                pvals['applies_on'] = ap_sel[0][0]
+
+            program = Program.create(pvals)
+            vals['program_id'] = program.id
+
+        return Reward.create(vals)
+
     def _create_invoice(
             self, 
             products, 
@@ -277,3 +337,35 @@ class TestAccountMove(TransactionCase):
                 "invoice_line_ids": [Command.update(line.id, {"price_unit": 0.0})]
             })
         _logger.info("test-> test_write_changing_price_to_zero_raises [OK].")
+
+    def test_loyalty_reward_allows_nonpositive_price(self):
+        """If there is a loyalty.reward whose discount_line_product_id matches the product of the line,
+        price_unit <= 0 should be allowed."""
+        if 'sale_discount_product_id' in self.env.company._fields:
+            self.env.company.sale_discount_product_id = False
+
+        reward_product = self.env['product.product'].create({
+            'name': 'Producto Recompensa',
+            'type': 'service',
+            'list_price': 0,
+            'taxes_id': [(6, 0, [self.tax_iva16.id])],
+        })
+        self._create_loyalty_reward_for_product(reward_product)
+
+        try:
+            inv = self._create_invoice([
+                {"product_id": reward_product.id, "quantity": 1, "price_unit": -5.0,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])]},
+                {"product_id": self.product.id, "quantity": 1, "price_unit": 3.0,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])]},
+            ])
+        except ValidationError as e:
+            self.fail(f"ValidationError was raised with reward product and should not have been: {e}")
+
+        self.assertTrue(True)
+        self.assertTrue(any(
+            l.product_id.id == reward_product.id and l.price_unit == -5.0
+            for l in inv.invoice_line_ids
+        ), "Reward line with price_unit=-5.0 not found")
+
+        _logger.info("test-> test_loyalty_reward_allows_nonpositive_price [OK].")
