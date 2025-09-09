@@ -42,6 +42,14 @@ class AccountMove(models.Model):
                     and line.product_id == self.env.company.sale_discount_product_id
                 ):
                     continue
+                
+                if 'loyalty.reward' in self.env:
+                    is_loyalty_reward = self.env['loyalty.reward'].search_count([
+                        ('discount_line_product_id', '=', line.product_id.id)
+                    ]) > 0
+                    if is_loyalty_reward:
+                        continue
+
                 raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
     @api.onchange("move_type")
