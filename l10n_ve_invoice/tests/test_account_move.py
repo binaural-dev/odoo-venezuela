@@ -3,6 +3,8 @@ import datetime
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 from odoo.exceptions import UserError, ValidationError
+from typing import Callable, Any
+import functools
 
 _logger = logging.getLogger(__name__)
 
@@ -83,11 +85,9 @@ class TestAccountMove(TransactionCase):
         Reward = self.env['loyalty.reward']
         vals = {'discount_line_product_id': product.id}
 
-        # Campos simples si existen
         if 'name' in Reward._fields:
             vals['name'] = 'Test Reward'
 
-        # reward_type (resolver selección de forma segura)
         try:
             reward_type_sel = Reward.fields_get(['reward_type']).get('reward_type', {}).get('selection', [])
         except Exception:
@@ -96,7 +96,6 @@ class TestAccountMove(TransactionCase):
             codes = [c for c, _ in reward_type_sel]
             vals['reward_type'] = 'discount' if 'discount' in codes else codes[0]
 
-        # discount_mode (resolver selección de forma segura)
         try:
             discount_mode_sel = Reward.fields_get(['discount_mode']).get('discount_mode', {}).get('selection', [])
         except Exception:
@@ -105,18 +104,15 @@ class TestAccountMove(TransactionCase):
             codes = [c for c, _ in discount_mode_sel]
             vals['discount_mode'] = 'fixed' if 'fixed' in codes else codes[0]
 
-        # discount (si existe)
         if 'discount' in Reward._fields:
             vals['discount'] = 10.0
 
-        # program_id si es requerido/está presente
         if 'program_id' in Reward._fields and 'loyalty.program' in self.env:
             Program = self.env['loyalty.program']
             pvals = {}
             if 'name' in Program._fields:
                 pvals['name'] = 'Test Program'
 
-            # program_type/applies_on si existen (resolver con fields_get)
             try:
                 pt_sel = Program.fields_get(['program_type']).get('program_type', {}).get('selection', [])
             except Exception:
@@ -135,6 +131,32 @@ class TestAccountMove(TransactionCase):
             vals['program_id'] = program.id
 
         return Reward.create(vals)
+    
+    def require_models(*required_modules: str) -> Callable:
+        """
+        Decorator for tests that checks if a set of models are installed.
+
+        If any of the specified models are not installed, the test is failed
+        with a message listing all the missing models. This is more efficient
+        than checking one by one as it performs a single DB query.
+        """
+        def decorator(func: Callable) -> Callable:
+            @functools.wraps(func)
+            def wrapper(self, *args: Any, **kwargs: Any) -> Any:
+                missing_models = [
+                    name for name in required_modules if name not in self.env
+                ]
+                
+                if missing_models:
+                    missing_list = ', '.join(sorted(missing_models))
+                    self.fail(
+                        f"Test error: The following models are not available in the environment: {missing_list}"
+                    )
+                    
+                return func(self, *args, **kwargs)
+            return wrapper
+        return decorator
+
 
     def _create_invoice(
             self, 
@@ -203,6 +225,7 @@ class TestAccountMove(TransactionCase):
         invoice.action_post()
         return invoice
 
+    @require_models('sale.order')
     def test_zero_price_line_raises_validation_error(self):
         """A normal line with price_unit=0 should raise a ValidationError."""
         with self.assertRaises(ValidationError):
@@ -218,6 +241,7 @@ class TestAccountMove(TransactionCase):
             )
         _logger.info("test-> test_zero_price_line_raises_validation_error [OK].")
 
+    @require_models('sale.order')
     def test_discount_product_allows_zero_price(self):
         """If company.sale_discount_product_id exists, it should allow price <= 0 for that product."""
 
@@ -261,6 +285,7 @@ class TestAccountMove(TransactionCase):
         _logger.info("test-> test_discount_product_allows_zero_price [OK].")
 
 
+    @require_models('sale.order')
     def test_negative_price_line_raises_validation_error(self):
         """A normal line with price_unit < 0 should raise a ValidationError."""
         with self.assertRaises(ValidationError):
@@ -273,6 +298,7 @@ class TestAccountMove(TransactionCase):
         
         _logger.info("test-> test_negative_price_line_raises_validation_error [OK].")
 
+    @require_models('sale.order')
     def test_zero_price_other_product_still_raises(self):
         discount_prod = self.env['product.product'].create({
             'name': 'Prod Desc',
@@ -291,6 +317,7 @@ class TestAccountMove(TransactionCase):
         
         _logger.info("test-> test_zero_price_other_product_still_raises [OK].")
 
+    @require_models('sale.order')
     def test_out_refund_with_zero_price_on_normal_product_raises(self):
         inv = self._create_invoice([{
             "product_id": self.product.id,
@@ -309,6 +336,7 @@ class TestAccountMove(TransactionCase):
 
         _logger.info("test-> test_out_refund_with_zero_price_on_normal_product_raises [OK].")
 
+    @require_models('sale.order')
     def test_write_changing_price_to_zero_raises(self):
         self.env.company.sale_discount_product_id = False
 
@@ -338,6 +366,7 @@ class TestAccountMove(TransactionCase):
             })
         _logger.info("test-> test_write_changing_price_to_zero_raises [OK].")
 
+    @require_models('loyalty.reward')
     def test_loyalty_reward_allows_nonpositive_price(self):
         """If there is a loyalty.reward whose discount_line_product_id matches the product of the line,
         price_unit <= 0 should be allowed."""
@@ -362,7 +391,7 @@ class TestAccountMove(TransactionCase):
         except ValidationError as e:
             self.fail(f"ValidationError was raised with reward product and should not have been: {e}")
 
-        self.assertTrue(True)
+        self.assertTrue(inv, "Invoice was not created correctly.")
         self.assertTrue(any(
             l.product_id.id == reward_product.id and l.price_unit == -5.0
             for l in inv.invoice_line_ids
