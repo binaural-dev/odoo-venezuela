@@ -5,7 +5,7 @@ import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { StudioSystray } from "@web_studio/systray_item/systray_item";
-import { onMounted } from "@odoo/owl";
+import { onMounted, onRendered } from "@odoo/owl";
 
 
 const systrayRegistry = registry.category("systray");
@@ -21,26 +21,35 @@ patch(ControlPanel.prototype, {
         this.orm = useService("orm");
         this.user = useService("user"); 
         let action_id = this.env.config ? this.env.config.actionId : false;
-       
+
         onMounted(() => {
             if (action_id) {
                 this.fetchModelName(this.orm,action_id);
             }
         });
+
+        onRendered(() => {
+            if (action_id) {
+                this.fetchModelName(this.orm,action_id);
+            }
+        });
+        
     },
 
     async fetchModelName(orm,actionId) {
 
         let action = await orm.read("ir.actions.act_window", [actionId], ["res_model", "name", "xml_id"]);
         let actionData = action[0];
-        let xmlId = actionData.xml_id;
-        let hasPermission = await this.user.hasGroup("binaural_hide_studio_menu.binaural_show_studio_menu");
+        let xmlId = actionData.xml_id ? actionData.xml_id : null;
+        let hasPermission = await this.user.hasGroup("l10n_binaural_hide_studio_menu.binaural_show_studio_menu");
         let remove = true
 
-        if (action) {
+    
+        if (xmlId) {
 
             if (xmlId && always_block.includes(xmlId)){
                 remove = true
+
             }
 
             if (hasPermission){
@@ -53,6 +62,9 @@ patch(ControlPanel.prototype, {
             }
             
         } 
+
+    
+
 
         this.env.bus.trigger("studio_visibility_change", { visible: remove });
     }
