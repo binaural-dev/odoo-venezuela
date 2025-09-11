@@ -61,7 +61,15 @@
                                     <field name="municipal_customer_retention_journal_id" class="col-lg-6"/>
                                 </div>
                             </div>
-                        </setting>
+                        </setting>                    
+                        <h2>Account reports</h2>
+                        <div class="row mt16 o_settings_container" name="binaural_accounting_reports_settings">
+                            <div class="o_setting_right_pane">
+                                <group colspan="4" col="4">
+                                    <field name="hide_patent_columns_extra"/>
+                                </group>
+                            </div>
+                        </div>                    
                     </block>
                 </xpath>
             </field>
