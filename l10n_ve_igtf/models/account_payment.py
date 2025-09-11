@@ -33,6 +33,8 @@ class AccountPaymentIgtf(models.Model):
         string="Amount with IGTF", compute="_compute_amount_with_igtf", store=True
     )
 
+    payment_from_wizard = fields.Boolean()
+
     @api.depends("partner_id")
     def _compute_igtf_percentage(self):
         for payment in self:
@@ -76,9 +78,9 @@ class AccountPaymentIgtf(models.Model):
             write_off_line_vals,
             force_balance
         )
-
-        # if self.igtf_percentage:
-        #     self._create_igtf_moves_in_payments(vals)
+        if self.payment_from_wizard:
+            if self.igtf_percentage:
+                self._create_igtf_moves_in_payments(vals)
 
         return vals
 
@@ -94,43 +96,43 @@ class AccountPaymentIgtf(models.Model):
 
     #se comenta mientras se revisa nuevo flujo de gno considerando para adaptar a odoo venezuela tambien.
     
-    # def _create_igtf_moves_in_payments(self, vals):
-    #     """Prepare values to create a new account.move.line for a payment.
-    #     this method adds the igtf in the move line values to be created depending on the payment type
+    def _create_igtf_moves_in_payments(self, vals):
+        """Prepare values to create a new account.move.line for a payment.
+        this method adds the igtf in the move line values to be created depending on the payment type
 
-    #     Args:
-    #         write_off_line_vals (dict, optional): Values to create the write-off account.move.line. Defaults to None.
+        Args:
+            write_off_line_vals (dict, optional): Values to create the write-off account.move.line. Defaults to None.
 
-    #     Returns:
-    #         dict: Values to create the account.move.line.
-    #     """
-    #     igtf_account = (
-    #         self.env.company.customer_account_igtf_id.id
-    #         if self.partner_type == "customer"
-    #         else self.env.company.supplier_account_igtf_id.id
-    #     )
+        Returns:
+            dict: Values to create the account.move.line.
+        """
+        igtf_account = (
+            self.env.company.customer_account_igtf_id.id
+            if self.partner_type == "customer"
+            else self.env.company.supplier_account_igtf_id.id
+        )
 
-    #     if self._context.get("from_pos", False):
-    #         return
+        if self._context.get("from_pos", False):
+            return
 
-    #     for payment in self:
-    #         move_id = (
-    #             self.env.context.get("active_id", False)
-    #         )
-    #         move = self.env["account.move"].browse(move_id)
-    #         if move:
-    #             payment.igtf_amount = payment.calculate_igtf_for_payment(move, payment.amount)
-    #         if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
-    #             if payment.payment_type == "inbound":
-    #                 vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
+        for payment in self:
+            move_id = (
+                self.env.context.get("active_id", False)
+            )
+            move = self.env["account.move"].browse(move_id)
+            if move:
+                payment.igtf_amount = payment.calculate_igtf_for_payment(move, payment.amount)
+            if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
+                if payment.payment_type == "inbound":
+                    vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
 
-    #                 if not vals_igtf:
-    #                     payment._prepare_inbound_move_line_igtf_vals(vals)
+                    if not vals_igtf:
+                        payment._prepare_inbound_move_line_igtf_vals(vals)
 
-    #             if payment.payment_type == "outbound":
-    #                 vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
-    #                 if not vals_igtf:
-    #                     payment._prepare_outbound_move_line_igtf_vals(vals)
+                if payment.payment_type == "outbound":
+                    vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
+                    if not vals_igtf:
+                        payment._prepare_outbound_move_line_igtf_vals(vals)
 
     def _create_inbound_move_line_igtf_vals(self, vals):
         """Create the igtf move line values for inbound payments
@@ -154,7 +156,7 @@ class AccountPaymentIgtf(models.Model):
             {
                 "name": "IGTF",
                 "currency_id": self.currency_id.id,
-                # "amount_currency": -igtf_amount,
+                "amount_currency": -igtf_amount,
                 "account_id": account_id,
                 "partner_id": self.partner_id.id,
             }
@@ -204,7 +206,7 @@ class AccountPaymentIgtf(models.Model):
 
         lines = [line for line in vals]
         if self.payment_type == "inbound":
-            credit_line = lines[1]["amount_currency"]
+            credit_line = lines[1]["amount_currency"] + self.igtf_amount
             credit_amount = -credit_line
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 credit_amount = -credit_line * self.foreign_rate
@@ -223,7 +225,7 @@ class AccountPaymentIgtf(models.Model):
         """
         lines = [line for line in vals]
         if self.payment_type == "outbound":
-            debit_line = lines[1]["amount_currency"]
+            debit_line = lines[1]["amount_currency"] - self.igtf_amount
             debit_amount = debit_line
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 debit_amount = debit_line * self.foreign_rate
