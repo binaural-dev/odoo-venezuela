@@ -14,6 +14,7 @@ class ResCompany(models.Model):
     url_tfhka = fields.Char()
     token_auth_tfhka = fields.Char()
     invoice_digital_tfhka = fields.Boolean()
+    dispatch_guide_digital_tfhka = fields.Boolean()
     sequence_validation_tfhka = fields.Boolean(default=True)
     
     def generate_token_tfhka(self):
