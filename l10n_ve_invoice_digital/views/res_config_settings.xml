@@ -76,6 +76,10 @@
                         <label for="invoice_digital_tfhka" class="col-lg-6 o_light_label"/>
                         <field name="invoice_digital_tfhka"/>
                     </div>
+                    <div class="o_setting_right_pane" invisible="not invoice_digital_tfhka">
+                        <label for="dispatch_guide_digital_tfhka" class="col-lg-6 o_light_label"/>
+                        <field name="dispatch_guide_digital_tfhka"/>
+                    </div>
                 </div>
             </xpath>
         </field>
