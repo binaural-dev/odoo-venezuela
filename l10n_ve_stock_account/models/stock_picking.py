@@ -42,9 +42,6 @@ class StockPicking(models.Model):
         ],
         default="to_invoice",
     )
-    document = fields.Selection(
-        related="sale_id.document")
-    
     optional_internal_movement_guidance = fields.Boolean(related='company_id.optional_internal_movement_guidance')
     reasons_optional_guide_dispatch = fields.Boolean(compute="_compute_reasons_optional_guide")
 
@@ -922,12 +919,17 @@ class StockPicking(models.Model):
                 picking.is_dispatch_guide = False
                 continue
 
+            elif picking.document == "dispatch_guide":
+                picking.is_dispatch_guide = True
+                continue
+            elif picking.operation_code == "outgoing":
+                picking.is_dispatch_guide = True
+                continue
             elif (
                 picking.transfer_reason_id
                 and picking.transfer_reason_id.id == consignment_reason.id
             ):
                 picking.is_dispatch_guide = True
-           
 
     @api.depends(
         "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
@@ -1054,6 +1056,7 @@ class StockPicking(models.Model):
 
                 if record.transfer_reason_id.code == "other_causes":
                     record.show_other_causes_transfer_reason = True
+                    record.is_dispatch_guide = True
                 if record.transfer_reason_id.code == "self_consumption":
                     record.is_dispatch_guide = False
             
