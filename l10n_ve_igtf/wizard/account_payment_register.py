@@ -83,7 +83,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
             amount_residual = payment.line_ids.mapped('move_id').amount_residual
             result = amount_residual - payment.amount
-
             if (
                 payment.journal_id.is_igtf
                 and payment.is_igtf
@@ -91,7 +90,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and abs(result) > 0.0001
             ):
                 payment.is_igtf_on_foreign_exchange = True
-            
             else:
                 payment.is_igtf_on_foreign_exchange = False
 
