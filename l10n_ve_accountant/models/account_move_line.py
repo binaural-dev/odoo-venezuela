@@ -48,12 +48,12 @@ class AccountMoveLine(models.Model):
     foreign_debit = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
-        store=False,
+        store=True,
     )
     foreign_credit = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
-        store=False,
+        store=True,
     )
 
     total_foreign_debit = fields.Float()
