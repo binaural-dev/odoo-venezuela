@@ -161,7 +161,7 @@ class AccountTax(models.Model):
 
     def process_payments_to_igtf(self,invoice):
         invoice_payments_widget = invoice.invoice_payments_widget
-        content = invoice_payments_widget.get("content", False)
+        content = invoice_payments_widget.get("content", False) if invoice_payments_widget else False
 
         if not content:
             return 0
