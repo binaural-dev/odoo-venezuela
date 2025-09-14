@@ -2,7 +2,7 @@
 
 {
     'name': 'Binaural Blockear botton odoo studio',
-    'version': '17.0.0.0.3',
+    'version': '17.0.0.0.4',
     'summary': 'This module is for block the button odoo studio based on a group.',
     'license': 'LGPL-3',
     'author': 'Binauraldev',

@@ -40,12 +40,13 @@ patch(ControlPanel.prototype, {
 
         let action = await orm.read("ir.actions.act_window", [actionId], ["res_model", "name", "xml_id"]);
         let actionData = action[0];
-        let xmlId = actionData.xml_id ? actionData.xml_id : null;
         let hasPermission = await this.user.hasGroup("l10n_binaural_hide_studio_menu.binaural_show_studio_menu");
-        let remove = true
-
+        let remove = true;
+        let xmlId = null;
     
-        if (xmlId) {
+        if (actionData) {
+
+            xmlId = actionData.xml_id ? actionData : null;
 
             if (xmlId && always_block.includes(xmlId)){
                 remove = true
