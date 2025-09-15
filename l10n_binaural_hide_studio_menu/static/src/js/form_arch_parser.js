@@ -46,7 +46,7 @@ patch(ControlPanel.prototype, {
     
         if (actionData) {
 
-            xmlId = actionData.xml_id ? actionData : null;
+            xmlId = actionData ? actionData.xml_id : null;
 
             if (xmlId && always_block.includes(xmlId)){
                 remove = true
