@@ -317,7 +317,7 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-        if 'name' in vals and vals['name'] != "/":
+        if "name" in vals and vals["name"] != "/" and vals["name"]:
             for move in self:
                 partner_id = vals.get('partner_id', move.partner_id.id)
                 
@@ -680,7 +680,6 @@ class AccountMove(models.Model):
             move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
 
     #override of base 
-    @api.depends_context('lang')
     @api.depends(
         'invoice_line_ids.currency_rate',
         'invoice_line_ids.tax_base_amount',
@@ -695,14 +694,9 @@ class AccountMove(models.Model):
     def _compute_tax_totals(self):
         # Adaptar el contexto para que el método de impuestos pueda recuperar el registro de factura
         for move in self:
-            # Pasar el id de la factura al contexto para que lo use account.tax
             ctx = self.env.context.copy()
             ctx.update({'active_id': move.id, 'active_model': move._name})
-            move.with_context(ctx)._compute_tax_totals_base()
-
-    def _compute_tax_totals_base(self):
-        # Llamada original al super
-        return super()._compute_tax_totals()
+            super(AccountMove, move.with_context(ctx))._compute_tax_totals()
 
 
     @api.onchange("foreign_rate")
