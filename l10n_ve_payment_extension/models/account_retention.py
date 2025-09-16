@@ -165,22 +165,6 @@ class AccountRetention(models.Model):
         )
     )
 
-    def round_2_decimals(self,value):
-        """
-        Rounds a numeric value to two decimal places using half-up rounding.
-
-        Args:
-            value (float or str or Decimal): The value to be rounded.
-
-        Returns:
-            float: The value rounded to two decimal places.
-
-        Example:
-            >>> round_2_decimals(2.345)
-            2.35
-        """
-        return float(Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
-
     @api.depends("type", "partner_id")
     def _compute_allowed_lines_move_ids(self):
         for retention in self:
@@ -941,7 +925,11 @@ class AccountRetention(models.Model):
                 line_data["foreign_retention_amount"] = 0.0
             else:
                 line_data["retention_amount"] = retention_amount
-                line_data["foreign_retention_amount"] = self.round_2_decimals(line_data["foreign_iva_amount"] * (withholding_amount / 100)) #Acá siempre que la tercera posición decimal sea 5 o mayor se redondea hacia arriba.
+                line_data["foreign_retention_amount"] = float_round(
+                    (line_data["foreign_iva_amount"] * (withholding_amount / 100)),
+                    precision_digits=invoice_id.company_id.foreign_currency_id.decimal_places,
+                    rounding_method='HALF-UP'
+                ) #Acá siempre que la tercera posición decimal sea 5 o mayor se redondea hacia arriba. ATT DANIELA
             lines_data.append(line_data)
         return lines_data
 
