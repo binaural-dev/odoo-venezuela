@@ -35,7 +35,7 @@ msgstr "Guardar afiliado"
 #. module: binaural_memberships
 #: model_terms:ir.ui.view,arch_db:binaural_memberships.portal_memberships
 msgid "Add new family member"
-msgstr "Agregar nuevo afiiliado"
+msgstr "Agregar nuevo afiliado"
 
 #. module: binaural_memberships
 #: model_terms:ir.ui.view,arch_db:binaural_memberships.portal_memberships
@@ -58,3 +58,19 @@ msgstr "Limite mensual para el registro de afiliados:"
 #: model_terms:ir.ui.view,arch_db:binaural_memberships.portal_memberships
 msgid "<i class=\"fa fa-eye me-1\"/> View family members"
 msgstr "Ver Afiliados"
+
+#. module: binaural_memberships
+#: model_terms:ir.ui.view,arch_db:binaural_memberships.portal_memberships
+msgid ""
+"You have reached the family member registration limit for this membership."
+msgstr ""
+"Has alcanzado el límite de registro de afiliados para esta membresía."
+
+#. module: binaural_memberships
+#: model_terms:ir.ui.view,arch_db:binaural_memberships.portal_memberships
+msgid ""
+"<i class=\"fa fa-exclamation-triangle me-2 text-warning\"/>\n"
+"                                                    You can't add more family members"
+msgstr ""
+"<i class=\"fa fa-exclamation-triangle me-2 text-warning\"/>\n"
+"                                                    No puedes agregar más afiliados"
