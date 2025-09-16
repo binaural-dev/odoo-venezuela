@@ -104,7 +104,7 @@ class AppointmentControllerMulti(AppointmentController):
     @route(['/appointment/<int:appointment_type_id>/submit'],
        auth='public', website=True, type='http', methods=['POST'], priority=400)
     def appointment_form_submit(self, appointment_type_id, multi_slots=None, **post):
-
+        
         # ── normal flow without multi-slots ─────────────────────────
         if not multi_slots:
             return super().appointment_form_submit(appointment_type_id, **post)
@@ -137,15 +137,25 @@ class AppointmentControllerMulti(AppointmentController):
         time_locale_str = f"{date_str} {hours_str}"
 
         customer_id = post.get('customer_id')
+        vat = post.get('vat')
+        phone = post.get('phone')
+
+
         customer   = request.env['res.partner'].sudo().browse(int(customer_id)) if customer_id else None
-        
+        staff_user       = request.env.user
+
+        if not customer:
+            customer= staff_user.partner_id
+        if not customer.vat:
+            customer.write({'vat':vat})
+        if not customer.phone:
+            customer.write({'phone':phone})
+            
         product_id = post.get('product_id')
         created_ev = request.env['calendar.event']
         first_token = None
         appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
-        staff_user       = request.env.user
-        if not customer:
-            customer= staff_user.partner_id
+       
         booking_vals     = []
 
         for st_local, en_local in ranges:
