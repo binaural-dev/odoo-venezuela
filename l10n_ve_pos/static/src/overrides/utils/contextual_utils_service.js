@@ -9,8 +9,7 @@ patch(contextualUtilsService, {
   //@override
   start(env, { pos, localization }) {
     super.start(...arguments)
-    const foreign_currency = pos.foreign_currency;
-
+    const foreign_currency = pos.config.foreign_currency_id;
     const formatForeignCurrency = (value, hasSymbol = true) => {
       if (!value) {
         value = 0
