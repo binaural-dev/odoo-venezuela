@@ -25,7 +25,7 @@ class IGTFTestCommon(TransactionCase):
         def account(code, ttype, name, recon=False):
             """auxiliar function whhich creates an account if it does not exist,avoiding duplicates."""
             account_founded = Account.search(
-                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
+                [("code", "=", code), ("company_ids", "in", [self.company.id])], limit=1
             )
             if not account_founded:
                 new_account = Account.create(
@@ -34,7 +34,7 @@ class IGTFTestCommon(TransactionCase):
                         "code": code,
                         "account_type": ttype,
                         "reconcile": recon,
-                        "company_id": self.company.id,
+                        "company_ids":[(6, 0, [self.company.id])],
                     }
                 )
             return new_account
@@ -67,7 +67,7 @@ class IGTFTestCommon(TransactionCase):
 
         def get_or_create(code, acc_type, name, reconcile=False):
             acc = Account.search(
-                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
+                [("code", "=", code), ("company_ids", "in", [self.company.id])], limit=1
             )
             if not acc:
                 acc = Account.create(
@@ -76,7 +76,7 @@ class IGTFTestCommon(TransactionCase):
                         "code": code,
                         "account_type": acc_type,
                         "reconcile": reconcile,
-                        "company_id": self.company.id,
+                        "company_ids": [(6, 0, [self.company.id])],
                     }
                 )
             return acc
@@ -85,22 +85,6 @@ class IGTFTestCommon(TransactionCase):
             "1101", "asset_receivable", "CxC Clientes", True
         )
         self.income_acc = get_or_create("4001", "income", "Ingresos Ventas")
-
-        # advance liability account for customers (Venezuela ≃ "to be collected" → liability account)
-
-        self.advance_cust_acc = get_or_create(
-            "21600", "liability_current", "Anticipo Clientes", reconcile=True
-        )
-        self.advance_supp_acc = get_or_create(
-            "13600", "asset_current", "Anticipo Proveedores", reconcile=True
-        )
-
-        self.company.write(
-            {
-                "advance_customer_account_id": self.advance_cust_acc.id,
-                "advance_supplier_account_id": self.advance_supp_acc.id,
-            }
-        )
 
         # -------- Método de pago manual inbound -----------------------
         manual_in = self.env.ref("account.account_payment_method_manual_in")

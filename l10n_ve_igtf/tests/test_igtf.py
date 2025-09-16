@@ -22,7 +22,7 @@ class TestIGTFBasic(IGTFTestCommon):
         ig_tf = round(invoice.amount_total *
                       self.company.igtf_percentage / 100, 2)
         pay1 = self._create_payment(amount=invoice.amount_total, is_igtf_on_foreign_exchange=True)
-
+        _logger.warning(f"PAGOOOOOOOOOOOOOOOOOOOOOOO{pay1.move_id}")
         line_to_match = pay1.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
         )
