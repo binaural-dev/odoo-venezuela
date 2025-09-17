@@ -920,6 +920,10 @@ class StockPicking(models.Model):
         
         for picking in self:
 
+            if self.env.user.has_group("l10n_ve_stock_account.group_not_dispatch_guide"):
+                picking.is_dispatch_guide = False
+                continue
+
             picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
@@ -1170,6 +1174,8 @@ class StockPicking(models.Model):
             result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
             result = result - timedelta(days=1)
 
+        if self.env.user.has_group("l10n_ve_stock_account.group_not_dispatch_guide"):
+            return
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")

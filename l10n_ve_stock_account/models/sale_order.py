@@ -40,6 +40,19 @@ class SaleOrder(models.Model):
             if order.warehouse_id and order.warehouse_id.is_consignation_warehouse:
                 order.document = "invoice"
 
+    @api.model
+    def fields_get(self, allfields=None, attributes=None):
+        res = super().fields_get(allfields=allfields, attributes=attributes)
+        if "document" in res:
+            user = self.env.user
+            selection = [
+                ("invoice", _("Invoice")),
+            ]
+            if not user.has_group("l10n_ve_stock_account.group_not_dispatch_guide"):
+                selection.insert(0, ("dispatch_guide", _("Dispatch Guide")))
+            res["document"]["selection"] = selection
+        return res
+
     ### DEFAULTS ###
     @api.model
     def _default_document(self):
