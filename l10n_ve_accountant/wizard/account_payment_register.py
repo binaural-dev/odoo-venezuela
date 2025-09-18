@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.tools.float_utils import float_round
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -156,7 +157,8 @@ class AccountPaymentRegister(models.TransientModel):
                 abs(
                     sum(
                         comp_curr._convert(
-                            aml.amount_residual,
+                            # aml.amount_residual,
+                            self.foreign_total_billed * self.foreign_inverse_rate_vef,
                             self.currency_id,
                             self.company_id,
                             self.payment_date,

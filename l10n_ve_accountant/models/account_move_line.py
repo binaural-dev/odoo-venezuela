@@ -121,9 +121,8 @@ class AccountMoveLine(models.Model):
                         / line.move_id.payment_id.foreign_inverse_rate
                     )
                 else:
-                    raise UserError(_("The rate of foreingn currency should be greater than zero"))
+                    raise UserError(_("The rate should be greater than zero"))
 
- 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
         lines_without_name = self.filtered(lambda l: not l.name)
@@ -411,6 +410,9 @@ class AccountMoveLine(models.Model):
                 amount_currency
             ):
                 return abs(amount_currency / balance)
+            
+            return 1.0
+        
 
         aml = aml_values["aml"]
         other_aml = (other_aml_values or {}).get("aml")
