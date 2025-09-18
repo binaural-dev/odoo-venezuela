@@ -121,7 +121,65 @@ class AccountTax(models.Model):
         res["foreign_formatted_discount_amount"] = formatLang(
             self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
         )
+        
+        move = next((l.get("record").move_id for l in base_lines if l.get("record")), None)
+
+        amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
+
+        res["foreign_total_amount_paid"] = float_round(
+            sum(amounts),
+            precision_digits=foreign_currency.decimal_places
+        )
+
+        foreign_amount_total = res.get('foreign_amount_total', 0.0)
+
+        res["foreign_total_residual"] = float_round(
+            foreign_amount_total - res["foreign_total_amount_paid"],
+            precision_digits=foreign_currency.decimal_places
+        )
+
+        res["foreign_formatted_total_residual"] = formatLang(
+            self.env,
+            res["foreign_total_residual"],
+            currency_obj=foreign_currency
+        )      
+        
         return res
+    
+    def _get_total_paid_foreign(self, move, foreign_currency):
+
+        if not move:
+            return []
+
+        amounts = []
+        invoice_payments = move.invoice_payments_widget
+
+        if not invoice_payments:
+            return amounts
+
+        content = invoice_payments.get('content') or []
+
+        for payment in content:
+
+            payment_id = payment.get('account_payment_id')
+
+            if not payment_id:
+                continue
+
+            account_payment = self.env['account.payment'].search([('id', '=', payment_id)])
+
+            if not account_payment or not account_payment.exists():
+                continue
+
+            if account_payment.currency_id == foreign_currency:
+                foreign_amt = account_payment.amount
+
+            else:
+                foreign_amt = float_round(account_payment.amount * account_payment.foreign_rate, precision_digits=foreign_currency.decimal_places)
+
+            amounts.append(foreign_amt)
+
+        return amounts
 
     def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
         foreign_base_lines = [line.copy() for line in base_lines if line]

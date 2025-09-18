@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.tools.float_utils import float_round
 
 
 class AccountPaymentRegister(models.TransientModel):
@@ -37,6 +38,18 @@ class AccountPaymentRegister(models.TransientModel):
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
+    )
+    
+    first_onchange_executed = fields.Boolean(default=False)
+
+    foreign_inverse_rate_vef = fields.Float(
+        string="Tasa Inversa VEF",
+        help="Inverse rate for VEF currency on selected date.",
+    )
+
+    foreign_total_billed = fields.Float(
+        string="Total Facturado en Moneda Extranjera",
+        help="Total amount billed in foreign currency."
     )
 
     @api.onchange("foreign_rate")
@@ -137,7 +150,8 @@ class AccountPaymentRegister(models.TransientModel):
                 abs(
                     sum(
                         comp_curr._convert(
-                            aml.amount_residual,
+                            # aml.amount_residual,
+                            self.foreign_total_billed * self.foreign_inverse_rate_vef,
                             self.currency_id,
                             self.company_id,
                             self.payment_date,
