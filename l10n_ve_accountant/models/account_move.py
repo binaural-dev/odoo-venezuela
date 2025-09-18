@@ -108,24 +108,19 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
-    @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
+    @api.depends('invoice_date', 'date')
     def _compute_inverse_rate_vef(self):
-        Rate = self.env['res.currency.rate']
-        for move in self:
-            currency = move.company_id.currency_foreign_id
-            rate = False
+        for move in self:           
 
-            if currency:
-                date = move.invoice_date or move.date
+            currency_vef = self.env["res.currency"].search([("id", "=", move.company_id.currency_foreign_id.id)], limit=1)
+            rate_record = self.env["res.currency.rate"].search(
+                [("currency_id", "=", currency_vef.id), ("name", "=", move.invoice_date or move.date)],
+                limit=1
+            )
+            move.foreign_inverse_rate_vef = rate_record.inverse_company_rate if rate_record else 0.0
 
-                if date:
-                    rate = Rate.search([
-                        ('currency_id', '=', currency.id),
-                        ('name', '<=', date),
-                    ], order='name desc', limit=1)
-
-            move.foreign_inverse_rate_vef = rate.inverse_company_rate if rate else 0.0
-
+    amount = fields.Float(tracking=True)
+    
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         context = self.with_context(active_test=False)
@@ -943,22 +938,21 @@ class AccountMove(models.Model):
         """
         Add the foreign rate and foreign inverse rate to the context of the action_register_payment.
         """
-        
         total_foreign_paid = 0
-        
-        foreign_currency_id = self.env.company.currency_foreign_id
-        
-        total_decimal_places = foreign_currency_id.decimal_places if foreign_currency_id else 2
-        
-        for move in self:
-            move._compute_inverse_rate_vef()
-            total_foreign_paid = move.tax_totals['foreign_total_amount_paid'] - move.tax_totals['foreign_amount_total']
 
+        foreign_currency_id = self.env.company.currency_foreign_id
+
+        total_decimal_places = foreign_currency_id.decimal_places if foreign_currency_id else 2
+
+        for move in self:
+
+            total_foreign_paid = move.tax_totals['foreign_total_amount_paid'] - move.tax_totals['foreign_amount_total']
+            
         if len(set(self.mapped("foreign_rate"))) > 1:
             raise UserError(
                 _("You can only register payments for one foreign rate at a time.")
             )
-        
+
         res = super().action_register_payment()
         res["context"]["default_foreign_rate"] = self[0].foreign_rate
         res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
