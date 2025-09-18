@@ -122,8 +122,8 @@ class AccountTax(models.Model):
             self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
         )
         
-        move = self._get_move_from_base_lines(base_lines)
-        
+        move = next((l.get("record").move_id for l in base_lines if l.get("record")), None)
+
         amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
 
         res["foreign_total_amount_paid"] = float_round(
@@ -145,20 +145,6 @@ class AccountTax(models.Model):
         )      
         
         return res
-    
-    def _get_move_from_base_lines(self, base_lines):
-        for l in (base_lines or []):
-            r = l.get("record")
-            if not r:
-                continue
-
-            if getattr(r, "_name", None) == "account.move":
-                return r
-
-            if "move_id" in getattr(r, "_fields", {}):
-                if r.move_id:
-                    return r.move_id
-        return None
     
     def _get_total_paid_foreign(self, move, foreign_currency):
 
@@ -184,21 +170,13 @@ class AccountTax(models.Model):
 
             if not account_payment or not account_payment.exists():
                 continue
-            
-            if self.env.company.currency_id == self.env.ref("base.VEF"):                
-                if account_payment.currency_id == foreign_currency:
-                    foreign_amt = account_payment.amount
-                    
-                else:
-                    foreign_amt = float_round(account_payment.amount * account_payment.foreign_inverse_rate, precision_digits=foreign_currency.decimal_places)
-            
-            else:
-                if account_payment.currency_id == foreign_currency:
-                    foreign_amt = account_payment.amount
 
-                else:
-                    foreign_amt = float_round(account_payment.amount * account_payment.foreign_rate, precision_digits=foreign_currency.decimal_places)
-            
+            if account_payment.currency_id == foreign_currency:
+                foreign_amt = account_payment.amount
+
+            else:
+                foreign_amt = float_round(account_payment.amount * account_payment.foreign_rate, precision_digits=foreign_currency.decimal_places)
+
             amounts.append(foreign_amt)
 
         return amounts
