@@ -98,16 +98,15 @@ class AccountMoveLine(models.Model):
                 and not line.move_id.is_invoice(True)
                 and line.move_id.payment_id
             ):
-                if (
-                    line.move_id.payment_id.foreign_inverse_rate != 0
-                    and line.amount_currency != 0
-                ):
-                    line.balance = line.company_id.currency_id.round(
-                        line.amount_currency
-                        / line.move_id.payment_id.foreign_inverse_rate
-                    )
-                else:
+                if line.amount_currency == 0:
+                    return
+
+                if line.move_id.payment_id.foreign_inverse_rate <= 0:
                     raise UserError(_("The rate should be greater than zero"))
+
+                line.balance = line.company_id.currency_id.round(
+                    line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
+                )
 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
@@ -372,6 +371,9 @@ class AccountMoveLine(models.Model):
                 amount_currency
             ):
                 return abs(amount_currency / balance)
+            
+            return 1.0
+        
 
         aml = aml_values["aml"]
         other_aml = (other_aml_values or {}).get("aml")
