@@ -6,7 +6,9 @@ class IotBox(models.Model):
 
     ip_public = fields.Char(string="Public IP Address", default=False)
     has_fiscal_machine = fields.Boolean()
+    has_fiscal_pinpad = fields.Boolean()
     fiscal_port_ids = fields.Many2many("iot.port", "iot_box_ids")
+    pinpad_port_id = fields.Many2one("iot.port", string="Pinpad Port")
     blacklist = fields.Boolean()
     blacklist_port_ids = fields.Many2many("iot.port", "iot_box_blacklist_ids")
 
