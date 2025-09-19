@@ -179,8 +179,6 @@ class AccountMoveLine(models.Model):
             if line.not_foreign_recalculate:
                 line.foreign_debit = 0.0
                 line.foreign_credit = 0.0
-
-                raise UserError(line.foreign_debit_adjustment)
                 continue
 
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
