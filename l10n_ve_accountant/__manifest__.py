@@ -7,7 +7,11 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
+<<<<<<< HEAD
     "version": "17.0.0.0.15",
+=======
+    "version": "17.0.0.0.18",
+>>>>>>> eb44fba (Se toma desde el wizard el monto a pagar desde el tax_totals para asi no tener que volverlo a recalcular)
     "depends": [
         "base",
         "web",
