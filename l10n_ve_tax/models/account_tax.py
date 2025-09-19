@@ -122,8 +122,8 @@ class AccountTax(models.Model):
             self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
         )
         
-        move = next((l.get("record").move_id for l in base_lines if l.get("record")), None)
-
+        move = self._get_move_from_base_lines(base_lines)
+        
         amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
 
         res["foreign_total_amount_paid"] = float_round(

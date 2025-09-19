@@ -57,6 +57,7 @@ class AccountPaymentRegister(models.TransientModel):
             
             move = self.env['account.move'].browse(active_id)
             res['foreign_total_billed_vef'] = move.tax_totals.get('foreign_total_residual') * move.foreign_inverse_rate_vef
+            
         return res
 
     @api.onchange("foreign_rate")
@@ -158,7 +159,7 @@ class AccountPaymentRegister(models.TransientModel):
                     sum(
                         comp_curr._convert(
                             # aml.amount_residual,
-                            self.foreign_total_billed * self.foreign_inverse_rate_vef,
+                            self.foreign_total_billed_vef, 
                             self.currency_id,
                             self.company_id,
                             self.payment_date,
