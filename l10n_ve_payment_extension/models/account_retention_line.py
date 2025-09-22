@@ -58,7 +58,7 @@ class AccountRetentionLine(models.Model):
     iva_amount = fields.Float(string="IVA", digits=(16, 2))
 
     retention_amount = fields.Float(
-        digits="Tasa", compute="_compute_retention_amount_compute_name", store=True, readonly=False
+        digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
     )
     foreign_retention_amount = fields.Float(
         digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
