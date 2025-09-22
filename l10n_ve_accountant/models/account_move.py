@@ -181,12 +181,7 @@ class AccountMove(models.Model):
                 if date:
                     rate = Rate.search([
                         ('currency_id', '=', currency.id),
-                        ('name', '=', date),
-                    ], limit=1)
-
-                if not rate:
-                    rate = Rate.search([
-                        ('currency_id', '=', currency.id),
+                        ('name', '<=', date),
                     ], order='name desc', limit=1)
 
             move.foreign_inverse_rate_vef = rate.inverse_company_rate if rate else 0.0
