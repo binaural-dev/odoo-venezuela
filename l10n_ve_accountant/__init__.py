@@ -19,6 +19,7 @@ def reassign_tax_unit_data_ids(env):
     
     for old_name, new_name in tax_unit_data.items():
         execute_script_sql_two(env, new_name, old_name)
+
     
 def execute_script_sql(env, xml_id_prefix): 
     env.execute(

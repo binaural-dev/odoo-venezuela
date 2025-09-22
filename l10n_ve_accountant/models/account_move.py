@@ -14,6 +14,12 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    _sql_constraints = [
+        ('unique_name_move_type_company',
+         'unique (name, move_type, company_id)',
+         'Another entry of the same type and with the same name already exists in this company.'),
+    ]
+
     def _get_fields_to_compute_lines(self):
         return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
 
