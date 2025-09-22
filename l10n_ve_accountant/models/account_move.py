@@ -343,11 +343,7 @@ class AccountMove(models.Model):
         moves = super().create(vals_list)
 
         for move in moves:
-            """ if move.move_type != "in_invoice":
-                move._compute_rate()
-                if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
-                    move.foreign_rate = move.reversed_entry_id.foreign_rate
-                    move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate """
+            
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
