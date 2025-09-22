@@ -7,8 +7,11 @@ _logger = logging.getLogger(__name__)
 class AccountRetentionLine(models.Model):
     _name = "account.retention.line"
     _description = "Retention Line"
+    _rec_name = 'name'
 
     check_company = True
+
+    
 
     name = fields.Char(
         string="Description", required=True, compute="_compute_name", store=True, readonly=False
@@ -55,7 +58,7 @@ class AccountRetentionLine(models.Model):
     iva_amount = fields.Float(string="IVA", digits=(16, 2))
 
     retention_amount = fields.Float(
-        digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
+        digits="Tasa", compute="_compute_retention_amount_compute_name", store=True, readonly=False
     )
     foreign_retention_amount = fields.Float(
         digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
@@ -157,7 +160,8 @@ class AccountRetentionLine(models.Model):
 
     def unlink(self):
         for record in self:
-            record.payment_id.unlink()
+            if record.payment_id:
+                record.payment_id.unlink()
         return super().unlink()
 
     @api.onchange("payment_concept_id")
