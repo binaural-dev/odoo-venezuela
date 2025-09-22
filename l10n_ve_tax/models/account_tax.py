@@ -184,13 +184,21 @@ class AccountTax(models.Model):
 
             if not account_payment or not account_payment.exists():
                 continue
-
-            if account_payment.currency_id == foreign_currency:
-                foreign_amt = account_payment.amount
-
+            
+            if self.env.company.currency_id == self.env.ref("base.VEF"):                
+                if account_payment.currency_id == foreign_currency:
+                    foreign_amt = account_payment.amount
+                    
+                else:
+                    foreign_amt = float_round(account_payment.amount * account_payment.foreign_inverse_rate, precision_digits=foreign_currency.decimal_places)
+            
             else:
-                foreign_amt = float_round(account_payment.amount * account_payment.foreign_rate, precision_digits=foreign_currency.decimal_places)
+                if account_payment.currency_id == foreign_currency:
+                    foreign_amt = account_payment.amount
 
+                else:
+                    foreign_amt = float_round(account_payment.amount * account_payment.foreign_rate, precision_digits=foreign_currency.decimal_places)
+            
             amounts.append(foreign_amt)
 
         return amounts
