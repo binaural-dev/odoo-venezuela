@@ -444,6 +444,13 @@ class AccountRetention(models.Model):
                     "original_lines_per_invoice_counter": json.dumps(lines_per_invoice_counter)
                 }
             }
+        
+    
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        res._set_sequence()
+        return res
 
     def unlink(self):
         for record in self:
