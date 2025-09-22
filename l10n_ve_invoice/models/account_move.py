@@ -34,6 +34,7 @@ class AccountMove(models.Model):
     )
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
+        from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
                 if (
@@ -50,7 +51,8 @@ class AccountMove(models.Model):
                     if is_loyalty_reward:
                         continue
 
-                raise ValidationError(_("An invoice cannot have a line with a price of zero"))
+                if not from_pos:
+                    raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
@@ -64,7 +66,7 @@ class AccountMove(models.Model):
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 
-            invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])
+            invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
             if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
