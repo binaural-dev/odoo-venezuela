@@ -905,9 +905,8 @@ class AccountRetention(models.Model):
                 and l.credit > 0
             )
             if not lines:
-                raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
-                )
+
+                raise ValidationError(_("No registered lines found in the move to reconcile."))
             line_to_reconcile = lines[0]
 
             payment.retention_line_ids.move_id.js_assign_outstanding_line(
@@ -917,16 +916,12 @@ class AccountRetention(models.Model):
     def _reconcile_customer_payment(self, payment):
 
         if payment.payment_type == "outbound":
-
-            lines = payment.move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == "asset_receivable"
-                and l.debit > 0
-            )
-
+            
+            lines = payment.move_id.line_ids.filtered(lambda l: l.account_id.account_type == "asset_receivable" and l.debit >= 0)
+            
             if not lines:
-                raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
-                )
+                raise ValidationError(_("No registered lines found in the move to reconcile."))
+            
             line_to_reconcile = lines[0]
 
             payment.retention_line_ids.move_id.js_assign_outstanding_line(
@@ -934,15 +929,12 @@ class AccountRetention(models.Model):
             )
 
         elif payment.payment_type == "inbound":
-            lines = payment.move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == "asset_receivable"
-                and l.credit > 0
-            )
+            lines = payment.move_id.line_ids.filtered(lambda l: l.account_id.account_type == "asset_receivable" and l.credit >= 0)
+            
+            #se comenta para probar en caso de retenciones con montos en cero
 
-            if not lines:
-                raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
-                )
+            # if not lines:
+            #     raise ValidationError(_("No registered lines found in the move to reconcile."))
             line_to_reconcile = lines[0]
 
             payment.retention_line_ids.move_id.js_assign_outstanding_line(
