@@ -119,6 +119,21 @@
                         />
                     </td>
                 </tr>
+                <!-- Total por pagar -->
+                <tr>
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label">Total to pay</label>
+                    </td>
+
+                    <td class="o_list_monetary">
+                        <span
+                            name="foreign_formatted_total_residual"
+                            t-att-class="Object.keys(totals.groups_by_subtotal).length > 0 ? 'oe_subtotal_footer_separator' : ''"
+                            t-out="totals.foreign_formatted_total_residual"
+                            style="font-size: 1.3em; font-weight: bold; white-space: nowrap;"
+                        />
+                    </td>
+                </tr>
             </tbody>
         </table>
     </t>
