@@ -11,6 +11,7 @@ class TestAccountant(TransactionCase):
     def setUp(self):
         super().setUp()
 
+        # --- Monedas y compañía ---
         self.currency_usd = self.env.ref("base.USD")
         self.currency_vef = self.env.ref("base.VEF")
         self.company = self.env.ref("base.main_company")
@@ -380,3 +381,88 @@ class TestAccountant(TransactionCase):
         self.assertEqual(l1.account_id.id, self.account_credito.id)
 
 
+    # ----------------- Helpers -----------------
+    def _create_invoice(self):
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner.id,
+            'journal_id': self.sale_journal.id,
+            'date': fields.Date.today(),
+            'invoice_line_ids': [
+                Command.create({
+                    'product_id': self.product.id,
+                    'quantity': 1.0,
+                    'price_unit': 100.0,
+                })
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        return invoice
+
+    def _create_payment(
+        self,
+        amount,
+        *,
+        currency=None,
+        journal=None,
+        is_advance=False,
+        fx_rate=None,
+        fx_rate_inv=None,
+        pm_line=None,
+    ):
+        """Crea y valida un payment genérico."""
+        currency = currency or self.currency_usd
+        journal = journal or self.bank_journal_usd
+        pm_line = pm_line or self.pm_line_in_usd
+
+        vals = {
+            "payment_type": "inbound",
+            "partner_type": "customer",
+            "partner_id": self.partner.id,
+            "amount": amount,
+            "currency_id": currency.id,
+            "journal_id": journal.id,
+            "payment_method_line_id": pm_line.id,  # <-- misma línea y mismo journal
+            "is_advance_payment": is_advance,
+            "date": fields.Date.today(),
+        }
+        if fx_rate:
+            vals.update({"foreign_rate": fx_rate, "foreign_inverse_rate": fx_rate_inv})
+
+        pay = self.env["account.payment"].create(vals)
+        pay.action_post()
+        return pay
+
+    # ----------------- Test -----------------
+    def test_reconcile_twice(self):
+        '''
+        This test verifies that when an advance payment is unmatched from an invoice, it can be matched again if required.
+        '''
+        invoice = self._create_invoice()
+        payment = self._create_payment(
+            amount=invoice.amount_total,
+            journal=self.bank_journal_usd,
+            pm_line=self.pm_line_in_usd,
+            is_advance=True,
+        )
+        #First reconciliation
+        for line in payment.line_ids:
+            line_ids = payment.line_ids.filtered(lambda line: line.account_type in ('asset_receivable', 'liability_payable', 'asset_current', 'liability_payable') and not line.reconciled)
+        if not line_ids:
+            _logger.warning("Theres not lines to conciliate")
+        else:
+            for line in line_ids:
+                invoice.js_assign_outstanding_line(line.id)
+
+        #Breaking reconciliation
+        conciliation_move = self.env['account.move'].search([('move_type', '=', 'entry'), ('name', '=',f'{invoice.name} - {payment.name}') ])
+        partial = self.env['account.partial.reconcile'].search([('debit_move_id.move_id', '=', invoice.id), ('credit_move_id.move_id', '=', conciliation_move.id),], limit=1)
+        invoice.js_remove_outstanding_partial(partial.id)
+
+        # Second reconciliation should not raise duplicate name error
+        invoice.js_assign_outstanding_line(line.id)
+        second_conciliation_move = self.env['account.move'].search([('move_type', '=', 'entry'), ('name', '=',f'{invoice.name} - {payment.name}'), ('state', '=', 'posted') ])
+        second_conciliation_move and conciliation_move
+        first_conciliation_move = self.env['account.move'].search([('move_type', '=', 'entry'), ('name', '=',f'{invoice.name} - {payment.name}'), ('state', '=', 'cancel') ])
+        # It is evaluated whether the first journal entry with canceled state and the second with posted state are created.
+        self.assertTrue(conciliation_move and first_conciliation_move)
