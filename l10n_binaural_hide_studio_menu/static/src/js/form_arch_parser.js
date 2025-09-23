@@ -10,7 +10,7 @@ import { onMounted, onRendered } from "@odoo/owl";
 
 const systrayRegistry = registry.category("systray");
 const studioItem = systrayRegistry.get("StudioSystrayItem");
-const always_block = ["account.action_move_out_invoice_type"];
+const always_block = ["account.action_move_out_invoice_type","base_setup.action_general_configuration"];
 
 
 patch(ControlPanel.prototype, {
