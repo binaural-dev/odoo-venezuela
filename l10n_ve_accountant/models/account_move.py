@@ -343,17 +343,13 @@ class AccountMove(models.Model):
                 ]
                 existing_record = self.search(domain, limit=1)
                 
-                if existing_record:
+                if existing_record and not (existing_record.move_type == 'entry' and existing_record.state == 'cancel') :
                     raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
 
         moves = super().create(vals_list)
 
         for move in moves:
-            """ if move.move_type != "in_invoice":
-                move._compute_rate()
-                if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
-                    move.foreign_rate = move.reversed_entry_id.foreign_rate
-                    move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate """
+            
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
@@ -769,20 +765,21 @@ class AccountMove(models.Model):
     def _compute_tax_totals(self):
         return super()._compute_tax_totals()
 
-    @api.onchange("foreign_rate")
+    @api.onchange("foreign_rate","invoice_date")
     def _onchange_foreign_rate(self):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
-        if self.foreign_rate < 0 or self.foreign_inverse_rate < 0:
-            raise ValidationError(_("The rate entered cannot be negative"))
-        Rate = self.env["res.currency.rate"]
-        for move in self:
-            if not move.foreign_rate:
-                return
-            move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
+        if self.invoice_date:
+            if self.foreign_rate < 0 or self.foreign_inverse_rate < 0:
+                raise ValidationError(_("The rate entered cannot be negative"))
+            Rate = self.env["res.currency.rate"]
+            for move in self:
+                if not move.foreign_rate:
+                    return
+                move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
 
-    @api.onchange("foreign_inverse_rate")
+    @api.onchange("foreign_inverse_rate","invoice_date")
     def _onchange_foreign_inverse_rate(self):
         """
         Onchange the foreign rate and compute the foreign inverse rate
@@ -793,6 +790,7 @@ class AccountMove(models.Model):
                     raise ValidationError(_("The rate entered cannot be negative."))
                 elif rec.foreign_inverse_rate == 0:
                     raise ValidationError(_("The rate entered cannot be zero."))
+
 
 
     def _get_payments(self, line_ids):
