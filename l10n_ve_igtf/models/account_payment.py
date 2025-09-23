@@ -116,13 +116,10 @@ class AccountPaymentIgtf(models.Model):
             return
 
         for payment in self:
-            move_id = (
-                self.env.context.get("active_id", False)
-            )
-            move = self.env["account.move"].browse(move_id)
-            if move:
-                payment.igtf_amount = payment.calculate_igtf_for_payment(move, payment.amount)
-            if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
+            if (
+                payment.igtf_amount
+                and payment.is_igtf_on_foreign_exchange
+            ):
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
 

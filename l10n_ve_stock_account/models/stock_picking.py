@@ -1,4 +1,3 @@
-from odoo.exceptions import UserError
 import logging
 
 from odoo import _, api, fields, models
@@ -86,7 +85,6 @@ class StockPicking(models.Model):
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
-        default=True,
         tracking=True,
         store=True,
         readonly=False,
@@ -1225,5 +1223,4 @@ class StockPicking(models.Model):
                     rec._assign_partner_from_location()
         
         return res
-
 
