@@ -14,6 +14,12 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    _sql_constraints = [
+        ('unique_name_move_type_company',
+         'unique (name, move_type, company_id)',
+         'Another entry of the same type and with the same name already exists in this company.'),
+    ]
+
     def _get_fields_to_compute_lines(self):
         return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
 
@@ -373,11 +379,7 @@ class AccountMove(models.Model):
         moves = super().create(vals_list)
 
         for move in moves:
-            """ if move.move_type != "in_invoice":
-                move._compute_rate()
-                if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
-                    move.foreign_rate = move.reversed_entry_id.foreign_rate
-                    move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate """
+            
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
@@ -812,11 +814,13 @@ class AccountMove(models.Model):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
-        if self.invoice_date:
-            if self.foreign_inverse_rate < 0:
-                raise ValidationError(_("The rate entered cannot be negative."))
-            elif self.foreign_inverse_rate == 0:
-                raise ValidationError(_("The rate entered cannot be zero."))
+        for rec in self:
+            if rec.foreign_currency_id and rec.foreign_inverse_rate:
+                if rec.foreign_inverse_rate < 0:
+                    raise ValidationError(_("The rate entered cannot be negative."))
+                elif rec.foreign_inverse_rate == 0:
+                    raise ValidationError(_("The rate entered cannot be zero."))
+
 
 
     def _get_payments(self, line_ids):
