@@ -176,9 +176,7 @@ class AccountMoveLine(models.Model):
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
-            if line.not_foreign_recalculate:
-                continue
-
+            
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 self._calculate_from_adjustment(line)
             elif line.display_type in ("line_section", "line_note"):
