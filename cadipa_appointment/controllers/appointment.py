@@ -251,4 +251,7 @@ class AppointmentControllerMulti(AppointmentController):
                 'partner_id': customer.id,
 
             })
+        customer.appointments_count += 1
         return event
+    
+    
