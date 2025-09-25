@@ -5,6 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import frozendict, formatLang, format_date, float_compare, Query
 from datetime import date, timedelta
 import traceback
+from markupsafe import Markup
 
 import logging
 
@@ -497,3 +498,50 @@ class AccountMoveLine(models.Model):
     def _onchange_price_unit(self):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
+        
+
+    def write(self, vals):
+        old_values = {
+            line.id: {
+                'foreign_debit': line.foreign_debit,
+                'foreign_credit': line.foreign_credit
+            } for line in self
+        }
+    
+        res = super(AccountMoveLine, self).write(vals)
+
+        for line in self:
+            old_line_data = old_values.get(line.id)
+            if old_line_data:
+                old_debit = old_line_data['foreign_debit']
+                new_debit = line.foreign_debit
+                old_credit = old_line_data['foreign_credit']
+                new_credit = line.foreign_credit
+
+                if old_debit != new_debit or old_credit != new_credit:
+                    if line.id and line.move_id and line.move_id.id:
+                        message_parts = []
+                        
+                        message_parts.append(_("<b>The accounting line has been updated:</b>"))
+                        
+                        message_parts.append(_("<b>Account:</b> %s") % line.account_id.display_name)
+                        
+                        if old_debit != new_debit:
+                            message_parts.append(_("<b>Foreign Debit Amount:</b> from %s to %s") % (str(old_debit), str(new_debit)))
+                        if old_credit != new_credit:
+                            message_parts.append(_("<b>Foreign Credit Amount:</b> from %s to %s") % (str(old_credit), str(new_credit)))
+
+                        msg_body = "<br/>".join(message_parts)
+                        
+                        final_body = Markup(msg_body)
+
+                        self.env['mail.message'].create({
+                            'body': final_body,
+                            'model': line.move_id._name,
+                            'res_id': line.move_id.id,
+                            'message_type': 'comment',
+                            'subtype_id': self.env.ref('mail.mt_note').id,
+                            'author_id': self.env.user.partner_id.id,
+                        })
+
+        return res
