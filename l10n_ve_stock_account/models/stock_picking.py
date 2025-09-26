@@ -3,7 +3,7 @@ import logging
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.osv import expression
+from odoo.fields import Domain
 from datetime import date, datetime, timedelta
 
 _logger = logging.getLogger(__name__)

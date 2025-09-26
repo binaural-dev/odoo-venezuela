@@ -2,8 +2,7 @@ import logging
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.osv import expression
-
+from odoo.fields import Domain
 _logger = logging.getLogger(__name__)
 
 from odoo.exceptions import UserError
@@ -86,7 +85,7 @@ class StockPicking(models.Model):
             if self.type_delivery_step == "pick":
                 return self
 
-            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
+            domain = Domain.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
@@ -103,7 +102,7 @@ class StockPicking(models.Model):
             if self.type_delivery_step == "pack":
                 return self
 
-            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
+            domain = Domain.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
@@ -120,7 +119,7 @@ class StockPicking(models.Model):
             if self.type_delivery_step == "out":
                 return self
 
-            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
+            domain = Domain.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 

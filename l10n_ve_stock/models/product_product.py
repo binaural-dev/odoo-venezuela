@@ -3,7 +3,7 @@ from collections import defaultdict
 from odoo import _, api, models, fields
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.float_utils import float_round
-from odoo.osv import expression
+from odoo.fields import Domain
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -105,16 +105,16 @@ class ProductProduct(models.Model):
             if location:
                 copy_domain_move_in_done = domain_move_in_done
                 copy_domain_move_out_done = domain_move_out_done
-                domain_move_in_done = expression.AND(
+                domain_move_in_done = Domain.AND(
                     [copy_domain_move_in_done, [("location_dest_id", "=", location.id)]]
                 )
-                domain_move_in_done = expression.OR(
+                domain_move_in_done = Domain.OR(
                     [copy_domain_move_in_done, [("location_id", "=", location.id)]]
                 )
-                domain_move_out_done = expression.AND(
+                domain_move_out_done = Domain.AND(
                     [copy_domain_move_out_done, [("location_dest_id", "=", location.id)]]
                 )
-                domain_move_out_done = expression.OR(
+                domain_move_out_done = Domain.OR(
                     [copy_domain_move_out_done, [("location_id", "=", location.id)]]
                 )
             domain_move_in_done = [('state', '=', 'done'), ('date', '>', to_date)] + domain_move_in_done 

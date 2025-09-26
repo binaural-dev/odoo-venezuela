@@ -3,7 +3,7 @@ import json
 
 from odoo import http, _
 from odoo.http import request
-from odoo.osv import expression
+from odoo.fields import Domain
 
 _logger = logging.getLogger(__name__)
 

@@ -1,5 +1,5 @@
 from odoo import _, fields, models
-from odoo.osv import expression
+from odoo.fields import Domain
 from odoo.tools.misc import format_datetime
 import operator as py_operator
 
@@ -52,7 +52,7 @@ class StockQuantityHistoryInh(models.TransientModel):
         
         qty_companies = len(self.env["res.company"].sudo().search([]))
         if qty_companies > 1:
-            domain = expression.AND(
+            domain = Domain.AND(
                 [domain, [("company_id", "in", (company.id, False))]]
             )
         product_ids = self.env["product.product"].search(domain)
