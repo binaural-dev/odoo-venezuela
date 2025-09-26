@@ -7,12 +7,11 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "18.0.1.1.16",
+    "version": "18.0.1.1.17",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
         "l10n_ve_base",
-        "l10n_ve_tax",
         "sale",
         "l10n_ve_rate",
         "l10n_ve_contact",

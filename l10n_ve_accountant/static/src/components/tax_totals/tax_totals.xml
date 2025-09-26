@@ -1,0 +1,105 @@
+
+<templates xml:space="preserve">
+
+    <t 
+        t-name="l10n_ve_accountant.TaxGroupComponent" 
+        t-inherit="account.TaxGroupComponent" 
+        t-inherit-mode="extension" 
+        owl="1">
+        <xpath expr="//tr/td[2]/t[@t-if]/t[@t-else]/span/span" position="replace">
+            <span class="o_tax_group_amount_value o_list_monetary">
+                <t t-out="formatMonetary(props.taxGroup.tax_amount_currency)"/>
+            </span>
+        </xpath>
+        <xpath expr="//tr" position="before">
+            <tr>
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label" t-esc="'Total G ' + props.taxGroup.group_name"/>
+                </td>
+
+                <td class="o_tax_group">
+                    <span class="o_tax_group_amount_value o_list_monetary">
+                        <t t-out="props.taxGroup.formatted_base_amount_currency" style="white-space: nowrap;"/>
+                    </span>
+                </td>
+            </tr>
+        </xpath>
+    </t>
+
+    <t t-name="l10n_ve_tax.TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table[1]/tbody[1]/t[1]" position="before">
+            <tr t-if="totals.discount_amount and totals.show_discount">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Subtotal pinga</label>
+                </td>
+                <td>
+                    <span
+                        name="subtotal"
+                        class="o_tax_group_amount_value o_list_monetary"
+                        t-out="totals.formatted_subtotal"
+                    />
+                </td>
+            </tr>
+            <tr t-if="totals.discount_amount and totals.show_discount">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Discount</label>
+                </td>
+                <td class="o_tax_group">
+                    <span
+                        name="discount_amount"
+                        class="o_tax_group_amount_value o_list_monetary"
+                        t-out="totals.formatted_discount_amount"
+                    />
+                </td>
+            </tr>
+        </xpath>
+    </t>
+
+    <t t-name="l10n_ve_tax.TaxForeignTotalsField" owl="1">
+        <table t-if="totals" class="oe_right">
+            <tbody>
+                <t t-foreach="totals.subtotals" t-as="subtotal" t-key="subtotal.name">
+                    <tr>
+                        <td class="o_td_label">
+                            <label class="o_form_label o_tax_total_label" t-esc="subtotal.name"/>
+                        </td>
+                        <td class="o_list_monetary">
+                            <span style="white-space: nowrap; font-weight: bold;"
+                                  t-out="subtotal.formatted_base_amount_foreign_currency"/>
+                        </td>
+                    </tr>
+                    <t t-foreach="subtotal.tax_groups" t-as="taxGroup" t-key="taxGroup.id">
+                        <tr>
+                            <td class="o_td_label">
+                                <label class="o_form_label o_tax_total_label" t-esc="'Total G ' + taxGroup.group_name"/>
+                            </td>
+                            <td>
+                                <span class="o_tax_group_amount_value o_list_monetary"
+                                      t-out="taxGroup.formatted_base_amount_foreign_currency"
+                                      style="white-space: nowrap;"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="o_td_label">
+                                <label class="o_form_label o_tax_total_label" t-esc="taxGroup.group_name"/>
+                            </td>
+                            <td class="o_list_monetary">
+                                <span style="white-space: nowrap;"
+                                      t-out="taxGroup.formatted_tax_amount_foreign_currency"/>
+                            </td>
+                        </tr>
+                    </t>
+                </t>
+                <tr>
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label">Total</label>
+                    </td>
+                    <td class="o_list_monetary">
+                        <span style="font-size: 1.3em; font-weight: bold; white-space: nowrap;"
+                              t-out="totals.formatted_total_amount_foreign_currency"/>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </t>
+</templates>

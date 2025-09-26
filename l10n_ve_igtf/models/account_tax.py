@@ -51,7 +51,7 @@ class AccountTax(models.Model):
             if base_line["record"]._name == "sale.order.line":
                 order = base_line["record"].order_id
 
-        foreign_currency = self.env.company.currency_foreign_id
+        foreign_currency = self.env.company.foreign_currency_id
         rate = 0
 
         if type_model == "account.move.line":

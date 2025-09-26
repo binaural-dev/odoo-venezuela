@@ -7,8 +7,8 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock / Inventory",
-    "version": "18.0.0.0.8",
-    "depends": ["stock", "account","sale_stock"],
+    "version": "18.0.0.0.9",
+    "depends": ["stock", "account","sale_stock","mrp"],
     "data": [
         "security/ir.model.access.csv",
         "wizard/stock_book_report.xml",

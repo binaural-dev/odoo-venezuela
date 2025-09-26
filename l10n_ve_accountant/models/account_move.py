@@ -2,12 +2,15 @@ import logging
 from collections import defaultdict
 
 from lxml import etree
-from odoo import _, api, fields, models
+from contextlib import ExitStack, contextmanager
+from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, index_exists
 from odoo.tools.sql import drop_index
 from odoo.tools.float_utils import float_round
 from odoo.tools.misc import formatLang
+from odoo.tools.misc import clean_context
+
 
 _logger = logging.getLogger(__name__)
 
@@ -314,7 +317,7 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-        if 'name' in vals and vals['name'] != "/":
+        if "name" in vals and vals["name"] != "/" and vals["name"]:
             for move in self:
                 partner_id = vals.get('partner_id', move.partner_id.id)
                 
@@ -677,7 +680,6 @@ class AccountMove(models.Model):
             move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
 
     #override of base 
-    @api.depends_context('lang')
     @api.depends(
         'invoice_line_ids.currency_rate',
         'invoice_line_ids.tax_base_amount',
@@ -692,14 +694,9 @@ class AccountMove(models.Model):
     def _compute_tax_totals(self):
         # Adaptar el contexto para que el método de impuestos pueda recuperar el registro de factura
         for move in self:
-            # Pasar el id de la factura al contexto para que lo use account.tax
             ctx = self.env.context.copy()
             ctx.update({'active_id': move.id, 'active_model': move._name})
-            move.with_context(ctx)._compute_tax_totals_base()
-
-    def _compute_tax_totals_base(self):
-        # Llamada original al super
-        return super()._compute_tax_totals()
+            super(AccountMove, move.with_context(ctx))._compute_tax_totals()
 
 
     @api.onchange("foreign_rate")
@@ -983,3 +980,318 @@ class AccountMove(models.Model):
                     and line.display_type == "product"
                 ):
                     raise ValidationError(_("All added lines must indicate the product."))
+    #TODO:Funciones duplicadas de la logica de negocio de Odoo para el manejo de moneda foranea.
+    #FUNCIONES FORANEAS
+    def _get_rounded_foreign_base_and_tax_lines(self, round_from_tax_lines=True):
+        """ Small helper to extract the base and tax lines for the taxes computation from the current move.
+        This is a duplicate of Odoo's logic for handling foreign currency.
+
+        The move could be stored or not and could have some features generating extra journal items acting as
+        base lines for the taxes computation (e.g. epd, rounding lines).
+
+        :param round_from_tax_lines:    Indicate if the manual tax amounts of tax journal items should be kept or not.
+                                        It only works when the move is stored.
+        :return:                        A tuple <base_lines, tax_lines> for the taxes computation.
+        """
+        self.ensure_one()
+        AccountTax = self.env['account.tax']
+        is_invoice = self.is_invoice(include_receipts=True)
+
+        if self.id or not is_invoice:
+            base_amls = self.line_ids.filtered(lambda line: line.display_type == 'product')
+        else:
+            base_amls = self.invoice_line_ids.filtered(lambda line: line.display_type == 'product')
+        # Product type lines
+        base_lines = [self._prepare_product_foreign_base_line_for_taxes_computation(line) for line in base_amls]
+        tax_lines = []
+        if self.id:
+            # The move is stored so we can add the early payment discount lines directly to reduce the
+            # tax amount without touching the untaxed amount.
+            epd_amls = self.line_ids.filtered(lambda line: line.display_type == 'epd')
+
+            # Discount type lines
+            base_lines += [self._prepare_epd_foreign_base_line_for_taxes_computation(line) for line in epd_amls]
+            cash_rounding_amls = self.line_ids \
+                .filtered(lambda line: line.display_type == 'rounding' and not line.tax_repartition_line_id)
+            # Rounding lines
+            base_lines += [self._prepare_cash_rounding_foreign_base_line_for_taxes_computation(line) for line in cash_rounding_amls]
+            AccountTax._add_tax_details_in_base_lines(base_lines, self.company_id)
+            tax_amls = self.line_ids.filtered('tax_repartition_line_id')
+            tax_lines = [self._prepare_tax_line_for_taxes_computation(tax_line) for tax_line in tax_amls]
+            AccountTax._round_base_lines_tax_details(base_lines, self.company_id, tax_lines=tax_lines if round_from_tax_lines else [])
+        else:
+            # The move is not stored yet so the only thing we have is the invoice lines.
+            base_lines += self._prepare_epd_base_lines_for_taxes_computation_from_base_lines(base_amls)
+            AccountTax._add_tax_details_in_base_lines(base_lines, self.company_id)
+            AccountTax._round_base_lines_tax_details(base_lines, self.company_id)
+        return base_lines, tax_lines
+
+    def _prepare_product_foreign_base_line_for_taxes_computation(self, product_line):
+        """ Convert an account.move.line having display_type='product' into a base line for the taxes computation.
+        This is a duplicate of Odoo's logic for handling foreign currency.
+
+        :param product_line: An account.move.line.
+        :return: A base line returned by '_prepare_base_line_for_taxes_computation'.
+        """
+        self.ensure_one()
+        is_invoice = self.is_invoice(include_receipts=True)
+        sign = self.direction_sign if is_invoice else 1
+        if is_invoice:
+            rate = self.foreign_rate
+        else:
+            rate = (abs(product_line.amount_currency) / abs(product_line.balance)) if product_line.balance else 0.0
+
+        return self.env['account.tax']._prepare_base_line_for_taxes_computation(
+            product_line,
+            price_unit=product_line.foreign_price,
+            quantity=product_line.quantity if is_invoice else 1.0,
+            discount=product_line.discount if is_invoice else 0.0,
+            currency_id=product_line.foreign_currency_id,
+            rate=rate,
+            sign=sign,
+            special_mode=False if is_invoice else 'total_excluded',
+        )
+
+    #TODO:FOREIGN
+    def _prepare_epd_foreign_base_line_for_taxes_computation(self, epd_line):
+        """ Convert an account.move.line having display_type='epd' into a base line for the taxes computation.
+        This is a duplicate of Odoo's logic for handling foreign currency.
+
+        :param epd_line: An account.move.line.
+        :return: A base line returned by '_prepare_base_line_for_taxes_computation'.
+        """
+        self.ensure_one()
+        sign = self.direction_sign
+        rate = self.foreign_rate
+
+        return self.env['account.tax']._prepare_base_line_for_taxes_computation(
+            epd_line,
+            price_unit=epd_line.foreign_price,
+            quantity=1.0,
+            sign=sign,
+            special_mode='total_excluded',
+            special_type='early_payment',
+            currency_id=epd_line.foreign_currency_id,
+            is_refund=self.move_type in ('out_refund', 'in_refund'),
+            rate=rate,
+        )
+    #foreign function
+    def _prepare_cash_rounding_foreign_base_line_for_taxes_computation(self, cash_rounding_line):
+        """ Convert an account.move.line having display_type='rounding' into a base line for the taxes computation.
+        This is a duplicate of Odoo's logic for handling foreign currency.
+
+        :param cash_rounding_line: An account.move.line.
+        :return: A base line returned by '_prepare_base_line_for_taxes_computation'.
+        """
+        self.ensure_one()
+        sign = self.direction_sign
+        rate = self.foreign_rate
+
+        return self.env['account.tax']._prepare_base_line_for_taxes_computation(
+            cash_rounding_line,
+            price_unit=cash_rounding_line.foreign_price,
+            quantity=1.0,
+            sign=sign,
+            special_mode='total_excluded',
+            special_type='cash_rounding',
+            currency_id=cash_rounding_line.foreign_currency_id,
+            is_refund=self.move_type in ('out_refund', 'in_refund'),
+            rate=rate,
+        )
+    #FIN DE FUNCIONES FORANEAS
+# Unbalanced Lines Synchronization
+    @contextmanager
+    def _sync_tax_lines(self, container):
+        AccountTax = self.env['account.tax']
+        fake_base_line = AccountTax._prepare_base_line_for_taxes_computation(None)
+
+        def get_base_lines(move):
+            return move.line_ids.filtered(lambda line: line.display_type in ('product', 'epd', 'rounding', 'cogs'))
+
+        def get_tax_lines(move):
+            return move.line_ids.filtered('tax_repartition_line_id')
+
+        def get_value(record, field):
+            return self.env['account.move.line']._fields[field].convert_to_write(record[field], record)
+
+        def get_tax_line_tracked_fields(line):
+            return ('amount_currency', 'balance', 'analytic_distribution')
+
+        def get_base_line_tracked_fields(line):
+            grouping_key = AccountTax._prepare_base_line_grouping_key(fake_base_line)
+            if line.move_id.is_invoice(include_receipts=True):
+                extra_fields = ['price_unit', 'quantity', 'discount']
+            else:
+                extra_fields = ['amount_currency']
+            return list(grouping_key.keys()) + extra_fields
+
+        def field_has_changed(values, record, field):
+            return get_value(record, field) != values.get(record, {}).get(field)
+
+        def get_changed_lines(values, records, fields=None):
+            return (
+                record
+                for record in records
+                if record not in values
+                or any(field_has_changed(values, record, field) for field in values[record] if not fields or field in fields)
+            )
+
+        def any_field_has_changed(values, records, fields=None):
+            return any(record for record in get_changed_lines(values, records, fields))
+
+        def is_write_needed(line, values):
+            return any(
+                self.env['account.move.line']._fields[fname].convert_to_write(line[fname], self) != values[fname]
+                for fname in values
+            )
+
+        moves_values_before = {
+            move: {
+                field: get_value(move, field)
+                for field in ('currency_id', 'partner_id', 'move_type')
+            }
+            for move in container['records']
+            if move.state == 'draft'
+        }
+        base_lines_values_before = {
+            move: {
+                line: {
+                    field: get_value(line, field)
+                    for field in get_base_line_tracked_fields(line)
+                }
+                for line in get_base_lines(move)
+            }
+            for move in container['records']
+        }
+        tax_lines_values_before = {
+            move: {
+                line: {
+                    field: get_value(line, field)
+                    for field in get_tax_line_tracked_fields(line)
+                }
+                for line in get_tax_lines(move)
+            }
+            for move in container['records']
+        }
+        yield
+
+        to_delete = []
+        to_create = []
+        for move in container['records']:
+            if move.state != 'draft':
+                continue
+
+            tax_lines = get_tax_lines(move)
+            base_lines = get_base_lines(move)
+            move_tax_lines_values_before = tax_lines_values_before.get(move, {})
+            move_base_lines_values_before = base_lines_values_before.get(move, {})
+            if (
+                move.is_invoice(include_receipts=True)
+                and (
+                    field_has_changed(moves_values_before, move, 'currency_id')
+                    or field_has_changed(moves_values_before, move, 'move_type')
+                )
+            ):
+                # Changing the type of an invoice using 'switch to refund' feature or just changing the currency.
+                round_from_tax_lines = False
+            elif changed_lines := list(get_changed_lines(move_base_lines_values_before, base_lines)):
+                # A base line has been modified.
+                round_from_tax_lines = (
+                    # The changed lines don't affect the taxes.
+                    all(
+                        not line.tax_ids and not move_base_lines_values_before.get(line, {}).get('tax_ids')
+                        for line in changed_lines
+                    )
+                    # Keep the tax lines amounts if an amount has been manually computed.
+                    or (
+                        list(move_tax_lines_values_before) != list(tax_lines)
+                        or any(
+                            self.env.is_protected(line._fields[fname], line)
+                            for line in tax_lines
+                            for fname in move_tax_lines_values_before[line]
+                        )
+                    )
+                )
+
+                # If the move has been created with all lines including the tax ones and the balance/amount_currency are provided on
+                # base lines, we don't need to recompute anything.
+                if (
+                    round_from_tax_lines                             
+                    and any(line[field] for line in changed_lines for field in ('amount_currency', 'balance'))
+                ):
+                    continue
+            elif any_line := get_changed_lines(move_base_lines_values_before, base_lines, fields=['tax_ids']):
+                any_line = any(any_line)
+                round_from_tax_lines = any_field_has_changed(move_tax_lines_values_before, tax_lines)
+            elif any(line not in base_lines for line, values in move_base_lines_values_before.items() if values['tax_ids']):
+                # Removed a base line affecting the taxes.
+                round_from_tax_lines = any_field_has_changed(move_tax_lines_values_before, tax_lines)
+            else:
+                continue
+
+            base_lines_values, tax_lines_values = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_from_tax_lines)
+            foreign_lines_values, foreign_tax_lines_values = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=round_from_tax_lines)
+            AccountTax._add_accounting_data_in_base_lines_tax_details(base_lines_values, move.company_id, include_caba_tags=move.always_tax_exigible)
+            AccountTax._add_accounting_data_in_base_lines_tax_details(foreign_lines_values, move.company_id, include_caba_tags=move.always_tax_exigible)
+            tax_results = AccountTax._prepare_tax_lines(base_lines_values, move.company_id, tax_lines=tax_lines_values)
+            foreign_tax_results = AccountTax._prepare_tax_lines(foreign_lines_values, move.company_id, tax_lines=foreign_tax_lines_values)
+            for base_line, to_update in tax_results['base_lines_to_update']:
+                line = base_line['record']
+                if is_write_needed(line, to_update):
+                    foreign_base_update = None
+                    for f_base_line, f_to_update in foreign_tax_results.get('base_lines_to_update', []):
+                        if f_base_line['record'].id == line.id:
+                            foreign_base_update = f_to_update
+                            break
+                    if foreign_base_update:
+                        to_update['foreign_balance'] = foreign_base_update.get('amount_currency', 0)
+                    else:
+                        to_update['foreign_balance'] = to_update['amount_currency']
+                    line.write(to_update)
+            for tax_line_vals in tax_results['tax_lines_to_delete']:
+                to_delete.append(tax_line_vals['record'].id)
+
+            for tax_line_vals in tax_results['tax_lines_to_add']:
+                foreign_balance = tax_line_vals['amount_currency']
+                for f_tax_line_vals in foreign_tax_results.get('tax_lines_to_add', []):
+                    if (
+                        f_tax_line_vals.get('tax_repartition_line_id') == tax_line_vals.get('tax_repartition_line_id') and
+                        f_tax_line_vals.get('account_id')  == tax_line_vals.get('account_id')
+                    ):
+                        foreign_balance = f_tax_line_vals.get('amount_currency', foreign_balance)
+                        break
+                to_create.append({
+                    **tax_line_vals,
+                    'display_type': 'tax',
+                    'move_id': move.id, 
+                    'foreign_balance': foreign_balance,
+                })
+
+            for tax_line_vals, grouping_key, to_update in tax_results['tax_lines_to_update']:
+                line = tax_line_vals['record']
+                foreign_tax_update = None
+                for f_tax_line_vals, f_grouping_key, f_to_update in foreign_tax_results.get('tax_lines_to_update', []):
+                    if f_tax_line_vals['record'].id == line.id:
+                        foreign_tax_update = f_to_update
+                        break
+
+                if not foreign_tax_update:
+                    for f_tax_line_vals in foreign_tax_results.get('tax_lines_to_add', []):
+                        if (
+                            f_tax_line_vals.get('tax_repartition_line_id') == tax_line_vals.get('tax_repartition_line_id').id and
+                            f_tax_line_vals.get('account_id') == tax_line_vals.get('account_id').id
+                        ):
+                            foreign_tax_update = f_tax_line_vals
+                            break
+
+                if is_write_needed(line, to_update):
+                    if foreign_tax_update:
+                        to_update['foreign_balance'] = foreign_tax_update.get('amount_currency', 0)
+                    else:
+                        to_update['foreign_balance'] = to_update['amount_currency']
+                    line.write(to_update)
+
+        if to_delete:
+            self.env['account.move.line'].browse(to_delete).with_context(dynamic_unlink=True).unlink()
+        if to_create:
+            self.env['account.move.line'].create(to_create)
