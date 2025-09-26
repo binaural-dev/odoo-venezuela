@@ -467,7 +467,7 @@ class SaleOrder(models.Model):
             for order in self:
                 for line in order.order_line:
                     if (
-                        line.product_id.detailed_type == "product"
+                        line.product_id.type == "product"
                         and line.product_id.qty_available < line.product_uom_qty
                     ):
                         msg = _("Does not have enough units available for the product ")
@@ -540,3 +540,6 @@ class SaleOrder(models.Model):
             order.amount_untaxed = order.tax_totals['base_amount_currency']
             order.amount_tax = order.tax_totals['tax_amount_currency']
             order.amount_total = order.tax_totals['total_amount_currency']
+
+    
+    
