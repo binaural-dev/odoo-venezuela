@@ -21,6 +21,23 @@ class SaleOrder(models.Model):
         help="Document type for the sale order.",
     )
 
+    compute_document = fields.Selection(
+        [
+            ("invoice", "Invoice"),
+        ],
+        compute="_compute_document",
+        string="Document",
+        required=True,
+        tracking=True,
+        help="Document type for the sale order.",
+    )
+
+    show_document = fields.Boolean(
+        compute="_compute_show_document",
+        string="Show Document",
+        store=False,
+    )
+
     is_donation = fields.Boolean(string="Is Donation", default=False, tracking=True)
 
     is_consignation = fields.Boolean(
@@ -40,18 +57,19 @@ class SaleOrder(models.Model):
             if order.warehouse_id and order.warehouse_id.is_consignation_warehouse:
                 order.document = "invoice"
 
-    @api.model
-    def fields_get(self, allfields=None, attributes=None):
-        res = super().fields_get(allfields=allfields, attributes=attributes)
-        if "document" in res:
-            user = self.env.user
-            selection = [
-                ("invoice", _("Invoice")),
-            ]
-            if not user.has_group("l10n_ve_stock_account.group_not_dispatch_guide"):
-                selection.insert(0, ("dispatch_guide", _("Dispatch Guide")))
-            res["document"]["selection"] = selection
-        return res
+    @api.depends("compute_document", "document")
+    def _compute_document(self):
+        for order in self:
+            if not order.compute_document:
+                order.compute_document = order._default_document()
+            order.document = order.compute_document or order._default_document()
+
+    @api.depends()
+    def _compute_show_document(self):
+        for order in self:
+            order.show_document = False
+            if order.state == "draft":
+                order.show_document = order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide')
 
     ### DEFAULTS ###
     @api.model
