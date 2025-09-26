@@ -546,9 +546,9 @@ class AccountMoveLine(models.Model):
                         message_parts.append(_("<b>Account:</b> %s") % line.account_id.display_name)
                         
                         if old_debit != new_debit:
-                            message_parts.append(_("<b>Foreign Debit Amount:</b> from %s to %s") % (str(old_debit), str(new_debit)))
+                            message_parts.append(_("<b>Foreign Debit Amount:</b> from %s to %s") % (str(old_debit).replace('.', ','), str(new_debit).replace('.', ',')))
                         if old_credit != new_credit:
-                            message_parts.append(_("<b>Foreign Credit Amount:</b> from %s to %s") % (str(old_credit), str(new_credit)))
+                            message_parts.append(_("<b>Foreign Credit Amount:</b> from %s to %s") % (str(old_credit).replace('.', ','), str(new_credit).replace('.', ',')))
 
                         msg_body = "<br/>".join(message_parts)
                         
