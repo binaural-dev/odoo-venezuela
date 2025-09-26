@@ -38,8 +38,8 @@
                     optional="hide"
                     readonly="1" />
             </xpath>
-
-            <xpath expr="//notebook/page/field[@name='order_line']/list/field[@name='tax_id']" position="attributes">
+            
+            <xpath expr="//notebook/page/field[@name='order_line']/list/field[@name='tax_ids']" position="attributes">
                 <attribute name="readonly">1</attribute>
             </xpath>
 
@@ -83,7 +83,7 @@
                     groups="!l10n_ve_sale.create_invoice_sale_order_group" />
             </xpath>
 
-            <xpath expr="//field[@name='show_update_pricelist']" position="after">
+            <xpath expr="//sheet[1]/group[1]/group[2]/div[@class='o_row'][1]" position="after">
 				<label for="pricelist_id" groups="product.group_product_pricelist"/>
                 <field name="pricelist_id" invisible="1" />
                 <div groups="l10n_ve_sale.pricelist_sale_order_group" class="o_row">
