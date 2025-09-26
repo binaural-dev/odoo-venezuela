@@ -11,6 +11,21 @@ class TestSaleOrder(TransactionCase):
         self.currency = self.env.ref('base.main_company').currency_id
         self.currency_usd = self.env['res.currency'].search([('name', '=', 'USD')], limit=1)
         self.currency_vef = self.env['res.currency'].search([('name', '=', 'VEF')], limit=1)
+        if self.env.company.currency_id != self.currency_usd:
+            self.env.company.foreign_currency_id = self.currency_usd.id
+        
+        if not self.currency_usd:
+            self.currency_usd = self.env['res.currency'].create({
+                'name': 'USD',
+                'symbol': '$',
+                'rounding': 0.01,
+                'decimal_places': 2,
+                'active': True,
+            })
+
+        # Solo asigna si son diferentes
+        if self.env.company.currency_id.id != self.currency_usd.id:
+            self.env.company.foreign_currency_id = self.currency_usd.id
         self.company = self.env.company
         self.company.block_order_invoice_payment_state = "not_paid"
         self.company.block_order_invoice_total_amount_overdue = 100.0

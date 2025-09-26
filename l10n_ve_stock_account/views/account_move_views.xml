@@ -65,11 +65,11 @@
                 <attribute name="readonly">from_picking_line == True</attribute>
             </xpath>
 
-            <xpath
+            <!-- <xpath
                 expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='not_deductible_tax']"
                 position="attributes">
                 <attribute name="readonly">{'readonly': [('from_picking_line', '=',True)]}</attribute>
-            </xpath>
+            </xpath> -->
 
             <!-- <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='tax_ids']" position="attributes">
                 <attribute name="readonly">from_picking_line == True</attribute>
