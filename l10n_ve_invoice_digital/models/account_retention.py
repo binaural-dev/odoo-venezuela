@@ -258,15 +258,26 @@ class AccountRetention(models.Model):
         retention_data = {}
 
         for record in self:
+
+            if record.base_currency_is_vef:
+                total_invoice = str(round(abs(record.total_invoice_amount), 2))
+                total_iva = str(round(abs(record.total_iva_amount), 2))
+                total_retention = str(round(abs(record.total_retention_amount), 2))
+            
+            else:
+                total_invoice = str(round(abs(record.foreign_total_invoice_amount), 2))
+                total_iva = str(round(abs(record.foreign_total_iva_amount), 2))
+                total_retention = str(round(abs(record.foreign_total_retention_amount), 2))
+
             retention_data = {
-                "totalBaseImponible": str(round(abs(record.total_invoice_amount), 2)), 
+                "totalBaseImponible": total_invoice, 
                 "numeroCompRetencion": record.number, 
                 "fechaEmisionCR": record.date.strftime("%d/%m/%Y"), 
-                "tipoComprobante": "" if record.total_iva_amount else "1",
+                "tipoComprobante": "" if record.total_iva_amount or record.foreign_total_iva_amount else "1",
             }
             if document_type == "05":
-                retention_data["totalRetenido"] = str(round(abs(record.total_retention_amount), 2))
-                retention_data["totalIVA"] = str(round(abs(record.total_iva_amount), 2))
+                retention_data["totalRetenido"] = total_retention
+                retention_data["totalIVA"] = total_iva
             else:
                 retention_data["TotalISRL"] = total_retention
 
@@ -287,6 +298,18 @@ class AccountRetention(models.Model):
                 document_series_ret = ''.join([c for c in serie if c.isalpha()])
                 document_number_ret = str(''.join([c for c in serie if c.isdigit()]))
 
+                if record.base_currency_is_vef:
+                    invoice_total = str(round(line.invoice_total, 2))
+                    invoice_amount = str(round(line.invoice_amount, 2))
+                    retention_amount = str(round(line.retention_amount, 2))
+                    iva_amount = str(round(line.iva_amount, 2))
+
+                else:
+                    invoice_total = str(round(line.foreign_invoice_total, 2))
+                    invoice_amount = str(round(line.foreign_invoice_amount, 2))
+                    retention_amount = str(round(line.foreign_retention_amount, 2))
+                    iva_amount = str(round(line.foreign_iva_amount, 2))
+
                 retention_data = {
                     "numeroLinea": str(counter), 
                     "fechaDocumento": line.move_id.invoice_date.strftime("%d/%m/%Y"), 
@@ -294,14 +317,14 @@ class AccountRetention(models.Model):
                     "serieDocumento": document_series_ret,
                     "numeroDocumento": document_number_ret,
                     "numeroControl": line.move_id.correlative,
-                    "montoTotal": str(round(line.invoice_total, 2)),  
-                    "baseImponible": str(round(line.invoice_amount, 2)),
+                    "montoTotal": invoice_total,  
+                    "baseImponible": invoice_amount,
                     "moneda": record.company_id.currency_id.name,
-                    "retenido": str(round(line.retention_amount, 2)),
+                    "retenido": retention_amount,
                 }
 
                 if document_type == "05":
-                    retention_data["montoIVA"] = str(round(line.iva_amount, 2))
+                    retention_data["montoIVA"] = iva_amount
                     retention_data["porcentaje"] = str(round(line.aliquot, 2))
                     retention_data["retenidoIVA"] = str(round(line.related_percentage_tax_base, 2))
 
