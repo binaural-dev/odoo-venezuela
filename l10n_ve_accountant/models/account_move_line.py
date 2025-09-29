@@ -283,11 +283,8 @@ class AccountMoveLine(models.Model):
         
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
-        for line in self:
-            if line.foreign_credit and line.foreign_debit:
-                line.foreign_balance = line.foreign_debit - line.foreign_credit
-            else:
-                line.foreign_balance = 0.0
+       for line in self:
+            line.foreign_balance = line.foreign_debit - line.foreign_credit
 
     def _inverse_foreign_balance(self):
         for line in self:
@@ -437,15 +434,42 @@ class AccountMoveLine(models.Model):
             and not has_zero_residual
             and counterpart_currency != company_currency
         ):
-            rate = get_odoo_rate(aml, other_aml, counterpart_currency)
-            residual_in_foreign_curr = counterpart_currency.round(
-                remaining_amount * rate
-            )
-            if not counterpart_currency.is_zero(residual_in_foreign_curr):
-                available_residual_per_currency[counterpart_currency] = {
-                    "residual": residual_in_foreign_curr,
-                    "rate": rate,
-                }
+            manual_residual = aml_values.get("foreign_amount_residual")
+            manual_available = manual_residual is not None
+            if not manual_available:
+                foreign_debit = aml._get_reconciliation_aml_field_value(
+                    "foreign_debit", shadowed_aml_values
+                ) or 0.0
+                foreign_credit = aml._get_reconciliation_aml_field_value(
+                    "foreign_credit", shadowed_aml_values
+                ) or 0.0
+                manual_residual, manual_available = aml._get_manual_foreign_amount_residual(
+                    counterpart_currency,
+                    foreign_debit=foreign_debit,
+                    foreign_credit=foreign_credit,
+                )
+
+            if manual_available:
+                residual_in_foreign_curr = counterpart_currency.round(manual_residual)
+                if not counterpart_currency.is_zero(residual_in_foreign_curr):
+                    if not company_currency.is_zero(remaining_amount):
+                        rate = residual_in_foreign_curr / remaining_amount
+                    else:
+                        rate = get_odoo_rate(aml, other_aml, counterpart_currency)
+                    available_residual_per_currency[counterpart_currency] = {
+                        "residual": residual_in_foreign_curr,
+                        "rate": rate,
+                    }
+            else:
+                rate = get_odoo_rate(aml, other_aml, counterpart_currency)
+                residual_in_foreign_curr = counterpart_currency.round(
+                    remaining_amount * rate
+                )
+                if not counterpart_currency.is_zero(residual_in_foreign_curr):
+                    available_residual_per_currency[counterpart_currency] = {
+                        "residual": residual_in_foreign_curr,
+                        "rate": rate,
+                    }
         elif (
             currency == counterpart_currency
             and currency != company_currency
