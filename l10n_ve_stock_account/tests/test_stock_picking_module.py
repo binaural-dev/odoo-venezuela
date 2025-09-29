@@ -3,6 +3,7 @@ from odoo import fields, _
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
+
 class _ToggleDict(dict):
     """Dictionary-like helper that controls `in` checks order."""
 
@@ -36,7 +37,7 @@ class TestStockPicking(TransactionCase):
         cls.stock_location = cls.env.ref("stock.stock_location_stock")
         cls.customer_location = cls.env.ref("stock.stock_location_customers")
         cls.category_all = cls.env.ref("product.product_category_all")
-        
+        company = cls.env.ref('base.main_company')
         tmpl = cls.env["product.template"].create({
             "name": "Producto de Prueba",
             "type": "consu",
@@ -44,43 +45,34 @@ class TestStockPicking(TransactionCase):
             "uom_po_id": cls.uom_unit.id,
             "categ_id": cls.category_all.id,
         })
+
         cls.product = tmpl.product_variant_id
-        cls.stock_location = cls.env['stock.location'].create({
-            'name': 'Main Stock',
-            'usage': 'internal',
-            'company_id': cls.env.company.id,
-        })
-        # Crear ubicación de salida (clientes)
-        cls.output_location = cls.env['stock.location'].create({
-            'name': 'Output',
-            'usage': 'customer',
-            'company_id': cls.env.company.id,
-        })
-        cls.qc_location = cls.env['stock.location'].create({
+        view_location = cls.env['stock.location'].search([('usage', '=', 'view')], limit=1)
+        lot_stock = cls.env['stock.location'].search([('usage', '=', 'internal')], limit=1)
+        input_loc = cls.env['stock.location'].search([('usage', '=', 'internal')], limit=1)
+        output_loc = cls.env['stock.location'].search([('usage', '=', 'internal')], limit=1)
+        pack_loc = cls.env['stock.location'].search([('usage', '=', 'internal')], limit=1)
+        qc_loc = cls.env['stock.location'].create({
             'name': 'Quality Control',
             'usage': 'internal',
-            'company_id': cls.env.company.id,
+            'location_id': cls.env.ref('stock.stock_location_stock').id,
+            'company_id': cls.env.ref('base.main_company').id,
+            'active': True,
+            'barcode': 'QC-LOC',
+            'removal_strategy_id': False,
         })
         # Crear el almacén usando las ubicaciones creadas
         cls.warehouse = cls.env['stock.warehouse'].create({
             'name': 'Test Warehouse',
             'code': 'TWH',
-            'company_id': cls.env.company.id,
-            'lot_stock_id': cls.stock_location.id,
-            'wh_output_stock_loc_id': cls.output_location.id,
-            'reception_steps': 'one_step',
-            'delivery_steps': 'ship_only',
-            'qc_type_id': {
-                'name': _('Quality Control'),
-                'code': 'quality',
-                'default_location_src_id': cls.qc_location.id,
-                'default_location_dest_id': cls.qc_location.id,
-                'sequence': 30,
-                'sequence_code': 'QC',
-                'company_id': cls.env.company.id,
-            }
+            'company_id': company.id,
+            'view_location_id': view_location.id,
+            'lot_stock_id': lot_stock.id,
+            'wh_input_stock_loc_id': input_loc.id,
+            'wh_output_stock_loc_id': output_loc.id,
+            'wh_pack_stock_loc_id': pack_loc.id,
+            'wh_qc_stock_loc_id': qc_loc.id
         })
-
     def _create_picking(self, picking_type_id=None, **extra):
         picking_type = self.env["stock.picking.type"].browse(picking_type_id) if picking_type_id else self.out_type
         vals = {

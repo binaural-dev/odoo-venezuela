@@ -1,4 +1,4 @@
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "l10n_ve_stock_account")
 class TestL10nVeStockAccount(TransactionCase):
@@ -6,7 +6,8 @@ class TestL10nVeStockAccount(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.company
+        company = cls.env.ref('base.main_company')
+        cls.company = company
         cls.sequence_model = cls.env['ir.sequence']
         cls.picking_type_out = cls.env.ref('stock.picking_type_out')
         cls.location_src = cls.env.ref('stock.stock_location_stock')
@@ -34,18 +35,19 @@ class TestL10nVeStockAccount(TransactionCase):
         )
         if not cls.journal:
             raise cls.skipTest('No general journal available for tests')
-
+        
         accounts = cls.env['account.account'].search(
-            [('deprecated', '=', False), ('company_id', '=', cls.company.id)],
+            [('deprecated', '=', False)],
             limit=2,
         )
         if len(accounts) < 2:
             raise cls.skipTest('Not enough accounts available for tests')
         cls.account_debit, cls.account_credit = accounts[:2]
 
-    def _create_basic_picking(self, values=None):
+
+    def _create_basic_picking(self, values=None, name='TEST/0002'):
         picking_vals = {
-            'name': 'TEST/0001',
+            'name': name,
             'company_id': self.company.id,
             'picking_type_id': self.picking_type_out.id,
             'location_id': self.location_src.id,
@@ -76,8 +78,8 @@ class TestL10nVeStockAccount(TransactionCase):
         })
 
     def test_compute_guide_number_concatenates_values(self):
-        picking_1 = self._create_basic_picking({'guide_number': 'GUIDE0001'})
-        picking_2 = self._create_basic_picking({'guide_number': 'GUIDE0002'})
+        picking_1 = self._create_basic_picking({'guide_number': 'GUIDE0001'}, name='TEST/0001')
+        picking_2 = self._create_basic_picking({'guide_number': 'GUIDE0002'}, name='TEST/0002')
 
         move = self._create_balanced_move()
         move.write({'picking_ids': [(6, 0, (picking_1 | picking_2).ids)]})
