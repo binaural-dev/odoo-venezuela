@@ -568,6 +568,13 @@ msgstr "Mostrar total en USD en forma libre"
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
+msgid "The accounting date cannot be earlier than the invoice date."
+msgstr "La fecha contable no puede ser anterior a la fecha de la factura."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#, python-format
 msgid ""
 "The correlative must be unique per journal when using a contingency journal"
 msgstr ""
