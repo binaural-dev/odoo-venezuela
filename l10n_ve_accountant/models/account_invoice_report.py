@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 from lxml import etree
+from odoo.tools import SQL
 
 
 class AccountInvoiceReport(models.Model):
@@ -16,7 +17,7 @@ class AccountInvoiceReport(models.Model):
             The id of the foreign currency of the company
 
         """
-        alternate_currency = self.env.company.currency_foreign_id.id
+        alternate_currency = self.env.company.foreign_currency_id.id
         if alternate_currency:
             return alternate_currency
         return False
@@ -57,9 +58,10 @@ class AccountInvoiceReport(models.Model):
             The query with the foreign_rate and foreign_total_billed fields
 
         """
-        return (
-            super()._select()
-            + ", line.foreign_currency_id, line.foreign_rate,  line.foreign_subtotal, line.foreign_price_total"
+        return SQL(
+            "%s, line.foreign_currency_id, line.foreign_rate, "
+            "line.foreign_subtotal, line.foreign_price_total",
+            super()._select(),
         )
 
     @api.model
@@ -74,7 +76,7 @@ class AccountInvoiceReport(models.Model):
 
         """
         res = super().get_view(view_id=view_id, view_type=view_type, **options)
-        foreign_currency_id = self.env.company.currency_foreign_id.id
+        foreign_currency_id = self.env.company.foreign_currency_id.id
         if foreign_currency_id:
             foreign_currency_record = self.env["res.currency"].search(
                 [("id", "=", int(foreign_currency_id))]

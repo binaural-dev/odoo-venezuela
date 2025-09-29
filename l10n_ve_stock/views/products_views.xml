@@ -4,16 +4,16 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_kanban_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@name='product_lst_price']" position="after">
-                <div name="product_lst_price" class="mt-1">
+            <xpath expr="//main[@class='pe-2'][1]/span[1]"  position="after">
+                <span name="product_lst_price" class="mt-1">
                     Price + IVA:
                     <field name="price_with_tax" widget="monetary" options="{'currency_field': 'currency_id', 'field_digits': True}"/>
-                </div>
+                </span>
             </xpath>
         </field>
     </record>
     <record id="product_template_tree_view" model="ir.ui.view">
-        <field name="name">product.template.tree.view.binaural.stock</field>
+        <field name="name">product.template.list.view.binaural.stock</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_tree_view"/>
         <field name="arch" type="xml">

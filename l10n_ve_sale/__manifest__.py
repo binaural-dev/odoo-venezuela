@@ -12,8 +12,7 @@
     "depends": [
         "base",
         "l10n_ve_base",
-        "l10n_ve_tax",
-        "sale_management",
+        "sale",
         "l10n_ve_rate",
         "l10n_ve_contact",
         "l10n_ve_invoice",

@@ -90,7 +90,7 @@ class WizardStockBookReport(models.TransientModel):
                     product_movements[product_id]["outgoing"] += quantity_done
                     product_movements[product_id]["outgoing_total"] += stock_move.value
 
-                if (stock_move.stock_move_id.picking_id and stock_move.stock_move_id.picking_id.transfer_reason_id.code == 'donation') or stock_move.stock_move_id.scrap_ids:
+                if (stock_move.stock_move_id.picking_id and stock_move.stock_move_id.picking_id.transfer_reason_id.code == 'donation'):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["withdraw"] += quantity_done

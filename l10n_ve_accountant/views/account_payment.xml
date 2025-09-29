@@ -4,14 +4,14 @@
         <field name="model">account.payment</field>
         <field name="inherit_id" ref="account.view_account_payment_form" />
         <field name="arch" type="xml">
-            <field name="partner_bank_id" position="after">
+            <!-- <xpath expr="//group[1]/field[@name='ref']" position="after">
+                <field name="concept" />
+            </xpath> -->
+            <xpath expr="//group[2]/field[@name='partner_bank_id'][3]" position="after">
                 <field name="foreign_rate" readonly="state == 'posted'" />
                 <field name="foreign_inverse_rate" invisible="1" />
                 <field name="foreign_inverse_rate" groups="base.group_no_one" />
-            </field>
-            <field name="ref" position="after">
-                <field name="concept" />
-            </field>
+            </xpath>
         </field>
     </record>
     <record id="view_account_payment_search_inherit_l10n_ve_accountant" model="ir.ui.view">

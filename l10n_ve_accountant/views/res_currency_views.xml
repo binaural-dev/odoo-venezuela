@@ -4,9 +4,9 @@
     <field name="model">res.currency</field>
     <field name="inherit_id" ref="base.view_currency_form" />
     <field name="arch" type="xml">
-      <xpath expr="//form[1]/field[1]" position="after">
+      <!-- <xpath expr="//form[1]/field[1]" position="after">
         <field name="edit_rate" invisible="1" />
-      </xpath>
+      </xpath> -->
       <xpath expr="//page[1]/field[1]" position="attributes">
         <attribute name="readonly">not edit_rate</attribute>
       </xpath>

@@ -18,21 +18,3 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.foreign_currency_id",
         readonly=False,
     )
-
-    @api.constrains("foreign_currency_id")
-    def _check_currency_foreign_id(self):
-        self = self.with_company(self.company_id)
-        for rec in self:
-            if "currency_id" in rec._fields and rec.currency_id == rec.foreign_currency_id:
-                raise UserError(
-                    _("The currency foreign must be different from the currency of the company")
-                )
-
-    @api.onchange("foreign_currency_id")
-    def currency_foreign_id_onchange_(self):
-        self = self.with_company(self.company_id)
-        for rec in self:
-            if "currency_id" in rec._fields and rec.currency_id == rec.foreign_currency_id:
-                raise UserError(
-                    _("The currency foreign must be different from the currency of the company")
-                )
