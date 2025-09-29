@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "18.0.0.0.13",
+    "version": "18.0.1.0.0",
     "depends": [
         "base",
         "web",
