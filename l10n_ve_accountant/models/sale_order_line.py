@@ -11,8 +11,9 @@ class SaleOrderLine(models.Model):
         """
         self.ensure_one()
         return self.env['account.tax']._prepare_foreign_base_line_for_taxes_computation(
+            self,
             price_unit=self.foreign_price,
-            tax_ids=self.tax_id,
+            tax_ids=self.tax_ids,
             quantity=self.product_uom_qty,
             partner_id=self.order_id.partner_id,
             currency_id=self.order_id.currency_id or self.order_id.company_id.currency_id,

@@ -101,7 +101,7 @@ class SaleOrder(models.Model):
         for order in self:
             for line in order.order_line:
                 if (
-                    len(line.tax_id) != 1
+                    len(line.tax_ids) != 1
                     and not line.display_type
                     and self.env.company.unique_tax
                 ):
@@ -193,11 +193,10 @@ class SaleOrder(models.Model):
         return res
 
     @api.depends(
-        "order_line.tax_id",
-        "order_line.price_unit",
-        "amount_total",
-        "amount_untaxed",
+        "order_line.price_subtotal",
         "currency_id",
+        "company_id",
+        "payment_term_id",
         "foreign_rate",
     )
     def _compute_tax_totals(self):
@@ -495,7 +494,7 @@ class SaleOrder(models.Model):
                         )
                     )
 
-        self._block_valid_confirm()
+                order._block_valid_confirm()
 
 
         res = super().action_confirm()
