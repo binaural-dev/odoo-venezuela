@@ -14,6 +14,7 @@
         # "report/sale_note_template.xml",
         "data/invoice_free_form_paperformat.xml",
         "report/report_invoice_free_form.xml",
+        "report/report_invoice_free_form_bs.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
