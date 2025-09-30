@@ -139,6 +139,9 @@ class AccountRetentionLine(models.Model):
             if not record.move_id:
                 return {}
 
+            if record.retention_id and record.retention_id.type_retention != 'iva' or not record.retention_id:
+                return
+            
             invoice_id = record.move_id
 
             # Lógica para obtener el monto de retención del partner
@@ -150,6 +153,7 @@ class AccountRetentionLine(models.Model):
             ).mapped("tax_ids")
             
             if not any(tax_ids):
+                
                 return {
                     'warning': {
                         'title': _("Atención"),
@@ -170,7 +174,6 @@ class AccountRetentionLine(models.Model):
                 
                 tax = taxes[0]
                 retention_amount = tax_group["tax_group_amount"] * (withholding_amount / 100)
-                
                 record.name = _("Iva Retention")
                 record.invoice_type = invoice_id.move_type
                 record.move_id = invoice_id.id
@@ -204,16 +207,11 @@ class AccountRetentionLine(models.Model):
                 "iva": _("IVA Retention"),
                 "municipal": _("Municipal Retention"),
             }
-            type_retention = "islr"
-            if record.retention_id.type_retention:
-                type_retention = record.retention_id.type_retention
-            elif record.move_id:
-                if record in record.move_id.retention_iva_line_ids:
-                    type_retention = "iva"
-                elif record in record.move_id.retention_municipal_line_ids:
-                    type_retention = "municipal"
-
-            record.name = names.get(type_retention, _("Retention"))
+            type_retention_key = record.retention_id.type_retention
+            if type_retention_key in names:
+                record.name = names.get(type_retention_key, _("Retention"))
+            else:
+                record.name = _("ISLR Retention")
 
     @api.depends("retention_id", "move_id")
     def _compute_economic_activity_id(self):

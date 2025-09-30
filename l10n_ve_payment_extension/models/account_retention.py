@@ -912,40 +912,41 @@ class AccountRetention(models.Model):
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []
         subtotals_name = invoice_id.tax_totals["subtotals"][0]["name"]
-        tax_groups = zip(
+        tax_groups_data = zip(
             invoice_id.tax_totals["groups_by_subtotal"][subtotals_name],
             invoice_id.tax_totals["groups_by_foreign_subtotal"][subtotals_name],
         )
-        for tax_group, foreign_tax_group in tax_groups:
-            taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["tax_group_id"])
-            if not taxes:
+        for tax_group, foreign_tax_group in tax_groups_data:
+            tax_group_id = tax_group.get("tax_group_id")
+            taxes_in_group = tax_ids.filtered(lambda t: t.tax_group_id.id == tax_group_id)
+            if not taxes_in_group:
                 continue
-            tax = taxes[0]
-            retention_amount = tax_group["tax_group_amount"] * (withholding_amount / 100)
-            line_data = {
-                "name": _("Iva Retention"),
-                "invoice_type": invoice_id.move_type,
-                "move_id": invoice_id.id,
-                "payment_id": payment.id if payment else None,
-                "aliquot": tax.amount,
-                "iva_amount": tax_group["tax_group_amount"],
-                "invoice_total": invoice_id.tax_totals["amount_total"],
-                "related_percentage_tax_base": withholding_amount,
-                "invoice_amount": tax_group["tax_group_base_amount"],
-                "foreign_currency_rate": invoice_id.foreign_rate,
-                "foreign_invoice_amount": foreign_tax_group["tax_group_base_amount"],
-                "foreign_iva_amount": foreign_tax_group["tax_group_amount"],
-                "foreign_invoice_total": invoice_id.tax_totals["foreign_amount_total"],
-            }
-            if invoice_id.move_type == "out_invoice":
-                line_data["retention_amount"] = 0.0
-                line_data["foreign_retention_amount"] = 0.0
-            else:
-                line_data["retention_amount"] = retention_amount
-                line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (
-                    withholding_amount / 100
-                )
-            lines_data.append(line_data)
+            for tax in taxes_in_group:
+                retention_amount = tax_group["tax_group_amount"] * (withholding_amount / 100)
+                line_data = {
+                    "name": _("Iva Retention"),
+                    "invoice_type": invoice_id.move_type,
+                    "move_id": invoice_id.id,
+                    "payment_id": payment.id if payment else None,
+                    "aliquot": tax.amount,
+                    "iva_amount": tax_group["tax_group_amount"],
+                    "invoice_total": invoice_id.tax_totals["amount_total"],
+                    "related_percentage_tax_base": withholding_amount,
+                    "invoice_amount": tax_group["tax_group_base_amount"],
+                    "foreign_currency_rate": invoice_id.foreign_rate,
+                    "foreign_invoice_amount": foreign_tax_group["tax_group_base_amount"],
+                    "foreign_iva_amount": foreign_tax_group["tax_group_amount"],
+                    "foreign_invoice_total": invoice_id.tax_totals["foreign_amount_total"],
+                }
+                if invoice_id.move_type == "out_invoice":
+                    line_data["retention_amount"] = 0.0
+                    line_data["foreign_retention_amount"] = 0.0
+                else:
+                    line_data["retention_amount"] = retention_amount
+                    line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (
+                        withholding_amount / 100
+                    )
+                lines_data.append(line_data)
         return lines_data
 
     def get_signature(self):
