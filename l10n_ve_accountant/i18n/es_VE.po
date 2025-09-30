@@ -1039,8 +1039,8 @@ msgstr "La tasa del pago"
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move_line.py:0
 #, python-format
-msgid "The rate should be greater than zero"
-msgstr "La tasa debe ser superior a cero."
+msgid "The rate of foreingn currency should be greater than zero"
+msgstr "La tasa de la moneda externa debe ser superior a cero."
 
 #. module: l10n_ve_accountant
 #. odoo-python

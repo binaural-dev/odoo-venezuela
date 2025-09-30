@@ -72,9 +72,18 @@ class AccountMoveLine(models.Model):
         help="When setted, this field will be used to fill the foreign credit field",
     )
 
+    
+
     @api.onchange("amount_currency", "currency_id")
     def _inverse_amount_currency(self):
         for line in self:
+
+            if not line.currency_id:
+                raise UserError(_("You must first select a currency"))
+            
+            if not line.foreign_currency_id:
+                raise UserError(_("There is not a foreign currency defined"))
+            
             if (
                 line.currency_id == line.company_id.currency_id
                 and line.balance != line.amount_currency
@@ -108,8 +117,9 @@ class AccountMoveLine(models.Model):
                         / line.move_id.payment_id.foreign_inverse_rate
                     )
                 else:
-                    raise UserError(_("The rate should be greater than zero"))
+                    raise UserError(_("The rate of foreingn currency should be greater than zero"))
 
+ 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
         lines_without_name = self.filtered(lambda l: not l.name)
@@ -553,3 +563,4 @@ class AccountMoveLine(models.Model):
                             'author_id': self.env.user.partner_id.id,
                         })
 
+        return res
