@@ -265,9 +265,10 @@ class AccountMove(models.Model):
     )
     def _compute_amount_residual_igtf(self):
         for record in self:
-            continue
-            # record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
-
+            if record.amount_residual and record.amount_to_pay_igtf:
+                record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
+            else:
+                record.amount_residual_igtf = 0
     @api.depends(
         "bi_igtf",
     )
