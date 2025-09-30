@@ -50,7 +50,6 @@ class AccountMove(models.Model):
         store=True,
         tracking=True,
         readonly=False,
-        readonly=False,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
@@ -58,7 +57,6 @@ class AccountMove(models.Model):
         digits=(16, 15),
         store=True,
         index=True,
-        readonly=False,
         readonly=False,
     )
 
