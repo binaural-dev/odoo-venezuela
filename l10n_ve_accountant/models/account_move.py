@@ -699,15 +699,14 @@ class AccountMove(models.Model):
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
         """
         for rec in self:
-            if rec.invoice_date and rec.foreign_currency_id:
-                rec._compute_rate_for_documents(
-                    rec.filtered(lambda m: m.is_sale_document(include_receipts=True)),
-                    is_sale=True,
-                )
-                rec._compute_rate_for_documents(
-                    rec.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
-                    is_sale=False,
-                )
+            rec._compute_rate_for_documents(
+                rec.filtered(lambda m: m.is_sale_document(include_receipts=True)),
+                is_sale=True,
+            )
+            rec._compute_rate_for_documents(
+                rec.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
+                is_sale=False,
+            )
 
           
     @api.model
