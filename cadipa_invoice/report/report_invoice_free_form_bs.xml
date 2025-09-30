@@ -166,7 +166,7 @@
 
                 <div class="clearfix mb-4">
                     <div id="total" class="row">
-                        <div class="col-6">
+                        <div class="col-6 offset-6">
                             <table class="table table-borderless" style="page-break-inside: avoid;">
                                 <t t-set="tax_totals" t-value="o.tax_totals"/>
                                 <t t-call="cadipa_invoice.document_tax_totals_bsf"/>
@@ -323,7 +323,8 @@
     
                     <div class="clearfix mb-4">
                         <div id="total" class="row">
-                            <div class="col-6">
+                            <div class="col-6 offset-6">
+
                                 <table class="table table-borderless" style="page-break-inside: avoid;">
                                     <t t-set="tax_totals" t-value="o.tax_totals"/>
                                     <t t-call="cadipa_invoice.document_tax_totals_bsf"/>
