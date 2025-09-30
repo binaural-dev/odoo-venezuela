@@ -57,7 +57,7 @@ class SaleOrder(models.Model):
             if order.warehouse_id and order.warehouse_id.is_consignation_warehouse:
                 order.document = "invoice"
 
-    @api.depends("compute_document", "document")
+    @api.depends("compute_document")
     def _compute_document(self):
         for order in self:
             if not order.compute_document:
