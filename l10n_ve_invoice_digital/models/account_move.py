@@ -630,12 +630,12 @@ class AccountMove(models.Model):
 
     def get_additional_information(self):
         additional_information = []
-        for record in self:
-            if record.guide_number:
-                additional_information.append({
-                    "campo": "numeroGuia",
-                    "valor": str(record.guide_number),
-                })
+        # for record in self:
+        #     if record.guide_number:
+        #         additional_information.append({
+        #             "campo": "numeroGuia",
+        #             "valor": str(record.guide_number),
+        #         })
 
         return additional_information
     
