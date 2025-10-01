@@ -2,7 +2,7 @@
     "name": "Cadipa Facturación",
     "summary": """
        Modulo para personalizaciones de facturacion de CADIPA """,
-    "version": "17.0.1.0.5",
+    "version": "17.0.1.0.6",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
@@ -14,6 +14,7 @@
         # "report/sale_note_template.xml",
         "data/invoice_free_form_paperformat.xml",
         "report/report_invoice_free_form.xml",
+        "report/report_invoice_free_form_bs.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
