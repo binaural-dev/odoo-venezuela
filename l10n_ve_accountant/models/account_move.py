@@ -366,6 +366,13 @@ class AccountMove(models.Model):
                 )
         return moves
 
+    @api.onchange("partner_id")
+    def onchange_date(self):
+        for rec in self:
+           if rec.partner_id:
+                rec.invoice_date = fields.Date.today()
+                rec.foreign_currency_id = rec.default_alternate_currency()
+
     def write(self, vals):
         """
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
@@ -695,7 +702,7 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat) if move.partner_id.vat else ''
             move.vat = vat.upper()
 
-    @api.depends("invoice_date","foreign_currency_id")
+    @api.depends("invoice_date","foreign_currency_id","date")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.

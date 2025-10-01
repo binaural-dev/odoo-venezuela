@@ -176,7 +176,9 @@ class AccountMoveLine(models.Model):
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
-            
+            if line.not_foreign_recalculate:
+                continue
+
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 self._calculate_from_adjustment(line)
             elif line.display_type in ("line_section", "line_note"):
@@ -280,10 +282,10 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
         for line in self:
-            if line.foreign_credit and line.foreign_debit:
-                line.foreign_balance = line.foreign_debit - line.foreign_credit
-            else:
-                line.foreign_balance = 0.0
+        
+            line.foreign_balance = line.foreign_debit - line.foreign_credit
+            
+               
 
     def _inverse_foreign_balance(self):
         for line in self:
