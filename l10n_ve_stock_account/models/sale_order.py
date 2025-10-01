@@ -62,7 +62,8 @@ class SaleOrder(models.Model):
         for order in self:
             if not order.compute_document:
                 order.compute_document = order._default_document()
-            order.document = order.compute_document or order._default_document()
+            if order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide'):
+                order.document = order.compute_document or order._default_document()
 
     @api.depends()
     def _compute_show_document(self):
