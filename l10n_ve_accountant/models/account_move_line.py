@@ -50,11 +50,13 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
         store=True,
+        readonly=False
     )
     foreign_credit = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
         store=True,
+        readonly=False
     )
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
