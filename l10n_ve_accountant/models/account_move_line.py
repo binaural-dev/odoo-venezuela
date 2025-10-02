@@ -182,6 +182,7 @@ class AccountMoveLine(models.Model):
             if line.not_foreign_recalculate:
                 if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                     self._calculate_from_adjustment(line)
+                continue
 
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 self._calculate_from_adjustment(line)
