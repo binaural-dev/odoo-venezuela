@@ -272,13 +272,13 @@ class AccountMove(models.Model):
 
                 if old_taxes and set(old_taxes.ids) != set(new_taxes.ids):
                     product = line.product_id.display_name
-                    old_taxes = lines_before.get(line.id).display_name if line.id in lines_before else ""
+                    old_taxes_display = lines_before.get(line.id).display_name if line.id in lines_before else ""
 
                     changes.append(
                         f"""
                             <li>
                                 <b>{product}</b><br/>
-                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes} ⟶</i></span>
+                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes_display} ⟶</i></span>
                                 <span style="color:#007BFF;"><i>{new_taxes.display_name}</i></span>
                             </li>
                         """
