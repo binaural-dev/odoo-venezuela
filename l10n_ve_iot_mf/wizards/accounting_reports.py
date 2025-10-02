@@ -10,15 +10,39 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     with_fiscal_machine = fields.Boolean(default=False)
 
+    #override
     def _get_domain(self):
-        res = super()._get_domain()
+        search_domain = []
+        is_purchase = self.report == "purchase"
+
+        search_domain += [("company_id", "=", self.company_id.id)]
+
+        move_type = (
+            ["out_invoice", "out_refund"]
+            if not is_purchase
+            else ["in_invoice", "in_refund", "in_debit"]
+        )
+
+        search_domain += [("date", ">=", self.date_from)]
+        search_domain += [("date", "<=", self.date_to)]
+        
         if not self.with_fiscal_machine:
-            return res
-        res = [d for d in res if d != ('correlative', 'not in', ['/', False])]
-        res.append(("mf_invoice_number", "!=", False))
-        res.append(("mf_reportz", "!=", False))
-        res.append(("mf_serial", "!=", False))
-        return res
+            search_domain += [
+                ("state", "in", ("posted", "cancel")),
+                ("move_type", "in", move_type),
+                "|",
+                ("correlative", "not in", ['/', False]),
+                "&",
+                ("mf_invoice_number", "!=", False),
+                ("mf_reportz", "!=", False),
+                ("mf_serial", "!=", False),
+            ]
+            return search_domain
+
+        search_domain.append(("mf_invoice_number", "!=", False))
+        search_domain.append(("mf_reportz", "!=", False))
+        search_domain.append(("mf_serial", "!=", False))
+        return search_domain
 
     def search_moves(self):
         if not self.with_fiscal_machine:

@@ -373,6 +373,8 @@ class AccountMove(models.Model):
             if payment_forms:
                 if len(payment_forms) > 5:
                     raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
+                if any(not method.get('forma') for method in payment_forms):
+                    raise ValidationError(_("The payment method code is not configured in the journal."))
                 totals["formasPago"] = payment_forms
 
             if amounts_foreign:
@@ -599,11 +601,11 @@ class AccountMove(models.Model):
     def build_payment_info(self, payment):
         payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
         currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
-        payment_method_code = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else "03"
+        payment_method = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else False
         payment_info = {
-            "descripcion": payment_id.concept if payment_id.concept else "N/A",
+            "descripcion": payment_method.description if payment_method else "",
             "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
-            "forma": payment_method_code,
+            "forma": payment_method.code if payment_method else "",
             "monto": str(round(payment_id.amount, 2)),
             "moneda": currency,
         }

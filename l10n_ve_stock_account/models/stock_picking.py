@@ -1,4 +1,3 @@
-from odoo.exceptions import UserError
 import logging
 
 from odoo import _, api, fields, models
@@ -63,8 +62,6 @@ class StockPicking(models.Model):
         help="Technical field to check if the related sale order has a document.",
     )
 
-    document = fields.Selection(related="sale_id.document")
-
     transfer_reason_id = fields.Many2one(
         "transfer.reason",
         string="Reason for Transfer",
@@ -88,7 +85,6 @@ class StockPicking(models.Model):
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
-        default=True,
         tracking=True,
         store=True,
         readonly=False,
@@ -916,6 +912,11 @@ class StockPicking(models.Model):
             "l10n_ve_stock_account.transfer_reason_consignment",
             raise_if_not_found=False,
         )
+
+        other_causes_reason =  self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_other_causes",
+            raise_if_not_found=False,
+        )
         
         for picking in self:
 
@@ -926,10 +927,11 @@ class StockPicking(models.Model):
 
             elif (
                 picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id
+                and picking.transfer_reason_id.id == consignment_reason.id or picking.transfer_reason_id.id == other_causes_reason.id
             ):
                 picking.is_dispatch_guide = True
-           
+
+          
 
     @api.depends(
         "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
