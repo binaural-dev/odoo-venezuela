@@ -171,6 +171,7 @@ class AccountMoveLine(models.Model):
         "foreign_subtotal",
         "foreign_balance",
         "amount_currency",
+        "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
     )
@@ -179,6 +180,10 @@ class AccountMoveLine(models.Model):
             
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 self._calculate_from_adjustment(line)
+                
+            if line.not_foreign_recalculate:
+                continue
+
             elif line.display_type in ("line_section", "line_note"):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
