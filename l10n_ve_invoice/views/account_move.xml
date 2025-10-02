@@ -186,7 +186,7 @@
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/tree//field[@name='tax_ids']" position="before">
                 <field name="tax_ids" readonly="1" widget="many2many_tags" groups="!l10n_ve_invoice.group_edit_invoice_tax_ids"/>
-            </xpath>        
+            </xpath>
         </field>
     </record>
 
