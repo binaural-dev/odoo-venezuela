@@ -24,12 +24,6 @@ class TestAccountMove(TransactionCase):
             }
         )
 
-        self.tax_iva16 = self.env['account.tax'].create({
-            'name': 'IVA 16%',
-            'amount': 16,
-            'amount_type': 'percent',
-            'type_tax_use': 'sale',
-        })
         self.tax_iva16 = self.env["account.tax"].create(
             {
                 "name": "IVA 16%",
