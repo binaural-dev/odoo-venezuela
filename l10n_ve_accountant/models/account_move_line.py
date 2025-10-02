@@ -177,13 +177,14 @@ class AccountMoveLine(models.Model):
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
+            if line.not_foreign_recalculate:
+                if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
+                    self._calculate_from_adjustment(line)
 
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 self._calculate_from_adjustment(line)
-                
-            if line.not_foreign_recalculate:
-                continue
 
+             
             elif line.display_type in ("line_section", "line_note"):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
@@ -202,10 +203,13 @@ class AccountMoveLine(models.Model):
     def _calculate_from_adjustment(self, line):
         new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
         if line.foreign_debit != new_foreign_debit:
+
             line.foreign_debit = new_foreign_debit
 
         new_foreign_credit = abs(line.foreign_credit_adjustment) if line.foreign_credit_adjustment else 0.0
+
         if line.foreign_credit != new_foreign_credit:
+
             line.foreign_credit = new_foreign_credit
 
     def _calculate_zero(self, line):
