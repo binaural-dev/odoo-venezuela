@@ -75,9 +75,8 @@ class AccountMoveRetention(models.Model):
             if move.retention_islr_line_ids and not move.islr_voucher_number:
                 move._validate_islr_retention()
                 retention = move._create_supplier_retention("islr")
-                
-                move.islr_voucher_number = retention.number
                 retention.action_post()
+                move.islr_voucher_number = retention.number
 
             if move.retention_municipal_line_ids:
                 move._validate_municipal_retention()
@@ -92,8 +91,8 @@ class AccountMoveRetention(models.Model):
             ):
                 move._validate_iva_retention()
                 retention = move._create_supplier_retention("iva")
-                move.iva_voucher_number = retention.number
                 retention.action_post()
+                move.iva_voucher_number = retention.number
         return res
 
     def _validate_islr_retention(self):
