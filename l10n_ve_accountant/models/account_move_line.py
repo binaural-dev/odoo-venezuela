@@ -50,11 +50,13 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
         store=True,
+        readonly=False
     )
     foreign_credit = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
         store=True,
+        readonly=False
     )
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
@@ -171,14 +173,21 @@ class AccountMoveLine(models.Model):
         "foreign_subtotal",
         "foreign_balance",
         "amount_currency",
+        "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
-            
+            if line.not_foreign_recalculate:
+                if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
+                    self._calculate_from_adjustment(line)
+                continue
+
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 self._calculate_from_adjustment(line)
+
+             
             elif line.display_type in ("line_section", "line_note"):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
@@ -197,10 +206,13 @@ class AccountMoveLine(models.Model):
     def _calculate_from_adjustment(self, line):
         new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
         if line.foreign_debit != new_foreign_debit:
+
             line.foreign_debit = new_foreign_debit
 
         new_foreign_credit = abs(line.foreign_credit_adjustment) if line.foreign_credit_adjustment else 0.0
+
         if line.foreign_credit != new_foreign_credit:
+
             line.foreign_credit = new_foreign_credit
 
     def _calculate_zero(self, line):
@@ -280,10 +292,10 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
         for line in self:
-            if line.foreign_credit and line.foreign_debit:
-                line.foreign_balance = line.foreign_debit - line.foreign_credit
-            else:
-                line.foreign_balance = 0.0
+        
+            line.foreign_balance = line.foreign_debit - line.foreign_credit
+            
+               
 
     def _inverse_foreign_balance(self):
         for line in self:
