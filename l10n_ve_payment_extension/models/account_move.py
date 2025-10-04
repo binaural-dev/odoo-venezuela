@@ -63,6 +63,19 @@ class AccountMoveRetention(models.Model):
                 "base.VEF"
             )
 
+    def write(self, vals):
+        """
+        Override the write method to recalculate municipal retentions if the invoice lines change.
+        """
+        res = super(AccountMoveRetention, self).write(vals)
+        if 'invoice_line_ids' in vals:
+            for move in self:
+                if move.move_type in ('in_invoice', 'in_refund') and move.retention_municipal_line_ids:
+                    for line in move.retention_municipal_line_ids:
+                        line.onchange_economic_activity_id()
+        return res
+
+
     def action_post(self):
         """
         Override the action_post method to create the retentions payment.
