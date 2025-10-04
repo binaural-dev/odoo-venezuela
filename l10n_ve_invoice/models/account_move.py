@@ -40,13 +40,6 @@ class AccountMove(models.Model):
                 if not from_pos:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
-    @api.onchange("move_type")
-    def _onchange_move_type(self):
-        if self.move_type == "out_invoice":
-            self.invoice_date = False
-        elif not self.invoice_date:
-            self.invoice_date = fields.Date.today()
-
     def action_post(self):
         for record in self:
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
@@ -251,3 +244,50 @@ class AccountMove(models.Model):
         for picking in self:
             action = picking.env.ref('account_debit_note.action_view_account_move_debit').read()[0]
         return action
+    
+    def write(self, vals):
+        lines_before = {
+            line.id: line.tax_ids
+            for move in self
+            for line in move.invoice_line_ids
+        }
+
+        res = super().write(vals)
+
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+
+            changes = []
+            for line in move.invoice_line_ids:
+                old_taxes = lines_before.get(line.id)
+                new_taxes = line.tax_ids
+
+                if old_taxes and set(old_taxes.ids) != set(new_taxes.ids):
+                    product = line.product_id.display_name
+                    old_taxes_display = lines_before.get(line.id).display_name if line.id in lines_before else ""
+
+                    changes.append(
+                        f"""
+                            <li>
+                                <b>{product}</b><br/>
+                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes_display} ⟶</i></span>
+                                <span style="color:#007BFF;"><i>{new_taxes.display_name}</i></span>
+                            </li>
+                        """
+                    )
+
+            if changes:
+                move.message_post(
+                    body=_(
+                        """
+                        <div>
+                            <ul>%s</ul>
+                        </div>
+                        """
+                    ) % "".join(changes),
+                    message_type='notification',
+                    body_is_html=True
+                )
+
+        return res
