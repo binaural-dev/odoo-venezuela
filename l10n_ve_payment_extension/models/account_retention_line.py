@@ -134,15 +134,7 @@ class AccountRetentionLine(models.Model):
                 "iva": _("IVA Retention"),
                 "municipal": _("Municipal Retention"),
             }
-            type_retention = "islr"
-            if record.retention_id.type_retention:
-                type_retention = record.retention_id.type_retention
-            elif record.move_id:
-                if record in record.move_id.retention_iva_line_ids:
-                    type_retention = "iva"
-                elif record in record.move_id.retention_municipal_line_ids:
-                    type_retention = "municipal"
-
+            type_retention = record.retention_id.type_retention or self.env.context.get("type")
             record.name = names.get(type_retention, _("Retention"))
 
     @api.depends("retention_id", "move_id")
