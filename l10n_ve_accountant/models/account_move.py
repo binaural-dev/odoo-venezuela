@@ -791,7 +791,7 @@ class AccountMove(models.Model):
         for move in documents:
             if move.manually_set_rate:
                 continue
-            date_field = "invoice_date" if is_sale else "date"
+            date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
