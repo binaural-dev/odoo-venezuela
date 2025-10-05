@@ -230,7 +230,7 @@ class AccountRetentionLine(models.Model):
         return super().unlink()
 
     @api.onchange("payment_concept_id")
-    @api.depends("payment_concept_id", "move_id")
+    @api.depends("payment_concept_id", "move_id", "move_id.tax_totals", "foreign_invoice_amount")
     def _compute_related_fields(self):
         """
         This compute is used to get the related fields from the payment concept of the partner
@@ -362,8 +362,12 @@ class AccountRetentionLine(models.Model):
         """
         for record in self.filtered(
             lambda l: (not l.retention_id and l.economic_activity_id)
-            or l.retention_id.type_retention == "municipal"
+            or (l.retention_id and l.retention_id.type_retention == "municipal")
         ):
+            if record.move_id:
+                record.invoice_amount = record.move_id.tax_totals.get("amount_untaxed", 0.0)
+                record.foreign_invoice_amount = record.move_id.tax_totals.get("foreign_amount_untaxed", 0.0)
+
             record.retention_amount = record.invoice_amount * record.aliquot / 100
             record.foreign_retention_amount = record.foreign_invoice_amount * record.aliquot / 100
 
