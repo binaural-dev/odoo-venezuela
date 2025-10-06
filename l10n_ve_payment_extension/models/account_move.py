@@ -125,7 +125,6 @@ class AccountMoveRetention(models.Model):
             if (
                 move.generate_iva_retention
                 and not move.retention_iva_line_ids.filtered(lambda l: l.state != "cancel")
-                and move.retention_iva_line_ids.filtered(lambda l: l.state != "emitted")
             ):
                 move._validate_iva_retention()
                 retention = move._create_supplier_retention("iva")
