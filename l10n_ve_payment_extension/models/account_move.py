@@ -6,7 +6,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-class AccountMoveRetention(models.Model):
+class AccountRetention(models.Model):
     _inherit = "account.move"
 
     base_currency_is_vef = fields.Boolean(
@@ -303,8 +303,8 @@ class AccountMoveRetention(models.Model):
         return True
 
     @api.model
-    def _compute_rate_for_documents(self, documents, is_sale):
-        res = super()._compute_rate_for_documents(documents, is_sale)
+    def _compute_rate_for_documents(self):
+        res = super()._compute_rate_for_documents()
         for move in documents:
             if move.payment_id.is_retention:
                 move.foreign_rate = move.payment_id.foreign_rate
