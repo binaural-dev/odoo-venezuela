@@ -74,3 +74,13 @@ msgid ""
 msgstr ""
 "<i class=\"fa fa-exclamation-triangle me-2 text-warning\"/>\n"
 "                                                    No puedes agregar más afiliados"
+
+#. module: binaural_memberships
+#: model:ir.model.fields,field_description:binaural_memberships.field_membership_type_plan__family_limit_per_user
+msgid "Family Limit Per User"
+msgstr "Límite de afiliados por usuario"
+
+#. module: binaural_memberships
+#: model_terms:ir.ui.view,arch_db:binaural_memberships.portal_memberships
+msgid "<i class=\"fa fa-save me-1\"/> Save family member"
+msgstr "<i class=\"fa fa-save me-1\"/> Guardar afiliado"
