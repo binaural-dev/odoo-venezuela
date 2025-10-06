@@ -314,7 +314,6 @@ patch(Order.prototype, {
           continue;
         }
         
-        console.log("AKDASD PRODUCT", this.pos.config.allow_sales_on_order );
         if (this.pos.config.allow_sales_on_order && prd.pos_sale_on_order){
           allow_sales_on_order = true
         }
