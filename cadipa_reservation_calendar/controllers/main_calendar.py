@@ -171,13 +171,6 @@ class MainCalendar(http.Controller):
                 "payment_state": reservation.invoice_ids[0].payment_state,
             }
         partner_id = {"id": reservation.partner_id.id, "name": reservation.partner_id.name}
-        # se comenta en caso de que en un futuro se quiera evitar mostrar el partner principal como originalmente hacia
-        # ya que el flujo de reservas ha cambiado con el tiempo y el partner principal que se llena al parecer es el que quiere reservar
-        # if reservation.partner_ids:
-        #     for partner in reservation.partner_ids.filtered(
-        #         lambda p: p.id != reservation.partner_id.id
-        #     ):
-        #         partner_id = {"id": partner.id, "name": partner.name}
         start_time_12h = reservation.start.astimezone(pytz.timezone(request.env.user.tz)).strftime(
             "%I:%M %p"
         )
