@@ -1224,4 +1224,3 @@ class StockPicking(models.Model):
         
         return res
 
-

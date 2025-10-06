@@ -283,3 +283,10 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__unique_tax
 msgid "Unique Tax"
 msgstr "Impuesto único"
+
+#. module: l10n_ve_tax
+#. odoo-javascript
+#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
+#, python-format
+msgid "Total to pay"
+msgstr "Total a pagar"

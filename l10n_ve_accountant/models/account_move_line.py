@@ -58,6 +58,10 @@ class AccountMoveLine(models.Model):
         store=True,
         readonly=False
     )
+
+    total_foreign_debit = fields.Float()
+    total_foreign_credit = fields.Float()
+
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_balance",
@@ -73,6 +77,14 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign credit field",
     )
+    # @api.depends("foreign_debit", "foreign_credit")
+    def get_total_foreign_debit_credit(self,foreign_credit,foreign_debit):
+        for line in self:
+            line.total_foreign_debit += foreign_debit
+            line.total_foreign_credit += foreign_credit
+            _logger.info(f"omarrr {line.total_foreign_debit}")
+
+            _logger.info(f"daniii {line.total_foreign_credit}")
 
     
 
@@ -110,18 +122,16 @@ class AccountMoveLine(models.Model):
                 and not line.move_id.is_invoice(True)
                 and line.move_id.payment_id
             ):
-                if (
-                    line.move_id.payment_id.foreign_inverse_rate != 0
-                    and line.amount_currency != 0
-                ):
-                    line.balance = line.company_id.currency_id.round(
-                        line.amount_currency
-                        / line.move_id.payment_id.foreign_inverse_rate
-                    )
-                else:
-                    raise UserError(_("The rate of foreingn currency should be greater than zero"))
+                if line.amount_currency == 0:
+                    return
 
- 
+                if line.move_id.payment_id.foreign_inverse_rate <= 0:
+                    raise UserError(_("The rate should be greater than zero"))
+
+                line.balance = line.company_id.currency_id.round(
+                    line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
+                )
+
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
         lines_without_name = self.filtered(lambda l: not l.name)
@@ -178,16 +188,17 @@ class AccountMoveLine(models.Model):
         "foreign_credit_adjustment",
     )
     def _compute_foreign_debit_credit(self):
+        foreign_debit = 0.0
+        foreign_credit = 0.0
         for line in self:
-            if line.not_foreign_recalculate:
-                if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
-                    self._calculate_from_adjustment(line)
-                continue
-
+            _logger.info(f"line.amount_currency === {line.amount_currency}")
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 self._calculate_from_adjustment(line)
+                continue
 
-             
+            if line.not_foreign_recalculate:
+                continue
+
             elif line.display_type in ("line_section", "line_note"):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
@@ -206,13 +217,10 @@ class AccountMoveLine(models.Model):
     def _calculate_from_adjustment(self, line):
         new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
         if line.foreign_debit != new_foreign_debit:
-
             line.foreign_debit = new_foreign_debit
 
         new_foreign_credit = abs(line.foreign_credit_adjustment) if line.foreign_credit_adjustment else 0.0
-
         if line.foreign_credit != new_foreign_credit:
-
             line.foreign_credit = new_foreign_credit
 
     def _calculate_zero(self, line):
@@ -255,6 +263,9 @@ class AccountMoveLine(models.Model):
             line.foreign_credit = new_foreign_credit
 
     def _calculate_for_non_invoice(self, line):
+        line.total_foreign_debit = 0.00
+        line.total_foreign_credit = 0.00
+
         foreign_lines = line.move_id.line_ids.filtered(
             lambda l: l.currency_id == l.company_id.currency_foreign_id
         )
@@ -271,7 +282,10 @@ class AccountMoveLine(models.Model):
         else:
             new_foreign_debit = line.debit * line.foreign_inverse_rate
             new_foreign_credit = line.credit * line.foreign_inverse_rate
-        
+
+            line.total_foreign_debit += new_foreign_debit
+            line.total_foreign_credit += new_foreign_credit
+
         if line.foreign_debit != new_foreign_debit:
             line.foreign_debit = new_foreign_debit
         if line.foreign_credit != new_foreign_credit:
@@ -292,10 +306,7 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
         for line in self:
-        
             line.foreign_balance = line.foreign_debit - line.foreign_credit
-            
-               
 
     def _inverse_foreign_balance(self):
         for line in self:
@@ -305,19 +316,6 @@ class AccountMoveLine(models.Model):
             line.foreign_credit = (
                 abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
             )
-
-    # @api.depends("foreign_rate", "balance")
-    # def _compute_amount_currency(self):
-    #     _logger.warning(
-    #         "Source code: %s", inspect.getsource(super()_compute_amount_currency)
-    #     )
-    #     res = super()._compute_amount_currency()
-    #     # for line in self:
-    #     #     if line.amount_currency is False:
-    #     #         line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
-    #     #     if line.currency_id == line.company_id.currency_id:
-    #     #         line.amount_currency = line.balance
-    #     return res
 
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
@@ -407,6 +405,9 @@ class AccountMoveLine(models.Model):
                 amount_currency
             ):
                 return abs(amount_currency / balance)
+            
+            return 1.0
+        
 
         aml = aml_values["aml"]
         other_aml = (other_aml_values or {}).get("aml")

@@ -133,6 +133,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         :return: A list of ids of the created payments.
         """
         to_process[0]["create_vals"]["igtf_amount"] = self.igtf_amount
+        to_process[0]["create_vals"]["payment_from_wizard"] = True
         to_process[0]["create_vals"]["igtf_percentage"] = self.igtf_percentage
         to_process[0]["create_vals"][
             "is_igtf_on_foreign_exchange"

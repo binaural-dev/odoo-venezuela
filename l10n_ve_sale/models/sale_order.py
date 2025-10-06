@@ -257,7 +257,7 @@ class SaleOrder(models.Model):
 
     def _get_invoiceable_lines(self, final=False):
         if self._context.get("ignore_limit", False):
-            return super()._get_invoiceable_lines(final)
+            res = super()._get_invoiceable_lines(final)
 
         res = super()._get_invoiceable_lines(final)
         limit = self.company_id.max_product_invoice

@@ -95,6 +95,14 @@
                     sum="Total Foreign Debit"
                     readonly="1"
                     force_save="1"
+<<<<<<< HEAD
+=======
+                />
+                <field
+                    name="total_foreign_debit"
+                    optional="show"
+                    readonly="1"
+>>>>>>> origin/update_homo_stg_siseca
                 />
                 <field
                     name="foreign_credit"
