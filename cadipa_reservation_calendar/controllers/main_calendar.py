@@ -10,6 +10,8 @@ from odoo import _, http, fields
 from odoo.http import request
 from odoo.osv import expression
 
+import logging
+_logger = logging.getLogger(__name__)
 
 FIELDSRESERVATION = ["name", "product_id"]
 FIELDSRESERVATIONMADE = [
@@ -158,6 +160,9 @@ class MainCalendar(http.Controller):
     def _info_partner_with_reservation(self, reservation):
         partner_id = {}
         invoice = {}
+        if not reservation:
+            return False
+        
         if reservation.invoice_ids:
             invoice = {
                 "id": reservation.invoice_ids[0].id,
@@ -165,11 +170,14 @@ class MainCalendar(http.Controller):
                 "state": reservation.invoice_ids[0].state,
                 "payment_state": reservation.invoice_ids[0].payment_state,
             }
-        if reservation.partner_ids:
-            for partner in reservation.partner_ids.filtered(
-                lambda p: p.id != reservation.partner_id.id
-            ):
-                partner_id = {"id": partner.id, "name": partner.name}
+        partner_id = {"id": reservation.partner_id.id, "name": reservation.partner_id.name}
+        # se comenta en caso de que en un futuro se quiera evitar mostrar el partner principal como originalmente hacia
+        # ya que el flujo de reservas ha cambiado con el tiempo y el partner principal que se llena al parecer es el que quiere reservar
+        # if reservation.partner_ids:
+        #     for partner in reservation.partner_ids.filtered(
+        #         lambda p: p.id != reservation.partner_id.id
+        #     ):
+        #         partner_id = {"id": partner.id, "name": partner.name}
         start_time_12h = reservation.start.astimezone(pytz.timezone(request.env.user.tz)).strftime(
             "%I:%M %p"
         )
