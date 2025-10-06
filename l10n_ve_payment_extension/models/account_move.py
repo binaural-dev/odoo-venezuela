@@ -68,7 +68,7 @@ class AccountRetention(models.Model):
         """
         Override the write method to recalculate municipal retentions if the invoice lines change.
         """
-        res = super(AccountMoveRetention, self).write(vals)
+        res = super().write(vals)
         if "invoice_line_ids" in vals:
             for move in self:
                 if (
