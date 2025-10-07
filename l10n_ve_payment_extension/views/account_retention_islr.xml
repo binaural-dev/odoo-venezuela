@@ -8,7 +8,7 @@
             <field name="model">account.retention</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
-                <form string="Retention">
+                <form string="Retention" duplicate="false">
                     <header>
                         <button name="action_draft" type="object"
                             string="Convert to draft"

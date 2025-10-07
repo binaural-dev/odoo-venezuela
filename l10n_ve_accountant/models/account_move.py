@@ -15,10 +15,75 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     _sql_constraints = [
-        ('unique_name_move_type_company',
-         'unique (name, move_type, company_id)',
-         'Another entry of the same type and with the same name already exists in this company.'),
+        (
+            "unique_name",
+            "",
+            "Another entry with the same name already exists.",
+        ),
+        (
+            "unique_name_ve",
+            "",
+            "Another entry with the same name already exists.",
+        ),
     ]
+    
+    def _auto_init(self):
+        res = super()._auto_init()
+        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
+            drop_index(self.env.cr, "account_move_unique_name", self._table)
+            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
+            # we can add the following UNIQUE INDEX
+            self.env.cr.execute(
+                """
+                WITH duplicated_sequence AS (
+                    SELECT name, partner_id, state, journal_id
+                    FROM account_move
+                    WHERE state = 'posted'
+                    AND name != '/'
+                    AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
+                GROUP BY partner_id, journal_id, name, state
+                    HAVING COUNT(*) > 1
+                ),
+                to_update AS (
+                    SELECT move.id,
+                        move.name,
+                        move.state,
+                        move.date,
+                        row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
+                        FROM duplicated_sequence
+                        JOIN account_move move ON move.name = duplicated_sequence.name
+                                            AND move.partner_id = duplicated_sequence.partner_id
+                                            AND move.state = duplicated_sequence.state
+                                            AND move.journal_id = duplicated_sequence.journal_id
+                ),
+                new_vals AS (
+                    SELECT id,
+                            name || ' (' || (row_seq-1)::text || ')' AS name
+                        FROM to_update
+                        WHERE row_seq > 1
+                )
+                UPDATE account_move
+                SET name = new_vals.name
+                FROM new_vals
+                WHERE account_move.id = new_vals.id;
+            """
+            )
+
+            self.env.cr.execute(
+                """
+                CREATE UNIQUE INDEX account_move_unique_name
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+                CREATE UNIQUE INDEX account_move_unique_name_ve
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+            """
+            )
+        return res
 
     def _get_fields_to_compute_lines(self):
         return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
@@ -364,6 +429,13 @@ class AccountMove(models.Model):
                 )
         return moves
 
+    @api.onchange("partner_id")
+    def onchange_date(self):
+        for rec in self:
+           if rec.partner_id:
+                rec.invoice_date = fields.Date.today()
+                rec.foreign_currency_id = rec.default_alternate_currency()
+
     def write(self, vals):
         """
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
@@ -693,21 +765,20 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat) if move.partner_id.vat else ''
             move.vat = vat.upper()
 
-    @api.depends("invoice_date","foreign_currency_id")
+    @api.depends("invoice_date","foreign_currency_id","date")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
         """
         for rec in self:
-            if rec.invoice_date and rec.foreign_currency_id:
-                rec._compute_rate_for_documents(
-                    rec.filtered(lambda m: m.is_sale_document(include_receipts=True)),
-                    is_sale=True,
-                )
-                rec._compute_rate_for_documents(
-                    rec.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
-                    is_sale=False,
-                )
+            rec._compute_rate_for_documents(
+                rec.filtered(lambda m: m.is_sale_document(include_receipts=True)),
+                is_sale=True,
+            )
+            rec._compute_rate_for_documents(
+                rec.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
+                is_sale=False,
+            )
 
           
     @api.model
@@ -720,7 +791,7 @@ class AccountMove(models.Model):
         for move in documents:
             if move.manually_set_rate:
                 continue
-            date_field = "invoice_date" if is_sale else "date"
+            date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
