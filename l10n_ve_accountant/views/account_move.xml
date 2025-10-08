@@ -95,11 +95,6 @@
                     readonly="1"
                 />
                 <field
-                    name="total_foreign_debit"
-                    optional="show"
-                    readonly="1"
-                />
-                <field
                     name="foreign_credit"
                     optional="show"
                     sum="Total Foreign Credit"
