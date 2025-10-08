@@ -976,7 +976,6 @@ class AccountMove(models.Model):
 
             move.foreign_debit = float_round(sum(move.line_ids.mapped("foreign_debit")), precision_digits=precision)
             move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit")), precision_digits=precision)
-            _logger.info(f"Foreign Debit: {move.foreign_debit}, Foreign Credit: {float_round(sum(move.line_ids.mapped('foreign_credit_no_format')),precision_digits=precision)}, Precision: {precision}")
             if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
                 move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit_no_format")), precision_digits=precision)
                 if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
