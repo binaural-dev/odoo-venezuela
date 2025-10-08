@@ -113,6 +113,7 @@ class AccountMove(models.Model):
 
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
+
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         context = self.with_context(active_test=False)
@@ -121,8 +122,8 @@ class AccountMove(models.Model):
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
         for move in self:
-            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
-            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
+            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
+            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
             move.foreign_balance = move.foreign_debit - move.foreign_credit
 
 
@@ -969,6 +970,16 @@ class AccountMove(models.Model):
                             round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
+        for move in self:
+
+            precision = move.currency_id.decimal_places if move.currency_id else 2
+
+            move.foreign_debit = float_round(sum(move.line_ids.mapped("foreign_debit")), precision_digits=precision)
+            move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit_no_format")), precision_digits=precision)
+            _logger.info(f"Foreign Debit: {move.foreign_debit}, Foreign Credit: {float_round(sum(move.line_ids.mapped('foreign_credit_no_format')),precision_digits=precision)}, Precision: {precision}")
+            # if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
+            #     raise UserError(_("Your transaction cannot be processed because the debit must match the credit."))
+            
         return super().action_post()
 
     @api.depends(

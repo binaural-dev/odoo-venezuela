@@ -55,6 +55,10 @@ class AccountMoveLine(models.Model):
         compute="_compute_foreign_debit_credit",
         store=True,
     )
+
+    foreign_debit_no_format = fields.Float()
+    foreign_credit_no_format = fields.Float()
+
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_balance",
@@ -70,8 +74,6 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign credit field",
     )
-
-    
 
     @api.onchange("amount_currency", "currency_id")
     def _inverse_amount_currency(self):
@@ -205,6 +207,7 @@ class AccountMoveLine(models.Model):
                 line.currency_id == line.company_id.currency_foreign_id
                 and line.amount_currency
             ):
+                
                 line.foreign_debit = (
                     abs(line.amount_currency) if line.amount_currency > 0 else 0.0
                 )
@@ -232,6 +235,7 @@ class AccountMoveLine(models.Model):
                     continue
 
             if not line.move_id.is_invoice(include_receipts=True):
+
                 # 6 Case: Not Invoice
                 # In this case, we need to calculate the foreign debit and credit with rate
                 foreign_lines = line.move_id.line_ids.filtered(
@@ -246,9 +250,16 @@ class AccountMoveLine(models.Model):
                     line.foreign_debit = abs(balance) if balance < 0 else 0.0
                     line.foreign_credit = abs(balance) if balance > 0 else 0.0
                     continue
-
+                
+                line_foreign_debit = line.debit * line.foreign_inverse_rate
+                line_foreign_credit = line.credit * line.foreign_inverse_rate
+                foreign_credit += line_foreign_credit
+                foreign_debit += line_foreign_debit
+                line.foreign_debit_no_format = line_foreign_debit
+                line.foreign_credit_no_format = line_foreign_credit
                 line.foreign_debit = line.debit * line.foreign_inverse_rate
                 line.foreign_credit = line.credit * line.foreign_inverse_rate
+
                 continue
 
             if line.display_type == "product":

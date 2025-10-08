@@ -30,6 +30,8 @@
 		<field name="foreign_credit" readonly="1" optional="show" sum="Total Foreign Credit"/>
 		<field name="foreign_credit_adjustment" optional="hide" />
 		<field name="foreign_balance" readonly="1" optional="hide"/>
+                    
+
 	    </xpath>
         </field>
     </record>
