@@ -152,8 +152,7 @@ class AccountRetentionLine(models.Model):
             record.payment_id.unlink()
         return super().unlink()
 
-    @api.onchange("payment_concept_id")
-    @api.depends("payment_concept_id", "move_id", "move_id.tax_totals")
+    @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
         """
         This compute is used to get the related fields from the payment concept of the partner
@@ -163,6 +162,10 @@ class AccountRetentionLine(models.Model):
             lambda l: l.payment_concept_id
             and (not l.retention_id or l.retention_id.type_retention == "islr")
         )
+        islr_len = len(self.move_id.retention_islr_line_ids)
+
+        municipal_len = len(self.move_id.retention_municipal_line_ids)
+
         for record in lines_from_islr_retention:
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
@@ -184,10 +187,16 @@ class AccountRetentionLine(models.Model):
                     if not record.retention_id or record.retention_id.type == "in_invoice":
                         # We don't want this fields to be computed when the retention is
                         # created from a customer invoice since they are filled by the user.
-                        record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
-                        record.foreign_invoice_amount = record.move_id.tax_totals[
-                            "foreign_amount_untaxed"
-                        ]
+                        record.invoice_amount = (
+                            record.move_id.tax_totals["amount_untaxed"]
+                            if (islr_len == 1 and municipal_len == 1)
+                            else record.invoice_amount or 0
+                        )
+                        record.foreign_invoice_amount = (
+                            record.move_id.tax_totals["foreign_amount_untaxed"]
+                            if (islr_len == 1 and municipal_len == 1)
+                            else record.foreign_invoice_amount or 0
+                        )
 
     @api.depends("invoice_amount", "foreign_invoice_amount")
     def _compute_amounts(self):
