@@ -92,6 +92,7 @@ class AccountRetention(models.Model):
         "Voucher Date",
         states={"draft": [("readonly", False)]},
         help="Date of issuance of the withholding voucher by the external party.",
+        default=fields.Date.context_today,
     )
     date_accounting = fields.Date(
         "Accounting Date",
