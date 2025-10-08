@@ -488,14 +488,16 @@ class AccountRetention(models.Model):
         set of retention lines that have the same invoice.
         """
         for retention in self:
-            if any(retention.payment_ids) or retention.type_retention != "iva":
-                continue
+            
+            journal_id, currency_id = self._get_journal_and_currency(retention.type_retention ,retention.type)
+
             payment_vals = {
                 "retention_id": retention.id,
                 "partner_id": retention.partner_id.id,
                 "payment_type_retention": "iva",
                 "is_retention": True,
-                "currency_id": self.env.user.company_id.currency_id.id,
+                "currency_id": currency_id.id,
+                "journal_id": journal_id,
             }
 
             def account_retention_line_empty_recordset():
@@ -510,6 +512,30 @@ class AccountRetention(models.Model):
                     payment_vals, account_retention_line_empty_recordset
                 )
 
+    def _get_journal_and_currency(self, retention_type, type):
+
+        journal = False
+        if retention_type == "iva" and type == "in_invoice":
+            journal = self.env.company.iva_supplier_retention_journal_id
+
+        if retention_type == "islr"  and type == "in_invoice":
+            journal = self.env.company.islr_supplier_retention_journal_id
+
+        if retention_type == "municipal" and type == "in_invoice":
+            journal = self.env.company.municipal_supplier_retention_journal_id
+
+        if retention_type == "iva" and type == "out_invoice":
+            journal = self.env.company.iva_customer_retention_journal_id
+
+        if retention_type == "islr" and type == "out_invoice":
+            journal = self.env.company.islr_customer_retention_journal_id
+
+        if retention_type == "municipal" and type == "out_invoice":
+            journal = self.env.company.municipal_customer_retention_journal_id
+
+        currency_id = journal.currency_id if journal.currency_id else self.env.user.company_id.currency_id
+        return journal.id, currency_id
+    
     def _create_payments_for_iva_supplier(
         self, payment_vals, account_retention_line_empty_recordset
     ):
@@ -812,7 +838,7 @@ class AccountRetention(models.Model):
                 "out_invoice",
             ): self.env.company.municipal_customer_retention_journal_id,
         }
-        journal_id = journals[(self.type_retention, self.type)].id
+        journal_id = journals[(self.type_retention, self.type)]
 
         if self.type_retention == "islr":
             self._validate_islr_retention_fields()
@@ -839,14 +865,14 @@ class AccountRetention(models.Model):
                     "payment_type": payment_type,
                     "partner_type": partner_type,
                     "partner_id": line.move_id.partner_id.id,
-                    "journal_id": journal_id,
+                    "journal_id": journal_id.id,
                     "payment_type_retention": self.type_retention,
                     "payment_method_id": self.env.ref(payment_method_ref).id,
                     "is_retention": True,
                     "foreign_rate": line.move_id.foreign_rate,
                     "foreign_inverse_rate": line.move_id.foreign_inverse_rate,
                     "retention_line_ids": line,
-                    "currency_id": self.env.user.company_id.currency_id.id,
+                    "currency_id": journal_id.currency_id.id if journal_id.currency_id else self.env.user.company_id.currency_id.id,
                 }
             )
 
