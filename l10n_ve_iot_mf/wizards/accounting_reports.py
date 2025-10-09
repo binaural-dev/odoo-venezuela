@@ -3,8 +3,8 @@ from datetime import datetime
 from io import BytesIO
 from odoo import models, fields
 import xlsxwriter
-
-
+import logging
+_logger = logging.getLogger(__name__)
 class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     _inherit = "wizard.accounting.reports"
 
@@ -14,6 +14,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res = super()._get_domain()
         if not self.with_fiscal_machine:
             return res
+        res = [d for d in res if d != ('correlative', 'not in', ['/', False])]
         res.append(("mf_invoice_number", "!=", False))
         res.append(("mf_reportz", "!=", False))
         res.append(("mf_serial", "!=", False))

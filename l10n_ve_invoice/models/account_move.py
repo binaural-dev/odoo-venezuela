@@ -34,30 +34,11 @@ class AccountMove(models.Model):
     )
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
+        from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
-                if (
-                    'sale_discount_product_id' in self.env.company._fields
-                    and self.env.company.sale_discount_product_id
-                    and line.product_id == self.env.company.sale_discount_product_id
-                ):
-                    continue
-                
-                if 'loyalty.reward' in self.env:
-                    is_loyalty_reward = self.env['loyalty.reward'].search_count([
-                        ('discount_line_product_id', '=', line.product_id.id)
-                    ]) > 0
-                    if is_loyalty_reward:
-                        continue
-
-                raise ValidationError(_("An invoice cannot have a line with a price of zero"))
-
-    @api.onchange("move_type")
-    def _onchange_move_type(self):
-        if self.move_type == "out_invoice":
-            self.invoice_date = False
-        elif not self.invoice_date:
-            self.invoice_date = fields.Date.today()
+                if not from_pos:
+                    raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
     def action_post(self):
         for record in self:
@@ -68,6 +49,8 @@ class AccountMove(models.Model):
 
             if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
+            if record.invoice_date and record.date and record.date < record.invoice_date:
+                raise ValidationError(_("The accounting date cannot be earlier than the invoice date."))
         return super().action_post()
 
     @api.constrains("correlative", "is_contingency")
@@ -261,3 +244,50 @@ class AccountMove(models.Model):
         for picking in self:
             action = picking.env.ref('account_debit_note.action_view_account_move_debit').read()[0]
         return action
+    
+    def write(self, vals):
+        lines_before = {
+            line.id: line.tax_ids
+            for move in self
+            for line in move.invoice_line_ids
+        }
+
+        res = super().write(vals)
+
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+
+            changes = []
+            for line in move.invoice_line_ids:
+                old_taxes = lines_before.get(line.id)
+                new_taxes = line.tax_ids
+
+                if old_taxes and set(old_taxes.ids) != set(new_taxes.ids):
+                    product = line.product_id.display_name
+                    old_taxes_display = lines_before.get(line.id).display_name if line.id in lines_before else ""
+
+                    changes.append(
+                        f"""
+                            <li>
+                                <b>{product}</b><br/>
+                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes_display} ⟶</i></span>
+                                <span style="color:#007BFF;"><i>{new_taxes.display_name}</i></span>
+                            </li>
+                        """
+                    )
+
+            if changes:
+                move.message_post(
+                    body=_(
+                        """
+                        <div>
+                            <ul>%s</ul>
+                        </div>
+                        """
+                    ) % "".join(changes),
+                    message_type='notification',
+                    body_is_html=True
+                )
+
+        return res

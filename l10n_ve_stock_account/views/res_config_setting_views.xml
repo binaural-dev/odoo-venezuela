@@ -92,7 +92,6 @@
             </xpath>
         </field>
     </record>
-
     <record id="res_config_settings_view_form_stock_inherit" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.stock_inherit</field>
         <field name="model">res.config.settings</field>

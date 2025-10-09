@@ -134,15 +134,7 @@ class AccountRetentionLine(models.Model):
                 "iva": _("IVA Retention"),
                 "municipal": _("Municipal Retention"),
             }
-            type_retention = "islr"
-            if record.retention_id.type_retention:
-                type_retention = record.retention_id.type_retention
-            elif record.move_id:
-                if record in record.move_id.retention_iva_line_ids:
-                    type_retention = "iva"
-                elif record in record.move_id.retention_municipal_line_ids:
-                    type_retention = "municipal"
-
+            type_retention = record.retention_id.type_retention or self.env.context.get("type")
             record.name = names.get(type_retention, _("Retention"))
 
     @api.depends("retention_id", "move_id")
@@ -161,7 +153,7 @@ class AccountRetentionLine(models.Model):
         return super().unlink()
 
     @api.onchange("payment_concept_id")
-    @api.depends("payment_concept_id", "move_id")
+    @api.depends("payment_concept_id", "move_id", "move_id.tax_totals")
     def _compute_related_fields(self):
         """
         This compute is used to get the related fields from the payment concept of the partner
@@ -293,8 +285,9 @@ class AccountRetentionLine(models.Model):
         """
         for record in self.filtered(
             lambda l: (not l.retention_id and l.economic_activity_id)
-            or l.retention_id.type_retention == "municipal"
+            or (l.retention_id and l.retention_id.type_retention == "municipal")
         ):
+
             record.retention_amount = record.invoice_amount * record.aliquot / 100
             record.foreign_retention_amount = record.foreign_invoice_amount * record.aliquot / 100
 
