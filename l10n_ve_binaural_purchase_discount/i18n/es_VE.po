@@ -1,0 +1,148 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_binaural_purchase_discount
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20250821\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-09 13:24+0000\n"
+"PO-Revision-Date: 2025-10-09 13:24+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_binaural_purchase_discount.res_config_settings_discount_purchase_id
+msgid "<span class=\"o_form_label\">Discount product in purchase orders</span>"
+msgstr "<span class=\"o_form_label\">Producto de Descuento en Compra</span>"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields,field_description:l10n_ve_binaural_purchase_discount.field_purchase_order_discount__discount_amount
+msgid "Amount"
+msgstr "Cantidad"
+
+#. module: l10n_ve_binaural_purchase_discount
+#. odoo-python
+#: code:addons/l10n_ve_binaural_purchase_discount/models/account_move.py:0
+#, python-format
+msgid "An invoice cannot have a line with a price of zero"
+msgstr "Una factura no puede tener una línea con un precio de cero"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_binaural_purchase_discount.purchase_order_line_wizard_form
+msgid "Apply"
+msgstr "Aplicar"
+
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields,help:l10n_ve_binaural_purchase_discount.field_res_company__purchase_discount_product_id
+#: model:ir.model.fields,help:l10n_ve_binaural_purchase_discount.field_res_config_settings__purchase_discount_product_id
+msgid "Default product used for discounts"
+msgstr "Producto por defecto utilizado para descuentos"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_binaural_purchase_discount.res_config_settings_discount_purchase_id
+msgid ""
+"Define the default product to be used for applying discounts on Purchase "
+"Orders"
+msgstr ""
+"Define el producto por defecto que se utilizará para aplicar descuentos en "
+"Órdenes de Compra."
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_binaural_purchase_discount.res_config_settings_discount_purchase_id
+msgid "Purchase Discounts"
+msgstr "Descuentos Compras"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_binaural_purchase_discount.purchase_order_line_wizard_form
+msgid "Discard"
+msgstr "Descartar"
+
+#. module: l10n_ve_binaural_purchase_discount
+#. odoo-python
+#: code:addons/l10n_ve_binaural_purchase_discount/models/purchase_order.py:0
+#: code:addons/l10n_ve_binaural_purchase_discount/wizard/purchase_order_discount.py:0
+#: model_terms:ir.ui.view,arch_db:l10n_ve_binaural_purchase_discount.purchase_order_form_inherit_discount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_binaural_purchase_discount.purchase_order_line_wizard_form
+#, python-format
+msgid "Discount"
+msgstr "Descuento"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields,field_description:l10n_ve_binaural_purchase_discount.field_purchase_order_discount__discount_type
+msgid "Discount Type"
+msgstr "Tipo de Descuento"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model,name:l10n_ve_binaural_purchase_discount.model_purchase_order_discount
+msgid "Discount Wizard"
+msgstr "Asistente de Descuento"
+
+#. module: l10n_ve_binaural_purchase_discount
+#. odoo-python
+#: code:addons/l10n_ve_binaural_purchase_discount/wizard/purchase_order_discount.py:0
+#, python-format
+msgid "Discount: %(percent)s%%"
+msgstr "Descuento: %(percent)s%%"
+
+#. module: l10n_ve_binaural_purchase_discount
+#. odoo-python
+#: code:addons/l10n_ve_binaural_purchase_discount/wizard/purchase_order_discount.py:0
+#, python-format
+msgid ""
+"Discount: %(percent)s%%- On products with the following taxes %(taxes)s"
+msgstr ""
+"Descuento: %(percent)s%%- En productos con los siguientes impuestos %(taxes)s"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields,field_description:l10n_ve_binaural_purchase_discount.field_res_company__purchase_discount_product_id
+#: model:ir.model.fields,field_description:l10n_ve_binaural_purchase_discount.field_res_config_settings__purchase_discount_product_id
+msgid "Discounted Product"
+msgstr "Producto con Descuento"
+
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields.selection,name:l10n_ve_binaural_purchase_discount.selection__purchase_order_discount__discount_type__amount
+msgid "Fixed Amount"
+msgstr "Monto Fijo"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields.selection,name:l10n_ve_binaural_purchase_discount.selection__purchase_order_discount__discount_type__po_discount
+msgid "Global Discount"
+msgstr "Descuento Global"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields,field_description:l10n_ve_binaural_purchase_discount.field_purchase_order_discount__id
+msgid "ID"
+msgstr "ID"
+
+#. module: l10n_ve_binaural_purchase_discount
+#. odoo-python
+#: code:addons/l10n_ve_binaural_purchase_discount/wizard/purchase_order_discount.py:0
+#, python-format
+msgid "Invalid discount amount"
+msgstr "Monto de descuento inválido"
+
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields.selection,name:l10n_ve_binaural_purchase_discount.selection__purchase_order_discount__discount_type__pol_discount
+msgid "On All Order Lines"
+msgstr "En Todas las Líneas de Pedido"
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model.fields,field_description:l10n_ve_binaural_purchase_discount.field_purchase_order_discount__discount_percentage
+msgid "Percentage"
+msgstr "Porcentaje"
+
+
+#. module: l10n_ve_binaural_purchase_discount
+#: model:ir.model,name:l10n_ve_binaural_purchase_discount.model_purchase_order
+#: model:ir.model.fields,field_description:l10n_ve_binaural_purchase_discount.field_purchase_order_discount__purchase_order_id
+msgid "Purchase Order"
+msgstr "Orden de compra"
+
