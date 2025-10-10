@@ -215,68 +215,10 @@ class AccountMoveLine(models.Model):
 
             line.foreign_debit = new_foreign_debit
 
-            if (
-                line.currency_id == line.company_id.currency_foreign_id
-                and line.amount_currency
-            ):
-                
-                line.foreign_debit = (
-                    abs(line.amount_currency) if line.amount_currency > 0 else 0.0
-                )
-                line.foreign_credit = (
-                    abs(line.amount_currency) if line.amount_currency < 0 else 0.0
-                )
-                continue
+        new_foreign_credit = abs(line.foreign_credit_adjustment) if line.foreign_credit_adjustment else 0.0
 
-            if (
-                line.move_id.payment_id
-                and "retention_foreign_amount" in self.env["account.payment"]._fields
-                and line.move_id.payment_id.is_retention
-            ):
-                
-                # 5 Case: Retention
-                # In this case, we need to set the foreign debit and credit of the retention
-                if not line.currency_id.is_zero(line.debit):
-                    line.foreign_debit = (
-                        line.move_id.payment_id.retention_foreign_amount
-                    )
-                    continue
-                if not line.currency_id.is_zero(line.credit):
-                    line.foreign_credit = (
-                        line.move_id.payment_id.retention_foreign_amount
-                    )
-                    continue
-
-            if not line.move_id.is_invoice(include_receipts=True):
-
-                # 6 Case: Not Invoice
-                # In this case, we need to calculate the foreign debit and credit with rate
-                foreign_lines = line.move_id.line_ids.filtered(
-                    lambda l: l.currency_id == l.company_id.currency_foreign_id
-                )
-                currency_lines = line.move_id.line_ids.filtered(
-                    lambda l: l.currency_id == l.company_id.currency_id
-                )
-
-                balance = sum((foreign_lines).mapped("amount_currency"))
-                if balance and len(currency_lines) == 1:
-                    line.foreign_debit = abs(balance) if balance < 0 else 0.0
-                    line.foreign_credit = abs(balance) if balance > 0 else 0.0
-                    continue
-                
-                line_foreign_debit = line.debit * line.foreign_inverse_rate
-                line_foreign_credit = line.credit * line.foreign_inverse_rate
-                foreign_credit += line_foreign_credit
-                foreign_debit += line_foreign_debit
-                line.foreign_debit_no_format = line_foreign_debit
-                line.foreign_credit_no_format = line_foreign_credit
-                line.foreign_debit = line.debit * line.foreign_inverse_rate
-                line.foreign_credit = line.credit * line.foreign_inverse_rate
-
-                continue
-
-        new_foreign_credit = abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
         if line.foreign_credit != new_foreign_credit:
+
             line.foreign_credit = new_foreign_credit
 
     def _calculate_from_amount_currency(self, line):
@@ -320,6 +262,8 @@ class AccountMoveLine(models.Model):
             new_foreign_debit = line.debit * line.foreign_inverse_rate
             new_foreign_credit = line.credit * line.foreign_inverse_rate
         
+        line.foreign_debit_no_format = line.debit * line.foreign_inverse_rate
+        line.foreign_credit_no_format = line.credit * line.foreign_inverse_rate
         if line.foreign_debit != new_foreign_debit:
             line.foreign_debit = new_foreign_debit
         if line.foreign_credit != new_foreign_credit:
