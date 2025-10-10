@@ -294,10 +294,7 @@ class StockPicking(models.Model):
                 if qty_real_allow < 0:
                     info_lote_serial = f" ({_('Lot/Serial')}: {lot_obj.name})" if lot_obj else ""
                     stock_msg.append(
-                        _("%s%s") % ( 
-                            product_obj.display_name,
-                            info_lote_serial,
-                        )
+                        _("%s%s", product_obj.display_name, info_lote_serial)
                     )
             
             if stock_msg:
