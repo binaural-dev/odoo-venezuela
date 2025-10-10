@@ -655,7 +655,7 @@ msgstr "Cantidad de Picks"
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__not_allow_negative_stock_movement
 msgid "Prevent internal movement with negative stock"
-msgstr "Evita movimientos internos con stock negativo""
+msgstr "Evita movimientos internos con stock negativo"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_kanban_view
