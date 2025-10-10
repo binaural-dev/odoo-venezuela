@@ -60,22 +60,32 @@ class AccountMoveRetention(models.Model):
 
     not_edit_municipal_retention_lines = fields.Boolean(
         string="Edit Municipal Retention Lines?",
-        compute="_compute_state_retentions_lines"
+        compute="_compute_state_retentions_lines",
     )
 
     not_edit_islr_retention_lines = fields.Boolean(
-        string="Edit ISLR Retention Lines?",
-        compute="_compute_state_retentions_lines"
+        string="Edit ISLR Retention Lines?", compute="_compute_state_retentions_lines"
     )
-    
-    @api.depends("retention_islr_line_ids.state", "retention_iva_line_ids.state", "retention_municipal_line_ids.state")
+
+    @api.depends(
+        "retention_islr_line_ids.state",
+        "retention_iva_line_ids.state",
+        "retention_municipal_line_ids.state",
+    )
     def _compute_state_retentions_lines(self):
         for record in self:
-            edit_islr_retention_lines = record.retention_islr_line_ids.filtered(lambda l: l.state == "emitted")
-            edit_municipal_retention_lines = record.retention_municipal_line_ids.filtered(lambda l: l.state == "emitted")
+            edit_islr_retention_lines = record.retention_islr_line_ids.filtered(
+                lambda l: l.state == "emitted"
+            )
+            edit_municipal_retention_lines = (
+                record.retention_municipal_line_ids.filtered(
+                    lambda l: l.state == "emitted"
+                )
+            )
             record.not_edit_islr_retention_lines = bool(edit_islr_retention_lines)
-            record.not_edit_municipal_retention_lines = bool(edit_municipal_retention_lines)
-
+            record.not_edit_municipal_retention_lines = bool(
+                edit_municipal_retention_lines
+            )
 
     def _compute_currency_fields(self):
         for retention in self:
@@ -107,15 +117,25 @@ class AccountMoveRetention(models.Model):
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
 
-            if (move.retention_islr_line_ids and not move.islr_voucher_number and
-                move.retention_islr_line_ids.filtered(lambda l: l.state != "emitted")):
+            if (
+                move.retention_islr_line_ids
+                and not move.islr_voucher_number
+                and move.retention_islr_line_ids.filtered(
+                    lambda l: l.state != "emitted"
+                )
+            ):
                 move._validate_islr_retention()
                 retention = move._create_supplier_retention("islr")
                 retention.action_post()
                 move.islr_voucher_number = retention.number
 
-            if (move.retention_municipal_line_ids and not move.municipal_voucher_number and
-                move.retention_municipal_line_ids.filtered(lambda l: l.state != "emitted")):
+            if (
+                move.retention_municipal_line_ids
+                and not move.municipal_voucher_number
+                and move.retention_municipal_line_ids.filtered(
+                    lambda l: l.state != "emitted"
+                )
+            ):
                 move._validate_municipal_retention()
                 retention = move._create_supplier_retention("municipal")
                 retention.action_post()
@@ -124,7 +144,9 @@ class AccountMoveRetention(models.Model):
             # is not cancelled
             if (
                 move.generate_iva_retention
-                and not move.retention_iva_line_ids.filtered(lambda l: l.state != "cancel")
+                and not move.retention_iva_line_ids.filtered(
+                    lambda l: l.state != "cancel"
+                )
             ):
                 move._validate_iva_retention()
                 retention = move._create_supplier_retention("iva")
@@ -140,16 +162,20 @@ class AccountMoveRetention(models.Model):
         """
         self.ensure_one()
         if not self.env.company.islr_supplier_retention_journal_id:
-            raise UserError(_("The company must have a journal for ISLR supplier retention."))
+            raise UserError(
+                _("The company must have a journal for ISLR supplier retention.")
+            )
         islr_retention = self.retention_islr_line_ids
         sum_invoice_amount = sum(
-            islr_retention.filtered(lambda rl: rl.state != "cancel").mapped("invoice_amount")
+            islr_retention.filtered(lambda rl: rl.state != "cancel").mapped(
+                "invoice_amount"
+            )
         )
         if sum_invoice_amount > self.tax_totals["amount_untaxed"]:
-            _logger.info("Suma de la factura %s es mayor que el total de la factura", sum_invoice_amount)
-            _logger.info("Total de la factura %s", self.tax_totals["amount_untaxed"])
             raise UserError(
-                _("The amount of the retention is greater than the total amount of the invoice %s.")
+                _(
+                    "The amount of the retention is greater than the total amount of the invoice %s."
+                )
             )
         sum_invoice_amount = sum(
             self.retention_islr_line_ids.filtered(
