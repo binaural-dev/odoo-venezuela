@@ -216,6 +216,23 @@ class AccountMoveLine(models.Model):
         if line.foreign_credit != new_foreign_credit:
 
             line.foreign_credit = new_foreign_credit
+            
+    def _calculate_zero(self, line):
+        """Asigna cero para secciones o notas."""
+        if line.foreign_debit != 0.0:
+            line.foreign_debit = 0.0
+        if line.foreign_credit != 0.0:
+            line.foreign_credit = 0.0
+    
+    def _calculate_from_balance(self, line):
+        new_foreign_debit = abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
+        if line.foreign_debit != new_foreign_debit:
+            line.foreign_debit = new_foreign_debit
+
+        new_foreign_credit = abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
+        if line.foreign_credit != new_foreign_credit:
+            line.foreign_credit = new_foreign_credit
+
 
     def _calculate_zero(self, line):
         """Asigna cero para secciones o notas."""
