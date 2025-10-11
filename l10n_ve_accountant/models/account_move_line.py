@@ -5,6 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import frozendict, formatLang, format_date, float_compare, Query
 from datetime import date, timedelta
 import traceback
+from markupsafe import Markup
 
 import logging
 
@@ -49,11 +50,13 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
         store=True,
+        readonly=False
     )
     foreign_credit = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
         store=True,
+        readonly=False
     )
 
     foreign_debit_no_format = fields.Float()
@@ -135,7 +138,14 @@ class AccountMoveLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
-            line.foreign_price = line.price_unit * line.foreign_inverse_rate
+           
+            if line.price_unit and line.foreign_inverse_rate:
+                if line._origin.foreign_inverse_rate:
+                    if line._origin.foreign_inverse_rate == line.foreign_inverse_rate:
+                        continue
+                line.foreign_price = line.price_unit * line.foreign_inverse_rate
+            else:
+                line.foreign_price = 0.0
 
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
@@ -172,36 +182,34 @@ class AccountMoveLine(models.Model):
     def _compute_foreign_debit_credit(self):
         for line in self:
             if line.not_foreign_recalculate:
+                if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
+                    self._calculate_from_adjustment(line)
                 continue
 
-            if line.display_type in ("payment_term", "tax"):
-                line.foreign_debit = (
-                    abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-                )
-                line.foreign_credit = (
-                    abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-                )
-                # 1 Case: Payment Term
-                # In this case, we don't want to calculate the foreign debit and credit
-                continue
+            if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
+                self._calculate_from_adjustment(line)
 
-            if line.display_type in ("line_section", "line_note"):
-                line.foreign_debit = line.foreign_credit = 0.0
-                # 2 Case: not Product
-                # In this case, we don't want to calculate the foreign debit and credit
-                continue
+             
+            elif line.display_type in ("line_section", "line_note"):
+                self._calculate_zero(line)
+            elif line.display_type in ("payment_term", "tax"):
+                self._calculate_from_balance(line)
+            elif line.currency_id == line.company_id.currency_foreign_id and line.amount_currency:
+                self._calculate_from_amount_currency(line)
+            elif line.move_id.payment_id and "retention_foreign_amount" in self.env["account.payment"]._fields and line.move_id.payment_id.is_retention:
+                self._calculate_from_retention(line)
+            elif not line.move_id.is_invoice(include_receipts=True):
+                self._calculate_for_non_invoice(line)
+            elif line.display_type == "product":
+                self._calculate_from_product(line)
+            else:
+                self._calculate_from_balance(line)
 
-            if line.foreign_debit_adjustment:
-                line.foreign_debit = abs(line.foreign_debit_adjustment)
-                # 3 Case: Foreign Debit Adjustment
-                # In this case, we need to set the foreign debit manually
-                continue
+    def _calculate_from_adjustment(self, line):
+        new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
+        if line.foreign_debit != new_foreign_debit:
 
-            if line.foreign_credit_adjustment:
-                line.foreign_credit = abs(line.foreign_credit_adjustment)
-                # 4 Case: Foreign Credit Adjustment
-                # In this case, we need to set the foreign credit manually
-                continue
+            line.foreign_debit = new_foreign_debit
 
         new_foreign_credit = abs(line.foreign_credit_adjustment) if line.foreign_credit_adjustment else 0.0
 
@@ -209,12 +217,26 @@ class AccountMoveLine(models.Model):
 
             line.foreign_credit = new_foreign_credit
 
-            line.foreign_debit = (
-                abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-            )
-            line.foreign_credit = (
-                abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-            )
+    def _calculate_zero(self, line):
+        """Asigna cero para secciones o notas."""
+        if line.foreign_debit != 0.0:
+            line.foreign_debit = 0.0
+        if line.foreign_credit != 0.0:
+            line.foreign_credit = 0.0
+
+    def _calculate_from_balance(self, line):
+        new_foreign_debit = abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
+        if line.foreign_debit != new_foreign_debit:
+            line.foreign_debit = new_foreign_debit
+
+        new_foreign_credit = abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
+        if line.foreign_credit != new_foreign_credit:
+            line.foreign_credit = new_foreign_credit
+
+    def _calculate_from_amount_currency(self, line):
+        new_foreign_debit = abs(line.amount_currency) if line.amount_currency > 0 else 0.0
+        if line.foreign_debit != new_foreign_debit:
+            line.foreign_debit = new_foreign_debit
 
         new_foreign_credit = abs(line.amount_currency) if line.amount_currency < 0 else 0.0
         if line.foreign_credit != new_foreign_credit:
@@ -274,7 +296,10 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
         for line in self:
+        
             line.foreign_balance = line.foreign_debit - line.foreign_credit
+            
+               
 
     def _inverse_foreign_balance(self):
         for line in self:
@@ -300,7 +325,7 @@ class AccountMoveLine(models.Model):
 
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
-    ):
+        ):
         """
         This method adds the foreign_amount in the foreign currency to the analytical account line
         """
@@ -508,3 +533,50 @@ class AccountMoveLine(models.Model):
     def _onchange_price_unit(self):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
+        
+
+    def write(self, vals):
+        old_values = {
+            line.id: {
+                'foreign_debit': line.foreign_debit,
+                'foreign_credit': line.foreign_credit
+            } for line in self
+        }
+    
+        res = super(AccountMoveLine, self).write(vals)
+
+        for line in self:
+            old_line_data = old_values.get(line.id)
+            if old_line_data:
+                old_debit = old_line_data['foreign_debit']
+                new_debit = line.foreign_debit
+                old_credit = old_line_data['foreign_credit']
+                new_credit = line.foreign_credit
+
+                if old_debit != new_debit or old_credit != new_credit:
+                    if line.id and line.move_id and line.move_id.id:
+                        message_parts = []
+                        
+                        message_parts.append(_("<b>The accounting line has been updated:</b>"))
+                        
+                        message_parts.append(_("<b>Account:</b> %s") % line.account_id.display_name)
+                        
+                        if old_debit != new_debit:
+                            message_parts.append(_("<b>Foreign Debit Amount:</b> from %s to %s") % (str(old_debit).replace('.', ','), str(new_debit).replace('.', ',')))
+                        if old_credit != new_credit:
+                            message_parts.append(_("<b>Foreign Credit Amount:</b> from %s to %s") % (str(old_credit).replace('.', ','), str(new_credit).replace('.', ',')))
+
+                        msg_body = "<br/>".join(message_parts)
+                        
+                        final_body = Markup(msg_body)
+
+                        self.env['mail.message'].create({
+                            'body': final_body,
+                            'model': line.move_id._name,
+                            'res_id': line.move_id.id,
+                            'message_type': 'comment',
+                            'subtype_id': self.env.ref('mail.mt_note').id,
+                            'author_id': self.env.user.partner_id.id,
+                        })
+
+        return res
