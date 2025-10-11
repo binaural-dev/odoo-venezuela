@@ -1,6 +1,8 @@
 from odoo import api, fields, models, _
 from odoo.tools.float_utils import float_round
 
+import logging
+_logger = logging.getLogger(__name__)
 
 class AccountPaymentRegister(models.TransientModel):
     _inherit = "account.payment.register"
@@ -55,7 +57,6 @@ class AccountPaymentRegister(models.TransientModel):
             
             move = self.env['account.move'].browse(active_id)
             res['foreign_total_billed_vef'] = move.tax_totals.get('foreign_total_residual') * move.foreign_inverse_rate_vef
-            
         return res
 
     @api.onchange("foreign_rate")
