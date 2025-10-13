@@ -279,8 +279,8 @@ class AccountPaymentIgtf(models.Model):
 
         return super(AccountPaymentIgtf, self).action_draft()
 
-    def get_bi_igtf(self,move_id=None):
-        for record in self:        
+    def get_bi_igtf(self, move_id=None):
+        for record in self:
             amount_without_difference = record.amount_with_igtf - record.igtf_amount
             if record.env.company.currency_id.id == record.env.ref("base.VEF").id:
                 amount_without_difference = amount_without_difference * record.foreign_rate
@@ -289,10 +289,10 @@ class AccountPaymentIgtf(models.Model):
 
         return amount
     
-    def get_amount_residual_from_payment(self,move_id):
+    def get_amount_residual_from_payment(self, move_id):
         for record in self:
             residual_amount = 0.00
-            igtf_amount= record.igtf_amount
+            igtf_amount = record.igtf_amount
 
             if record.reconciled_invoice_ids:
                 # payment_used_amount = record.get_used_payment_amount(payments)
@@ -304,7 +304,7 @@ class AccountPaymentIgtf(models.Model):
             record.amount_residual_from_payment = residual_amount
             return record.amount_residual_from_payment - igtf_amount
 
-    def get_used_payment_amount(self, reconciled_ids,move_id):
+    def get_used_payment_amount(self, reconciled_ids, move_id):
         payment_data = []  # Lista de diccionarios con {id_factura, monto}
         for invoice in reconciled_ids:
             payments = invoice.invoice_payments_widget.get("content", False)
@@ -322,7 +322,7 @@ class AccountPaymentIgtf(models.Model):
         excluded_ids = move_id
         total = sum(item["amount"] for item in payment_data if item["id"] != excluded_ids)
 
-        return total 
+        return total
 
     @api.depends('journal_id')
     def _compute_is_igtf_journal(self):
