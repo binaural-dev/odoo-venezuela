@@ -8,7 +8,7 @@
             <field name="model">account.retention</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
-                <form string="Retention">
+                <form string="Retention" duplicate="false">
                     <header>
                         <button name="action_draft" type="object"
                             string="Convert to draft"
@@ -42,7 +42,7 @@
                                 invisible="1"
                                 readonly="type == 'in_invoice'" />
                             <field name="date"
-                                readonly="state in ['emitted', 'cancel']" />
+                                readonly="type == 'in_invoice' or state in ['emitted', 'cancel']" />
                         </group>
                         <notebook colspan="4">
                             <page name="retention_lines" string="Retention Lines">

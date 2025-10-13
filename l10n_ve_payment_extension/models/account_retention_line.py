@@ -64,7 +64,7 @@ class AccountRetentionLine(models.Model):
     payment_concept_id = fields.Many2one(
         "payment.concept", "Payment concept", ondelete="cascade", index=True
     )
-    code=fields.Char(
+    code = fields.Char(
         related="payment_concept_id.line_payment_concept_ids.code"
     )
     code_visible=fields.Boolean(
@@ -134,15 +134,7 @@ class AccountRetentionLine(models.Model):
                 "iva": _("IVA Retention"),
                 "municipal": _("Municipal Retention"),
             }
-            type_retention = "islr"
-            if record.retention_id.type_retention:
-                type_retention = record.retention_id.type_retention
-            elif record.move_id:
-                if record in record.move_id.retention_iva_line_ids:
-                    type_retention = "iva"
-                elif record in record.move_id.retention_municipal_line_ids:
-                    type_retention = "municipal"
-
+            type_retention = record.retention_id.type_retention or self.env.context.get("type")
             record.name = names.get(type_retention, _("Retention"))
 
     @api.depends("retention_id", "move_id")
@@ -160,7 +152,6 @@ class AccountRetentionLine(models.Model):
             record.payment_id.unlink()
         return super().unlink()
 
-    @api.onchange("payment_concept_id")
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
         """
@@ -171,6 +162,11 @@ class AccountRetentionLine(models.Model):
             lambda l: l.payment_concept_id
             and (not l.retention_id or l.retention_id.type_retention == "islr")
         )
+
+        move_id = self.move_id
+        municipal_retention_lines = self.env['account.retention.line'].search_count([('id','in',move_id.retention_municipal_line_ids.ids)])
+        islr_retention_lines = self.env['account.retention.line'].search_count([('id','in',move_id.retention_islr_line_ids.ids)])
+
         for record in lines_from_islr_retention:
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
@@ -192,24 +188,30 @@ class AccountRetentionLine(models.Model):
                     if not record.retention_id or record.retention_id.type == "in_invoice":
                         # We don't want this fields to be computed when the retention is
                         # created from a customer invoice since they are filled by the user.
-                        record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
-                        record.foreign_invoice_amount = record.move_id.tax_totals[
-                            "foreign_amount_untaxed"
-                        ]
+                        if (islr_retention_lines <= 1) and (municipal_retention_lines <= 1):
+                            record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
+                            record.foreign_invoice_amount = record.move_id.tax_totals["foreign_amount_untaxed"]
+                        else:
+                            record.invoice_amount = record.invoice_amount or 0
+                            record.foreign_invoice_amount = record.foreign_invoice_amount or 0
+
 
     @api.depends("invoice_amount", "foreign_invoice_amount")
     def _compute_amounts(self):
         base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
-        if not base_currency_is_vef:
-            for line in self:
-                if line.invoice_amount > 0 and line.foreign_invoice_amount > 0:
+        for line in self:
+            if not base_currency_is_vef:
+                if line.foreign_invoice_amount:
                     line.invoice_amount = line.foreign_invoice_amount * (
                         1 / line.foreign_currency_rate
                     )
+            else:
+                if line.invoice_amount > 0:
+                    line.foreign_invoice_amount = line.invoice_amount * line.foreign_currency_rate
 
     @api.onchange(
         "invoice_amount",
-        "foreign_invoice_amount",
+        "foreign_invoice_amount", 
         "related_percentage_tax_base",
         "related_percentage_fees",
         "related_amount_subtract_fees",
@@ -293,8 +295,9 @@ class AccountRetentionLine(models.Model):
         """
         for record in self.filtered(
             lambda l: (not l.retention_id and l.economic_activity_id)
-            or l.retention_id.type_retention == "municipal"
+            or (l.retention_id and l.retention_id.type_retention == "municipal")
         ):
+
             record.retention_amount = record.invoice_amount * record.aliquot / 100
             record.foreign_retention_amount = record.foreign_invoice_amount * record.aliquot / 100
 
