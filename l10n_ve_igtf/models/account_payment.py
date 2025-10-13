@@ -283,7 +283,7 @@ class AccountPaymentIgtf(models.Model):
 
         return super(AccountPaymentIgtf, self).action_draft()
 
-    def get_bi_igtf(self,move_id=None):
+    def get_bi_igtf(self, move_id=None):
         for record in self:        
             # amount_without_difference = record.amount_with_igtf - record.igtf_amount
             # if record.env.company.currency_id.id == record.env.ref("base.VEF").id:
