@@ -146,3 +146,16 @@ msgstr "Porcentaje"
 msgid "Purchase Order"
 msgstr "Orden de compra"
 
+#. module: l10n_ve_binaural_purchase_discount
+#. odoo-python
+#: code:addons/l10n_ve_binaural_purchase_discount/models/account_move_line.py:0
+#, python-format
+msgid "The price entered cannot be negative"
+msgstr "El precio ingresado no puede ser negativo"
+
+#. module: l10n_ve_binaural_purchase_discount
+#. odoo-python
+#: code:addons/l10n_ve_binaural_purchase_discount/models/account_move_line.py:0
+#, python-format
+msgid "The price entered cannot be positive"
+msgstr "El precio ingresado no puede ser positivo"

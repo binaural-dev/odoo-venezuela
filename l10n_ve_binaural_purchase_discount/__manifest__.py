@@ -9,7 +9,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Purchase/Purchase",
-    "version": "17.0.0.0.1",
+    "version": "17.0.0.0.2",
     'depends': ['l10n_ve_purchase','l10n_ve_invoice'],
     'data': [
         'security/ir.model.access.csv',
