@@ -127,7 +127,7 @@ class AccountMove(models.Model):
                 payment_id = line.move_id.payment_id
                 if payment_id and payment_id.is_igtf_on_foreign_exchange:
                     payment_id = line.move_id.payment_id
-                    bi_igtf = payment_id.get_bi_igtf()
+                    bi_igtf = payment_id.get_bi_igtf(move_id)
                     if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
                         record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
                         bi_igtf = 0
@@ -142,7 +142,7 @@ class AccountMove(models.Model):
 
                 payment_id = record.env["account.payment"].browse([payment_id])
                 if payment_id.is_igtf_on_foreign_exchange:
-                    bi_igtf = payment_id.get_bi_igtf()
+                    bi_igtf = payment_id.get_bi_igtf(move_id)
                     if initial_residual < bi_igtf:
                         continue
                     amount += bi_igtf
@@ -269,6 +269,7 @@ class AccountMove(models.Model):
     )
     def _compute_amount_residual_igtf(self):
         for record in self:
+            record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
 
             if record.amount_residual and record.amount_to_pay_igtf:
                 record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf

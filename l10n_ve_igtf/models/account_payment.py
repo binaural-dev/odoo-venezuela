@@ -10,7 +10,7 @@ class AccountPaymentIgtf(models.Model):
 
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
-        help="IGTF on Foreign Exchange?",
+        help="IGTF on Foreign Exchange",
         compute="_compute_is_igtf",
         store=True,
     )
@@ -34,6 +34,7 @@ class AccountPaymentIgtf(models.Model):
     )
 
     payment_from_wizard = fields.Boolean()
+    amount_residual_from_payment = fields.Float()
 
     @api.depends("partner_id")
     def _compute_igtf_percentage(self):
