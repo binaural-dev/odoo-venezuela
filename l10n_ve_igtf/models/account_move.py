@@ -108,14 +108,17 @@ class AccountMove(models.Model):
         """This method can be used by ir.actions.server to update bi_igtf"""
         for record in self:
             move_id = record.id
+
+            if not record.invoice_payments_widget:
+                record.bi_igtf = 0
+                continue
+                
             if record.bi_igtf > 0 and any(
             payment.get("account_payment_id", False) for payment in record.invoice_payments_widget.get("content", [])
             if payment.get("account_payment_id", False)
             ):
                 continue
-            if not record.invoice_payments_widget:
-                record.bi_igtf = 0
-                continue
+            
 
             payments = record.invoice_payments_widget.get("content", False)
             amount = 0

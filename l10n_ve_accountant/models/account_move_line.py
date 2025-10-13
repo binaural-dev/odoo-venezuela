@@ -58,6 +58,10 @@ class AccountMoveLine(models.Model):
         store=True,
         readonly=False
     )
+
+    foreign_debit_no_format = fields.Float()
+    foreign_credit_no_format = fields.Float()
+
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_balance",
@@ -73,8 +77,6 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign credit field",
     )
-
-    
 
     @api.onchange("amount_currency", "currency_id")
     def _inverse_amount_currency(self):
@@ -213,7 +215,7 @@ class AccountMoveLine(models.Model):
 
         if line.foreign_credit != new_foreign_credit:
 
-            line.foreign_credit = new_foreign_credit
+            line.foreign_credit = new_foreign_credit         
 
     def _calculate_zero(self, line):
         """Asigna cero para secciones o notas."""
@@ -272,6 +274,8 @@ class AccountMoveLine(models.Model):
             new_foreign_debit = line.debit * line.foreign_inverse_rate
             new_foreign_credit = line.credit * line.foreign_inverse_rate
         
+        line.foreign_debit_no_format = line.debit * line.foreign_inverse_rate
+        line.foreign_credit_no_format = line.credit * line.foreign_inverse_rate
         if line.foreign_debit != new_foreign_debit:
             line.foreign_debit = new_foreign_debit
         if line.foreign_credit != new_foreign_credit:
