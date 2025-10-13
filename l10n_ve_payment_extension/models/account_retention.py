@@ -1005,7 +1005,7 @@ class AccountRetention(models.Model):
             invoice_id.tax_totals["groups_by_subtotal"][subtotals_name],
             invoice_id.tax_totals["groups_by_foreign_subtotal"][subtotals_name],
         )
-        for tax_group, foreign_tax_group in tax_groups:
+        for tax_group, foreign_tax_group in tax_groups_data:
             taxes = tax_ids.filtered(
                 lambda l: l.tax_group_id.id == tax_group["tax_group_id"]
             )
