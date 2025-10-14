@@ -509,6 +509,7 @@ class AccountRetention(models.Model):
         for retention in self:
             if any(retention.payment_ids) or retention.type_retention != "iva":
                 continue
+
             payment_vals = {
                 "retention_id": retention.id,
                 "partner_id": retention.partner_id.id,
@@ -528,7 +529,7 @@ class AccountRetention(models.Model):
                 self._create_payments_for_iva_customer(
                     payment_vals, account_retention_line_empty_recordset
                 )
-
+    
     def _create_payments_for_iva_supplier(
         self, payment_vals, account_retention_line_empty_recordset
     ):

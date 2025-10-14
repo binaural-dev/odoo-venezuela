@@ -121,6 +121,29 @@ class AccountTax(models.Model):
         res["foreign_formatted_discount_amount"] = formatLang(
             self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
         )
+        
+        move = self._get_move_from_base_lines(base_lines)
+        
+        amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
+
+        res["foreign_total_amount_paid"] = float_round(
+            sum(amounts),
+            precision_digits=foreign_currency.decimal_places
+        )
+
+        foreign_amount_total = res.get('foreign_amount_total', 0.0)
+
+        res["foreign_total_residual"] = float_round(
+            foreign_amount_total - res["foreign_total_amount_paid"],
+            precision_digits=foreign_currency.decimal_places
+        )
+
+        res["foreign_formatted_total_residual"] = formatLang(
+            self.env,
+            res["foreign_total_residual"],
+            currency_obj=foreign_currency
+        )      
+        
         return res
     
     def _get_move_from_base_lines(self, base_lines):
