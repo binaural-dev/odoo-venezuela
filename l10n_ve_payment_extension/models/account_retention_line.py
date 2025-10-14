@@ -371,11 +371,11 @@ class AccountRetentionLine(models.Model):
         for record in self:
             if any(
                 (
-                    record.retention_amount < 0.00000,
-                    record.invoice_total < 0.00000,
-                    record.foreign_retention_amount < 0.00000,
-                    record.invoice_amount < 0.00000,
-                    record.foreign_invoice_amount < 0.00000,
+                    record.retention_amount == 0,
+                    record.invoice_total == 0,
+                    record.foreign_retention_amount == 0,
+                    record.invoice_amount == 0,
+                    record.foreign_invoice_amount == 0,
                 )
             ):
                 raise ValidationError(_("You can not create a retention with 0 amount."))

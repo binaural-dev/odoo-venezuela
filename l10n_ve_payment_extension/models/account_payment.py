@@ -99,13 +99,7 @@ class AccountPayment(models.Model):
         Compute the amount from the retention lines.
         """
         for payment in self:
-
-            if payment.currency_id == payment.company_id.currency_foreign_id:
-                payment.amount = sum(payment.retention_line_ids.mapped("foreign_retention_amount"))
-                return
-            else:                
-                payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
-                return
+            payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
 
     @api.depends("retention_line_ids")
     def _compute_retention_foreign_amount(self):
