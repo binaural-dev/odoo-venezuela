@@ -197,7 +197,10 @@ class AccountTax(models.Model):
                     foreign_amt = account_payment.amount
 
                 else:
-                    foreign_amt = float_round(account_payment.amount * account_payment.foreign_rate, precision_digits=foreign_currency.decimal_places)
+                    if account_payment.igtf_amount > 0:
+                        foreign_amt = float_round((account_payment.amount - account_payment.igtf_amount ) * account_payment.foreign_rate, precision_digits=foreign_currency.decimal_places)
+                    else:
+                        foreign_amt = float_round(account_payment.amount * account_payment.foreign_rate, precision_digits=foreign_currency.decimal_places)
             
             amounts.append(foreign_amt)
 

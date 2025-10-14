@@ -1285,3 +1285,31 @@ msgstr "Primero debe seleccionar una moneda."
 #, python-format
 msgid "There is not a foreign currency defined"
 msgstr "No hay una moneda alterna definida."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Account:</b> %s"
+msgstr "<b>Cuenta:</b> %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Foreign Credit Amount:</b> from %s to %s"
+msgstr "<b>Monto credito alterno:</b> de %s a %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Foreign Debit Amount:</b> from %s to %s"
+msgstr "<b>Monto debito alterno:</b> de %s a %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>The accounting line has been updated:</b>"
+msgstr "<b>La linea contable ha sido actualizada:</b>"
