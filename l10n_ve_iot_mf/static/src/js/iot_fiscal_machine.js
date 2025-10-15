@@ -26,6 +26,12 @@ function onIoTActionResult(data, notification) {
   }
 }
 
+function onIoTError(message, notification) {
+  notification.add(message, {
+    title: "Error de comunicación con la impresora",
+    type: "danger",
+  });
+}
 
 const { xml, useState } = owl;
 
@@ -424,9 +430,9 @@ export class IoTFiscalMachineComponent extends Component {
       );
 
       const deviceResponse = await this.device_response(print_type, request);
-
+      
       if (print_type != "reprint") {
-        
+
         await this.call_model_method(
           "account.move", 
           print_type,
@@ -437,7 +443,9 @@ export class IoTFiscalMachineComponent extends Component {
       }
 
     }catch(error){
-      onIoTError(error.data.message, this.notification)
+      console.log("Error", error)
+      const message = error?.data?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
     }
   }
 
