@@ -37,7 +37,6 @@ class SerialInterface(SerialInterface):
                 if pinpad_ports and port.device in pinpad_ports:
                     _logger.warning("Port disabled (Pinpad): %s", port.device)
                     continue
-
                 _logger.info("Port enabled: %s", port.device)
                 serial_devices[port.device] = {"identifier": port.device}
 
