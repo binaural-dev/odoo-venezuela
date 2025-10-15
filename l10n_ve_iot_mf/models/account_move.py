@@ -48,6 +48,9 @@ class AccountMoveInh(models.Model):
         Return
         Recordset of account.move if exist
         """
+        if not invoice_number:
+            return False
+        
         return (
             len(
                 self.env["account.move"].search(
@@ -210,19 +213,23 @@ class AccountMoveInh(models.Model):
 
     def print_out_invoice(self, values):
         _logger.info("VALUE %s", values)
+        result_data = values.get("result", {}).get("data", {})
+        sequence = result_data.get("sequence")
+        serial_machine = result_data.get("serial_machine")
+
         self.write(
             {
-                "mf_invoice_number": values["sequence"],
-                "mf_serial": values["serial_machine"],
+                "mf_invoice_number": sequence,
+                "mf_serial": serial_machine,
             }
         )
 
-        if self.has_printed(values["sequence"]):
+        if self.has_printed(sequence):
             context = dict(self._context or {})
             context[
                 "message"
             ] = f"""
-            An invoice with the same sequence number {values["sequence"]}
+            An invoice with the same sequence number {sequence}
             Please review previous invoices
             """
 
@@ -320,7 +327,17 @@ class AccountMoveInh(models.Model):
             raise ValidationError(str(ae))
         
     def print_out_refund(self, values):
-        self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
+        _logger.info("VALUE %s", values)
+        result_data = values.get("data", {})
+        sequence = result_data.get("sequence")
+        serial_machine = result_data.get("serial_machine")
+        
+        self.write(
+            {
+                "mf_invoice_number": sequence,
+                "mf_serial": serial_machine,
+            }
+        )
 
     def _get_reconciled_info_JSON_values(self):
         res = super()._get_reconciled_info_JSON_values()
@@ -420,7 +437,17 @@ class AccountMoveInh(models.Model):
         
     
     def print_debit_note(self, values):
-        self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
+        _logger.info("VALUE %s", values)
+        result_data = values.get("data", {})
+        sequence = result_data.get("sequence")
+        serial_machine = result_data.get("serial_machine")
+        
+        self.write(
+            {
+                "mf_invoice_number": sequence,
+                "mf_serial": serial_machine,
+            }
+        )
         
 
     def _normalize_product_name(self, name):
