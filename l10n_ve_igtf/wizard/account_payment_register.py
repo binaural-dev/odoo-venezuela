@@ -1,4 +1,5 @@
 from odoo import api, models, fields, _
+from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -108,6 +109,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ):
                 payment_amount = payment.amount
                 if payment.payment_difference < 0:
+                    #raise UserError(payment.payment_difference)
                     payment_amount = payment.amount + payment.payment_difference
                 payment.igtf_amount = payment.calculate_igtf_for_payment(
                     move_id, payment_amount, payment.igtf_percentage
