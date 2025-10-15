@@ -17,7 +17,7 @@ patch(TicketScreen, {
 patch(PosStore.prototype, {
   open_cashbox() {
     if (this.useFiscalMachine() && this.config.has_cashbox) {
-      const fdm = this.useFiscalMachine();
+    const fdm = this.useFiscalMachine();
       fdm.action({
         action: `logger`,
         data: "0",
@@ -104,6 +104,7 @@ patch(PosStore.prototype, {
           }
         }
       } catch (e) {
+        console.log(e)
       }
     }
 
@@ -159,66 +160,52 @@ patch(PosStore.prototype, {
   },
   
   async print_out_invoice(data) {
-    
-    const fdm = this.useFiscalMachine();
+    return await this.print_document("print_out_invoice", data)
+  },
 
-    if (!fdm) {
-      return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
-    }
-    const request_data = {
-      action: `print_${data.type}`,
-      data: data,
-    }
-
-    return new Promise(async (resolve, reject) => {
-
-      const listener = (data) => {
-
-        if (data.request_data.action === request_data.action) {          
-          if (data.status.status === "connected") {
-            if (data.value && data.value.message === "No se ha completado") {
-                return;
-            }
-            fdm.removeListener(listener);
-            return resolve(data);
-          } else {
-            fdm.removeListener(listener);
-            return reject(data);
-          }
-        }
-      };
-
-      fdm.addListener(listener);
-      
-      try {
-        const response = await fdm.action(request_data);
-
-        if (!response.result) {            
-          fdm.removeListener(listener);            
-          reject({  
-            valid: false,
-            message: _t("Error connecting to the fiscal machine, check if it is turned on or connected to the IoT"),
-            printer_connection: false
-          });
-        }
-      } catch (error) {
-
-        fdm.removeListener(listener);
-        reject({
-            valid: false,
-            message: error.statusText === "timeout" 
-                ? _t("The tax machine did not respond in time")
-                : _t("Error with the tax machine"),
-            printer_connection: false
-        });
+  async print_document(print_type, data) {
+    try {
+      const deviceResponse = await this.device_response(print_type, data);
+      if (!deviceResponse?.result?.valid) {
+        return { "valid": false, "message": "No se ha podido conectar a la Maquina fiscal" }
       }
+      return deviceResponse;
+
+    }catch(error){
+      console.log("Error", error)
+      return { valid: false, message: "Error interno al imprimir documento"};
+    }
+  },
+
+  async device_response(action, data) {
+    return new Promise((resolve, reject) => {
+      const fdm = this.useFiscalMachine();
+
+      if (!fdm) {
+        return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
+      }
+      const listener = ({value}) => {
+        fdm.removeListener(listener);
+        resolve(value);
+      };
+  
+      fdm.addListener(listener);
+  
+      fdm.action({
+        action: action,
+        data: data,
+      }).catch(reject);
     });
   },
 
-  set_data_from_fiscal_machine(order, data) {
-    order.fiscal_machine = data["serial_machine"] || false;
-    order.mf_invoice_number = data["sequence"] || false;
-    order.mf_reportz = data["mf_reportz"] || false;
+  set_data_from_fiscal_machine(order, values) {
+    const result_data = values?.result?.data ?? {};
+    const sequence = result_data.sequence;
+    const serial_machine = result_data.serial_machine;
+    const mf_reportz = result_data.mf_reportz;
+    order.fiscal_machine = serial_machine || false;
+    order.mf_invoice_number = sequence || false;
+    order.mf_reportz = mf_reportz || false;
   },
 
   async pushToMF(order) {
@@ -229,13 +216,12 @@ patch(PosStore.prototype, {
       }
 
       const response = await this.print_out_invoice(data)
-      const { value } = response
-      
-      if (!value.valid) {
-        throw value
+      console.log(response)
+      if (!response?.result?.valid) {
+        throw response
       }
 
-      this.set_data_from_fiscal_machine(order, value)
+      this.set_data_from_fiscal_machine(order, response)
       
       return {  
         valid: true,
@@ -244,7 +230,7 @@ patch(PosStore.prototype, {
       }
     
     } catch (err) {
-
+      console.log("MF error: ", err)
       if (!err.valid) { 
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
@@ -254,6 +240,7 @@ patch(PosStore.prototype, {
         return err
       
       } else {
+        console.log("MF error: ", err)
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
           body: _t(err.status ? err.status : "Internal MF error"),
