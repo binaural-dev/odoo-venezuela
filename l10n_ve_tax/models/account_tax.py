@@ -182,7 +182,7 @@ class AccountTax(models.Model):
                 continue
             for line in payment_id.line_ids:
                 if line.account_id == self.env.company.customer_account_igtf_id or line.account_id == self.env.company.supplier_account_igtf_id:
-                    igtf_amount = line.credit
+                    igtf_amount = line.credit or line.debit
                 
             if self.env.company.currency_id == self.env.ref("base.VEF"): 
                 if payment_id.currency_id == foreign_currency:
