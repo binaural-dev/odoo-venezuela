@@ -1,15 +1,10 @@
-<<<<<<< HEAD
-# Part of Odoo. See LICENSE file for full copyright and licensing details.
-
 import serial.tools.list_ports
-import logging
-=======
-import serial.tools.list_ports
->>>>>>> 70db0d31 (Manifest y acomodando)
 import platform
 import urllib3
 import json
-from odoo.addons.hw_drivers.iot_handlers.interfaces.SerialInterface import SerialInterface
+from odoo.addons.hw_drivers.iot_handlers.interfaces.SerialInterface import (
+    SerialInterface,
+)
 from odoo.addons.hw_drivers.tools import helpers
 from odoo import _
 import logging
@@ -18,7 +13,7 @@ _logger = logging.getLogger(__name__)
 
 
 class SerialInterface(SerialInterface):
-    connection_type = 'serial'
+    connection_type = "serial"
 
     def get_devices(self):
         _logger.info("Getting serial devices")
@@ -42,17 +37,7 @@ class SerialInterface(SerialInterface):
                 if pinpad_ports and port.device in pinpad_ports:
                     _logger.warning("Port disabled (Pinpad): %s", port.device)
                     continue
-<<<<<<< HEAD
-
-                    serial_devices[port.device] = {
-                        'identifier': port.device
-                    }
-=======
                 _logger.info("Port enabled: %s", port.device)
                 serial_devices[port.device] = {"identifier": port.device}
->>>>>>> 70db0d31 (Manifest y acomodando)
 
-                return serial_devices
-
-        except Exception as e:
-            return super().get_devices()
+            return serial_devices
