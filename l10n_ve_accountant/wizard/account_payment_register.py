@@ -133,6 +133,7 @@ class AccountPaymentRegister(models.TransientModel):
         :param batch_result:    A batch returned by '_get_batches'.
         :return:                An amount in the currency of the wizard.
         """
+        
         self.ensure_one()
         comp_curr = self.company_id.currency_id
         if self.source_currency_id == self.currency_id:
