@@ -79,7 +79,6 @@ class SaleOrder(models.Model):
     pricelist_id = fields.Many2one(
         domain=lambda self: (
             "[('company_id', 'in', (company_id, False)),"
-            f"('currency_id', '=', {self.env.company.currency_id.id})]"
         )
     )
 
