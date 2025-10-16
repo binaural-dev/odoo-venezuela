@@ -1,0 +1,16 @@
+<odoo>
+    <template id="status_screen_page" name="Access Status Screen">
+        <t t-call="website.layout">
+            <div id="wrap" class="oe_structure oe_empty">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <h2>Estado de Acceso</h2>
+                            <div id="access-status-root" class="access-status-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

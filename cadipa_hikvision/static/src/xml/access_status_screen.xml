@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="cadipa_hikvision.access_status_screen" owl="1">
+        <div t-attf-class="card text-white text-center {{ state.bg_class }}" style="height: 100vh; display: flex; flex-direction: column; justify-content: center; border-radius: 0;">
+            <div class="card-body">
+                <div class="mb-4">
+                    <t if="state.image_url">
+                        <img t-att-src="state.image_url" class="rounded-circle" style="width: 200px; height: 200px; object-fit: cover; border: 5px solid white;" alt="Foto"/>
+                    </t>
+                    <t t-else="">
+                        <i class="fa fa-user-circle" style="font-size: 200px;"></i>
+                    </t>
+                </div>
+                <h1 class="display-4" t-esc="state.name"/>
+                <p class="lead" t-esc="state.status_text"/>
+            </div>
+        </div>
+    </t>
+</templates>

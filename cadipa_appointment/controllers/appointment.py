@@ -1,3 +1,4 @@
+from urllib import response
 from odoo.addons.binaural_appointment.controllers.appointment import (
     AppointmentController
 )
@@ -107,7 +108,17 @@ class AppointmentControllerMulti(AppointmentController):
         
         # ── normal flow without multi-slots ─────────────────────────
         if not multi_slots:
-            return super().appointment_form_submit(appointment_type_id, **post)
+            if response.status_code == 303 and 'calendar/view' in response.location:
+                access_token = response.location.split('/calendar/view/')[1].split('?')[0]
+                created_event = request.env['calendar.event'].sudo().search([('access_token', '=', access_token)], limit=1)
+                guest_ids_str = request.httprequest.form.getlist('selected_guest_ids')
+                guest_ids = [int(gid) for gid in guest_ids_str if gid.isdigit()]
+                if created_event and guest_ids:
+                    created_event.sudo().write({'guest_ids': [Command.set(guest_ids)]})
+            return response
+        
+        guest_ids_str = request.httprequest.form.getlist('selected_guest_ids')
+        guest_ids = [int(gid) for gid in guest_ids_str if gid.isdigit()]
 
         # ── parsing and group ───────────────────────────────
         slots = sorted((_parse_slot(q) for q in json.loads(multi_slots)),
@@ -187,6 +198,9 @@ class AppointmentControllerMulti(AppointmentController):
                 else:
                     ev.write({'access_token': first_token})
                 created_ev |= ev
+
+            if created_ev and guest_ids:
+                created_ev.sudo().write({'guest_ids': [Command.set(guest_ids)]})
 
         
         has_membership_active = customer.action_number.state == 'active' if customer.action_number else False

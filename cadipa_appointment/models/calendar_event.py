@@ -8,6 +8,11 @@ _logger = logging.getLogger(__name__)
 
 class CalendarEventCrm(models.Model):
     _inherit = 'calendar.event'
+
+    guest_ids = fields.Many2many(
+        "appointment.guests",
+        string="Guests"
+    )
     
 
     def create_invoices(self, data):
