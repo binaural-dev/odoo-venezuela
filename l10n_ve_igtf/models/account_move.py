@@ -170,38 +170,41 @@ class AccountMove(models.Model):
                 line = self.env["account.move.line"].browse([line_id])
                 _logger.info(f'line.move_id === {line.read([])}')
                 payment_id = line.move_id.payment_id
-                if payment_id and payment_id.is_igtf_on_foreign_exchange:
-                    payment_id = line.move_id.payment_id
-                    bi_igtf = payment_id.get_bi_igtf(move_id)
-                    if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
-                        record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
-                        bi_igtf = 0
-                        continue
-                    elif initial_residual <= bi_igtf:
-                        record.bi_igtf = initial_residual
-                        continue
+                # if payment_id and payment_id.is_igtf_on_foreign_exchange:
+                #     _logger.info(f'tiene payment_id igtf === {payment_id.id}')
+                #     # payment_id = line.move_id.payment_id
+                #     bi_igtf = payment_id.get_bi_igtf(move_id)
+                #     _logger.info(f'tiene payment_id igtf === {bi_igtf}')
+                #     if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
+                #         record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                #         _logger.warning(f'Hey 22222222222 {record.bi_igtf}')
+                #         bi_igtf = 0
+                #         continue
+                #     elif initial_residual <= bi_igtf:
+                #         record.bi_igtf = initial_residual
+                #         _logger.warning(f'Hey {record.bi_igtf}')
+                #         continue
+                #     record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                #     _logger.warning(f'Hey 33333333333 {record.bi_igtf}')
+                #     continue
+                # else:
 
+
+
+
+                # if record.move_type == 'in_invoice':
+                payment_id = line.move_id.payment_id
+                bi_igtf = record.amount_total
+                _logger.info(f'asignando el bi igtf === {bi_igtf}')
+                if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
                     record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                    bi_igtf = 0
                     continue
-                else:
-
-
-
-
-                    if record.move_type == 'in_invoice':
-                        payment_id = line.move_id.payment_id
-                        bi_igtf = record.amount_total
-                        _logger.info(f'asignando el bi igtf === {bi_igtf}')
-                        if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
-                            record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
-                            bi_igtf = 0
-                            continue
-                        elif initial_residual <= bi_igtf:
-                            record.bi_igtf = initial_residual
-                            continue
-
-                        record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
-                        continue
+                elif initial_residual <= bi_igtf:
+                    record.bi_igtf = initial_residual
+                    continue
+                record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                continue
 
 
             for payment in payments:
