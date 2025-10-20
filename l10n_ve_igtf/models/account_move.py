@@ -107,7 +107,7 @@ class AccountMove(models.Model):
     def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0,amount_to_pay = 0.0):
         """This method can be used by ir.actions.server to update bi_igtf"""
         _logger.info(f'self.bi_igtf === {self.move_type}')
-        _logger.info(f' jajajaja line_id === {line_id}')
+        _logger.info(f'Processing recalculate_bi_igtf for line_id: {line_id}')
         for record in self:
             bi_igtf = 0
             credits_for_payment = {}
