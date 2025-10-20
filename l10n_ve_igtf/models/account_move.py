@@ -154,7 +154,6 @@ class AccountMove(models.Model):
                     if bi_igtf > record.amount_total and not initial_residual == 0:
                         bi_igtf = initial_residual + record.bi_igtf
                         record.bi_igtf = bi_igtf
-                        _logger.info(xd.xd)
                         return
                     if not advance_igtf:
                         record.bi_igtf = 0.00
