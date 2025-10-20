@@ -323,7 +323,6 @@ class AccountMove(models.Model):
 
     def js_assign_outstanding_line(self, line_id):
         _logger.info('entrando a l10 igtf')
-        # _logger.info(xd.xd)
         amount_residual = self.amount_residual
         self = self.with_context(from_widget=True)
         res = super().js_assign_outstanding_line(line_id)
