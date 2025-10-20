@@ -67,4 +67,5 @@ class Warehouse(models.Model):
                 "sequence_code": "INT",
                 "company_id": self.company_id.id,
             },
+
         }, max_sequence + 6
