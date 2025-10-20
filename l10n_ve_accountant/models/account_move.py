@@ -841,7 +841,7 @@ class AccountMove(models.Model):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
-        if self.invoice_date:
+        if self.invoice_date or self.date:
             if self.foreign_rate < 0 or self.foreign_inverse_rate < 0:
                 raise ValidationError(_("The rate entered cannot be negative"))
             Rate = self.env["res.currency.rate"]
