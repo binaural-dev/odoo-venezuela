@@ -218,7 +218,6 @@ class AccountMove(models.Model):
                         continue
                     amount += bi_igtf
         _logger.info(f'record.bi_igtf === {record.bi_igtf}')
-        # _logger.info(xd.xd)
 
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
