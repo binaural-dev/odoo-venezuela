@@ -27,4 +27,3 @@ class Warehouse(models.Model):
             max_sequence += 1
 
         return picking_type_create_values, max_sequence
-
