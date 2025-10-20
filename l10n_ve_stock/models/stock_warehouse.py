@@ -67,15 +67,4 @@ class Warehouse(models.Model):
                 "sequence_code": "INT",
                 "company_id": self.company_id.id,
             },
-            "pos_type_id": {
-                "name": _("PoS Orders"),
-                "code": "outgoing",
-                "default_location_src_id": self.lot_stock_id.id,
-                "default_location_dest_id": self.env.ref(
-                    "stock.stock_location_customers"
-                ).id,
-                "sequence": max_sequence + 6,
-                "sequence_code": "POS",
-                "company_id": self.company_id.id,
-            },
         }, max_sequence + 6
