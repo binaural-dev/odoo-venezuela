@@ -107,7 +107,7 @@ class AccountMove(models.Model):
     def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0,amount_to_pay = 0.0):
         """This method can be used by ir.actions.server to update bi_igtf"""
         _logger.info(f'self.bi_igtf === {self.move_type}')
-        _logger.info(f' jajajaja line_id === {line_id}')
+        _logger.info(f'Processing recalculate_bi_igtf for line_id: {line_id}')
         for record in self:
             bi_igtf = 0
             credits_for_payment = {}
@@ -218,7 +218,6 @@ class AccountMove(models.Model):
                         continue
                     amount += bi_igtf
         _logger.info(f'record.bi_igtf === {record.bi_igtf}')
-        # _logger.info(xd.xd)
 
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
@@ -324,7 +323,6 @@ class AccountMove(models.Model):
 
     def js_assign_outstanding_line(self, line_id):
         _logger.info('entrando a l10 igtf')
-        # _logger.info(xd.xd)
         amount_residual = self.amount_residual
         self = self.with_context(from_widget=True)
         res = super().js_assign_outstanding_line(line_id)
