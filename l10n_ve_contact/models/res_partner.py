@@ -10,6 +10,14 @@ _logger = logging.getLogger(__name__)
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
+    def _default_company_id(self):
+        company_id = self.env.company.id
+        return company_id
+
+    company_id = fields.Many2one(
+        default=_default_company_id,
+    )
+
     name = fields.Char(tracking=True)
 
     mobile = fields.Char(tracking=True)
@@ -26,7 +34,9 @@ class ResPartner(models.Model):
 
     street2 = fields.Char(tracking=True)
 
-    country_id = fields.Many2one(tracking=True, default= lambda self: self.env.ref("base.ve"))
+    country_id = fields.Many2one(
+        tracking=True, default=lambda self: self.env.ref("base.ve")
+    )
 
     state_id = fields.Many2one(tracking=True)
 
@@ -38,9 +48,7 @@ class ResPartner(models.Model):
 
     zip = fields.Char(tracking=True)
 
-    def _default_company_id(self):
-        company_id = self.env.company.id
-        return company_id
+    identity_document = fields.Char("Identify Document")
 
     prefix_vat = fields.Selection(
         [
@@ -56,6 +64,35 @@ class ResPartner(models.Model):
         help="Prefix of the VAT number",
         tracking=True,
     )
+
+    @api.constrains("name")
+    def _check_name_immutable(self):
+        model_checks = {
+            "sale.order": [("partner_id", "=", "id")],
+            "purchase.order": [("partner_id", "=", "id")],
+            "account.move": [
+                ("partner_id", "=", "id"),
+                ("move_type", "in", ["out_invoice", "in_invoice"]),
+            ],
+            "account.move.line": [("partner_id", "=", "id")],
+        }
+
+        for partner in self:
+            for model, domain in model_checks.items():
+                if model not in self.env.registry.models:
+                    continue
+                # Replace 'id' placeholder with actual partner.id
+                resolved_domain = [
+                    (field, op, partner.id if val == "id" else val)
+                    for field, op, val in domain
+                ]
+                if self.env[model].search_count(resolved_domain) > 0:
+                    raise ValidationError(
+                        _(
+                            "You cannot modify the name of a contact with associated "
+                            "transactions."
+                        )
+                    )
 
     def check_duplicate_vat(self, prefix_vat, vat, company_id=None):
         error_message = ""
@@ -101,8 +138,7 @@ class ResPartner(models.Model):
                     "A partner with the same email address already exists for this company."
                 )
             elif self.env.company.validate_user_creation_general:
-                error_message = _(
-                    "A partner with the same email already exists.")
+                error_message = _("A partner with the same email already exists.")
             else:
                 error_message = _(
                     "A partner with the same email address already exists for this company."
@@ -111,10 +147,6 @@ class ResPartner(models.Model):
             existing_partner = self.env["res.partner"].search(domain, limit=1)
             if existing_partner:
                 raise ValidationError(error_message)
-
-    company_id = fields.Many2one(
-        default=_default_company_id,
-    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -142,8 +174,7 @@ class ResPartner(models.Model):
                         continue
                     vals["name"] = name
             if "vat" and "prefix_vat" in vals:
-                self.check_duplicate_vat(
-                    vals.get("prefix_vat"), vals.get("vat"))
+                self.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
             if "email" in vals:
                 self.check_duplicate_email(vals.get("email"))
         return super(ResPartner, self).create(vals_list)
@@ -152,8 +183,7 @@ class ResPartner(models.Model):
         res = super().write(vals)
         if "prefix_vat" and "vat" in vals:
             for record in self:
-                record.check_duplicate_vat(
-                    vals.get("prefix_vat"), vals.get("vat"))
+                record.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
         if "email" in vals:
             for record in self:
                 record.check_duplicate_email(vals.get("email"))
@@ -170,16 +200,26 @@ class ResPartner(models.Model):
     def _onchange_(self):
         """This function assign the name of the person by the vat number and the prefix of the vat number
         calling the function get_default_name_by_vat from binaural_cne_query
-    
+
         Args:
             prefix_vat (string): prefix of the vat number (V)
             vat (string): vat number of the person, this number is unique in Venezuela
         """
         if self.vat and not self.name and self.prefix_vat in ["V", "E"]:
             self._check_vat()
-            name, flag = binaural_cne_query.get_default_name_by_vat(self, self.prefix_vat, self.vat)
+            name, flag = binaural_cne_query.get_default_name_by_vat(
+                self, self.prefix_vat, self.vat
+            )
             if not flag:
                 return
             for record in self:
                 record.name = name
-    
+
+    @api.onchange("vat")
+    def _onchange_vat_(self):
+        """This function checks that if a VAT is being added and the identity_document field is empty,
+        the identity_document field is assigned the same value as the VAT.
+        """
+        for record in self:
+            if not record.identity_document:
+                record.identity_document = record.vat
