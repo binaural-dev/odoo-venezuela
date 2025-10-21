@@ -4,17 +4,10 @@
 #
 msgid ""
 msgstr ""
-<<<<<<< HEAD
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 17:00+0000\n"
-"PO-Revision-Date: 2025-03-27 17:00+0000\n"
-=======
 "Project-Id-Version: Odoo Server 17.0+e\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-21 14:24+0000\n"
 "PO-Revision-Date: 2025-10-21 14:24+0000\n"
->>>>>>> a9a83334 (fix:Se suben las traducciones para la solucion del ticket)
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -96,18 +89,6 @@ msgid "Activate Barcode Strict Mode"
 msgstr "Activar Modo Estricto Barcode"
 
 #. module: l10n_ve_pos
-<<<<<<< HEAD
-=======
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
-msgid ""
-"Activate product entry with barcode in\n"
-"                                                            strict mode"
-msgstr ""
-"Activar entrada de producto con\n"
-"                                       código de barras en modo estricto"
-
-#. module: l10n_ve_pos
->>>>>>> a9a83334 (fix:Se suben las traducciones para la solucion del ticket)
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__activate_barcode_strict_mode
 #: model:ir.model.fields,help:l10n_ve_pos.field_res_config_settings__activate_barcode_strict_mode
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
@@ -117,11 +98,6 @@ msgstr "Activar entrada de producto con código de barras en modo estricto"
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid ""
-<<<<<<< HEAD
-"Allows you to sell kits whose products are not in the main warehouse of the "
-"box."
-msgstr "Permite vender kits cuyos productos no están en el almacén principal de la caja."
-=======
 "Allows you to sell kits whose products are\n"
 "                                                        not in the main\n"
 "                                                        warehouse of the box."
@@ -129,7 +105,6 @@ msgstr ""
 "Permite vender kits cuyos productos son\n"
 "                                                        no en el principal\n"
 "                                                        warehouse of the box."
->>>>>>> a9a83334 (fix:Se suben las traducciones para la solucion del ticket)
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__amount_to_zero
@@ -938,14 +913,11 @@ msgid ""
 msgstr ""
 "No puede romper conciliación de un pago vinculado a una sesión de POS que "
 "aún está abierta"
-<<<<<<< HEAD
-=======
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "allows sales on order without having the product available"
 msgstr "Permite la venta bajo pedido sin tener el producto disponible"
->>>>>>> a9a83334 (fix:Se suben las traducciones para la solucion del ticket)
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos
