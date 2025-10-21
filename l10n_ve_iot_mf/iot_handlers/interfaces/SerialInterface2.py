@@ -30,9 +30,10 @@ class SerialInterface(SerialInterface):
                 b_body = waiting._body
                 body = json.loads(b_body.decode("utf-8"))
 
-                for port in serial.tools.list_ports.comports():
-                    if(port.device in body[helpers.get_mac_address()]):
-                        continue
+            for port in serial.tools.list_ports.comports():
+                if pinpad_ports and port.device in pinpad_ports:
+                    continue
+                serial_devices[port.device] = {"identifier": port.device}
 
                     serial_devices[port.device] = {
                         'identifier': port.device
