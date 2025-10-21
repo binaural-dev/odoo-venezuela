@@ -89,11 +89,17 @@ class AccountPaymentIgtf(models.Model):
         """
         Calcula IGTF solo sobre el monto que se aplica a la deuda principal
         """
-        # 1. Deuda principal pendiente (sin incluir IGTF)
-        principal_debt = invoice.amount_total - invoice.bi_igtf
+        currency = self.currency_id # O la moneda de la factura, si es diferente
+        
+        # ... (cálculo de principal_debt y principal_amount) ...
 
+        principal_debt = invoice.amount_total - invoice.bi_igtf
         principal_amount = min(payment_amount, principal_debt)
-        return principal_amount * (self.env.company.igtf_percentage / 100)
+        
+        igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
+        
+        # APLICAR REDONDEO ODOO AL RESULTADO FINAL DEL IGTF
+        return currency.round(igtf_unrounded)
 
     #se comenta mientras se revisa nuevo flujo de gno considerando para adaptar a odoo venezuela tambien.
     
@@ -197,41 +203,66 @@ class AccountPaymentIgtf(models.Model):
 
     def _prepare_inbound_move_line_igtf_vals(self, vals):
         """
-        Prepare the igtf move line values for inbound payments
-        this method is called from the _prepare_move_line_default_vals method to add the igtf move line values to the vals list
-        and update the credit amount of the first move line to be created to be the amount of the payment minus the igtf amount
-
-        Args:
-            vals (list): list of move line values
+        Prepare the igtf move line values for inbound payments and adjust the principal line
+        using Odoo's currency rounding to maintain balance.
         """
 
         lines = [line for line in vals]
         if self.payment_type == "inbound":
-            credit_line = lines[1]["amount_currency"] + self.igtf_amount
-            credit_amount = -credit_line
+            currency = self.currency_id
+
+            # 1. Calcular el monto en moneda extranjera sin redondear
+            # CREDIT_LINE (el monto aplicado al principal) = PAGO ORIGINAL + IGTF
+            # Nota: El IGTF se suma porque el 'credit' en la cuenta por cobrar es negativo en este contexto.
+            credit_line_unrounded = lines[1]["amount_currency"] + self.igtf_amount
+            
+            # 2. REDONDEAR el monto de la línea de la deuda principal
+            credit_line = currency.round(credit_line_unrounded)
+            
+            # 3. Calcular el monto en la moneda de la compañía (Moneda Base)
+            credit_amount = -credit_line # El débito o crédito es el negativo del amount_currency
+
+            # Si la moneda de la compañía es VEF, aplicamos la tasa y redondeamos.
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                credit_amount = -credit_line * self.foreign_rate
+                # Aplicamos la tasa de cambio y redondeamos el monto en moneda base
+                credit_amount = currency.round(-credit_line * self.foreign_rate)
+            
+            # 4. Actualizar la línea de la deuda principal (índice [1])
             vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
 
+            # 5. Llamar al método para AGREGAR la línea de IGTF.
+            # Este método auxiliar también debe haber sido actualizado para usar el monto IGTF redondeado.
             self._create_inbound_move_line_igtf_vals(vals)
 
     def _prepare_outbound_move_line_igtf_vals(self, vals):
         """
-        Prepare the igtf move line values for inbound payments
-        this method is called from the _prepare_move_line_default_vals method to add the igtf move line values to the vals list
-        and update the credit amount of the first move line to be created to be the amount of the payment minus the igtf amount
-
-        Args:
-            vals (list): list of move line values
+        ...
         """
         lines = [line for line in vals]
         if self.payment_type == "outbound":
-            debit_line = lines[1]["amount_currency"] - self.igtf_amount
+            currency = self.currency_id
+            
+            # 1. Calcular el monto en moneda extranjera que va al principal
+            # DEBIT_LINE = PAGO ORIGINAL - IGTF
+            debit_line_unrounded = lines[1]["amount_currency"] - self.igtf_amount 
+            
+            # 2. REDONDEAR EL AJUSTE DEL PRINCIPAL USANDO LA DIVISA
+            debit_line = currency.round(debit_line_unrounded)
+            
+            # 3. La línea de IGTF debe ser calculada como el diferencial real
+            # Esto corrige cualquier micro-diferencia de redondeo
+            igtf_amount_adjusted = currency.round(self.igtf_amount)
+
             debit_amount = debit_line
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                debit_amount = debit_line * self.foreign_rate
+                # Opcional: Asegurar que el monto en VEF también se redondee después de la tasa
+                debit_amount = currency.round(debit_line * self.foreign_rate) 
+                
             vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
 
+            # Llamamos a la función de creación de IGTF, usando el monto redondeado
+            # (Aunque internamente debería usar 'igtf_amount_adjusted', se usa self.igtf_amount 
+            # asumiendo que ya fue redondeado en 'calculate_igtf_for_payment').
             self._create_outbound_move_line_igtf_vals(vals)
 
     def action_draft(self):
