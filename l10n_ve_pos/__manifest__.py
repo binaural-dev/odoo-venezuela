@@ -8,11 +8,7 @@
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-<<<<<<< HEAD
-    "version": "17.0.0.0.2",
-=======
     "version": "17.0.0.0.4",
->>>>>>> a9a83334 (fix:Se suben las traducciones para la solucion del ticket)
     # any module necessary for this one to work correctly
     "depends": [
         "base",
