@@ -85,6 +85,9 @@ class IGTFTestCommon(TransactionCase):
         # 📢 CORRECCIÓN DE NOMBRE: Usar self.account_bank para consistencia en la clase
         self.account_bank = self.get_or_create_account("1001", "asset_cash", "Cuenta de Banco USD") 
 
+        self.account_bank_bsf = self.get_or_create_account("1001", "asset_cash", "Cuenta de Banco VEF") 
+
+
         self.advance_cust_acc = self.get_or_create_account(
             "21600", "liability_current", "Anticipo Clientes", recon=True
         )
@@ -133,7 +136,16 @@ class IGTFTestCommon(TransactionCase):
                 "name": "Manual Inbound VEF",
                 "payment_method_id": manual_in.id,
                 "payment_type": "inbound",
-                "payment_account_id": self.account_bank.id, 
+                "payment_account_id": self.account_bank_bsf.id, 
+            }
+        )
+
+        self.pm_line_out_vef = self.env["account.payment.method.line"].create(
+            {
+                "name": "Manual Outbound VEF",
+                "payment_method_id": manual_out.id,
+                "payment_type": "outbound",
+                "payment_account_id": self.account_bank_bsf.id, 
             }
         )
 
@@ -169,8 +181,9 @@ class IGTFTestCommon(TransactionCase):
                 "company_id": self.company.id,
                 "currency_id": self.currency_vef.id, # Moneda Local VEF
                 "is_igtf": False, # Sin IGTF
-                "default_account_id": self.account_bank.id,
+                "default_account_id": self.account_bank_bsf.id,
                 "inbound_payment_method_line_ids": [(6, 0, self.pm_line_in_vef.ids)],
+                "outbound_payment_method_line_ids": [(6, 0, self.pm_line_out_vef.ids)],
             }
         )
         self.pm_line_in_vef.journal_id = self.bank_journal_bs.id

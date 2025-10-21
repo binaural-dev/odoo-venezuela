@@ -83,6 +83,9 @@ class IGTFTestCommon(TransactionCase):
             "13600", "asset_current", "Anticipo Proveedores", recon=True
         )
 
+        self.account_bank_bsf = self.get_or_create_account("1001", "asset_cash", "Cuenta de Banco VEF") 
+
+
         # 4. Configuración de la Compañía (IGTF y Anticipos)
         self.company.write(
             {
@@ -117,14 +120,24 @@ class IGTFTestCommon(TransactionCase):
         )
 
         # Líneas de método VEF (PRIORIZANDO OUTBOUND)
+        self.pm_line_in_vef = self.env["account.payment.method.line"].create(
+            {
+                "name": "Manual Inbound VEF",
+                "payment_method_id": manual_in.id,
+                "payment_type": "inbound",
+                "payment_account_id": self.account_bank_bsf.id, 
+            }
+        )
+
         self.pm_line_out_vef = self.env["account.payment.method.line"].create(
             {
                 "name": "Manual Outbound VEF",
                 "payment_method_id": manual_out.id,
                 "payment_type": "outbound",
-                "payment_account_id": self.account_bank.id, 
+                "payment_account_id": self.account_bank_bsf.id, 
             }
         )
+
 
         # 6. Configuración de Diarios (AJUSTADO PARA PROVEEDORES)
         self.bank_journal_usd = self.Journal.create(
@@ -152,7 +165,8 @@ class IGTFTestCommon(TransactionCase):
                 "company_id": self.company.id,
                 "currency_id": self.currency_vef.id,
                 "is_igtf": False, 
-                "default_account_id": self.account_bank.id,
+                "default_account_id": self.account_bank_bsf.id,
+                "inbound_payment_method_line_ids": [(6, 0, self.pm_line_in_vef.ids)],
                 "outbound_payment_method_line_ids": [(6, 0, self.pm_line_out_vef.ids)], # SOLO OUTBOUND
             }
         )

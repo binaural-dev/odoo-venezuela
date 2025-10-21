@@ -665,7 +665,7 @@ class TestIGTFNEW(IGTFTestCommon):
 
         expected_lines_2 = [
             {
-                'account': self.account_bank,      
+                'account': self.account_bank_bsf,      
                 'debit': 0.0,  
                 'foreign_credit':payment_amount_2_ves,   
                 'credit': amount_to_pay_2_usd,

@@ -614,6 +614,8 @@ class TestIGTFNEW(IGTFTestCommon):
             },
         ]
 
+        
+
         self._assert_move_lines_equal(payment_move_1, expected_lines)
 
         self.assertEqual(invoice.payment_state, 'partial')
@@ -621,14 +623,15 @@ class TestIGTFNEW(IGTFTestCommon):
         _logger.info("--- PRIMER PAGO (USD) SUPERADO. ---")
         _logger.info("--- SEGUNDO PAGO (Para liquidar el residual, PAGO EN VES) ---")
 
-        cxc_liquidation_ves = expected_residual_1 * rate
+        self.assertEqual(invoice.amount_residual, round(expected_residual_1, 2), "Residual incorrecto después del pago 1. se esperaba: " + str(expected_residual_1) + " - valor actual: " + str(invoice.amount_residual))
+        cxc_liquidation_ves = amount_to_pay_2_usd * rate
         payment_amount_2_ves = cxc_liquidation_ves
         payment_amount_2_ves = round(payment_amount_2_ves, 2) 
         
         
         invoice_1 = self.env['account.move'].browse(invoice.id)
 
-        
+        _logger.info("Monto para segundo pago: " + str(payment_amount_2_ves))
         with Form(
             self.env['account.payment.register'].with_context(
                 active_model='account.move', active_ids=invoice_1.ids,
@@ -642,9 +645,7 @@ class TestIGTFNEW(IGTFTestCommon):
             pay_form.payment_date = fields.Date.today()
             
             pay_form.foreign_currency_id = self.currency_vef 
-
-            pay_form.foreign_rateamount_to_pay_2_usd = invoice.foreign_rate
-
+            pay_form.foreign_rate = rate
             pay_form.amount = payment_amount_2_ves
  
 
@@ -652,9 +653,11 @@ class TestIGTFNEW(IGTFTestCommon):
 
         action_2 = payment_register_wiz_2.action_create_payments()
 
+        
         _logger.info('SEGUNDO PAGO REALIZADO' )
 
         payment_2 = self.env['account.payment'].browse(action_2.get('res_id'))
+        _logger.info('SEGUNDO PAGO valor: ' + str(payment_2.amount))
         payment_move_2 = payment_2.move_id 
 
 
@@ -679,6 +682,8 @@ class TestIGTFNEW(IGTFTestCommon):
         ]
 
         _logger.info(expected_lines_2)
+        _logger.info(payment_move_2.amount_total)
+        _logger.info(payment_move_2.line_ids.mapped(lambda l: (l.account_id.name, l.debit, l.credit, l.foreign_debit, l.foreign_credit, l.currency_id.name if l.currency_id else False)))
 
         self.assertEqual(
             payment_move_2.state, 
