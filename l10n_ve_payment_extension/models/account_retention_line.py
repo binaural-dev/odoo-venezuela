@@ -371,14 +371,19 @@ class AccountRetentionLine(models.Model):
                     record.foreign_invoice_amount == 0,
                 )
             ):
-                raise ValidationError(_("You can not create a retention with 0 amount."))
+                raise ValidationError(
+                    _("You can not create a retention with 0 amount.")
+                )
 
-            is_vef_the_base_currency = self.env.company.currency_id == self.env.ref("base.VEF")
+            is_vef_the_base_currency = self.env.company.currency_id == self.env.ref(
+                "base.VEF"
+            )
             is_client_retention = record.retention_id.type == "out_invoice"
             if (
                 is_vef_the_base_currency
                 and is_client_retention
-                and record.retention_amount > record.move_id.amount_residual
+                and record.move_id.payment_state not in ("in_payment", "paid")
+                and abs(record.retention_amount) > abs(record.move_id.amount_residual)
             ):
                 raise ValidationError(
                     _(
@@ -390,8 +395,7 @@ class AccountRetentionLine(models.Model):
     def get_invoice_paid_amount_not_related_with_retentions(self):
         """
         Returns the amount paid on the invoice that is not related with the retentions for the ISLR
-        supplier retention lines.
-        """
+        supplier retention lines. """
         # We need to get the lines without duplicate invoices because the invoice can have more
         # than one retention line.
         lines_without_duplicate_invoices = self.env[self._name]
