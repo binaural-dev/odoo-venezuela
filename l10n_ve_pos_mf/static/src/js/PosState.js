@@ -97,10 +97,14 @@ patch(PosStore.prototype, {
           return { "valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}` }
         }
         if (response.length > 0) {
+          const date = new Date(response[0].date_order);
+          const format_date = date.toLocaleDateString('es-ES');
+          console.log(format_date);
+
           invoice["invoice_affected"] = {
             "number": response[0].mf_invoice_number,
             "serial_machine": response[0].fiscal_machine,
-            "date": response[0].date_order,
+            "date": format_date,
           }
         }
       } catch (e) {
@@ -158,16 +162,13 @@ patch(PosStore.prototype, {
 
     return noSpecialChars;
   },
-  
-  async print_out_invoice(data) {
-    return await this.print_document("print_out_invoice", data)
-  },
 
   async print_document(print_type, data) {
     try {
       const deviceResponse = await this.device_response(print_type, data);
-      if (!deviceResponse?.result?.valid) {
-        return { "valid": false, "message": "No se ha podido conectar a la Maquina fiscal" }
+
+      if (print_type == "print_invoice" && !deviceResponse?.valid) {
+        return { "valid": false, "message": deviceResponse?.message || "Error al imprimir" }
       }
       return deviceResponse;
 
@@ -199,10 +200,10 @@ patch(PosStore.prototype, {
   },
 
   set_data_from_fiscal_machine(order, values) {
-    const result_data = values?.result?.data ?? {};
-    const sequence = result_data.sequence;
-    const serial_machine = result_data.serial_machine;
-    const mf_reportz = result_data.mf_reportz;
+    const data = values?.data ?? {};
+    const sequence = data.sequence;
+    const serial_machine = data.serial_machine;
+    const mf_reportz = data.mf_reportz;
     order.fiscal_machine = serial_machine || false;
     order.mf_invoice_number = sequence || false;
     order.mf_reportz = mf_reportz || false;
@@ -215,9 +216,9 @@ patch(PosStore.prototype, {
         throw data["message"]
       }
 
-      const response = await this.print_out_invoice(data)
+      const response = await this.print_document(`print_${data.type}`, data)
       console.log(response)
-      if (!response?.result?.valid) {
+      if (!response?.valid) {
         throw response
       }
 

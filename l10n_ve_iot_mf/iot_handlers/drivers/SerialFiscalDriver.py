@@ -183,7 +183,6 @@ class SerialFiscalDriver(SerialDriver):
     @classmethod
     def supported(cls, device):
         try:
-            _logger.info("DLL cargada exitosamente y Tfhka inicializado, linea 108.")            
             condition = False
             
             try:
@@ -199,7 +198,7 @@ class SerialFiscalDriver(SerialDriver):
 
                 device_manager = Tfhka()
                 # Tfhka = device_manager
-                _logger.info("DLL cargada exitosamente y Tfhka inicializado, linea 108.")
+                _logger.info("DLL cargada exitosamente y Tfhka inicializado")
             except Exception as e:
                 _logger.error("Error al cargar la DLL: %s", e)
                 _logger.error(f"Problema del la clase Tfhka: {Tfhka}")
@@ -261,7 +260,7 @@ class SerialFiscalDriver(SerialDriver):
             return
 
         self.tfhka = Tfhka()  # Aquí se inicializa self.tfhka correctamente.
-        _logger.info("DLL TfhkaNet cargada correctamente, linea 260.")
+        _logger.info("DLL TfhkaNet cargada correctamente.")
         
     def connect(self, port):
         """
@@ -296,7 +295,7 @@ class SerialFiscalDriver(SerialDriver):
                 "reprint_date": self.reprint_date,
                 "print_resume": self.print_resume,
                 "test": self.test,
-                "report_x": self.print_x_report,
+                "report_x": self.PrintXReport,
                 "report_z": self.PrintZReport,
                 "get_last_invoice_number": self.get_last_invoice_number,
                 "get_last_out_refund_number": self.get_last_out_refund_number,
@@ -349,40 +348,52 @@ class SerialFiscalDriver(SerialDriver):
         self._push_status()
 
     def configure_device(self, data):
-        if data["data"].get("flag_21", False):
-            self.send_command("PJ21" + data["data"]["flag_21"])
-        if data["data"].get("flag_24", False):
-            self.send_command("PJ24" + data["data"]["flag_24"])
-        if data["data"].get("show_version", False):
-            self.send_command("PJ77" + data["data"]["show_version"])
-        self.send_command("PJ6300")
+        try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
 
-        payment_methods = [
-            "PE01EFECTIVO 01",
-            "PE02EFECTIVO 02",
-            "PE03PAGO MOVIL 01",
-            "PE04PAGO MOVIL 02",
-            "PE05PAGO MOVIL 03",
-            "PE06PAGO MOVIL 04",
-            "PE07TRANSFERENCIA 01 ",
-            "PE08TRANSFERENCIA 02",
-            "PE09TRANSFERENCIA 03",
-            "PE10TRANSFERENCIA 04",
-            "PE11PDV 01 ",
-            "PE12PDV 02",
-            "PE13PDV 03",
-            "PE14PDV 04",
-            "PE15CREDITO 01",
-            "PE16CREDITO 02",
-            "PE19DIVISA 02",
-            "PE20DIVISA 01",
-            "PE21ZELLE",
-        ]
-        for line in payment_methods:
-            self.send_command(line)
+            if data["data"].get("flag_21", False):
+                self.send_command("PJ21" + data["data"]["flag_21"])
+            if data["data"].get("flag_24", False):
+                self.send_command("PJ24" + data["data"]["flag_24"])
+            if data["data"].get("show_version", False):
+                self.send_command("PJ77" + data["data"]["show_version"])
+            self.send_command("PJ6300")
 
-        self.data["value"] = {"status": "true"}
-        event_manager.device_changed(self)
+            payment_methods = [
+                "PE01EFECTIVO 01",
+                "PE02EFECTIVO 02",
+                "PE03PAGO MOVIL 01",
+                "PE04PAGO MOVIL 02",
+                "PE05PAGO MOVIL 03",
+                "PE06PAGO MOVIL 04",
+                "PE07TRANSFERENCIA 01 ",
+                "PE08TRANSFERENCIA 02",
+                "PE09TRANSFERENCIA 03",
+                "PE10TRANSFERENCIA 04",
+                "PE11PDV 01 ",
+                "PE12PDV 02",
+                "PE13PDV 03",
+                "PE14PDV 04",
+                "PE15CREDITO 01",
+                "PE16CREDITO 02",
+                "PE19DIVISA 02",
+                "PE20DIVISA 01",
+                "PE21ZELLE",
+            ]
+            for line in payment_methods:
+                self.send_command(line)
+
+            self.data["value"] = {"valid": "true"}
+            event_manager.device_changed(self)
+        except Exception as e:
+            _logger.error(f"Error en configure_device: {e}")
+            self.data["value"] = {"valid": False, "message": str(e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(e)}
 
     def _set_name(self):
         """Establece el nombre del dispositivo basado en la información del modelo, país de la impresora y número de registro de la impresora fiscal."""
@@ -394,7 +405,13 @@ class SerialFiscalDriver(SerialDriver):
                 _logger.error("No hay impresora conectada.")
             else:
                 _logger.error("El objeto e=si existe.")
-                
+            
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+
             sv_data = self.tfhka.GetSVPrinterData()
             
             if sv_data:
@@ -404,7 +421,7 @@ class SerialFiscalDriver(SerialDriver):
                 model = "Modelo desconocido"
                 country = "País desconocido"
             
-            estado_s1 = self.get_s1_printer_data()  
+            estado_s1 = status["result"] 
             
             if estado_s1:
                 machine_number = estado_s1.RegisteredMachineNumber 
@@ -422,20 +439,27 @@ class SerialFiscalDriver(SerialDriver):
 
     def test(self, data):
         try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
             self.send_command("7")
             self.send_command("800")
             self.send_command("80$Binaural Test")
             self.send_command("80!Documento de pruebas")
             self.send_command("810")
-            self.data["value"] = {"status": "true"}
+            self.data["value"] = {"valid": True, "message": "Test impreso correctamente."}
             event_manager.device_changed(self)
             _logger.info(" Test command executed successfully.")
             
             # self.get_z_number(data)
         except Exception as e:
-            _logger.info("Test command executed successfully.")
             _logger.error(f"Error executing test command: {e}")
-            raise
+            self.data["value"] = {"valid": False, "message": str(e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(e)}
 
     def send_command(self, command):
         """
@@ -467,16 +491,28 @@ class SerialFiscalDriver(SerialDriver):
             return {"valid": False, "message": str(e)}
         
     def logger(self, data):
-        self.tfhka.SendCmd(str(data["data"]))
-        _logger.info(data["data"])
-        self.data["value"] = {"status": "true"}
-        event_manager.device_changed(self)
+        try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
+            self.send_command(str(data["data"]))
+            _logger.info(data["data"])
+            self.data["value"] = {"valid": "true"}
+            event_manager.device_changed(self)
+        except Exception as e:
+            _logger.error(f"Error en logger: {e}")
+            self.data["value"] = {"valid": False, "message": str(e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(e)}
 
     def logger_multi(self, data):
         lines = data.get("data", [])
         for line in lines:
             self.send_command(str(line))
-        self.data["value"] = {"status": "true"}
+        self.data["value"] = {"valid": True}
         event_manager.device_changed(self)
         
     def print_out_invoice(self, invoice):  
@@ -494,6 +530,11 @@ class SerialFiscalDriver(SerialDriver):
             
             if self.data["value"].get("valid"):
                 send_result = self.send_invoice_commands(self.data["value"])
+                if not send_result.get("valid", False):
+                    self.data["value"] = send_result
+                    event_manager.device_changed(self)
+                    return send_result
+                
                 result = self.finalize_invoice(True)
                 self.data["value"] = result
 
@@ -602,7 +643,7 @@ class SerialFiscalDriver(SerialDriver):
                 for index, aditional_lines in enumerate(invoice_data.get("aditional_lines")):
                     cmd.append(f"i{str(index).zfill(2)}{aditional_lines}")
                                 
-            cmd.append(str("199"))
+            # cmd.append(str("199"))
             
             self.data["value"] = {"valid": True, "data": cmd}
             
@@ -624,13 +665,17 @@ class SerialFiscalDriver(SerialDriver):
         :return: Resultado de la operación.
         """
         try:
-            _logger.info("cmd 894")
             msg = []
             cmd = cmd.get("cmd", cmd)
-            _logger.info("Grupo de comandos a enviar: %s", cmd)
+
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
             for command in cmd:
-                _logger.info(f"COMANDO : {command}")
-                result = self.tfhka.SendCmd(command)
+                result = self.send_command(command)
                 
                 if not result:
                     msg.append(f"Fallo al enviar comando: {command}")
@@ -642,7 +687,7 @@ class SerialFiscalDriver(SerialDriver):
 
         except Exception as _e:
             _logger.error(f"Error al enviar los comandos de la factura: {_e}")
-            return {"valid": False, "message": str(_e)}
+            return {"valid": False, "message": str(_e), "continue": False}
         
     def finalize_invoice(self, data):
         """
@@ -657,7 +702,7 @@ class SerialFiscalDriver(SerialDriver):
             machine_number = estado_s1.RegisteredMachineNumber
             number_z = estado_s1.DailyClosureCounter + 1
             
-            result = {
+            return{
                 "valid": True,
                 "data": {
                     "sequence": number,
@@ -666,12 +711,6 @@ class SerialFiscalDriver(SerialDriver):
                 },
                 "message": msg
             }
-
-            return {
-                    "id": None,
-                    "jsonrpc": "2.0",
-                    "result": result
-                    }
             
         else:
             self.data["value"] = {"valid": False, "message": "No se pudo obtener el número de la última factura."}
@@ -1027,9 +1066,14 @@ class SerialFiscalDriver(SerialDriver):
                     cmd_name
                 ] + aditional_lines + product_lines + ['3'] + payment_commands + ['101', '199']
             
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+
             for command in cmd2:
-                _logger.info("COMANDO : %s", command)
-                result = self.tfhka.SendCmd(command)
+                result = self.send_command(command) 
                 
                 if not result:
                     _logger.error(f"Fallo al enviar comando: {command}")
@@ -1057,11 +1101,22 @@ class SerialFiscalDriver(SerialDriver):
         _data = data.get("data", False)
         if _data:
             data = _data
-        _logger.info(data)
-        self.send_command("I2S" + str(data["resume_range_from"] + data["resume_range_to"]))
-        self.data["value"] = {"valid": True, "message": "MENSAJE"}
-        event_manager.device_changed(self)
-        return self.data["value"]
+        try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
+            self.send_command("I2S" + str(data["resume_range_from"] + data["resume_range_to"]))
+            self.data["value"] = {"valid": True, "message": "MENSAJE"}
+            event_manager.device_changed(self)
+            return self.data["value"]
+        except Exception as _e:
+            _logger.error(f"Error al imprimir el resumen: {_e}")
+            self.data["value"] = {"valid": False, "message": str(_e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(_e)}
 
     def reprint_date(self, data):
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -1070,15 +1125,27 @@ class SerialFiscalDriver(SerialDriver):
             data = _data
         _logger.info(data)
         mode = data.get("mode", "Rs")
-        self.send_command(
-            mode
-            + str(
-                data["reprint_range_from"].zfill(7) + data["reprint_range_to"].zfill(7)
+        try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
+            self.send_command(
+                mode
+                + str(
+                    data["reprint_range_from"].zfill(7) + data["reprint_range_to"].zfill(7)
+                )
             )
-        )
-        self.data["value"] = {"valid": True, "message": "MENSAJE"}
-        event_manager.device_changed(self)
-        return self.data["value"]
+            self.data["value"] = {"valid": True, "message": "MENSAJE"}
+            event_manager.device_changed(self)
+            return self.data["value"]
+        except Exception as _e:
+            _logger.error(f"Error al imprimir la reimpresión por fecha: {_e}")
+            self.data["value"] = {"valid": False, "message": str(_e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(_e)}
 
     def reprint_type(self, data):
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -1087,16 +1154,28 @@ class SerialFiscalDriver(SerialDriver):
             data = _data
         _logger.info(data)
         mode = data.get("mode", "R@")
-        self.send_command(
-            mode
-            + str(
-                data["reprint_range_from"].zfill(7)
-                + str(data["reprint_range_to"].zfill(7))
+        try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
+            self.send_command(
+                mode
+                + str(
+                    data["reprint_range_from"].zfill(7)
+                    + str(data["reprint_range_to"].zfill(7))
+                )
             )
-        )
-        self.data["value"] = {"valid": True, "message": "MENSAJE"}
-        event_manager.device_changed(self)
-        return self.data["value"]
+            self.data["value"] = {"valid": True, "message": "MENSAJE"}
+            event_manager.device_changed(self)
+            return self.data["value"]
+        except Exception as _e:
+            _logger.error(f"Error al imprimir la reimpresión por tipo: {_e}")
+            self.data["value"] = {"valid": False, "message": str(_e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(_e)}
 
     def reprint(self, data):
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -1115,11 +1194,23 @@ class SerialFiscalDriver(SerialDriver):
         
         command = mode + str(data["mf_number"].zfill(7) + str(data["mf_number"].zfill(7)))
         
-        result = self.tfhka.SendCmd(command)
-        
-        self.data["value"] = result
-        event_manager.device_changed(self)
-        return self.data["value"]
+        try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+
+            result = self.send_command(command)
+            
+            self.data["value"] = result
+            event_manager.device_changed(self)
+            return self.data["value"]
+        except Exception as _e:
+            _logger.error(f"Error al imprimir la reimpresión: {_e}")
+            self.data["value"] = {"valid": False, "message": str(_e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(_e)}
 
     def split_amount(self, amount, dec=2):
         txt = "{price:.2f}"
@@ -1153,7 +1244,13 @@ class SerialFiscalDriver(SerialDriver):
 
     def get_last_invoice_number(self, data):
         try:
-            estado_s1 = self.get_s1_printer_data()
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
+            estado_s1 = status["result"]
             
             if estado_s1:
                 machine_number = estado_s1.RegisteredMachineNumber
@@ -1171,7 +1268,9 @@ class SerialFiscalDriver(SerialDriver):
             return response
         except Exception as _e:
             _logger.warning("exepcion %s", str(_e))
-            return str(_e)
+            self.data["value"] = {"valid": False, "message": str(_e)}
+            event_manager.device_changed(self)
+            return self.data["value"]
 
     def pre_invoice(self, invoice):
         valid, _msg = self._validate_invoice_parameter(invoice)
@@ -1355,8 +1454,13 @@ class SerialFiscalDriver(SerialDriver):
     
     def programacion(self, data):
         try:
-            # Enviar el comando de programación
-            result = self.tfhka.SendCmd("D")
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+
+            result = self.send_command("D")
             
             if result:
                 self.data["value"] = {"valid": True, "message": "Programación impresa correctamente."}
@@ -1482,48 +1586,67 @@ class SerialFiscalDriver(SerialDriver):
 
     def get_status_machine(self, data):
         try:
-            status = self.tfhka.GetPrinterStatus()
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
+            status = status["status"]
             _logger.info(f"Estado de la impresora: {status.PrinterStatusDescription}")
+            self.data["value"] = {"valid": True, "message": "Estado de la impresora: " + status.PrinterStatusDescription}
+            event_manager.device_changed(self)
+
             return status
         except Exception as e:
             _logger.error(f"Error al obtener estado de la impresora: {e}")
-            raise      
+            self.data["value"] = {"valid": False, "message": str(e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(e)}
 
     def ReadFpStatus(self, data):
-        msj = chr(0x05)
-        self._write(msj)
-        time.sleep(0.05)
-        r = self._read(5)
-        if len(r) == 5:
-            if ord(r[1]) ^ ord(r[2]) ^ 0x03 == ord(r[4]):
-                status = self._GetStatusError(ord(r[1]), ord(r[2]))
+        try:
+
+            result = self.get_s1_printer_data()
+            if result:
+                status_obj = self.tfhka.GetPrinterStatus()
+
+                status = self._GetStatusError(status_obj.PrinterStatusCode, status_obj.PrinterErrorCode)
+
                 return {
                     "valid": True,
                     "message": f"""
+                    {status['status']['code']}: {status['status']['msg']}
+                    {status['error']['code']}: {status['error']['msg']}
+                    """,
+                    "data": status,
+                    "status": status_obj,
+                    "result": result,
+                }
+            else:
+                status = self._GetStatusError(0, 128)
+                return {
+                    "valid": False,
+                    "message": f"""
+                    {status['status']['code']}: {status['status']['msg']}
+                    {status['error']['code']}: {status['error']['msg']}
+                    """,
+                    "data": status,
+                    "status": False,
+                    "result": False,
+                }
+
+        except Exception as e:
+            _logger.error(f"Error al leer estado fiscal: {e}")
+            status = self._GetStatusError(0, 128)
+            return {
+                "valid": False,
+                "message": f"""
                 {status['status']['code']}: {status['status']['msg']}
                 {status['error']['code']}: {status['error']['msg']}
                 """,
-                    "data": status,
-                }
-            status = self._GetStatusError(0, 144)
-            return {
-                "valid": True,
-                "message": f"""
-            {status['status']['code']}: {status['status']['msg']}
-            {status['error']['code']}: {status['error']['msg']}
-            """,
                 "data": status,
             }
-        _logger.info("3")
-        status = self._GetStatusError(0, 114)
-        return {
-            "valid": True,
-            "message": f"""
-        {status['status']['code']}: {status['status']['msg']}
-        {status['error']['code']}: {status['error']['msg']}
-        """,
-            "data": status,
-        }
 
     def _write(self, msj):
         connection = self._connection
@@ -1703,84 +1826,114 @@ class SerialFiscalDriver(SerialDriver):
             raise
 
     def GetS2PrinterData(self):
-        return S2PrinterData(self._States("S2"))
+        try:
+            data = self.tfhka.GetS2PrinterData()
+            _logger.info("Datos del estado S2 obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S2: {e}")
+            raise
 
     def GetS25PrinterData(self):
-        self.trama = self._States("S25")
-        # print self.trama
-        self.S25PrinterData = S25PrinterData(self.trama)
-        return self.S25PrinterData
+        try:
+            data = self.tfhka.GetS25PrinterData()
+            _logger.info("Datos del estado S25 obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S25: {e}")
+            raise
 
     def GetS3PrinterData(self):
-        self.trama = self._States("S3")
-        # print self.trama
-        self.S3PrinterData = S3PrinterData(self.trama)
-        return self.S3PrinterData
+        try:
+            data = self.tfhka.GetS3PrinterData()
+            _logger.info("Datos del estado S3 obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S3: {e}")
+            raise
 
     def GetS4PrinterData(self):
-        self.trama = self._States("S4")
-        # print self.trama
-        self.S4PrinterData = S4PrinterData(self.trama)
-        return self.S4PrinterData
+        try:
+            data = self.tfhka.GetS4PrinterData()
+            _logger.info("Datos del estado S4 obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S4: {e}")
+            raise
 
     def GetS5PrinterData(self):
-        self.trama = self._States("S5")
-        # print self.trama
-        self.S5PrinterData = S5PrinterData(self.trama)
-        return self.S5PrinterData
+        try:
+            data = self.tfhka.GetS5PrinterData()
+            _logger.info("Datos del estado S5 obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S5: {e}")
+            raise
 
     def GetS6PrinterData(self):
-        self.trama = self._States("S6")
-        # print self.trama
-        self.S6PrinterData = S6PrinterData(self.trama)
-        return self.S6PrinterData
+        try:
+            data = self.tfhka.GetS6PrinterData()
+            _logger.info("Datos del estado S6 obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S6: {e}")
+            raise
 
     def GetS7PrinterData(self):
-        self.trama = self._States("S7")
-        # print self.trama
-        self.S7PrinterData = S7PrinterData(self.trama)
-        return self.S7PrinterData
+        try:
+            data = self.tfhka.GetS7PrinterData()
+            _logger.info("Datos del estado S7 obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S7: {e}")
+            raise
 
     def GetS8EPrinterData(self):
-        self.trama = self._States("S8E")
-        # print self.trama
-        self.S8EPrinterData = S8EPrinterData(self.trama)
-        return self.S8EPrinterData
+        try:
+            data = self.tfhka.GetS8EPrinterData()
+            _logger.info("Datos del estado S8E obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S8E: {e}")
+            raise
 
     def GetS8PPrinterData(self):
-        self.trama = self._States("S8P")
-        # print self.trama
-        self.S8PPrinterData = S8PPrinterData(self.trama)
-        return self.S8PPrinterData
+        try:
+            data = self.tfhka.GetS8PPrinterData()
+            _logger.info("Datos del estado S8P obtenidos correctamente. : %s", data)
+            return data
+        except Exception as e:
+            _logger.error(f"Error al obtener los datos S8P: {e}")
+            raise
 
     def GetXReport(self):
         self.trama = self._UploadDataReport("U0X")
         # print self.trama
-        self.XReport = ReportData(self.trama)
+        self.XReport = self.tfhka.ReportData(self.trama)
         return self.XReport
 
     def GetX2Report(self):
         self.trama = self._UploadDataReport("U1X")
         # print self.trama
-        self.XReport = ReportData(self.trama)
+        self.XReport = self.tfhka.ReportData(self.trama)
         return self.XReport
 
     def GetX4Report(self):
         self.trama = self._UploadDataReport("U0X4")
         # print self.trama
-        self.XReport = AcumuladosX(self.trama)
+        self.XReport = self.tfhka.AcumuladosX(self.trama)
         return self.XReport
 
     def GetX5Report(self):
         self.trama = self._UploadDataReport("U0X5")
         # print self.trama
-        self.XReport = AcumuladosX(self.trama)
+        self.XReport = self.tfhka.AcumuladosX(self.trama)
         return self.XReport
 
     def GetX7Report(self):
         self.trama = self._UploadDataReport("U0X7")
         # print self.trama
-        self.XReport = AcumuladosX(self.trama)
+        self.XReport = self.tfhka.AcumuladosX(self.trama)
         return self.XReport
 
     def GetZReport(self, *items):
@@ -1805,129 +1958,101 @@ class SerialFiscalDriver(SerialDriver):
             self.ReportData = []
             i = 0
             for report in self.trama[0:-1]:
-                self.Z = ReportData(report)
+                self.Z = self.tfhka.ReportData(report)
                 self.ReportData.append(self.Z)
                 i += 1
         else:
             self.trama = self._UploadDataReport("U0Z")
-            self.ReportData = ReportData(self.trama)
+            self.ReportData = self.tfhka.ReportData(self.trama)
         return self.ReportData
-
-    def PrintXReport(self, action):
-        try:
-            self.tfhka.PrintXReport()
-            _logger.info("Reporte X impreso correctamente.")
-        except Exception as e:
-            _logger.error(f"Error al imprimir el reporte X: {e}")
-            raise
     
-    def print_x_report(self,data):
+    def PrintXReport(self,data):
         """
         Imprime un reporte X.
         """
         try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
             self.tfhka.PrintXReport()
             _logger.info("Reporte X impreso correctamente.")
+            self.data["value"] = {"valid": True, "message": "Reporte X impreso correctamente."}
+            event_manager.device_changed(self)
+            return {"valid": True, "message": "Reporte X impreso correctamente."}
+
         except Exception as e:
             _logger.error(f"Error al imprimir el reporte X: {e}")
-            raise    
+            self.data["value"] = {"valid": False, "message": str(e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(e)}
         
     def PrintZReport(self, data, *items):
         try:
+            status = self.ReadFpStatus(True)
+            if status["data"]["error"]["code"] != "0":
+                raise Exception(status["data"]["error"]["msg"])
+            if status["data"]["status"]["code"] not in ["1", "4"]:
+                raise Exception(status["data"]["status"]["msg"])
+            
             self.tfhka.PrintZReport()
             _logger.info("Reporte Z impreso correctamente.")
+            self.data["value"] = {"valid": True, "message": "Reporte Z impreso correctamente."}
+            event_manager.device_changed(self)
+            return {"valid": True, "message": "Reporte Z impreso correctamente."}
         except Exception as e:
             _logger.error(f"Error al imprimir el reporte Z: {e}")
-            raise
+            self.data["value"] = {"valid": False, "message": str(e)}
+            event_manager.device_changed(self)
+            return {"valid": False, "message": str(e)}
 
     def _GetStatusError(self, st, er):
-        st_aux = st
-        st = st & ~0x04
 
-        status = {
-            "msg": "Status Desconocido",
-            "code": "#",
-        }
-        error = {"msg": "Error Desconocido", "code": "#"}
 
         status_codes = {
-            "0x6A": {
-                "msg": "En modo fiscal, carga completa de la memoria fiscal "
-                + "y emisi�n de documentos no fiscales",
-                "code": "12",
-            },
-            "0x69": {
-                "msg": "En modo fiscal, carga completa de la memoria fiscal "
-                + "y emisi�n de documentos  fiscales",
-                "code": "11",
-            },
-            "0x68": {
-                "msg": "En modo fiscal, carga completa de la memoria fiscal y en espera",
-                "code": "10",
-            },
-            "0x72": {
-                "msg": "En modo fiscal, cercana carga completa de la memoria fiscal "
-                + "y en emision de documentos no fiscales",
-                "code": "9",
-            },
-            "0x71": {
-                "msg": "En modo fiscal, cercana carga completa de la memoria fiscal "
-                + "y en emisi�n de documentos no fiscales",
-                "code": "8",
-            },
-            "0x70": {
-                "msg": "En modo fiscal, cercana carga completa de la memoria fiscal y en espera",
-                "code": "7",
-            },
-            "0x62": {
-                "msg": "En modo fiscal y en emision de documentos no fiscales",
-                "code": "6",
-            },
-            "0x61": {
-                "msg": "En modo fiscal y en emision de documentos fiscales",
-                "code": "5",
-            },
-            "0x60": {"msg": "En modo fiscal y en espera", "code": "4"},
-            "0x42": {
-                "msg": "En modo prueba y en emision de documentos no fiscales",
-                "code": "3",
-            },
-            "0x41": {
-                "msg": "En modo prueba y en emision de documentos fiscales",
-                "code": "2",
-            },
-            "0x40": {"msg": "En modo prueba y en espera", "code": "1"},
-            "0x00": {"msg": "Status Desconocido", "code": "0"},
-            "0x0": {"msg": "Status Desconocido", "code": "0"},
+            0:  {"msg": "Estado desconocido.", "code": "0"},
+            1:  {"msg": "En modo prueba y en espera.", "code": "1"},
+            2:  {"msg": "En modo prueba y emisión de documentos.", "code": "2"},
+            3:  {"msg": "En modo prueba y emisión de documentos no fiscales.", "code": "3"},
+            4:  {"msg": "En modo fiscal y en espera.", "code": "4"},
+            5:  {"msg": "En modo fiscal y emisión de documentos fiscales.", "code": "5"},
+            6:  {"msg": "En modo fiscal y emisión de documentos no fiscales.", "code": "6"},
+            7:  {"msg": "En modo fiscal, cercana carga completa de la memoria fiscal y en espera.", "code": "7"},
+            8:  {"msg": "En modo fiscal, cercana carga completa de la memoria fiscal y en emisión de documentos fiscales.", "code": "8"},
+            9:  {"msg": "En modo fiscal, cercana carga completa de la memoria fiscal y en emisión de documentos no fiscales.", "code": "9"},
+            10: {"msg": "En modo fiscal, carga completa de la memoria fiscal y en espera.", "code": "10"},
+            11: {"msg": "En modo fiscal, carga completa de la memoria fiscal y en emisión de documentos fiscales.", "code": "11"},
+            12: {"msg": "En modo fiscal, carga completa de la memoria fiscal y en emisión de documentos no fiscales.", "code": "12"},
         }
 
         error_codes = {
-            "0x80": {"msg": "CTS en falso", "code": "128"},
-            "0x89": {"msg": "No hay respuesta", "code": "137"},
-            "0x90": {"msg": "Error LRC", "code": "144"},
-            "0x72": {"msg": "Impresora no responde u ocupada", "code": "114"},
-            "0x6C": {"msg": "Memoria Fiscal llena", "code": "108"},
-            "0x64": {"msg": "Error en memoria fiscal", "code": "100"},
-            "0x60": {"msg": "Error Fiscal", "code": "96"},
-            "0x5C": {"msg": "Comando Invalido", "code": "92"},
-            "0x58": {"msg": "No hay asignadas  directivas", "code": "88"},
-            "0x54": {"msg": "Tasa Invalida", "code": "84"},
-            "0x50": {"msg": "Comando Invalido/Valor Invalido", "code": "80"},
-            "0x48": {"msg": "Error Gaveta", "code": "0"},
-            "0x43": {"msg": "Fin en la entrega de papel y error mecanico", "code": "3"},
-            "0x42": {
-                "msg": "Error de indole mecanico en la entrega de papel",
-                "code": "2",
-            },
-            "0x41": {"msg": "Fin en la entrega de papel", "code": "1"},
-            "0x40": {"msg": "Sin error", "code": "0"},
+            0:   {"msg": "No hay error.", "code": "0"},
+            1:   {"msg": "Fin en la entrega de papel.", "code": "1"},
+            2:   {"msg": "Error de índole mecánico en la entrega de papel.", "code": "2"},
+            3:   {"msg": "Fin en la entrega de papel y error mecánico.", "code": "3"},
+            80:  {"msg": "Comando inválido o valor inválido.", "code": "80"},
+            84:  {"msg": "Tasa inválida.", "code": "84"},
+            88:  {"msg": "No hay asignadas directivas.", "code": "88"},
+            92:  {"msg": "Comando inválido.", "code": "92"},
+            96:  {"msg": "Error fiscal.", "code": "96"},
+            100: {"msg": "Error de la memoria fiscal.", "code": "100"},
+            108: {"msg": "Memoria fiscal llena.", "code": "108"},
+            112: {"msg": "Buffer completo. (debe enviar el comando de reinicio)", "code": "112"},
+            128: {"msg": "Error en la comunicación.", "code": "128"},
+            137: {"msg": "No hay respuesta.", "code": "137"},
+            144: {"msg": "Error LRC.", "code": "144"},
+            145: {"msg": "Error interno api.", "code": "145"},
+            153: {"msg": "Error en la apertura del archivo.", "code": "153"},
         }
 
-        if hex(st) in status_codes:
-            status = status_codes[hex(st)]
-        if hex(er) in error_codes:
-            error = error_codes[hex(er)]
-        if hex(st_aux) == "0x04":
-            error = {"msg": "Buffer Completo", "code": "112"}
+        status = {"msg": "Status Desconocido", "code": "#"}
+        error = {"msg": "Error Desconocido", "code": "#"}
+
+        if st in status_codes:
+            status = status_codes[st]
+        if er in error_codes:
+            error = error_codes[er]
 
         return {"status": status, "error": error}

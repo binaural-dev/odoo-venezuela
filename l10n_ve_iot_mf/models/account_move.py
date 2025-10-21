@@ -213,7 +213,7 @@ class AccountMoveInh(models.Model):
 
     def print_out_invoice(self, values):
         _logger.info("VALUE %s", values)
-        result_data = values.get("result", {}).get("data", {})
+        result_data = values.get("data", {})
         sequence = result_data.get("sequence")
         serial_machine = result_data.get("serial_machine")
 
