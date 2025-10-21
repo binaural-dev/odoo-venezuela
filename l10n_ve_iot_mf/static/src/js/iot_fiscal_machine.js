@@ -87,28 +87,27 @@ export class IoTFiscalMachineComponent extends Component {
   not_function() {
     // Placeholder for undefined actions
   }
-  get_serial_machine() {
+  async get_serial_machine() {
     if (!this.device) {
       this.showFailedConnection()
       return
     }
 
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-      if (!value.valid) {
-        return
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      const deviceResponse = await this.device_response("get_last_invoice_number", { "me": "you" });
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
       }
-      this.orm.call('iot.device', 'set_serial_machine', [this.props.record.evalContext.active_id, value])
-        .then(() => {
-          // window.location.reload()
-        })
-    });
-    this.iotDevice.action({
-      action: "get_last_invoice_number",
-      data: { "me": "you" },
-    }).then(data => {
-      return onIoTActionResult(data, this.notification)
-    })
+      await this.orm.call('iot.device', 'set_serial_machine', [this.props.record.evalContext.active_id, deviceResponse])
+      window.location.reload()
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    }
   }
 
   async payment_method() {
@@ -116,28 +115,30 @@ export class IoTFiscalMachineComponent extends Component {
       this.showFailedConnection()
       return
     }
-
-    const device = this.props.record.resId
-
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_data_to_payment_method", {
-      model: 'iot.device',
-      method: 'get_data_to_payment_method',
-      args: [device],
-      kwargs: {},
-    })
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-    });
-
-    this.iotDevice.action({
-      action: "logger",
-      data: `PE${request.payment_methods}${request.payment_method_name}`.toUpperCase(),
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
+    
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      
+      const device = this.props.record.resId
+  
+      const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_data_to_payment_method", {
+        model: 'iot.device',
+        method: 'get_data_to_payment_method',
+        args: [device],
+        kwargs: {},
       })
 
+      const deviceResponse = await this.device_response("logger", `PE${request.payment_methods}${request.payment_method_name}`.toUpperCase());
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
 
 
@@ -147,19 +148,19 @@ export class IoTFiscalMachineComponent extends Component {
       return
     }
 
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-      this.env.services.notification.add(value.message)
-    });
-
-    this.iotDevice.action({
-      action: "status",
-      data: true,
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
-      })
-
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      const deviceResponse = await this.device_response("status", true);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
 
   async print_resume_date() {
@@ -167,27 +168,28 @@ export class IoTFiscalMachineComponent extends Component {
       this.showFailedConnection()
       return
     }
-
-    const device = this.props.record.resId
-
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_resume", {
-      model: 'iot.device',
-      method: 'get_range_resume',
-      args: [device],
-      kwargs: {},
-    })
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-    });
-
-    this.iotDevice.action({
-      action: "print_resume",
-      data: request,
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
+    
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      const device = this.props.record.resId
+  
+      const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_resume", {
+        model: 'iot.device',
+        method: 'get_range_resume',
+        args: [device],
+        kwargs: {},
       })
+      const deviceResponse = await this.device_response("print_resume", request);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
 
   async reprint_type_date() {
@@ -195,28 +197,28 @@ export class IoTFiscalMachineComponent extends Component {
       this.showFailedConnection()
       return
     }
-
-    const device = this.props.record.resId
-
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
-      model: 'iot.device',
-      method: 'get_range_reprint',
-      args: [device],
-      kwargs: {},
-    })
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-    });
-
-    this.iotDevice.action({
-      action: "reprint_date",
-      data: request,
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
+    
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      const device = this.props.record.resId
+  
+      const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
+        model: 'iot.device',
+        method: 'get_range_reprint',
+        args: [device],
+        kwargs: {},
       })
-
+      const deviceResponse = await this.device_response("reprint_date", request);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
   async reprint_type() {
     if (!this.device) {
@@ -224,26 +226,27 @@ export class IoTFiscalMachineComponent extends Component {
       return
     }
 
-    const device = this.props.record.resId
-
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
-      model: 'iot.device',
-      method: 'get_range_reprint',
-      args: [device],
-      kwargs: {},
-    })
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-    });
-
-    this.iotDevice.action({
-      action: "reprint_type",
-      data: request,
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      const device = this.props.record.resId
+  
+      const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
+        model: 'iot.device',
+        method: 'get_range_reprint',
+        args: [device],
+        kwargs: {},
       })
+      const deviceResponse = await this.device_response("reprint_type", request);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
 
   }
   async configure_device() {
@@ -252,101 +255,113 @@ export class IoTFiscalMachineComponent extends Component {
       return
     }
 
-    const device = this.props.record.resId
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/configure_device", {
-      model: 'iot.device',
-      method: 'configure_device',
-      args: [device],
-      kwargs: {},
-    })
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-    });
-
-    this.iotDevice.action({
-      action: "configure_device",
-      data: request,
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
+      const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/configure_device", {
+        model: 'iot.device',
+        method: 'configure_device',
+        args: [device],
+        kwargs: {},
       })
+      const deviceResponse = await this.device_response("configure_device", request);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
   async test() {
     if (!this.device) {
       this.showFailedConnection()
       return
     }
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-    });
-
-    this.iotDevice.action({
-      action: "test",
-      data: true,
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
-      })
-
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      const deviceResponse = await this.device_response("test", true);
+      console.log(deviceResponse);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    }
   }
+  
   async command() {
     if (!this.device) {
       this.showFailedConnection()
       return
     }
-
-    const device = this.props.record.resId
-
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_command", {
-      model: 'iot.device',
-      method: 'get_command',
-      args: [device],
-      kwargs: {},
-    })
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-    });
-
-    this.iotDevice.action({
-      action: "logger",
-      data: request["command"],
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
+    
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      const device = this.props.record.resId
+  
+      const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_command", {
+        model: 'iot.device',
+        method: 'get_command',
+        args: [device],
+        kwargs: {},
       })
-
+      const deviceResponse = await this.device_response("logger", request["command"]);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+      console.log(deviceResponse);
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
+
   async generate_report_z() {
     if (!this.device) {
       this.showFailedConnection()
       return
     }
-
-    const request = await this.orm.call('account.move', 'check_report_z', [[], this.device.serial_machine])
-
-    if (!request) {
-      this.notification.add(_t("Not are invoices to Report Z"), {
-        title: _t("Verify invoices with Serial Machine"),
-        type: "danger",
+    
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
       });
-      return
-    }
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-      this.orm.call('account.move', 'report_z', [[], this.device.serial_machine, value])
-    });
-    this.iotDevice.action({
-      action: "report_z",
-      data: { "me": "you" },
-    })
-    .then(data => {
-      onIoTActionResult(data, this.notification)
-    })
+      
+      const request = await this.orm.call('account.move', 'check_report_z', [[], this.device.serial_machine])
+  
+      if (!request) {
+        this.notification.add(_t("Not are invoices to Report Z"), {
+          title: _t("Verify invoices with Serial Machine"),
+          type: "danger",
+        });
+        return
+      }
+  
+      this.iotDevice.addListener(({ value }) => {
+        this.iotDevice.removeListener();
+        this.orm.call('account.move', 'report_z', [[], this.device.serial_machine, value])
+      });
+      const deviceResponse = await this.device_response("report_z", { "me": "you" });
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
 
   async generate_report_x() {
@@ -355,16 +370,21 @@ export class IoTFiscalMachineComponent extends Component {
       return
     }
 
-    this.iotDevice.addListener(() => {
-      this.iotDevice.removeListener();
-    });
-    this.iotDevice.action({
-      action: "report_x",
-      data: { "me": "you" },
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
-      })
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+
+      const deviceResponse = await this.device_response("report_x", { "me": "you" });
+      console.log("Device response:", deviceResponse);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
 
   async programacion() {
@@ -373,16 +393,20 @@ export class IoTFiscalMachineComponent extends Component {
       return
     }
 
-    this.iotDevice.addListener(() => {
-      this.iotDevice.removeListener();
-    });
-    this.iotDevice.action({
-      action: "programacion",
-      data: { "me": "you" },
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
-      })
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+
+      const deviceResponse = await this.device_response("programacion", { "me": "you" });
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
   }
 
   async print_out_invoice() {
@@ -423,13 +447,16 @@ export class IoTFiscalMachineComponent extends Component {
         check_print_type,
         [move_id]
       );
-
+      console.log("Request: ", request)
       this.device = new DeviceController(
         this.env.services.iot_longpolling,
         { iot_ip: request.iot_ip, identifier: request.identifier }
       );
-
+      console.log("Device: ", this.device)
       const deviceResponse = await this.device_response(print_type, request);
+      if (!deviceResponse.valid) {
+        throw new Error(deviceResponse.message || "Error desconocido");
+      }
       
       if (print_type != "reprint") {
 
@@ -443,8 +470,8 @@ export class IoTFiscalMachineComponent extends Component {
       }
 
     }catch(error){
-      console.log("Error", error)
-      const message = error?.data?.message || "Error de comunicación con el dispositivo IoT.";
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
       onIoTError(message, this.notification);
     }
   }
@@ -473,6 +500,8 @@ export class IoTFiscalMachineComponent extends Component {
       this.iotDevice.action({
         action: action,
         data: data,
+      }). then(data => {
+        onIoTActionResult(data, this.notification);
       }).catch(reject);
     });
   }
