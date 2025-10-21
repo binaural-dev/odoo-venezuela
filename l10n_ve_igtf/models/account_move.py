@@ -154,7 +154,6 @@ class AccountMove(models.Model):
                     if bi_igtf > record.amount_total and not initial_residual == 0:
                         bi_igtf = initial_residual + record.bi_igtf
                         record.bi_igtf = bi_igtf
-                        _logger.info(xd.xd)
                         return
                     if not advance_igtf:
                         record.bi_igtf = 0.00
@@ -230,7 +229,7 @@ class AccountMove(models.Model):
         :param partial_id: id of the partial reconciliation to remove
         :type partial_id: int
         """
-
+        _logger.warning(f'Removing IGTF from move for partial {partial_id}')
         partial = self.env["account.partial.reconcile"].browse(partial_id)
 
         payment_credit = partial.credit_move_id.payment_id
@@ -312,14 +311,14 @@ class AccountMove(models.Model):
         for move in self:
             move.remove_igtf_from_move(partial_id)
 
-        amount_residual = self.amount_residual
-        self.recalculate_bi_igtf(
-            partial_id,
-            initial_residual=amount_residual
-            if not self.currency_id.is_zero(amount_residual)
-            else self.amount_residual,
+        # amount_residual = self.amount_residual
+        # self.recalculate_bi_igtf(
+        #     partial_id,
+        #     initial_residual=amount_residual
+        #     if not self.currency_id.is_zero(amount_residual)
+        #     else self.amount_residual,
 
-        )
+        # )
         res = super().js_remove_outstanding_partial(partial_id)
         return res
 
