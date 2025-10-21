@@ -32,8 +32,9 @@ class SerialInterface(SerialInterface):
             # body = json.loads(b_body.decode("utf-8"))
 
             for port in serial.tools.list_ports.comports():
-                if port.device == "COM11":
+                if pinpad_ports and port.device in pinpad_ports:
                     continue
+                serial_devices[port.device] = {"identifier": port.device}
 
                 serial_devices[port.device] = {"identifier": port.device}
 
