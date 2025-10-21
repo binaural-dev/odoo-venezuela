@@ -9,3 +9,9 @@ from . import pos_payment
 from . import account_move
 from . import stock_picking
 from . import account_partial_reconcile
+<<<<<<< HEAD
+=======
+from . import product_product
+from . import product_template
+from . import warehouse
+>>>>>>> a9a83334 (fix:Se suben las traducciones para la solucion del ticket)
