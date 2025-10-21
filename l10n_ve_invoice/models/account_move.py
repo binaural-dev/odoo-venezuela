@@ -25,26 +25,32 @@ class AccountMove(models.Model):
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
+    display_date_warning = fields.Boolean(
+        compute="_compute_display_date_warning")
+
     is_debit_journal = fields.Boolean(
         compute="_compute_is_debit_journal",
         store=True
     )
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
+        from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
-                raise ValidationError(_("An invoice cannot have a line with a price of zero"))
+                if not from_pos:
+                    raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
     def action_post(self):
         for record in self:
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
-
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 
-            invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])
+            invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
             if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
+            if record.invoice_date and record.date and record.date < record.invoice_date:
+                raise ValidationError(_("The accounting date cannot be earlier than the invoice date."))
         return super().action_post()
 
     @api.constrains("correlative", "is_contingency")
@@ -150,6 +156,14 @@ class AccountMove(models.Model):
                 if term_date and term_date >= fields.Date.today():
                     invoice.next_installment_date = term_date
                     break
+    
+    @api.depends("invoice_date", "state")
+    def _compute_display_date_warning(self):
+        today = fields.Date.context_today(self)
+        for move in self:
+            move.display_date_warning = bool(
+                move.invoice_date and move.state == "draft" and move.invoice_date < today
+            )
 
     def _post(self, soft=True):
         res = super()._post(soft)
@@ -230,3 +244,50 @@ class AccountMove(models.Model):
         for picking in self:
             action = picking.env.ref('account_debit_note.action_view_account_move_debit').read()[0]
         return action
+    
+    def write(self, vals):
+        lines_before = {
+            line.id: line.tax_ids
+            for move in self
+            for line in move.invoice_line_ids
+        }
+
+        res = super().write(vals)
+
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+
+            changes = []
+            for line in move.invoice_line_ids:
+                old_taxes = lines_before.get(line.id)
+                new_taxes = line.tax_ids
+
+                if old_taxes and set(old_taxes.ids) != set(new_taxes.ids):
+                    product = line.product_id.display_name
+                    old_taxes_display = lines_before.get(line.id).display_name if line.id in lines_before else ""
+
+                    changes.append(
+                        f"""
+                            <li>
+                                <b>{product}</b><br/>
+                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes_display} ⟶</i></span>
+                                <span style="color:#007BFF;"><i>{new_taxes.display_name}</i></span>
+                            </li>
+                        """
+                    )
+
+            if changes:
+                move.message_post(
+                    body=_(
+                        """
+                        <div>
+                            <ul>%s</ul>
+                        </div>
+                        """
+                    ) % "".join(changes),
+                    message_type='notification',
+                    body_is_html=True
+                )
+
+        return res

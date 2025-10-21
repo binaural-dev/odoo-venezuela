@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250313\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 17:00+0000\n"
-"PO-Revision-Date: 2025-03-27 17:00+0000\n"
+"POT-Creation-Date: 2025-07-04 16:05+0000\n"
+"PO-Revision-Date: 2025-07-04 16:05+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -89,18 +89,39 @@ msgid "Activate Barcode Strict Mode"
 msgstr "Activar Modo Estricto Barcode"
 
 #. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid ""
+"Activate product entry with barcode in\n"
+"                                                            strict mode"
+msgstr ""
+
+#. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__activate_barcode_strict_mode
 #: model:ir.model.fields,help:l10n_ve_pos.field_res_config_settings__activate_barcode_strict_mode
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Activate product entry with barcode in strict mode"
 msgstr "Activar entrada de producto con código de barras en modo estricto"
 
 #. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__allow_sales_on_order
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__allow_sales_on_order
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "Allow sales on order"
+msgstr "Permitir ventas bajo pedido"
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_product_product__pos_sale_on_order
+#: model:ir.model.fields,help:l10n_ve_pos.field_product_template__pos_sale_on_order
+msgid ""
+"Allow selling this product in POS even if it is not available in stock."
+msgstr ""
+
+#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid ""
-"Allows you to sell kits whose products are not in the main warehouse of the "
-"box."
-msgstr "Permite vender kits cuyos productos no están en el almacén principal de la caja."
+"Allows you to sell kits whose products are\n"
+"                                                        not in the main\n"
+"                                                        warehouse of the box."
+msgstr ""
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__amount_to_zero
@@ -252,8 +273,10 @@ msgstr "Moneda alterna para la compañía"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
-msgid "Deletes automatically products without free qty on POS"
-msgstr "Elimina automáticamente productos sin cantidad disponible en el POS"
+msgid ""
+"Deletes automatically products without free qty on\n"
+"                                                POS"
+msgstr ""
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -436,11 +459,10 @@ msgstr "Es moneda alterna"
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid ""
-"It is allowed to break reconciliation of payments associated with the POS\n"
+"It is allowed to break reconciliation of payments associated\n"
+"                                    with the POS\n"
 "                                    if the session it corresponds to is open"
 msgstr ""
-"Se permite romper la conciliación de pagos asociados con el POS\n"
-"                                    si la sesión correspondiente está abierta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_account_move
@@ -492,8 +514,11 @@ msgstr "Nombre"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
-msgid "No Point of Sale selected"
-msgstr "No se ha seleccionado un Punto de Venta"
+msgid ""
+"No Point of\n"
+"                                                Sale\n"
+"                                                selected"
+msgstr ""
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -531,7 +556,7 @@ msgstr "Configuración del POS"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_account_partial_reconcile
 msgid "Partial Reconcile"
-msgstr "Conciliación Parcial"
+msgstr "Conciliación parcial"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -570,9 +595,10 @@ msgstr "Pagos en"
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid ""
-"Please create/select a Point of Sale above to show the configuration "
-"options."
-msgstr "Por favor cree/seleccione un Punto de Venta arriba para mostrar las opciones de configuración."
+"Please create/select a Point of Sale above to show\n"
+"                                                the\n"
+"                                                configuration options."
+msgstr ""
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
@@ -597,7 +623,7 @@ msgstr "Punto de Venta Reporte de Detalles"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_order_line
 msgid "Point of Sale Order Lines"
-msgstr "Líneas de orden del Punto de venta"
+msgstr "Líneas de orden del punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_order
@@ -617,7 +643,7 @@ msgstr "Pagos en punto de venta"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_session
 msgid "Point of Sale Session"
-msgstr "Sesión de punto de venta"
+msgstr "Sesión del punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__pos_config_ids
@@ -679,9 +705,15 @@ msgid "Print"
 msgstr "Imprimir"
 
 #. module: l10n_ve_pos
+#: model:ir.model,name:l10n_ve_pos.model_product_template
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
 msgid "Product"
 msgstr "Producto"
+
+#. module: l10n_ve_pos
+#: model:ir.model,name:l10n_ve_pos.model_product_product
+msgid "Product Variant"
+msgstr "Variante del producto"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
@@ -703,6 +735,12 @@ msgstr ""
 " movimientos."
 
 #. module: l10n_ve_pos
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_product_product__pos_sale_on_order
+#: model:ir.model.fields,field_description:l10n_ve_pos.field_product_template__pos_sale_on_order
+msgid "Sale on Order in POS"
+msgstr "Venta bajo pedido en POS"
+
+#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
 msgid "Sales Details"
 msgstr "Detalle de ventas"
@@ -710,7 +748,8 @@ msgstr "Detalle de ventas"
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Search clients by vat number in CNE database"
-msgstr "Buscar clientes por número de identificación en la base de datos del CNE"
+msgstr ""
+"Buscar clientes por número de identificación en la base de datos del CNE"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__sell_kit_from_another_store
@@ -735,8 +774,10 @@ msgstr "Mostrar cantidad disponible en el POS"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
-msgid "Show quantites from warehouse of TPV"
-msgstr "Mostrar cantidades del almacén del TPV"
+msgid ""
+"Show quantites from warehouse of\n"
+"                                                                    TPV"
+msgstr ""
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__start_date
@@ -825,7 +866,7 @@ msgstr ""
 #: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
 #, python-format
 msgid "Total de productos:"
-msgstr "Total de productos:"
+msgstr ""
 
 #. module: l10n_ve_pos
 #. odoo-javascript
@@ -897,6 +938,10 @@ msgid ""
 msgstr ""
 "No puede romper conciliación de un pago vinculado a una sesión de POS que "
 "aún está abierta"
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "allows sales on order without having the product available"
+msgstr "Permite la venta bajo pedido sin tener el producto disponible"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos

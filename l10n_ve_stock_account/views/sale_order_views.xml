@@ -5,6 +5,7 @@
         <field name="inherit_id" ref="sale.view_order_form" />
         <field name="arch" type="xml">
             <field name="payment_term_id" position="after">
+                <field name="is_consignation" invisible="1"/>
                 <field name="document"
                     readonly="state in ['sale', 'done', 'cancel'] or is_consignation" />
             </field>
@@ -14,7 +15,7 @@
             </field>
 
             <xpath expr="//button[@id='create_invoice']" position="attributes">
-                <attribute name="invisible">invoice_status != 'to invoice' or document == 'dispatch_guide' or is_consignation</attribute>
+                <attribute name="invisible">invoice_status != 'to invoice' or document == 'dispatch_guide'</attribute>
             </xpath>
         </field>
     </record>

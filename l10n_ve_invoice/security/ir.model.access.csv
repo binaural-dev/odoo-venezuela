@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_wizard_accounting_reports,binaural_wizard_accounting_reports,model_wizard_accounting_reports,base.group_user,1,1,1,1
+access_account_move_line_edit_tax_ids,account.move.line.edit_tax_ids,account.model_account_move_line,l10n_ve_invoice.group_edit_invoice_tax_ids,1,1,0,0
