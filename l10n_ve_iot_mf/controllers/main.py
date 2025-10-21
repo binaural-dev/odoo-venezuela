@@ -25,12 +25,10 @@ class ApiIoT(http.Controller):
         "/iot_pinpad/ports", type="http", auth="public", methods=["GET"], csrf=False
     )
     def getPinpadPort(self, **kw):
-        _logger.warning("Request for pinpad ports received")
         iot_id = request.env["iot.box"].sudo().search([("has_pinpad_machine", "=", True)])
         response = {}
         for iot in iot_id:
             response[iot.identifier] = iot.pinpad_port_id.mapped(lambda x: x.name)
-        _logger.warning("Response for pinpad ports: %s", response)
         return json.dumps(response)
 
     @http.route(
