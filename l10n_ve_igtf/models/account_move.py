@@ -106,45 +106,54 @@ class AccountMove(models.Model):
 
     def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0,amount_to_pay = 0.0):
         """This method can be used by ir.actions.server to update bi_igtf"""
+        _logger.info(f'self.bi_igtf === {self.move_type}')
+        _logger.info(f'Processing recalculate_bi_igtf for line_id: {line_id}')
         for record in self:
             bi_igtf = 0
             credits_for_payment = {}
             credit_amount = 0
             move_id = record.id
-
+            # _logger.info(f'record.invoice_payments_widget === {record.invoice_payments_widget}')
             if not record.invoice_payments_widget:
                 record.bi_igtf = 0
+                _logger.info('No tiene pagos relacionados')
                 continue
                 
             if record.bi_igtf > 0 and any(
             payment.get("account_payment_id", False) for payment in record.invoice_payments_widget.get("content", [])
             if payment.get("account_payment_id", False)
             ):
+                _logger.info('Tiene pagos relacionados')
                 advance_igtf = False
                 for payment in record.invoice_payments_widget.get("content", []):
                     move_id = payment.get('move_id')
+                    _logger.info(f'move_id === {move_id}')
                     payment_id = self.env['account.move'].browse(move_id)
                     if not payment_id:
                         continue
 
                     for line in payment_id.line_ids:
-                        credit_amount += line.credit 
                         if line.account_id == self.env.company.customer_account_igtf_id or line.account_id == self.env.company.supplier_account_igtf_id:
                             advance_igtf = True
                             for move in line.move_id:
-                                for payment_line in move.line_ids:
+                                filtered_lines = move.line_ids
+                                if record.move_type in ('out_invoice'):
+                                    filtered_lines = move.line_ids[1:]
+                                else:
+                                    filtered_lines = [line for idx, line in enumerate(move.line_ids) if idx != 1]
+                                _logger.info(f'filtered_lines === {filtered_lines}')
+                                for payment_line in filtered_lines:
                                     if payment_line.account_id == self.env.company.customer_account_igtf_id or payment_line.account_id == self.env.company.supplier_account_igtf_id:
                                         continue
                                     if move_id in credits_for_payment:
-                                        credits_for_payment[move_id] += payment_line.credit
+                                        credits_for_payment[move_id] += payment_line.credit 
                                     else:
-                                        credits_for_payment[move_id] = payment_line.credit
+                                        credits_for_payment[move_id] = payment_line.credit 
                             continue
                     bi_igtf = sum(credits_for_payment.values())
                     if bi_igtf > record.amount_total and not initial_residual == 0:
                         bi_igtf = initial_residual + record.bi_igtf
                         record.bi_igtf = bi_igtf
-
                         return
                     if not advance_igtf:
                         record.bi_igtf = 0.00
@@ -156,21 +165,46 @@ class AccountMove(models.Model):
             payments = record.invoice_payments_widget.get("content", False)
             amount = 0
             if line_id:
+                _logger.info(f'tiene line_id === {line_id}')
                 line = self.env["account.move.line"].browse([line_id])
+                _logger.info(f'line.move_id === {line.read([])}')
                 payment_id = line.move_id.payment_id
-                if payment_id and payment_id.is_igtf_on_foreign_exchange:
-                    payment_id = line.move_id.payment_id
-                    bi_igtf = payment_id.get_bi_igtf(move_id)
-                    if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
-                        record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
-                        bi_igtf = 0
-                        continue
-                    elif initial_residual <= bi_igtf:
-                        record.bi_igtf = initial_residual
-                        continue
+                # if payment_id and payment_id.is_igtf_on_foreign_exchange:
+                #     _logger.info(f'tiene payment_id igtf === {payment_id.id}')
+                #     # payment_id = line.move_id.payment_id
+                #     bi_igtf = payment_id.get_bi_igtf(move_id)
+                #     _logger.info(f'tiene payment_id igtf === {bi_igtf}')
+                #     if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
+                #         record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                #         _logger.warning(f'Hey 22222222222 {record.bi_igtf}')
+                #         bi_igtf = 0
+                #         continue
+                #     elif initial_residual <= bi_igtf:
+                #         record.bi_igtf = initial_residual
+                #         _logger.warning(f'Hey {record.bi_igtf}')
+                #         continue
+                #     record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                #     _logger.warning(f'Hey 33333333333 {record.bi_igtf}')
+                #     continue
+                # else:
 
+
+
+
+                # if record.move_type == 'in_invoice':
+                payment_id = line.move_id.payment_id
+                bi_igtf = record.amount_total
+                _logger.info(f'asignando el bi igtf === {bi_igtf}')
+                if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
                     record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                    bi_igtf = 0
                     continue
+                elif initial_residual <= bi_igtf:
+                    record.bi_igtf = initial_residual
+                    continue
+                record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                continue
+
 
             for payment in payments:
                 payment_id = payment.get("account_payment_id", False)
@@ -183,7 +217,7 @@ class AccountMove(models.Model):
                     if initial_residual < bi_igtf:
                         continue
                     amount += bi_igtf
-
+        _logger.info(f'record.bi_igtf === {record.bi_igtf}')
 
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
@@ -194,7 +228,7 @@ class AccountMove(models.Model):
         :param partial_id: id of the partial reconciliation to remove
         :type partial_id: int
         """
-
+        _logger.warning(f'Removing IGTF from move for partial {partial_id}')
         partial = self.env["account.partial.reconcile"].browse(partial_id)
 
         payment_credit = partial.credit_move_id.payment_id
@@ -276,18 +310,19 @@ class AccountMove(models.Model):
         for move in self:
             move.remove_igtf_from_move(partial_id)
 
-        amount_residual = self.amount_residual
-        self.recalculate_bi_igtf(
-            partial_id,
-            initial_residual=amount_residual
-            if not self.currency_id.is_zero(amount_residual)
-            else self.amount_residual,
+        # amount_residual = self.amount_residual
+        # self.recalculate_bi_igtf(
+        #     partial_id,
+        #     initial_residual=amount_residual
+        #     if not self.currency_id.is_zero(amount_residual)
+        #     else self.amount_residual,
 
-        )
+        # )
         res = super().js_remove_outstanding_partial(partial_id)
         return res
 
     def js_assign_outstanding_line(self, line_id):
+        _logger.info('entrando a l10 igtf')
         amount_residual = self.amount_residual
         self = self.with_context(from_widget=True)
         res = super().js_assign_outstanding_line(line_id)
