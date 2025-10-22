@@ -360,7 +360,7 @@ class AccountRetentionLine(models.Model):
         "invoice_amount",
         "foreign_invoice_amount",
     )
-    def _constraint_amounts(self):
+    def _constraint_amounts_in_zero(self):
         for record in self:
             if any(
                 (
@@ -375,10 +375,10 @@ class AccountRetentionLine(models.Model):
                     _("You can not create a retention with 0 amount.")
                 )
 
-            is_vef_the_base_currency = self.env.company.currency_id == self.env.ref(
-                "base.VEF"
-            )
-            is_client_retention = record.retention_id.type == "out_invoice"
+    def check_retention_amount(self):
+        for record in self:
+            is_vef_the_base_currency = record.env.company.currency_id == record.env.ref("base.VEF")
+            is_client_retention = record.retention_id and record.retention_id.type == "out_invoice"
             if (
                 is_vef_the_base_currency
                 and is_client_retention
@@ -391,6 +391,19 @@ class AccountRetentionLine(models.Model):
                         " the invoice."
                     )
                 )
+
+    def write(self, vals):
+        res = super().write(vals)
+        if "retention_amount" in vals or "invoice_amount" in vals:
+            self.check_retention_amount()
+        return res
+
+    @api.model
+    def create(self, vals):
+        record = super().create(vals)
+        if "retention_amount" in vals or "invoice_amount" in vals:
+            record.check_retention_amount()
+        return record
 
     def get_invoice_paid_amount_not_related_with_retentions(self):
         """
