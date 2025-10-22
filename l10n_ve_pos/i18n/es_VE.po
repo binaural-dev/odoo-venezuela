@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250313\n"
+"Project-Id-Version: Odoo Server 17.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-04 16:05+0000\n"
-"PO-Revision-Date: 2025-07-04 16:05+0000\n"
+"POT-Creation-Date: 2025-10-21 17:32+0000\n"
+"PO-Revision-Date: 2025-10-21 17:32+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -94,6 +94,8 @@ msgid ""
 "Activate product entry with barcode in\n"
 "                                                            strict mode"
 msgstr ""
+"Activar entrada de producto con\n"
+"                                       código de barras en modo estricto"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__activate_barcode_strict_mode
@@ -122,6 +124,9 @@ msgid ""
 "                                                        not in the main\n"
 "                                                        warehouse of the box."
 msgstr ""
+"Permite vender kits cuyos productos son\n"
+"                                                        no en el principal\n"
+"                                                        warehouse of the box."
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__amount_to_zero
@@ -601,6 +606,13 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/warehouse.py:0
+#, python-format
+msgid "PoS Orders"
+msgstr "Órdenes de entrega"
+
+#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Point of Sale"
 msgstr "Punto de Venta"
@@ -623,7 +635,7 @@ msgstr "Punto de Venta Reporte de Detalles"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_order_line
 msgid "Point of Sale Order Lines"
-msgstr "Líneas de orden del punto de venta"
+msgstr "Líneas de orden del Punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_order
@@ -633,7 +645,7 @@ msgstr "Órdenes del punto de venta"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment_method
 msgid "Point of Sale Payment Methods"
-msgstr "Métodos de pago de punto de venta "
+msgstr "Métodos de pago del punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment
@@ -912,6 +924,11 @@ msgid "View Payments Origin"
 msgstr "Ver Pagos del Origen"
 
 #. module: l10n_ve_pos
+#: model:ir.model,name:l10n_ve_pos.model_stock_warehouse
+msgid "Warehouse"
+msgstr "Almacén"
+
+#. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 #, python-format
@@ -938,6 +955,7 @@ msgid ""
 msgstr ""
 "No puede romper conciliación de un pago vinculado a una sesión de POS que "
 "aún está abierta"
+
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "allows sales on order without having the product available"
