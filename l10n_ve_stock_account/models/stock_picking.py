@@ -859,7 +859,7 @@ class StockPicking(models.Model):
         for picking in self:
             picking.has_document = bool(picking.sale_id.document)
 
-    @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid", "picking_type_code")
+    @api.depends("is_dispatch_guide", "state", "sale_id", "write_uid", "picking_type_code")
     def _compute_dispatch_guide_controls(self):
         for picking in self:
             picking.dispatch_guide_controls = False
