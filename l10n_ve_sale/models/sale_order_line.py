@@ -1,5 +1,8 @@
 from odoo import api, fields, models, _
 import logging
+from odoo.exceptions import UserError, ValidationError
+
+
 
 _logger = logging.getLogger(__name__)
 
@@ -12,7 +15,9 @@ class SaleOrderLine(models.Model):
     )
     foreign_rate = fields.Float(related="order_id.foreign_rate", store=True)
     foreign_inverse_rate = fields.Float(
-        related="order_id.foreign_inverse_rate", store=True
+
+        related="order_id.foreign_inverse_rate",
+        store=True
     )
 
     foreign_price = fields.Float(
@@ -20,6 +25,7 @@ class SaleOrderLine(models.Model):
         compute="_compute_foreign_price",
         digits="Foreign Product Price",
         store=True,
+        readonly=False
     )
     foreign_subtotal = fields.Monetary(
         help="Foreign Subtotal of the line",
@@ -29,6 +35,8 @@ class SaleOrderLine(models.Model):
     )
 
     invoiced = fields.Boolean(compute="_compute_invoiced", store=True, copy=False)
+
+    
 
     @api.depends("invoice_lines.move_id.state", "invoice_lines.quantity")
     def _compute_invoiced(self):
@@ -40,15 +48,43 @@ class SaleOrderLine(models.Model):
             )
             line.invoiced = invoiced
 
+    
+
+    @api.depends("order_id.foreign_inverse_rate")
+    def _compute_foreign_inverse_rate(self):
+        for record in self:
+            valor_orden = record.order_id.foreign_inverse_rate or 0.0
+            if record.foreign_inverse_rate != valor_orden:
+                record.foreign_inverse_rate = valor_orden
+
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
-            line.foreign_price = line.price_unit * line.foreign_inverse_rate
+            if line.price_unit and line.foreign_inverse_rate:
+                
+                line.foreign_price = line.price_unit * line.order_id.foreign_inverse_rate
+            else:
+                line.foreign_price = 0.0
 
     @api.depends("product_uom_qty", "foreign_price", "discount")
     def _compute_foreign_subtotal(self):
+        
         for line in self:
-            line_discount_price_unit = line.foreign_price * (
-                1 - (line.discount / 100.0)
-            )
-            line.foreign_subtotal = line_discount_price_unit * line.product_uom_qty
+            if not line.product_uom_qty or not line.foreign_price:
+                line.foreign_subtotal = 0.0
+                continue
+            
+            discount = line.discount if line.discount and not float_is_zero(line.discount, precision_digits=2) else 0.0
+            
+            price_with_discount = line.foreign_price * (1 - (discount / 100.0))
+            
+            line.foreign_subtotal = price_with_discount * line.product_uom_qty
+            
+    def _prepare_invoice_line(self, **optional_values):
+       
+        res = super(SaleOrderLine, self)._prepare_invoice_line(**optional_values)
+        res['foreign_subtotal'] = self.foreign_subtotal
+        res['foreign_price'] = self.foreign_price
+        res['foreign_inverse_rate'] = self.foreign_inverse_rate
+        res['foreign_currency_id'] = self.foreign_currency_id.id
+        return res

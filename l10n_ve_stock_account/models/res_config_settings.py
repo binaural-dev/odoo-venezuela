@@ -14,3 +14,12 @@ class ResConfigSettings(models.TransientModel):
 
     invoice_cron_type = fields.Selection(related="company_id.invoice_cron_type", readonly=False)
     invoice_cron_time = fields.Float(related="company_id.invoice_cron_time", readonly=False)
+
+    hide_price_on_dispatch_guide = fields.Boolean(
+        related="company_id.hide_price_on_dispatch_guide", readonly=False
+    )
+    optional_internal_movement_guidance = fields.Boolean(
+        "Internal picking with dispatched guidance ptional",
+        related='company_id.optional_internal_movement_guidance',
+        readonly=False,
+    )
