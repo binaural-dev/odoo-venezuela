@@ -306,7 +306,7 @@ class AccountPaymentIgtf(models.Model):
                 residual_amount = record.amount
 
             record.amount_residual_from_payment = residual_amount
-            return record.amount_residual_from_payment - igtf_amount
+            return record.amount_residual_from_payment
 
     def get_used_payment_amount(self, reconciled_ids,move_id):
         payment_data = []  # Lista de diccionarios con {id_factura, monto}
