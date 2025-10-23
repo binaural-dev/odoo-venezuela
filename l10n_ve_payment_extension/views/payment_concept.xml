@@ -60,7 +60,7 @@
             <field name="res_model">payment.concept</field>
             <field name="type">ir.actions.act_window</field>
             <field name="binding_view_types">form</field>
-            <field name="view_mode">tree,kanban,form</field>
+            <field name="view_mode">list,kanban,form</field>
             <field name="context">{"search_default_status":True}</field>
         </record>
 

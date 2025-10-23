@@ -3,7 +3,7 @@
     <data>
 
         <record id="view_fees_retention_tree_l10n_ve_payment_extension" model="ir.ui.view">
-            <field name="name">view.fees.retention.tree</field>
+            <field name="name">view.fees.retention.list</field>
             <field name="model">fees.retention</field>
             <field name="arch" type="xml">
                 <tree>
@@ -71,7 +71,7 @@
             <field name="res_model">fees.retention</field>
             <field name="type">ir.actions.act_window</field>
             <field name="binding_view_types">form</field>
-            <field name="view_mode">tree,kanban,form</field>
+            <field name="view_mode">list,kanban,form</field>
             <field name="context">{"search_default_status":True}</field>
         </record>
 
