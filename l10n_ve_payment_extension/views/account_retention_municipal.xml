@@ -175,19 +175,12 @@
             <field name="arch" type="xml">
                 <search string="Municipal Retention">
                     <field name="number" string="Number" filter_domain="[('number','ilike',self)]" />
-                    <field name="partner_id" string="Business Name"
-                        filter_domain="[('partner_id','ilike',self)]" />
+                    <field name="partner_id" string="Business Name" filter_domain="[('partner_id','ilike',self)]" />
                     <field name="date" string="Vocher date" filter_domain="[('date','ilike',self)]" />
-                    <field name="date_accounting" string="Fecha Contable"
-                        filter_domain="[('date_accounting','ilike',self)]" />
-                    <group expand="0" string="Group By">
-                        <filter name="group_state" string="State" domain="[]"
-                            context="{'group_by':'state'}" />
-                        <filter name="group_partner" string="Business Name" domain="[]"
-                            context="{'group_by':'partner_id'}" />
-                        <filter name="group_date_accounting" string="Fecha Contable" domain="[]"
-                            context="{'group_by':'date_accounting'}" />
-                    </group>
+                    <field name="date_accounting" string="Fecha Contable" filter_domain="[('date_accounting','ilike',self)]" />
+                    <filter name="group_state" string="Group by State" context="{'group_by':'state'}" />
+                    <filter name="group_partner" string="Group by Business Name" context="{'group_by':'partner_id'}" />
+                    <filter name="group_date_accounting" string="Group by Fecha Contable" context="{'group_by':'date_accounting'}" />
                 </search>
             </field>
         </record>
