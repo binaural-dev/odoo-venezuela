@@ -610,7 +610,7 @@ msgstr ""
 #: code:addons/l10n_ve_pos/models/warehouse.py:0
 #, python-format
 msgid "PoS Orders"
-msgstr "Órdenes de entrega"
+msgstr "Órdenes de PdV"
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
