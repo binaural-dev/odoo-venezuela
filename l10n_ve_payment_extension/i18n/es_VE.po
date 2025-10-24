@@ -161,6 +161,26 @@ msgid "<span>03-REG</span>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>01-REG</span>"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>02-REG</span>"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>03-ANU</span>"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>03-REG</span>"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid "<span>0</span>"
 msgstr ""
@@ -341,6 +361,11 @@ msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Tipo de Transacción</span>"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 msgid "<span>Total Compras Incluyendo el IVA</span>"
 msgstr ""
 
@@ -404,6 +429,11 @@ msgid "Action Needed"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_needaction
+msgid "Action Needed"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__state
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__active
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__economic_branch__status__active
@@ -419,6 +449,26 @@ msgstr "Activo"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__state
 msgid "Active?"
 msgstr "Activo"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_ids
+msgid "Activities"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_state
+msgid "Activity State"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_type_icon
+msgid "Activity Type Icon"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_ids
@@ -508,6 +558,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__payment_concept_id
 msgid "Associated Payment Concept"
 msgstr "Concepto de pago asociado"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_attachment_count
+msgid "Attachment Count"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_attachment_count
@@ -655,7 +710,7 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_config_settings
 msgid "Config Settings"
-msgstr "Ajustes de configuración"
+msgstr "Opciones de configuración"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_partner
@@ -1040,6 +1095,21 @@ msgid "Font awesome icon e.g. fa-tasks"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_follower_ids
+msgid "Followers"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_partner_ids
+msgid "Followers (Partners)"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_currency_id
@@ -1199,6 +1269,13 @@ msgid "ISLR Retentions"
 msgstr "Retenciones de ISLR"
 
 #. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "ISLR retention: Number must be exactly 11 numeric digits."
+msgstr "Retención ISLR: El número debe tener exactamente 11 dígitos numéricos."
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__iva_amount
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_payment__payment_type_retention__iva
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type_retention__iva
@@ -1263,6 +1340,34 @@ msgstr "Retenciones de IVA"
 #: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_type_withholding
 msgid "IVA retention percentage"
 msgstr "Porcentaje de retención de IVA"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "IVA retention: Number must be exactly 14 numeric digits."
+msgstr "Retención IVA: El número debe tener exactamente 14 dígitos numéricos."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_exception_icon
+msgid "Icon"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__message_has_error
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -1384,6 +1489,11 @@ msgstr "Total de Factura"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__invoice_type
 msgid "Invoice Type"
 msgstr "Tipo de Factura"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_is_follower
+msgid "Is Follower"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_is_follower
@@ -1598,6 +1708,16 @@ msgid "Messages"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_has_error
+msgid "Message Delivery error"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_ids
+msgid "Messages"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__month
 msgid "Month"
 msgstr "Mes"
@@ -1725,6 +1845,11 @@ msgid "My Activity Deadline"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid "NO HAY DATOS"
 msgstr ""
@@ -1799,6 +1924,26 @@ msgstr "Número"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__number_count
 msgid "Number Count"
 msgstr "Nro"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_needaction_counter
+msgid "Number of Actions"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_has_error_counter
+msgid "Number of errors"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_needaction_counter
@@ -1996,6 +2141,11 @@ msgid "Rate accumulated?"
 msgstr "¿Tarifa Acumulada?"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__rating_ids
+msgid "Ratings"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__raw_aliquot
 msgid "Raw Aliquot"
 msgstr "Alícuota Bruta"
@@ -2026,6 +2176,11 @@ msgstr "Acción de reporte"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__report
 msgid "Report type"
 msgstr "Tipo de reporte"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_user_id
+msgid "Responsible User"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_user_id
@@ -2162,6 +2317,11 @@ msgid "SMS Delivery error"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__code_visible
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__code_visible
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__code_visible
@@ -2273,6 +2433,15 @@ msgstr "Estado"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_search_l10n_ve_payment_extension
 msgid "Status"
 msgstr "Estado"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_state
@@ -2706,6 +2875,11 @@ msgid "Type of the exception activity on record."
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__type_person_id
 msgid "Type person"
 msgstr "Tipo de Persona"
@@ -2760,9 +2934,21 @@ msgid "Website communication history"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__website_message_ids
+msgid "Website Messages"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__website_message_ids
+msgid "Website communication history"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
 msgid ""
 "When this option is enabled, the code will be displayed in the reports."
+msgstr ""
+"Cuando esta opción está habilitada, el código se mostrará en los informes."
 msgstr ""
 "Cuando esta opción está habilitada, el código se mostrará en los informes."
 
