@@ -1071,12 +1071,15 @@ class TestIGTFNEW(IGTFTestCommon):
 
         # Validar estado de Factura 1
         #invoice_1.refresh()
+        invoice_1 = self.env['account.move'].browse(invoice_1.id)
         self.assertEqual(invoice_1.payment_state, 'not_paid', "La Factura 1 debe volver a 'not_paid' después de desconciliar.")
+
+        self.assertEqual(round(invoice_1.amount_residual,2), 2681.20, f"El monto residual de la factura 2 desconciliada debe ser 2861.2 y esta mostrando {invoice_1.amount_residual}")
 
         
         # 6b. Desconciliar Factura 2 (Conciliación entre Sobrante y Factura 2)
         # partial_reconcile_2: Registro de la aplicación de $950.00
-        partial_reconcile_2 = outstanding_line.matched_credit_ids.filtered(
+        partial_reconcile_2 = outstanding_line.matched_debit_ids.filtered(
             lambda p: p.debit_move_id == invoice_2_payable_line
         )
         self.assertTrue(partial_reconcile_2, "Error: No se encontró el registro de conciliación parcial para Factura 2.")
@@ -1088,6 +1091,7 @@ class TestIGTFNEW(IGTFTestCommon):
         #invoice_2.refresh()
         self.assertEqual(invoice_2.payment_state, 'not_paid', "La Factura 2 debe volver a 'not_paid' después de desconciliar.")
 
+        self.assertEqual(invoice_2.amount_residual, 950.00, f"El monto residual de la factura 2 desconciliada debe ser 950.00 y esta mostrando {invoice_2.amount_residual}")
         # --- 7. VALIDACIÓN FINAL DEL PAGO (Crédito Pendiente) ---
         
         # Recargar la línea de débito del Pago 1 para verificar el residual
@@ -1099,13 +1103,14 @@ class TestIGTFNEW(IGTFTestCommon):
         # Ya que ambas conciliaciones fueron deshechas, el monto completo es un sobrante/crédito pendiente.
         self.assertAlmostEqual(
             outstanding_line.amount_residual,
-            cxc_credit_amount_1,
+            -cxc_credit_amount_1,
             2,
             f"El residual final de la línea de Pago 1 debe ser el monto original del crédito ({cxc_credit_amount_1}), pero es {outstanding_line.amount_residual}"
         )
         
+        _logger.info(f"Residual de factura 1 y Factura 2 {invoice_1.amount_residual} y {invoice_2.amount_residual} totalmente correctos")
         # La línea de pago no debe tener registros de conciliación asociados
         self.assertFalse(outstanding_line.matched_debit_ids, "La línea de Pago 1 no debe tener registros de conciliación pendientes.")
         
         _logger.info(f"RESULTADO FINAL: Sobrante/Crédito pendiente: ${outstanding_line.amount_residual} (Original: ${cxc_credit_amount_1}).")
-        _logger.info("Test de Desconciliación superado.")
+        _logger.info("Test de Desconciliación superado.  SE Creo factura 1 por 2681.20 y factura 950.00 corectamente, se le agrego pago de 4036.80 a primera factura y restante a segunda factura correctamente, desconcilio factura 1 y 2 corectamente y concuerdan sus estados y residuales correctamente")
