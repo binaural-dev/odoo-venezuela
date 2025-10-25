@@ -23,10 +23,8 @@ class CadipaWebsiteAppointment(AppointmentControllerMulti):
         type="http",
         methods=["POST"],
         priority=1000,
-    )  # Prioridad alta para asegurar que se ejecute
+    )
     def appointment_form_submit(self, appointment_type_id, multi_slots=None, **post):
-        # Esta función ahora contiene TODA la lógica, eliminando la necesidad de `super()` complejo.
-
         # ── 1. Lógica de multi-slots (copiada de cadipa_appointment) ──
         if not multi_slots:
             # Si no es multi-slot, podemos usar el super() de la clase padre (cadipa_appointment)
@@ -76,26 +74,42 @@ class CadipaWebsiteAppointment(AppointmentControllerMulti):
         customer_id = post.get("customer_id")
         vat = post.get("vat")
         phone = post.get("phone")
+
         customer = (
             request.env["res.partner"].sudo().browse(int(customer_id))
             if customer_id
             else None
         )
-        staff_user = request.env.user
-
         if not customer:
-            customer = staff_user.partner_id
-        if not customer.vat:
-            customer.write({"vat": vat})
-        if not customer.phone:
-            customer.write({"phone": phone})
+            customer = request.env.user.partner_id
+
+        if customer:
+            if not customer.vat:
+                customer.write({"vat": vat})
+            if not customer.phone:
+                customer.write({"phone": phone})
+        
+        appointment_type = (
+            request.env["appointment.type"].sudo().browse(appointment_type_id)
+        )
+
+        # 2. Determinar el Staff User (a quien se reserva)
+        staff_user = None
+        first_slot_params = slots[0][2] # Parámetros del primer slot
+
+        if appointment_type.schedule_based_on == 'users':
+            staff_user_id = first_slot_params.get('staff_user_id')
+            if staff_user_id:
+                staff_user = request.env['res.users'].sudo().browse(int(staff_user_id))
+        else:
+            # Lógica para 'resources' (si es necesaria)
+            pass
+        
+        # --- FIN DEL BLOQUE CORREGIDO ---
 
         product_id = post.get("product_id")
         created_ev = request.env["calendar.event"]
         first_token = None
-        appointment_type = (
-            request.env["appointment.type"].sudo().browse(appointment_type_id)
-        )
         booking_vals = []
 
         # ── 2. Creación de eventos (llamando al método correcto) ──
@@ -115,11 +129,11 @@ class CadipaWebsiteAppointment(AppointmentControllerMulti):
                 description="",
                 answer_input_values=[],
                 name=post.get("name"),
-                customer=customer,
+                customer=customer,         # Partner del Cliente
                 appointment_invite=None,
                 product_id=product_id,
                 guests=None,
-                staff_user=staff_user,
+                staff_user=staff_user,     # Empleado/Doctor (corregido)
                 asked_capacity=int(post.get("asked_capacity", 1)),
                 booking_line_values=booking_vals,
                 create_invoice=False,

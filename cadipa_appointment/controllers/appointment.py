@@ -106,8 +106,11 @@ class AppointmentControllerMulti(AppointmentController):
        auth='public', website=True, type='http', methods=['POST'], priority=400)
     def appointment_form_submit(self, appointment_type_id, multi_slots=None, **post):
         
-        # ── normal flow without multi-slots ─────────────────────────
         if not multi_slots:
+            response = super(AppointmentControllerMulti, self).appointment_form_submit(
+                appointment_type_id, multi_slots=multi_slots, **post
+            )
+
             if response.status_code == 303 and 'calendar/view' in response.location:
                 access_token = response.location.split('/calendar/view/')[1].split('?')[0]
                 created_event = request.env['calendar.event'].sudo().search([('access_token', '=', access_token)], limit=1)
@@ -115,8 +118,9 @@ class AppointmentControllerMulti(AppointmentController):
                 guest_ids = [int(gid) for gid in guest_ids_str if gid.isdigit()]
                 if created_event and guest_ids:
                     created_event.sudo().write({'guest_ids': [Command.set(guest_ids)]})
+            
             return response
-        
+                
         guest_ids_str = request.httprequest.form.getlist('selected_guest_ids')
         guest_ids = [int(gid) for gid in guest_ids_str if gid.isdigit()]
 
@@ -151,16 +155,28 @@ class AppointmentControllerMulti(AppointmentController):
         vat = post.get('vat')
         phone = post.get('phone')
 
-
-        customer   = request.env['res.partner'].sudo().browse(int(customer_id)) if customer_id else None
-        staff_user       = request.env.user
-
+        
+        customer = request.env['res.partner'].sudo().browse(int(customer_id)) if customer_id else None
         if not customer:
-            customer= staff_user.partner_id
-        if not customer.vat:
-            customer.write({'vat':vat})
-        if not customer.phone:
-            customer.write({'phone':phone})
+            customer = request.env.user.partner_id
+        
+        if customer:
+            if not customer.vat:
+                customer.write({'vat':vat})
+            if not customer.phone:
+                customer.write({'phone':phone})
+        
+        appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
+        
+        staff_user = None
+        first_slot_params = slots[0][2]
+        
+        if appointment_type.schedule_based_on == 'users':
+            staff_user_id = first_slot_params.get('staff_user_id')
+            if staff_user_id:
+                staff_user = request.env['res.users'].sudo().browse(int(staff_user_id))
+        else:
+            pass
             
         product_id = post.get('product_id')
         created_ev = request.env['calendar.event']
