@@ -87,7 +87,15 @@ class MainCalendar(http.Controller):
                 order="appointment_type_id asc"
             )
             for res in reservations:
-                res_dict = self._info_partner_with_reservation(res)
+                res_dict = self._info_partner_with_reservation(res)                
+                guest_details = []
+                for guest in res.guest_ids:
+                    guest_details.append({
+                        'name': guest.name,
+                        'vat': guest.vat,
+                        'prefix_vat': guest.prefix_vat,
+                    })                
+                res_dict['guest_details'] = guest_details                
                 reservation_list.append(res_dict)
         except Exception as e:
             data.update(

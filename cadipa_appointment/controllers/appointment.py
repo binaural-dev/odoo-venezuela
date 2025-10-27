@@ -3,6 +3,7 @@ from odoo.addons.binaural_appointment.controllers.appointment import (
     AppointmentController
 )
 from werkzeug.urls import url_parse, url_encode, url_unparse
+from odoo.exceptions import ValidationError
 
 from urllib.parse import parse_qs, unquote_plus
 from odoo.http import route, request
@@ -11,6 +12,7 @@ from dateutil.relativedelta import relativedelta
 import json, pytz, logging
 from babel.dates import format_datetime
 from odoo import Command, exceptions, http, fields, _
+from datetime import datetime, time
 
 _logger = logging.getLogger(__name__)
 
@@ -107,142 +109,165 @@ class AppointmentControllerMulti(AppointmentController):
     def appointment_form_submit(self, appointment_type_id, multi_slots=None, **post):
         
         if not multi_slots:
-            response = super(AppointmentControllerMulti, self).appointment_form_submit(
-                appointment_type_id, multi_slots=multi_slots, **post
-            )
-
-            if response.status_code == 303 and 'calendar/view' in response.location:
-                access_token = response.location.split('/calendar/view/')[1].split('?')[0]
-                created_event = request.env['calendar.event'].sudo().search([('access_token', '=', access_token)], limit=1)
-                guest_ids_str = request.httprequest.form.getlist('selected_guest_ids')
-                guest_ids = [int(gid) for gid in guest_ids_str if gid.isdigit()]
-                if created_event and guest_ids:
-                    created_event.sudo().write({'guest_ids': [Command.set(guest_ids)]})
-            
-            return response
+            try:
+                response = super(AppointmentControllerMulti, self).appointment_form_submit(
+                    appointment_type_id, multi_slots=multi_slots, **post
+                )
+                if response.status_code == 303 and 'calendar/view' in response.location:
+                    access_token = response.location.split('/calendar/view/')[1].split('?')[0]
+                    created_event = request.env['calendar.event'].sudo().search([('access_token', '=', access_token)], limit=1)
+                    
+                    guest_ids_str = post.get("guest_ids", "") 
+                    guest_ids = [int(gid) for gid in guest_ids_str.split(',') if gid.isdigit()]
+                    if created_event and guest_ids:
+                        created_event.sudo().write({'guest_ids': [Command.set(guest_ids)]})
+                        created_event = created_event.exists()
+                    
+                    self._post_submission_hook(created_event)
                 
-        guest_ids_str = request.httprequest.form.getlist('selected_guest_ids')
-        guest_ids = [int(gid) for gid in guest_ids_str if gid.isdigit()]
-
-        # ── parsing and group ───────────────────────────────
-        slots = sorted((_parse_slot(q) for q in json.loads(multi_slots)),
-                    key=lambda s: s[0])
-
-        time_ranges = []
-        current_start, current_duration = slots[0][0], slots[0][1]
-        current_end = current_start + relativedelta(hours=current_duration)
-        total_hours = current_duration
-        for slot_start, slot_duration, _ in slots[1:]:
-            slot_end = slot_start + relativedelta(hours=slot_duration)
-            total_hours += slot_duration
-            if slot_start == current_end:
-                current_end = slot_end
-            else:
-                time_ranges.append((current_start, current_end))
-                current_start, current_end = slot_start, slot_end
-        time_ranges.append((current_start, current_end))
-        ranges = time_ranges
-
-        tz_name = request.session.get('timezone', post.get('appointment_tz', 'UTC'))
-        tz      = pytz.timezone(tz_name)
-        location     = request.env.context.get('lang', 'es_ES')
-
-        date_str  = format_datetime(ranges[0][0], "EEE d MMM y", locale=location, tzinfo=tz)
-        hours_str = ", ".join(f"{s.strftime('%H:%M')} – {e.strftime('%H:%M')}" for s, e in ranges)
-        time_locale_str = f"{date_str} {hours_str}"
-
-        customer_id = post.get('customer_id')
-        vat = post.get('vat')
-        phone = post.get('phone')
-
-        
-        customer = request.env['res.partner'].sudo().browse(int(customer_id)) if customer_id else None
-        if not customer:
-            customer = request.env.user.partner_id
-        
-        if customer:
-            if not customer.vat:
-                customer.write({'vat':vat})
-            if not customer.phone:
-                customer.write({'phone':phone})
-        
-        appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
-        
-        staff_user = None
-        first_slot_params = slots[0][2]
-        
-        if appointment_type.schedule_based_on == 'users':
-            staff_user_id = first_slot_params.get('staff_user_id')
-            if staff_user_id:
-                staff_user = request.env['res.users'].sudo().browse(int(staff_user_id))
-        else:
-            pass
+                return response
             
-        product_id = post.get('product_id')
-        created_ev = request.env['calendar.event']
-        first_token = None
-        appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
-       
-        booking_vals     = []
-
-        for st_local, en_local in ranges:
-            st_utc = tz.localize(st_local).astimezone(pytz.utc).replace(tzinfo=None)
-            en_utc = tz.localize(en_local).astimezone(pytz.utc).replace(tzinfo=None)
-            single_dur = (en_local - st_local).total_seconds() / 3600.0
-
-            ev = self._handle_appointment_form_submission(
-                appointment_type   = appointment_type,
-                date_start         = st_utc,
-                date_end           = en_utc,
-                duration           = single_dur,
-                description        = '',
-                answer_input_values= [],
-                name               = post.get('name'),
-                customer           = customer,
-                appointment_invite = None,
-                product_id         = product_id,
-                guests             = None,
-                staff_user         = staff_user,
-                asked_capacity     = int(post.get('asked_capacity', 1)),
-                booking_line_values= booking_vals,
-                create_invoice     = False
-            )
-
-            if ev:
-                if not first_token:
-                    first_token = ev.access_token
-                else:
-                    ev.write({'access_token': first_token})
-                created_ev |= ev
-
-            if created_ev and guest_ids:
-                created_ev.sudo().write({'guest_ids': [Command.set(guest_ids)]})
-
+            except ValidationError as e:
+                _logger.warning("Error de validación de invitado: %s", str(e))
+                query_params = post.copy()
+                query_params['validation_error'] = str(e)
+                info_url = f"/appointment/{appointment_type_id}/info"
+                return request.redirect(info_url + '?' + url_encode(query_params))
         
-        has_membership_active = customer.action_number.state == 'active' if customer.action_number else False
+        try:
+            guest_ids_str = post.get("guest_ids", "")
+            guest_ids = [int(gid) for gid in guest_ids_str.split(',') if gid.isdigit()]
 
-        # ── single invoice with multiple lines ─────────────────────────
-        if created_ev and product_id and not has_membership_active:
-            created_ev.sudo().create_invoices({
-                'product_id': product_id,
-                'duration'  : total_hours,
-                'partner_id': customer.id,
-            })
-            if not created_ev.invoice_ids.partner_id:
-                created_ev.invoice_ids.sudo().write({'partner_id': customer.id})
+            slots = sorted((_parse_slot(q) for q in json.loads(multi_slots)),
+                        key=lambda s: s[0])
+            
+            time_ranges = []
+            current_start, current_duration = slots[0][0], slots[0][1]
+            current_end = current_start + relativedelta(hours=current_duration)
+            total_hours = current_duration
+            for slot_start, slot_duration, _ in slots[1:]:
+                slot_end = slot_start + relativedelta(hours=slot_duration)
+                total_hours += slot_duration
+                if slot_start == current_end:
+                    current_end = slot_end
+                else:
+                    time_ranges.append((current_start, current_end))
+                    current_start, current_end = slot_start, slot_end
+            time_ranges.append((current_start, current_end))
+            ranges = time_ranges
 
-        if first_token:
-            query = {
-                'partner_id'  : customer.id,
-                'state'       : 'new',
-                'duration_str': total_hours,
-                'time_locale' : time_locale_str,
-            }
-            return request.redirect(
-                url_unparse(('', '', f'/calendar/view/{first_token}', url_encode(query), ''))
-            )
+            tz_name = request.session.get('timezone', post.get('appointment_tz', 'UTC'))
+            tz      = pytz.timezone(tz_name)
+            location     = request.env.context.get('lang', 'es_ES')
 
-        return request.redirect('/appointment/booking_error')
+            date_str  = format_datetime(ranges[0][0], "EEE d MMM y", locale=location, tzinfo=tz)
+            hours_str = ", ".join(f"{s.strftime('%H:%M')} – {e.strftime('%H:%M')}" for s, e in ranges)
+            time_locale_str = f"{date_str} {hours_str}"
+
+            customer_id = post.get('customer_id')
+            vat = post.get('vat')
+            phone = post.get('phone')
+            
+            customer = request.env['res.partner'].sudo().browse(int(customer_id)) if customer_id else None
+            if not customer:
+                customer = request.env.user.partner_id
+            
+            if customer:
+                if not customer.vat:
+                    customer.write({'vat':vat})
+                if not customer.phone:
+                    customer.write({'phone':phone})
+            
+            appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
+            
+            staff_user = None
+            first_slot_params = slots[0][2]
+            
+            if appointment_type.schedule_based_on == 'users':
+                staff_user_id = first_slot_params.get('staff_user_id')
+                if staff_user_id:
+                    staff_user = request.env['res.users'].sudo().browse(int(staff_user_id))
+            
+            product_id = post.get('product_id')
+            created_ev = request.env['calendar.event']
+            first_token = None
+            booking_vals = []
+
+            for st_local, en_local in ranges:
+                st_utc = tz.localize(st_local).astimezone(pytz.utc).replace(tzinfo=None)
+                en_utc = tz.localize(en_local).astimezone(pytz.utc).replace(tzinfo=None)
+                single_dur = (en_local - st_local).total_seconds() / 3600.0
+
+                ev = self._handle_appointment_form_submission(
+                    appointment_type   = appointment_type,
+                    date_start         = st_utc,
+                    date_end           = en_utc,
+                    duration           = single_dur,
+                    description        = '',
+                    answer_input_values= [],
+                    name               = post.get('name'),
+                    customer           = customer,
+                    appointment_invite = None,
+                    product_id         = product_id,
+                    guests             = None,
+                    staff_user         = staff_user,
+                    asked_capacity     = int(post.get('asked_capacity', 1)),
+                    booking_line_values= booking_vals,
+                    create_invoice     = False
+                )
+
+                if ev:
+                    if not first_token:
+                        first_token = ev.access_token
+                    else:
+                        ev.write({'access_token': first_token})
+                    created_ev |= ev
+
+                if created_ev and guest_ids:
+                    created_ev.sudo().write({'guest_ids': [Command.set(guest_ids)]})
+                    created_ev = created_ev.exists()
+
+            has_membership_active = customer.action_number.state == 'active' if customer.action_number else False
+
+            if created_ev and product_id and not has_membership_active:
+                created_ev.sudo().create_invoices({
+                    'product_id': product_id,
+                    'duration'  : total_hours,
+                    'partner_id': customer.id,
+                })
+                if not created_ev.invoice_ids.partner_id:
+                    created_ev.invoice_ids.sudo().write({'partner_id': customer.id})
+            
+            self._post_submission_hook(created_ev)
+
+            if first_token:
+                query = {
+                    'partner_id'  : customer.id,
+                    'state'       : 'new',
+                    'duration_str': total_hours,
+                    'time_locale' : time_locale_str,
+                }
+                return request.redirect(
+                    url_unparse(('', '', f'/calendar/view/{first_token}', url_encode(query), ''))
+                )
+
+            return request.redirect('/appointment/booking_error')
+
+        except ValidationError as e:
+            _logger.warning("Error de validación de invitado (multi-slot): %s", str(e))
+            query_params = post.copy() 
+            query_params['multi_slots'] = multi_slots
+            query_params['validation_error'] = str(e)
+            info_url = f"/appointment/{appointment_type_id}/info"
+            return request.redirect(info_url + '?' + url_encode(query_params))
+
+    def _post_submission_hook(self, created_events):
+        """
+        Empty hook to be extended by other modules (e.g., cadipa_hikvision).
+        Called after events have been created and before redirecting.
+        :param created_events: a recordset of 'calendar.event' with the created events.
+        """
+        pass
 
     def _handle_appointment_form_submission(
         self, appointment_type,

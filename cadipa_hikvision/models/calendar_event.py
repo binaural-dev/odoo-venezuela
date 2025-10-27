@@ -39,7 +39,6 @@ class CalendarEvent(models.Model):
 
         for access_token, event_group in events_by_token.items():
             primary_event = event_group[0]
-
             if not primary_event.guest_ids:
                 _logger.info(
                     "Event group with token %s skipped: no guests found.",
@@ -55,7 +54,7 @@ class CalendarEvent(models.Model):
 
             try:
                 hik_host = self.env["hikcentral.users"].search(
-                    [("partner_id", "=", primary_event.user_id.partner_id.id)], limit=1
+                    [("partner_id", "=", primary_event.appointment_booker_id.id)], limit=1
                 )
                 if not hik_host:
                     primary_event.message_post(

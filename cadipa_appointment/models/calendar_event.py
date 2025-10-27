@@ -1,8 +1,9 @@
+from datetime import datetime, time
 import logging
 from datetime import timedelta
 from pickle import NONE
-
-from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+from odoo import api, fields, models, _
 
 _logger = logging.getLogger(__name__)
 
@@ -13,7 +14,35 @@ class CalendarEventCrm(models.Model):
         "appointment.guests",
         string="Guests"
     )
-    
+
+    # @api.constrains('guest_ids', 'start')
+    # def _check_guest_daily_reservation(self):
+    #     """
+    #     Prevent a guest (appointment.guests) from being added to more than one
+    #     calendar event (calendar.event) on the same day.
+    #     """
+    #     for event in self:
+    #         if not event.guest_ids or not event.start:
+    #             continue
+    #         reservation_date = event.start.date()
+    #         day_start_utc_str = fields.Datetime.to_string(datetime.combine(reservation_date, time.min))
+    #         day_end_utc_str = fields.Datetime.to_string(datetime.combine(reservation_date, time.max))
+
+    #         for guest in event.guest_ids:                
+    #             domain = [
+    #                 ('id', '!=', event.id),
+    #                 ('guest_ids', '=', guest.id),
+    #                 ('start', '>=', day_start_utc_str),
+    #                 ('start', '<=', day_end_utc_str),
+    #             ]
+                
+    #             if self.env['calendar.event'].search(domain, limit=1):                    
+    #                 guest_vat = f"{guest.prefix_vat}-{guest.vat}" if guest.prefix_vat and guest.vat else (guest.vat or 'N/A')
+                    
+    #                 raise ValidationError(
+    #                     _("Validación fallida: El invitado '%s' (CI: %s) ya tiene otra reserva asignada para el día %s.") %
+    #                     (guest.name, guest_vat, reservation_date.strftime('%d-%m-%Y'))
+    #                 )
 
     def create_invoices(self, data):
         if self.env.context.get('skip_core_invoice'):
