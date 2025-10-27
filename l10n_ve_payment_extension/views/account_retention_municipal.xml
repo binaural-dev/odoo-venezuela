@@ -5,7 +5,7 @@
             <field name="model">account.retention</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
-                <form string="Retention">
+                <form string="Retention" duplicate="false">
                     <header>
                         <button name="action_print_municipal_retention_xlsx" type="object"
                             string="Print municipal retention XLSX" />

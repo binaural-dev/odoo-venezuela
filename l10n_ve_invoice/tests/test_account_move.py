@@ -1,10 +1,12 @@
 import logging
 import datetime
+from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestAccountMove(TransactionCase):
@@ -22,71 +24,94 @@ class TestAccountMove(TransactionCase):
             }
         )
 
+        self.tax_iva16 = self.env["account.tax"].create(
+            {
+                "name": "IVA 16%",
+                "amount": 16,
+                "amount_type": "percent",
+                "type_tax_use": "sale",
+            }
+        )
 
+        self.product = self.env["product.product"].create(
+            {
+                "name": "Producto Prueba",
+                "type": "service",
+                "list_price": 100,
+                "barcode": "123456789",
+                "taxes_id": [(6, 0, [self.tax_iva16.id])],
+            }
+        )
 
-        self.tax_iva16 = self.env['account.tax'].create({
-            'name': 'IVA 16%',
-            'amount': 16,
-            'amount_type': 'percent',
-            'type_tax_use': 'sale',
-        })
+        self.partner_a = self.env["res.partner"].create(
+            {
+                "name": "Test Partner A",
+                "customer_rank": 1,
+            }
+        )
 
-        self.product = self.env['product.product'].create({
-            'name': 'Producto Prueba',
-            'type': 'service',
-            'list_price': 100,
-            'barcode': '123456789',
-            'taxes_id': [(6, 0, [self.tax_iva16.id])],
-        })
-        
-        self.partner_a = self.env['res.partner'].create({
-            'name': 'Test Partner A',
-            'customer_rank': 1,
-        })
-        
         self.company_data = {
-            'company': self.env['res.company'].create({
-                'name': 'Test Company',
-                'currency_id': self.env.ref('base.VEF').id,
-                'confirm_invoice_with_current_date': False,
-            }),
+            "company": self.env["res.company"].create(
+                {
+                    "name": "Test Company",
+                    "currency_id": self.env.ref("base.VEF").id,
+                }
+            ),
         }
-        sequence = self.env['ir.sequence'].create({
-            'name': 'Secuencia Factura',
-            'code': 'account.move',
-            'prefix': 'INV/',
-            'padding': 8,
-            "number_next_actual": 2,
-        })
-        refund_sequence = self.env['ir.sequence'].create({
-            'name': 'nota de credito',
-            'code': '',
-            'prefix': 'NC/',
-            'padding': 8,
-            "number_next_actual": 2,
-        })
+        sequence = self.env["ir.sequence"].create(
+            {
+                "name": "Secuencia Factura",
+                "code": "account.move",
+                "prefix": "INV/",
+                "padding": 8,
+                "number_next_actual": 2,
+            }
+        )
+        refund_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "nota de credito",
+                "code": "",
+                "prefix": "NC/",
+                "padding": 8,
+                "number_next_actual": 2,
+            }
+        )
 
-        self.journal = self.env['account.journal'].create({
-            'name': 'Diario de Ventas',
-            'code': 'VEN',
-            'type': 'sale',
-            'sequence_id': sequence.id,
-            "refund_sequence_id": refund_sequence.id,
-            'company_id': self.env.company.id,
-        })
+        self.sales_journal = self.env["account.journal"].create(
+            {
+                "name": "Diario de Ventas",
+                "code": "VEN",
+                "type": "sale",
+                "sequence_id": sequence.id,
+                "refund_sequence_id": refund_sequence.id,
+                "company_id": self.env.company.id,
+            }
+        )
 
-      
+        self.purchase_journal = self.env["account.journal"].create(
+            {
+                "name": "Diario de compras",
+                "code": "COM",
+                "type": "purchase",
+                "sequence_id": sequence.id,
+                "refund_sequence_id": refund_sequence.id,
+                "company_id": self.env.company.id,
+            }
+        )
+
     def _create_invoice(
-            self, 
-            products, 
-            move_type="out_invoice", 
-            reversed_entry_id=None, 
-            debit_origin_id=None, 
-            ref = "Test Invoice",
-            foreign_rate=38,
-            foreign_inverse_rate=38,
-            invoice_date=None
-        ):
+        self,
+        products,
+        move_type="out_invoice",
+        reversed_entry_id=None,
+        debit_origin_id=None,
+        ref="Test Invoice",
+        foreign_rate=38,
+        foreign_inverse_rate=38,
+        invoice_date=None,
+        date=None,
+        journal=None,
+    ):
         """Helper function to create an invoice with given parameters.
         Args:
             products (list): List of dictionaries with product details.
@@ -105,10 +130,15 @@ class TestAccountMove(TransactionCase):
             for product in products
         ]
 
-        name = self.journal.sequence_id.next_by_id()
+        journal = self.sales_journal
+
+        if move_type == "in_invoice":
+            journal = self.purchase_journal
+
+        name = journal.sequence_id.next_by_id()
 
         if move_type == "out_refund" and reversed_entry_id:
-            name = self.journal.refund_sequence_id.next_by_id()
+            name = journal.refund_sequence_id.next_by_id()
 
         if move_type == "out_invoice" and debit_origin_id:
             name = self.debit_journal.sequence_id.next_by_id()
@@ -124,8 +154,9 @@ class TestAccountMove(TransactionCase):
             "foreign_inverse_rate": foreign_inverse_rate,
             "manually_set_rate": True,
             "invoice_line_ids": invoice_lines,
-            "invoice_date": fields.Date.today(),
-            "journal_id": self.journal.id,
+            "invoice_date": invoice_date or fields.Date.today(),
+            "date": date or fields.Date.today(),
+            "journal_id": journal.id,
             "correlative": 1,
         }
 
@@ -137,10 +168,53 @@ class TestAccountMove(TransactionCase):
         if move_type == "out_invoice" and debit_origin_id:
             invoice_vals["debit_origin_id"] = debit_origin_id.id
             invoice_vals["ref"] = ref
-        
+
         invoice = self.env["account.move"].create(invoice_vals)
 
-        invoice.action_post()
         return invoice
 
-   
+    def test_01_create_in_invoice(self):
+        
+        invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            move_type="in_invoice",
+            journal=self.purchase_journal,
+        )
+        invoice.action_post()
+        self.assertTrue(
+            invoice.state == "posted", "The invoice should be posted after creation."
+        )
+        _logger.info("test_01_create_in_invoice --- successfully.")
+
+    def test_02_error_create_in_invoice(self):
+        invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            move_type="in_invoice",
+            invoice_date=fields.Date.today(),
+            date=fields.Date.today() - timedelta(days=1),
+            journal=self.purchase_journal,
+        )
+        with self.assertRaises(UserError) as e:
+            invoice.action_post()
+        _logger.info("Error creating invoice: %s", e.exception)
+
+        exception = "The accounting date cannot be earlier than the invoice date."
+
+        self.assertEqual(
+            str(e.exception),
+            exception,
+            f"The error message should indicate that: {exception}",
+        )
+        _logger.info("test_02_error_create_in_invoice --- successfully.")

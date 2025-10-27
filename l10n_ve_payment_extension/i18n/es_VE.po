@@ -2405,10 +2405,10 @@ msgstr "La alícuota debe ser mayor a cero "
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #, python-format
 msgid ""
-"The amount of the retention is greater than the total amount of the invoice."
+"The amount of the retention is greater than the total amount of the invoice %s."
 msgstr ""
 "La base imponible de la retención es mayor que la base imponible de la "
-"factura."
+"factura %s."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
