@@ -5,6 +5,7 @@ from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_is_zero
+import pytz
 
 _logger = logging.getLogger(__name__)
 
@@ -41,7 +42,6 @@ class SaleOrder(models.Model):
         help="The rate that is gonna be always shown to the user.",
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
         tracking=True,
@@ -50,7 +50,6 @@ class SaleOrder(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
         store=True,
         readonly=False,
     )
@@ -215,24 +214,16 @@ class SaleOrder(models.Model):
                 vat = str(rec.partner_id.vat)
             rec.vat = vat.upper()
 
-    @api.onchange("name")
-    def _onchange_name(self):
-        """
-        Ensure the foreign_rate and foreign_inverse_rate are computed when the order is still not
-        created.
-        """
-        self._compute_rate()
+ 
 
-    @api.depends("foreign_currency_id", "date_order")
+    @api.depends('date_order','foreign_currency_id')
     def _compute_rate(self):
-        """
-        Compute the rate of the sale order using the compute_rate method of the res.currency.rate
-        model.
-        """
+       
         Rate = self.env["res.currency.rate"]
-        # If the user doesn't want to update the foreign rate using the date order, then don't
-        # compute the rate when it is not zero.
+
         for sale in self:
+            
+                
             if (
                 sale.manually_set_rate
                 or "website_id" in sale._fields
@@ -247,29 +238,22 @@ class SaleOrder(models.Model):
                 )
             ):
                 continue
-            rate_values = Rate.compute_rate(
-                sale.foreign_currency_id.id,
-                sale.date_order.date() or fields.Date.today(),
-            )
-            sale.foreign_rate = rate_values.get("foreign_rate", 0)
-            sale.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            
+            if  sale.foreign_currency_id.id and sale.date_order:
+                
+                rate_values = Rate.compute_rate(
+                    sale.foreign_currency_id.id,
+                    sale.date_order
+                )   
+                if rate_values.get("foreign_rate", 0) != self.foreign_rate:
+                    sale.foreign_rate = rate_values.get("foreign_rate", 0) 
+                if rate_values.get("foreign_inverse_rate", 0) != self.foreign_inverse_rate:
+                    sale.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0) 
+            else:
+                sale.foreign_rate = 0.0
+                sale.foreign_inverse_rate = 0.0
 
-    @api.onchange("foreign_rate")
-    def _onchange_foreign_rate(self):
-        """
-        Onchange the foreign rate and compute the foreign inverse rate
-        """
-        for sale in self:
-            base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
-                "base.USD", raise_if_not_found=False
-            )
-            if not bool(sale.foreign_rate):
-                return
-            sale.foreign_inverse_rate = (
-                1 / sale.foreign_rate
-                if sale.foreign_currency_id.id == base_usd_id
-                else sale.foreign_rate
-            )
+    
 
     def _get_invoiceable_lines(self, final=False):
         if self._context.get("ignore_limit", False):
@@ -277,19 +261,15 @@ class SaleOrder(models.Model):
 
         res = super()._get_invoiceable_lines(final)
         limit = self.company_id.max_product_invoice
+        if len(res) > limit:
+            res = res[:limit]
 
-        if len(res) <= limit:
-            return res
-        return res[:limit]
+        if not any(not line.display_type for line in res):
+            return self.env['sale.order.line']
+        return res
 
     def _create_invoices(self, grouped=False, final=False, date=None):
-        """
-        This function creates the invoice associated to the order,
-        but with this inheritance it creates multiple invoices if
-        it exceeds the configuration limit.
-
-        It also sends the custom rate of the order to the invoice
-        """
+       
         invoices = self.env["account.move"]
         for order in self:
             invoiceable_lines = order._get_invoiceable_lines(final)
@@ -304,41 +284,23 @@ class SaleOrder(models.Model):
         invoice_vals["manually_set_rate"] = (
             self.manually_set_rate or self.env.company.use_invoice_rate_from_sale_order
         )
+        invoice_vals["foreign_currency_id"] = self.foreign_currency_id.id
         invoice_vals["foreign_rate"] = self.foreign_rate
         invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
+        if self.date_order:
+            utc_datetime = pytz.utc.localize(self.date_order)
+
+       
+            user_tz = self.env.user.tz or 'UTC' 
+            local_datetime = utc_datetime.astimezone(pytz.timezone(user_tz))
+
+            local_date = local_datetime.date()
+            invoice_vals["invoice_date"] = local_date
+        else:
+            invoice_vals["invoice_date"] = False
         return invoice_vals
 
-    def _update_invoices_rate(self):
-        """
-        Syncs the rates of the invoices with the rates of the order.
-        """
-        if not self.env.company.use_invoice_rate_from_sale_order:
-            return
-        for sale in self:
-            sale.invoice_ids.write(
-                {
-                    "foreign_rate": sale.foreign_rate,
-                    "foreign_inverse_rate": sale.foreign_inverse_rate,
-                }
-            )
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        res = super().create(vals_list)
-        for sale in res:
-            Rate = self.env["res.currency.rate"]
-            rate_values = Rate.compute_rate(
-                sale.foreign_currency_id.id, sale.date_order or fields.Date.today()
-            )
-            last_foreign_rate = rate_values.get("foreign_rate", 0)
-            if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:
-                sale.message_post(
-                    body=_(
-                        "The rate has been updated from %(last_rate)s to %(rate)s ",
-                    )
-                    % ({"rate": sale.foreign_rate, "last_rate": last_foreign_rate})
-                )
-        return res
+    
 
     def write(self, vals):
         if vals.get("foreign_rate", False):
@@ -526,3 +488,17 @@ class SaleOrder(models.Model):
         )
         for order in orders:
             order.action_cancel()
+
+   
+    def _prepare_confirmation_values(self):
+        """ Prepare the sales order confirmation values.
+
+        Note: self can contain multiple records.
+
+        :return: Sales Order confirmation values
+        :rtype: dict
+        """
+        res = super(SaleOrder, self)._prepare_confirmation_values()
+        res.pop('date_order', None)
+       
+        return res
