@@ -68,6 +68,9 @@
                     </group>
                 </page>
             </xpath>
+            <xpath expr="//field[@name='tax_totals'][@widget='account-tax-totals-field']" position="attributes">
+                <attribute name="widget">account-tax-foreign-totals-field</attribute>
+            </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="after">
                 <field name="foreign_price" readonly="move_type != 'in_invoice'" />
