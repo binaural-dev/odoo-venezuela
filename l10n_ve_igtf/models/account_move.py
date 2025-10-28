@@ -158,8 +158,8 @@ class AccountMove(models.Model):
                     # payment_id = line.move_id.payment_id
                     bi_igtf = payment_id.get_bi_igtf(move_id)
                     _logger.info(f'tiene payment_id igtf === {bi_igtf}')
-                    if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
-                        record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
+                    if initial_residual <= bi_igtf and bi_igtf >= amount_to_pay:
+                        record.bi_igtf = min(record.bi_igtf + bi_igtf,amount_to_pay)
                         _logger.warning(f'Hey 22222222222 {record.bi_igtf}')
                         bi_igtf = 0
                         continue
