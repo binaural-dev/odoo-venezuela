@@ -859,11 +859,11 @@ class StockPicking(models.Model):
         #     raise_if_not_found=False,
         # )
         for picking in self:
-            if consignment_reason:
-                picking.is_consignment = (
-                    picking.transfer_reason_id.id == consignment_reason.id
-                )
-            else:
+            # if consignment_reason:
+            #     picking.is_consignment = (
+            #         picking.transfer_reason_id.id == consignment_reason.id
+            #     )
+            # else:
                 picking.is_consignment = False
 
     @api.depends("transfer_reason_id")
@@ -875,12 +875,12 @@ class StockPicking(models.Model):
         # )
 
         for picking in self:
-            if (
-                picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id
-            ):
-                picking.is_dispatch_guide = True
-            else:
+            # if (
+            #     picking.transfer_reason_id
+            #     and picking.transfer_reason_id.id == consignment_reason.id
+            # ):
+            #     picking.is_dispatch_guide = True
+            # else:
                 # This is necessary always should be return a value
                 picking.is_dispatch_guide = picking.is_dispatch_guide
 
@@ -1128,11 +1128,11 @@ class StockPicking(models.Model):
         consignment_reason = False
         # consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
         for picking in self:
-            picking.partner_required = (
-                picking.transfer_reason_id.id == consignment_reason.id
-                and picking.is_dispatch_guide
-                and picking.is_consignment
-            )
+            # picking.partner_required = (
+            #     picking.transfer_reason_id.id == consignment_reason.id
+            #     and picking.is_dispatch_guide
+            #     and picking.is_consignment
+            # )
             picking._assign_partner_from_location()
 
     @api.onchange('location_dest_id', 'partner_required')
