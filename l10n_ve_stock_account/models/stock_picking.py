@@ -853,10 +853,11 @@ class StockPicking(models.Model):
 
     @api.depends("transfer_reason_id")
     def _compute_is_consignment(self):
-        consignment_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_consignment",
-            raise_if_not_found=False,
-        )
+        consignment_reason = True
+        # consignment_reason = self.env.ref(
+        #     "l10n_ve_stock_account.transfer_reason_consignment",
+        #     raise_if_not_found=False,
+        # )
         for picking in self:
             if consignment_reason:
                 picking.is_consignment = (
@@ -867,10 +868,11 @@ class StockPicking(models.Model):
 
     @api.depends("transfer_reason_id")
     def _compute_is_dispatch_guide(self):
-        consignment_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_consignment",
-            raise_if_not_found=False,
-        )
+        consignment_reason = True
+        # consignment_reason = self.env.ref(
+        #     "l10n_ve_stock_account.transfer_reason_consignment",
+        #     raise_if_not_found=False,
+        # )
 
         for picking in self:
             if (
@@ -895,7 +897,7 @@ class StockPicking(models.Model):
                 "transfer_between_warehouses": "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
                 "export": "l10n_ve_stock_account.transfer_reason_export",
                 "self_consumption": "l10n_ve_stock_account.transfer_reason_self_consumption",
-                "consignment": "l10n_ve_stock_account.transfer_reason_consignment",
+                # "consignment": "l10n_ve_stock_account.transfer_reason_consignment",
                 "repair_improvement": "l10n_ve_stock_account.transfer_reason_repair",
                 "external_storage": "l10n_ve_stock_account.transfer_reason_external_storage",
                 "other_causes": "l10n_ve_stock_account.transfer_reason_other_causes",
@@ -1123,7 +1125,8 @@ class StockPicking(models.Model):
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):
-        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
+        consignment_reason = True
+        # consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
         for picking in self:
             picking.partner_required = (
                 picking.transfer_reason_id.id == consignment_reason.id
