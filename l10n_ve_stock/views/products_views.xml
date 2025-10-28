@@ -59,6 +59,9 @@
                     <field name="physical_location_id" options="{'no_create': True}"/>
                 </group>
             </xpath>
+            <xpath expr="//field[@name='taxes_id']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
         </field>
     </record>
     <record id="product_template_form_view" model="ir.ui.view">
