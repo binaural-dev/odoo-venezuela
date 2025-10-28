@@ -203,7 +203,7 @@ class AccountMove(models.Model):
             affected_invoice_number = ""
             affected_invoice_date = ""
             affected_invoice_amount = ""
-            affected_invoice_comment = ""
+            affected_invoice_comment = record.ref if record.debit_origin_id or record.reversed_entry_id else ""
             affected_invoice_series = ""
 
             if record.debit_origin_id:
@@ -220,8 +220,8 @@ class AccountMove(models.Model):
                     tax_totals = record.debit_origin_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
-                part = record.ref.split(',')
-                affected_invoice_comment = part[1].strip()
+                if record.ref and ',' in record.ref:
+                    affected_invoice_comment = record.ref.split(',', 1)[1].strip()
 
             if record.reversed_entry_id:
                 affected_invoice_number = str(record.reversed_entry_id.sequence_number)
@@ -237,8 +237,8 @@ class AccountMove(models.Model):
                     tax_totals = record.reversed_entry_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
-                part = record.ref.split(',')
-                affected_invoice_comment = part[1].strip()
+                if record.ref and ',' in record.ref:
+                    affected_invoice_comment = record.ref.split(',', 1)[1].strip()
 
             if not record.invoice_date:
                 raise UserError(_("The invoice date is not defined."))
