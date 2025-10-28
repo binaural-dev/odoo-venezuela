@@ -73,8 +73,6 @@ class StockPicking(models.Model):
     ##TODO Considerar si se pueden refactorizar estas funciones y dejar una sola a la que se le pase
     ###### el tipo de picking.
     def _get_picks(self, assigned=False):
-        if not self.group_id:
-            return self.env["stock.picking"]
         domain = [
             "&",
             ("group_id", "=", self.group_id.id),
