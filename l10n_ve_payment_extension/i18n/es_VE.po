@@ -2949,8 +2949,6 @@ msgid ""
 "When this option is enabled, the code will be displayed in the reports."
 msgstr ""
 "Cuando esta opción está habilitada, el código se mostrará en los informes."
-msgstr ""
-"Cuando esta opción está habilitada, el código se mostrará en los informes."
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
