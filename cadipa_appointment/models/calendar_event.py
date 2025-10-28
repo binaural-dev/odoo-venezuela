@@ -1,14 +1,20 @@
+from datetime import datetime, time
 import logging
 from datetime import timedelta
 from pickle import NONE
-
-from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+from odoo import api, fields, models, _
 
 _logger = logging.getLogger(__name__)
 
 class CalendarEventCrm(models.Model):
     _inherit = 'calendar.event'
-    
+
+    guest_ids = fields.Many2many(
+        "appointment.guests",
+        string="Guests"
+    )
+
 
     def create_invoices(self, data):
         if self.env.context.get('skip_core_invoice'):

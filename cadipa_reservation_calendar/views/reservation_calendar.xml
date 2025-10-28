@@ -96,6 +96,15 @@
         <p><strong>Cliente:</strong> <span id="modalPartnerName"></span></p>
         <p><strong>Hora:</strong> <span id="modalReservationTime"></span></p>
         <p><strong>Descripción:</strong><span id="modalDescription"></span></p>
+        <div id="modalGuestsSection" class="mt-3" style="display: none;">
+            <hr/>
+            <p><strong>Invitados:</strong></p>
+            <ul id="modalGuestsList" class="list-group list-group-flush"></ul>
+            
+            <p id="modalNoGuests" class="text-muted" style="display: none;">
+                No hay invitados registrados para esta reserva.
+            </p>
+        </div>
       </div>
 
       <div class="modal-footer">
