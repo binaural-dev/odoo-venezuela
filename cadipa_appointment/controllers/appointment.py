@@ -44,12 +44,14 @@ class AppointmentControllerMulti(AppointmentController):
         available_resource_ids=None, asked_capacity=1,
         **kwargs):
 
+        validation_error = kwargs.get('validation_error') 
+        guest_creation_error = kwargs.get('error')
+
         multi_raw = kwargs.get('multi_slots')
         multi_list = json.loads(multi_raw) if multi_raw else []
 
         if multi_list:
             first_dt, first_dur, first_params = _parse_slot(multi_list[0])
-
             date_time = date_time or fields.Datetime.to_string(first_dt)
             duration = duration or str(first_dur)
             staff_user_id = staff_user_id or first_params.get('staff_user_id')
@@ -60,6 +62,9 @@ class AppointmentControllerMulti(AppointmentController):
         clean_kwargs = kwargs.copy()
         for dup in ('staff_user_id', 'resource_selected_id', 'available_resource_ids', 'asked_capacity'):
             clean_kwargs.pop(dup, None)
+        
+        clean_kwargs.pop('validation_error', None) 
+        clean_kwargs.pop('error', None) 
 
         resp = super().appointment_type_id_form(
             appointment_type_id,
@@ -74,22 +79,20 @@ class AppointmentControllerMulti(AppointmentController):
 
         if multi_list:
             slots = sorted((_parse_slot(q) for q in multi_list), key=lambda slot: slot[0])
-
             time_ranges = []
             range_start, current_dur = slots[0][0], slots[0][1]
             range_end = range_start + relativedelta(hours=current_dur)
             total_hours = current_dur
-
             for slot_start, slot_duration, _ in slots[1:]:
-                next_end = slot_start + relativedelta(hours=slot_duration)
-                total_hours += slot_duration
-                if slot_start == range_end:
-                    range_end = next_end
-                else:
-                    time_ranges.append((range_start, range_end))
-                    range_start, range_end = slot_start, next_end
+                 next_end = slot_start + relativedelta(hours=slot_duration)
+                 total_hours += slot_duration
+                 if slot_start == range_end:
+                     range_end = next_end
+                 else:
+                     time_ranges.append((range_start, range_end))
+                     range_start, range_end = slot_start, next_end
             time_ranges.append((range_start, range_end))
-
+            
             resp.qcontext.update({
                 'time_locale': ", ".join(f"{start.strftime('%H:%M')} – {end.strftime('%H:%M')}" for start, end in time_ranges),
                 'multi_slots_json': multi_raw,
@@ -101,12 +104,76 @@ class AppointmentControllerMulti(AppointmentController):
                 website_appointment_category_override='custom'
             )
         
+        if validation_error:
+            resp.qcontext['validation_error'] = validation_error
+            
+        if guest_creation_error:                     
+            if guest_creation_error == 'guest_creation_failed':
+                 resp.qcontext['guest_creation_error'] = _("Error al crear el invitado. Intente de nuevo.")
+            else:
+                 resp.qcontext['guest_creation_error'] = guest_creation_error
+            
         return resp
-
     
     @route(['/appointment/<int:appointment_type_id>/submit'],
        auth='public', website=True, type='http', methods=['POST'], priority=400)
     def appointment_form_submit(self, appointment_type_id, multi_slots=None, **post):
+        try:
+            guest_ids_str = post.get("guest_ids", "") 
+            guest_ids = [int(gid) for gid in guest_ids_str.split(',') if gid.isdigit()]
+            
+            if guest_ids:
+                incoming_guests = request.env['appointment.guests'].sudo().browse(guest_ids)
+                incoming_vats = [v for v in incoming_guests.mapped('vat') if v]
+
+                if incoming_vats:
+                    date_str = None
+                    if multi_slots:
+                        slots_data = json.loads(multi_slots)
+                        if slots_data:
+                            first_dt, _duration, _params = _parse_slot(slots_data[0])
+                            date_str = fields.Datetime.to_string(first_dt)
+                    else:
+                        date_str = post.get('date_time')
+
+                    if date_str:
+                        appointment_dt_utc = fields.Datetime.from_string(date_str)
+                        appointment_date = appointment_dt_utc.date()
+                        
+                        day_start_utc = datetime.combine(appointment_date, time.min)
+                        day_end_utc = datetime.combine(appointment_date, time.max)
+                        
+
+                        domain = [
+                            ('guest_ids.vat', 'in', incoming_vats),
+                            ('start', '>=', day_start_utc),
+                            ('start', '<=', day_end_utc),
+                        ]
+                        
+                        existing_events = request.env['calendar.event'].sudo().search(domain)
+                        
+                        if existing_events:                            
+                            attendees_in_conflict = existing_events.mapped('guest_ids')
+                            vats_in_conflict = set(attendees_in_conflict.mapped('vat'))
+                            
+                            conflicting_incoming_vats = set(incoming_vats) & vats_in_conflict
+                            
+                            conflicting_guests = incoming_guests.filtered(
+                                lambda p: p.vat in conflicting_incoming_vats
+                            )
+                            guest_names = ", ".join(conflicting_guests.mapped('name'))
+                            
+                            error_msg = "Uno o más invitados (%s) ya tienen una reserva para este día." % guest_names
+                            raise ValidationError(error_msg)
+
+        except ValidationError as e:
+            _logger.warning("Error de validación de invitado (Conflicto de Horario por VAT): %s", str(e))
+            query_params = post.copy() 
+            query_params['multi_slots'] = multi_slots
+            query_params['validation_error'] = str(e)
+            info_url = f"/appointment/{appointment_type_id}/info"
+            return request.redirect(info_url + '?' + url_encode(query_params))
+        
         
         if not multi_slots:
             try:
