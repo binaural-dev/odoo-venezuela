@@ -179,6 +179,7 @@ class MainCalendar(http.Controller):
                 "payment_state": reservation.invoice_ids[0].payment_state,
             }
         partner_id = {"id": reservation.partner_id.id, "name": reservation.partner_id.name}
+        booker_id = {"id": reservation.appointment_booker_id.id, "name": reservation.appointment_booker_id.name} 
         start_time_12h = reservation.start.astimezone(pytz.timezone(request.env.user.tz)).strftime(
             "%I:%M %p"
         )
@@ -217,6 +218,7 @@ class MainCalendar(http.Controller):
             "categ_ids": {"id": reservation.categ_ids[0].id, "name": reservation.categ_ids[0].name} if reservation.categ_ids else {},
             "responsible": {"id": reservation.partner_id.id, "name": reservation.partner_id.name},
             "partner_id": partner_id,
+            "appointment_booker_id": booker_id,
             "message": {
                 "question": question.name if question else '',
                 "answer": answer,
