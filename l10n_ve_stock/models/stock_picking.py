@@ -17,15 +17,6 @@ class StockPicking(models.Model):
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
         pickings = self.env["stock.picking"]
-        if self.group_id:
-            pickings = self.search(
-                [
-                    "&",
-                    ("group_id", "=", self.group_id.id),
-                    ("type_delivery_step", "=", picking_type),
-                ]
-            )
-            pickings -= self
         action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
 
         if len(pickings) > 1:
@@ -52,7 +43,7 @@ class StockPicking(models.Model):
             default_partner_id=self.partner_id.id,
             default_picking_type_id=picking_id.picking_type_id.id,
             default_origin=self.name,
-            default_group_id=picking_id.group_id.id,
+            #default_group_id=picking_id.group_id.id,
             default_type_delivery_step=picking_type,
         )
         return action
@@ -75,7 +66,6 @@ class StockPicking(models.Model):
     def _get_picks(self, assigned=False):
         domain = [
             "&",
-            ("group_id", "=", self.group_id.id),
             ("type_delivery_step", "=", "pick"),
             ("id", "!=", self.id),
         ]
@@ -88,11 +78,8 @@ class StockPicking(models.Model):
         return self.search(domain)
 
     def _get_packs(self, assigned=False):
-        if not self.group_id:
-            return self.env["stock.picking"]
         domain = [
             "&",
-            ("group_id", "=", self.group_id.id),
             ("type_delivery_step", "=", "pack"),
             ("id", "!=", self.id),
         ]
@@ -105,11 +92,8 @@ class StockPicking(models.Model):
         return self.search(domain)
 
     def _get_outs(self, assigned=False):
-        if not self.group_id:
-            return self.env["stock.picking"]
         domain = [
             "&",
-            ("group_id", "=", self.group_id.id),
             ("type_delivery_step", "=", "out"),
             ("id", "!=", self.id),
         ]
