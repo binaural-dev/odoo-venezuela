@@ -26,7 +26,7 @@ class AccountMove(models.Model):
             "Another entry with the same name already exists.",
         ),
     ]
-    
+
     def _auto_init(self):
         res = super()._auto_init()
         if not index_exists(self.env.cr, "account_move_unique_name_ve"):
@@ -152,8 +152,6 @@ class AccountMove(models.Model):
         store=True,
     )
 
-    
-
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
     foreign_debit = fields.Monetary(
@@ -205,7 +203,6 @@ class AccountMove(models.Model):
             move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
             move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
             move.foreign_balance = move.foreign_debit - move.foreign_credit
-
 
     def _get_journal_income_account(self, journal):
         """
@@ -262,14 +259,13 @@ class AccountMove(models.Model):
                 lambda l: (l.display_type == 'product' and not l.tax_line_id 
                     and l.account_id.id == old_income.id )
             )
-        
+
         if lines_to_update:
             for line in lines_to_update:
                 line.write({'account_id': new_income.id})
         if moves: 
             container = {'records': moves}
             moves._sync_dynamic_lines(container)
-
 
     @api.depends("invoice_line_ids", "tax_totals")
     def _compute_detailed_amounts(self):
@@ -419,23 +415,10 @@ class AccountMove(models.Model):
         Ensure that the foreign_rate and foreign_inverse_rate are computed and computes the foreign
         debit and foreign credit of the line_ids fields (journal entries) when the move is created.
         """
-        for vals in vals_list:
-            
-            if 'name' in vals and vals['name'] != "/":
-                
-                domain = [
-                    ('name', '=', vals['name']),
-                    ('partner_id', '=', vals.get('partner_id'))
-                ]
-                existing_record = self.search(domain, limit=1)
-                
-                if existing_record and not (existing_record.move_type == 'entry' and existing_record.state == 'cancel') :
-                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-
         moves = super().create(vals_list)
 
         for move in moves:
-            
+
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
@@ -453,7 +436,7 @@ class AccountMove(models.Model):
     @api.onchange("partner_id")
     def onchange_date(self):
         for rec in self:
-           if rec.partner_id:
+            if rec.partner_id:
                 rec.invoice_date = fields.Date.today()
                 rec.foreign_currency_id = rec.default_alternate_currency()
 
@@ -464,32 +447,16 @@ class AccountMove(models.Model):
 
         if vals has 'journal_id' inside, then call _update_invoice_lines_with_new_journal to update the line_ids to update the account_id.
         """
-        if 'name' in vals and vals['name'] != "/":
-            for move in self:
-                partner_id = vals.get('partner_id', move.partner_id.id)
-                
-                domain = [
-                    ('name', '=', vals['name']),
-                    ('partner_id', '=', partner_id),
-                    ('id', '!=', move.id) 
-                ]
-                
-                existing_record = self.search(domain, limit=1)
-                
-                if existing_record:
-                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-                
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
-                
-        if 'journal_id' in vals:    
+
+        if "journal_id" in vals:
             for move in self:
                 old_journal_id = move.journal_id.id
         else:
             old_journal_id = None
 
-            
         res = super().write(vals)
         for move in self:
             if (
@@ -506,7 +473,7 @@ class AccountMove(models.Model):
             new_journal_id = move.journal_id.id
             if old_journal_id and new_journal_id and old_journal_id != new_journal_id:
                 if move.is_invoice(include_receipts=True) and move.move_type in ('out_invoice', 'out_refund', 'out_receipt'):
-                        move._update_invoice_lines_with_new_journal(old_journal_id, new_journal_id)
+                    move._update_invoice_lines_with_new_journal(old_journal_id, new_journal_id)
         return res
 
     @api.constrains("invoice_line_ids")
@@ -801,7 +768,6 @@ class AccountMove(models.Model):
                 is_sale=False,
             )
 
-          
     @api.model
     def _compute_rate_for_documents(self, documents, is_sale):
         """
@@ -862,7 +828,7 @@ class AccountMove(models.Model):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
-        if self.invoice_date:
+        if self.invoice_date or self.date:
             if self.foreign_rate < 0 or self.foreign_inverse_rate < 0:
                 raise ValidationError(_("The rate entered cannot be negative"))
             Rate = self.env["res.currency.rate"]
@@ -882,8 +848,6 @@ class AccountMove(models.Model):
                     raise ValidationError(_("The rate entered cannot be negative."))
                 elif rec.foreign_inverse_rate == 0:
                     raise ValidationError(_("The rate entered cannot be zero."))
-
-
 
     def _get_payments(self, line_ids):
         self.ensure_one()
@@ -946,7 +910,7 @@ class AccountMove(models.Model):
 
         return account_analytic_by_line_id
 
-    #override 
+    # override
     def _get_retention_payment_move_ids(self, line_ids):
         return []
 
