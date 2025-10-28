@@ -36,7 +36,7 @@
                     <field name="name" />
                     <field name="status" />
                     <filter string="Active" name="status" domain="[('status', '=', 'active')]" />
-                    <group expand="1" string="Group by">
+                    <group>
                         <filter string="Status" name='status' context="{'group_by':'status'}" />
                     </group>
                 </search>
@@ -48,7 +48,7 @@
             <field name="res_model">economic.branch</field>
             <field name="type">ir.actions.act_window</field>
             <field name="binding_view_types">form</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
         </record>
     
     
