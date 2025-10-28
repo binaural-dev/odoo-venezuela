@@ -8,7 +8,6 @@
         'website',
         'bus',
         'cadipa_appointment',
-        'binaural_hikvision',
         'mail',
         'binaural_hikvision_employee'
     ],

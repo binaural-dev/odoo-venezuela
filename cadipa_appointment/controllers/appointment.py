@@ -1,4 +1,3 @@
-from urllib import response
 from odoo.addons.binaural_appointment.controllers.appointment import (
     AppointmentController
 )
@@ -167,7 +166,7 @@ class AppointmentControllerMulti(AppointmentController):
                             raise ValidationError(error_msg)
 
         except ValidationError as e:
-            _logger.warning("Error de validación de invitado (Conflicto de Horario por VAT): %s", str(e))
+            _logger.error("Error de validación de invitado (Conflicto de Horario por VAT): %s", str(e))
             query_params = post.copy() 
             query_params['multi_slots'] = multi_slots
             query_params['validation_error'] = str(e)
@@ -195,7 +194,7 @@ class AppointmentControllerMulti(AppointmentController):
                 return response
             
             except ValidationError as e:
-                _logger.warning("Error de validación de invitado: %s", str(e))
+                _logger.error("Error de validación de invitado: %s", str(e))
                 query_params = post.copy()
                 query_params['validation_error'] = str(e)
                 info_url = f"/appointment/{appointment_type_id}/info"
@@ -321,7 +320,7 @@ class AppointmentControllerMulti(AppointmentController):
             return request.redirect('/appointment/booking_error')
 
         except ValidationError as e:
-            _logger.warning("Error de validación de invitado (multi-slot): %s", str(e))
+            _logger.error("Error de validación de invitado (multi-slot): %s", str(e))
             query_params = post.copy() 
             query_params['multi_slots'] = multi_slots
             query_params['validation_error'] = str(e)

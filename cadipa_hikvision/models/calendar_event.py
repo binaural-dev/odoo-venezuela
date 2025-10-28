@@ -1,4 +1,3 @@
-from setuptools import Command
 from odoo import models, fields, _, Command
 import logging
 

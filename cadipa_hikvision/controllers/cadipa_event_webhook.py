@@ -9,7 +9,7 @@ try:
         HikcentralWebhookController,
     )
 except ImportError:
-    _logger.warning("CADIPA: No se encontró el módulo binaural_hikvision.")
+    _logger.error("CADIPA: No se encontró el módulo binaural_hikvision.")
 
 
 class CadipaHikcentralWebhookController(HikcentralWebhookController):

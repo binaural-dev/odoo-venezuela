@@ -11,8 +11,8 @@
                         <i class="fa fa-user-circle" style="font-size: 200px;"></i>
                     </t>
                 </div>
-                <h1 class="display-4" t-esc="state.name"/>
-                <p class="lead" t-esc="state.status_text"/>
+                <h1 class="display-4" t-out="state.name"/>
+                <p class="lead" t-out="state.status_text"/>
             </div>
         </div>
     </t>
