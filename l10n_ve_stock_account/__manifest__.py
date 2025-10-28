@@ -18,11 +18,11 @@
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",
-        "security/res_groups.xml",
+        # "security/res_groups.xml",
+        "data/transfer_reason.xml",
         "data/dispatch_guide_paperformat.xml",
         "data/ir_cron.xml",
         "data/ir_sequence.xml",
-        "data/transfer_reason.xml",
         "views/account_move_views.xml",
         "wizard/picking_invoice_wizard.xml",
         "views/stock_picking_guide_dispatch_views.xml",
