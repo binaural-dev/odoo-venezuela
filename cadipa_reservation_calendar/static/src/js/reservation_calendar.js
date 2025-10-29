@@ -282,14 +282,14 @@ _searchReservationsPartners: async function() {
               <div class="schedule bg-primary js-reservation-click"
                    style="top:${topPct}%; height:${hPct}%"
                    data-reservation-id="${r.id}"
-                   data-partner-name="${r.partner_id.name}"
+                   data-partner-name="${r.appointment_booker_id.name}"
                    data-start-time="${r.start}"
                    data-stop-time="${r.stop}"
                    data-court-name="${zone.name}"
                    data-court-id="${zone.id}"
                    data-description="${r.description}"
                    data-guests='${guestsJson}'> <strong>${r.start} - ${r.stop}</strong><br/>
-                   ${r.partner_id.name}
+                   ${r.appointment_booker_id.name}
               </div>`;
         });
 
