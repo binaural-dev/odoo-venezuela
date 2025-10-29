@@ -668,31 +668,6 @@ class PosSession(models.Model):
 
             return move_lines
 
-    def _create_account_move(
-        self,
-        balancing_account=False,
-        amount_to_balance=0,
-        bank_payment_method_diffs=None,
-    ):
-        """
-        This function was overwritten to assign the cash rate since it was previously assigned
-        after creation.
-
-        Additionally, the execution of the function: "compute_line_ids_foreign_debit_and_credit"
-        is added so that it can calculate it
-        """
-        res = super()._create_account_move(
-            balancing_account, amount_to_balance, bank_payment_method_diffs
-        )
-        account_move = self.move_id
-        account_move.write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-            }
-        )
-        return res
-
     def _accumulate_amounts(self, data):
         data = super()._accumulate_amounts(data)
         split_receivables_bank = data.get("split_receivables_bank")
