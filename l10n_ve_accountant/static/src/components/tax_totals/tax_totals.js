@@ -39,11 +39,9 @@ patch(TaxTotalsComponent.prototype, {
   },
 
   formatMonetaryForeign(value) {
-      console.log("value", this.props.record.data.foreign_currency_id);
       const currency = this.props.record.data.foreign_currency_id;
       let res = formatMonetary(value, {currencyId: currency.id});
 
-      console.log("res", res);
       return res;
   }
 
