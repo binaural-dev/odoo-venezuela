@@ -1,4 +1,5 @@
 from odoo import api, models, fields, _
+from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -108,6 +109,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ):
                 payment_amount = payment.amount
                 if payment.payment_difference < 0:
+                    #raise UserError(payment.payment_difference)
                     payment_amount = payment.amount + payment.payment_difference
                 payment.igtf_amount = payment.calculate_igtf_for_payment(
                     move_id, payment_amount, payment.igtf_percentage
@@ -133,6 +135,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         :return: A list of ids of the created payments.
         """
         to_process[0]["create_vals"]["igtf_amount"] = self.igtf_amount
+        to_process[0]["create_vals"]["payment_from_wizard"] = True
         to_process[0]["create_vals"]["igtf_percentage"] = self.igtf_percentage
         to_process[0]["create_vals"][
             "is_igtf_on_foreign_exchange"
