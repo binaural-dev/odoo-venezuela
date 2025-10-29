@@ -9,12 +9,14 @@ import { patch } from "@web/core/utils/patch";
 const { Component, onPatched, onWillUpdateProps, useRef, toRaw, useState } = owl;
 
 patch(TaxTotalsComponent.prototype, {
+
+
   formatData(props) {
     let totals = JSON.parse(JSON.stringify(toRaw(props.record.data[this.props.name])));
     if (!totals) {
       return;
     }
-    const foreignCurrencyFmtOpts = { currencyId: props.record.data.foreign_currency_id && props.record.data.foreign_currency_id[0] };
+    const foreignCurrencyFmtOpts = { currencyId: props.record.data.foreign_currency_id };
     const currencyFmtOpts = { currencyId: props.record.data.currency_id && props.record.data.currency_id[0] };
     if (totals.subtotals && Array.isArray(totals.subtotals)) {
       for (let subtotal of totals.subtotals) {
@@ -34,8 +36,20 @@ patch(TaxTotalsComponent.prototype, {
     totals.formatted_total_amount_currency = formatMonetary(totals.total_amount_currency, currencyFmtOpts);
     this.totals = totals;
     return totals;
+  },
+
+  formatMonetaryForeign(value) {
+      console.log("value", this.props.record.data.foreign_currency_id);
+      const currency = this.props.record.data.foreign_currency_id;
+      let res = formatMonetary(value, {currencyId: currency.id});
+
+      console.log("res", res);
+      return res;
   }
+
+  
 });
+
 export class TaxTotalsComponents extends TaxTotalsComponent {
 }
 TaxTotalsComponents.template = "l10n_ve_tax.TaxForeignTotalsField";
