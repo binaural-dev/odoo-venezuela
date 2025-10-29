@@ -315,3 +315,276 @@ class IGTFTestCommon(TransactionCase):
 
 
         return inv
+
+
+    def get_residual_not_reconcilied(self,move_id):
+        """
+        Calcula el balance total de todas las líneas de asientos
+        (de todos los apuntes) que están completamente reconciliadas.
+        """
+        # 1. Obtener los IDs de todas las líneas de asientos del conjunto de movimientos.
+        all_lines = move_id.line_ids._all_reconciled_lines().filtered(lambda l: l.matched_debit_ids or l.matched_credit_ids)
+
+        total_balance = sum(line.balance for line in all_lines)
+
+        return total_balance
+    
+
+
+    def create_and_post_invoice(self, amount):
+        """
+        Crea una factura (por defecto de cliente) con IGTF y la registra.
+        
+        :param float amount: Monto de la factura.
+        :param record partner: Partner (si se omite, usa el partner por defecto del test).
+        :param str move_type: Tipo de movimiento ('out_invoice' para cliente, 'in_invoice' para proveedor).
+        :return: El registro account.move de la factura registrada.
+        """
+        _logger.info(f"Creating and posting facture for {amount}")
+        
+        # Asume que _create_invoice_rate es el helper de tu test que incluye el IGTF.
+        # Si partner es None, usa el partner predefinido en tu test.
+        invoice = self._create_invoice_rate(amount) 
+        
+        # Registra la factura
+        invoice.with_context(move_action_post_alert=True).action_post()
+        
+        # Verificación básica
+        self.assertEqual(invoice.state, 'posted', f"Invoice {invoice.name} must be in posted state.")
+        self.assertAlmostEqual(invoice.amount_total, amount,2, f"Invoice total must match {amount}.")
+        
+        return invoice
+
+
+    def register_and_verify_overpayment_with_igtf(self, invoice, payment_amount):
+        """
+        Registra un pago contra una factura, calcula el IGTF, verifica los asientos
+        generados y el estado 'paid' de la factura.
+        
+        :param record invoice: El registro account.move (factura).
+        :param float payment_amount: El monto total pagado (incluye el sobrepago).
+        :return: (record payment, float cxc_credit_amount, float expected_igtf)
+        """
+        _logger.info(f"Starting payment registration ({payment_amount}) for invoice {invoice.name}")
+        
+        # 1. Cálculos esperados
+        pct = self.company.igtf_percentage 
+        expected_igtf = round(payment_amount * pct / 100, 2)
+        # Monto que realmente se aplica a la cuenta por cobrar/pagar
+        cxc_credit_amount = payment_amount - expected_igtf 
+
+        # 2. Crear y configurar el wizard de pago
+        payment_register_wiz = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=invoice.ids
+        ).create({})
+
+        payment_register_wiz.write({
+            'amount': payment_amount, 
+            'journal_id': self.bank_journal_usd.id, # Asumido en el test original
+        })
+        
+        # 3. Crear el pago y obtener el registro
+        action = payment_register_wiz.action_create_payments()
+        payment = self.env['account.payment'].browse(action.get('res_id'))
+        payment_move = payment.move_id
+
+        # 4. Verificaciones de asientos del pago
+        # Adaptar las cuentas según si es cliente o proveedor. Aquí asumimos Cliente (out_invoice)
+        expected_lines = [
+            {'account': self.account_bank,  'debit': payment_amount, 'credit': 0.0},
+            {'account': self.acc_receivable, 'debit': 0.0, 'credit': cxc_credit_amount},
+            {'account': self.acc_igtf_cli,  'debit': 0.0, 'credit': expected_igtf},
+        ]
+        self._assert_move_lines_equal(payment_move, expected_lines)
+        
+        # 5. Verificación de estado de la factura
+        self.assertEqual(invoice.payment_state, 'paid', f"Invoice {invoice.name} must be 'paid'.")
+        self.assertAlmostEqual(invoice.amount_residual, 0.0, 2, "Invoice residual must be $0.00.")
+
+        return payment, cxc_credit_amount, expected_igtf
+
+
+    def find_and_verify_advance_move(self, payment_record, expected_advance_amount):
+        """
+        Busca el asiento contable de cruce (sobrante) generado por el sobrepago
+        y verifica que su monto total coincida con el sobrante esperado.
+        
+        :param record payment_record: El registro account.payment inicial.
+        :param float expected_advance_amount: El monto total esperado del sobrante.
+        :return: El registro account.move del sobrante.
+        """
+        cros_move = self.env['account.move'].search(  
+            [('origin_payment_advanced_payment_id', '=', payment_record.id),('is_advance_move','=', True)],
+            order='id DESC',  
+        
+        )[0]
+        
+        self.assertTrue(cros_move, "Error: Advance/Cros move not found for overpayment.")
+        self.assertAlmostEqual(cros_move.amount_total, expected_advance_amount, 2, 
+            f"ERROR: Expected advance amount {expected_advance_amount}, but found {cros_move.amount_total}.")
+        
+        _logger.info(f'Advance Move found: {cros_move.display_name} | Amount: {cros_move.amount_total}')
+        return cros_move
+
+
+    def apply_advance_to_residual(self, advance_move, target_invoice):
+        """
+        Aplica el crédito pendiente del asiento de avance (sobrante) a una factura.
+        
+        :param record advance_move: El registro account.move del sobrante.
+        :param record target_invoice: La factura a la que se le aplicará el crédito.
+        :return: La línea outstanding_line_cros2 (la línea de crédito usada para la conciliación).
+        """
+        
+        # 1. Encontrar la línea contable del sobrante
+        # Asume self.advance_cust_acc es la cuenta de anticipos de cliente
+        outstanding_line = advance_move.line_ids.filtered(
+            lambda l: l.account_id == self.advance_cust_acc and l.credit > 0
+        )  
+        self.assertTrue(outstanding_line, "Error: Outstanding credit line not found on advance move.")
+        
+        # 2. Aplicar el crédito usando el método Odoo (simulando widget)
+        target_invoice = self.env['account.move'].search([('id', '=', target_invoice.id)],)
+
+        target_invoice.js_assign_outstanding_line(outstanding_line.id)
+        _logger.info(f"Outstanding credit {outstanding_line.id} applied to Invoice {target_invoice.name}.")
+        
+        # 3. Encontrar el asiento de cruce generado (el que contiene la línea de crédito)
+        # Buscamos el último asiento de avance generado para ese pago original
+        cros_moves = self.env['account.move'].search(  
+            [('origin_payment_advanced_payment_id', '=', advance_move.origin_payment_advanced_payment_id.id),
+            ('is_advance_move','=', True)],
+            order='id DESC',  
+        )
+        cros_move_2 = cros_moves[0] if cros_moves else False
+
+        self.assertTrue(cros_move_2, "Error: Second cros move (reconciliation) not found.")
+
+        # 4. Obtener la línea de asiento que se reconcilia contra la factura
+        outstanding_line_cros2 = cros_move_2.line_ids.filtered(
+            lambda l: l.account_id == self.acc_receivable and l.credit > 0
+        )
+        
+        return outstanding_line_cros2
+        
+    def assert_partial_reconcile_match(self, outstanding_line, invoice_payable_line, expected_amount):
+        """
+        Verifica que el registro account.partial.reconcile se haya creado.
+        
+        :param record outstanding_line: Línea de asiento que contiene el crédito (ej: línea de pago).
+        :param record invoice_payable_line: Línea CxC/CxP de la factura (el débito que se compensa).
+        :param float expected_amount: Monto que se espera haya sido conciliado.
+        :return: El registro account.partial.reconcile.
+        """
+        # La línea de crédito (outstanding_line) usa matched_debit_ids para apuntar a la línea de débito de la factura.
+        partial_reconcile = outstanding_line.matched_debit_ids.filtered(
+            lambda p: p.debit_move_id == invoice_payable_line
+        )
+        
+        self.assertTrue(partial_reconcile, "Error: Partial reconciliation record not found.")
+        self.assertAlmostEqual(partial_reconcile.amount, expected_amount, 2, 
+            f"Reconciled amount ({partial_reconcile.amount}) does not match expected amount ({expected_amount}).")
+        
+        _logger.info(f'Partial reconciliation match successful. Amount: {partial_reconcile.amount}')
+        
+        return partial_reconcile
+    
+    def verify_final_advance_residual(self, advance_move, applied_invoice_amount):
+        """
+        Verifica el sobrante final remanente en la línea de anticipo (advance_move) 
+        después de aplicar el crédito a una segunda factura.
+
+        :param record advance_move: El registro account.move del sobrante inicial (cros_move_1).
+        :param float applied_invoice_amount: El monto de la factura (invoice_amount_2) que se liquidó con el avance.
+        """
+        
+        # 1. Calcular el IGTF aplicado al monto de la segunda factura
+        # El IGTF se calcula sobre el monto de la factura liquidada, que se convierte en gasto al usarse.
+        pct = self.company.igtf_percentage
+        # La fórmula es idéntica a la que tenías en el test original
+        igtf_applied_on_usage = round(applied_invoice_amount * pct / 100, 2)
+        
+        # 2. Calcular el restante final esperado
+        # Sobrante Inicial (amount_total de advance_move) - (Monto Factura Liquidada + IGTF asociado)
+        expected_restante_final = advance_move.amount_total - (applied_invoice_amount + igtf_applied_on_usage)
+        
+        # 3. Verificación
+        # Se usa abs() porque get_residual_not_reconcilied puede devolver un valor negativo (crédito pendiente).
+        residual_on_move = self.get_residual_not_reconcilied(advance_move)
+        
+        self.assertAlmostEqual(
+            expected_restante_final, 
+            abs(residual_on_move), 
+            2, 
+            f"ERROR: Final advance residual verification failed. Expected: ${expected_restante_final}, "
+            f"but advance move residual is ${residual_on_move} (absolute: {abs(residual_on_move)})."
+        )
+        _logger.info(f"Final advance residual verified. Remaining: ${expected_restante_final}.")
+
+    def unreconcile_last_line_with_invoice(self, target_invoice,move_id_advance ):
+        """
+        Simula la desconciliación obteniendo el último registro de reconciliación parcial 
+        asociado a la factura y llamando al método js_remove_outstanding_partial sobre él.
+
+        Este es el método estándar de Odoo para simular la desconciliación desde la UI (widget).
+
+        :param record target_invoice: La factura a desconciliar.
+        :return: True si la desconciliación fue exitosa, False si no se encontró nada.
+        """
+        target_invoice.ensure_one()
+        
+        outstanding_line = move_id_advance.line_ids.filtered(
+            lambda l: l.account_id == self.advance_cust_acc and l.credit > 0
+        )  
+        self.assertTrue(outstanding_line, "Error: No se encontró la línea contable del sobrante para conciliar.")
+            
+        # 2. Buscar el registro de reconciliación parcial más reciente.
+        # Usamos matched_credit_ids porque la línea de la factura es DÉBITO, y fue conciliada con CRÉDITOS.
+        
+
+        _logger.info(f"Simulando desconciliación de Factura {target_invoice.name} usando el registro de conciliación parcial ID {outstanding_line.id}.")
+        
+        # 3. LLAMAR AL MÉTODO DE DESCONCILIACIÓN EN EL REGISTRO (Simulación de UI)
+        # Esto es equivalente a pulsar 'Remove' en el widget de conciliaciones.
+        target_invoice.js_remove_outstanding_partial(outstanding_line.id)
+
+        #_logger.info(target_invoice.amount_residual)
+        #_logger.info(target_invoice.payment_state)
+        
+        # 4. Invalidar caché para que los siguientes asserts vean los cambios de estado/residuales
+        
+        _logger.info("Desconciliación simulada exitosamente. Verifique el estado de la factura.")
+
+
+    
+    def get_last_move_reconcilied_with_invoice(self, target_invoice):
+        """
+        Simula la desconciliación obteniendo el último registro de reconciliación parcial 
+        asociado a la factura y llamando al método js_remove_outstanding_partial sobre él.
+        
+        Retorna el registro account.move (asiento contable) de la línea de crédito que fue desconciliada.
+
+        :param record target_invoice: La factura.
+        :return: El registro account.move de la ultima linea reconciliada
+        """
+        target_invoice = self.env['account.move'].search([('id','=',target_invoice)])
+
+        
+        # 1. Encontrar la línea CxC/CxP (débito) de la factura
+        invoice_payable_line = target_invoice.line_ids.filtered(
+            lambda l: l.account_id == self.acc_receivable and l.debit > 0
+        )
+
+        self.assertTrue(invoice_payable_line, "No se encontró línea CxC/CxP para la factura")
+       
+        # 2. Buscar el registro de reconciliación parcial más reciente.
+        # Usamos matched_credit_ids porque la línea de la factura es DÉBITO, y fue conciliada con CRÉDITOS.
+        partial_reconcile_records = invoice_payable_line.matched_credit_ids
+        
+        self.assertTrue(partial_reconcile_records, "No se encontraron registros parcialmente conciliados")
+        last_reconcile = partial_reconcile_records.sorted(key='id', reverse=True)[0]
+            
+        credit_move = last_reconcile.credit_move_id.move_id
+
+        return credit_move
+      
