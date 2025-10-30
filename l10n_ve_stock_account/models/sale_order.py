@@ -57,12 +57,13 @@ class SaleOrder(models.Model):
             if order.warehouse_id and order.warehouse_id.is_consignation_warehouse:
                 order.document = "invoice"
 
-    @api.depends("compute_document")
+    @api.depends("compute_document", "document")
     def _compute_document(self):
         for order in self:
-            if not order.compute_document:
-                order.compute_document = order._default_document()
-            order.document = order.compute_document or order._default_document()
+            order.compute_document = order._default_document()
+                
+            if order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide'):
+                order.document = order.compute_document or order._default_document()
 
     @api.depends("show_document", "state")
     def _compute_show_document(self):
