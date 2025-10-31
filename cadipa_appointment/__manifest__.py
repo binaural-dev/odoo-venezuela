@@ -17,11 +17,16 @@
     "data": [
         "views/res_config_settings.xml",
         "views/calendar_event_views.xml",
-
+        "views/portal_my_memberships.xml",
     ],
     "images": [
         "static/description/icon.png"
     ],
     "application": True,
     "auto_install": True,
+    "assets": {
+        "web.assets_frontend": [
+            "cadipa_appointment/static/src/js/guest_form.js",
+        ],
+    },
 }

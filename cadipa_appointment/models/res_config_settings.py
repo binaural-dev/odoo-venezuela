@@ -13,3 +13,8 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.appointment_close_hour',
         readonly=False
     )
+
+    minimum_child_age = fields.Integer(
+        related='company_id.minimum_child_age',
+        readonly=False,
+    )
