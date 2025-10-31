@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <template id="portal_memberships_inherit_min_age"
+              name="Portal Memberships: inject min child age"
+              inherit_id="binaural_memberships.portal_memberships"> 
+      <xpath expr='//div[contains(@t-att-id, "addGuestModal")]//form'
+             position="inside">
+        <t t-set="company" t-value="membership.company_id"/>
+        <input type="hidden"
+               t-attf-id="binaural_min_child_age"
+               class="binaural_min_child_age"
+               t-att-value="company.minimum_child_age or 0"/>
+      </xpath>
+    </template>
+  </data>
+</odoo>

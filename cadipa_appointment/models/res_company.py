@@ -42,3 +42,8 @@ class ResCompany(models.Model):
         string="Appointment Close Hour",
         selection=hours,
     )
+
+    minimum_child_age = fields.Integer(
+        string="Minimum age (years)",
+        help="Minimum age in years that a minor must have to be included in a membership.",
+    )
