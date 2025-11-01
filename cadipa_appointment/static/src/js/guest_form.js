@@ -38,8 +38,8 @@ if (OriginalGuestForm) {
             }
 
             if (age < minAge) {
-                $error.text(_t('El niño debe tener al menos 9 años')).show();
-                $birth[0]?.setCustomValidity(_t('The child must be at least 9 years old'));
+                $error.text(_t(`El niño debe tener al menos ${minAge} años`)).show();
+                $birth[0]?.setCustomValidity(_t(`The child must be at least ${minAge} years old`));
                 return false;
             }
             return true;
