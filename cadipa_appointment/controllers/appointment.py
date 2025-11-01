@@ -248,11 +248,27 @@ class AppointmentControllerMulti(AppointmentController):
             
             staff_user = None
             first_slot_params = slots[0][2]
+            resource_id = None
             
             if appointment_type.schedule_based_on == 'users':
                 staff_user_id = first_slot_params.get('staff_user_id')
                 if staff_user_id:
                     staff_user = request.env['res.users'].sudo().browse(int(staff_user_id))
+
+            if appointment_type.schedule_based_on == 'resources':
+                resource_ids_str = first_slot_params.get('available_resource_ids')
+
+                if resource_ids_str:
+                    try:
+                        resource_id_list = json.loads(resource_ids_str)
+                    except json.JSONDecodeError:
+                        _logger.error("Error al decodificar JSON para available_resource_ids: %s", resource_ids_str)
+                        return
+                    
+                    if resource_id_list:
+                        first_resource_id = resource_id_list[0] 
+                        resource = request.env['appointment.resource'].sudo().browse(first_resource_id)
+                        resource_id = resource.id if resource else None            
             
             product_id = post.get('product_id')
             created_ev = request.env['calendar.event']
@@ -279,7 +295,8 @@ class AppointmentControllerMulti(AppointmentController):
                     staff_user         = staff_user,
                     asked_capacity     = int(post.get('asked_capacity', 1)),
                     booking_line_values= booking_vals,
-                    create_invoice     = False
+                    create_invoice     = False,
+                    resource_id        = resource_id,
                 )
 
                 if ev:
@@ -340,7 +357,7 @@ class AppointmentControllerMulti(AppointmentController):
         date_start, date_end, duration,
         description, answer_input_values, name, customer, appointment_invite,
         product_id, guests=None,
-        staff_user=None, asked_capacity=1, booking_line_values=None,
+        staff_user=None, resource_id=None, asked_capacity=1, booking_line_values=None,
         create_invoice=False):
 
         staff_user = staff_user and staff_user.exists() or None
@@ -358,7 +375,8 @@ class AppointmentControllerMulti(AppointmentController):
                 asked_capacity, booking_line_values, description, duration,
                 appointment_invite or request.env['appointment.invite'],
                 guests, name, customer, staff_user,
-                date_start, date_end
+                date_start, date_end,
+                resource_id=resource_id
             )
         })
 
