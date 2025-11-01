@@ -262,7 +262,7 @@ class AppointmentControllerMulti(AppointmentController):
                     try:
                         resource_id_list = json.loads(resource_ids_str)
                     except json.JSONDecodeError:
-                        _logger.error("Error al decodificar JSON para available_resource_ids: %s", resource_ids_str)
+                        _logger.error("Error decoding JSON for available_resource_ids: %s", resource_ids_str)
                         return
                     
                     if resource_id_list:
