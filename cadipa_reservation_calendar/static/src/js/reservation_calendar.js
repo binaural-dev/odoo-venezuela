@@ -259,45 +259,57 @@ _searchReservationsPartners: async function() {
     },
 
     _BuildColumnsWithReservationZone: async function (zones, hourKeys) {
-    const partners = await this._searchReservationsPartners();
-    const { open, close } = await jsonrpc('/get_opening_and_closing_time');
-    const minutesTotal = ((+close + 1) - open) * 60;
-    let html = '';
+        const partners = await this._searchReservationsPartners();
+        const { open, close } = await jsonrpc('/get_opening_and_closing_time');
+        const minutesTotal = ((+close + 1) - open) * 60; 
+        let html = '';
 
-    zones.forEach(zone => {
-        let col = `<div class="timesheet__col" data-court="${zone.id}">`;
-        hourKeys.forEach(k => {
-            col += `<div class="timesheet__block" data-hour="${k}"></div>`;
+        zones.forEach(zone => {
+            let col = `<div class="timesheet__col" data-court="${zone.id}">`;
+            
+            hourKeys.forEach(k => {
+                col += `<div class="timesheet__block" data-hour="${k}"></div>`;
+            });
+
+            const resForCourt = partners.filter(p => p.appointment_type_id.id === zone.id);
+            
+            resForCourt.forEach(r => {
+                const offsetMin = this._getMinuteOffset(r.start, +open);
+                const durMin    = this._getDuration(r.start, r.stop);
+                
+                const guestsJson = JSON.stringify(r.guest_details || []);
+                const canViewExtra = r.can_view_extra;
+                
+                const topPct    = offsetMin  / minutesTotal * 100;
+                const hPct      = durMin     / minutesTotal * 100;
+
+                const clickClass = canViewExtra ? 'js-reservation-click' : 'schedule-no-click';
+                const bookerName = r.appointment_booker_id.name;
+                const displayText = canViewExtra ? bookerName : 'Reservado';
+                
+                col += `
+                  <div class="schedule bg-primary ${clickClass}"
+                       style="top:${topPct}%; height:${hPct}%"
+                       data-reservation-id="${r.id}"
+                       data-partner-name="${bookerName}"
+                       data-start-time="${r.start}"
+                       data-stop-time="${r.stop}"
+                       data-court-name="${zone.name}"
+                       data-court-id="${zone.id}"
+                       data-description="${r.description}"
+                       data-guests='${guestsJson}'
+                       data-can-view-extra="${canViewExtra}"> 
+                       
+                       <strong>${r.start} - ${r.stop}</strong><br/>
+                       ${displayText}
+                  </div>`;
+            });
+
+            col += '</div>';
+            html += col;
         });
-
-        const resForCourt = partners.filter(p => p.appointment_type_id.id === zone.id);
-        resForCourt.forEach(r => {
-            const offsetMin = this._getMinuteOffset(r.start, +open);
-            const durMin    = this._getDuration(r.start, r.stop);
-            const guestsJson = JSON.stringify(r.guest_details || []);
-            const topPct    = offsetMin  / minutesTotal * 100;
-            const hPct      = durMin     / minutesTotal * 100;
-
-            col += `
-              <div class="schedule bg-primary js-reservation-click"
-                   style="top:${topPct}%; height:${hPct}%"
-                   data-reservation-id="${r.id}"
-                   data-partner-name="${r.appointment_booker_id.name}"
-                   data-start-time="${r.start}"
-                   data-stop-time="${r.stop}"
-                   data-court-name="${zone.name}"
-                   data-court-id="${zone.id}"
-                   data-description="${r.description}"
-                   data-guests='${guestsJson}'> <strong>${r.start} - ${r.stop}</strong><br/>
-                   ${r.appointment_booker_id.name}
-              </div>`;
-        });
-
-        col += '</div>';
-        html += col;
-    });
-    return html;
-},
+        return html;
+    },
 
     _BuildPartnersInColumns: async function(zones, hourKeys) {
       const partners = await this._searchReservationsPartners();

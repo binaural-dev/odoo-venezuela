@@ -80,6 +80,9 @@ class MainCalendar(http.Controller):
         data = {"status": 200, "msg": _("Success")}
         reservation_list = []
         try:
+            can_view_extra = request.env.user.has_group(
+                'cadipa_reservation_calendar.extra_info_calendar_view'
+            )
             domain_for_events = self._domain_reservation_made(date=date)
 
             reservations = request.env["calendar.event"].sudo().search(
@@ -95,7 +98,8 @@ class MainCalendar(http.Controller):
                         'vat': guest.vat,
                         'prefix_vat': guest.prefix_vat,
                     })                
-                res_dict['guest_details'] = guest_details                
+                res_dict['guest_details'] = guest_details
+                res_dict['can_view_extra'] = can_view_extra              
                 reservation_list.append(res_dict)
         except Exception as e:
             data.update(

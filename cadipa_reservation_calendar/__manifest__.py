@@ -5,12 +5,13 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Website/Website",
-    "version": "17.0.1.0.9",
+    "version": "17.0.1.0.10",
     "depends": [
         "website",
         "appointment",
     ],
     "data": [
+        "data/security.xml",
         "views/reservation_calendar.xml",
         "views/appointment_type.xml",
     ],
