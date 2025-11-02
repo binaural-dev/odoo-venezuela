@@ -81,6 +81,23 @@ class AccountTax(models.Model):
             value=res.get('total_amount_currency', 0.0),
             currency_obj=currency_id
         )
+        #only ves
+        ves_currency = self.env.ref('base.VES').id
+        res['formatted_base_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('base_amount_currency_ves', 0.0),
+            currency_obj=ves_currency
+        )
+        res['formatted_tax_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('tax_amount_currency', 0.0),
+            currency_obj=ves_currency
+        )
+        res['formatted_total_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('total_amount_currency', 0.0),
+            currency_obj=ves_currency
+        )
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
             env=self.env,
