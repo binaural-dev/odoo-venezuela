@@ -28,6 +28,10 @@ patch(TaxTotalsComponent.prototype, {
             taxGroup.formatted_base_amount_foreign_currency = formatMonetary(taxGroup.base_amount_foreign_currency, foreignCurrencyFmtOpts);
             taxGroup.formatted_tax_amount_currency = formatMonetary(taxGroup.tax_amount_currency, currencyFmtOpts);
             taxGroup.formatted_base_amount_currency = formatMonetary(taxGroup.base_amount_currency, currencyFmtOpts);
+            // VES_ONLY AMOUNTS ves_currency
+            taxGroup.formatted_tax_amount_currency_ves = formatMonetary(taxGroup.tax_amount_currency_ves, { currencyId: ves_currency.id });
+            taxGroup.formatted_base_amount_currency_ves = formatMonetary(taxGroup.base_amount_currency_ves, { currencyId: ves_currency.id });
+            taxGroup.formatted_total_amount_currency_ves = formatMonetary(taxGroup.total_amount_currency_ves, { currencyId: ves_currency.id });
           }
         }
       }
