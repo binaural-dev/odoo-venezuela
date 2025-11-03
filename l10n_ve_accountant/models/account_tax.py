@@ -24,14 +24,14 @@ class AccountTax(models.Model):
         res = super()._get_tax_totals_summary(
             base_lines, currency, company, cash_rounding
         )
+        #only ves
+        ves_currency = self.env.ref('base.VEF')
         # Obtener el registro de factura desde el contexto si está disponible
         active_model = self.env.context.get('active_model')
         active_id = self.env.context.get('active_id')
         if not active_model or not active_id:
             return res
         record = self.env[active_model].browse(active_id)
-
-
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
         foreign_lines = []
@@ -60,11 +60,12 @@ class AccountTax(models.Model):
             company,
             cash_rounding
         )
+        #amounts in foreign currency
         res['foreign_currency_id'] = foreign_res['currency_id']
+        res['ves_currency_id'] = self.env.ref('base.VEF').id
         res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
         res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
         res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
-
         # Moneda Base
         res['formatted_base_amount_currency'] = formatLang(
             env=self.env,
@@ -81,6 +82,24 @@ class AccountTax(models.Model):
             value=res.get('total_amount_currency', 0.0),
             currency_obj=currency_id
         )
+
+        
+        res['formatted_base_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('base_amount_currency', 0.0),
+            currency_obj=ves_currency
+        )
+        res['formatted_tax_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('tax_amount_currency', 0.0),
+            currency_obj=ves_currency
+        )
+        res['formatted_total_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('total_amount_currency', 0.0),
+            currency_obj=ves_currency
+        )
+    
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
             env=self.env,
@@ -156,6 +175,22 @@ class AccountTax(models.Model):
                     env=self.env,
                     value=res_tax_group.get('display_base_amount_currency', 0.0),
                     currency_obj=currency_id
+                )
+                #ONLY VES
+                res_tax_group['formatted_base_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('base_amount_currency', 0.0),
+                    currency_obj=ves_currency
+                )
+                res_tax_group['formatted_tax_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('tax_amount_currency', 0.0),
+                    currency_obj=ves_currency
+                )
+                res_tax_group['formatted_total_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('total_amount_currency', 0.0),
+                    currency_obj=ves_currency
                 )
                 # Foranea
                 res_tax_group['formatted_base_amount_foreign_currency'] = formatLang(
