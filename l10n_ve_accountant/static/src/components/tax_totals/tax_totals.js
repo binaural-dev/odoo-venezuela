@@ -16,18 +16,22 @@ patch(TaxTotalsComponent.prototype, {
     if (!totals) {
       return;
     }
+    totals.formatted_total_amount_currency_ves = totals.formatted_total_amount_currency_ves
     const foreignCurrencyFmtOpts = { currencyId: props.record.data.foreign_currency_id };
     const currencyFmtOpts = { currencyId: props.record.data.currency_id && props.record.data.currency_id[0] };
     if (totals.subtotals && Array.isArray(totals.subtotals)) {
       for (let subtotal of totals.subtotals) {
         subtotal.formatted_base_amount_foreign_currency = formatMonetary(subtotal.base_amount_foreign_currency, foreignCurrencyFmtOpts);
         subtotal.formatted_base_amount_currency = formatMonetary(subtotal.base_amount_currency, currencyFmtOpts);
+        subtotal.formatted_base_amount_currency_ves = totals.formatted_base_amount_currency_ves
+        
         if (subtotal.tax_groups && Array.isArray(subtotal.tax_groups)) {
           for (let taxGroup of subtotal.tax_groups) {
             taxGroup.formatted_tax_amount_foreign_currency = formatMonetary(taxGroup.tax_amount_foreign_currency, foreignCurrencyFmtOpts);
             taxGroup.formatted_base_amount_foreign_currency = formatMonetary(taxGroup.base_amount_foreign_currency, foreignCurrencyFmtOpts);
             taxGroup.formatted_tax_amount_currency = formatMonetary(taxGroup.tax_amount_currency, currencyFmtOpts);
             taxGroup.formatted_base_amount_currency = formatMonetary(taxGroup.base_amount_currency, currencyFmtOpts);
+            taxGroup.formatted_tax_amount_currency_ves = totals.formatted_tax_amount_currency_ves;
           }
         }
       }
@@ -41,7 +45,6 @@ patch(TaxTotalsComponent.prototype, {
   formatMonetaryForeign(value) {
       const currency = this.props.record.data.foreign_currency_id;
       let res = formatMonetary(value, {currencyId: currency.id});
-
       return res;
   }
 
@@ -51,6 +54,7 @@ patch(TaxTotalsComponent.prototype, {
 export class TaxTotalsComponents extends TaxTotalsComponent {
 }
 TaxTotalsComponents.template = "l10n_ve_tax.TaxForeignTotalsField";
+TaxTotalsComponents.template = "l10n_ve_tax.TaxVesTotalsField";
 TaxTotalsComponents.props = {
   ...standardFieldProps,
 };
@@ -63,4 +67,8 @@ const fieldsRegistry = registry.category("fields");
 
 if (!fieldsRegistry.contains("account-tax-foreign-totals-field")) {
     fieldsRegistry.add("account-tax-foreign-totals-field", taxTotalsComponent);
+}
+
+if (!fieldsRegistry.contains("account-tax-ves-totals-field")) {
+    fieldsRegistry.add("account-tax-ves-totals-field", taxTotalsComponent);
 }
