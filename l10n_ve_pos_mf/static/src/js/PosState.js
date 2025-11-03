@@ -267,9 +267,9 @@ patch(PosStore.prototype, {
       
       const response = await this.pushToMF(order)
 
-      if (response.printer_connection === false) {
-        return
-      }
+    if (response.printer_connection == false || !("printer_connection" in response)) {
+      return
+    }
 
     }
     return await super.push_single_order.apply(this, [order, opts]);
