@@ -272,6 +272,7 @@ class AccountMoveRetention(models.Model):
             "foreign_rate": self.foreign_rate,
             "foreign_inverse_rate": self.foreign_inverse_rate,
             "currency_id": self.env.user.company_id.currency_id.id,
+            
         }
         if type_retention == "islr":
             payment_vals["retention_line_ids"] = self.retention_islr_line_ids.filtered(
