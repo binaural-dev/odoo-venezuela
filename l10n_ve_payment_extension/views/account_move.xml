@@ -16,6 +16,8 @@
                     <field name="base_currency_is_vef" invisible="1"/>
                     <field name="company_currency_id" invisible="1"/>
                     <field name="foreign_currency_id" invisible="1"/>
+                    <field name="not_edit_islr_retention_lines" invisible="1"/>
+                    <field name="not_edit_municipal_retention_lines" invisible="1"/>
                 </xpath>
 
                 <xpath expr="//notebook" position="inside">
@@ -89,7 +91,7 @@
                         <field
                             name="retention_islr_line_ids"
                             nolabel="1"
-                            readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'"
+                            readonly="move_type not in ('in_invoice', 'in_refund') or (state != 'draft' or not_edit_islr_retention_lines)"
                             context="{'type':'islr'}"
                         >
                             <tree editable='bottom'>
@@ -159,7 +161,7 @@
                         <field
                             name="retention_municipal_line_ids"
                             nolabel="1"
-                            readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'"
+                            readonly="move_type not in ('in_invoice', 'in_refund') or (state != 'draft' or not_edit_municipal_retention_lines)"
                             context="{'type':'municipal'}">
                             <tree editable='bottom'>
                                 <field name="name" force_save="1" readonly="1"/>
