@@ -22,7 +22,7 @@ class AccountRetention(models.Model):
         for record in self:
             name = record.number or record.name or "/"
             record.display_name = name
-    
+
     company_currency_id = fields.Many2one(
         "res.currency",
         default=lambda self: self.env.company.currency_id.id,
@@ -475,8 +475,7 @@ class AccountRetention(models.Model):
                     )
                 }
             }
-        
-    
+
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
@@ -529,7 +528,7 @@ class AccountRetention(models.Model):
                 self._create_payments_for_iva_customer(
                     payment_vals, account_retention_line_empty_recordset
                 )
-    
+
     def _create_payments_for_iva_supplier(
         self, payment_vals, account_retention_line_empty_recordset
     ):
@@ -652,7 +651,6 @@ class AccountRetention(models.Model):
 
     def action_post(self):
         today = datetime.now()
-
         self._create_payments_from_retention_lines()
         for retention in self:
 
@@ -683,6 +681,7 @@ class AccountRetention(models.Model):
                         _("IVA retention: Number must be exactly 14 numeric digits.")
                     )
     
+
             if retention.type_retention == "islr" and retention.type == "in_invoice":
                 retention._validate_islr_retention()
 
@@ -915,7 +914,7 @@ class AccountRetention(models.Model):
             )
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -931,7 +930,7 @@ class AccountRetention(models.Model):
             )
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -950,7 +949,7 @@ class AccountRetention(models.Model):
 
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -966,7 +965,7 @@ class AccountRetention(models.Model):
 
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
