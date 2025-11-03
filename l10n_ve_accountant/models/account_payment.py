@@ -27,6 +27,7 @@ class AccountPayment(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
+        default=0.0,
         store=True,
         readonly=False,
     )
@@ -34,6 +35,7 @@ class AccountPayment(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
+        default=0.0,
         store=True,
         readonly=False,
     )
