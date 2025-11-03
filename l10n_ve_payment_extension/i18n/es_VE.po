@@ -2405,10 +2405,10 @@ msgstr "La alícuota debe ser mayor a cero "
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #, python-format
 msgid ""
-"The amount of the retention is greater than the total amount of the invoice."
+"The amount of the retention is greater than the total amount of the invoice %s."
 msgstr ""
 "La base imponible de la retención es mayor que la base imponible de la "
-"factura."
+"factura %s."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -2953,3 +2953,10 @@ msgstr "Reportes contables"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__hide_patent_columns_extra
 msgid "Hide extra columns in Patent Municipal Report related to advances"
 msgstr "Ocultar columnas adicionales en el reporte de Patente Municipal relacionadas con anticipos"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/wizard/wizard_retention_iva.py:0
+#, python-format
+msgid "No VAT number for company %s"
+msgstr "La compañia %s no tiene RIF"

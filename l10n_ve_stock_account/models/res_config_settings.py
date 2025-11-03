@@ -18,3 +18,9 @@ class ResConfigSettings(models.TransientModel):
     hide_price_on_dispatch_guide = fields.Boolean(
         related="company_id.hide_price_on_dispatch_guide", readonly=False
     )
+
+    optional_internal_movement_guidance = fields.Boolean(
+        "Internal picking with dispatched guidance ptional",
+        related='company_id.optional_internal_movement_guidance',
+        readonly=False,
+    )
