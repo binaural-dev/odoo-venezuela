@@ -280,16 +280,13 @@ class AccountRetention(models.Model):
                 if move.currency_id == base_vef:
                     retention_totals[move] += line.retention_amount
             
-            # 2. Comparación (solo para los asientos en Bolívares que fueron agrupados)
             for move_id, total_retention in retention_totals.items():
-                #raise UserError(move_id.amount_residual)
-                # move_id.residual ya está en la moneda del move_id (Bolívares en este caso)
+               
                 if total_retention > move_id.amount_residual:
                     
-                    # Error de sobre-retención
                     raise ValidationError(
-                        _("El total de las retenciones en Bolívares ({total_retention:.2f}) asignadas al asiento contable '{move_name}' "
-                          "supera su saldo pendiente ({residual:.2f}). Por favor, verifique."
+                        _("The total amount ({total_retention:.2f})bs asignate to the account move '{move_name}' "
+                          "is high than residual ({residual:.2f}). Please check."
                           .format(total_retention=total_retention, 
                                   move_name=move_id.name, 
                                   residual=move_id.amount_residual))
