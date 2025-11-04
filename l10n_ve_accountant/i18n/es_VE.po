@@ -1312,4 +1312,16 @@ msgstr "<b>Monto debito alterno:</b> de %s a %s"
 #: code:addons/l10n_ve_accountant/models/account_move_line.py:0
 #, python-format
 msgid "<b>The accounting line has been updated:</b>"
-msgstr "<b>La linea contable ha sido actualziada:</b>"
+msgstr "<b>La linea contable ha sido actualizada:</b>"
+
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#, python-format
+msgid ""
+"The total amount ({total_retention:.2f})bs asignate to the account move "
+"'{move_name}' is high than residual ({residual:.2f}). Please check."
+msgstr ""
+"El monto total retenido ({total_retention:.2f})bs asignado "
+"'{move_name}' no puede ser mayor que el residual de la factura ({residual:.2f})"
