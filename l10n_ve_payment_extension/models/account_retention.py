@@ -267,6 +267,35 @@ class AccountRetention(models.Model):
                         precision_digits=retention.foreign_currency_id.decimal_places,
                     )
 
+    @api.onchange('retention_line_ids.retention_amount','retention_line_ids')
+    def _check_retention_amount_vs_residual_bs(self):
+
+        for record in self:
+            base_vef = record.env.ref("base.VEF")
+            retention_totals = defaultdict(float)
+            
+            for line in record.retention_line_ids:
+                move = line.move_id
+                
+                if move.currency_id == base_vef:
+                    retention_totals[move] += line.retention_amount
+            
+            # 2. Comparación (solo para los asientos en Bolívares que fueron agrupados)
+            for move_id, total_retention in retention_totals.items():
+                #raise UserError(move_id.amount_residual)
+                # move_id.residual ya está en la moneda del move_id (Bolívares en este caso)
+                if total_retention > move_id.amount_residual:
+                    
+                    # Error de sobre-retención
+                    raise ValidationError(
+                        _("El total de las retenciones en Bolívares ({total_retention:.2f}) asignadas al asiento contable '{move_name}' "
+                          "supera su saldo pendiente ({residual:.2f}). Por favor, verifique."
+                          .format(total_retention=total_retention, 
+                                  move_name=move_id.name, 
+                                  residual=move_id.amount_residual))
+                    )
+
+
     @api.onchange("partner_id")
     def onchange_partner_id(self):
         """
@@ -483,11 +512,7 @@ class AccountRetention(models.Model):
         res._set_sequence()
         return res
 
-    def write(self, vals):
-        res = super().write(vals)
-        if vals.get("retention_line_ids", False):
-            self._create_payments_from_retention_lines()
-        return res
+  
 
     def unlink(self):
         for record in self:
@@ -508,6 +533,7 @@ class AccountRetention(models.Model):
         """
         for retention in self:
             if any(retention.payment_ids) or retention.type_retention != "iva":
+                
                 continue
 
             payment_vals = {
@@ -559,6 +585,7 @@ class AccountRetention(models.Model):
                 self.env.ref("account.account_payment_method_manual_in").id,
             )
             payment_vals["payment_type"] = "inbound"
+            payment_vals["date"] = self.date_accounting
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             payment.update(
@@ -570,11 +597,13 @@ class AccountRetention(models.Model):
             )
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
+
         for lines in in_invoices_dict.values():
             payment_vals["payment_method_id"] = (
                 self.env.ref("account.account_payment_method_manual_out").id,
             )
             payment_vals["payment_type"] = "outbound"
+            payment_vals["date"] = self.date_accounting
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             payment.update(
@@ -616,6 +645,7 @@ class AccountRetention(models.Model):
                 self.env.ref("account.account_payment_method_manual_out").id,
             )
             payment_vals["payment_type"] = "outbound"
+            payment_vals["date"] = self.date_accounting
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             payment.update(
@@ -632,6 +662,7 @@ class AccountRetention(models.Model):
                 self.env.ref("account.account_payment_method_manual_in").id,
             )
             payment_vals["payment_type"] = "inbound"
+            payment_vals["date"] = self.date_accounting
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             payment.update(
