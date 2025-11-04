@@ -186,7 +186,7 @@ class AccountMoveLine(models.Model):
                     self._calculate_from_adjustment(line)
                 continue
 
-            if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
+            elif line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 _logger.info("Calculating from foreign_debit_adjustment or foreign_credit_adjustment")
                 self._calculate_from_adjustment(line)
 
@@ -569,25 +569,51 @@ class AccountMoveLine(models.Model):
         
 
     def write(self, vals):
+        # 1. Almacenar valores antiguos
         old_values = {
             line.id: {
                 'foreign_debit': line.foreign_debit,
-                'foreign_credit': line.foreign_credit
+                'foreign_credit': line.foreign_credit,
+                # Guardar los valores de AJUSTE anteriores para comparación
+                'old_debit_adj': line.foreign_debit_adjustment,
+                'old_credit_adj': line.foreign_credit_adjustment,
             } for line in self
         }
     
+        # 2. Ejecutar la escritura original de Odoo
         res = super(AccountMoveLine, self).write(vals)
 
+        # 3. Verificar cambios y condiciones
         for line in self:
             old_line_data = old_values.get(line.id)
             if old_line_data:
+                
+                # Montos Extranjeros
                 old_debit = old_line_data['foreign_debit']
                 new_debit = line.foreign_debit
                 old_credit = old_line_data['foreign_credit']
                 new_credit = line.foreign_credit
 
-                if old_debit != new_debit or old_credit != new_credit:
+                has_amount_changed = old_debit != new_debit or old_credit != new_credit
+                
+                # Ajustes (Antes y Después)
+                old_debit_adj = old_line_data['old_debit_adj']
+                old_credit_adj = old_line_data['old_credit_adj']
+                
+                new_debit_adj = line.foreign_debit_adjustment
+                new_credit_adj = line.foreign_credit_adjustment
+
+                # Condición de Notificación
+                was_adjustment_defined = old_debit_adj or old_credit_adj
+                is_adjustment_defined = new_debit_adj or new_credit_adj
+
+                # La notificación se dispara si el monto cambió Y (el ajuste estaba definido ANTES O está definido AHORA)
+                if has_amount_changed and (is_adjustment_defined or was_adjustment_defined):
+                    
                     if line.id and line.move_id and line.move_id.id:
+                        
+                      
+                        # --- INICIO: ESTRUCTURA DE MENSAJE SOLICITADA ---
                         message_parts = []
                         
                         message_parts.append(_("<b>The accounting line has been updated:</b>"))
@@ -595,9 +621,17 @@ class AccountMoveLine(models.Model):
                         message_parts.append(_("<b>Account:</b> %s") % line.account_id.display_name)
                         
                         if old_debit != new_debit:
-                            message_parts.append(_("<b>Foreign Debit Amount:</b> from %s to %s") % (str(old_debit).replace('.', ','), str(new_debit).replace('.', ',')))
+                            # Mantenemos la estructura de formatting solicitada (reemplazo de punto por coma)
+                            message_parts.append(_("<b>Foreign Debit Amount:</b> from %s to %s") % (
+                                str(old_debit).replace('.', ','), 
+                                str(new_debit_adj).replace('.', ',')
+                            ))
                         if old_credit != new_credit:
-                            message_parts.append(_("<b>Foreign Credit Amount:</b> from %s to %s") % (str(old_credit).replace('.', ','), str(new_credit).replace('.', ',')))
+                             # Mantenemos la estructura de formatting solicitada
+                            message_parts.append(_("<b>Foreign Credit Amount:</b> from %s to %s") % (
+                                str(old_credit).replace('.', ','), 
+                                str(new_credit_adj).replace('.', ',')
+                            ))
 
                         msg_body = "<br/>".join(message_parts)
                         
@@ -611,5 +645,6 @@ class AccountMoveLine(models.Model):
                             'subtype_id': self.env.ref('mail.mt_note').id,
                             'author_id': self.env.user.partner_id.id,
                         })
+                        # --- FIN: ESTRUCTURA DE MENSAJE SOLICITADA ---
 
         return res

@@ -11,8 +11,6 @@ class AccountRetentionLine(models.Model):
 
     check_company = True
 
-    
-
     name = fields.Char(
         string="Description", required=True, compute="_compute_name", store=True, readonly=False
     )
