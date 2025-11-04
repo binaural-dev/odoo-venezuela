@@ -50,12 +50,18 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
         store=True,
+        readonly=False
     )
     foreign_credit = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_debit_credit",
         store=True,
+        readonly=False
     )
+
+    foreign_debit_no_format = fields.Float()
+    foreign_credit_no_format = fields.Float()
+
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_balance",
@@ -71,8 +77,6 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign credit field",
     )
-
-    
 
     @api.onchange("amount_currency", "currency_id")
     def _inverse_amount_currency(self):
@@ -108,18 +112,16 @@ class AccountMoveLine(models.Model):
                 and not line.move_id.is_invoice(True)
                 and line.move_id.payment_id
             ):
-                if (
-                    line.move_id.payment_id.foreign_inverse_rate != 0
-                    and line.amount_currency != 0
-                ):
-                    line.balance = line.company_id.currency_id.round(
-                        line.amount_currency
-                        / line.move_id.payment_id.foreign_inverse_rate
-                    )
-                else:
-                    raise UserError(_("The rate of foreingn currency should be greater than zero"))
+                if line.amount_currency == 0:
+                    return
 
- 
+                if line.move_id.payment_id.foreign_inverse_rate <= 0:
+                    raise UserError(_("The rate should be greater than zero"))
+
+                line.balance = line.company_id.currency_id.round(
+                    line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
+                )
+
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
         lines_without_name = self.filtered(lambda l: not l.name)
@@ -171,37 +173,56 @@ class AccountMoveLine(models.Model):
         "foreign_subtotal",
         "foreign_balance",
         "amount_currency",
+        "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
-            
+            _logger.info("Computing foreign debit and credit for line %s", line.id)
+            if line.not_foreign_recalculate:
+                _logger.info("Skipping recalculation for line %s", line.id)
+                if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
+                    self._calculate_from_adjustment(line)
+                continue
+
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
+                _logger.info("Calculating from foreign_debit_adjustment or foreign_credit_adjustment")
                 self._calculate_from_adjustment(line)
+
+             
             elif line.display_type in ("line_section", "line_note"):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
+                _logger.info("Calculating from payment_term or tax")
                 self._calculate_from_balance(line)
             elif line.currency_id == line.company_id.currency_foreign_id and line.amount_currency:
+                _logger.info("Calculating from amount_currency")
                 self._calculate_from_amount_currency(line)
+
             elif line.move_id.payment_id and "retention_foreign_amount" in self.env["account.payment"]._fields and line.move_id.payment_id.is_retention:
                 self._calculate_from_retention(line)
             elif not line.move_id.is_invoice(include_receipts=True):
+                _logger.info("Calculating for non-invoice")
                 self._calculate_for_non_invoice(line)
             elif line.display_type == "product":
+                _logger.info("Calculating from product")
                 self._calculate_from_product(line)
             else:
+                _logger.info("Calculating from balance")
                 self._calculate_from_balance(line)
 
     def _calculate_from_adjustment(self, line):
         new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
         if line.foreign_debit != new_foreign_debit:
+
             line.foreign_debit = new_foreign_debit
 
         new_foreign_credit = abs(line.foreign_credit_adjustment) if line.foreign_credit_adjustment else 0.0
+
         if line.foreign_credit != new_foreign_credit:
-            line.foreign_credit = new_foreign_credit
+
+            line.foreign_credit = new_foreign_credit         
 
     def _calculate_zero(self, line):
         """Asigna cero para secciones o notas."""
@@ -243,6 +264,7 @@ class AccountMoveLine(models.Model):
             line.foreign_credit = new_foreign_credit
 
     def _calculate_for_non_invoice(self, line):
+        
         foreign_lines = line.move_id.line_ids.filtered(
             lambda l: l.currency_id == l.company_id.currency_foreign_id
         )
@@ -252,13 +274,37 @@ class AccountMoveLine(models.Model):
         new_foreign_debit = 0.0
         new_foreign_credit = 0.0
 
+        rate_is_zero = line.foreign_inverse_rate == 0.0
+        is_base_currency = line.currency_id == line.company_id.currency_id
+        
+        inverse_rate_to_use = line.foreign_inverse_rate
+        
+        if is_base_currency and rate_is_zero:
+            foreign_currency = line.company_id.currency_foreign_id
+            
+           
+            if foreign_currency:
+                rate = foreign_currency._get_conversion_rate(
+                    line.company_id.currency_id, 
+                    foreign_currency,          
+                    line.company_id,           
+                    line.date                  
+                )
+                
+                inverse_rate_to_use = rate 
+     
         balance = sum(foreign_lines.mapped("amount_currency"))
         if balance and len(currency_lines) == 1:
             new_foreign_debit = abs(balance) if balance < 0 else 0.0
             new_foreign_credit = abs(balance) if balance > 0 else 0.0
+        
         else:
-            new_foreign_debit = line.debit * line.foreign_inverse_rate
-            new_foreign_credit = line.credit * line.foreign_inverse_rate
+            new_foreign_debit = line.debit * inverse_rate_to_use
+            new_foreign_credit = line.credit * inverse_rate_to_use
+        
+       
+        line.foreign_debit_no_format = line.debit * inverse_rate_to_use
+        line.foreign_credit_no_format = line.credit * inverse_rate_to_use
         
         if line.foreign_debit != new_foreign_debit:
             line.foreign_debit = new_foreign_debit
@@ -280,10 +326,10 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
         for line in self:
-            if line.foreign_credit and line.foreign_debit:
-                line.foreign_balance = line.foreign_debit - line.foreign_credit
-            else:
-                line.foreign_balance = 0.0
+        
+            line.foreign_balance = line.foreign_debit - line.foreign_credit
+            
+               
 
     def _inverse_foreign_balance(self):
         for line in self:
@@ -395,6 +441,9 @@ class AccountMoveLine(models.Model):
                 amount_currency
             ):
                 return abs(amount_currency / balance)
+            
+            return 1.0
+        
 
         aml = aml_values["aml"]
         other_aml = (other_aml_values or {}).get("aml")
