@@ -251,4 +251,12 @@ class AccountTax(models.Model):
                 if k.startswith('_') and k not in base_line:
                     base_line[k] = v
 
+        manual_fields = (
+            'manual_total_excluded',
+            'manual_total_excluded_currency',
+            'manual_total_included',
+            'manual_total_included_currency',
+        )
+        for field in manual_fields:
+            base_line.setdefault(field, None)
         return base_line
