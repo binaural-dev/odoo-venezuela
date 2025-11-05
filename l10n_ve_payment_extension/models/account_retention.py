@@ -706,8 +706,7 @@ class AccountRetention(models.Model):
         for line in islr_retention.filtered(lambda rl: rl.state != "cancel"):
             invoice_amounts_by_move[line.move_id] += line.invoice_amount
 
-        move = self.env["account.move"]
-        move._check_retention_vs_move(islr_retention)
+        self.env['account.move']._check_retention_vs_move(islr_retention)
 
     def set_voucher_number_in_invoice(self, move, retention):
         if retention.type_retention == "iva":
