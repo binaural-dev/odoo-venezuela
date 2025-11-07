@@ -5,7 +5,7 @@
             <field name="model">account.payment.register</field>
             <field name="inherit_id" ref="account.view_account_payment_register_form" />
             <field name="arch" type="xml">
-                <xpath expr="//group[@name='group2']" position="after">
+                <xpath expr="//group[@name='group3']" position="after">
                     <group name="igtf_group">
                         <field name="is_igtf" invisible="1" />
                         <field name="is_igtf_on_foreign_exchange"

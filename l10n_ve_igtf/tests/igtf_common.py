@@ -18,14 +18,14 @@ class IGTFTestCommon(TransactionCase):
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "foreign_currency_id": self.currency_vef.id,
+                "currency_foreign_id": self.currency_vef.id,
             }
         )
 
         def account(code, ttype, name, recon=False):
             """auxiliar function whhich creates an account if it does not exist,avoiding duplicates."""
             account_founded = Account.search(
-                [("code", "=", code), ("company_ids", "in", [self.company.id])], limit=1
+                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
             )
             if not account_founded:
                 new_account = Account.create(
@@ -34,7 +34,7 @@ class IGTFTestCommon(TransactionCase):
                         "code": code,
                         "account_type": ttype,
                         "reconcile": recon,
-                        "company_ids":[(6, 0, [self.company.id])],
+                        "company_id": self.company.id,
                     }
                 )
             return new_account
@@ -67,7 +67,7 @@ class IGTFTestCommon(TransactionCase):
 
         def get_or_create(code, acc_type, name, reconcile=False):
             acc = Account.search(
-                [("code", "=", code), ("company_ids", "in", [self.company.id])], limit=1
+                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
             )
             if not acc:
                 acc = Account.create(
@@ -76,7 +76,7 @@ class IGTFTestCommon(TransactionCase):
                         "code": code,
                         "account_type": acc_type,
                         "reconcile": reconcile,
-                        "company_ids": [(6, 0, [self.company.id])],
+                        "company_id": self.company.id,
                     }
                 )
             return acc
@@ -85,6 +85,22 @@ class IGTFTestCommon(TransactionCase):
             "1101", "asset_receivable", "CxC Clientes", True
         )
         self.income_acc = get_or_create("4001", "income", "Ingresos Ventas")
+
+        # advance liability account for customers (Venezuela ≃ "to be collected" → liability account)
+
+        self.advance_cust_acc = get_or_create(
+            "21600", "liability_current", "Anticipo Clientes", reconcile=True
+        )
+        self.advance_supp_acc = get_or_create(
+            "13600", "asset_current", "Anticipo Proveedores", reconcile=True
+        )
+
+        # self.company.write(
+        #     {
+        #         "advance_customer_account_id": self.advance_cust_acc.id,
+        #         "advance_supplier_account_id": self.advance_supp_acc.id,
+        #     }
+        # )
 
         # -------- Método de pago manual inbound -----------------------
         manual_in = self.env.ref("account.account_payment_method_manual_in")
@@ -115,9 +131,16 @@ class IGTFTestCommon(TransactionCase):
                 "property_account_income_id": self.acc_income.id,
             }
         )
+        self.tax_iva_exent = self.env['account.tax'].create({
+            'name': 'IVA exento',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'company_id': self.company.id,
+        })
 
         self.invoice = self._create_invoice_usd(1000.0)
-
+        
     # ------------------------------------------------------------------
     # UTILITY: creates a customer invoice in USD for the given amount
 
@@ -128,6 +151,7 @@ class IGTFTestCommon(TransactionCase):
                 "product_id": self.product.id,
                 "quantity": 1,
                 "price_unit": amount,
+                "tax_ids": [(6, 0, [self.tax_iva_exent.id])],
             }
         )
         inv = self.env["account.move"].create(
@@ -141,7 +165,6 @@ class IGTFTestCommon(TransactionCase):
                 "invoice_line_ids": [line],
             }
         )
-        inv.action_post()
         return inv
 
     def _create_payment(
