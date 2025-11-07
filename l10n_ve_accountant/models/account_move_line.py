@@ -6,11 +6,11 @@ from odoo.tools import frozendict, formatLang, format_date, float_compare, Query
 from datetime import date, timedelta
 import traceback
 from markupsafe import Markup
+from odoo.tools import float_is_zero
 
 import logging
 
 _logger = logging.getLogger(__name__)
-
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
@@ -76,6 +76,19 @@ class AccountMoveLine(models.Model):
     foreign_credit_adjustment = fields.Monetary(
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign credit field",
+    )
+
+    foreign_amount_residual = fields.Monetary(
+        currency_field="foreign_currency_id",
+        compute="_compute_foreign_amount_residuals",
+        store=True,
+        readonly=True,
+    )
+    foreign_amount_residual_currency = fields.Monetary(
+        currency_field="foreign_currency_id",
+        compute="_compute_foreign_amount_residuals",
+        store=True,
+        readonly=True,
     )
 
     @api.onchange("amount_currency", "currency_id")
@@ -612,4 +625,304 @@ class AccountMoveLine(models.Model):
                             'author_id': self.env.user.partner_id.id,
                         })
 
+        return res
+
+    def _get_manual_foreign_amount_residual(
+        self,
+        currency=None,
+        foreign_debit=None,
+        foreign_credit=None,
+        partials=None,
+    ):
+        """
+        Calculates the manual residual amount in foreign currency for the move line.
+        Considers matched partials and computes the remaining amount after reconciliation.
+        Returns a tuple: (rounded residual, manual_available).
+        """
+        self.ensure_one()
+
+        currency = currency or self.foreign_currency_id
+        if not currency:
+            return 0.0, False
+
+        if self.foreign_currency_id and currency != self.foreign_currency_id:
+            return 0.0, False
+
+        foreign_debit = foreign_debit if foreign_debit is not None else self.foreign_debit
+        foreign_credit = (
+            foreign_credit if foreign_credit is not None else self.foreign_credit
+        )
+
+        manual_total = (foreign_debit or 0.0) - (foreign_credit or 0.0)
+
+        partials = partials or (self.matched_debit_ids | self.matched_credit_ids)
+        manual_partial_total = 0.0
+        for partial in partials:
+            amount = 0.0
+            partial_currency = False
+            if partial.debit_move_id == self:
+                amount = partial.debit_amount_currency or 0.0
+                partial_currency = partial.debit_currency_id
+            elif partial.credit_move_id == self:
+                amount = partial.credit_amount_currency or 0.0
+                partial_currency = partial.credit_currency_id
+
+            if partial_currency == currency and amount:
+                manual_partial_total += amount
+
+        if currency.is_zero(manual_total) and currency.is_zero(manual_partial_total):
+            return 0.0, False
+
+        if currency.is_zero(manual_total):
+            balance_sign = 1 if self.balance >= 0 else -1
+        else:
+            balance_sign = 1 if manual_total >= 0 else -1
+
+        residual = manual_total - balance_sign * manual_partial_total
+        if balance_sign > 0:
+            residual = max(residual, 0.0)
+        else:
+            residual = min(residual, 0.0)
+
+        return currency.round(residual), True
+
+    @api.depends(
+        "foreign_currency_id",
+        "foreign_debit",
+        "foreign_credit",
+        "matched_debit_ids.debit_amount_currency",
+        "matched_debit_ids.debit_currency_id",
+        "matched_credit_ids.credit_amount_currency",
+        "matched_credit_ids.credit_currency_id",
+    )
+    def _compute_foreign_amount_residuals(self):
+        """
+        Computes and stores the foreign currency residuals for each move line.
+        Uses _get_manual_foreign_amount_residual for calculation.
+        """
+        for line in self:
+            residual, manual_available = line._get_manual_foreign_amount_residual()
+            line.foreign_amount_residual = residual if manual_available else 0.0
+            line.foreign_amount_residual_currency = residual if manual_available else 0.0
+
+    def _prepare_reconciliation_single_partial(
+        self,
+        debit_vals,
+        credit_vals,
+        shadowed_aml_values=None,
+        **kwargs,
+    ):
+        """
+        Prepares the values for a single partial reconciliation between debit and credit lines.
+        Calculates foreign currency progress and updates partial values accordingly.
+        Returns the result from the super method with updated foreign currency fields.
+        """
+        debit_line = debit_vals.get("aml")
+        credit_line = credit_vals.get("aml")
+
+        initial_debit_amount_residual = debit_vals.get("amount_residual")
+        if initial_debit_amount_residual is None and debit_line:
+            initial_debit_amount_residual = getattr(
+                debit_line, "amount_residual", 0.0
+            )
+        initial_credit_amount_residual = credit_vals.get("amount_residual")
+        if initial_credit_amount_residual is None and credit_line:
+            initial_credit_amount_residual = getattr(
+                credit_line, "amount_residual", 0.0
+            )
+
+        initial_debit_foreign_residual = debit_vals.get("foreign_amount_residual")
+        if initial_debit_foreign_residual is None and debit_line:
+            initial_debit_foreign_residual = getattr(
+                debit_line, "foreign_amount_residual", 0.0
+            )
+        initial_debit_foreign_residual_currency = debit_vals.get(
+            "foreign_amount_residual_currency"
+        )
+        if initial_debit_foreign_residual_currency is None and debit_line:
+            initial_debit_foreign_residual_currency = getattr(
+                debit_line, "foreign_amount_residual_currency", 0.0
+            )
+
+        initial_credit_foreign_residual = credit_vals.get("foreign_amount_residual")
+        if initial_credit_foreign_residual is None and credit_line:
+            initial_credit_foreign_residual = getattr(
+                credit_line, "foreign_amount_residual", 0.0
+            )
+        initial_credit_foreign_residual_currency = credit_vals.get(
+            "foreign_amount_residual_currency"
+        )
+        if initial_credit_foreign_residual_currency is None and credit_line:
+            initial_credit_foreign_residual_currency = getattr(
+                credit_line, "foreign_amount_residual_currency", 0.0
+            )
+
+        res = super()._prepare_reconciliation_single_partial(
+            debit_vals,
+            credit_vals,
+            shadowed_aml_values=shadowed_aml_values,
+            **kwargs,
+        )
+
+        partial_vals = res.get("partial_values")
+        if not partial_vals:
+            return res
+
+        new_debit_amount_residual = debit_vals.get("amount_residual")
+        new_credit_amount_residual = credit_vals.get("amount_residual")
+
+        def _compute_foreign_progress(
+            line,
+            initial_company_residual,
+            new_company_residual,
+            initial_foreign_residual,
+            initial_foreign_residual_currency,
+        ):
+            if not line or not line.foreign_currency_id:
+                return 0.0, abs(initial_foreign_residual or 0.0), 0.0, abs(
+                    initial_foreign_residual_currency or 0.0
+                )
+
+            company_foreign_currency = line.company_id.currency_foreign_id
+            foreign_currency = line.foreign_currency_id
+
+            initial_company = abs(initial_company_residual or 0.0)
+            new_company = abs(new_company_residual or 0.0)
+            line_foreign_total = 0.0
+            # For credit line, use foreign_credit directly for currency calculation
+            if line and line.foreign_credit is not None:
+                line_foreign_total = abs(line.foreign_credit)
+            elif line and line.foreign_debit is not None:
+                line_foreign_total = abs(line.foreign_debit)
+            initial_foreign = line_foreign_total or abs(initial_foreign_residual or 0.0)
+            if initial_foreign_residual_currency is not None:
+                initial_foreign_currency = abs(initial_foreign_residual_currency)
+            else:
+                initial_foreign_currency = initial_foreign
+
+            if line_foreign_total:
+                initial_foreign_currency = line_foreign_total
+
+            if not initial_company:
+                return (
+                    0.0,
+                    initial_foreign,
+                    0.0,
+                    initial_foreign_currency,
+                )
+
+            matched_ratio = min(
+                max((initial_company - new_company) / initial_company, 0.0),
+                1.0,
+            )
+
+            partial_foreign_currency = foreign_currency.round(
+                initial_foreign_currency * matched_ratio
+            )
+            new_foreign_currency = foreign_currency.round(
+                max(initial_foreign_currency - partial_foreign_currency, 0.0)
+            )
+
+            rounding_currency = company_foreign_currency or foreign_currency
+            partial_foreign = rounding_currency.round(initial_foreign * matched_ratio)
+            new_foreign = rounding_currency.round(
+                max(initial_foreign - partial_foreign, 0.0)
+            )
+
+            return (
+                partial_foreign,
+                new_foreign,
+                partial_foreign_currency,
+                new_foreign_currency,
+            )
+
+        (
+            debit_foreign_amount,
+            debit_foreign_residual,
+            debit_foreign_amount_currency,
+            debit_foreign_residual_currency,
+        ) = _compute_foreign_progress(
+            debit_line,
+            initial_debit_amount_residual,
+            new_debit_amount_residual,
+            initial_debit_foreign_residual,
+            initial_debit_foreign_residual_currency,
+        )
+
+        (
+            credit_foreign_amount,
+            credit_foreign_residual,
+            credit_foreign_amount_currency,
+            credit_foreign_residual_currency,
+        ) = _compute_foreign_progress(
+            credit_line,
+            initial_credit_amount_residual,
+            new_credit_amount_residual,
+            initial_credit_foreign_residual,
+            initial_credit_foreign_residual_currency,
+        )
+
+        company_foreign_currency = False
+        line_for_company = debit_line or credit_line
+        if line_for_company:
+            company_foreign_currency = line_for_company.company_id.currency_foreign_id
+
+        preferred_candidates = []
+        if company_foreign_currency:
+            if (
+                debit_line
+                and debit_line.foreign_currency_id == company_foreign_currency
+                and debit_foreign_amount_currency
+            ):
+                preferred_candidates.append(debit_foreign_amount_currency)
+            if (
+                credit_line
+                and credit_line.foreign_currency_id == company_foreign_currency
+                and credit_foreign_amount_currency
+            ):
+                preferred_candidates.append(credit_foreign_amount_currency)
+
+        partial_foreign_amount = 0.0
+        if preferred_candidates:
+            partial_foreign_amount = max(preferred_candidates)
+        else:
+            fallback_candidates = []
+            rounding = False
+            if company_foreign_currency:
+                rounding = company_foreign_currency.rounding
+            elif line_for_company:
+                rounding = line_for_company.company_currency_id.rounding
+
+            for amount in (debit_foreign_amount, credit_foreign_amount):
+                if amount and not (
+                    rounding
+                    and float_is_zero(
+                        amount,
+                        precision_rounding=rounding,
+                    )
+                ):
+                    fallback_candidates.append(amount)
+
+            if fallback_candidates:
+                partial_foreign_amount = max(fallback_candidates)
+
+        partial_vals.update(
+            {
+                "foreign_amount": partial_foreign_amount,
+                "debit_foreign_amount_currency": debit_foreign_amount_currency,
+                "credit_foreign_amount_currency": credit_foreign_amount_currency,
+            }
+        )
+
+        if debit_line and debit_line.foreign_currency_id:
+            debit_vals["foreign_amount_residual"] = debit_foreign_residual
+            debit_vals["foreign_amount_residual_currency"] = (
+                debit_foreign_residual_currency
+            )
+
+        if credit_line and credit_line.foreign_currency_id:
+            credit_vals["foreign_amount_residual"] = credit_foreign_residual
+            credit_vals["foreign_amount_residual_currency"] = (
+                credit_foreign_residual_currency
+            )
         return res
