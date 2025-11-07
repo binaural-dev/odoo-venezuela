@@ -47,3 +47,8 @@ class ResCompany(models.Model):
         string="Minimum age (years)",
         help="Minimum age in years that a minor must have to be included in a membership.",
     )
+
+    maximum_child_age = fields.Integer(
+        string="Maximum age (years)",
+        help="Maximum age in years that a minor can have to be included in a membership.",
+    )
