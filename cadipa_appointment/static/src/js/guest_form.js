@@ -32,8 +32,6 @@ if (OriginalGuestForm) {
             const maxAge = parseInt(document.querySelector('#binaural_max_child_age')?.value || 0);
             const age = this._calcAge(parsed);
             
-            console.log(age, clasification, guest_type, minAge, maxAge);
-
             if (guest_type === 'children') {
                 if (age > maxAge) {
                     $error.text(_t(`The maximum age for a child is ${maxAge} years`)).show();
