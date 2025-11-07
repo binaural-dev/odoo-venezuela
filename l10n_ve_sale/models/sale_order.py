@@ -466,8 +466,7 @@ class SaleOrder(models.Model):
             for order in self:
                 for line in order.order_line:
                     if (
-                        line.product_id.product_tmpl_id.detailed_type == "product"
-                        and line.product_id.qty_available < line.product_uom_qty
+                       line.product_id.qty_available < line.product_uom_qty
                     ):
                         msg = _("Does not have enough units available for the product ")
                         msg += _("{}. Only has {} units of the {} demanded.").format(
