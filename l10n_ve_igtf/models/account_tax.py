@@ -1,4 +1,4 @@
-from odoo import models, _
+from odoo import models, api, _
 from odoo.tools.misc import formatLang
 from odoo.tools.float_utils import float_round, float_is_zero
 
@@ -11,8 +11,9 @@ _logger = logging.getLogger(__name__)
 class AccountTax(models.Model):
     _inherit = "account.tax"
 
-    def _prepare_tax_totals(
-        self, base_lines, currency, tax_lines=None, igtf_base_amount=False, is_company_currency_requested=False
+    @api.model
+    def _get_tax_totals_summary(
+        self, base_lines, currency, company, cash_rounding=None
     ):
         """
         This function add values and calculated of igtf on invoices
@@ -34,8 +35,9 @@ class AccountTax(models.Model):
             - foreign_amount_total_igtf: float
             - formatted_foreign_amount_total_igtf: str
         """
-        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
-
+        res = super()._get_tax_totals_summary(
+            base_lines, currency, company, cash_rounding
+        )
         invoice = self.env["account.move"]
         order = False
         apply_igtf = False
@@ -48,8 +50,10 @@ class AccountTax(models.Model):
             type_model = base_line["record"]._name
             if base_line["record"]._name == "account.move.line":
                 invoice = base_line["record"].move_id
+                break
             if base_line["record"]._name == "sale.order.line":
                 order = base_line["record"].order_id
+                break
 
         foreign_currency = self.env.company.foreign_currency_id
         rate = 0
@@ -69,22 +73,22 @@ class AccountTax(models.Model):
             and invoice.payment_state == "not_paid"
         ):
             is_igtf_suggested = True
-            base_igtf = res.get("amount_total", 0)
-            foreign_base_igtf = res.get("foreign_amount_total", 0)
+            base_igtf = res.get("foreign_amount_total", 0)
+            foreign_base_igtf = res.get("total_amount_foreign_currency", 0)
         if (
             type_model == "sale.order.line"
             and self.env.company.show_igtf_suggested_sale_order
         ):
             is_igtf_suggested = True
-            base_igtf = res.get("amount_total", 0)
-            foreign_base_igtf = res.get("foreign_amount_total", 0)
+            base_igtf = res.get("foreign_amount_total", 0)
+            foreign_base_igtf = res.get("total_amount_foreign_currency", 0)
 
         if invoice.bi_igtf:
             is_igtf_suggested = False
             base_igtf = invoice.bi_igtf
             foreign_base_igtf = invoice.bi_igtf * rate
-            if invoice.bi_igtf == res.get("amount_total"):
-                foreign_base_igtf = res.get("foreign_amount_total")
+            if invoice.bi_igtf == res.get("total_amount_currency"):
+                foreign_base_igtf = res.get("total_amount_foreign_currency")
 
         igtf_base_amount = float_round(
             base_igtf or 0, precision_rounding=currency.rounding
@@ -134,13 +138,14 @@ class AccountTax(models.Model):
         )
 
         res["amount_total_igtf"] = float_round(
-            res["amount_total"] + igtf_amount, precision_rounding=currency.rounding
+            res["total_amount_currency"] + igtf_amount,
+            precision_rounding=currency.rounding,
         )
         res["formatted_amount_total_igtf"] = formatLang(
             self.env, res["amount_total_igtf"], currency_obj=currency
         )
         res["foreign_amount_total_igtf"] = float_round(
-            res["foreign_amount_total"] + foreign_igtf_amount,
+            res["total_amount_foreign_currency"] + foreign_igtf_amount,
             precision_rounding=foreign_currency.rounding,
         )
         res["formatted_foreign_amount_total_igtf"] = formatLang(
@@ -149,4 +154,3 @@ class AccountTax(models.Model):
         res["igtf"]["is_igtf_suggested"] = is_igtf_suggested
 
         return res
-
