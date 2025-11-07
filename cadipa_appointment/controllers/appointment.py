@@ -108,7 +108,7 @@ class AppointmentControllerMulti(AppointmentController):
             
         if guest_creation_error:                     
             if guest_creation_error == 'guest_creation_failed':
-                 resp.qcontext['guest_creation_error'] = _("Error al crear el invitado. Intente de nuevo.")
+                 resp.qcontext['guest_creation_error'] = "Error al crear el invitado. Intente de nuevo."
             else:
                  resp.qcontext['guest_creation_error'] = guest_creation_error
             
@@ -183,10 +183,20 @@ class AppointmentControllerMulti(AppointmentController):
                     access_token = response.location.split('/calendar/view/')[1].split('?')[0]
                     created_event = request.env['calendar.event'].sudo().search([('access_token', '=', access_token)], limit=1)
                     
-                    guest_ids_str = post.get("guest_ids", "") 
-                    guest_ids = [int(gid) for gid in guest_ids_str.split(',') if gid.isdigit()]
-                    if created_event and guest_ids:
-                        created_event.sudo().write({'guest_ids': [Command.set(guest_ids)]})
+                    guest_ids = self._extract_ids(post, "guest_ids")
+                    beneficiary_ids = self._extract_ids(post, "family_guest_ids")
+                       
+                    update_vals = {}
+
+                    if guest_ids:
+                        update_vals['guest_ids'] = [Command.set(guest_ids)]
+                    if beneficiary_ids:
+                        current_partners_ids = created_event.partner_ids.ids
+                        all_partners_ids = list(set(current_partners_ids + beneficiary_ids))
+                        update_vals['partner_ids'] = [Command.set(all_partners_ids)]
+
+                    if created_event and update_vals:
+                        created_event.sudo().write(update_vals)
                         created_event = created_event.exists()
                     
                     self._post_submission_hook(created_event)
@@ -201,8 +211,8 @@ class AppointmentControllerMulti(AppointmentController):
                 return request.redirect(info_url + '?' + url_encode(query_params))
         
         try:
-            guest_ids_str = post.get("guest_ids", "")
-            guest_ids = [int(gid) for gid in guest_ids_str.split(',') if gid.isdigit()]
+            guest_ids = self._extract_ids(post, "guest_ids")
+            beneficiary_ids = self._extract_ids(post, "family_guest_ids")
 
             slots = sorted((_parse_slot(q) for q in json.loads(multi_slots)),
                         key=lambda s: s[0])
@@ -306,9 +316,20 @@ class AppointmentControllerMulti(AppointmentController):
                         ev.write({'access_token': first_token})
                     created_ev |= ev
 
-                if created_ev and guest_ids:
-                    created_ev.sudo().write({'guest_ids': [Command.set(guest_ids)]})
-                    created_ev = created_ev.exists()
+
+            update_vals = {}
+            if guest_ids:
+                update_vals['guest_ids'] = [Command.set(guest_ids)]
+            if beneficiary_ids:
+                booking_partner_id = customer.id
+                all_partners_ids = [booking_partner_id]
+                all_partners_ids.extend(beneficiary_ids)
+                final_partners_ids = list(set(all_partners_ids))
+                update_vals['partner_ids'] = [Command.set(final_partners_ids)]
+            
+            if created_ev and update_vals:
+                created_ev.sudo().write(update_vals)
+                created_ev = created_ev.exists()
 
             has_membership_active = customer.action_number.state == 'active' if customer.action_number else False
 
@@ -351,6 +372,11 @@ class AppointmentControllerMulti(AppointmentController):
         :param created_events: a recordset of 'calendar.event' with the created events.
         """
         pass
+    
+    @staticmethod
+    def _extract_ids(post, key):
+        ids_str = post.get(key, "") 
+        return [int(gid) for gid in ids_str.split(',') if gid.isdigit()]
 
     def _handle_appointment_form_submission(
         self, appointment_type,
