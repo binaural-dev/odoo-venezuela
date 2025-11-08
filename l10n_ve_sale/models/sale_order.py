@@ -464,7 +464,8 @@ class SaleOrder(models.Model):
             if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
                 for line in order.order_line:
                     if (
-                        line.product_id.product_tmpl_id.detailed_type == "product"
+                        line.product_id.is_storable
+                        and line.product_id.type == "consu"
                         and line.product_id.qty_available < line.product_uom_qty
                     ):
                         msg = _("Does not have enough units available for the product ")
