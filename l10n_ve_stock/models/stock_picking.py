@@ -1,11 +1,10 @@
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
-from odoo.fields import Domain, ValidationError
+from odoo.exceptions import UserError, ValidationError
+from odoo.fields import Domain
 _logger = logging.getLogger(__name__)
 
-from odoo.exceptions import UserError
 
 
 class StockPicking(models.Model):
