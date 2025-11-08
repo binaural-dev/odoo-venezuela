@@ -23,3 +23,12 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.maximum_child_age',
         readonly=False,
     )
+
+    membership_auto_suspend = fields.Boolean(
+        related='company_id.membership_auto_suspend',
+        readonly=False,
+    )
+    membership_suspension_delay_days = fields.Integer(
+        related='company_id.membership_suspension_delay_days',
+        readonly=False,
+    )
