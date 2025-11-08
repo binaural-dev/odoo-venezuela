@@ -2,7 +2,7 @@ import logging
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.fields import Domain
+from odoo.fields import Domain, ValidationError
 _logger = logging.getLogger(__name__)
 
 from odoo.exceptions import UserError
@@ -241,3 +241,62 @@ class StockPicking(models.Model):
             self = self.with_context(skip_physical_location=True)
         return super().action_assign()
 
+    def button_validate(self):
+        if self.env.company.not_allow_negative_stock_movement:
+            res = super(StockPicking, self).button_validate()
+
+            if isinstance(res, dict) and res.get('res_model') == 'stock.backorder.confirmation':
+                
+                return res
+
+            else:
+
+                self._check_stock_availability_for_pickings()
+
+    def _check_stock_availability_for_pickings(self):
+        if self.picking_type_id.code in ['internal', 'outgoing']:
+            group_product_location_lot = {}
+            
+            all_move_lines_to_check = self.env['stock.move.line']
+            for picking in self:
+                all_move_lines_to_check |= picking.move_line_ids
+
+            for line in all_move_lines_to_check:
+                if line.product_id.type == 'product':
+                    qty_done_line = line.quantity 
+                    if qty_done_line <= 0:
+                        continue 
+
+                    key = (line.product_id.id, line.lot_id.id if line.lot_id else False, line.location_id.id)
+                    
+                    group_product_location_lot[key] = \
+                        group_product_location_lot.get(key, 0.0) + qty_done_line
+
+            stock_msg = []
+
+            for key, total_qty_to_move in group_product_location_lot.items():
+                product_id, lot_id, location_id = key
+                
+                product_obj = self.env['product.product'].browse(product_id)
+                location_obj = self.env['stock.location'].browse(location_id)
+                lot_obj = self.env['stock.lot'].browse(lot_id) if lot_id else False
+
+                context_to_stock = {'location': location_obj.id}
+                if lot_obj:
+                    context_to_stock['lot_id'] = lot_obj.id
+                
+                qty_real_allow = \
+                    product_obj.with_context(context_to_stock).qty_available - \
+                    total_qty_to_move
+                
+                if qty_real_allow < 0:
+                    info_lote_serial = f" ({_('Lot/Serial')}: {lot_obj.name})" if lot_obj else ""
+                    stock_msg.append(
+                        _("%s%s", product_obj.display_name, info_lote_serial)
+                    )
+            
+            if stock_msg:
+                error_msg = _(
+                    "Insufficient stock:\n%s\n\nAdjust quantitys or request stock for this location."
+                ) % "\n".join(stock_msg)
+                raise ValidationError(error_msg)
