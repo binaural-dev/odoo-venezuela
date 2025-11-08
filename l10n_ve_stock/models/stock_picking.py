@@ -255,7 +255,7 @@ class StockPicking(models.Model):
                 self._check_stock_availability_for_pickings()
 
     def _check_stock_availability_for_pickings(self):
-        if self.picking_type_id.code == 'internal':
+        if self.picking_type_id.code in ['internal', 'outgoing']:
             group_product_location_lot = {}
             
             all_move_lines_to_check = self.env['stock.move.line']
