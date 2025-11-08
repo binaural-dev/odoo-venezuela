@@ -61,6 +61,30 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <group colspan="2" col="4">
+                                <field name="membership_auto_suspend"/>
+                            </group>
+                            <div class="text-muted">
+                                Automatically suspend memberships that are inactive for a certain period.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" invisible="not membership_auto_suspend">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <group colspan="2" col="4">
+                                <field name="membership_suspension_delay_days"/>
+                            </group>
+                            <div class="text-muted">
+                                Number of days before an inactive membership is suspended.
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 </block>
             </xpath>
