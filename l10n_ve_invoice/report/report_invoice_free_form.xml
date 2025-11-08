@@ -15,7 +15,7 @@
         </record>
 
         <template id="report_freeform_document">
-            <div class="article" t-att-data-oe-model="'account.move'" t-att-data-oe-id="o.id">
+            <div class="article" t-att-data-oe-model="account.move" t-att-data-oe-id="account.move.id">
                 <div class="row">
                     <div class="col-12">
                     <h3 t-if="o.state == 'draft'" style="position:absolute;left:65px;top:250px;font-size:180px !important;opacity: 0.1;">BORRADOR</h3>
