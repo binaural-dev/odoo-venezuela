@@ -15,7 +15,7 @@
         </record>
 
         <template id="report_freeform_document">
-            <div class="article" t-att-data-oe-model="account.move" t-att-data-oe-id="account.move.id">
+            <div class="article" t-att-data-oe-model="'account.move'" t-att-data-oe-id="o.id or ''">
                 <div class="row">
                     <div class="col-12">
                     <h3 t-if="o.state == 'draft'" style="position:absolute;left:65px;top:250px;font-size:180px !important;opacity: 0.1;">BORRADOR</h3>
@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 <div class="mt-5">
-                    <div class="page">
+                    <div class="article" t-att-data-oe-model="'account.move'" t-att-data-oe-id="o.id or ''">
                         <div id="informations" class="row mt-4 mb-4">
                             <div class="col-8 mw-100 mb-2" name="header_left">
                                 <span><strong>Razón Social:</strong> <t t-out="o.partner_id.name"/></span>
@@ -344,12 +344,13 @@
 
         <template id="template_invoice_free_form_l10n_ve_invoice">
             <t t-call="web.html_container">
-                <t t-call="web.basic_layout">
-                    <t t-foreach="docs" t-as="o">
-                        <t t-set="lang" t-value="o.partner_id.lang"/>
-                        <t t-set="o" t-value="o.with_context(lang=lang)" />
-                        <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
-                        <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/> <!-- So that it appears in the footer of the report instead of the company VAT if it's set -->
+                <t t-foreach="docs" t-as="invoice">
+                    <t t-set="lang" t-value="invoice.partner_id.lang"/>
+                    <t t-set="o" t-value="invoice.with_context(lang=lang)" />
+                    <t t-set="doc" t-value="o" />
+                    <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
+                    <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/> <!-- So that it appears in the footer of the report instead of the company VAT if it's set -->
+                    <t t-call="web.basic_layout">
                         <t t-call="l10n_ve_invoice.report_freeform_document" t-lang="lang"/>
                     </t>
                 </t>
