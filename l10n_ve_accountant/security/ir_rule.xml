@@ -10,5 +10,15 @@
             <field name="perm_create">1</field>
             <field name="perm_unlink">0</field>
         </record>
+        <record id="account_move_unlink_draft_only" model="ir.rule">
+            <field name="name">Eliminar facturas solo en borrador</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="domain_force">[('state', '=', 'draft')]</field>
+            <field name="groups" eval="[(4, ref('account.group_account_invoice'))]"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+        </record>
     </odoo>
 </odoo>
