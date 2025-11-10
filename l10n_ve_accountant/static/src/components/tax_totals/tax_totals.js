@@ -35,7 +35,7 @@ patch(TaxTotalsComponent.prototype, {
             
             taxGroup.formatted_base_amount_currency = formatMonetary(taxGroup.base_amount_currency, currencyFmtOpts);
             // Solo VEES
-            taxGroup.formatted_tax_amount_currency_ves = totals.formatted_tax_amount_currency_ves;
+            taxGroup.formatted_tax_amount_currency_ves = taxGroup.formatted_tax_amount_currency_ves;
           }
         }
       }
