@@ -180,17 +180,17 @@ class AccountTax(models.Model):
                 #ONLY VES
                 res_tax_group['formatted_base_amount_currency_ves'] = formatLang(
                     env=self.env,
-                    value=res_tax_group.get('base_amount_currency', 0.0),
+                    value=res_tax_group.get('base_amount', 0.0),
                     currency_obj=ves_currency
                 )
                 res_tax_group['formatted_tax_amount_currency_ves'] = formatLang(
                     env=self.env,
-                    value=res_tax_group.get('tax_amount_currency', 0.0),
+                    value=res_tax_group.get('tax_amount', 0.0),
                     currency_obj=ves_currency
                 )
                 res_tax_group['formatted_total_amount_currency_ves'] = formatLang(
                     env=self.env,
-                    value=res_tax_group.get('total_amount_currency', 0.0),
+                    value=res_tax_group.get('total_amount', 0.0),
                     currency_obj=ves_currency
                 )
                 # Foranea
