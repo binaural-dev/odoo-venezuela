@@ -160,7 +160,6 @@ class AccountRetentionLine(models.Model):
             record.payment_id.unlink()
         return super().unlink()
 
-    @api.onchange("payment_concept_id")
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
         """
@@ -310,12 +309,9 @@ class AccountRetentionLine(models.Model):
         case when the retention amount and the invoice amount are shown on the retention line,
         because the amounts of the retention lines are always shown in VEF.
         """
-        if self.env.context.get("noonchange", False):
-            return
         for line in self.filtered(
             lambda l: not l.retention_id or l.retention_id.type == "out_invoice"
         ):
-            self.env.context = self.with_context(noonchange=True).env.context
             if not line.retention_id or line.retention_id.type_retention in ("islr", "municipal"):
                 line.update(
                     {
@@ -330,36 +326,44 @@ class AccountRetentionLine(models.Model):
                 }
             )
 
-    @api.onchange("foreign_retention_amount", "foreign_invoice_amount")
-    def onchange_foreign_retention_amount(self):
-        """
-        Making sure that the retention amount and the invoice amount are updated when the foreign
-        retention amount or the foreign invoice amount are changed on the retention line of the
-        customer retentions.
+    # @api.onchange("foreign_retention_amount", "foreign_invoice_amount")
+    # def onchange_foreign_retention_amount(self):
+    #     """
+    #     Making sure that the retention amount and the invoice amount are updated when the foreign
+    #     retention amount or the foreign invoice amount are changed on the retention line of the
+    #     customer retentions.
 
-        This is made to be triggered only when the foreign currency is VEF, as this is the only
-        case when the foreign retention amount and the foreign iva amount are shown on the views of
-        the customer retentions, because the amounts of the retention lines are always shown in VEF.
-        """
-        if self.env.context.get("noonchange", False):
-            return
-        for line in self.filtered(
-            lambda l: not l.retention_id or l.retention_id.type == "out_invoice"
-        ):
-            if not line.retention_id or line.retention_id.type_retention in ("islr", "municipal"):
-                line.update(
-                    {
-                        "invoice_amount": line.foreign_invoice_amount
-                        * (1 / line.move_id.foreign_rate)
-                    }
-                )
-            self.env.context = self.with_context(noonchange=True).env.context
-            line.update(
-                {
-                    "retention_amount": line.foreign_retention_amount
-                    * (1 / line.move_id.foreign_rate)
-                }
-            ) 
+    #     This is made to be triggered only when the foreign currency is VEF, as this is the only
+    #     case when the foreign retention amount and the foreign iva amount are shown on the views of
+    #     the customer retentions, because the amounts of the retention lines are always shown in VEF.
+    #     """
+    #     _logger.warning("noonchange context: %s", self.env.context)
+    #     if self.env.context.get("noonchange", False):
+    #         return
+    #     for line in self.filtered(
+    #         lambda l: not l.retention_id or l.retention_id.type == "out_invoice"
+    #     ):
+    #         if not line.move_id:
+    #             continue
+    #         line_with_ctx = line.with_context(noonchange=True)
+    #         if not line.retention_id or line.retention_id.type_retention in ("islr", "municipal"):
+    #             _logger.warning("rate: %s", line.move_id.foreign_rate)
+    #             _logger.warning("inverse rate: %s", line.move_id.foreign_inverse_rate)
+    #             _logger.warning("move id: %s", line.move_id)
+    #             line_with_ctx.update(
+    #                 {
+    #                     "invoice_amount": line.foreign_invoice_amount
+    #                     * (1 / line.move_id.foreign_rate)
+    #                 }
+    #             )
+    #         _logger.warning("rate: %s", line.move_id.foreign_rate)
+    #         _logger.warning("inverse rate: %s", line.move_id.foreign_inverse_rate)
+    #         line_with_ctx.update(
+    #             {
+    #                 "retention_amount": line.foreign_retention_amount
+    #                 * (1 / line.move_id.foreign_rate)
+    #             }
+    #         )
     @api.constrains(
         "retention_amount",
         "invoice_total",
