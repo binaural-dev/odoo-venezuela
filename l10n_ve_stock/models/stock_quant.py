@@ -137,7 +137,7 @@ class StockQuan(models.Model):
                 break
         return reserved_quants
     
-    def _apply_inventory(self):
+    def _apply_inventory(self, date=None):
         """Base Odoo function that is inherited only to add a return of the stock_moves resulting from the inventory adjustment to another
         function.
         :return: The stock moves resulting from the inventory adjustment
@@ -151,6 +151,6 @@ class StockQuan(models.Model):
                     raise ValidationError(
                         _("You cannot set the physical quantity of '%s' to a negative value.") % line.product_id.display_name
                     )
-        moves = super()._apply_inventory()
+        moves = super()._apply_inventory(date=date)
 
         return moves
