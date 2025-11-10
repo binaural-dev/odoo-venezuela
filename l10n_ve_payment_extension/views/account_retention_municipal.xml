@@ -174,15 +174,13 @@
             <field name="model">account.retention</field>
             <field name="arch" type="xml">
                 <search string="Municipal Retention">
-                    <field name="number" filter_domain="[('number','ilike',self)]" />
-                    <field name="partner_id" filter_domain="[('partner_id','ilike',self)]" />
-                    <field name="date" filter_domain="[('date','ilike',self)]" />
-                    <field name="date_accounting" filter_domain="[('date_accounting','ilike',self)]" />
-                    <group>
-                        <filter string="State" name="group_state" context="{'group_by':'state'}" />
-                        <filter string="Business Name" name="group_partner" context="{'group_by':'partner_id'}" />
-                        <filter string="Fecha Contable" name="group_date_accounting" context="{'group_by':'date_accounting'}" />
-                    </group>
+                    <field name="number" string="Number" filter_domain="[('number','ilike',self)]" />
+                    <field name="partner_id" string="Business Name" filter_domain="[('partner_id','ilike',self)]" />
+                    <field name="date" string="Vocher date" filter_domain="[('date','ilike',self)]" />
+                    <field name="date_accounting" string="Fecha Contable" filter_domain="[('date_accounting','ilike',self)]" />
+                    <filter name="group_state" string="Group by State" context="{'group_by':'state'}" />
+                    <filter name="group_partner" string="Group by Business Name" context="{'group_by':'partner_id'}" />
+                    <filter name="group_date_accounting" string="Group by Fecha Contable" context="{'group_by':'date_accounting'}" />
                 </search>
             </field>
         </record>
@@ -214,4 +212,3 @@
             <field name="domain">[('type_retention', '=', 'municipal'), ('type', '=', 'in_invoice')]</field>
         </record>
     </data>
-</odoo>
