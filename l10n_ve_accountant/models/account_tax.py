@@ -83,20 +83,20 @@ class AccountTax(models.Model):
             currency_obj=currency_id
         )
 
-        
+        #only VES amounts
         res['formatted_base_amount_currency_ves'] = formatLang(
             env=self.env,
-            value=res.get('base_amount_currency', 0.0),
+            value=res.get('base_amount', 0.0),
             currency_obj=ves_currency
         )
         res['formatted_tax_amount_currency_ves'] = formatLang(
             env=self.env,
-            value=res.get('tax_amount_currency', 0.0),
+            value=res.get('tax_amount', 0.0),
             currency_obj=ves_currency
         )
         res['formatted_total_amount_currency_ves'] = formatLang(
             env=self.env,
-            value=res.get('total_amount_currency', 0.0),
+            value=res.get('total_amount', 0.0),
             currency_obj=ves_currency
         )
     
