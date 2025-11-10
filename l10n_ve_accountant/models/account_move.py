@@ -18,6 +18,76 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    _sql_constraints = [
+        (
+            "unique_name",
+            "",
+            "Another entry with the same name already exists.",
+        ),
+        (
+            "unique_name_ve",
+            "",
+            "Another entry with the same name already exists.",
+        ),
+    ]
+
+    def _auto_init(self):
+        res = super()._auto_init()
+        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
+            drop_index(self.env.cr, "account_move_unique_name", self._table)
+            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
+            # we can add the following UNIQUE INDEX
+            self.env.cr.execute(
+                """
+                WITH duplicated_sequence AS (
+                    SELECT name, partner_id, state, journal_id
+                    FROM account_move
+                    WHERE state = 'posted'
+                    AND name != '/'
+                    AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
+                GROUP BY partner_id, journal_id, name, state
+                    HAVING COUNT(*) > 1
+                ),
+                to_update AS (
+                    SELECT move.id,
+                        move.name,
+                        move.state,
+                        move.date,
+                        row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
+                        FROM duplicated_sequence
+                        JOIN account_move move ON move.name = duplicated_sequence.name
+                                            AND move.partner_id = duplicated_sequence.partner_id
+                                            AND move.state = duplicated_sequence.state
+                                            AND move.journal_id = duplicated_sequence.journal_id
+                ),
+                new_vals AS (
+                    SELECT id,
+                            name || ' (' || (row_seq-1)::text || ')' AS name
+                        FROM to_update
+                        WHERE row_seq > 1
+                )
+                UPDATE account_move
+                SET name = new_vals.name
+                FROM new_vals
+                WHERE account_move.id = new_vals.id;
+            """
+            )
+
+            self.env.cr.execute(
+                """
+                CREATE UNIQUE INDEX account_move_unique_name
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+                CREATE UNIQUE INDEX account_move_unique_name_ve
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+            """
+            )
+        return res
     def _get_fields_to_compute_lines(self):
         return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
 
@@ -277,19 +347,6 @@ class AccountMove(models.Model):
         Ensure that the foreign_rate and foreign_inverse_rate are computed and computes the foreign
         debit and foreign credit of the line_ids fields (journal entries) when the move is created.
         """
-        for vals in vals_list:
-
-            if 'name' in vals and vals['name'] != "/":
-                
-                domain = [
-                    ('name', '=', vals['name']),
-                    ('partner_id', '=', vals.get('partner_id'))
-                ]
-                existing_record = self.search(domain, limit=1)
-                
-                if existing_record:
-                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-
         moves = super().create(vals_list)
 
         for move in moves:
@@ -317,21 +374,6 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-        if "name" in vals and vals["name"] != "/" and vals["name"]:
-            for move in self:
-                partner_id = vals.get('partner_id', move.partner_id.id)
-                
-                domain = [
-                    ('name', '=', vals['name']),
-                    ('partner_id', '=', partner_id),
-                    ('id', '!=', move.id) 
-                ]
-                
-                existing_record = self.search(domain, limit=1)
-                
-                if existing_record:
-                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-                
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
