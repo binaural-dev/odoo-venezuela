@@ -182,6 +182,7 @@ class AccountTax(models.Model):
                     value=res_tax_group.get('base_amount', 0.0),
                     currency_obj=ves_currency
                 )
+                
                 res_tax_group['formatted_tax_amount_currency_ves'] = formatLang(
                     env=self.env,
                     value=res_tax_group.get('tax_amount', 0.0),
@@ -208,6 +209,7 @@ class AccountTax(models.Model):
                     value=res_tax_group.get('display_base_amount_foreign_currency', 0.0),
                     currency_obj=foreign_currency_id
                 )
+        _logger.warning("TOTALES FINALES CON MONEDAS: %s", res)
         return res
     
     @api.model
