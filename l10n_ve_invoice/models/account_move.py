@@ -37,21 +37,13 @@ class AccountMove(models.Model):
         from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
+                from_loyalty = self.env.context.get('from_loyalty', False)
                 if (
-                    'sale_discount_product_id' in self.env.company._fields
-                    and self.env.company.sale_discount_product_id
+                    self.env.company.sale_discount_product_id
                     and line.product_id == self.env.company.sale_discount_product_id
                 ):
                     continue
-                
-                if 'loyalty.reward' in self.env:
-                    is_loyalty_reward = self.env['loyalty.reward'].search_count([
-                        ('discount_line_product_id', '=', line.product_id.id)
-                    ]) > 0
-                    if is_loyalty_reward:
-                        continue
-
-                if not from_pos:
+                if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
     @api.onchange("move_type")
