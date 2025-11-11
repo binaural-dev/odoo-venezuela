@@ -259,7 +259,7 @@ class StockPicking(models.Model):
                 all_move_lines_to_check |= picking.move_line_ids
 
             for line in all_move_lines_to_check:
-                if line.product_id.type == 'product':
+                if line.product_id.type == 'consu':
                     qty_done_line = line.quantity 
                     if qty_done_line <= 0:
                         continue 
