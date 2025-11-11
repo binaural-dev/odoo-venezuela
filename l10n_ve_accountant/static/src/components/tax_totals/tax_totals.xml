@@ -1,4 +1,3 @@
-
 <templates xml:space="preserve">
     <!-- Tax Group Component normal -->
     <t 
@@ -30,7 +29,7 @@
         <xpath expr="//table[1]/tbody[1]/t[1]" position="before">
             <tr t-if="totals.discount_amount and totals.show_discount">
                 <td class="o_td_label">
-                    <label class="o_form_label o_tax_total_label">Subtotal pinga</label>
+                    <label class="o_form_label o_tax_total_label">Subtotal</label>
                 </td>
                 <td>
                     <span
