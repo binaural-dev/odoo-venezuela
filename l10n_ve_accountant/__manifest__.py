@@ -13,9 +13,9 @@
         "web",
         "account",
         "account_reports",
-        "purchase", 
-        "sale", 
-        "l10n_ve_base", 
+        "purchase",
+        "sale",
+        "l10n_ve_base",
         "l10n_ve_rate",
         "l10n_ve_contact",
     ],
@@ -54,5 +54,5 @@
         "web.assets_backend": ["l10n_ve_accountant/static/src/components/**/*"],
     },
     "application": True,
-    "pre_init_hook": "pre_init_hook"
+    "pre_init_hook": "pre_init_hook",
 }

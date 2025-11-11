@@ -100,6 +100,7 @@ class AccountTax(models.Model):
             currency_obj=ves_currency
         )
     
+    
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
             env=self.env,
@@ -182,7 +183,6 @@ class AccountTax(models.Model):
                     value=res_tax_group.get('base_amount', 0.0),
                     currency_obj=ves_currency
                 )
-                
                 res_tax_group['formatted_tax_amount_currency_ves'] = formatLang(
                     env=self.env,
                     value=res_tax_group.get('tax_amount', 0.0),
