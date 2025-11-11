@@ -38,6 +38,7 @@ class AccountTax(models.Model):
         res = super()._get_tax_totals_summary(
             base_lines, currency, company, cash_rounding
         )
+
         invoice = self.env["account.move"]
         order = False
         apply_igtf = False
@@ -138,14 +139,14 @@ class AccountTax(models.Model):
         )
 
         res["amount_total_igtf"] = float_round(
-            res["total_amount_currency"] + igtf_amount,
+            res.get("total_amount_currency", 0.0) + igtf_amount,
             precision_rounding=currency.rounding,
         )
         res["formatted_amount_total_igtf"] = formatLang(
             self.env, res["amount_total_igtf"], currency_obj=currency
         )
         res["foreign_amount_total_igtf"] = float_round(
-            res["total_amount_foreign_currency"] + foreign_igtf_amount,
+            res.get("total_amount_foreign_currency", 0.0) + foreign_igtf_amount,
             precision_rounding=foreign_currency.rounding,
         )
         res["formatted_foreign_amount_total_igtf"] = formatLang(
