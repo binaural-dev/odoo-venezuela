@@ -35,8 +35,10 @@
                 <search>
                     <field name="name" />
                     <field name="status" />
-                    <filter string="Active" name="status_active" domain="[('status', '=', 'active')]" />
-                    <filter string="Group by Status" name="group_by_status" context="{'group_by':'status'}" />
+                    <filter string="Active" name="status" domain="[('status', '=', 'active')]" />
+                    <group expand="1" string="Group by">
+                        <filter string="Status" name='status' context="{'group_by':'status'}" />
+                    </group>
                 </search>
             </field>
         </record>
