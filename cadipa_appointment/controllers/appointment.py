@@ -176,6 +176,14 @@ class AppointmentControllerMulti(AppointmentController):
         
         if not multi_slots:
             try:
+                guest_ids = self._extract_ids(post, "guest_ids")
+                beneficiary_ids = self._extract_ids(post, "family_guest_ids")
+                total_guests = len(guest_ids) + len(beneficiary_ids) + (1 if post.get('attend_reservation') else 0)
+                resource_capacity = post.get('resource_capacity')
+
+                if total_guests > resource_capacity:
+                    raise ValidationError(_("The number of guests exceeds the resource capacity."))
+
                 response = super(AppointmentControllerMulti, self).appointment_form_submit(
                     appointment_type_id, multi_slots=multi_slots, **post
                 )
@@ -213,7 +221,14 @@ class AppointmentControllerMulti(AppointmentController):
         try:
             guest_ids = self._extract_ids(post, "guest_ids")
             beneficiary_ids = self._extract_ids(post, "family_guest_ids")
+            attend_reservation = post.get('attend_reservation')
+            total_guests = len(guest_ids) + len(beneficiary_ids) + (1 if attend_reservation else 0)
+            resource_capacity = int(post.get('resource_capacity', 0))
 
+            if total_guests > resource_capacity:
+                raise ValidationError(_("The number of guests exceeds the resource capacity."))
+                
+            
             slots = sorted((_parse_slot(q) for q in json.loads(multi_slots)),
                         key=lambda s: s[0])
             
@@ -322,10 +337,15 @@ class AppointmentControllerMulti(AppointmentController):
                 update_vals['guest_ids'] = [Command.set(guest_ids)]
             if beneficiary_ids:
                 booking_partner_id = customer.id
-                all_partners_ids = [booking_partner_id]
-                all_partners_ids.extend(beneficiary_ids)
-                final_partners_ids = list(set(all_partners_ids))
-                update_vals['partner_ids'] = [Command.set(final_partners_ids)]
+                final_partners_ids = []
+                
+                final_partners_ids.extend(beneficiary_ids)
+                
+                if attend_reservation:
+                    final_partners_ids.append(booking_partner_id)
+
+                unique_partners_ids = list(set(final_partners_ids))
+                update_vals['partner_ids'] = [Command.set(unique_partners_ids)]
             
             if created_ev and update_vals:
                 created_ev.sudo().write(update_vals)
