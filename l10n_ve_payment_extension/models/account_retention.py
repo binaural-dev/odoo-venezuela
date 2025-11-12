@@ -17,12 +17,12 @@ class AccountRetention(models.Model):
     _description = "Retention"
     _check_company_auto = True
 
-    @api.depends('name', 'number')
+    @api.depends("name", "number")
     def _compute_display_name(self):
         for record in self:
             name = record.number or record.name or "/"
             record.display_name = name
-    
+
     company_currency_id = fields.Many2one(
         "res.currency",
         default=lambda self: self.env.company.currency_id.id,
@@ -172,13 +172,19 @@ class AccountRetention(models.Model):
             " that the one that just has been deleted."
         )
     )
-    actual_invoice_ids = fields.Many2many("account.move", string="Actual Invoices", compute="_compute_actual_invoice_ids")  
-    available_invoice_ids = fields.Many2many("account.move", string="Available Invoices")
+    actual_invoice_ids = fields.Many2many(
+        "account.move", string="Actual Invoices", compute="_compute_actual_invoice_ids"
+    )
+    available_invoice_ids = fields.Many2many(
+        "account.move", string="Available Invoices"
+    )
 
     @api.depends("retention_line_ids", "retention_line_ids.move_id")
     def _compute_actual_invoice_ids(self):
         for retention in self:
-            retention.actual_invoice_ids = retention.retention_line_ids.mapped('move_id').ids
+            retention.actual_invoice_ids = retention.retention_line_ids.mapped(
+                "move_id"
+            ).ids
 
     @api.depends("type", "partner_id")
     def _compute_allowed_lines_move_ids(self):
@@ -287,7 +293,7 @@ class AccountRetention(models.Model):
         self.ensure_one()
         self.date_accounting = fields.Date.today()
         search_domain = [
-            ('iva_voucher_number', '=', False),
+            ("iva_voucher_number", "=", False),
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
@@ -327,7 +333,7 @@ class AccountRetention(models.Model):
     def _load_retention_lines_for_iva_customer_retention(self):
         self.ensure_one()
         search_domain = [
-            ('iva_voucher_number', '=', False),
+            ("iva_voucher_number", "=", False),
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
@@ -461,11 +467,9 @@ class AccountRetention(models.Model):
                 lines_per_invoice_counter[str(line.move_id.id)] += 1
 
             for line in retention.retention_line_ids:
-                if (
-                    line.move_id.id
-                    and lines_per_invoice_counter[str(line.move_id.id)]
-                    != original_lines_per_invoice_counter.get(str(line.move_id.id), 0)
-                ):
+                if line.move_id.id and lines_per_invoice_counter[
+                    str(line.move_id.id)
+                ] != original_lines_per_invoice_counter.get(str(line.move_id.id), 0):
                     retention.retention_line_ids -= line
 
             return {
@@ -475,8 +479,7 @@ class AccountRetention(models.Model):
                     )
                 }
             }
-        
-    
+
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
@@ -529,7 +532,7 @@ class AccountRetention(models.Model):
                 self._create_payments_for_iva_customer(
                     payment_vals, account_retention_line_empty_recordset
                 )
-    
+
     def _create_payments_for_iva_supplier(
         self, payment_vals, account_retention_line_empty_recordset
     ):
@@ -682,7 +685,7 @@ class AccountRetention(models.Model):
                     raise ValidationError(
                         _("IVA retention: Number must be exactly 14 numeric digits.")
                     )
-    
+
             if retention.type_retention == "islr" and retention.type == "in_invoice":
                 retention._validate_islr_retention()
 
@@ -793,18 +796,16 @@ class AccountRetention(models.Model):
             )
         return sequence
 
-    def clear_islr_retention_number(self):
-        if self.retention_line_ids:
-            for line in self.retention_line_ids:
-                if line.move_id.islr_voucher_number:
-                    line.move_id.islr_voucher_number = False
+    def _clear_retention_number_on_invoices(self):
+        for line in self.retention_line_ids:
+            setattr(line.move_id, f"{self.type_retention}_voucher_number", False)
 
     def action_cancel(self):
         for rec in self:
             if rec.payment_ids:
                 rec.payment_ids.mapped("move_id.line_ids").remove_move_reconcile()
                 rec.payment_ids.action_cancel()
-            rec.clear_islr_retention_number()
+            rec._clear_retention_number_on_invoices()
             rec.write({"state": "cancel"})
 
     def create_payment_from_retention_form(self):
