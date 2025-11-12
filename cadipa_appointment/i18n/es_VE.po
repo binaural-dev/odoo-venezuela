@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250917\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-08 18:30+0000\n"
-"PO-Revision-Date: 2025-11-08 18:30+0000\n"
+"POT-Creation-Date: 2025-11-12 20:10+0000\n"
+"PO-Revision-Date: 2025-11-12 20:10+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -138,13 +138,16 @@ msgstr "Suspender automáticamente a los miembros del club"
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
-msgid "Automatically suspend memberships that are inactive for a certain period."
-msgstr "Suspender automáticamente las membresías inactivas durante un cierto período."
+msgid ""
+"Automatically suspend memberships that are inactive for a certain period."
+msgstr ""
+"Suspender automáticamente las membresías inactivas durante un cierto "
+"período."
 
 #. module: cadipa_appointment
 #: model:ir.model,name:cadipa_appointment.model_calendar_event
 msgid "Calendar Event"
-msgstr "Evento del calendario"
+msgstr "Calendario de eventos"
 
 #. module: cadipa_appointment
 #: model:ir.model,name:cadipa_appointment.model_res_company
@@ -197,6 +200,11 @@ msgid "Guests"
 msgstr "Invitados"
 
 #. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.appointment_form_family_members_cadipa
+msgid "I will attend the reservation"
+msgstr "Asistiré a la reserva"
+
+#. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.view_calendar_event_form_inherit_guests
 msgid "Invitados del evento"
 msgstr ""
@@ -213,7 +221,9 @@ msgstr "Edad máxima (años)"
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
 msgid ""
 "Maximum age in years that a minor can have to be included in a membership."
-msgstr "Edad máxima en años que puede tener un menor para ser incluido en una membresía."
+msgstr ""
+"Edad máxima en años que puede tener un menor para ser incluido en una "
+"membresía."
 
 #. module: cadipa_appointment
 #: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__minimum_child_age
@@ -227,7 +237,9 @@ msgstr "Edad mínima (años)"
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
 msgid ""
 "Minimum age in years that a minor must have to be included in a membership."
-msgstr "Edad mínima en años que debe tener un menor para ser incluido en una membresía."
+msgstr ""
+"Edad mínima en años que debe tener un menor para ser incluido en una "
+"membresía."
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
@@ -284,6 +296,14 @@ msgstr "El menor debe tener al menos ${minAge} años"
 #, python-format
 msgid "The maximum age for a child is ${maxAge} years"
 msgstr "La edad máxima para un menor es de ${maxAge} años"
+
+#. module: cadipa_appointment
+#. odoo-python
+#: code:addons/cadipa_appointment/controllers/appointment.py:0
+#: code:addons/cadipa_appointment/controllers/appointment.py:0
+#, python-format
+msgid "The number of guests exceeds the resource capacity."
+msgstr "El número de invitados excede la capacidad del recurso."
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment

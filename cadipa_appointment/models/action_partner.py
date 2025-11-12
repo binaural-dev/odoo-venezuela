@@ -10,6 +10,19 @@ _logger = logging.getLogger(__name__)
 class ActionPartner(models.Model):
     _inherit = "action.partner"
 
+
+    @api.onchange("state")
+    def _onchange_is_membership_active(self):
+        """
+        Onchange method to update the suspended_membership field
+        based on the state of the membership.
+        """
+        if self.state == "active":
+            self.suspended_membership = False
+
+        if self.state == "suspended":
+            self.suspended_membership = True
+
     def _cron_suspend_club_members(self):
         """
         Cron job to automatically suspend active memberships
@@ -27,8 +40,7 @@ class ActionPartner(models.Model):
 
             for membership in active_memberships:
                 owner_partner = membership.owner_id
-                membership_type_product = membership.membership_type_plan.suscription_product_id
-
+                membership_type_product = membership.membership_type_plan.product_id
                                 
                 overdue_invoices = self.env['account.move'].search([
                     ('partner_id', '=', owner_partner.id),
