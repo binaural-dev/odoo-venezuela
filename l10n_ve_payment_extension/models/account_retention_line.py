@@ -64,11 +64,17 @@ class AccountRetentionLine(models.Model):
     payment_concept_id = fields.Many2one(
         "payment.concept", "Payment concept", ondelete="cascade", index=True
     )
-    code=fields.Char(
-        related="payment_concept_id.line_payment_concept_ids.code"
+    
+    code = fields.Char(
+        string='Code',
+        compute='_compute_code',
+        store=True, 
+        readonly=False
     )
-    code_visible=fields.Boolean(
+
+    code_visible = fields.Boolean(
         related='company_id.code_visible')
+    
     economic_activity_id = fields.Many2one(
         "economic.activity",
         ondelete="cascade",
@@ -123,6 +129,18 @@ class AccountRetentionLine(models.Model):
     foreign_iva_amount = fields.Float(string="Foreign IVA")
     foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate")
+
+    @api.depends("payment_concept_id")
+    def _compute_code(self):
+        for rec in self:
+            if rec.retention_id.partner_id and rec.payment_concept_id:
+                codes = rec.payment_concept_id.line_payment_concept_ids.filtered(
+                    lambda l: l.type_person_id == rec.retention_id.partner_id.type_person_id
+                ).mapped('code')
+
+                rec.code = codes[0] if codes else ''
+            else:
+                rec.code = ''
 
     @api.depends("retention_id.type_retention", "move_id")
     def _compute_name(self):
