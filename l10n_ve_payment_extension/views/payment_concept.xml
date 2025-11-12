@@ -30,7 +30,7 @@
                         <notebook>
                             <page name="line_payment_concept" string="Payment concept line">
                                 <field name="line_payment_concept_ids">
-                                    <list delete="true" editable="op">
+                                    <list delete="true" editable="top">
                                         <field name="type_person_id" />
                                         <field name="code" />
                                         <field name="percentage_tax_base" />
