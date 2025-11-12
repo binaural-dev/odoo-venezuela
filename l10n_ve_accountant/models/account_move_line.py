@@ -76,7 +76,7 @@ class AccountMoveLine(models.Model):
 
     not_deductible_tax = fields.Boolean(default=False)
 
-    # overridee
+    # override
     @api.depends("product_id", "product_uom_id", "move_id.currency_id")
     def _compute_price_unit(self):
         for line in self:
