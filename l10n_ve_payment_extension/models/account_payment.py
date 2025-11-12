@@ -56,7 +56,6 @@ class AccountPayment(models.Model):
                 continue
             return super()._compute_rate()
 
-
     def _synchronize_to_moves(self, changed_fields):
         """
         Override the original method to change the name of the move based on the retention type
@@ -88,9 +87,11 @@ class AccountPayment(models.Model):
                     f"-{retention_line_id.economic_activity_id.branch_id.name}"
                 )
 
-            vals_to_change = {"name": move_name}
+            vals_to_change = {"name": move_name, "is_manually_modified": True}
             move.write(vals_to_change)
-            move.line_ids.write(vals_to_change)
+            #Se comenta la siguiente linea para evitar errores al modificar las lineas
+            # Hablando con jesus el problema puede tener otra raiz
+            #move.line_ids.write(vals_to_change)
         return res
 
     def unlink(self):
@@ -106,7 +107,8 @@ class AccountPayment(models.Model):
         Compute the amount from the retention lines.
         """
         for payment in self:
-            payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
+            payment.amount = sum(
+                payment.retention_line_ids.mapped("retention_amount"))
 
     @api.depends("retention_line_ids")
     def _compute_retention_foreign_amount(self):
