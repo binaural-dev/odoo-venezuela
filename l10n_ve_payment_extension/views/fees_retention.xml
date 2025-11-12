@@ -2,8 +2,8 @@
 
     <data>
 
-        <record id="view_fees_retention_tree_l10n_ve_payment_extension" model="ir.ui.view">
-            <field name="name">view.fees.retention.tree</field>
+        <record id="view_fees_retention_list_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">view.fees.retention.list</field>
             <field name="model">fees.retention</field>
             <field name="arch" type="xml">
                 <list>
