@@ -58,7 +58,7 @@ class ResPartner(models.Model):
     )
 
     def check_duplicate_vat(self, prefix_vat, vat, company_id=None):
-        error_message = "tumasa"
+        error_message = ""
         domain = [
             ("prefix_vat", "=", prefix_vat),
             ("vat", "=", vat),
