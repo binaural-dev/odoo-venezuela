@@ -173,6 +173,7 @@ class AccountTax(models.Model):
                     value=res_tax_group.get('display_base_amount_foreign_currency', 0.0),
                     currency_obj=foreign_currency_id
                 )
+        _logger.warning("RES TAX TOTALS SUMMARY: %s", res)
         return res
     
     @api.model

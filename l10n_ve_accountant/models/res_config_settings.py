@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError, UserError
 
 
 class ResConfigSettings(models.TransientModel):
@@ -68,3 +69,10 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.no_deductible_extend_aliquot_purchase",
         readonly=False,
     )
+
+    @api.onchange("currency_id")
+    def _check_currency_id(self):
+        if self.currency_id != self.env.ref("base.VEF"):
+            raise UserError(
+                _("The company's primary currency can only be Bolivars (VEF)")
+            )
