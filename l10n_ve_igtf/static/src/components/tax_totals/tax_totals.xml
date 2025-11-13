@@ -2,7 +2,7 @@
 
     <t 
         t-name="TaxForeignTotalsField" 
-        t-inherit="l10n_ve_tax.TaxForeignTotalsField" 
+        t-inherit="l10n_ve_accountant.TaxForeignTotalsField" 
         t-inherit-mode="extension" 
         owl="1">
         <xpath expr="//t[@t-as='taxGroup']" position="after">

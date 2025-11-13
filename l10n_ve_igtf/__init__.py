@@ -2,7 +2,7 @@ from . import models
 from . import wizard
 #from . import tests
 
-from odoo.tools import column_exists, create_column
+from odoo.tools.sql import column_exists, create_column
 
 
 def pre_init_hook(env):
