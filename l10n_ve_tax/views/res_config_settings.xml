@@ -55,6 +55,17 @@
                                 </group>
                             </div>
                         </div>
+                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_internacional_purchase">
+                            <div class="o_setting_right_pane">
+                                <separator string="Purchase Tax International Rates"/>
+                                <group>
+                                    <field name="exent_aliquot_purchase_international" string="Exempt Aliquot"/>
+                                    <field name="general_aliquot_purchase_international" string="General Aliquot"/>
+                                    <field name="reduced_aliquot_purchase_international" string="Reduced Aliquot"/>
+                                    <field name="extend_aliquot_purchase_international" string="Extended Aliquot"/>
+                                </group>
+                            </div>
+                        </div>
                     </block>
                     <block title="Configuration Taxes: Non-Deductible " name="l10n_ve_tax_block_non_deductible" >
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_deductibility">
@@ -88,10 +99,20 @@
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_purchase_book">
                             <div class="o_setting_right_pane">
-                                <separator string="Purchase Book" />
+                                
+                                
                                 <group>
-                                    <field name="not_show_reduced_aliquot_purchase" string="Hide Reduced Aliquot"/>
-                                    <field name="not_show_extend_aliquot_purchase" string="Hide Extended Aliquot"/>
+                                    <separator string="Purchase Book" />
+                                    <group>
+                                        <field name="not_show_reduced_aliquot_purchase" string="Hide Reduced Aliquot"/>
+                                        <field name="not_show_extend_aliquot_purchase" string="Hide Extended Aliquot"/>
+                                    </group>
+
+                                    <group>
+                                        <field name="not_show_general_aliquot_purchase_international" string="Hide General Aliquot International"/>
+                                        <field name="not_show_reduced_aliquot_purchase_international" string="Hide Reduced Aliquot International"/>
+                                        <field name="not_show_extend_aliquot_purchase_international" string="Hide Extended Aliquot International"/>
+                                    </group>
                                 </group>
                             </div>
                         </div>
