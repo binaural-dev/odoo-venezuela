@@ -89,9 +89,3 @@ class ResConfigSettings(models.TransientModel):
     not_show_reduced_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_reduced_aliquot_purchase_international", readonly=False)
 
     not_show_extend_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_extend_aliquot_purchase_international", readonly=False)
-
-    not_show_total_purchases_with_international_iva = fields.Boolean(related="company_id.not_show_total_purchases_with_international_iva", readonly=False)
-
-    not_show_exempt_total_purchases = fields.Boolean(related="company_id.not_show_exempt_total_purchases", readonly=False)
-
-    not_show_total_purchases_international = fields.Boolean(related="company_id.not_show_total_purchases_international", readonly=False)
