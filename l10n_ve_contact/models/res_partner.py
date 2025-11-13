@@ -58,7 +58,7 @@ class ResPartner(models.Model):
     )
 
     def check_duplicate_vat(self, prefix_vat, vat, company_id=None):
-        error_message = ""
+        error_message = "tumasa"
         domain = [
             ("prefix_vat", "=", prefix_vat),
             ("vat", "=", vat),
@@ -79,7 +79,10 @@ class ResPartner(models.Model):
                 error_message = _(
                     "A partner with the same VAT number already exists for this company."
                 )
-
+            else:
+                 error_message = _(
+                    "There is already a partner with the same VAT number for this company."
+                )
             existing_partner = self.env["res.partner"].search(domain)
             if existing_partner:
                 raise ValidationError(error_message)
