@@ -1,0 +1,14 @@
+<odoo>
+    <record id="view_journal_form_inherit_international_purchase" model="ir.ui.view">
+        <field name="name">account.journal.form.international.purchase</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            
+            <field name="type" position="after">
+                <field name="is_purchase_international" invisible="type != 'purchase'"/>
+            </field>
+            
+        </field>
+    </record>
+</odoo>

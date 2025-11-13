@@ -68,3 +68,18 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.no_deductible_extend_aliquot_purchase",
         readonly=False,
     )
+
+
+    exent_aliquot_purchase_international = fields.Many2one("account.tax",
+        related="company_id.exent_aliquot_purchase_international", readonly=False)
+    general_aliquot_purchase_international = fields.Many2one("account.tax",
+        related="company_id.general_aliquot_purchase_international", readonly=False)
+    reduced_aliquot_purchase_international = fields.Many2one("account.tax",
+        related="company_id.reduced_aliquot_purchase_international", readonly=False)
+    extend_aliquot_purchase_international = fields.Many2one("account.tax",
+        related="company_id.extend_aliquot_purchase_international", readonly=False)
+
+    not_show_general_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_general_aliquot_purchase_international", readonly=False)
+    not_show_reduced_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_reduced_aliquot_purchase_international", readonly=False)
+
+    not_show_extend_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_extend_aliquot_purchase_international", readonly=False)
