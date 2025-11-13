@@ -52,7 +52,3 @@ class ResCompany(models.Model):
     not_show_reduced_aliquot_purchase_international = fields.Boolean()
 
     not_show_extend_aliquot_purchase_international = fields.Boolean()
-
-    not_show_international_purchase_in_book = fields.Boolean()
-
-    
