@@ -102,7 +102,7 @@ class WizardAccountingReports(models.TransientModel):
         )
         return fields
 
-    def purchase_book_fields(self):
+    """ def purchase_book_fields(self):
         fields = super().purchase_book_fields()
         fields.extend(
             [
@@ -119,7 +119,23 @@ class WizardAccountingReports(models.TransientModel):
                 {"name": "IVA retenido", "field": "iva_retained", "format": "number"},
             ]
         )
-        return fields
+        return fields """
+    
+    def _get_purchase_book_field_groups(self):
+        purchase_groups = super()._get_purchase_book_field_groups() 
+
+        retention_fields = [
+            {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},
+            {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
+            {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
+        ]
+        
+        purchase_groups.append({
+            'header': 'RETENCIONES', 
+            'fields': retention_fields
+        })
+
+        return purchase_groups
 
     def _get_retention_domain(self):
         is_purchase = self.report == "purchase"
