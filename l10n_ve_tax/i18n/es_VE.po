@@ -234,12 +234,6 @@ msgid "Not Show Extend Aliquot Purchase"
 msgstr "No mostrar alícuota extendida (Compras Nacionales)"
 
 #. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_purchase_international
-msgid "Not Show Extend Aliquot Purchase International"
-msgstr "No mostrar alícuota extendida compras internacionales"
-
-#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_sale
 msgid "Not Show Extend Aliquot Sale"
@@ -262,12 +256,6 @@ msgstr "No mostrar total compras exentas (Compras Nacionales)"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_purchase
 msgid "Not Show Reduced Aliquot Purchase"
 msgstr "No mostrar alícuota reducida (Compras Nacionales)"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_purchase_international
-msgid "Not Show Reduced Aliquot Purchase International"
-msgstr "No mostrar alícuota reducida compras internacionales"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_sale
