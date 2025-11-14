@@ -83,3 +83,55 @@ class ResConfigSettings(models.TransientModel):
     not_show_reduced_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_reduced_aliquot_purchase_international", readonly=False)
 
     not_show_extend_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_extend_aliquot_purchase_international", readonly=False)
+
+    not_show_international_purchase_in_book = fields.Boolean(string ="Hide international alicuotes", related="company_id.not_show_international_purchase_in_book", readonly=False)
+
+
+    @api.onchange(
+        'not_show_reduced_aliquot_purchase_international',
+        'not_show_extend_aliquot_purchase_international',
+        'not_show_general_aliquot_purchase_international')
+    def _onchange_international_purchase(self):
+        for rec in self:
+            all_sub_aliquots_hidden = (
+                    rec.not_show_general_aliquot_purchase_international and
+                    rec.not_show_reduced_aliquot_purchase_international and
+                    rec.not_show_extend_aliquot_purchase_international
+                )
+
+            if all_sub_aliquots_hidden and rec.not_show_international_purchase_in_book == False:
+                    rec.company_id.not_show_international_purchase_in_book = True
+                    rec.not_show_international_purchase_in_book = True 
+
+            if not all_sub_aliquots_hidden:
+                 rec.company_id.not_show_international_purchase_in_book = False
+                 rec.not_show_international_purchase_in_book = False
+
+
+    
+    def _onchange_international_purchase_all(self):
+        for rec in self:
+            if rec.not_show_international_purchase_in_book:
+                rec.company_id.not_show_general_aliquot_purchase_international = True
+                rec.company_id.not_show_reduced_aliquot_purchase_international = True
+                rec.company_id.not_show_extend_aliquot_purchase_international = True
+                
+                rec.not_show_general_aliquot_purchase_international = True
+                rec.not_show_reduced_aliquot_purchase_international = True
+                rec.not_show_extend_aliquot_purchase_international = True
+            else:
+                rec.company_id.not_show_general_aliquot_purchase_international = False
+                rec.company_id.not_show_reduced_aliquot_purchase_international = False
+                rec.company_id.not_show_extend_aliquot_purchase_international = False
+                
+                rec.not_show_general_aliquot_purchase_international = False
+                rec.not_show_reduced_aliquot_purchase_international = False
+                rec.not_show_extend_aliquot_purchase_international = False
+
+
+    def write(self, vals):
+        result =  super().write(vals)
+
+        result._onchange_international_purchase_all()
+
+        return result
