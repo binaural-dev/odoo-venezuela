@@ -103,8 +103,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     def _fields_purchase_book_line(self, move, taxes):
         if not move.invoice_date:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
-        
-        multiplier = -1 if move.move_type == "in_refund" else 1
+
+        multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
 
         if move.journal_id.is_purchase_international :
             tax_keys_to_check = [
