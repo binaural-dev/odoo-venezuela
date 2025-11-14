@@ -1,6 +1,5 @@
-
 <templates xml:space="preserve">
-
+    <!-- Tax Group Component normal -->
     <t 
         t-name="l10n_ve_accountant.TaxGroupComponent" 
         t-inherit="account.TaxGroupComponent" 
@@ -19,18 +18,18 @@
 
                 <td class="o_tax_group">
                     <span class="o_tax_group_amount_value o_list_monetary">
-                        <t t-out="props.taxGroup.formatted_base_amount_currency" style="white-space: nowrap;"/>
+                        <t t-out="formatMonetary(props.taxGroup.base_amount_currency)" style="white-space: nowrap;"/>
                     </span>
                 </td>
             </tr>
         </xpath>
     </t>
-
+    <!-- Discounts -->
     <t t-name="l10n_ve_tax.TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1">
         <xpath expr="//table[1]/tbody[1]/t[1]" position="before">
             <tr t-if="totals.discount_amount and totals.show_discount">
                 <td class="o_td_label">
-                    <label class="o_form_label o_tax_total_label">Subtotal pinga</label>
+                    <label class="o_form_label o_tax_total_label">Subtotal</label>
                 </td>
                 <td>
                     <span
@@ -54,10 +53,13 @@
             </tr>
         </xpath>
     </t>
-
+    <!-- Foreign Currency Totals-->
     <t t-name="l10n_ve_tax.TaxForeignTotalsField" owl="1">
-        <table t-if="totals" class="oe_right">
+        <table class="oe_right">
             <tbody>
+                <h1>
+                    <span t-out="totals.currency_id.symbol"/>
+                </h1>
                 <t t-foreach="totals.subtotals" t-as="subtotal" t-key="subtotal.name">
                     <tr>
                         <td class="o_td_label">
@@ -65,7 +67,7 @@
                         </td>
                         <td class="o_list_monetary">
                             <span style="white-space: nowrap; font-weight: bold;"
-                                  t-out="subtotal.formatted_base_amount_foreign_currency"/>
+                                  t-out="formatMonetaryForeign(subtotal.base_amount_foreign_currency)"/>
                         </td>
                     </tr>
                     <t t-foreach="subtotal.tax_groups" t-as="taxGroup" t-key="taxGroup.id">
@@ -75,7 +77,7 @@
                             </td>
                             <td>
                                 <span class="o_tax_group_amount_value o_list_monetary"
-                                      t-out="taxGroup.formatted_base_amount_foreign_currency"
+                                      t-out="formatMonetaryForeign(taxGroup.base_amount_foreign_currency)"
                                       style="white-space: nowrap;"/>
                             </td>
                         </tr>
@@ -85,7 +87,7 @@
                             </td>
                             <td class="o_list_monetary">
                                 <span style="white-space: nowrap;"
-                                      t-out="taxGroup.formatted_tax_amount_foreign_currency"/>
+                                      t-out="formatMonetaryForeign(taxGroup.tax_amount_foreign_currency)"/>
                             </td>
                         </tr>
                     </t>
@@ -96,10 +98,59 @@
                     </td>
                     <td class="o_list_monetary">
                         <span style="font-size: 1.3em; font-weight: bold; white-space: nowrap;"
-                              t-out="totals.formatted_total_amount_foreign_currency"/>
+                              t-out="formatMonetaryForeign(totals.total_amount_foreign_currency)"/>
                     </td>
                 </tr>
             </tbody>
         </table>
     </t>
+    <!-- VES ONLY FIELDS -->
+    <t t-name="l10n_ve_tax.TaxVesTotalsField" owl="1">
+        <table class="oe_right">
+            <tbody>
+                <t t-foreach="totals.subtotals" t-as="subtotal" t-key="subtotal.name">
+                    <tr>
+                        <td class="o_td_label">
+                            <label class="o_form_label o_tax_total_label" t-esc="subtotal.name"/>
+                        </td>
+                        <td class="o_list_monetary">
+                            <span style="white-space: nowrap; font-weight: bold;"
+                                  t-out="subtotal.formatted_base_amount_currency_ves"/>
+                        </td>
+                    </tr>
+                    <t t-foreach="subtotal.tax_groups" t-as="taxGroup" t-key="taxGroup.id">
+                        <tr>
+                            <td class="o_td_label">
+                                <label class="o_form_label o_tax_total_label" t-esc="'Total G ' + taxGroup.group_name"/>
+                            </td>
+                            <td>
+                                <span class="o_tax_group_amount_value o_list_monetary"
+                                      t-out="taxGroup.formatted_base_amount_currency_ves"
+                                      style="white-space: nowrap;"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="o_td_label">
+                                <label class="o_form_label o_tax_total_label" t-esc="taxGroup.group_name"/>
+                            </td>
+                            <td class="o_list_monetary">
+                                <span style="white-space: nowrap;"
+                                      t-out="taxGroup.formatted_tax_amount_currency_ves"/>
+                            </td>
+                        </tr>
+                    </t>
+                </t>
+                <tr>
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label">Total</label>
+                    </td>
+                    <td class="o_list_monetary">
+                        <span style="font-size: 1.3em; font-weight: bold; white-space: nowrap;"
+                              t-out="totals.formatted_total_amount_currency_ves"/>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </t>
+
 </templates>

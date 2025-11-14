@@ -5,7 +5,7 @@
             <field name="model">account.retention</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
-                <form string="Retention">
+                <form string="Retention" duplicate="false">
                     <header>
                         <field name="state" invisible="1" />
                         <button name="action_draft" type="object"
@@ -20,6 +20,10 @@
                     <sheet>
                         <group colspan="4" col="4">
                             <!-- Invisible fields -->
+                            <field name="name" invisible="1" force_save="1" />
+
+                            <field name="available_invoice_ids" invisible="1" />
+                            <field name="actual_invoice_ids" invisible="1" />
                             <field name="original_lines_per_invoice_counter" invisible="1" />
                             <field name="base_currency_is_vef" invisible="1" />
                             <field name="company_currency_id" invisible="1" />
@@ -40,7 +44,7 @@
                                 invisible="1"
                                 readonly="type == 'in_invoice'" />
                             <field name="date"
-                                readonly="state in ['emitted', 'cancel']" />
+                                readonly="type == 'in_invoice' or state in ['emitted', 'cancel']" />
                         </group>
                         <notebook>
                             <page name="retention_lines" string="Retention Lines">
@@ -53,7 +57,11 @@
                                         <field name="foreign_currency_id" column_invisible="True" />
                                         <field name="name" />
                                         <field name="move_id"
-                                            domain="[('iva_voucher_number', '=',False)]" />
+                                            options="{'no_create': True}"
+                                            force_save="1"
+                                            domain="[
+                                                ('id', 'in', parent.available_invoice_ids)  
+                                            ]"/>
                                         <field name="company_id" optional="hide"
                                             groups="base.group_multi_company" />
                                         <field name="aliquot" />

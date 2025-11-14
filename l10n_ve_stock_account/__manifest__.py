@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "1.0",
+    "version": "1.1",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_invoice",
@@ -16,7 +16,6 @@
         "web",
     ],
     "data": [
-        "security/res_groups.xml",
         "security/ir.model.access.csv",
         "security/res_groups.xml",
         "data/dispatch_guide_paperformat.xml",
