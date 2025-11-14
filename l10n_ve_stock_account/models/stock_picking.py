@@ -83,7 +83,6 @@ class StockPicking(models.Model):
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
-        default=True,
         tracking=True,
         store=True,
         compute="_compute_is_dispatch_guide",
