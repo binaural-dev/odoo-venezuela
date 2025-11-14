@@ -47,7 +47,7 @@ class AccountingReportsController(http.Controller):
         purchase_book = purchase_book_model_su.search([], order="id desc", limit=1)
         
         file = purchase_book.generate_purchases_book(company_id)
-
+        
         return http.request.make_response(
             file,
             headers=[
