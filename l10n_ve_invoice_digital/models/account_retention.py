@@ -117,7 +117,6 @@ class AccountRetention(models.Model):
                 "detallesRetencion": retention_details,
             }
         }
-        _logger.info("Payload for digital retention document: %s", json.dumps(payload, indent=4))
         response = self.call_tfhka_api("emision", payload)
 
         if response:
