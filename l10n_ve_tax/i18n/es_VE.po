@@ -352,3 +352,13 @@ msgstr "No mostrar alícuota general compras internacionales"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_purchase_international
 msgid "Not Show Extend Aliquot Purchase International"
 msgstr "No mostrar alícuota extendida compras internacionales"
+
+#. module: l10n_ve_tax
+#. odoo-python
+#: code:addons/l10n_ve_tax/models/account_journal.py:0
+#, python-format
+msgid ""
+"An International Purchase Journal is already enabled. Only one is allowed."
+msgstr ""
+"Ya se ha habilitado un Diario de Compras Internacional. Solo se permite uno."
+
