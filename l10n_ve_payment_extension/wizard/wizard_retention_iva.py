@@ -15,6 +15,8 @@ class TxtWizard(models.TransientModel):
         company_id = self.env.company.id
         if not (self.date_start and self.date_end):
             raise UserError(_("You must enter a start and end date"))
+        if not self.env.company.vat:
+            raise UserError(_("No VAT number for company %s" % self.env.company.name))
         retention_count = self.env["account.retention"].search_count(
             [
                 ("date", ">=", self.date_start),
