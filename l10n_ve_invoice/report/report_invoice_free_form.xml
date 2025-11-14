@@ -344,7 +344,16 @@
 
         <template id="template_invoice_free_form_l10n_ve_invoice">
             <t t-call="web.html_container">
-                <t t-foreach="docs" t-as="invoice">
+                 <t t-set="requested_doc_ids" t-value="docs.env.context.get('active_ids') or docs.env.context.get('doc_ids') or []"/>
+
+                <t t-if="requested_doc_ids">
+
+                    <t t-set="requested_doc_ids" t-value="list(dict.fromkeys(requested_doc_ids))"/>
+
+                </t>
+
+                <t t-set="docs_to_print" t-value="docs.env['account.move'].browse(requested_doc_ids) if requested_doc_ids else docs"/>
+                <t t-foreach="docs_to_print" t-as="invoice">
                     <t t-set="lang" t-value="invoice.partner_id.lang"/>
                     <t t-set="o" t-value="invoice.with_context(lang=lang)" />
                     <t t-set="doc" t-value="o" />
