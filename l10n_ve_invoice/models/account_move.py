@@ -226,7 +226,7 @@ class AccountMove(models.Model):
 
             if not correlative:
                 raise UserError(_("The sale's series sequence must be in the selected journal."))
-            return correlative.next_by_id(correlative.id)
+            return correlative.next_by_id()
 
         correlative = sequence.search(
             [("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)]
@@ -239,7 +239,7 @@ class AccountMove(models.Model):
                     "padding": 5,
                 }
             )
-        return correlative.next_by_id(correlative.id)
+        return correlative.next_by_id()
 
 
     def action_debit_note_button(self):
