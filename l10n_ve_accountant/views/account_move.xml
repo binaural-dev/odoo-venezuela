@@ -10,6 +10,9 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
+            <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">
+                <attribute name='invisible'>True</attribute>     
+            </xpath>
             <xpath expr="//header/button[@name='button_cancel']" position="after">
                 <button name="action_update_account_id" string="Update account lines" type="object"
                     groups="base.group_no_one" />
