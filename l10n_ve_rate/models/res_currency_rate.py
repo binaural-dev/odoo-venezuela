@@ -48,16 +48,17 @@ class ResCurrencyRate(models.Model):
             return {}
 
         rate = rates.filtered(lambda r: r.name == rate_date) or rates[0]
-        base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
-            "base.USD", raise_if_not_found=False
-        )
-        if foreign_currency_id == base_usd_id:
+        vef_id = self.env.ref("base.VEF").id
+        if vef_id == foreign_currency_id:
+            return {
+                "foreign_rate": rate.company_rate,
+                "foreign_inverse_rate": rate.company_rate,
+            }
+        else:
             return {
                 "foreign_rate": rate.inverse_company_rate,
                 "foreign_inverse_rate": rate.company_rate,
             }
-        else:
-            return {"foreign_rate": rate.company_rate, "foreign_inverse_rate": rate.company_rate}
 
     @api.model
     def compute_inverse_rate(self, rate):
