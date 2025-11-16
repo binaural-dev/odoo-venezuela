@@ -48,7 +48,7 @@ class WizardAccountingReports(models.TransientModel):
                             )
                         )
                     )
-                    * -1
+                    
                     for move in credit_notes
                 ]
             )
