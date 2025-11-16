@@ -1246,17 +1246,21 @@ class AccountMove(models.Model):
             foreign_tax_results = AccountTax._prepare_tax_lines(foreign_lines_values, move.company_id, tax_lines=foreign_tax_lines_values)
             for base_line, to_update in tax_results['base_lines_to_update']:
                 line = base_line['record']
+                foreign_base_update = None
+                for f_base_line, f_to_update in foreign_tax_results.get('base_lines_to_update', []):
+                    if f_base_line['record'].id == line.id:
+                        foreign_base_update = f_to_update
+                        break
+                if foreign_base_update:
+                    to_update['foreign_balance'] = foreign_base_update.get('amount_currency', 0)
+                else:
+                    to_update['foreign_balance'] = to_update['amount_currency']
                 if is_write_needed(line, to_update):
-                    foreign_base_update = None
-                    for f_base_line, f_to_update in foreign_tax_results.get('base_lines_to_update', []):
-                        if f_base_line['record'].id == line.id:
-                            foreign_base_update = f_to_update
-                            break
-                    if foreign_base_update:
-                        to_update['foreign_balance'] = foreign_base_update.get('amount_currency', 0)
-                    else:
-                        to_update['foreign_balance'] = to_update['amount_currency']
                     line.write(to_update)
+                else:
+                    foreign_balance_new = to_update.get('foreign_balance')
+                    if foreign_balance_new is not None and getattr(line, 'foreign_balance', None) != foreign_balance_new:
+                        line.write({'foreign_balance': foreign_balance_new})
             for tax_line_vals in tax_results['tax_lines_to_delete']:
                 to_delete.append(tax_line_vals['record'].id)
 
@@ -1293,12 +1297,17 @@ class AccountMove(models.Model):
                             foreign_tax_update = f_tax_line_vals
                             break
 
+                if foreign_tax_update:
+                    to_update['foreign_balance'] = foreign_tax_update.get('amount_currency', 0)
+                else:
+                    to_update['foreign_balance'] = to_update['amount_currency']
                 if is_write_needed(line, to_update):
-                    if foreign_tax_update:
-                        to_update['foreign_balance'] = foreign_tax_update.get('amount_currency', 0)
-                    else:
-                        to_update['foreign_balance'] = to_update['amount_currency']
                     line.write(to_update)
+                else:
+                    # Si solo foreign_balance cambió, igual lo escribimos
+                    foreign_balance_new = to_update.get('foreign_balance')
+                    if foreign_balance_new is not None and getattr(line, 'foreign_balance', None) != foreign_balance_new:
+                        line.write({'foreign_balance': foreign_balance_new})
 
         if to_delete:
             self.env['account.move.line'].browse(to_delete).with_context(dynamic_unlink=True).unlink()
