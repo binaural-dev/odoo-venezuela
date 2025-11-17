@@ -25,7 +25,7 @@
         </xpath>
     </t>
     <!-- Discounts -->
-    <t t-name="l10n_ve_tax.TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1">
+    <t t-name="l10n_ve_accountant.TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1">
         <xpath expr="//table[1]/tbody[1]/t[1]" position="before">
             <tr t-if="totals.discount_amount and totals.show_discount">
                 <td class="o_td_label">
@@ -54,7 +54,7 @@
         </xpath>
     </t>
     <!-- Foreign Currency Totals-->
-    <t t-name="l10n_ve_tax.TaxForeignTotalsField" owl="1">
+    <t t-name="l10n_ve_accountant.TaxForeignTotalsField" owl="1">
         <table class="oe_right">
             <tbody>
                 <h1>
@@ -105,7 +105,7 @@
         </table>
     </t>
     <!-- VES ONLY FIELDS -->
-    <t t-name="l10n_ve_tax.TaxVesTotalsField" owl="1">
+    <t t-name="l10n_ve_accountant.TaxVesTotalsField" owl="1">
         <table class="oe_right">
             <tbody>
                 <t t-foreach="totals.subtotals" t-as="subtotal" t-key="subtotal.name">
