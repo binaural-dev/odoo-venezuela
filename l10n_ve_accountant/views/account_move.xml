@@ -11,13 +11,14 @@
                         name="foreign_balance" />. </div> -->
             </xpath>
             <xpath expr="//div[@class='d-flex gap-1 text-muted'][1]" position="after">
-            <!-- TODO REGRESAR A REPLACE Y CAMBIAR EL XPR A //div[@class='w-100'][1] descomentar el codigo de abajo.
+                <!-- TODO REGRESAR A REPLACE Y CAMBIAR EL XPR A //div[@class='w-100'][1] descomentar
+                el codigo de abajo.
             ESTO CUANDO CULMINEN LAS PRUEBAS DE LA GIRALDA
              -->
                 <div name="currency_div"
-                 groups="base.group_multi_currency"
-                 class="w-100"
-                 invisible="move_type == 'entry'">
+                    groups="base.group_multi_currency"
+                    class="w-100"
+                    invisible="move_type == 'entry'">
                     <div class="d-flex gap-1">
                         <!-- <field name="currency_id"
                                readonly="state != 'draft'"
@@ -26,37 +27,44 @@
                                context="{'search_default_active': 1, 'search_default_inactive': 1}"/> -->
                     </div>
                     <div name="currency_conversion_div"
-                         class="d-flex gap-1 text-muted"
-                         invisible="currency_id == company_currency_id">
+                        class="d-flex gap-1 text-muted"
+                        invisible="currency_id == company_currency_id">
                         <span>1</span>
-                        <field name="currency_id" readonly="True" options="{'no_open': True}" class="w-auto"/>
+                        <field name="currency_id" readonly="True" options="{'no_open': True}"
+                            class="w-auto" />
                         <span>=</span>
-                        <field name="move_currency_to_company_currency_rate" digits="[12,6]" readonly="True"/>
-                        <field name="company_currency_id" readonly="True" options="{'no_open': True}" class="w-auto"/>
+                        <field name="move_currency_to_company_currency_rate" digits="[12,6]"
+                            readonly="True" />
+                        <field name="company_currency_id" readonly="True"
+                            options="{'no_open': True}" class="w-auto" />
                     </div>
                     <div name="currency_conversion_div_foreign"
-                         class="d-flex gap-1 text-muted"
-                         invisible="currency_id != company_currency_id">
+                        class="d-flex gap-1 text-muted"
+                        invisible="currency_id != company_currency_id">
                         <span>1</span>
-                        <field name="foreign_currency_id" readonly="True" options="{'no_open': True}" class="w-auto"/>
+                        <field name="foreign_currency_id" readonly="True"
+                            options="{'no_open': True}" class="w-auto" />
                         <span>=</span>
-                        <field name="move_currency_to_company_currency_rate" digits="[12,6]" readonly="True"/>
-                        <field name="company_currency_id" readonly="True" options="{'no_open': True}" class="w-auto"/>
+                        <field name="move_currency_to_company_currency_rate" digits="[12,6]"
+                            readonly="True" />
+                        <field name="company_currency_id" readonly="True"
+                            options="{'no_open': True}" class="w-auto" />
                     </div>
                 </div>
             </xpath>
             <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">
-                <attribute name='invisible'>True</attribute>     
+                <attribute name='invisible'>True</attribute>
             </xpath>
             <xpath expr="//header/button[@name='button_cancel']" position="after">
                 <button name="action_update_account_id" string="Update account lines" type="object"
                     groups="base.group_no_one" />
             </xpath>
-            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="before">
-                <field name="config_deductible_tax" column_invisible="True"/>
-                <field name="move_type" column_invisible="True"/>
-                <field name="not_deductible_tax" optional="hide" 
-                invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax"/>
+            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']"
+                position="before">
+                <field name="config_deductible_tax" column_invisible="True" />
+                <field name="move_type" column_invisible="True" />
+                <field name="not_deductible_tax" optional="hide"
+                    invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax" />
             </xpath>
             <xpath expr="//button[@name='action_reverse']" position="attributes">
                 <attribute name="string">Add Credit Note</attribute>
@@ -96,12 +104,6 @@
                                 nolabel="1"
                                 colspan="2"
                                 readonly="state != 'draft' or (move_type not in ('in_invoice', 'in_refund') and not quick_edit_mode)" />
-                            <field name="invoice_payments_widget" colspan="2" nolabel="1"
-                                widget="payment" />
-                            <field name="invoice_outstanding_credits_debits_widget"
-                                class="oe_invoice_outstanding_credits_debits"
-                                colspan="2" nolabel="1" widget="payment"
-                                invisible="state != 'posted'" />
                         </group>
                     </group>
                 </page>
@@ -109,24 +111,24 @@
             <!-- ONLY VES SQUARE -->
             <xpath expr="//page[@name='invoice_tab']"
                 position="inside">
-                    <group colspan="2" class="oe_subtotal_footer oe_right">
-                        <group class="oe_subtotal_footer oe_right"
-                            invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt') or payment_state == 'invoicing_legacy'">
-                            <field name="tax_totals"
-                                widget="account-tax-ves-totals-field"
-                                nolabel="1"
-                                readonly="state != 'draft' or (move_type not in ('in_invoice', 'in_refund') and not quick_edit_mode)" />
-                        </group>
+                <group colspan="2" class="oe_subtotal_footer oe_right">
+                    <group class="oe_subtotal_footer oe_right"
+                        invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt') or payment_state == 'invoicing_legacy'">
+                        <field name="tax_totals"
+                            widget="account-tax-ves-totals-field"
+                            nolabel="1"
+                            readonly="state != 'draft' or (move_type not in ('in_invoice', 'in_refund') and not quick_edit_mode)" />
                     </group>
+                </group>
             </xpath>
 
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" readonly="move_type != 'in_invoice'" optional="hide"/>
+                <field name="foreign_price" readonly="move_type != 'in_invoice'" optional="hide" />
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_subtotal']"
                 position="after">
-                
+
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field name="foreign_subtotal" optional='hide'
                 />
