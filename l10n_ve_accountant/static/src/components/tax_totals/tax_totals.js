@@ -23,6 +23,8 @@ patch(TaxTotalsComponent.prototype, {
       for (let subtotal of totals.subtotals) {
         subtotal.formatted_base_amount_foreign_currency = formatMonetary(subtotal.base_amount_foreign_currency, foreignCurrencyFmtOpts);
         subtotal.formatted_base_amount_currency = formatMonetary(subtotal.base_amount_currency, currencyFmtOpts);
+        console.log("SUBTOTAL FORMATTED BASE AMOUNT:", subtotal.formatted_base_amount_currency);
+        console.log("MONEDA", this.props.record.data.currency_id)
         subtotal.formatted_base_amount_currency_ves = totals.formatted_base_amount_currency_ves
         
         if (subtotal.tax_groups && Array.isArray(subtotal.tax_groups)) {
