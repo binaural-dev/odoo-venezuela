@@ -54,8 +54,6 @@ class AccountPaymentRegister(models.TransientModel):
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(
                 payment.foreign_rate
             )
-            total_amount_residual_in_wizard_currency = 0
-            payment.amount = total_amount_residual_in_wizard_currency
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):
