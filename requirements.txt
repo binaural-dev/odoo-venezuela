@@ -1,2 +1,6 @@
 httpagentparser
 pandas
+git+https://github.com/binaural-dev/python-sdk.git
+pyOpenSSL<23
+urllib3<2
+cryptography<39
