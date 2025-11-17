@@ -63,6 +63,13 @@ class AccountMoveLine(models.Model):
         store=True,
     )
 
+    price_unit_ves = fields.Monetary(
+        currency_field="env.ref('base.VEF')",
+        help="Price Unit in VES",
+        compute="_compute_price_unit",
+        store=True,
+    )
+
     foreign_debit_adjustment = fields.Monetary(
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign debit field",
@@ -95,6 +102,14 @@ class AccountMoveLine(models.Model):
             line.price_unit = line.product_id._get_tax_included_unit_price(
                 line.move_id.company_id,
                 line.move_id.currency_id,
+                line.move_id.date,
+                document_type,
+                fiscal_position=line.move_id.fiscal_position_id,
+                product_uom=line.product_uom_id,
+            )
+            line.price_unit_ves = line.product_id._get_tax_included_unit_price(
+                line.move_id.company_id,
+                self.env.ref("base.VEF"),
                 line.move_id.date,
                 document_type,
                 fiscal_position=line.move_id.fiscal_position_id,
