@@ -66,28 +66,11 @@ class AccountMoveLine(models.Model):
     )
 
     price_unit_ves = fields.Monetary(
-        string="Unit Price VES",
-        currency_field="ves_currency_id",
-        help="Unit Price in VES currency",
-        compute="_compute_price_unit_ves",
+        currency_field="env.ref('base.VEF')",
+        help="Price Unit in VES",
+        compute="_compute_price_unit",
         store=True,
     )
-
-    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
-    def _compute_price_unit_ves(self):
-        for line in self:
-            if line.currency_id and line.currency_id.name == "VEF":
-                line.price_unit_ves = line.price_unit
-            else:
-                line.price_unit_ves = line.price_unit / line.currency_id.rate
-
-    def _compute_ves_currency_id(self):
-        ves_currency = self.env["res.currency"].search([("name", "=", "VES")], limit=1)
-        for line in self:
-            if line.currency_id and ves_currency and line.currency_id == ves_currency:
-                line.ves_currency_id = ves_currency
-            else:
-                line.ves_currency_id = False
 
     foreign_debit_adjustment = fields.Monetary(
         currency_field="foreign_currency_id",
@@ -125,7 +108,14 @@ class AccountMoveLine(models.Model):
                 document_type,
                 fiscal_position=line.move_id.fiscal_position_id,
                 product_uom=line.product_uom_id,
-                product_price_unit=line.price_unit,
+            )
+            line.price_unit_ves = line.product_id._get_tax_included_unit_price(
+                line.move_id.company_id,
+                self.env.ref("base.VEF"),
+                line.move_id.date,
+                document_type,
+                fiscal_position=line.move_id.fiscal_position_id,
+                product_uom=line.product_uom_id,
             )
 
     @api.onchange("amount_currency", "currency_id")
