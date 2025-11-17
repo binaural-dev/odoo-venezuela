@@ -56,8 +56,8 @@ patch(TaxTotalsComponent.prototype, {
 
 export class TaxTotalsComponents extends TaxTotalsComponent {
 }
-TaxTotalsComponents.template = "l10n_ve_tax.TaxForeignTotalsField";
-TaxTotalsComponents.template = "l10n_ve_tax.TaxVesTotalsField";
+TaxTotalsComponents.template = "l10n_ve_accountant.TaxForeignTotalsField";
+TaxTotalsComponents.template = "l10n_ve_accountant.TaxVesTotalsField";
 TaxTotalsComponents.props = {
   ...standardFieldProps,
 };
