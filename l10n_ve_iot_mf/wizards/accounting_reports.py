@@ -48,26 +48,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return res
 
     def search_moves(self):
-        if self.with_fiscal_machine:
+        if not self.with_fiscal_machine:
             res = super().search_moves()
             res = res.filtered_domain([("mf_serial", "!=", False)])
-            res = res.sorted(key=lambda r: r.invoice_date)
             return res
-        if self.all_documents:
-            domain_free_form , domain_fiscal_machine = self._get_domain_all_documents()
-            account_moves_free_form = self.env["account.move"].search(domain_free_form, order="invoice_date asc")
-            account_moves_fiscal_machine = self.env["account.move"].search(domain_fiscal_machine, order="invoice_date asc")
-            moves = account_moves_free_form | account_moves_fiscal_machine
-            return moves.sorted(key=lambda r: r.invoice_date or r.date)
+
         move_model = self.env["account.move"]
         domain = self._get_domain()
         moves = move_model.search(domain, order="invoice_date asc")
         return moves
-
+    
     def _get_sale_book_field_groups(self):
         sale_groups = super()._get_sale_book_field_groups()
 
-        if not self.with_fiscal_machine and not self.all_documents:
+        if not self.with_fiscal_machine:
             return sale_groups
 
         new_fields = [
@@ -78,17 +72,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         for group in sale_groups:
             if group.get('header') == 'DETALLE DEL DOCUMENTO':
                 basic_fields = group['fields']
-
+                
                 insertion_index = -1
                 for i, field_dict in enumerate(basic_fields):
                     if field_dict.get('field') == 'move_type':
                         insertion_index = i + 1  
                         break
-
+                
                 if insertion_index != -1:
-
+                   
                     basic_fields.insert(insertion_index, new_fields[1]) 
-
+                    
                     basic_fields.insert(insertion_index, new_fields[0]) 
 
                 break 

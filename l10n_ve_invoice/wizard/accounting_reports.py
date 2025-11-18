@@ -653,7 +653,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain += [
             ("state", "in", ("posted", "cancel")),
             ("move_type", "in", move_type),
-            ("correlative", "not in", ['/',False])
+            ("correlative", "not in", ['/'])
         ]
             
         if hasattr(self, 'account_analytic_id') and self.account_analytic_id:
