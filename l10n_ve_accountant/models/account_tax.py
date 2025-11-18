@@ -15,9 +15,10 @@ class AccountTax(models.Model):
     def _get_tax_totals_summary(
         self, base_lines, currency, company, cash_rounding=None
     ):
+        foreign_currency_id = self.env.company.foreign_currency_id or False
         
-        
-        
+        if not foreign_currency_id:
+            raise ValidationError(_("No foreign currency configured in the company"))
 
         ## Base currency
         res = super()._get_tax_totals_summary(
@@ -35,20 +36,10 @@ class AccountTax(models.Model):
         
         record = self.env[active_model].browse(active_id)
         currency_id = self.env.company.currency_id or False
-        foreign_currency_id = self.env.company.foreign_currency_id or False
-        company_rate = 1.0
-        has_discount= False
         if active_model == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
-            company_rate = record.company_currency_rate
             currency_id = record.currency_id
-            foreign_currency_id =record.foreign_currency_id
-            has_discount = any(
-                line.discount > 0
-                for line in record.invoice_line_ids
-            )
-        else: 
+        else:
             currency_id = record.company_id.currency_id
-            foreign_currency_id = self.env.company.foreign_currency_id
 
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
