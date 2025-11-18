@@ -16,7 +16,7 @@ class AccountTax(models.Model):
         self, base_lines, currency, company, cash_rounding=None
     ):
         foreign_currency_id = self.env.company.foreign_currency_id or False
-        currency_id = self.env.company.currency_id or False
+        
         if not foreign_currency_id:
             raise ValidationError(_("No foreign currency configured in the company"))
 
@@ -31,7 +31,14 @@ class AccountTax(models.Model):
         active_id = self.env.context.get('active_id')
         if not active_model or not active_id:
             return res
+        
         record = self.env[active_model].browse(active_id)
+        currency_id = self.env.company.currency_id or False
+        if active_model == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+            currency_id = record.currency_id
+        else:
+            currency_id = record.company_id.currency_id
+
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
         foreign_lines = []

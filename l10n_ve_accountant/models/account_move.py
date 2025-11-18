@@ -31,6 +31,25 @@ class AccountMove(models.Model):
         ),
     ]
 
+    company_currency_rate = fields.Float(
+        string="Tasa de moneda de la compañía",
+        compute="_compute_company_currency_rate",
+        store=True,
+        copy=False,
+        help="Tasa de la moneda seleccionada en la compañía (campo inverse_rate_company de res.currency)",
+    )
+
+    @api.depends('currency_id')
+    def _compute_company_currency_rate(self):
+        for move in self:
+            currency = move.currency_id
+            _logger.info("Computing company currency rate for move %s", currency)
+            currency_search = move.env["res.currency"].search([("id", "=", currency.id)], limit=1)
+            if currency_search and hasattr(currency_search, "inverse_rate"):
+                move.company_currency_rate = currency_search.inverse_rate or 1.0
+            else:
+                move.company_currency_rate = 1.0
+
     def _auto_init(self):
         res = super()._auto_init()
         if not index_exists(self.env.cr, "account_move_unique_name_ve"):
