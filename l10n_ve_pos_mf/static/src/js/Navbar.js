@@ -2,6 +2,7 @@
 
 import { Navbar } from "@point_of_sale/app/navbar/navbar";
 import { patch } from "@web/core/utils/patch";
+import { Gui } from "point_of_sale.Gui";
 
 patch(Navbar.prototype, {
   async _on_click_mf_test() {
@@ -16,7 +17,7 @@ patch(Navbar.prototype, {
 
       }
     } catch (e) {
-      this.showPopup("ErrorPopup", {
+      Gui.showPopup("ErrorPopup", {
         title: "No se ha podido conectar a la Maquina fiscal",
       });
     }
@@ -28,6 +29,6 @@ patch(Navbar.prototype, {
     return this.pos.config.access_button_mf
   },
   async showFiscalMachinePopup() {
-    await this.showPopup('FiscalMachinePopup');
+    await Gui.showPopup('FiscalMachinePopup');
   }
 })
