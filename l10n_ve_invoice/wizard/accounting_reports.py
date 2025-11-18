@@ -71,7 +71,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
             "accounting_date": self._format_date(move.date),
-            "vat": move.vat,
+            "vat": move.vat or '--',
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
             "move_type": self._determinate_type_for_move(move),
@@ -81,7 +81,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if move.journal_id.is_debit
                 else move.reversed_entry_id.name or "--"
             ),
-            "correlative": move.correlative,
+            "correlative": move.correlative or '--',
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
             "extend_aliquot": 0.31,
@@ -579,7 +579,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain += [
             ("state", "in", ("posted", "cancel")),
             ("move_type", "in", move_type),
-            ("correlative", "not in", ['/',False])
+            ("correlative", "not in", ['/'])
         ]
 
         return search_domain
