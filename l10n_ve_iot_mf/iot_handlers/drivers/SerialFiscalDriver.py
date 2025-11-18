@@ -596,14 +596,26 @@ class SerialFiscalDriver(SerialDriver):
             cmd.append(f"iR*{invoice_data['partner_id']['vat']}")
             cmd.append(f"iS*{invoice_data['partner_id']['name']}")
             
+            next_index = 0
             if invoice_data["partner_id"]["address"]:
-                cmd.append(str("i00Direccion:" + invoice_data["partner_id"]["address"]))
+                address = invoice_data["partner_id"]["address"]
+
+                first_line = address[:30]
+                cmd.append(f"i{next_index:02d}Direccion:{first_line}")
+                next_index += 1
+
+                remaining = address[30:70]
+                if remaining:
+                    cmd.append(f"i{next_index:02d}{remaining}")
+                    next_index += 1
+
             if invoice_data["partner_id"]["phone"]:
-                cmd.append(str("i01Telefono:" + invoice_data["partner_id"]["phone"]))
-                
-            if len(invoice_data.get("info", [])) > 0:
-                for index, info in enumerate(invoice_data.get("info")):
-                    cmd.append(f"i{str(index + 2).zfill(2)}{info}")
+                cmd.append(f"i{next_index:02d}Telefono:{invoice_data['partner_id']['phone']}")
+                next_index += 1
+
+            for info in invoice_data.get("info", []):
+                cmd.append(f"i{next_index:02d}{info}")
+                next_index += 1
 
             discount = 0
             
@@ -679,6 +691,7 @@ class SerialFiscalDriver(SerialDriver):
                 
                 if not result:
                     msg.append(f"Fallo al enviar comando: {command}")
+                    self.send_command("199")
                     return {"valid": False, "message": msg}
 
             self.data["value"] = {"valid": True, "msg": msg, "continue": True}
@@ -805,10 +818,22 @@ class SerialFiscalDriver(SerialDriver):
             cmd.append(str("iF*" + invoice["invoice_affected"]["number"]))
             cmd.append(str("iI*" + invoice["invoice_affected"]["serial_machine"]))
             cmd.append(str("iD*" + invoice["invoice_affected"]["date"]))
+            
+            next_index = 0
             if invoice["partner_id"]["address"]:
-                cmd.append(str("i00Direccion:" + invoice["partner_id"]["address"]))
+                address = invoice["partner_id"]["address"]
+
+                first_line = address[:30]
+                cmd.append(f"i{next_index:02d}Direccion:{first_line}")
+                next_index += 1
+
+                remaining = address[30:70]
+                if remaining:
+                    cmd.append(f"i{next_index:02d}{remaining}")
+                    next_index += 1
+
             if invoice["partner_id"]["phone"]:
-                cmd.append(str("i01Telefono:" + invoice["partner_id"]["phone"]))
+                cmd.append(f"i{next_index:02d}Telefono:{invoice['partner_id']['phone']}")
 
             if len(invoice.get("info", [])) > 0:
                 for index, info in enumerate(invoice.get("info")):
@@ -1035,9 +1060,13 @@ class SerialFiscalDriver(SerialDriver):
             address_partner = invoice.get('partner_id', {}).get('address', '')
             
             if address_partner:
-                cmd_address = f"i01Direccion:{address_partner}"
-                aditional_lines.append(cmd_address)    
-                
+                first_line = address_partner[:30]
+                aditional_lines.append(f"i01Direccion:{first_line}")
+
+                remaining = address_partner[30:70]
+                if remaining:
+                    aditional_lines.append(f"i02{remaining}")
+
             invoice_lines = invoice.get('invoice_lines', [])
             product_lines = []
             
