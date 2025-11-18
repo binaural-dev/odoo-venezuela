@@ -655,7 +655,7 @@ class SerialFiscalDriver(SerialDriver):
                 for index, aditional_lines in enumerate(invoice_data.get("aditional_lines")):
                     cmd.append(f"i{str(index).zfill(2)}{aditional_lines}")
                                 
-            # cmd.append(str("199"))
+            cmd.append(str("199"))
             
             self.data["value"] = {"valid": True, "data": cmd}
             
@@ -689,7 +689,7 @@ class SerialFiscalDriver(SerialDriver):
             for command in cmd:
                 result = self.send_command(command)
                 
-                if not result:
+                if not result and command not in ["101","199"]:
                     msg.append(f"Fallo al enviar comando: {command}")
                     self.send_command("199")
                     return {"valid": False, "message": msg}
