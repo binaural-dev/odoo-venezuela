@@ -1,5 +1,5 @@
 from odoo import fields, models, api, _
-from odoo.exceptions import ValidationError,UserError
+from odoo.exceptions import ValidationError, UserError
 import re
 import unicodedata
 
@@ -34,13 +34,48 @@ class AccountMoveInh(models.Model):
     mf_invoice_number = fields.Char(
         string="Sequence number", default=False, copy=False, tracking=True
     )
-    mf_reportz = fields.Char(string="Report number Z", default=False, copy=False, tracking=True)
-    
+    mf_reportz = fields.Char(string="Report number Z",
+                             default=False, copy=False, tracking=True)
+
     print_type = fields.Selection(
         related='company_id.invoice_print_type',
         store=True
     )
 
+    def has_print_pending(self):
+        """
+        Retorna el primer documento de venta pendiente de impresión en el mismo diario y tipo, excluyendo el actual.
+        Si no hay pendiente, retorna un recordset vacío.
+        """
+        if not self.is_sale_document(include_receipts=False):
+            return self.env['account.move']
+        domain = [
+            ('id', '!=', self.id),
+            ('state', 'not in', ['draft', 'cancel']),
+            ('mf_serial', '=', False),
+            ('move_type', '=', self.move_type),
+            ('journal_id', '=', self.journal_id.id)
+        ]
+        print_pending = self.env['account.move'].search(domain, limit=1)
+        _logger.warning("print_pending %s", print_pending)
+        return print_pending
+    
+    def action_post(self):
+        for move in self:
+            pending_move = move.has_print_pending()
+            if pending_move:
+                raise UserError(_(
+                    "There is a pending document to print before posting this one:\n"
+                    "Control number: %s\n"
+                    "Date: %s\n"
+                    "Customer: %s\n"
+                    "Please print it first."
+                ) % (
+                    pending_move.name,
+                    pending_move.invoice_date,
+                    pending_move.partner_id.display_name,
+                ))
+        return super().action_post()
     def has_printed(self, invoice_number):
         """
         Check if the invoice sequence has already been printed
@@ -48,6 +83,9 @@ class AccountMoveInh(models.Model):
         Return
         Recordset of account.move if exist
         """
+        if not invoice_number:
+            return False
+
         return (
             len(
                 self.env["account.move"].search(
@@ -68,7 +106,8 @@ class AccountMoveInh(models.Model):
         data = response.get("data", False)
 
         if not response.get("valid", False):
-            raise ValidationError(response.get("message", "No se pudo imprimir el reporte Z"))
+            raise ValidationError(response.get(
+                "message", "No se pudo imprimir el reporte Z"))
 
         serial = data.get("_registeredMachineNumber")
 
@@ -109,9 +148,11 @@ class AccountMoveInh(models.Model):
 
     def check_reprint(self):
         if not self.mf_invoice_number:
-            raise ValidationError(_("The invoice has not already been printed"))
+            raise ValidationError(
+                _("The invoice has not already been printed"))
         if not self.iot_mf:
-            raise ValidationError(_("The invoice has no fiscal machine assigned"))
+            raise ValidationError(
+                _("The invoice has no fiscal machine assigned"))
         data = self
         if not data:
             return {"valid": False, "message": "No se envio datos"}
@@ -133,15 +174,20 @@ class AccountMoveInh(models.Model):
         #     raise ValidationError(_("You cannot print an invoice with a non-fiscal journal"))
         try:
             if self.mf_invoice_number:
-                raise ValidationError(_("The invoice has already been printed"))
+                raise ValidationError(
+                    _("The invoice has already been printed"))
             if not self.iot_mf:
-                raise ValidationError(_("The invoice has no fiscal machine assigned"))
+                raise ValidationError(
+                    _("The invoice has no fiscal machine assigned"))
             if self.state in ["draft", "cancel"]:
-                raise ValidationError(_("Cannot print an invoice without validation"))
+                raise ValidationError(
+                    _("Cannot print an invoice without validation"))
             if self.invoice_date != fields.Date.today():
-                raise ValidationError(_("Cannot print an invoice with a future date"))
+                raise ValidationError(
+                    _("Cannot print an invoice with a future date"))
             if self.is_credit and self.amount_residual != self.amount_total:
-                raise ValidationError(_("You cannot print a credit invoice with associated payments"))
+                raise ValidationError(
+                    _("You cannot print a credit invoice with associated payments"))
 
             data = self
 
@@ -167,7 +213,8 @@ class AccountMoveInh(models.Model):
                         "payment_method": journal_id["payment_method"] or "01",
                     }
                     if payment["currency_id"] != data.env.ref("base.VEF").id:
-                        new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
+                        new_payment["amount"] = payment["amount"] * \
+                            data.foreign_inverse_rate
 
                     payment_lines.append(new_payment)
 
@@ -204,7 +251,7 @@ class AccountMoveInh(models.Model):
                 "payment_lines": payment_lines,
             }
             return _data
-        
+
         except ValidationError as ae:
             raise ValidationError(str(ae))
 
@@ -234,20 +281,23 @@ class AccountMoveInh(models.Model):
                 "target": "new",
                 "context": context,
             }
-            
+
     def check_print_out_refund(self):
         """
         Print out refund in fiscal machine
         """
         try:
             if not self.iot_mf:
-                raise ValidationError(_("The invoice has no fiscal machine assigned"))
+                raise ValidationError(
+                    _("The invoice has no fiscal machine assigned"))
             # if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
             #     raise ValidationError(_("The credit note must be made in the same fiscal machine"))
             if self.invoice_date != fields.Date.today():
-                raise ValidationError(_("The credit note must be made on the same day"))
+                raise ValidationError(
+                    _("The credit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
-                raise ValidationError(_("Cannot print an invoice without validation"))
+                raise ValidationError(
+                    _("Cannot print an invoice without validation"))
 
             data = self
 
@@ -273,7 +323,8 @@ class AccountMoveInh(models.Model):
                         "payment_method": journal_id["payment_method"] or "01",
                     }
                     if payment["currency_id"] != data.env.ref("base.VEF").id:
-                        new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
+                        new_payment["amount"] = payment["amount"] * \
+                            data.foreign_inverse_rate
 
                     payment_lines.append(new_payment)
 
@@ -315,12 +366,22 @@ class AccountMoveInh(models.Model):
             }
 
             return _data
-        
+
         except ValidationError as ae:
             raise ValidationError(str(ae))
-        
+
     def print_out_refund(self, values):
-        self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
+        _logger.info("VALUE %s", values)
+        result_data = values.get("data", {})
+        sequence = result_data.get("sequence")
+        serial_machine = result_data.get("serial_machine")
+
+        self.write(
+            {
+                "mf_invoice_number": sequence,
+                "mf_serial": serial_machine,
+            }
+        )
 
     def _get_reconciled_info_JSON_values(self):
         res = super()._get_reconciled_info_JSON_values()
@@ -333,20 +394,22 @@ class AccountMoveInh(models.Model):
             reconciled_vals.append(payment)
         return reconciled_vals
 
-        
     def check_print_debit_note(self):
         """
         Print debit note in fiscal machine
         """
         try:
             if not self.iot_mf:
-                raise ValidationError(_("The invoice has no fiscal machine assigned"))
+                raise ValidationError(
+                    _("The invoice has no fiscal machine assigned"))
             # if self.iot_mf.serial_machine != self.debit_origin_id.mf_serial:
             #     raise ValidationError(_("The debit note must be made in the same fiscal machine"))
             if self.invoice_date != fields.Date.today():
-                raise ValidationError(_("The debit note must be made on the same day"))
+                raise ValidationError(
+                    _("The debit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
-                raise ValidationError(_("Cannot print an invoice without validation"))
+                raise ValidationError(
+                    _("Cannot print an invoice without validation"))
 
             data = self
 
@@ -372,7 +435,8 @@ class AccountMoveInh(models.Model):
                         "payment_method": journal_id["payment_method"] or "01",
                     }
                     if payment["currency_id"] != data.env.ref("base.VEF").id:
-                        new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
+                        new_payment["amount"] = payment["amount"] * \
+                            data.foreign_inverse_rate
 
                     payment_lines.append(new_payment)
 
@@ -414,25 +478,34 @@ class AccountMoveInh(models.Model):
             }
 
             return _data
-        
+
         except ValidationError as ae:
             raise ValidationError(str(ae))
-        
-    
+
     def print_debit_note(self, values):
-        self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
-        
+        _logger.info("VALUE %s", values)
+        result_data = values.get("data", {})
+        sequence = result_data.get("sequence")
+        serial_machine = result_data.get("serial_machine")
+
+        self.write(
+            {
+                "mf_invoice_number": sequence,
+                "mf_serial": serial_machine,
+            }
+        )
 
     def _normalize_product_name(self, name):
         if not name:
             return ""
-        
+
         normalized = unicodedata.normalize('NFKD', str(name))
 
-        no_accents = ''.join(c for c in normalized if not unicodedata.combining(c))
-        
+        no_accents = ''.join(
+            c for c in normalized if not unicodedata.combining(c))
+
         cleaned = re.sub(r'[^\w\s]', ' ', no_accents)
-        
+
         final_name = re.sub(r'\s+', ' ', cleaned).strip()
-        
+
         return final_name
