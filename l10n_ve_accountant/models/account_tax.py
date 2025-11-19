@@ -55,6 +55,7 @@ class AccountTax(models.Model):
             for line in record.invoice_line_ids
         )
         formatted_total_discount = 0.0
+        formatted_total_discount_ves = 0.0
         if has_discount:
             exchange_rate = company_rate
             total_discount_amount = sum([
