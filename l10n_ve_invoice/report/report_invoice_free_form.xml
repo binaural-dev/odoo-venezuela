@@ -219,7 +219,7 @@
                         
 
                         <div class="clearfix mb-4">
-                            <div id="total" class="row justify-content-center">
+                            <div id="total" class="row justify-content-end">
                                 <t t-if="o.currency_id.name != 'VEF'">
                                     <div class="col-5 mx-2" style="border:1.5px solid #222; background:#fff; padding:16px; margin-bottom:12px;">
                                         <table class="table table-borderless" style="page-break-inside: avoid;">
@@ -235,6 +235,7 @@
                                         </table>
                                     </div>
                                 </t>
+                                
                                 <div class="col-5 mx-2" style="border:1.5px solid #222; background:#fff; padding:16px; margin-bottom:12px;">
                                     <table class="table table-borderless" style="page-break-inside: avoid;">
                                         <thead>
