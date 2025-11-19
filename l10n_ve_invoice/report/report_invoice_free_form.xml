@@ -326,7 +326,7 @@
                         </td>
                         <td class="text-end o_price_total">
                             <span class="text-nowrap"
-                                t-out="base_vef and group.get('formatted_base_amount_currency_ves', group.get('formatted_base_amount_currency_ves', 0.0)) or group.get('formatted_tax_amount_currency_ves', group.get('formatted_base_amount_currency_ves', 0.0))"/>
+                                t-out="group.get('formatted_tax_amount_currency', group.get('formatted_tax_amount_currency', 0.0)) or group.get('formatted_tax_amount_currency_ves', group.get('formatted_tax_amount_currency', 0.0))"/>
                         </td>
                     </tr>
 
@@ -337,7 +337,7 @@
                         </td>
                         <td class="text-end o_price_total">
                             <span class="text-nowrap"
-                                t-out="base_vef and group.get('formatted_base_amount_currency_ves', 0.0) or group.get('formatted_base_amount_currency_ves', 0.0)"/>
+                                t-out="group.get('formatted_tax_amount_currency', 0.0) or group.get('formatted_tax_amount_currency', 0.0)"/>
                         </td>
                     </tr>
                 </t>
