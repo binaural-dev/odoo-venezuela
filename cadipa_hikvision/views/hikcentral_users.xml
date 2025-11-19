@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_hikcentral_users_form_inherit" model="ir.ui.view">
+            <field name="name">view_hikcentral_users_form_inherit</field>
+            <field name="model">hikcentral.users</field>
+            <field name="inherit_id" ref="binaural_hikvision.view_hikcentral_users_form_simple"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="after">
+                    <div class="oe_button_box" name="button_box">
+                        <button name="sync_cards_from_hikcentral" 
+                                type="object" 
+                                class="oe_stat_button" 
+                                icon="fa-address-card">
+                            <span class="o_stat_text">Sincronizar Tarjetas</span>
+                        </button>
+                    </div>
+                </xpath>
+
+                <xpath expr="//sheet/div/div[1]" position="after">
+                    <div class="col-12 col-lg-6">
+                        <group string="Detalles de Tarjeta">
+                            <field name="card_no" />
+                            <field name="qr_code_image" widget="image" />
+                        </group>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

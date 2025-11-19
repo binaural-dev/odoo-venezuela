@@ -6,3 +6,4 @@ pdf2image
 xmltodict
 git+https://github.com/binaural-dev/python-sdk.git
 watchdog
+qrcode

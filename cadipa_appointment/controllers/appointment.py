@@ -226,7 +226,7 @@ class AppointmentControllerMulti(AppointmentController):
             resource_capacity = int(post.get('resource_capacity', 0))
 
             if total_guests > resource_capacity:
-                raise ValidationError(_("The number of guests exceeds the resource capacity."))
+                raise ValidationError("El número de invitados excede la capacidad del área.")
                 
             
             slots = sorted((_parse_slot(q) for q in json.loads(multi_slots)),
