@@ -37,10 +37,15 @@ class AccountTax(models.Model):
         currency_id = self.env.company.currency_id or False
         foreign_currency_id = self.env.company.foreign_currency_id or False
         company_rate = 1.0
+        has_discount= False
         if active_model == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
             company_rate = record.company_currency_rate
             currency_id = record.currency_id
             foreign_currency_id =record.foreign_currency_id
+            has_discount = any(
+                line.discount > 0
+                for line in record.invoice_line_ids
+            )
         else: 
             currency_id = record.company_id.currency_id
             foreign_currency_id = self.env.company.foreign_currency_id
@@ -50,10 +55,7 @@ class AccountTax(models.Model):
         #? QUESTION do i need to put the amount without discount?
         
         #total amount discount 
-        has_discount = any(
-            line.discount > 0
-            for line in record.invoice_line_ids
-        )
+        
         formatted_total_discount = 0.0
         formatted_total_discount_ves = 0.0
         if has_discount:
