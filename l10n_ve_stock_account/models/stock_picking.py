@@ -83,7 +83,6 @@ class StockPicking(models.Model):
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
-        default=True,
         tracking=True,
         store=True,
         compute="_compute_is_dispatch_guide",
@@ -1123,8 +1122,8 @@ class StockPicking(models.Model):
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):
-        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
-        for picking in self:
+        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment', raise_if_not_found=False)
+        for picking in self.filtered(lambda p: p.transfer_reason_id):
             picking.partner_required = (
                 picking.transfer_reason_id.id == consignment_reason.id
                 and picking.is_dispatch_guide

@@ -1,9 +1,5 @@
 from odoo import api, fields, models, Command
 from odoo.tools.float_utils import float_round
-from odoo.exceptions import UserError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountPayment(models.Model):
@@ -76,17 +72,26 @@ class AccountPayment(models.Model):
         ):
             if not all((payment.retention_line_ids, payment.retention_id.number)):
                 continue
+            retention_line_id = payment.retention_line_ids[0]
             move = payment.move_id
             move_name = (
                 account_move_name_by_retention_type[payment.retention_id.type_retention]
                 + f"-{payment.retention_id.number}"
-                + f"-{payment.retention_line_ids[0].move_id.name}"
+                + f"-{retention_line_id.move_id.name}"
             )
             if payment.retention_id.type_retention == "islr":
-                move_name += f"-{payment.retention_line_ids[0].payment_concept_id.name[:5]}"
+                move_name += f"-{retention_line_id.payment_concept_id.name[:5]}"
+            if payment.retention_id.type_retention == "municipal":
+                move_name += (
+                    f"-{retention_line_id.economic_activity_id.name}"
+                    f"-{retention_line_id.economic_activity_id.branch_id.name}"
+                )
 
-            vals_to_change = {"name": move_name}
+            vals_to_change = {"name": move_name, "is_manually_modified": True}
             move.write(vals_to_change)
+            #Se comenta la siguiente linea para evitar errores al modificar las lineas
+            # Hablando con jesus el problema puede tener otra raiz
+            #move.line_ids.write(vals_to_change)
         return res
 
     def unlink(self):
@@ -94,7 +99,7 @@ class AccountPayment(models.Model):
             if any(isinstance(id, models.NewId) for id in self.retention_line_ids.ids):
                 payment.retention_line_ids = False
             else:
-                payment.retention_line_ids = Command.clear()
+                payment.retention_line_ids = False
         return super().unlink()
 
     def compute_retention_amount_from_retention_lines(self):
@@ -102,7 +107,8 @@ class AccountPayment(models.Model):
         Compute the amount from the retention lines.
         """
         for payment in self:
-            payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
+            payment.amount = sum(
+                payment.retention_line_ids.mapped("retention_amount"))
 
     @api.depends("retention_line_ids")
     def _compute_retention_foreign_amount(self):

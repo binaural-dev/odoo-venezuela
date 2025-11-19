@@ -15,25 +15,64 @@ class AccountTax(models.Model):
     def _get_tax_totals_summary(
         self, base_lines, currency, company, cash_rounding=None
     ):
-        foreign_currency_id = self.env.company.foreign_currency_id or False
-        currency_id = self.env.company.currency_id or False
-        if not foreign_currency_id:
-            raise ValidationError(_("No foreign currency configured in the company"))
+        
+        
+        
 
         ## Base currency
         res = super()._get_tax_totals_summary(
             base_lines, currency, company, cash_rounding
         )
+
+        #only ves currency
+        ves_currency = self.env.ref('base.VEF')
+        
         # Obtener el registro de factura desde el contexto si está disponible
         active_model = self.env.context.get('active_model')
         active_id = self.env.context.get('active_id')
         if not active_model or not active_id:
             return res
+        
         record = self.env[active_model].browse(active_id)
-
+        currency_id = self.env.company.currency_id or False
+        foreign_currency_id = self.env.company.foreign_currency_id or False
+        company_rate = 1.0
+        if active_model == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+            company_rate = record.company_currency_rate
+            currency_id = record.currency_id
+            foreign_currency_id =record.foreign_currency_id
+        else: 
+            currency_id = record.company_id.currency_id
+            foreign_currency_id = self.env.company.foreign_currency_id
 
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
+        #? QUESTION do i need to put the amount without discount?
+        
+        #total amount discount 
+        has_discount = any(
+            line.discount > 0
+            for line in record.invoice_line_ids
+        )
+        formatted_total_discount = 0.0
+        if has_discount:
+            exchange_rate = company_rate
+            total_discount_amount = sum([
+                (line.get("price_unit", 0.0) * line.get("quantity", 0.0) * line.get("discount", 0.0) / 100)
+                for line in base_lines
+            ])
+            total_discount_amount_ves = total_discount_amount * exchange_rate
+            formatted_total_discount = formatLang(
+                env=self.env,
+                value=total_discount_amount,
+                currency_obj=currency_id
+            )
+            #discount only en VEF
+            formatted_total_discount_ves = formatLang(
+                env=self.env,
+                value=total_discount_amount_ves,
+                currency_obj=ves_currency
+            )
         foreign_lines = []
         # has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
         # if has_discount:
@@ -60,11 +99,15 @@ class AccountTax(models.Model):
             company,
             cash_rounding
         )
+        #amounts in foreign currency
         res['foreign_currency_id'] = foreign_res['currency_id']
+        res['ves_currency_id'] = self.env.ref('base.VEF').id
         res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
         res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
         res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
-
+        #discount amount 
+        res['formatted_total_discount'] = formatted_total_discount
+        res['formatted_total_discount_ves'] = formatted_total_discount_ves
         # Moneda Base
         res['formatted_base_amount_currency'] = formatLang(
             env=self.env,
@@ -81,6 +124,27 @@ class AccountTax(models.Model):
             value=res.get('total_amount_currency', 0.0),
             currency_obj=currency_id
         )
+
+        
+
+        #only VES amounts
+        res['formatted_base_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('base_amount', 0.0),
+            currency_obj=ves_currency
+        )
+        res['formatted_tax_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('tax_amount', 0.0),
+            currency_obj=ves_currency
+        )
+        res['formatted_total_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('total_amount', 0.0),
+            currency_obj=ves_currency
+        )
+    
+    
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
             env=self.env,
@@ -119,6 +183,22 @@ class AccountTax(models.Model):
                 value=res_subtotal.get('total_amount_foreign_currency', 0.0),
                 currency_obj=foreign_currency_id
             )
+            #ONLY VES
+            res_subtotal['formatted_base_amount_currency_ves'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('base_amount', 0.0),
+                currency_obj=ves_currency
+            )
+            res_subtotal['formatted_tax_amount_currency_ves'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('tax_amount', 0.0),
+                currency_obj=ves_currency
+            )
+            res_subtotal['formatted_total_amount_currency_ves'] = formatLang(
+                env=self.env,
+                value=res_subtotal.get('total_amount', 0.0),
+                currency_obj=ves_currency
+            )
             #Base sistema
             res_subtotal['formatted_base_amount_currency'] = formatLang(
                 env=self.env,
@@ -135,6 +215,9 @@ class AccountTax(models.Model):
                 value=res_subtotal.get('total_amount_currency', 0.0),
                 currency_obj=currency_id
             )
+
+            #Amount discount
+            
 
             for res_tax_group, foreign_tax_group in zip(res_subtotal.get("tax_groups", []), foreign_subtotal.get("tax_groups", [])):
                 res_tax_group["tax_amount_foreign_currency"] = foreign_tax_group.get("tax_amount_currency", 0.0)
@@ -156,6 +239,22 @@ class AccountTax(models.Model):
                     env=self.env,
                     value=res_tax_group.get('display_base_amount_currency', 0.0),
                     currency_obj=currency_id
+                )
+                #ONLY VES
+                res_tax_group['formatted_base_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('base_amount', 0.0),
+                    currency_obj=ves_currency
+                )
+                res_tax_group['formatted_tax_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('tax_amount', 0.0),
+                    currency_obj=ves_currency
+                )
+                res_tax_group['formatted_total_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('total_amount', 0.0),
+                    currency_obj=ves_currency
                 )
                 # Foranea
                 res_tax_group['formatted_base_amount_foreign_currency'] = formatLang(
@@ -251,4 +350,12 @@ class AccountTax(models.Model):
                 if k.startswith('_') and k not in base_line:
                     base_line[k] = v
 
+        manual_fields = (
+            'manual_total_excluded',
+            'manual_total_excluded_currency',
+            'manual_total_included',
+            'manual_total_included_currency',
+        )
+        for field in manual_fields:
+            base_line.setdefault(field, None)
         return base_line
