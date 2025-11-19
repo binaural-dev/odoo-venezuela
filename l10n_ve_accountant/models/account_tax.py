@@ -17,6 +17,7 @@ class AccountTax(models.Model):
     ):
         
         
+        
 
         ## Base currency
         res = super()._get_tax_totals_summary(
@@ -35,9 +36,6 @@ class AccountTax(models.Model):
         record = self.env[active_model].browse(active_id)
         currency_id = self.env.company.currency_id or False
         foreign_currency_id = self.env.company.foreign_currency_id or False
-        if not foreign_currency_id:
-            raise ValidationError(_("No foreign currency configured in the company"))
-
         if active_model == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
             currency_id = record.currency_id
             foreign_currency_id =record.foreign_currency_id
