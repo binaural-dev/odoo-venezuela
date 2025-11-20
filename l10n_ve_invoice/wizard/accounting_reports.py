@@ -83,17 +83,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "correlative": move.correlative,
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
-            "total_sales_iva": taxes.get("amount_taxed", 0),
-            "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0)
-            * multiplier,
-            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0)
-            * multiplier,
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0)
-            * multiplier,
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0)
-            * multiplier,
+            "total_sales_iva": taxes.get("amount_taxed", 0) + taxes.get("amount_untaxed", 0),
+            "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) ,
+            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0),
+            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0),
+            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0),
+            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0),
         }
+        return values
 
     def _fields_purchase_book_line(self, move, taxes):
         if not move.invoice_date:
@@ -113,14 +110,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "reduced_aliquot": 0.08,
             "extend_aliquot": 0.31,
             "general_aliquot": 0.16,
-            "total_purchases_iva": taxes.get("amount_taxed", 0),
-            "total_purchases_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
-            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
-            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) * multiplier,
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
-            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) * multiplier,
+            "total_purchases_iva": taxes.get("amount_taxed", 0) + taxes.get("amount_untaxed", 0),
+            "total_purchases_not_iva": taxes.get("tax_base_exempt_aliquot", 0) ,
+            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) ,
+            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) ,
+            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) ,
+            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) ,
+            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) ,
+            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) ,
         }
         if self.company_id.config_deductible_tax and self.report == "purchase":
             fields_purchase_book_line.update(
