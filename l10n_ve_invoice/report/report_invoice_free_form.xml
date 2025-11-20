@@ -165,12 +165,7 @@
                                                 <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
                                             </td>
                                             <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                                <t t-if="base_vef">
-                                                    <span class="text-nowrap" t-field="line.price_unit_ves"/>
-                                                </t>
-                                                <t t-else="">
-                                                    <span class="text-nowrap" t-field="line.price_unit_ves"/>
-                                                </t>
+                                                <span class="text-nowrap" t-field="line.price_unit_ves"/>
                                             </td>
                                             <td t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                 <span class="text-nowrap" t-field="line.discount"/>
