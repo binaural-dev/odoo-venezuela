@@ -10,41 +10,6 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
-            <xpath expr="//div[@class='d-flex gap-1 text-muted'][1]" position="after">
-            <!-- TODO REGRESAR A REPLACE Y CAMBIAR EL XPR A //div[@class='w-100'][1] descomentar el codigo de abajo.
-            ESTO CUANDO CULMINEN LAS PRUEBAS DE LA GIRALDA
-             -->
-                <div name="currency_div"
-                 groups="base.group_multi_currency"
-                 class="w-100"
-                 invisible="move_type == 'entry'">
-                    <div class="d-flex gap-1">
-                        <!-- <field name="currency_id"
-                               readonly="state != 'draft'"
-                               class="oe_inline"
-                               options="{'no_create': True}"
-                               context="{'search_default_active': 1, 'search_default_inactive': 1}"/> -->
-                    </div>
-                    <div name="currency_conversion_div"
-                         class="d-flex gap-1 text-muted"
-                         invisible="currency_id == company_currency_id">
-                        <span>1</span>
-                        <field name="currency_id" readonly="True" options="{'no_open': True}" class="w-auto"/>
-                        <span>=</span>
-                        <field name="move_currency_to_company_currency_rate" digits="[12,6]" readonly="True"/>
-                        <field name="company_currency_id" readonly="True" options="{'no_open': True}" class="w-auto"/>
-                    </div>
-                    <div name="currency_conversion_div_foreign"
-                         class="d-flex gap-1 text-muted"
-                         invisible="currency_id != company_currency_id">
-                        <span>1</span>
-                        <field name="foreign_currency_id" readonly="True" options="{'no_open': True}" class="w-auto"/>
-                        <span>=</span>
-                        <field name="move_currency_to_company_currency_rate" digits="[12,6]" readonly="True"/>
-                        <field name="company_currency_id" readonly="True" options="{'no_open': True}" class="w-auto"/>
-                    </div>
-                </div>
-            </xpath>
             <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">
                 <attribute name='invisible'>True</attribute>     
             </xpath>
