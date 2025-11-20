@@ -24,18 +24,48 @@ class AccountPayment(models.Model):
         "res.currency", default=default_alternate_currency
     )
 
+    def default_rate(self):
+        """
+        This method is used to get the rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            self.date or fields.Date.today(),
+        )
+        return rate_values.get("foreign_rate", 0)
+
+    def default_inverse_rate(self):
+        """
+        This method is used to get the inverse rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The inverse rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            self.date or fields.Date.today(),
+        )
+        return rate_values.get("foreign_inverse_rate", 0)
+
     foreign_rate = fields.Float(
         compute="_compute_rate",
+        default=default_rate,
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
+        default=default_inverse_rate,
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
         store=True,
         readonly=False,
     )
@@ -75,7 +105,7 @@ class AccountPayment(models.Model):
             )
         return res
 
-    @api.depends("date")
+    @api.depends("date", "currency_id")
     def _compute_rate(self):
         """
         Compute the rate of the payment using the compute_rate method of the res.currency.rate model.
@@ -83,7 +113,7 @@ class AccountPayment(models.Model):
         Rate = self.env["res.currency.rate"]
         for payment in self:
             rate_values = Rate.compute_rate(
-                payment.foreign_currency_id.id, payment.date or fields.Date.today()
+                payment.currency_id.id, payment.date or fields.Date.today()
             )
             payment.update(rate_values)
 

@@ -35,7 +35,7 @@ class AccountTax(models.Model):
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
         foreign_lines = []
-        # has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
+        #has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
         # if has_discount:
         #     base_without_discount = [line.copy() for line in base_lines if line]
         #     for base_line in base_without_discount:
@@ -52,6 +52,7 @@ class AccountTax(models.Model):
         elif record._name in ('sale.order','purchase.order'):
             company_id = (self.company_id or self.env.company)
             foreign_lines = [line._prepare_foreign_base_line_for_taxes_computation() for line in record.order_line]
+            
             self._add_tax_details_in_base_lines(foreign_lines, company_id)
             self._round_base_lines_tax_details(foreign_lines, company_id)
         foreign_res = super()._get_tax_totals_summary(
@@ -259,10 +260,10 @@ class AccountTax(models.Model):
             # For all computation that are inferring a base amount in order to reach a total you know in advance, you have to force some
             # base/tax amounts for the computation (E.g. down payment, combo products, global discounts etc).
             'manual_tax_amounts': load('manual_tax_amounts', None, from_base_line=True),
-
+            'manual_total_excluded_currency': load('manual_total_excluded_currency', None, from_base_line=True),
             # Add a function allowing to filter out some taxes during the evaluation. Those taxes can't be removed from the base_line
             'filter_tax_function': load('filter_tax_function', None, from_base_line=True),
-
+            'manual_total_excluded' : load('manual_total_excluded', None, from_base_line=True),
             # ===== Accounting stuff =====
             'sign': load('sign', 1.0),
             'is_refund': load('is_refund', False),

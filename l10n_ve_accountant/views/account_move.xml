@@ -10,6 +10,9 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
+            <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">
+                <attribute name='invisible'>True</attribute>     
+            </xpath>
             <xpath expr="//header/button[@name='button_cancel']" position="after">
                 <button name="action_update_account_id" string="Update account lines" type="object"
                     groups="base.group_no_one" />
@@ -84,13 +87,13 @@
 
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" readonly="move_type != 'in_invoice'" />
+                <field name="foreign_price" readonly="move_type != 'in_invoice'" optional="hide"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_subtotal']"
                 position="after">
                 
                 <field name="foreign_currency_id" column_invisible="True" />
-                <field name="foreign_subtotal"
+                <field name="foreign_subtotal" optional='hide'
                 />
                 <field name="foreign_price_total"
                     column_invisible="parent.tax_calculation_rounding_method == 'round_globally'" />

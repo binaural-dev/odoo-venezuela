@@ -53,7 +53,6 @@ class ProductProduct(models.Model):
             )
             raise ValidationError(_("Barcode(s) already assigned:\n\n%s", duplicates_as_str))
 
-
     def _compute_quantities_dict(
         self, lot_id, owner_id, package_id, from_date=False, to_date=False, location=False
     ):
