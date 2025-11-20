@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 from odoo import fields, models, _
 from odoo.exceptions import UserError
 from xlsxwriter import utility
+import re
 
 _logger = logging.getLogger(__name__)
 INIT_LINES = 8
@@ -65,8 +66,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     def _fields_sale_book_line(self, move, taxes):
         if not move.invoice_date:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
-        multiplier = -1 if move.move_type == "out_refund" else 1
-        return {
+        multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
+        values =  {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
             "accounting_date": self._format_date(move.date),
@@ -83,7 +84,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "correlative": move.correlative,
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
-            "total_sales_iva": taxes.get("amount_taxed", 0) + taxes.get("amount_untaxed", 0),
+            "total_sales_iva": taxes.get("amount_taxed", 0),
             "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) ,
             "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0),
             "amount_general_aliquot": taxes.get("amount_general_aliquot", 0),
@@ -95,7 +96,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     def _fields_purchase_book_line(self, move, taxes):
         if not move.invoice_date:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
-        multiplier = -1 if move.move_type == "in_refund" else 1
+        multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
         fields_purchase_book_line = {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
@@ -110,7 +111,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "reduced_aliquot": 0.08,
             "extend_aliquot": 0.31,
             "general_aliquot": 0.16,
-            "total_purchases_iva": taxes.get("amount_taxed", 0) + taxes.get("amount_untaxed", 0),
+            "total_purchases_iva": taxes.get("amount_taxed", 0),
             "total_purchases_not_iva": taxes.get("tax_base_exempt_aliquot", 0) ,
             "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) ,
             "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) ,
@@ -310,7 +311,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     ]
                 )
             )
-
             return resume_lines
 
         return [0.0, 0.0, 0.0, 0.0]
@@ -754,6 +754,33 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "total": True,
             },
         ]
+    
+    def convert_currency_to_float(self, currency_str):
+  
+        if not currency_str:
+            return 0.0
+        
+        cleaned_str = str(currency_str).strip()
+       
+        if '\xa0' in cleaned_str:
+            cleaned_str = cleaned_str.split('\xa0', 1)[0]
+        
+        numeric_part = re.sub(r'[^\d,\.-]', '', cleaned_str)
+        
+        if '.' in numeric_part and ',' in numeric_part:
+            numeric_part = numeric_part.replace('.', '')
+        
+        final_value = numeric_part.replace(',', '.')
+
+        try:
+            return float(final_value)
+        except ValueError:
+            _logger.warning(
+                "No se pudo convertir la cadena de moneda '%s' a float. Valor final procesado: '%s'",
+                currency_str,
+                final_value
+            )
+            return 0.0
 
     def _determinate_amount_taxeds(self, move):
         is_posted = move.state == "posted"
@@ -782,8 +809,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return fields_in_zero
 
         is_credit_note = move.move_type in ["out_refund", "in_refund"]
-        tax_totals = move.tax_totals
-        _logger.warning("tax totals %s", tax_totals)
+        tax_totals = move.tax_totals 
         tax_result = {}
 
         amount_untaxed = 0.0
@@ -797,14 +823,13 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         tax_base_extend_aliquot = 0.0
         amount_extend_aliquot = 0.0
 
-        use_foreign = not self.currency_system
-        base_key = "base_amount_foreign_currency" if use_foreign else "base_amount_currency"
-        tax_key = "tax_amount_foreign_currency" if use_foreign else "tax_amount_currency"
+        base_key = "formatted_base_amount_currency_ves"
+        tax_key = "formatted_tax_amount_currency_ves"
 
         # Sumar totales generales
         if tax_totals:
-            amount_untaxed = tax_totals.get(base_key, 0.0)
-            amount_taxed = tax_totals.get(tax_key, 0.0)
+            amount_untaxed = self.convert_currency_to_float(tax_totals.get(base_key, ''))
+            amount_taxed = self.convert_currency_to_float(tax_totals.get(tax_key, ''))
             if is_credit_note:
                 amount_untaxed *= -1
                 amount_taxed *= -1
@@ -843,8 +868,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             for subtotal in tax_totals["subtotals"]:
                 for group in subtotal.get("tax_groups", []):
                     group_id = group.get("id")
-                    base = group.get(base_key, 0.0)
-                    tax = group.get(tax_key, 0.0)
+                    base = self.convert_currency_to_float(group.get(base_key,''))
+                    tax = self.convert_currency_to_float(group.get(tax_key,''))
                     if is_credit_note:
                         base *= -1
                         tax *= -1
