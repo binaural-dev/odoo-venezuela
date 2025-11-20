@@ -75,6 +75,7 @@ class AccountMoveLine(models.Model):
 
     @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
     def _compute_price_unit_ves(self):
+        _logger.warning("Computing price_unit_ves")
         for line in self:
             if line.currency_id and line.currency_id.name == "VEF":
                 line.price_unit_ves = line.price_unit
@@ -118,6 +119,7 @@ class AccountMoveLine(models.Model):
                 document_type = "purchase"
             else:
                 document_type = "other"
+            _logger.warning("la moneda es %s", line.move_id.currency_id)
             line.price_unit = line.product_id._get_tax_included_unit_price(
                 line.move_id.company_id,
                 line.move_id.currency_id,
