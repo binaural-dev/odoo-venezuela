@@ -13,7 +13,7 @@ _logger = logging.getLogger(__name__)
 class AppointmentGuests(models.Model):
     _inherit = "hikcentral.users"
 
-    card_no = fields.Char(string="Número de Tarjeta")
+    card_no = fields.Char()
     qr_code_image = fields.Binary(
         string="Código QR (Base64)", compute="_compute_qr_code", store=True
     )
@@ -77,31 +77,24 @@ class AppointmentGuests(models.Model):
 
     def push_card_update_to_hikcentral(self):
         """
-        Envía la tarjeta actual de Odoo a HikCentral.
+        Send the current Odoo card to HikCentral.
         """
         try:
             cards_payload = [{"cardNo": self.card_no}] if self.card_no else []
 
             payload = {"cards": cards_payload}
 
-            _logger.info(
-                "Enviando actualización a HikCentral para %s: %s",
-                self.hikcentral_person_api_id,
-                payload,
-            )
-
             response = hikcentral_api.update_person(self.env, self.hikcentral_person_api_id, payload)
 
             if response.get("code") == "0":
-                _logger.info("Éxito actualizando tarjeta en HikCentral")
+                _logger.info("Successfully updated card in HikCentral")
             else:
                 raise ValidationError(
                     _("Error API HikCentral: %s") % response.get("msg")
                 )
 
         except Exception as e:
-            _logger.error("Fallo al enviar tarjeta a HikCentral: %s", e)
-            # Opcional: Lanzar error al usuario o solo loguear
+            _logger.error("Failed to send card to HikCentral: %s", e)
             raise ValidationError(
-                _("No se pudo actualizar la tarjeta en el equipo físico: %s") % str(e)
+                _("Could not update the card on the physical device: %s") % str(e)
             )
