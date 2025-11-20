@@ -58,6 +58,13 @@ class AccountMove(models.Model):
         index=True,
     )
 
+    move_currency_to_company_currency_rate = fields.Float(
+        string="Move Currency to Company Currency Rate",
+        compute="_compute_move_currency_to_company_currency_rate",
+        copy=False,
+        help="The conversion rate between the move currency and the company currency at the move date.",
+    )
+
     manually_set_rate = fields.Boolean(default=False)
     last_foreign_rate = fields.Float(copy=False)
 
@@ -121,6 +128,26 @@ class AccountMove(models.Model):
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         context = self.with_context(active_test=False)
         return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
+    
+    @api.depends('currency_id', 'invoice_date')
+    def _compute_move_currency_to_company_currency_rate(self):
+        '''
+        Compute the move currency to company currency rate'''
+        for move in self:
+            if move.currency_id == move.company_currency_id:
+                move.move_currency_to_company_currency_rate = move.currency_id._get_conversion_rate(
+                    from_currency=move.foreign_currency_id,
+                    to_currency=move.company_currency_id,
+                    company=move.company_id,
+                    date=move._get_invoice_currency_rate_date(),
+                )
+            else:
+                move.move_currency_to_company_currency_rate = move.currency_id._get_conversion_rate(
+                    from_currency=move.currency_id,
+                    to_currency=move.company_currency_id,
+                    company=move.company_id,
+                    date=move._get_invoice_currency_rate_date(),
+                )
 
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
@@ -317,21 +344,12 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-        if "name" in vals and vals["name"] != "/" and vals["name"]:
-            for move in self:
-                partner_id = vals.get('partner_id', move.partner_id.id)
-                
-                domain = [
-                    ('name', '=', vals['name']),
-                    ('partner_id', '=', partner_id),
-                    ('id', '!=', move.id) 
-                ]
-                
-                existing_record = self.search(domain, limit=1)
-                
-                if existing_record:
-                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-                
+        # move_currency_to_company_currency_rate = vals.get('move_currency_to_company_currency_rate', False)
+        # if move_currency_to_company_currency_rate:
+        #     for move in self:
+        #         vals.update({"last_foreign_rate": move.foreign_rate})
+        #         vals.update({"foreign_rate": move_currency_to_company_currency_rate})
+        #A REALIZAR PARA INTEGRA FLEXIBLE
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
@@ -363,14 +381,6 @@ class AccountMove(models.Model):
                     and self.env.company.unique_tax
                 ):
                     raise ValidationError(_("This product must have only one tax."))
-
-    @api.constrains("currency_id")
-    def _check_currency_id(self):
-        for move in self.filtered(lambda m: m.is_invoice(include_receipts=True)):
-            if move.currency_id.id != self.env.company.currency_id.id:
-                raise ValidationError(
-                    _("You cannot place a currency other than the base of the system.")
-                )
 
     def legacy_compute_line_ids_foreign_debit_and_credit(self):
         """

@@ -432,6 +432,7 @@ class AccountRetention(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
+        res._set_sequence()
         res._create_payments_from_retention_lines()
         return res
 
@@ -616,6 +617,13 @@ class AccountRetention(models.Model):
     def action_post(self):
         today = datetime.now()
         for retention in self:
+            if retention.type_retention == "islr":
+                if not re.fullmatch(r"\d{11}", retention.number):
+                    raise ValidationError(_("ISLR retention: Number must be exactly 11 numeric digits."))
+            elif retention.type_retention == 'iva':
+                if not re.fullmatch(r"\d{14}", retention.number):
+                    raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
+            
             if (
                 retention.type in ["out_invoice", "out_refund", "out_debit"]
                 and not retention.number
