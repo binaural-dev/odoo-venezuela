@@ -43,7 +43,6 @@ class AccountMove(models.Model):
     def _compute_company_currency_rate(self):
         for move in self:
             currency = move.currency_id
-            _logger.info("Computing company currency rate for move %s", currency)
             currency_search = move.env["res.currency"].search([("id", "=", currency.id)], limit=1)
             if currency_search and hasattr(currency_search, "inverse_rate"):
                 move.company_currency_rate = currency_search.inverse_rate or 1.0
