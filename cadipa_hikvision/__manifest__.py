@@ -1,6 +1,6 @@
 {
     'name': 'Hikvision Cadipa Integration',
-    'version': '17.0.1.0.0',
+    'version': '17.0.1.0.1',
     'summary': '',
     'author': 'Binaural',
     'depends': [
@@ -9,11 +9,11 @@
         'bus',
         'cadipa_appointment',
         'mail',
-        'binaural_hikvision_employee'
+        'binaural_hikvision_employee',
     ],
     'data': [
         'data/mail_template.xml',
-        # 'views/template.xml',
+        'views/hikcentral_users.xml',
     ],
     'assets': {
         'web.assets_frontend': [
