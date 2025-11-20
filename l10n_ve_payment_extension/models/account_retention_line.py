@@ -440,9 +440,7 @@ class AccountRetentionLine(models.Model):
                 (
                     record.retention_amount == 0,
                     record.invoice_total == 0,
-                    record.foreign_retention_amount == 0,
                     record.invoice_amount == 0,
-                    record.foreign_invoice_amount == 0,
                 )
             ):
                 raise ValidationError(
