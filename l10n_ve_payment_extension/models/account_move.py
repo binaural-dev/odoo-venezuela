@@ -71,10 +71,17 @@ class AccountMoveRetention(models.Model):
         for move in self:
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
-
-            if move.retention_islr_line_ids and not move.islr_voucher_number:
+            company = move.company_id or self.env.company
+            if (
+                move.retention_islr_line_ids
+                and not move.islr_voucher_number
+                and move.retention_islr_line_ids.filtered(
+                    lambda l: l.state != "emitted"
+                )
+            ):
                 move._validate_islr_retention()
                 retention = move._create_supplier_retention("islr")
+                
                 retention.action_post()
                 move.islr_voucher_number = retention.number
 
@@ -91,7 +98,8 @@ class AccountMoveRetention(models.Model):
             ):
                 move._validate_iva_retention()
                 retention = move._create_supplier_retention("iva")
-                retention.action_post()
+                if not company.create_retentions_of_suppliers_in_draft:
+                    retention.action_post()
                 move.iva_voucher_number = retention.number
         return res
 
