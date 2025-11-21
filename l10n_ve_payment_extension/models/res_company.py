@@ -47,5 +47,5 @@ class ResCompany(models.Model):
         default=False,
     )
     create_retentions_of_suppliers_in_draft = fields.Boolean(
-        string="Create Suppliers IVA Retentions in Draft", default=False
+        string="Create Suppliers Retentions in Draft", default=False
     )
