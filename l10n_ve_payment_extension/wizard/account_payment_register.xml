@@ -60,9 +60,9 @@
                         </page>
                     </notebook>
                 </group>
-                <group name="group2" position="attributes">
-                    <attribute name="invisible">not edit_retention_fields or payment_difference == 0.0 or not can_edit_wizard or can_group_payments and not group_payment</attribute>
-                </group>
+                <!-- <group name="group2" position="attributes"> -->
+                <!--     <attribute name="invisible">not edit_retention_fields or payment_difference == 0.0 or not can_edit_wizard or can_group_payments and not group_payment</attribute> -->
+                <!-- </group> -->
             </field>
         </record>
     </data>

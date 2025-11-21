@@ -56,7 +56,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     ):
                         continue
                     payment.is_igtf = True
-            
 
     @api.depends("is_igtf")
     def _compute_igtf_percentage(self):
@@ -88,7 +87,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment.journal_id.is_igtf
                 and payment.is_igtf
                 and payment.currency_id.id == self.env.ref("base.USD").id
-                and abs(result) > 0.0001
             ):
                 payment.is_igtf_on_foreign_exchange = True
             else:
@@ -98,9 +96,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     def _compute_igtf_amount(self):
         """Compute the igtf amount of the payment"""
         for payment in self:
-            id=self.env.context.get("active_id",False)
-            move_id=self.env['account.move'].browse(id)
-            _logger.warning("move_id %s",move_id)
+            id = self.env.context.get("active_id", False)
+            move_id = self.env["account.move"].browse(id)
             payment.igtf_amount = 0.0
             if (
                 payment.journal_id.is_igtf
@@ -109,7 +106,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ):
                 payment_amount = payment.amount
                 if payment.payment_difference < 0:
-                    #raise UserError(payment.payment_difference)
+                    # raise UserError(payment.payment_difference)
                     payment_amount = payment.amount + payment.payment_difference
                 payment.igtf_amount = payment.calculate_igtf_for_payment(
                     move_id, payment_amount, payment.igtf_percentage
@@ -173,11 +170,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     if payment.reconciled_bill_ids:
                         payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
         return res
-    
-    
+
     @api.depends('journal_id')
     def _compute_is_igtf_journal(self):
         for record in self:
-            if record.journal_id.currency_id and record.journal_id.currency_id == self.env.ref("base.USD"):
+            if record.journal_id and record.journal_id.is_igtf:
                 record.is_igtf_on_foreign_exchange = True
-
