@@ -871,15 +871,23 @@ class StockPicking(models.Model):
             raise_if_not_found=False,
         )
 
+        other_causes_reason =  self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_other_causes",
+            raise_if_not_found=False,
+        )
+        
         for picking in self:
-            if (
+
+            picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
+            if picking.document == "invoice":
+                picking.is_dispatch_guide = False
+                continue
+
+            elif (
                 picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id
+                and picking.transfer_reason_id.id == consignment_reason.id or picking.transfer_reason_id.id == other_causes_reason.id
             ):
                 picking.is_dispatch_guide = True
-            else:
-                # This is necessary always should be return a value
-                picking.is_dispatch_guide = picking.is_dispatch_guide
 
     @api.depends(
         "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
@@ -1001,12 +1009,13 @@ class StockPicking(models.Model):
             record.show_other_causes_transfer_reason = False
 
             if record.transfer_reason_id:
+
+                record.is_dispatch_guide = False if record.is_dispatch_guide is None else record.is_dispatch_guide
+
                 if record.transfer_reason_id.code == "other_causes":
                     record.show_other_causes_transfer_reason = True
                 if record.transfer_reason_id.code == "self_consumption":
                     record.is_dispatch_guide = False
-                else:
-                    record.is_dispatch_guide = True
 
     # === CONSTRAINT METHODS ===#
 
