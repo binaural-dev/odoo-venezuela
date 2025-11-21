@@ -34,6 +34,7 @@ class AccountMove(models.Model):
     )
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
+        from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
                 from_loyalty = self.env.context.get('from_loyalty', False)
