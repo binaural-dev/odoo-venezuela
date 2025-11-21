@@ -935,7 +935,7 @@ class AccountMove(models.Model):
         res = super()._compute_needed_terms()
 
         for invoice in self:
-            if not invoice.needed_terms:
+            if not isinstance(invoice.needed_terms, dict):
                 invoice.needed_terms = {}
             is_draft = invoice.id != invoice._origin.id
             sign = 1 if invoice.is_inbound(include_receipts=True) else -1
@@ -984,8 +984,6 @@ class AccountMove(models.Model):
                                     "foreign_balance": term["company_amount"],
                                 }
                 else:
-                    if not isinstance(invoice.needed_terms, dict):
-                        invoice.needed_terms = {}
                     for key in list(invoice.needed_terms.keys()):
                         invoice.needed_terms[key] = {
                             **invoice.needed_terms[key],
