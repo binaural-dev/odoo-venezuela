@@ -127,8 +127,9 @@ class AccountMoveRetention(models.Model):
             ):
                 move._validate_islr_retention()
                 retention = move._create_supplier_retention("islr")
-                
-                retention.action_post()
+
+                if not company.create_retentions_of_suppliers_in_draft:
+                    retention.action_post()
                 move.islr_voucher_number = retention.number
 
             if (
@@ -140,10 +141,9 @@ class AccountMoveRetention(models.Model):
             ):
                 move._validate_municipal_retention()
                 retention = move._create_supplier_retention("municipal")
-                retention.action_post()
+                if not company.create_retentions_of_suppliers_in_draft:
+                    retention.action_post()
 
-            # The IVA retention will not be generated if the invoice already has a retention that
-            # is not cancelled
             if (
                 move.generate_iva_retention
                 and not move.retention_iva_line_ids.filtered(
