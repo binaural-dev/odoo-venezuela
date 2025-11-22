@@ -918,6 +918,7 @@ class AccountMove(models.Model):
         res = super()._compute_needed_terms()
 
         for invoice in self:
+            _logger.warning("Computing needed terms for invoice %s %s", invoice.name, invoice.needed_terms)
             if not isinstance(invoice.needed_terms, dict):
                 invoice.needed_terms = {}
             is_draft = invoice.id != invoice._origin.id
@@ -958,6 +959,8 @@ class AccountMove(models.Model):
                     )
 
                     for term in invoice_payment_terms["line_ids"]:
+                        if not isinstance(invoice.needed_terms, dict):
+                            invoice.needed_terms = {}
                         for key in list(invoice.needed_terms.keys()):
                             if key["date_maturity"] == fields.Date.to_date(
                                 term.get("date")
@@ -967,6 +970,8 @@ class AccountMove(models.Model):
                                     "foreign_balance": term["company_amount"],
                                 }
                 else:
+                    if not isinstance(invoice.needed_terms, dict):
+                        invoice.needed_terms = {}
                     for key in list(invoice.needed_terms.keys()):
                         invoice.needed_terms[key] = {
                             **invoice.needed_terms[key],
