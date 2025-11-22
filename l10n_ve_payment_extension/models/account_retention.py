@@ -643,7 +643,7 @@ class AccountRetention(models.Model):
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             if 'subsidiary' in self.env.company._fields:
                 if self.env.company.subsidiary:
-                    payment_vals['account_analytic_id'] = line.move_id.account_analytic_id.id
+                    payment_vals['account_analytic_id'] = lines[0].move_id.account_analytic_id.id
                 else:
                     payment_vals['account_analytic_id'] = False
             payment = Payment.create(payment_vals)
