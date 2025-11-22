@@ -918,7 +918,6 @@ class AccountMove(models.Model):
         res = super()._compute_needed_terms()
 
         for invoice in self:
-            _logger.warning("Computing needed terms for invoice %s %s", invoice.name, invoice.needed_terms)
             if not isinstance(invoice.needed_terms, dict):
                 invoice.needed_terms = {}
             is_draft = invoice.id != invoice._origin.id
