@@ -975,6 +975,8 @@ class AccountMove(models.Model):
                     )
 
                     for term in invoice_payment_terms["line_ids"]:
+                        if not isinstance(invoice.needed_terms, dict):
+                            invoice.needed_terms = {}
                         for key in list(invoice.needed_terms.keys()):
                             if key["date_maturity"] == fields.Date.to_date(
                                 term.get("date")
@@ -984,6 +986,8 @@ class AccountMove(models.Model):
                                     "foreign_balance": term["company_amount"],
                                 }
                 else:
+                    if not isinstance(invoice.needed_terms, dict):
+                        invoice.needed_terms = {}
                     for key in list(invoice.needed_terms.keys()):
                         invoice.needed_terms[key] = {
                             **invoice.needed_terms[key],
