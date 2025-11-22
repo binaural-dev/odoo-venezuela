@@ -577,6 +577,12 @@ class AccountRetention(models.Model):
                 self.env.ref("account.account_payment_method_manual_out").id,
             )
             payment_vals["payment_type"] = "outbound"
+            if 'subsidiary' in self.env.company._fields:
+                if self.env.company.subsidiary:
+                    payment_vals['account_analytic_id'] = line.move_id.account_analytic_id.id
+                else:
+                    payment_vals['account_analytic_id'] = False
+            
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             payment.update(
@@ -635,6 +641,11 @@ class AccountRetention(models.Model):
             )
             payment_vals["payment_type"] = "inbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
+            if 'subsidiary' in self.env.company._fields:
+                if self.env.company.subsidiary:
+                    payment_vals['account_analytic_id'] = line.move_id.account_analytic_id.id
+                else:
+                    payment_vals['account_analytic_id'] = False
             payment = Payment.create(payment_vals)
             payment.update(
                 {
