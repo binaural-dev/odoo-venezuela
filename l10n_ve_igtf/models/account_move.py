@@ -187,14 +187,17 @@ class AccountMove(models.Model):
         return res
 
     def js_assign_outstanding_line(self, line_id):
+        _logger.info('entrando a l10 igtf')
         amount_residual = self.amount_residual
         res = super().js_assign_outstanding_line(line_id)
-        self.recalculate_bi_igtf(
-            line_id,
-            initial_residual=amount_residual
-            if not self.currency_id.is_zero(amount_residual)
-            else self.amount_residual,
-        )
+        lines = self.env["account.move.line"].browse(line_id)
+        if lines['move_id'].currency_id.id == self.env.ref('base.USD').id or lines['move_id'].payment_id.currency_id.id == self.env.ref('base.USD').id:
+            self.recalculate_bi_igtf(
+                line_id,
+                initial_residual=amount_residual
+                if not self.currency_id.is_zero(amount_residual)
+                else self.amount_residual,
+            )
         return res
 
     @api.depends("tax_totals")

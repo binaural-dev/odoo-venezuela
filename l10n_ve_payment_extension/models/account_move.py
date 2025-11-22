@@ -184,6 +184,11 @@ class AccountMoveRetention(models.Model):
             "foreign_inverse_rate": self.foreign_inverse_rate,
             "currency_id": self.env.user.company_id.currency_id.id,
         }
+        if 'subsidiary' in self.env.company._fields:
+                if self.env.company.subsidiary:
+                    payment_vals['account_analytic_id'] = self.account_analytic_id.id
+                else:
+                    payment_vals['account_analytic_id'] = False
         if type_retention == "islr":
             payment_vals["retention_line_ids"] = self.retention_islr_line_ids.filtered(
                 lambda rl: rl.state != "cancel"
