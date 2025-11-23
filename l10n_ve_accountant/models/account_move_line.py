@@ -2,7 +2,8 @@ import inspect
 from odoo import api, fields, models, Command, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import frozendict, formatLang, format_date, float_compare, Query
+from odoo.tools import frozendict, formatLang, format_date, float_compare, Query, float_round
+
 from datetime import date, timedelta
 import traceback
 from markupsafe import Markup
@@ -301,10 +302,10 @@ class AccountMoveLine(models.Model):
                     line.company_id.currency_id, 
                     foreign_currency,          
                     line.company_id,           
-                    line.date                  
+                    line.move_id.origin_payment_advanced_payment_id.date if line.move_id.origin_payment_advanced_payment_id else line.date #asientos de cruce toman tasa del pago          
                 )
-                
-                inverse_rate_to_use = rate 
+
+                inverse_rate_to_use = rate if inverse_rate_to_use <= 0.0 else rate
      
         balance = sum(foreign_lines.mapped("amount_currency"))
         if balance and len(currency_lines) == 1:
