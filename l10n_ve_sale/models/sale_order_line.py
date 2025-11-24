@@ -77,6 +77,11 @@ class SaleOrderLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
+
+            invoice_date = (
+                line.invoice_lines and line.invoice_lines.move_ids.date
+            ) or fields.Date.today()
+
             company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
             if line.currency_id.id == company_currency.id:
@@ -88,7 +93,7 @@ class SaleOrderLine(models.Model):
                     line.price_unit,
                     company_currency,
                     line.company_id,
-                    line.move_id.invoice_date or fields.Date.today(),
+                    invoice_date,
                 )
                 line.foreign_price = price_in_company * line.foreign_inverse_rate 
 
