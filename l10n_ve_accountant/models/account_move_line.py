@@ -63,6 +63,30 @@ class AccountMoveLine(models.Model):
         store=True,
     )
 
+    price_unit_ves = fields.Monetary(
+        string="Unit Price VES",
+        currency_field="ves_currency_id",
+        help="Unit Price in VES currency",
+        compute="_compute_price_unit_ves",
+        store=True,
+    )
+
+    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
+    def _compute_price_unit_ves(self):
+        for line in self:
+            if line.currency_id and line.currency_id.name == "VEF":
+                line.price_unit_ves = line.price_unit
+            else:
+                line.price_unit_ves = line.price_unit / line.currency_id.rate
+
+    def _compute_ves_currency_id(self):
+        ves_currency = self.env["res.currency"].search([("name", "=", "VES")], limit=1)
+        for line in self:
+            if line.currency_id and ves_currency and line.currency_id == ves_currency:
+                line.ves_currency_id = ves_currency
+            else:
+                line.ves_currency_id = False
+
     foreign_debit_adjustment = fields.Monetary(
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign debit field",
@@ -153,8 +177,20 @@ class AccountMoveLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
-            line.foreign_price = line.price_unit * line.foreign_inverse_rate
-
+            company_currency = line.company_id.currency_id
+            foreign_currency = line.company_id.foreign_currency_id
+            if line.currency_id.id == company_currency.id:
+                line.foreign_price = line.price_unit * line.foreign_inverse_rate
+            elif line.currency_id.id == foreign_currency.id:
+                line.foreign_price = line.price_unit
+            else:
+                price_in_company = line.currency_id._convert(
+                    line.price_unit,
+                    company_currency,
+                    line.company_id,
+                    line.move_id.invoice_date or fields.Date.today(),
+                )
+                line.foreign_price = price_in_company * line.foreign_inverse_rate 
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
         for line in self:
