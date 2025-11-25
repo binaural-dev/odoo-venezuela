@@ -18,6 +18,94 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    _sql_constraints = [
+        (
+            "unique_name",
+            "",
+            "Another entry with the same name already exists.",
+        ),
+        (
+            "unique_name_ve",
+            "",
+            "Another entry with the same name already exists.",
+        ),
+    ]
+
+    company_currency_rate = fields.Float(
+        string="Tasa de moneda de la compañía",
+        compute="_compute_company_currency_rate",
+        store=True,
+        copy=False,
+        help="Tasa de la moneda seleccionada en la compañía (campo inverse_rate_company de res.currency)",
+    )
+
+    @api.depends('currency_id')
+    def _compute_company_currency_rate(self):
+        for move in self:
+            currency = move.currency_id
+            currency_search = move.env["res.currency"].search([("id", "=", currency.id)], limit=1)
+            if currency_search and hasattr(currency_search, "inverse_rate"):
+                move.company_currency_rate = currency_search.inverse_rate or 1.0
+            else:
+                move.company_currency_rate = 1.0
+
+    def _auto_init(self):
+        res = super()._auto_init()
+        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
+            drop_index(self.env.cr, "account_move_unique_name", self._table)
+            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
+            # we can add the following UNIQUE INDEX
+            self.env.cr.execute(
+                """
+                WITH duplicated_sequence AS (
+                    SELECT name, partner_id, state, journal_id
+                    FROM account_move
+                    WHERE state = 'posted'
+                    AND name != '/'
+                    AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
+                GROUP BY partner_id, journal_id, name, state
+                    HAVING COUNT(*) > 1
+                ),
+                to_update AS (
+                    SELECT move.id,
+                        move.name,
+                        move.state,
+                        move.date,
+                        row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
+                        FROM duplicated_sequence
+                        JOIN account_move move ON move.name = duplicated_sequence.name
+                                            AND move.partner_id = duplicated_sequence.partner_id
+                                            AND move.state = duplicated_sequence.state
+                                            AND move.journal_id = duplicated_sequence.journal_id
+                ),
+                new_vals AS (
+                    SELECT id,
+                            name || ' (' || (row_seq-1)::text || ')' AS name
+                        FROM to_update
+                        WHERE row_seq > 1
+                )
+                UPDATE account_move
+                SET name = new_vals.name
+                FROM new_vals
+                WHERE account_move.id = new_vals.id;
+            """
+            )
+
+            self.env.cr.execute(
+                """
+                CREATE UNIQUE INDEX account_move_unique_name
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+                CREATE UNIQUE INDEX account_move_unique_name_ve
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+            """
+            )
+        return res
     def _get_fields_to_compute_lines(self):
         return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
 
@@ -195,64 +283,6 @@ class AccountMove(models.Model):
                 }
             )
 
-    def _auto_init(self):
-        res = super()._auto_init()
-        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
-            # we can add the following UNIQUE INDEX
-            self.env.cr.execute(
-                """
-                WITH duplicated_sequence AS (
-                    SELECT name, partner_id, state, journal_id
-                      FROM account_move
-                     WHERE state = 'posted'
-                       AND name != '/'
-                       AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
-                  GROUP BY partner_id, journal_id, name, state
-                    HAVING COUNT(*) > 1
-                ),
-                to_update AS (
-                    SELECT move.id,
-                           move.name,
-                           move.state,
-                           move.date,
-                           row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
-                      FROM duplicated_sequence
-                      JOIN account_move move ON move.name = duplicated_sequence.name
-                                            AND move.partner_id = duplicated_sequence.partner_id
-                                            AND move.state = duplicated_sequence.state
-                                            AND move.journal_id = duplicated_sequence.journal_id
-                ),
-               new_vals AS (
-                    SELECT id,
-                           name || ' (' || (row_seq-1)::text || ')' AS name
-                      FROM to_update
-                     WHERE row_seq > 1
-                )
-                UPDATE account_move
-                   SET name = new_vals.name
-                  FROM new_vals
-                 WHERE account_move.id = new_vals.id;
-            """
-            )
-
-            self.env.cr.execute(
-                """
-                CREATE UNIQUE INDEX account_move_unique_name
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-                CREATE UNIQUE INDEX account_move_unique_name_ve
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-            """
-            )
-        return res
-
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
         """
@@ -304,19 +334,6 @@ class AccountMove(models.Model):
         Ensure that the foreign_rate and foreign_inverse_rate are computed and computes the foreign
         debit and foreign credit of the line_ids fields (journal entries) when the move is created.
         """
-        for vals in vals_list:
-
-            if 'name' in vals and vals['name'] != "/":
-                
-                domain = [
-                    ('name', '=', vals['name']),
-                    ('partner_id', '=', vals.get('partner_id'))
-                ]
-                existing_record = self.search(domain, limit=1)
-                
-                if existing_record:
-                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-
         moves = super().create(vals_list)
 
         for move in moves:
@@ -1253,17 +1270,21 @@ class AccountMove(models.Model):
             foreign_tax_results = AccountTax._prepare_tax_lines(foreign_lines_values, move.company_id, tax_lines=foreign_tax_lines_values)
             for base_line, to_update in tax_results['base_lines_to_update']:
                 line = base_line['record']
+                foreign_base_update = None
+                for f_base_line, f_to_update in foreign_tax_results.get('base_lines_to_update', []):
+                    if f_base_line['record'].id == line.id:
+                        foreign_base_update = f_to_update
+                        break
+                if foreign_base_update:
+                    to_update['foreign_balance'] = foreign_base_update.get('amount_currency', 0)
+                else:
+                    to_update['foreign_balance'] = to_update['amount_currency']
                 if is_write_needed(line, to_update):
-                    foreign_base_update = None
-                    for f_base_line, f_to_update in foreign_tax_results.get('base_lines_to_update', []):
-                        if f_base_line['record'].id == line.id:
-                            foreign_base_update = f_to_update
-                            break
-                    if foreign_base_update:
-                        to_update['foreign_balance'] = foreign_base_update.get('amount_currency', 0)
-                    else:
-                        to_update['foreign_balance'] = to_update['amount_currency']
                     line.write(to_update)
+                else:
+                    foreign_balance_new = to_update.get('foreign_balance')
+                    if foreign_balance_new is not None and getattr(line, 'foreign_balance', None) != foreign_balance_new:
+                        line.write({'foreign_balance': foreign_balance_new})
             for tax_line_vals in tax_results['tax_lines_to_delete']:
                 to_delete.append(tax_line_vals['record'].id)
 
@@ -1300,12 +1321,17 @@ class AccountMove(models.Model):
                             foreign_tax_update = f_tax_line_vals
                             break
 
+                if foreign_tax_update:
+                    to_update['foreign_balance'] = foreign_tax_update.get('amount_currency', 0)
+                else:
+                    to_update['foreign_balance'] = to_update['amount_currency']
                 if is_write_needed(line, to_update):
-                    if foreign_tax_update:
-                        to_update['foreign_balance'] = foreign_tax_update.get('amount_currency', 0)
-                    else:
-                        to_update['foreign_balance'] = to_update['amount_currency']
                     line.write(to_update)
+                else:
+                    # Si solo foreign_balance cambió, igual lo escribimos
+                    foreign_balance_new = to_update.get('foreign_balance')
+                    if foreign_balance_new is not None and getattr(line, 'foreign_balance', None) != foreign_balance_new:
+                        line.write({'foreign_balance': foreign_balance_new})
 
         if to_delete:
             self.env['account.move.line'].browse(to_delete).with_context(dynamic_unlink=True).unlink()
