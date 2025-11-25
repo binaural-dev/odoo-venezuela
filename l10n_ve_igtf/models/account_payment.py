@@ -80,7 +80,7 @@ class AccountPaymentIgtf(models.Model):
             force_balance
         )
         if self.payment_from_wizard:
-            if self.igtf_percentage:
+            if self.igtf_percentage and self.journal_id.is_igtf:
                 self._create_igtf_moves_in_payments(vals)
 
         return vals

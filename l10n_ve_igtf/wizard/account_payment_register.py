@@ -152,7 +152,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         Returns:
             Payment: The created payment.
         """
-
         res = super(AccountPaymentRegisterIgtf, self)._create_payments()
         for payment in res:
             if (
