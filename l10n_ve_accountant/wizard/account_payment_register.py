@@ -124,15 +124,10 @@ class AccountPaymentRegister(models.TransientModel):
             else:
                 wizard.payment_difference = 0.0
 
-    def _get_total_amount_in_wizard_currency_to_full_reconcile(
+    """ def _get_total_amount_in_wizard_currency_to_full_reconcile(
         self, batch_result, early_payment_discount=True
     ):
-        """Compute the total amount needed in the currency of the wizard to fully reconcile the batch of journal
-        items passed as parameter.
-
-        :param batch_result:    A batch returned by '_get_batches'.
-        :return:                An amount in the currency of the wizard.
-        """
+      
         
         self.ensure_one()
         comp_curr = self.company_id.currency_id
@@ -180,3 +175,4 @@ class AccountPaymentRegister(models.TransientModel):
                 ),
                 False,
             )
+ """
