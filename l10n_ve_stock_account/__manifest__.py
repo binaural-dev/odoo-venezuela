@@ -16,7 +16,6 @@
         "web",
     ],
     "data": [
-        "security/res_groups.xml",
         "security/ir.model.access.csv",
         "security/res_groups.xml",
         "data/dispatch_guide_paperformat.xml",

@@ -18,7 +18,7 @@ class IGTFTestCommon(TransactionCase):
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "foreign_currency_id": self.currency_vef.id,
+                "currency_foreign_id": self.currency_vef.id,
             }
         )
 
@@ -95,12 +95,12 @@ class IGTFTestCommon(TransactionCase):
             "13600", "asset_current", "Anticipo Proveedores", reconcile=True
         )
 
-        self.company.write(
-            {
-                "advance_customer_account_id": self.advance_cust_acc.id,
-                "advance_supplier_account_id": self.advance_supp_acc.id,
-            }
-        )
+        # self.company.write(
+        #     {
+        #         "advance_customer_account_id": self.advance_cust_acc.id,
+        #         "advance_supplier_account_id": self.advance_supp_acc.id,
+        #     }
+        # )
 
         # -------- Método de pago manual inbound -----------------------
         manual_in = self.env.ref("account.account_payment_method_manual_in")
@@ -131,9 +131,16 @@ class IGTFTestCommon(TransactionCase):
                 "property_account_income_id": self.acc_income.id,
             }
         )
+        self.tax_iva_exent = self.env['account.tax'].create({
+            'name': 'IVA exento',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'company_id': self.company.id,
+        })
 
         self.invoice = self._create_invoice_usd(1000.0)
-
+        
     # ------------------------------------------------------------------
     # UTILITY: creates a customer invoice in USD for the given amount
 
@@ -144,6 +151,7 @@ class IGTFTestCommon(TransactionCase):
                 "product_id": self.product.id,
                 "quantity": 1,
                 "price_unit": amount,
+                "tax_ids": [(6, 0, [self.tax_iva_exent.id])],
             }
         )
         inv = self.env["account.move"].create(
@@ -157,7 +165,6 @@ class IGTFTestCommon(TransactionCase):
                 "invoice_line_ids": [line],
             }
         )
-        inv.action_post()
         return inv
 
     def _create_payment(
