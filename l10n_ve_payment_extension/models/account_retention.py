@@ -577,6 +577,12 @@ class AccountRetention(models.Model):
                 self.env.ref("account.account_payment_method_manual_out").id,
             )
             payment_vals["payment_type"] = "outbound"
+            if 'subsidiary' in self.env.company._fields:
+                if self.env.company.subsidiary:
+                    payment_vals['account_analytic_id'] = lines[0].move_id.account_analytic_id.id
+                else:
+                    payment_vals['account_analytic_id'] = False
+            
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             payment.update(
@@ -635,6 +641,11 @@ class AccountRetention(models.Model):
             )
             payment_vals["payment_type"] = "inbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
+            if 'subsidiary' in self.env.company._fields:
+                if self.env.company.subsidiary:
+                    payment_vals['account_analytic_id'] = lines[0].move_id.account_analytic_id.id
+                else:
+                    payment_vals['account_analytic_id'] = False
             payment = Payment.create(payment_vals)
             payment.update(
                 {
@@ -908,12 +919,9 @@ class AccountRetention(models.Model):
         """
         for payment in self.mapped("payment_ids"):
             payment.action_post()
-            if payment.partner_type == "supplier":
-                self._reconcile_supplier_payment(payment)
-            if payment.partner_type == "customer":
-                self._reconcile_customer_payment(payment)
+            self._reconcile_payment(payment)
 
-    def _reconcile_supplier_payment(self, payment):
+    def get_amount_field_and_account_type(self, payment, is_payment_credit=False):
 
         if payment.payment_type == "outbound":
 

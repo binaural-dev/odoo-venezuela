@@ -124,7 +124,7 @@
 
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" readonly="move_type != 'in_invoice'" optional="hide" />
+                <field name="foreign_price" readonly="move_type != 'in_invoice'" optional="hide"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_subtotal']"
                 position="after">

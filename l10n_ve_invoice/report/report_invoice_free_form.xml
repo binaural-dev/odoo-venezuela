@@ -165,12 +165,7 @@
                                                 <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
                                             </td>
                                             <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                                <t t-if="base_vef">
-                                                    <span class="text-nowrap" t-field="line.price_unit_ves"/>
-                                                </t>
-                                                <t t-else="">
-                                                    <span class="text-nowrap" t-field="line.price_unit_ves"/>
-                                                </t>
+                                                <span class="text-nowrap" t-field="line.price_unit_ves"/>
                                             </td>
                                             <td t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                 <span class="text-nowrap" t-field="line.discount"/>
@@ -309,12 +304,15 @@
                     <tr style="line-height:1.2px;">
                         <td>
                             <span t-if="group.get('tax_amount_currency', 0.0) != 0.0" t-out="'Total G ' + group.get('group_name', '')"/>
-                            <span t-else=""></span>
+                            <span t-else="">Exento</span>
                         </td>
                         <td class="text-end o_price_total">
                             <span class="text-nowrap"
                                 t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0"
                                 t-out="base_vef and group.get('formatted_base_amount_currency_ves', group.get('formatted_base_amount_currency_ves', 0.0)) or group.get('formatted_base_amount_currency_ves', group.get('formatted_base_amount_currency_ves', 0.0))"/>
+                            <span 
+                            t-else="" 
+                            t-out="group.get('formatted_base_amount_currency_ves')"></span>
                         </td>
                     </tr>
                     
@@ -325,7 +323,7 @@
                         </td>
                         <td class="text-end o_price_total">
                             <span class="text-nowrap"
-                                t-out="base_vef and group.get('formatted_tax_amount_currency_ves', group.get('formatted_tax_amount_currency_ves', 0.0)) or group.get('formatted_tax_amount_currency_ves', group.get('formatted_tax_amount_currency_ves', 0.0))"/>
+                                t-out="group.get('formatted_tax_amount_currency_ves', group.get('formatted_tax_amount_currency_ves', 0.0)) or group.get('formatted_tax_amount_currency_ves', group.get('formatted_tax_amount_currency_ves', 0.0))"/>
                         </td>
                     </tr>
 
@@ -364,7 +362,7 @@
                 <t t-set="tax_groups" t-value="subtotal.get('tax_groups', [])"/>
                 <tr style="line-height:1.2px;" class="mt-2">
                     <td>
-                        Subtotal
+                        <span>Subtotal</span>
                     </td>
                     <td class="text-end o_price_total">
                         <span class="text-nowrap"
@@ -372,7 +370,7 @@
                     </td>
                 </tr>
                 <tr t-if="display_discount">
-                    <td><strong>Descuento total</strong></td>
+                    <td><span>Descuento total</span></td>
                     <td class="text-end">
                         <span t-out="total['formatted_total_discount']"/>
                     </td>
@@ -381,31 +379,43 @@
                     <tr style="line-height:1.2px;">
                         <td>
                             <span t-if="group.get('tax_amount_currency', 0.0) != 0.0" t-out="'Total G ' + group.get('group_name', '')"/>
-                            <span t-out="group.get('currency_id', '')" />
+                            <span t-else="">Exento</span>
                         </td>
                         <td class="text-end o_price_total">
                             <span class="text-nowrap"
                                 t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0"
                                 t-out="base_vef and group.get('formatted_base_amount_currency', group.get('formatted_base_amount_currency', 0.0)) or group.get('formatted_base_amount_currency', group.get('formatted_base_amount_currency', 0.0))"/>
+                            <span 
+                            t-else="" 
+                            t-out="group.get('formatted_base_amount_currency')"></span>
                         </td>
                     </tr>
+
                     <tr t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0" style="line-height:1.2;">
                         <td>
-                            
-                            <span t-out="group.get('group_name', '')"/>
+                            <span t-if="group.get('tax_amount_currency', 0.0) != 0.0" t-out="group.get('group_name', '')"/>  
+                            <span t-else="">Exento</span>
                         </td>
                         <td class="text-end o_price_total">
                             <span class="text-nowrap"
-                                t-out="base_vef and group.get('formatted_tax_amount_currency', group.get('formatted_base_amount_currency', 0.0)) or group.get('formatted_tax_amount_currency', group.get('formatted_base_amount_currency', 0.0))"/>
+                                t-out="group.get('formatted_tax_amount_currency', group.get('formatted_tax_amount_currency', 0.0)) or group.get('formatted_tax_amount_currency', group.get('formatted_tax_amount_currency', 0.0))"/>
                         </td>
                     </tr>
+
                     <tr t-if="group.get('tax_amount', 0.0) == 0.0 and group.get('tax_amount_currency', 0.0) == 0.0 and group.get('tax_amount_foreign_currency', 0.0) == 0.0" style="line-height:1.2;">
                         <td>
-                            <span t-out="group.get('group_name', '')"/>
+                            <span t-if="group.get('tax_amount_currency', 0.0) != 0.0" t-out="group.get('group_name', '')  "/>   
+                            <span t-else="">Exento</span>
                         </td>
                         <td class="text-end o_price_total">
-                            <span class="text-nowrap"
+                            <span 
+                            class="text-nowrap"
+                                t-if="group.get('tax_amount', 0.0) == 0.0"
                                 t-out="base_vef and group.get('formatted_base_amount_currency', 0.0) or group.get('formatted_base_amount_currency', 0.0)"/>
+                            <span 
+                            class="text-nowrap"
+                                t-else=""
+                                t-out="base_vef and group.get('formatted_base_amount_currency', 0.0) or group.get('formatted_base_amount_currency', 0.0)"/>    
                         </td>
                     </tr>
                 </t>
@@ -483,11 +493,18 @@
 
         </template>
 
-        
-
         <template id="template_invoice_free_form_l10n_ve_invoice">
             <t t-call="web.html_container">
-                <t t-foreach="docs" t-as="invoice">
+                 <t t-set="requested_doc_ids" t-value="docs.env.context.get('active_ids') or docs.env.context.get('doc_ids') or []"/>
+
+                <t t-if="requested_doc_ids">
+
+                    <t t-set="requested_doc_ids" t-value="list(dict.fromkeys(requested_doc_ids))"/>
+
+                </t>
+
+                <t t-set="docs_to_print" t-value="docs.env['account.move'].browse(requested_doc_ids) if requested_doc_ids else docs"/>
+                <t t-foreach="docs_to_print" t-as="invoice">
                     <t t-set="lang" t-value="invoice.partner_id.lang"/>
                     <t t-set="o" t-value="invoice.with_context(lang=lang)" />
                     <t t-set="doc" t-value="o" />

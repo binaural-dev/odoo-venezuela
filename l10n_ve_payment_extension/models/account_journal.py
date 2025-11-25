@@ -6,7 +6,7 @@ class AccountJournal(models.Model):
 
     def _get_default_account_domain(self):
         return """[
-            ('company_id', '=', company_id),
+            ('company_ids', 'in', company_id),
             ('account_type', 'in', ('asset_cash', 'liability_credit_card','asset_current','liability_current') if type == 'bank'
                                    else ('asset_cash',) if type == 'cash'
                                    else ('income', 'income_other','expense') if type == 'sale'

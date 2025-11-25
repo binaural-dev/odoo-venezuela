@@ -1,12 +1,8 @@
-import inspect
-from contextlib import ExitStack, contextmanager
-from odoo import api, fields, models, Command, _
+
+from odoo import api, fields, models, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import frozendict, formatLang, format_date, float_compare, Query
-from datetime import date, timedelta
-import traceback
-
+from odoo.tools import float_compare
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -70,32 +66,21 @@ class AccountMoveLine(models.Model):
     )
 
     price_unit_ves = fields.Monetary(
+        string="Unit Price VES",
         currency_field="ves_currency_id",
-        help="Price Unit in VES",
+        help="Unit Price in VES currency",
         compute="_compute_price_unit_ves",
         store=True,
     )
 
-    @api.depends("product_id", "product_uom_id", "move_id.currency_id")
+    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
     def _compute_price_unit_ves(self):
         for line in self:
-            if (
-                not line.product_id
-                or line.display_type in ("line_section", "line_subsection", "line_note")
-                or line.is_imported
-            ):
-                continue
-            document_type = "sale" if line.move_id.is_sale_document(include_receipts=True) else "purchase" if line.move_id.is_purchase_document(include_receipts=True) else "other"
-            line.price_unit_ves = line.product_id._get_tax_included_unit_price(
-                line.move_id.company_id,
-                self.env.ref("base.VEF"),
-                line.move_id.date,
-                document_type,
-                fiscal_position=line.move_id.fiscal_position_id,
-                product_uom=line.product_uom_id,
-            )
+            if line.currency_id and line.currency_id.name == "VEF":
+                line.price_unit_ves = line.price_unit
+            else:
+                line.price_unit_ves = line.price_unit / line.currency_id.rate
 
-    
     def _compute_ves_currency_id(self):
         ves_currency = self.env["res.currency"].search([("name", "=", "VES")], limit=1)
         for line in self:
@@ -140,6 +125,7 @@ class AccountMoveLine(models.Model):
                 document_type,
                 fiscal_position=line.move_id.fiscal_position_id,
                 product_uom=line.product_uom_id,
+                product_price_unit=line.price_unit,
             )
 
     @api.onchange("amount_currency", "currency_id")
@@ -196,23 +182,19 @@ class AccountMoveLine(models.Model):
         for line in self:
             company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
-            # Si la línea está en moneda principal de la compañía
             if line.currency_id.id == company_currency.id:
                 line.foreign_price = line.price_unit * line.foreign_inverse_rate
-            # Si la línea está en moneda foránea
             elif line.currency_id.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
-            # Si la línea está en otra moneda (ni principal ni foránea)
             else:
-                # Convertir de la moneda de la línea a la moneda principal
                 price_in_company = line.currency_id._convert(
                     line.price_unit,
                     company_currency,
                     line.company_id,
                     line.move_id.invoice_date or fields.Date.today(),
                 )
-                # Luego convertir de la moneda principal a la foránea usando la tasa de la factura
-                line.foreign_price = price_in_company * line.foreign_inverse_rate 
+                line.foreign_price = price_in_company * line.foreign_inverse_rate
+
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
         for line in self:
