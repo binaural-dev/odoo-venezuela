@@ -16,6 +16,15 @@ class StockPicking(models.Model):
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
         pickings = self.env["stock.picking"]
+        if self.reference_ids:
+            pickings = self.search(
+                [
+                    "&",
+                    ("reference_ids", "=", self.reference_ids.id),
+                    ("type_delivery_step", "=", picking_type),
+                ]
+            )
+            pickings -= self
         action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
 
         if len(pickings) > 1:
@@ -42,8 +51,7 @@ class StockPicking(models.Model):
             default_partner_id=self.partner_id.id,
             default_picking_type_id=picking_id.picking_type_id.id,
             default_origin=self.name,
-            #default_group_id=picking_id.group_id.id,
-            #default_group_id=picking_id.group_id.id,
+            default_reference_ids=picking_id.reference_ids.id,
             default_type_delivery_step=picking_type,
         )
         return action
@@ -64,8 +72,11 @@ class StockPicking(models.Model):
     ##TODO Considerar si se pueden refactorizar estas funciones y dejar una sola a la que se le pase
     ###### el tipo de picking.
     def _get_picks(self, assigned=False):
+        if not self.reference_ids:
+            return self.env["stock.picking"]
         domain = [
             "&",
+            ("reference_ids", "=", self.reference_ids.id),
             ("type_delivery_step", "=", "pick"),
             ("id", "!=", self.id),
         ]
@@ -78,8 +89,11 @@ class StockPicking(models.Model):
         return self.search(domain)
 
     def _get_packs(self, assigned=False):
+        if not self.reference_ids:
+            return self.env["stock.picking"]
         domain = [
             "&",
+            ("reference_ids", "=", self.reference_ids.id),
             ("type_delivery_step", "=", "pack"),
             ("id", "!=", self.id),
         ]
@@ -92,8 +106,11 @@ class StockPicking(models.Model):
         return self.search(domain)
 
     def _get_outs(self, assigned=False):
+        if not self.reference_ids:
+            return self.env["stock.picking"]
         domain = [
             "&",
+            ("reference_ids", "=", self.reference_ids.id),
             ("type_delivery_step", "=", "out"),
             ("id", "!=", self.id),
         ]
@@ -146,11 +163,13 @@ class StockPicking(models.Model):
         for val in vals_list:
             self.validate_block_transfers_expedition(vals=val)
         res = super().create(vals_list)
+        
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
         return res
 
     def write(self, vals):
         res = super().write(vals)
+        
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
         keys_to_check = [
             "move_line_nosuggest_ids",
