@@ -193,7 +193,8 @@ class AccountMoveLine(models.Model):
                     line.company_id,
                     line.move_id.invoice_date or fields.Date.today(),
                 )
-                line.foreign_price = price_in_company * line.foreign_inverse_rate 
+                line.foreign_price = price_in_company * line.foreign_inverse_rate
+
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
         for line in self:

@@ -3,7 +3,6 @@ from odoo.tests import tagged, TransactionCase
 from odoo import Command, fields
 from odoo.tools.float_utils import float_round
 from odoo.exceptions import ValidationError
-
 _logger = logging.getLogger(__name__)
 
 
@@ -191,8 +190,8 @@ class TestAccountRetentionSequence(TransactionCase):
                             "foreign_retention_amount": float_round(
                                 invoice.amount_untaxed * 0.16, precision_rounding=0.01
                             ),
-                            "foreign_invoice_amount": invoice.amount_untaxed,
-                            "payment_concept_id": payment_concept.id,
+                            'foreign_invoice_amount': invoice.amount_untaxed,
+                            'payment_concept_id': payment_concept.id,
                         }
                     )
                 ],

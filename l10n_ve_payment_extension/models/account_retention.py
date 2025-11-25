@@ -919,12 +919,9 @@ class AccountRetention(models.Model):
         """
         for payment in self.mapped("payment_ids"):
             payment.action_post()
-            if payment.partner_type == "supplier":
-                self._reconcile_supplier_payment(payment)
-            if payment.partner_type == "customer":
-                self._reconcile_customer_payment(payment)
+            self._reconcile_payment(payment)
 
-    def _reconcile_supplier_payment(self, payment):
+    def get_amount_field_and_account_type(self, payment, is_payment_credit=False):
 
         if payment.payment_type == "outbound":
 
