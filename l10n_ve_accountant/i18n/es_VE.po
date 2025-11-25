@@ -1463,3 +1463,8 @@ msgstr "Informe de Detalles de Facturas de Cuentas"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "to"
 msgstr "Hasta"
+
+#. module: l10n_ve_accountant
+#: model:ir.rule,name:l10n_ve_accountant.account_move_unlink_draft_only
+msgid "delete invoice if draft"
+msgstr "Eliminar factura si está en borrador"
