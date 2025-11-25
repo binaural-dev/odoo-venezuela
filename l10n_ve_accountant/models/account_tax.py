@@ -24,18 +24,18 @@ class AccountTax(models.Model):
         res = super()._get_tax_totals_summary(
             base_lines, currency, company, cash_rounding
         )
+        #only ves
+        ves_currency = self.env.ref('base.VEF')
         # Obtener el registro de factura desde el contexto si está disponible
         active_model = self.env.context.get('active_model')
         active_id = self.env.context.get('active_id')
         if not active_model or not active_id:
             return res
         record = self.env[active_model].browse(active_id)
-
-
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
         foreign_lines = []
-        # has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
+        #has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
         # if has_discount:
         #     base_without_discount = [line.copy() for line in base_lines if line]
         #     for base_line in base_without_discount:
@@ -52,6 +52,7 @@ class AccountTax(models.Model):
         elif record._name in ('sale.order','purchase.order'):
             company_id = (self.company_id or self.env.company)
             foreign_lines = [line._prepare_foreign_base_line_for_taxes_computation() for line in record.order_line]
+            
             self._add_tax_details_in_base_lines(foreign_lines, company_id)
             self._round_base_lines_tax_details(foreign_lines, company_id)
         foreign_res = super()._get_tax_totals_summary(
@@ -60,11 +61,12 @@ class AccountTax(models.Model):
             company,
             cash_rounding
         )
+        #amounts in foreign currency
         res['foreign_currency_id'] = foreign_res['currency_id']
+        res['ves_currency_id'] = self.env.ref('base.VEF').id
         res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
         res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
         res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
-
         # Moneda Base
         res['formatted_base_amount_currency'] = formatLang(
             env=self.env,
@@ -81,6 +83,24 @@ class AccountTax(models.Model):
             value=res.get('total_amount_currency', 0.0),
             currency_obj=currency_id
         )
+
+        #only VES amounts
+        res['formatted_base_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('base_amount', 0.0),
+            currency_obj=ves_currency
+        )
+        res['formatted_tax_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('tax_amount', 0.0),
+            currency_obj=ves_currency
+        )
+        res['formatted_total_amount_currency_ves'] = formatLang(
+            env=self.env,
+            value=res.get('total_amount', 0.0),
+            currency_obj=ves_currency
+        )
+    
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
             env=self.env,
@@ -157,6 +177,23 @@ class AccountTax(models.Model):
                     value=res_tax_group.get('display_base_amount_currency', 0.0),
                     currency_obj=currency_id
                 )
+                #ONLY VES
+                res_tax_group['formatted_base_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('base_amount', 0.0),
+                    currency_obj=ves_currency
+                )
+                
+                res_tax_group['formatted_tax_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('tax_amount', 0.0),
+                    currency_obj=ves_currency
+                )
+                res_tax_group['formatted_total_amount_currency_ves'] = formatLang(
+                    env=self.env,
+                    value=res_tax_group.get('total_amount', 0.0),
+                    currency_obj=ves_currency
+                )
                 # Foranea
                 res_tax_group['formatted_base_amount_foreign_currency'] = formatLang(
                     env=self.env,
@@ -173,6 +210,7 @@ class AccountTax(models.Model):
                     value=res_tax_group.get('display_base_amount_foreign_currency', 0.0),
                     currency_obj=foreign_currency_id
                 )
+        _logger.warning("TOTALES FINALES CON MONEDAS: %s", res)
         return res
     
     @api.model
@@ -223,10 +261,10 @@ class AccountTax(models.Model):
             # For all computation that are inferring a base amount in order to reach a total you know in advance, you have to force some
             # base/tax amounts for the computation (E.g. down payment, combo products, global discounts etc).
             'manual_tax_amounts': load('manual_tax_amounts', None, from_base_line=True),
-
+            'manual_total_excluded_currency': load('manual_total_excluded_currency', None, from_base_line=True),
             # Add a function allowing to filter out some taxes during the evaluation. Those taxes can't be removed from the base_line
             'filter_tax_function': load('filter_tax_function', None, from_base_line=True),
-
+            'manual_total_excluded' : load('manual_total_excluded', None, from_base_line=True),
             # ===== Accounting stuff =====
             'sign': load('sign', 1.0),
             'is_refund': load('is_refund', False),
