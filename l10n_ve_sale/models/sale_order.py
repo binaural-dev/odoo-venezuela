@@ -78,8 +78,7 @@ class SaleOrder(models.Model):
 
     pricelist_id = fields.Many2one(
         domain=lambda self: (
-            "[('company_id', 'in', (company_id, False)),"
-            f"('currency_id', '=', {self.env.company.currency_id.id})]"
+            "[('company_id', 'in', (company_id, False))]"
         )
     )
 
@@ -465,7 +464,7 @@ class SaleOrder(models.Model):
             if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
                 for line in order.order_line:
                     if (
-                        line.product_id.detailed_type == "product"
+                        line.product_id.product_tmpl_id.detailed_type == "product"
                         and line.product_id.qty_available < line.product_uom_qty
                     ):
                         msg = _("Does not have enough units available for the product ")
@@ -475,6 +474,7 @@ class SaleOrder(models.Model):
                             line.product_uom_qty,
                         )
                         raise ValidationError(msg)
+            
 
                 if (
                     order.company_id.account_use_credit_limit

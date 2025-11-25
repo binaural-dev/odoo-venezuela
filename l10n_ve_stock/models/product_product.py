@@ -53,8 +53,6 @@ class ProductProduct(models.Model):
             )
             raise ValidationError(_("Barcode(s) already assigned:\n\n%s", duplicates_as_str))
 
-        if self.env["product.packaging"].search(domain, order="id", limit=1):
-            raise ValidationError(_("A packaging already uses the barcode"))
 
     def _compute_quantities_dict(
         self, lot_id, owner_id, package_id, from_date=False, to_date=False, location=False
