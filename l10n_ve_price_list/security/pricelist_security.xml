@@ -1,0 +1,5 @@
+<odoo>
+    <record id="group_pricelist_change_permission" model="res.groups">
+        <field name="name">Pricelist Change Permission</field>
+    </record>
+</odoo>

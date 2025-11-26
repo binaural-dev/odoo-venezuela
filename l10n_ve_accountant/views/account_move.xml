@@ -145,12 +145,12 @@
             </xpath>
 
             <xpath
-                expr="//notebook/page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']"
+                expr="//notebook/page/field[@name='line_ids']/list/field[@name='tax_ids']"
                 position="attributes">
                 <attribute name="readonly">1</attribute>
             </xpath>
 
-            <xpath expr="//page/field[@name='journal_line_ids']/list/field[@name='balance']"
+            <xpath expr="//field[@name='balance']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field
