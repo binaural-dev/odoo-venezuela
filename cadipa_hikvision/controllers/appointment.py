@@ -14,8 +14,8 @@ class CadipaWebsiteAppointment(AppointmentControllerMulti):
 
     def _post_submission_hook(self, created_events):
         """
-        Sobrescribe el hook del padre para disparar la sincronización
-        con HikCentral para los eventos recién creados.
+        Override the parent hook to trigger synchronization
+        with HikCentral for newly created events.
         """
         super(CadipaWebsiteAppointment, self)._post_submission_hook(created_events)
 
@@ -119,6 +119,7 @@ class CadipaWebsiteAppointment(AppointmentControllerMulti):
                 if hik_user.hikcentral_person_api_id:
                     try:
                         hik_user.action_delete_from_hikcentral()
+                        hik_user.action_send_cancellation_email()
                     except Exception as e:
                         _logger.warning(
                             f"Failed to delete from HikCentral API; proceeding with local deletion: {e}"
