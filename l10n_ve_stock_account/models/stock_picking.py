@@ -929,7 +929,10 @@ class StockPicking(models.Model):
                 continue
             elif (
                 picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id or picking.transfer_reason_id.id == other_causes_reason.id
+                and (
+                    picking.transfer_reason_id.id == consignment_reason.id
+                    or picking.transfer_reason_id.id == other_causes_reason.id
+                )
             ):
                 picking.is_dispatch_guide = True
 
