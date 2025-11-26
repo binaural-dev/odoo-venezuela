@@ -182,21 +182,24 @@ class AccountMoveRetention(models.Model):
                 lambda rl: rl.state != "cancel"
             ).mapped("invoice_amount")
         )
-        self._check_retention_vs_move(sum_invoice_amount)
+        self._check_retention_vs_move(islr_retention)
 
         if not self.partner_id.type_person_id:
             raise UserError(_("The partner must have a type of person"))
         if sum_invoice_amount <= 0:
             raise UserError(_("The amount of the retention must be greater than zero."))
 
-    def _check_retention_vs_move(self, sum_invoice_amount):
-        if sum_invoice_amount > self.tax_totals.get("amount_untaxed", 0.0):
-            raise UserError(
-                _(
-                    "The amount of the retention is greater than the total amount of the invoice %s."
+    @api.model
+    def _check_retention_vs_move(self, islr_retention_lines):
+        for line in islr_retention_lines:
+            move = line.move_id
+            invoice_base = move.tax_totals.get("amount_untaxed", 0.0)
+            if line.invoice_amount > invoice_base:
+                raise UserError(
+                    _(
+                        "The taxable base of one of the withholding lines is greater than the taxable base of the invoice"
+                    )
                 )
-                % self.name
-            )
 
     def _validate_iva_retention(self):
         """
