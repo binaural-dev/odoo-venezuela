@@ -217,6 +217,7 @@ class StockPicking(models.Model):
                             "transfer_ids": self,
                             "from_picking": True,
                             "fiscal_position_id": picking_id.sale_id.fiscal_position_id.id if picking_id.sale_id.fiscal_position_id else False,
+                            "invoice_payment_term_id": picking_id.sale_id.payment_term_id.id if picking_id.sale_id.payment_term_id else False,
                         }
                     )
                 else:
