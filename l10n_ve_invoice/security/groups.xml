@@ -1,0 +1,7 @@
+<odoo>
+    <!-- Grupo para cambiar la lista de precios en facturas originadas en pedidos de venta -->
+    <record id="group_change_pricelist_invoice_so" model="res.groups">
+        <field name="name">Cambiar lista de precios en factura de pedido de venta</field>
+        <field name="category_id" ref="base.module_category_accounting_and_finance"/>
+    </record>
+</odoo>

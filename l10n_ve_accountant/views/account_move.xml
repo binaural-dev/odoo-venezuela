@@ -10,6 +10,11 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
+                <!-- Solo usuarios del grupo pueden editar la lista de precios si la factura proviene de un pedido de venta -->
+                <xpath expr="//field[@name='pricelist_id']" position="attributes">
+                    <attribute name="groups">l10n_ve_invoice.group_change_pricelist_invoice_so</attribute>
+                    <attribute name="readonly">context.get('sale_order_origin', False) and not user_has_groups('l10n_ve_invoice.group_change_pricelist_invoice_so')</attribute>
+                </xpath>
             <xpath expr="//div[@class='d-flex gap-1 text-muted'][1]" position="after">
                 <!-- TODO REGRESAR A REPLACE Y CAMBIAR EL XPR A //div[@class='w-100'][1] descomentar
                 el codigo de abajo.
@@ -150,7 +155,7 @@
                 <attribute name="readonly">1</attribute>
             </xpath>
 
-            <xpath expr="//page/field[@name='journal_line_ids']/list/field[@name='balance']"
+            <xpath expr="//field[@name='balance']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field
