@@ -1,0 +1,92 @@
+<odoo>
+    <template id="appointment_validated_guests_qr_image_modal_edit" inherit_id="binaural_memberships.appointment_validated_guests_inherit">
+        <xpath expr="//div[contains(@t-foreach, 'event.guest_ids')]/div[hasclass('d-flex')]" position="replace">
+            
+            <div class="d-flex align-items-center justify-content-between">
+                
+                <div class="d-flex align-items-center">
+                    
+                    <t t-set="qr_code_src" t-value="event.get_guest_hik_qr(guest.id)"/>
+                    <t t-set="modal_id" t-value="'guestQrModal_%s' % guest.id"/>
+                    <t t-set="download_name" t-value="'QR_%s.png' % (guest.name or '').replace(' ', '_')"/>
+                    
+                    <div t-if="qr_code_src" class="me-3 text-center">
+                        <a href="#" role="button" data-bs-toggle="modal" t-att-data-bs-target="'#' + modal_id" class="d-block text-decoration-none">
+                            <img t-att-src="qr_code_src" alt="QR" class="shadow-sm mb-1" style="width: 50px; height: 50px; border: 1px solid #ddd; padding: 2px; border-radius: 4px; object-fit: contain; cursor: pointer;"/>
+                        </a>
+                        <div class="d-flex justify-content-center gap-1">
+                            <button type="button" class="btn btn-light btn-sm p-0 text-primary" style="width: 24px; height: 24px; border: 1px solid #eee;" data-bs-toggle="modal" t-att-data-bs-target="'#' + modal_id"><i class="fa fa-eye"></i></button>
+                            <a t-att-href="qr_code_src" t-att-download="download_name" class="btn btn-light btn-sm p-0 text-success d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; border: 1px solid #eee;"><i class="fa fa-download"></i></a>
+                        </div>
+
+                        <div class="modal fade" t-att-id="modal_id" tabindex="-1" aria-hidden="true" style="z-index: 1055;">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Acces: <t t-esc="guest.name"/></h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body bg-light">
+                                        
+                                        <div class="text-center mb-3">
+                                            <img t-att-src="qr_code_src" style="width: 100%; max-width: 300px; height: auto; border-radius: 8px; border: 1px solid #ddd;"/>
+                                            <div class="mt-2 text-muted small">
+                                                ID: <t t-esc="guest.prefix_vat"/>-<t t-esc="guest.vat"/>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-4 pt-3 border-top">
+                                            <label class="form-label fw-bold small text-muted">Wrong email? Edit it and resend the QR:</label>
+                                            
+                                            <form class="js_guest_resend_email_form" 
+                                                t-att-data-token="event.access_token"
+                                                t-att-data-guest-id="guest.id">
+                                                
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-white"><i class="fa fa-envelope text-muted"></i></span>
+                                                    <input type="email" name="email" class="form-control" required="required" t-att-value="guest.email" placeholder="nuevo@correo.com"/>
+                                                    
+                                                    <button type="submit" class="btn btn-warning text-dark" title="Actualizar y Reenviar">
+                                                        <i class="fa fa-paper-plane me-1"></i> <span>Re send</span>
+                                                    </button>
+                                                </div>
+                                                
+                                                <div class="js_feedback_msg mt-2 small fw-bold d-none"></div>
+                                            </form>
+                                        </div>
+
+                                    </div>
+                                    <div class="modal-footer justify-content-between">
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                                        <a t-att-href="qr_code_src" t-att-download="download_name" class="btn btn-primary btn-sm">
+                                            <i class="fa fa-download me-1"></i> Download Image
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                    <div class="d-flex flex-column">
+                        <span class="fw-bold" t-field="guest.name"/>
+                        <small t-if="guest.email" class="text-muted" t-field="guest.email"></small>
+                        <small t-if="guest.vat" class="text-muted"><t t-out="guest.prefix_vat"/>-<t t-out="guest.vat"/></small>
+                    </div>
+                </div>
+
+                <div class="ms-2">
+                    <button type="button" 
+                            class="btn btn-sm btn-danger p-1 js_delete_guest" 
+                            aria-label="Remove Guest" 
+                            title="Eliminar Invitado y Acceso HikCentral"
+                            t-att-disabled="check_modification_expired and 'disabled'"
+                            t-att-data-guest-id="guest.id"
+                            t-att-data-access-token="event.access_token">
+                        <i class="fa fa-trash"/>
+                    </button>
+                </div>
+            </div>
+
+        </xpath>
+    </template>
+</odoo>
