@@ -111,7 +111,6 @@ class AccountMove(models.Model):
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        digits="Tasa",
         store=True,
         tracking=True,
         readonly=False,
@@ -119,7 +118,6 @@ class AccountMove(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
         store=True,
         index=True,
         readonly=False,
@@ -177,6 +175,7 @@ class AccountMove(models.Model):
                 date = move.invoice_date or move.date
 
                 if date:
+                    
                     rate = Rate.search([
                         ('currency_id', '=', currency.id),
                         ('name', '<=', date),
@@ -202,7 +201,7 @@ class AccountMove(models.Model):
         for move in self:
             move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
             move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
-            move.foreign_balance = move.foreign_debit - move.foreign_credit
+            move.foreign_balance = move.foreign_currency_id.round(move.foreign_debit - move.foreign_credit)
 
     def _get_journal_income_account(self, journal):
         """
