@@ -1,5 +1,5 @@
 {
-    "name": "Venezuela - reglas para listas de precio, precios en moneda extranjera y precios unitarios en factura",
+    "name": "Venezuela - reglas para listas de precio, precios en moneda extranjera y precios unitarios",
     "version": "1.1",
     "license": "LGPL-3",
     "summary": "Módulo para gestionar reglas de listas de precio en Venezuela",
@@ -14,6 +14,7 @@
         "security/pricelist_security.xml",
         "views/account_invoice_view.xml",
         "views/sale_order.xml",
+        "views/product_template_view.xml",
     ],
     "application": True,
     "images": ["static/description/icon.png"],
