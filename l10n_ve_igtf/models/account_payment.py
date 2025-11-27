@@ -63,6 +63,7 @@ class AccountPaymentIgtf(models.Model):
                     payment.igtf_amount = payment.amount * (
                         payment.igtf_percentage / 100
                     )
+                   
 
     def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
         """Prepare values to create a new account.move.line for a payment.
@@ -81,7 +82,7 @@ class AccountPaymentIgtf(models.Model):
         )
         if self.payment_from_wizard:
             if self.igtf_percentage and self.journal_id.is_igtf:
-                self._create_igtf_moves_in_payments(vals)
+                self._create_igtf_moves_in_payments(vals, write_off_line_vals)
 
         return vals
 
@@ -103,7 +104,7 @@ class AccountPaymentIgtf(models.Model):
 
     #se comenta mientras se revisa nuevo flujo de gno considerando para adaptar a odoo venezuela tambien.
     
-    def _create_igtf_moves_in_payments(self, vals):
+    def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
         """Prepare values to create a new account.move.line for a payment.
         this method adds the igtf in the move line values to be created depending on the payment type
 
@@ -130,16 +131,17 @@ class AccountPaymentIgtf(models.Model):
             if move:
                 payment.igtf_amount = payment.calculate_igtf_for_payment(move, payment.amount)
             if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
+                #aplica solo para igtf
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
 
                     if not vals_igtf:
-                        payment._prepare_inbound_move_line_igtf_vals(vals)
+                        payment._prepare_inbound_move_line_igtf_vals(vals, write_off_line_vals)
 
                 if payment.payment_type == "outbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
-                        payment._prepare_outbound_move_line_igtf_vals(vals)
+                        payment._prepare_outbound_move_line_igtf_vals(vals,write_off_line_vals)
 
     def _create_inbound_move_line_igtf_vals(self, vals):
         """Create the igtf move line values for inbound payments
@@ -168,6 +170,7 @@ class AccountPaymentIgtf(models.Model):
                 "partner_id": self.partner_id.id,
             }
         )
+
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
@@ -201,7 +204,7 @@ class AccountPaymentIgtf(models.Model):
 
         return vals
 
-    def _prepare_inbound_move_line_igtf_vals(self, vals):
+    def _prepare_inbound_move_line_igtf_vals(self, vals, write_off_line_vals = False):
         """
         Prepare the igtf move line values for inbound payments and adjust the principal line
         using Odoo's currency rounding to maintain balance.
@@ -210,12 +213,10 @@ class AccountPaymentIgtf(models.Model):
         lines = [line for line in vals]
         if self.payment_type == "inbound":
             currency = self.currency_id
-
-            # 1. Calcular el monto en moneda extranjera sin redondear
-            # CREDIT_LINE (el monto aplicado al principal) = PAGO ORIGINAL + IGTF
-            # Nota: El IGTF se suma porque el 'credit' en la cuenta por cobrar es negativo en este contexto.
-            credit_line_unrounded = lines[1]["amount_currency"] + self.igtf_amount
             
+            
+            credit_line_unrounded = lines[1]["amount_currency"] + self.igtf_amount
+            #raise UserError(self.igtf_amount)
             # 2. REDONDEAR el monto de la línea de la deuda principal
             credit_line = currency.round(credit_line_unrounded)
             
@@ -232,9 +233,10 @@ class AccountPaymentIgtf(models.Model):
 
             # 5. Llamar al método para AGREGAR la línea de IGTF.
             # Este método auxiliar también debe haber sido actualizado para usar el monto IGTF redondeado.
+           
             self._create_inbound_move_line_igtf_vals(vals)
-
-    def _prepare_outbound_move_line_igtf_vals(self, vals):
+                
+    def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
         """
         ...
         """

@@ -40,6 +40,7 @@ class ResCurrency(models.Model):
     def round(self, amount):
         
         self.ensure_one()
+        amount_float = float(amount)
 
         try:
             amount_float = float(amount)
@@ -49,4 +50,4 @@ class ResCurrency(models.Model):
         if abs(amount_float - round(amount_float, 6)) > 1e-9:
             return amount_float
 
-        return super(ResCurrency, self).round(amount)
+        return super(ResCurrency, self).round(amount_float)

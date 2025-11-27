@@ -183,8 +183,6 @@ class AccountMove(models.Model):
                         continue
                     record.bi_igtf = min(record.bi_igtf + bi_igtf, record.amount_total)
                     continue
-        _logger.info(f'record.bi_igtf === {record.bi_igtf}')
-        # _logger.info(xd.xd)
 
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
@@ -195,84 +193,36 @@ class AccountMove(models.Model):
         :param partial_id: id of the partial reconciliation to remove
         :type partial_id: int
         """
-        _logger.warning(f'Removing IGTF from move for partial {partial_id}')
-        partial = self.env["account.partial.reconcile"].browse(partial_id)
+        if partial_id:
+            _logger.info('REmove igtf')
+            partial = self.env["account.partial.reconcile"].browse(partial_id)
 
-        payment_credit = partial.credit_move_id.payment_id
-        payment_debit = partial.debit_move_id.payment_id
+            move_line_a = partial.credit_move_id
+            account_move_a = move_line_a.move_id
 
-        move_credit = partial.credit_move_id.payment_id.reconciled_invoice_ids
-        move_debit = partial.debit_move_id.payment_id.reconciled_invoice_ids
+            factura_types = ('out_invoice', 'in_invoice', 'out_refund', 'in_refund')
+            factura= False
+            counter_part_payment = False
+            counter_part_amount = 0.0
+            if account_move_a.move_type in factura_types:
+                factura = account_move_a
+                move_line_b = partial.debit_move_id
+                counter_part_payment = move_line_b.move_id.payment_id or move_line_b.move_id.origin_payment_advanced_payment_id
+                counter_part_amount = partial.amount 
+            else :
+                move_line_b = partial.debit_move_id
+                factura = move_line_b.move_id
+                counter_part_payment = move_line_a.move_id.payment_id or move_line_a.move_id.origin_payment_advanced_payment_id
+                counter_part_amount = partial.amount 
 
-        reverse_move_credit = partial.credit_move_id.payment_id.reconciled_bill_ids
-        reverse_move_debit = partial.debit_move_id.payment_id.reconciled_bill_ids
 
-        for move in move_credit:
-            if (
-                payment_credit.is_igtf_on_foreign_exchange
-                and move
-                and move.bi_igtf > 0
-            ):
-                amount = partial.credit_move_id.payment_id.amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    amount = amount * move.foreign_rate
-                result = move.bi_igtf - amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    result = move.bi_igtf - (amount * self.foreign_rate)
-                if result < 0:
-                    result = 0
-                move.write({"bi_igtf": result})
+            #raise UserError(counter_part_amount)
+            for move in factura:
+                if counter_part_payment.journal_id.is_igtf and move.bi_igtf > 0 and counter_part_amount != 0.0:
+                    result = counter_part_amount - move.bi_igtf 
+                    move.write({"bi_igtf": result})
 
-        for move in move_debit:
-            if (
-                payment_debit.is_igtf_on_foreign_exchange
-                and move
-                and move.bi_igtf > 0
-            ):
-                amount = partial.debit_move_id.payment_id.amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    amount = amount * move.foreign_rate
-                result = move.bi_igtf - amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    result = move.bi_igtf - (amount * self.foreign_rate)
-                if result < 0:
-                    result = 0
-                move.write({"bi_igtf": result})
-
-        for reverse_credit in reverse_move_credit:
-            if (
-
-                payment_credit.is_igtf_on_foreign_exchange
-                and reverse_credit
-                and reverse_credit.bi_igtf > 0
-            ):
-                amount = partial.credit_move_id.payment_id.amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    amount = amount * reverse_credit.foreign_rate
-                result = reverse_credit.bi_igtf - amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    result = reverse_credit.bi_igtf - (amount * self.foreign_rate)
-                if result < 0:
-                    result = 0
-                reverse_credit.write({"bi_igtf": result})
-
-        for reverse_debit in reverse_move_debit:
-            if (
-                
-                payment_debit.is_igtf_on_foreign_exchange
-                and reverse_debit
-                and reverse_debit.bi_igtf > 0
-            ):
-                amount = partial.debit_move_id.payment_id.amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    amount = amount * reverse_debit.foreign_rate
-                result = reverse_debit.bi_igtf - amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    result = reverse_debit.bi_igtf - (amount * self.foreign_rate)
-                if result < 0:
-                    result = 0
-                reverse_debit.write({"bi_igtf": result})
-
+        
     def js_remove_outstanding_partial(self, partial_id):
         for move in self:
             move.remove_igtf_from_move(partial_id)
@@ -290,15 +240,18 @@ class AccountMove(models.Model):
 
     def js_assign_outstanding_line(self, line_id):
         _logger.info('entrando a l10 igtf')
+        lines = self.env["account.move.line"].browse(line_id)
         amount_residual = self.amount_residual
         self = self.with_context(from_widget=True)
         res = super().js_assign_outstanding_line(line_id)
-        self.recalculate_bi_igtf(
-            line_id,
-            initial_residual=amount_residual
-            if not self.currency_id.is_zero(amount_residual)
-            else self.amount_residual,
-        )
+        if lines["move_id"].journal_id.is_igtf:
+            self.recalculate_bi_igtf(
+                    line_id,
+                    initial_residual=amount_residual
+                    if not self.currency_id.is_zero(amount_residual)
+                    else self.amount_residual,
+                    amount_to_pay = amount_residual
+                )
         return res
 
     @api.depends("tax_totals")
