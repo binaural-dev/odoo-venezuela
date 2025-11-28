@@ -9,7 +9,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Purchase",
-    "depends": ["account","sale", "account_invoice_pricelist", "l10n_ve_sale"],
+    "depends": ["account", "account_invoice_pricelist", "l10n_ve_sale"],
     "data": [
         "security/pricelist_security.xml",
         "views/account_invoice_view.xml",
