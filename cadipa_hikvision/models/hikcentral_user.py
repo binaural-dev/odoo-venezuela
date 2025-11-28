@@ -24,3 +24,10 @@ class AppointmentGuests(models.Model):
     appointment_guest_id = fields.Many2one(
         "appointment.guests",
     )
+
+    parent_user_id = fields.Many2one(
+        'hikcentral.users',
+        string="Parent User",
+        help="HikCentral user who represents the holder of this beneficiary's membership.",
+        index=True
+    )

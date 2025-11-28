@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_form_action_partner_inherit_photo" model="ir.ui.view">
+        <field name="name">action.partner.view.form.inherit.photo</field>
+        <field name="model">action.partner</field>
+        <field name="inherit_id" ref="binaural_club_socios.binaural_club_socios_view_form_action_partner"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='beneficiary_partner_ids']/tree/field[@name='name']" position="before">
+                <field name="image_128" 
+                       widget="image" 
+                       options="{'zoom': true, 'size': [40, 40]}" 
+                       string="Foto"
+                       optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_form_action_partner_inherit_remove_editable" model="ir.ui.view">
+        <field name="name">action.partner.view.form.inherit.remove.editable</field>
+        <field name="model">action.partner</field>
+        <field name="inherit_id" ref="binaural_club_socios.binaural_club_socios_view_form_action_partner"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//field[@name='beneficiary_partner_ids']/tree" position="attributes">
+                <attribute name="editable"></attribute>
+            </xpath>
+
+    </field>
+</record>
+</odoo>

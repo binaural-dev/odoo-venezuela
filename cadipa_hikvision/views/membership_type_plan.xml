@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_membership_type_plan_form_inherit_hikcentral" model="ir.ui.view">
+        <field name="name">membership.type.plan.form.inherit.hikcentral</field>
+        <field name="model">membership.type.plan</field>
+        <field name="inherit_id" ref="binaural_memberships.binaural_memberships_view_form_membership_type_plan"/>
+        <field name="arch" type="xml">
+
+            <field name="membership_sequence" position="after">
+                <group name="hikcentral_settings" string="Hikcentral Settings">
+                    <field name="hikcentral_department_id" required="1" options="{'no_create':1}"/>
+                </group>
+            </field>
+        </field>
+    </record>
+</odoo>
