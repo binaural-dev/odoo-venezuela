@@ -1,5 +1,8 @@
 from odoo import api, fields, models, _
+from odoo.tools.float_utils import float_round
 
+import logging
+_logger = logging.getLogger(__name__)
 
 class AccountPaymentRegister(models.TransientModel):
     _inherit = "account.payment.register"
@@ -38,6 +41,23 @@ class AccountPaymentRegister(models.TransientModel):
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
     )
+    
+    first_onchange_executed = fields.Boolean(default=False)
+    
+    foreign_total_billed_vef = fields.Float(
+        string="Total Facturado (VEF)",
+        help="Total facturado convertido con la tasa inversa VEF de la fecha seleccionada.",
+        store=False,
+    )
+    
+    def default_get(self, fields):
+        res = super().default_get(fields)
+        active_id = self.env.context.get('active_id')
+        if active_id:
+            
+            move = self.env['account.move'].browse(active_id)
+            res['foreign_total_billed_vef'] = move.tax_totals.get('foreign_total_residual') * move.foreign_inverse_rate_vef
+        return res
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -113,6 +133,7 @@ class AccountPaymentRegister(models.TransientModel):
         :param batch_result:    A batch returned by '_get_batches'.
         :return:                An amount in the currency of the wizard.
         """
+        
         self.ensure_one()
         comp_curr = self.company_id.currency_id
         if self.source_currency_id == self.currency_id:
@@ -137,7 +158,7 @@ class AccountPaymentRegister(models.TransientModel):
                 abs(
                     sum(
                         comp_curr._convert(
-                            aml.amount_residual,
+                            aml.amount_residual, 
                             self.currency_id,
                             self.company_id,
                             self.payment_date,

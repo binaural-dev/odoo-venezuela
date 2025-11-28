@@ -1,4 +1,4 @@
-from odoo.tools.float_utils import float_round
+from odoo.tools.float_utils import float_round, float_compare
 from odoo import api, models, _
 from odoo.exceptions import ValidationError
 from odoo.tools.misc import formatLang
@@ -121,7 +121,90 @@ class AccountTax(models.Model):
         res["foreign_formatted_discount_amount"] = formatLang(
             self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
         )
+        
+        move = self._get_move_from_base_lines(base_lines)
+
+        amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
+
+        res["foreign_total_amount_paid"] = float_round(
+            sum(amounts),
+            precision_digits=foreign_currency.decimal_places
+        )
+
+        foreign_amount_total = res.get('foreign_amount_total', 0.0)
+
+        res["foreign_total_residual"] = float_round(
+            foreign_amount_total - res["foreign_total_amount_paid"],
+            precision_digits=foreign_currency.decimal_places
+        )
+
+        formatted_result = 0 if float_compare(res['foreign_total_residual'], 0, precision_digits=foreign_currency.decimal_places) < 0 else res['foreign_total_residual']
+        res["foreign_formatted_total_residual"] = formatLang(
+            self.env,
+            formatted_result,
+            currency_obj=foreign_currency
+        )            
+        
         return res
+    
+    def _get_move_from_base_lines(self, base_lines):
+        for l in (base_lines or []):
+            r = l.get("record")
+            if not r:
+                continue
+
+            if getattr(r, "_name", None) == "account.move":
+                return r
+
+            if "move_id" in getattr(r, "_fields", {}):
+                if r.move_id:
+                    return r.move_id
+        return None
+    
+    def _get_total_paid_foreign(self, move, foreign_currency):
+        if not move:
+            return []
+
+        amounts = []
+        invoice_payments = move.invoice_payments_widget
+        igtf_amount = 0
+
+        if not invoice_payments:
+            return amounts
+
+        content = invoice_payments.get('content') or []
+        for payment in content:
+            
+            move_id = payment.get('move_id')
+            payment_id = self.env['account.move'].browse(move_id)
+
+            if not payment_id:
+                continue
+            for line in payment_id.line_ids:
+                if line.account_id == self.env.company.customer_account_igtf_id or line.account_id == self.env.company.supplier_account_igtf_id:
+                    igtf_amount = line.credit or line.debit
+                
+            if self.env.company.currency_id == self.env.ref("base.VEF"): 
+                if payment_id.currency_id == foreign_currency:
+                    foreign_amt = payment_id.amount_total
+                    
+                else:
+                    foreign_amt = float_round(payment_id.amount_total * payment_id.foreign_inverse_rate, precision_digits=foreign_currency.decimal_places)
+            
+            else:
+                if payment_id.currency_id == foreign_currency:
+
+                    foreign_amt = payment_id.amount_total
+
+                else:
+                    foreign_amt = float_round((payment_id.amount_total) * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
+
+                    if  igtf_amount > 0:
+                        foreign_amt = float_round((payment_id.amount_total - igtf_amount) * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
+                    else:
+                        foreign_amt = float_round(payment_id.amount_total * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
+            amounts.append(foreign_amt)
+        return amounts
 
     def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
         foreign_base_lines = [line.copy() for line in base_lines if line]
