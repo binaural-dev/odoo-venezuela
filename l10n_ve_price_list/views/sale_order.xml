@@ -8,9 +8,9 @@
                 <attribute name="readonly">not can_edit_prices</attribute>
             </xpath>
 
-            <!-- <xpath expr="//notebook/page[1]//list/field[@name='foreign_price']" position="attributes">
+            <xpath expr="//notebook/page[1]//list/field[@name='foreign_price']" position="attributes">
                 <attribute name="readonly">not can_edit_prices</attribute>
-            </xpath> -->
+            </xpath>
             
         </field>
     </record>
