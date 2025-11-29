@@ -2,6 +2,7 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime
 from io import BytesIO
 from odoo import models, fields
+from odoo.exceptions import UserError
 import xlsxwriter
 
 
@@ -20,7 +21,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return res
 
     def search_moves(self):
-        if not self.with_fiscal_machine:
+        if self.with_fiscal_machine:
             res = super().search_moves()
             res = res.filtered_domain([("mf_serial", "!=", False)])
             return res
