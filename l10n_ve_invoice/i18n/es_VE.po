@@ -623,3 +623,10 @@ msgstr "Notas de Débito"
 #, python-format
 msgid "An invoice cannot have a line with a price of zero"
 msgstr "Una factura no puede tener una linea con precio en cero"
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
+#, python-format
+msgid "There are no moves to show"
+msgstr "No se encontraron registros para mostrar"
