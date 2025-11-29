@@ -653,22 +653,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain += [
             ("state", "in", ("posted", "cancel")),
             ("move_type", "in", move_type),
-            ("correlative", "not in", ['/'])
+            ("correlative", "not in", ['/',False])
         ]
-            
-        if hasattr(self, 'account_analytic_id') and self.account_analytic_id:
-
-            if self.account_analytic_id.name == "Main Subsidiary":
-                
-                all_subsidiaries = self.env['account.analytic.account'].search([
-                    ('is_subsidiary', '=', True),
-                    ('company_id', '=', self.company_id.id)
-                ])
-                if all_subsidiaries:
-                    search_domain += [("account_analytic_id", "in", all_subsidiaries.ids)]
-            else:
-                
-                search_domain += [("account_analytic_id", "=", self.account_analytic_id.id)]
         return search_domain
 
     def generate_report(self):
