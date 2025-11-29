@@ -46,7 +46,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
-   
+    amount_with_difference = fields.Float(
+        string="Amount with Difference",
+        compute="amount_remanent",
+        store=True,
+    )
 
     payment_difference = fields.Monetary(
         compute='_compute_payment_difference',readonly=False)
@@ -70,7 +74,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 amount +=  wizard.igtf_amount
             wizard.amount = amount
 
-    @api.onchange('payment_difference','source_amount')
+    @api.onchange('payment_difference')
     def _onchange_diference(self):
         for wizard in self:
             if wizard.can_edit_wizard and wizard.payment_date:
@@ -105,10 +109,15 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             else:
                 wizard.payment_difference = 0.0
 
-    @api.onchange("amount","igtf_amount")
+    @api.depends("amount","igtf_amount")
     def _compute_amount_without_difference(self):
         for rec in self:
                 rec.amount_without_difference = rec.amount - rec.igtf_amount
+
+    @api.depends("amount_without_difference")
+    def amount_remanent(self):
+        for rec in self:
+                rec.amount_with_difference = rec.amount_without_difference + rec.igtf_amount
 
     @api.depends("journal_id","currency_id")
     def _compute_check_igtf(self):
@@ -132,13 +141,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     payment.is_igtf = True
 
 
-    @api.onchange("amount", "igtf_amount")
+    @api.depends("amount", "is_igtf", "igtf_amount")
     def _compute_amount_with_igtf(self):
         """Compute the amount with igtf of the payment"""
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    @api.onchange("journal_id", "is_igtf", "is_igtf_on_foreign_exchange")
+    @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
     def _compute_igtf_amount(self):
         """Compute the igtf amount of the payment"""
         for payment in self:
@@ -158,7 +167,14 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment.igtf_amount = payment.calculate_igtf_for_payment(
                     move_id, payment_amount, payment.igtf_percentage
                 ) 
-                
+
+    @api.depends('journal_id')
+    def _compute_is_igtf_journal(self):
+        for record in self:
+            if record.journal_id.currency_id and record.journal_id.currency_id == self.env.ref("base.USD"):
+                record.is_igtf_on_foreign_exchange = True
+    
+              
 
     @api.onchange('journal_id')
     def _compute_is_igtf_journal(self):

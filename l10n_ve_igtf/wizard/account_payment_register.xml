@@ -24,7 +24,10 @@
                                 widget="monetary"
                                 options="{'currency_field': 'currency_id'}"/>
                             
+                            
+                            
                             <field name="amount_without_difference" />
+                            <field name="amount_with_difference" />
                         </group>
 
                         
