@@ -579,9 +579,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain += [
             ("state", "in", ("posted", "cancel")),
             ("move_type", "in", move_type),
-            ("correlative", "not in", ['/'])
+            ("correlative", "not in", ['/',False])
         ]
-
         return search_domain
 
     def generate_report(self):
@@ -1236,6 +1235,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             worksheet.write(header_idx + 1, nidx + 1, header.get("headers")[1])
 
         moves = self.search_moves()
+        if not moves:
+            raise UserError(_('There are no moves to show'))
         resume_columns = (
             self._resume_purchase_book_fields(moves)
             if is_purchase
