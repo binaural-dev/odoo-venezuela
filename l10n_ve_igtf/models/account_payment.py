@@ -63,7 +63,8 @@ class AccountPaymentIgtf(models.Model):
                     payment.igtf_amount = payment.amount * (
                         payment.igtf_percentage / 100
                     )
-
+                   
+    # esto es llamado desde el Wizard tambien
     def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
         """Prepare values to create a new account.move.line for a payment.
         this method adds the igtf in the move line values to be created depending on the payment type
@@ -100,8 +101,6 @@ class AccountPaymentIgtf(models.Model):
         
         # APLICAR REDONDEO ODOO AL RESULTADO FINAL DEL IGTF
         return currency.round(igtf_unrounded)
-
-    #se comenta mientras se revisa nuevo flujo de gno considerando para adaptar a odoo venezuela tambien.
     
     def _create_igtf_moves_in_payments(self, vals):
         """Prepare values to create a new account.move.line for a payment.

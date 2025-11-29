@@ -2,7 +2,8 @@ from odoo import api, fields, models, _
 from odoo.tools.sql import column_exists, create_column
 from odoo.tools import formatLang
 import logging
-
+from odoo.exceptions import UserError
+from odoo.tools.float_utils import float_round
 _logger = logging.getLogger(__name__)
 
 
@@ -24,9 +25,8 @@ class AccountMove(models.Model):
             """)
         return super()._auto_init()
 
-    bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", copy=False)
+    bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", copy=False, compute='compute_bi_igtf',store=True)
     amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", copy=False)
-
 
     payment_igtf_id = fields.Many2one(
         "account.payment",
@@ -104,202 +104,6 @@ class AccountMove(models.Model):
             else:
                 move.invoice_payments_widget = False
 
-    def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0,amount_to_pay = 0.0):
-        """This method can be used by ir.actions.server to update bi_igtf"""
-        _logger.info(f'self.bi_igtf === {self.move_type}')
-        _logger.info(f' jajajaja line_id === {line_id}')
-        _logger.warning(f'Initial residual: {initial_residual}')
-        for record in self:
-            bi_igtf = 0
-            credits_for_payment = {}
-            move_id = record.id
-            # _logger.info(f'record.invoice_payments_widget === {record.invoice_payments_widget}')
-            if not record.invoice_payments_widget:
-                record.bi_igtf = 0
-                _logger.info('No tiene pagos relacionados')
-                continue
-                
-            if record.bi_igtf > 0 and any(
-            payment.get("account_payment_id", False) for payment in record.invoice_payments_widget.get("content", [])
-            if payment.get("account_payment_id", False)
-            ):
-                _logger.info('Tiene pagos relacionados')
-                advance_igtf = False
-                for payment in record.invoice_payments_widget.get("content", []):
-                    move_id = payment.get('move_id')
-                    _logger.info(f'move_id === {move_id}')
-                    payment_id = self.env['account.move'].browse(move_id)
-                    if not payment_id:
-                        continue
-                    is_igtf = payment_id.line_ids.filtered(
-                        lambda l: l.account_id == self.env.company.customer_account_igtf_id or l.account_id == self.env.company.supplier_account_igtf_id
-                    )
-                    if is_igtf:
-                        advance_igtf = True  # SI CONSIGUE LINEA IGTF EN EL PAGO
-                        credits_for_payment[move_id] = payment_id.amount_total
-                _logger.warning('iterando')
-                bi_igtf = sum(credits_for_payment.values())
-                if bi_igtf > record.amount_total and not initial_residual == 0:
-                    bi_igtf = initial_residual + record.bi_igtf
-                    record.bi_igtf = bi_igtf
-                    return
-                if not advance_igtf:
-                    record.bi_igtf = 0.00
-                elif bi_igtf:
-                    record.bi_igtf = bi_igtf
-                return
-            if line_id:
-                _logger.info(f'tiene line_id === {line_id}')
-                line = self.env["account.move.line"].browse([line_id])
-                _logger.info(f'line.move_id === {line.read([])}')
-                payment_id = line.move_id.payment_id
-                if payment_id and payment_id.is_igtf_on_foreign_exchange:
-                    _logger.info(f'tiene payment_id igtf === {payment_id.id}')
-                    # payment_id = line.move_id.payment_id
-                    bi_igtf = payment_id.get_bi_igtf(move_id)
-                    _logger.info(f'tiene payment_id igtf === {bi_igtf}')
-                    if initial_residual <= bi_igtf and bi_igtf >= amount_to_pay:
-                        record.bi_igtf = min(record.bi_igtf + bi_igtf,amount_to_pay)
-                        _logger.warning(f'Hey 22222222222 {record.bi_igtf}')
-                        bi_igtf = 0
-                        continue
-                    elif initial_residual <= bi_igtf:
-                        record.bi_igtf = initial_residual
-                        _logger.warning(f'Hey {record.bi_igtf}')
-                        continue
-                    record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)
-                    _logger.warning(f'Hey 33333333333 {record.bi_igtf}')
-                    continue
-                else:
-                    payment_id = line.move_id.payment_id
-                    bi_igtf = initial_residual if initial_residual else record.amount_total
-                    _logger.info(f'asignando el bi igtf === {bi_igtf}')
-                    if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
-                        record.bi_igtf = min(record.bi_igtf + bi_igtf, record.amount_total)
-                        bi_igtf = 0
-                        continue
-                    elif initial_residual <= bi_igtf:
-                        record.bi_igtf = initial_residual
-                        continue
-                    record.bi_igtf = min(record.bi_igtf + bi_igtf, record.amount_total)
-                    continue
-        _logger.info(f'record.bi_igtf === {record.bi_igtf}')
-        # _logger.info(xd.xd)
-
-    def remove_igtf_from_move(self, partial_id):
-        """Remove IGTF from move
-
-        this method is called when a partial reconciliation is removed from the reconciliation widget
-        search for the partial reconciliation and remove the IGTF from the move if it is a payment
-
-        :param partial_id: id of the partial reconciliation to remove
-        :type partial_id: int
-        """
-        _logger.warning(f'Removing IGTF from move for partial {partial_id}')
-        partial = self.env["account.partial.reconcile"].browse(partial_id)
-
-        payment_credit = partial.credit_move_id.payment_id
-        payment_debit = partial.debit_move_id.payment_id
-
-        move_credit = partial.credit_move_id.payment_id.reconciled_invoice_ids
-        move_debit = partial.debit_move_id.payment_id.reconciled_invoice_ids
-
-        reverse_move_credit = partial.credit_move_id.payment_id.reconciled_bill_ids
-        reverse_move_debit = partial.debit_move_id.payment_id.reconciled_bill_ids
-
-        for move in move_credit:
-            if (
-                payment_credit.is_igtf_on_foreign_exchange
-                and move
-                and move.bi_igtf > 0
-            ):
-                amount = partial.credit_move_id.payment_id.amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    amount = amount * move.foreign_rate
-                result = move.bi_igtf - amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    result = move.bi_igtf - (amount * self.foreign_rate)
-                if result < 0:
-                    result = 0
-                move.write({"bi_igtf": result})
-
-        for move in move_debit:
-            if (
-                payment_debit.is_igtf_on_foreign_exchange
-                and move
-                and move.bi_igtf > 0
-            ):
-                amount = partial.debit_move_id.payment_id.amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    amount = amount * move.foreign_rate
-                result = move.bi_igtf - amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    result = move.bi_igtf - (amount * self.foreign_rate)
-                if result < 0:
-                    result = 0
-                move.write({"bi_igtf": result})
-
-        for reverse_credit in reverse_move_credit:
-            if (
-
-                payment_credit.is_igtf_on_foreign_exchange
-                and reverse_credit
-                and reverse_credit.bi_igtf > 0
-            ):
-                amount = partial.credit_move_id.payment_id.amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    amount = amount * reverse_credit.foreign_rate
-                result = reverse_credit.bi_igtf - amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    result = reverse_credit.bi_igtf - (amount * self.foreign_rate)
-                if result < 0:
-                    result = 0
-                reverse_credit.write({"bi_igtf": result})
-
-        for reverse_debit in reverse_move_debit:
-            if (
-                
-                payment_debit.is_igtf_on_foreign_exchange
-                and reverse_debit
-                and reverse_debit.bi_igtf > 0
-            ):
-                amount = partial.debit_move_id.payment_id.amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    amount = amount * reverse_debit.foreign_rate
-                result = reverse_debit.bi_igtf - amount
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    result = reverse_debit.bi_igtf - (amount * self.foreign_rate)
-                if result < 0:
-                    result = 0
-                reverse_debit.write({"bi_igtf": result})
-
-    def js_remove_outstanding_partial(self, partial_id):
-        for move in self:
-            move.remove_igtf_from_move(partial_id)
-
-        # amount_residual = self.amount_residual
-        # self.recalculate_bi_igtf(
-        #     partial_id,
-        #     initial_residual=amount_residual
-        #     if not self.currency_id.is_zero(amount_residual)
-        #     else self.amount_residual,
-
-        # )
-        res = super().js_remove_outstanding_partial(partial_id)
-        return res
-
-    def js_assign_outstanding_line(self, line_id):
-        _logger.info('entrando a l10 igtf')
-        amount_residual = self.amount_residual
-        self = self.with_context(from_widget=True)
-        res = super().js_assign_outstanding_line(line_id)
-        self.recalculate_bi_igtf(
-            line_id,
-            initial_residual=amount_residual
-            if not self.currency_id.is_zero(amount_residual)
-            else self.amount_residual,
-        )
-        return res
 
     @api.depends("tax_totals")
     def _compute_amount_to_pay_igtf(self):
@@ -322,17 +126,161 @@ class AccountMove(models.Model):
                 record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
             else:
                 record.amount_residual_igtf = 0
-                
+
     @api.depends(
         "bi_igtf",
     )
     def _compute_tax_totals(self):
         return super()._compute_tax_totals()
 
-    def button_draft(self):
-        """
-        When the user click on the button draft, we need to delete the igtf
-        """
-        for record in self:
-            record.bi_igtf = 0
-        return super().button_draft()
+    @api.depends('amount_residual')
+    def compute_bi_igtf(self):
+        for rec in self:
+            receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
+
+            account = [self.company_id.customer_account_igtf_id.id,self.company_id.supplier_account_igtf_id.id ]
+            # Recolectar todos los asientos (move_id) que participaron en la conciliación
+            payment_moves = self.env['account.move']
+            
+            # Mapeo eficiente de todos los partial.reconcile (matched_debit/credit_ids)
+            all_partial_reconciles = receivable_payable_lines.matched_debit_ids | receivable_payable_lines.matched_credit_ids
+            
+            # 3. Recolectar todos los asientos de pago opuestos
+            # Usamos el operador '|' para unir los records
+            payment_moves |= all_partial_reconciles.mapped('debit_move_id.move_id')
+            payment_moves |= all_partial_reconciles.mapped('credit_move_id.move_id')
+
+            final_payment_moves = payment_moves.filtered(lambda m: m.state == 'posted' and m.id != rec.id)
+            total_bi_igtf = 0.0
+            
+            # 4. Procesar y Extraer la Base Imponible por cada Pago
+            for payment_move in final_payment_moves:
+                
+                # Buscar la línea de IGTF y la de Banco/Caja en el asiento de pago actual
+                igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
+                bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.account_type in ['asset_cash','bank'])
+                
+                # Validar la existencia de ambas líneas
+                if igtf_line and bank_line:
+                    # Obtenemos el primer elemento de la lista filtrada [0]
+                    #monto_igtf = abs(igtf_line[0].balance)
+                    base_pago = abs(bank_line[0].balance)
+                    # Sumar a los totales y almacenar detalles
+                    #total_igtf_monto += monto_igtf
+                    total_bi_igtf += base_pago
+            
+            
+            rec.bi_igtf = total_bi_igtf
+                    
+
+
+    def js_remove_outstanding_partial(self, partial_id):
+        partial_reconcile = self.env['account.partial.reconcile'].browse(partial_id)
+        if not partial_reconcile:
+            return super().js_remove_outstanding_partial(partial_id) 
+            
+        related_moves = partial_reconcile.debit_move_id.move_id | partial_reconcile.credit_move_id.move_id
+        
+        igtf_account_ids = [
+            self.company_id.customer_account_igtf_id.id,
+            self.company_id.supplier_account_igtf_id.id
+        ]
+        
+        liquidity_account_types = ['asset_cash', 'bank']
+        payment_move = related_moves.filtered(
+            lambda move: move.line_ids.filtered(
+                lambda line: line.account_id.account_type in liquidity_account_types
+            )
+        )[:1]
+
+        if not payment_move:
+            # Si no es un asiento de pago, solo dejamos que el super elimine la conciliación
+            return super().js_remove_outstanding_partial(partial_id) 
+
+        # --- INICIO DEL FLUJO SEGURO ---
+
+        # 2. LLAMAR a super() para Desconciliar (Elimina el partial_reconcile)
+        # Esto es crucial para liberar la línea antes de ir a borrador.
+        res_super = super().js_remove_outstanding_partial(partial_id)
+
+        # 3. Poner en Borrador (Ahora que la línea está liberada de la conciliación)
+        try:
+            payment_move.button_draft()
+        except Exception:
+            # Falla al ir a borrador
+            return False
+        
+        # 4. Buscar líneas clave y aplicar lógica IGTF
+        igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
+        receivable_payable_line = payment_move.line_ids.filtered(
+            lambda line: line.account_id.id in [payment_move.partner_id.property_account_payable_id.id,payment_move.partner_id.property_account_receivable_id.id ]
+        )[:1]
+      
+        if igtf_line and receivable_payable_line:
+        
+            currency_rounding = payment_move.currency_id.rounding or 0.01
+            igtf_line_balance = float_round(
+            igtf_line.balance, 
+            precision_rounding=currency_rounding
+            )
+            
+            # 1. Obtenemos el saldo existente en la línea a conciliar (solo un lado debe tener valor)
+            current_debit = receivable_payable_line.debit
+            current_credit = receivable_payable_line.credit
+
+            # 2. PREPARAR NUEVA LISTA DE LÍNEAS
+            new_lines_commands = []
+            
+            # 3. Iterar sobre las líneas existentes para construir el nuevo listado
+            for line in payment_move.line_ids:
+                
+                # Si la línea es la de IGTF, la omitimos (la eliminamos)
+                if line.id == igtf_line.id:
+                    new_lines_commands.append((2, line.id, False))
+                    
+                # Si la línea es la de Cuentas por Cobrar/Pagar, la ajustamos
+                elif line.id == receivable_payable_line.id:
+                    
+                    current_debit = float_round(line.debit, precision_rounding=currency_rounding)
+                    current_credit = float_round(line.credit, precision_rounding=currency_rounding)
+                    
+                    # Determinamos la compensación
+                    if igtf_line_balance > 0: # IGTF era DÉBITO
+                        new_debit = current_debit + igtf_line_balance
+                        new_credit = 0.0
+                    else: # IGTF era CRÉDITO
+                        new_credit = current_credit + abs(igtf_line_balance)
+                        new_debit = 0.0
+
+                    # Creamos el comando de actualización (comando 1: update)
+                    line_vals = {
+                        'debit': new_debit,
+                        'credit': new_credit,
+                        # Mantener el resto de campos (cuenta, nombre, etc.)
+                        'account_id': line.account_id.id,
+                        'name': line.name,
+                        # ... (Añadir cualquier otro campo crítico como analytic_tag_ids, etc.)
+                    }
+                    # Comando (1, ID, VALORES): Actualizar la línea existente
+                    new_lines_commands.append((1, line.id, line_vals))
+                # Para todas las demás líneas (Caja/Banco, etc.)
+                else:
+                    # Comando (1, ID, {}): Mantener la línea sin cambios
+                    new_lines_commands.append((1, line.id, {}))
+            
+            # 4. EJECUTAR EL COMANDO DE ESCRITURA GLOBAL
+            # Comando (6, 0, [lista de IDs]): Reemplazar TODAS las líneas existentes por las nuevas.
+            # En este caso, usamos una lista de comandos (1, ID, vals) para actualizar.
+            # Si ejecutamos un simple write, Odoo maneja la eliminación de las líneas no mencionadas.
+            #raise UserError('llega aqui')
+            payment_move.write({
+                'line_ids': new_lines_commands
+            })
+        # 6. Volver a Publicar
+        try:
+            payment_move.action_post()
+        except Exception:
+            # Si falla la publicación, el asiento se queda en borrador.
+            return False
+            
+        return res_super # Devolvemos el resultado del super() para compatibilidad con JS
