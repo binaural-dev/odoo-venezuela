@@ -204,6 +204,8 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
+    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
+                                            compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -217,6 +219,23 @@ class AccountMove(models.Model):
         context = self.with_context(active_test=False)
         return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
     
+    @api.depends('tax_totals')
+    def _compute_foreign_untaxed_total(self):
+        """
+        Compute the foreign total untaxed of the invoice using the tax_totals
+        """
+        for move in self:
+            move.foreign_untaxed_total = 0
+            if not (
+                move.invoice_line_ids
+                and move.is_invoice(include_receipts=True)
+                and move.tax_totals
+            ):
+                continue
+            move.foreign_untaxed_total = move.tax_totals.get(
+                "base_amount_foreign_currency", 0
+            )
+         
     @api.depends('currency_id', 'invoice_date')
     def _compute_move_currency_to_company_currency_rate(self):
         '''
