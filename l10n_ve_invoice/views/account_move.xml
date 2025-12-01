@@ -66,6 +66,18 @@
 
         </field>
     </record>
+    <!-- Hiding native print button -->
+    <record id="hide_print_button_account_move" model="ir.ui.view">
+        <field name="name">account.move.hide.print.button</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_print_pdf']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+    
     <record id="view_account_move_od_journal_sequence" model="ir.ui.view">
         <field name="name">view.account.move.od.journal.sequence</field>
         <field name="model">account.move</field>

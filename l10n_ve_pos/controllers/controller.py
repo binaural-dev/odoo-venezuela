@@ -21,7 +21,8 @@ class ValidateQtyProducts(http.Controller):
                 )
                 data = {"status": 200, "msg": "Success"}
                 if (
-                    product_id.detailed_type == "product"
+                    product_id.is_storable
+                    and product_id.type == "consu"
                     and product_id.qty_available < qty[product_qty_position]
                 ):
                     data.update(
@@ -49,7 +50,11 @@ class ValidateQtyProducts(http.Controller):
                 )
                 current_product = product_qty_position
                 product_qty_position += 1
-                if product_id and product_id.detailed_type in ['product',]:
+                if (
+                    product_id
+                    and product_id.is_storable
+                    and product_id.type == 'consu'
+                ):
                     stock_quant = request.env["stock.quant"].search(
                         [
                             ("product_tmpl_id", "=", product_id.id),
@@ -57,6 +62,7 @@ class ValidateQtyProducts(http.Controller):
                             ("product_tmpl_id.type", "!=", "service"),
                         ]
                     )
+                    
                     if stock_quant:
                         product_in_warehouse_pos = False
                         quantity_available = 0.0

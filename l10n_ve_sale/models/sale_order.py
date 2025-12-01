@@ -452,20 +452,21 @@ class SaleOrder(models.Model):
                 )
 
     def action_confirm(self):
-        for order in self:
-            if not order.order_line or all(line.display_type for line in order.order_line):
-                raise UserError(_("Before confirming an order, you need to add a product."))
         skip_not_allow_sell_products_validation = self.env.context.get(
             "skip_not_allow_sell_products_validation", False
         )
-        if (
-            self.env.company.not_allow_sell_products
-            and not skip_not_allow_sell_products_validation
-        ):
-            for order in self:
+        for order in self:
+            # Validación de líneas de producto
+            if not order.order_line or all(line.display_type for line in order.order_line):
+                raise UserError(_("Before confirming an order, you need to add a product."))
+
+            # Validación de productos no permitidos para la venta y límite de crédito
+            if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
                 for line in order.order_line:
                     if (
-                        line.product_id.qty_available < line.product_uom_qty
+                        line.product_id.is_storable
+                        and line.product_id.type == "consu"
+                        and line.product_id.qty_available < line.product_uom_qty
                     ):
                         msg = _("Does not have enough units available for the product ")
                         msg += _("{}. Only has {} units of the {} demanded.").format(
@@ -475,6 +476,7 @@ class SaleOrder(models.Model):
                         )
                         raise ValidationError(msg)
             
+
                 if (
                     order.company_id.account_use_credit_limit
                     and order.partner_id.use_partner_credit_limit_order
@@ -492,7 +494,7 @@ class SaleOrder(models.Model):
                             )
                         )
 
-                order._block_valid_confirm()
+                    order._block_valid_confirm()
 
 
         res = super().action_confirm()
