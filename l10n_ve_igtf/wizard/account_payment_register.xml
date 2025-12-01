@@ -20,14 +20,14 @@
                         </group>
 
                         <group name="igtf_2" >
-                            <field name="igtf_amount"
-                                widget="monetary"
-                                options="{'currency_field': 'currency_id'}"/>
+                            <field name="igtf_amount" invisible="1"/>
+
+                            <field name="igtf_to_show"  widget="monetary"  readonly="1"
+                                options="{'currency_field': 'currency_id'}" force_save="1" />
                             
+                            <field name="amount_without_difference"  readonly="1"
+                                options="{'currency_field': 'currency_id'}" force_save="1"/>
                             
-                            
-                            <field name="amount_without_difference" />
-                            <field name="amount_with_difference" />
                         </group>
 
                         
