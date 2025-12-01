@@ -35,7 +35,7 @@ class AccountPaymentIgtf(models.Model):
 
     payment_from_wizard = fields.Boolean()
     amount_residual_from_payment = fields.Float()
-
+    
     @api.depends("partner_id")
     def _compute_igtf_percentage(self):
         for payment in self:
@@ -64,7 +64,6 @@ class AccountPaymentIgtf(models.Model):
                         payment.igtf_percentage / 100
                     )
                    
-    # esto es llamado desde el Wizard tambien
     def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
         """Prepare values to create a new account.move.line for a payment.
         this method adds the igtf in the move line values to be created depending on the payment type
@@ -128,6 +127,7 @@ class AccountPaymentIgtf(models.Model):
             move = self.env["account.move"].browse(move_id)
             if move:
                 payment.igtf_amount = payment.calculate_igtf_for_payment(move, payment.amount)
+                
             if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
                 #aplica solo para igtf
                 if payment.payment_type == "inbound":
@@ -158,16 +158,16 @@ class AccountPaymentIgtf(models.Model):
         )
         igtf_amount = self.igtf_amount
         account_id = igtf_account if self.igtf_percentage else None
-
-        vals.append(
-            {
-                "name": "IGTF",
-                "currency_id": self.currency_id.id,
-                "amount_currency": -igtf_amount,
-                "account_id": account_id,
-                "partner_id": self.partner_id.id,
-            }
-        )
+        if igtf_amount > 0.0:
+            vals.append(
+                {
+                    "name": "IGTF",
+                    "currency_id": self.currency_id.id,
+                    "amount_currency": -igtf_amount,
+                    "account_id": account_id,
+                    "partner_id": self.partner_id.id,
+                }
+            )
 
         return vals
 
@@ -190,15 +190,16 @@ class AccountPaymentIgtf(models.Model):
         igtf_amount = self.igtf_amount
         account_id = igtf_account if self.igtf_percentage else None
 
-        vals.append(
-            {
-                "name": "IGTF",
-                "currency_id": self.currency_id.id,
-                "amount_currency": igtf_amount,
-                "account_id": account_id,
-                "partner_id": self.partner_id.id,
-            }
-        )
+        if igtf_amount > 0.0:
+            vals.append(
+                {
+                    "name": "IGTF",
+                    "currency_id": self.currency_id.id,
+                    "amount_currency": igtf_amount,
+                    "account_id": account_id,
+                    "partner_id": self.partner_id.id,
+                }
+            )
 
         return vals
 
@@ -227,7 +228,8 @@ class AccountPaymentIgtf(models.Model):
                 credit_amount = currency.round(-credit_line * self.foreign_rate)
             
             # 4. Actualizar la línea de la deuda principal (índice [1])
-            vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
+            if self.igtf_amount > 0:
+                vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
 
             # 5. Llamar al método para AGREGAR la línea de IGTF.
             # Este método auxiliar también debe haber sido actualizado para usar el monto IGTF redondeado.
@@ -258,7 +260,8 @@ class AccountPaymentIgtf(models.Model):
                 # Opcional: Asegurar que el monto en VEF también se redondee después de la tasa
                 debit_amount = currency.round(debit_line * self.foreign_rate) 
                 
-            vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
+            if self.igtf_amount > 0:
+                vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
 
             # Llamamos a la función de creación de IGTF, usando el monto redondeado
             # (Aunque internamente debería usar 'igtf_amount_adjusted', se usa self.igtf_amount 
