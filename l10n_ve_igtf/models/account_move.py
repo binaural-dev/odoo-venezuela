@@ -256,8 +256,8 @@ class AccountMove(models.Model):
                     line_vals = {
                         'debit': new_debit,
                         'credit': new_credit,
-                        # Mantener el resto de campos (cuenta, nombre, etc.)
-                        'account_id': line.account_id.id,
+                        # Mantener el resto de campos y la convertimos en anticipo
+                        'account_id': self.env.company.advance_customer_account_id.id if current_credit > 0 else self.env.company.advance_supplier_account_id.id,
                         'name': line.name,
                         # ... (Añadir cualquier otro campo crítico como analytic_tag_ids, etc.)
                     }
@@ -267,12 +267,14 @@ class AccountMove(models.Model):
                 else:
                     # Comando (1, ID, {}): Mantener la línea sin cambios
                     new_lines_commands.append((1, line.id, {}))
-            
-            # 4. EJECUTAR EL COMANDO DE ESCRITURA GLOBAL
-            # Comando (6, 0, [lista de IDs]): Reemplazar TODAS las líneas existentes por las nuevas.
-            # En este caso, usamos una lista de comandos (1, ID, vals) para actualizar.
-            # Si ejecutamos un simple write, Odoo maneja la eliminación de las líneas no mencionadas.
-            #raise UserError('llega aqui')
+            if 'is_advance_payment' in payment_move.payment_id._fields:
+
+                if payment_move.payment_id and not payment_move.payment_id.is_advance_payment:
+
+                    payment_move.payment_id.write({
+                        'is_advance_payment':True,
+                        'is_advance_move':True
+                    })
             payment_move.write({
                 'line_ids': new_lines_commands
             })
@@ -280,7 +282,6 @@ class AccountMove(models.Model):
         try:
             payment_move.action_post()
         except Exception:
-            # Si falla la publicación, el asiento se queda en borrador.
             return False
             
         return res_super # Devolvemos el resultado del super() para compatibilidad con JS
