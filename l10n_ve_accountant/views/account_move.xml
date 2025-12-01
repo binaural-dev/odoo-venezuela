@@ -200,6 +200,20 @@
             </xpath>
         </field>
     </record>
+    <record id="l10n_ve_accountant_view_invoice_tree_inherit" model="ir.ui.view">
+        <field name="name">account.move.list.inherit.l10n_ve_accountant</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='amount_total_in_currency_signed']" position="before">
+                <field name="foreign_currency_id" column_invisible="True"/>
+                <field name="amount_total_signed" optional="hide"/>
+                <field name="amount_untaxed_signed" optional="hide"/>
+                <field name="foreign_total_billed" widget="monetary" optional="hide"/>
+                <field name="foreign_untaxed_total" widget="monetary" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
     <!-- <record id="view_invoice_tree" model="ir.ui.view">
         <field name="name">account.move.list</field>
         <field name="model">account.move</field>
