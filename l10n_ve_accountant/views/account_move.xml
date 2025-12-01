@@ -145,7 +145,7 @@
             </xpath>
 
             <xpath
-                expr="//notebook/page/field[@name='line_ids']/list/field[@name='tax_ids']"
+                expr="//notebook/page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']"
                 position="attributes">
                 <attribute name="readonly">1</attribute>
             </xpath>
