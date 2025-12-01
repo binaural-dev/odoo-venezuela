@@ -128,7 +128,7 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
-        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
+        self.invoice_date = fields.Date.today()
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
