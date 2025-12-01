@@ -28,7 +28,7 @@ class ApiIoT(http.Controller):
         iot_id = request.env["iot.box"].sudo().search([("has_pinpad_machine", "=", True)])
         response = {}
         for iot in iot_id:
-            response[iot.identifier] = iot.pinpad_port_id.mapped(lambda x: x.name)
+            response[iot.identifier] = [iot.pinpad_port_id.name] if iot.pinpad_port_id else []
         return json.dumps(response)
 
     @http.route(
