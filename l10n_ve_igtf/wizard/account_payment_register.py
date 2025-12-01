@@ -144,7 +144,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
             id=self.env.context.get("active_id",False)
             move_id=self.env['account.move'].browse(id)
-            _logger.warning("move_id %s",move_id)
             payment.igtf_amount = 0.0
             if (
                 payment.journal_id.is_igtf
@@ -159,6 +158,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment.igtf_amount = payment.calculate_igtf_for_payment(
                     move_id, payment_amount, payment.igtf_percentage
                 ) 
+                
 
     @api.onchange('journal_id')
     def _compute_is_igtf_journal(self):
