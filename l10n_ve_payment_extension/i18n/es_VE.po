@@ -40,7 +40,7 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid "% o <br/>tarifa"
-msgstr ""
+msgstr "% o tarifa"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__related_percentage_fees
@@ -60,7 +60,7 @@ msgstr "'Comprobante ARCV'"
 #. module: l10n_ve_payment_extension
 #: model:ir.actions.report,print_report_name:l10n_ve_payment_extension.retention_voucher_action
 msgid "(object.number)"
-msgstr ""
+msgstr "(número del objeto)"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
@@ -121,12 +121,6 @@ msgid "<span class=\"tal\">Nombre o Razón Social:</span><br/>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span style=\"visibility:hidden\">--</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid ""
 "<span text-align=\"center\" style=\"font-weight: bold;\">Agente de "
@@ -144,50 +138,13 @@ msgid "<span text-align=\"center\">Firma y sello</span>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>% Alic</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>% Ret</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
-msgid "<span>%</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid "<span>---</span>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid "<span>--</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>01-REG</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>02-REG</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>03-ANU</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>03-REG</span>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
@@ -208,16 +165,6 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Base Imponible</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Compras sin derecho a Crédito IVA</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
 msgid "<span>Contribuyente:</span>"
 msgstr ""
@@ -235,87 +182,42 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 msgid "<span>Direccion Fiscal del Agente de Retención</span>"
-msgstr ""
+msgstr "Dirección Fiscal del Agente de Retención"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 msgid "<span>Direccion Fiscal del Sujeto Retenido</span>"
-msgstr ""
+msgstr "Dirección Fiscal del Sujeto Retenido"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
 msgid "<span>Dirección:</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
-msgid "<span>FA</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Factura afectada</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Fecha Factura</span>"
-msgstr ""
+msgstr "Dirección:"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 msgid "<span>Fecha de emision:</span>"
-msgstr ""
+msgstr "Fecha de emisión:"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
 msgid "<span>Fecha:</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>IVA Retenido</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Impuesto IVA</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
-msgid "<span>NC</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
-msgid "<span>ND</span>"
-msgstr ""
+msgstr "Fecha:"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
 msgid "<span>No. R.I.F.:</span>"
-msgstr ""
+msgstr "No. R.I.F.:"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 msgid "<span>Nombre o Razón Social del Agente de Retención</span>"
-msgstr ""
+msgstr "Nombre o Razón Social del Agente de Retención"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 msgid "<span>Nombre o Razón Social del Sujeto Retenido</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Nota de Crédito</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Nota de Débito</span>"
-msgstr ""
+msgstr "Nombre o Razón Social del Sujeto Retenido"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
@@ -324,18 +226,8 @@ msgid "<span>Nro Comprobante:</span>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Nro de Control Factura</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
 msgid "<span>Nro. R.I.F.:</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Número de Factura</span>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
@@ -362,16 +254,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 msgid ""
 "<span>Registro de Información Fiscal del Sujeto Retenido (R.I.F)</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Tipo de Transacción</span>"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
-msgid "<span>Total Compras Incluyendo el IVA</span>"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
@@ -434,6 +316,11 @@ msgid "Action Needed"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_needaction
+msgid "Action Needed"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__state
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__active
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__economic_branch__status__active
@@ -449,6 +336,31 @@ msgstr "Activo"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__state
 msgid "Active?"
 msgstr "Activo"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_ids
+msgid "Activities"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_state
+msgid "Activity State"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Ícono del tipo de actividad"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__actual_invoice_ids
+msgid "Actual Invoices"
+msgstr "Facturas actuales"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_ids
@@ -546,6 +458,11 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_attachment_count
 msgid "Attachment Count"
+msgstr "Cantidad de adjuntos"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_attachment_count
+msgid "Attachment Count"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
@@ -553,6 +470,11 @@ msgstr ""
 #: code:addons/l10n_ve_payment_extension/utils/utils_retention.py:0
 msgid "August"
 msgstr "Agosto"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__available_invoice_ids
+msgid "Available Invoices"
+msgstr "Facturas disponibles"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
@@ -565,6 +487,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__base_currency_is_vef
 msgid "Base Currency Is Vef"
 msgstr "La moneda base es Bs"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Base Imponible"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
@@ -691,7 +618,7 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_config_settings
 msgid "Config Settings"
-msgstr "Ajustes de configuración"
+msgstr "Opciones de configuración"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_partner
@@ -770,11 +697,6 @@ msgstr "Diario del Cliente"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_search
 msgid "Customer Retention"
 msgstr "Retenciones de Cliente"
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
-msgid "Código"
-msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_date
@@ -1002,6 +924,11 @@ msgstr "Error en el campo de porcentaje de tarifas"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "FA"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
 msgid "Fact Nro"
 msgstr ""
 
@@ -1117,6 +1044,21 @@ msgid "Font awesome icon e.g. fa-tasks"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_follower_ids
+msgid "Followers"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_partner_ids
+msgid "Followers (Partners)"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_currency_id
@@ -1202,7 +1144,7 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__has_message
 msgid "Has Message"
-msgstr ""
+msgstr "Tiene mensaje"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_patent_columns_extra
@@ -1300,6 +1242,13 @@ msgid "ISLR Retentions"
 msgstr "Retenciones de ISLR"
 
 #. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "ISLR retention: Number must be exactly 11 numeric digits."
+msgstr "Retención ISLR: El número debe tener exactamente 11 dígitos numéricos."
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__iva_amount
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_payment__payment_type_retention__iva
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type_retention__iva
@@ -1311,6 +1260,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__iva_account
 msgid "IVA Account"
 msgstr "Cuenta de Retención IVA"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "IVA Retenido"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -1406,6 +1360,11 @@ msgid "Impuesto <br/>retenido"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Impuesto IVA"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid "Impuesto retenido<br/>acumulado"
 msgstr ""
@@ -1488,6 +1447,11 @@ msgid "Is Follower"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_is_follower
+msgid "Is Follower"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__is_out_invoice
 msgid "Is Out Invoice"
 msgstr "Es Factura de Cliente"
@@ -1546,15 +1510,6 @@ msgstr "Enero"
 #: model:ir.model,name:l10n_ve_payment_extension.model_account_journal
 msgid "Journal"
 msgstr "Diario"
-
-#. module: l10n_ve_payment_extension
-#. odoo-python
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-msgid ""
-"Journal '%(journal)s' must have accounts configured and a payment method "
-"line for '%(method)s'."
-msgstr ""
-"El diario '%(journal)s' debe tener cuentas configuradas y una línea de método de pago para '%(method)s'."
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_account_move
@@ -1687,6 +1642,16 @@ msgid "Messages"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_has_error
+msgid "Message Delivery error"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_ids
+msgid "Messages"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__month
 msgid "Month"
 msgstr "Mes"
@@ -1807,6 +1772,16 @@ msgid "My Activity Deadline"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "NC"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "ND"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid "NO HAY DATOS"
 msgstr ""
@@ -1816,6 +1791,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__name
 msgid "Name"
 msgstr "Nombre"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_date_deadline
@@ -1863,6 +1843,16 @@ msgid "No withholdings have been found in the selected period"
 msgstr "No se han encontrado retenciones en el periodo seleccionado"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Nota de Crédito"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Nota de Débito"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/utils/utils_retention.py:0
 msgid "November"
@@ -1871,6 +1861,11 @@ msgstr "Noviembre"
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
 msgid "Nro de Control"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Nro de Control Factura"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
@@ -1902,6 +1897,11 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__message_has_error_counter
 msgid "Number of messages with delivery error"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Número de Factura"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
@@ -2107,12 +2107,17 @@ msgstr "Recordar usar (,) como separador decimal"
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_ir_actions_report
 msgid "Report Action"
-msgstr "Acción de reporte"
+msgstr "Reportar acción"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__report
 msgid "Report type"
 msgstr "Tipo de reporte"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_user_id
+msgid "Responsible User"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_user_id
@@ -2248,6 +2253,11 @@ msgid "SMS Delivery error"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__code_visible
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__code_visible
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__code_visible
@@ -2353,6 +2363,15 @@ msgstr "Estado"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__status
 msgid "Status"
 msgstr "Estado"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_state
@@ -2490,10 +2509,11 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 msgid ""
-"The amount of the retention is greater than the total amount of the invoice."
+"The amount of the retention is greater than the total amount of the invoice "
+"%s."
 msgstr ""
 "La base imponible de la retención es mayor que la base imponible de la "
-"factura."
+"factura %s."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -2758,6 +2778,11 @@ msgid "Type of the exception activity on record."
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr ""
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__type_person_id
 msgid "Type person"
 msgstr "Tipo de Persona"
@@ -2799,6 +2824,16 @@ msgstr "Nro de Comprobante"
 #: code:addons/l10n_ve_payment_extension/models/account_withholding_type.py:0
 msgid "Warning"
 msgstr "Advertencia"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__website_message_ids
+msgid "Website Messages"
+msgstr ""
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__website_message_ids
+msgid "Website communication history"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__website_message_ids
@@ -2976,24 +3011,3 @@ msgstr "Impuesto retenido"
 #: code:addons/l10n_ve_payment_extension/models/payment_concept_line.py:0
 msgid "the percentage may not exceed 100% on the payment concept line"
 msgstr "El porcentaje no puede exceder el 100% en la linea de pago."
-
-#. module: l10n_ve_payment_extension
-#. odoo-python
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-#, python-format
-msgid "No registered lines found in the move to reconcile."
-msgstr "No existen líneas registradas en el movimiento"
-
-#. module: l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
-msgid "Account reports"
-msgstr "Reportes contables"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_patent_columns_extra
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__hide_patent_columns_extra
-msgid "Hide extra columns in Patent Municipal Report related to advances"
-msgstr "Ocultar columnas adicionales en el reporte de Patente Municipal relacionadas con anticipos"

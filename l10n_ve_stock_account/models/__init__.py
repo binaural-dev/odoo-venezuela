@@ -13,5 +13,4 @@ from . import (
     stock_warehouse,
     stock_location,
     stock_return_picking,
-    ir_actions_report,
 )
