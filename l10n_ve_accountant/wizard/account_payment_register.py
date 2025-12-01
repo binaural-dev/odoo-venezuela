@@ -28,6 +28,8 @@ class AccountPaymentRegister(models.TransientModel):
     foreign_rate = fields.Float(
         help="The rate of the payment",
         digits="Tasa",
+        compute="_compute_rates",
+        store=True, 
     )
     foreign_inverse_rate = fields.Float(
         help=(
@@ -35,10 +37,28 @@ class AccountPaymentRegister(models.TransientModel):
             "and the moves created by the wizard."
         ),
         digits=(16, 15),
+        compute="_compute_rates",
+        store=True,
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
     )
+    
+    @api.depends("currency_id")
+    def _compute_rates(self):
+        """
+        Compute the currency and compute the foreign rate
+        """
+        Rate = self.env["res.currency.rate"]
+        for payment in self:
+            if not bool(payment.currency_id):
+                return
+            rate_values = Rate.compute_rate(
+                payment.currency_id.id, payment.payment_date
+            )
+            payment.foreign_rate = rate_values.get("foreign_rate", 0.0)
+            payment.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0.0)
+            
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -54,8 +74,6 @@ class AccountPaymentRegister(models.TransientModel):
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(
                 payment.foreign_rate
             )
-            total_amount_residual_in_wizard_currency = 0
-            payment.amount = total_amount_residual_in_wizard_currency
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):

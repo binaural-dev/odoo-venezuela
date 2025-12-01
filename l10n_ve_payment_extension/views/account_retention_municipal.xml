@@ -212,3 +212,4 @@
             <field name="domain">[('type_retention', '=', 'municipal'), ('type', '=', 'in_invoice')]</field>
         </record>
     </data>
+</odoo>
