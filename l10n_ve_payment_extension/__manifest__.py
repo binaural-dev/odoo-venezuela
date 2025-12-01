@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "1.0",
+    "version": "1.4",
     "depends": [
         "base",
         "account",
@@ -60,5 +60,5 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "pre_init_hook": "pre_init_hook"
+    "pre_init_hook": "pre_init_hook",
 }

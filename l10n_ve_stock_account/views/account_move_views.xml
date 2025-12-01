@@ -29,7 +29,7 @@
             </xpath>
 
             <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[1]" position="before">
-                <field name="from_picking_line" readonly="1" invisible="1"/>
+                <field name="from_picking_line" readonly="1" invisible="1" optional="hide"/>
             </xpath>
 
             <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='quantity']"

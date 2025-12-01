@@ -1,5 +1,5 @@
 from odoo import http
-import pandas as pd
+#import pandas as pd
 
 
 class IslrReportController(http.Controller):
