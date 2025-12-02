@@ -1,7 +1,7 @@
 from datetime import datetime, date, timedelta
 import json
 import logging
-
+import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import format_date
@@ -68,8 +68,8 @@ class AccountMove(models.Model):
             if taxpayer_type == "special":
                 if today.day < 15:
                     return today.replace(day=15)
-            last_day = date(today.year, today.month, 28) + timedelta(days=4)
-            return last_day - timedelta(days=1)
+            last_day = calendar.monthrange(today.year, today.month)[1]
+            return date(today.year, today.month, last_day)
 
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
