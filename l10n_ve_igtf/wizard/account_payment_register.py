@@ -50,7 +50,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     igtf_to_show = fields.Float(string="Amount with IGTF")
 
 
-    @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date','igtf_amount')
+    @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date')
     def _compute_amount(self):
         for wizard in self:
             amount = False
@@ -63,7 +63,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 # The wizard is not editable so no partial payment allowed and then, 'amount' is not used.
                 amount = None
             if  wizard.is_igtf and wizard.apply_igtf_in_wizard_payment:
-                amount +=  wizard.igtf_amount
+                id=self.env.context.get("active_id",False)
+                move_id=self.env['account.move'].browse(id)
+                
+                igtf = wizard.calculate_igtf_for_payment(move_id,amount,wizard.igtf_percentage)
+                #if move_id.amount_residual > (amount + igtf):
+                #raise UserError(igtf)
+                amount += igtf
             wizard.amount = amount
 
     @api.onchange("journal_id", "is_igtf", "is_igtf_on_foreign_exchange","amount")
@@ -82,13 +88,12 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                  
                     payment_amount = payment.amount + payment.payment_difference
 
-                #raise UserError('lonada')
                 payment.igtf_to_show = payment.calculate_igtf_for_payment(
                     move_id, payment_amount, payment.igtf_percentage
                 )
                 #raise UserError(payment.igtf_to_show)
 
-    @api.onchange('payment_difference','source_amount')
+    @api.onchange('payment_difference')
     def _onchange_diference(self):
         for wizard in self:
             if wizard.can_edit_wizard and wizard.payment_date:
@@ -100,8 +105,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                 # 2. Calcular el MONTO TOTAL ESPERADO (Factura + IGTF, si aplica)
                 expected_amount = total_residual
-                if wizard.company_id.apply_igtf_in_wizard_payment and wizard.igtf_amount > 0.00:
-                    expected_amount += wizard.igtf_amount
+                if wizard.company_id.apply_igtf_in_wizard_payment and wizard.igtf_to_show > 0.00:
+                    expected_amount += wizard.igtf_to_show
                     
                 # 3. Calcular la diferencia bruta
                 raw_difference = expected_amount - wizard.amount
@@ -123,10 +128,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             else:
                 wizard.payment_difference = 0.0
 
-    @api.onchange("amount","igtf_amount")
+    @api.onchange("amount","igtf_to_show")
     def _compute_amount_without_difference(self):
         for rec in self:
-                rec.amount_without_difference = rec.amount - rec.igtf_amount
+                
+                rec.amount_without_difference = rec.amount - rec.igtf_to_show
 
     @api.depends("journal_id","currency_id")
     def _compute_check_igtf(self):
@@ -154,7 +160,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     def _compute_amount_with_igtf(self):
         """Compute the amount with igtf of the payment"""
         for payment in self:
-            payment.amount_with_igtf = payment.amount + payment.igtf_amount
+            payment.amount_with_igtf = payment.amount + payment.igtf_to_show
 
     @api.onchange("journal_id", "is_igtf", "is_igtf_on_foreign_exchange")
     def _compute_igtf_amount(self):
@@ -185,14 +191,32 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     
               
 
-    def calculate_igtf_for_payment(self, invoice, payment_amount, igtf_percentage):
+    
+    
+    def calculate_igtf_for_payment(self, invoice, payment_amount, igtf_percentage=False):
         """
         Calcula IGTF solo sobre el monto que se aplica a la deuda principal
         """
-        # 1. Deuda principal pendiente (sin incluir IGTF)
-        principal_debt = invoice.amount_total - invoice.bi_igtf 
+        currency = self.currency_id 
+        
+        principal_debt = invoice.amount_residual
         principal_amount = min(payment_amount, principal_debt)
-        igtf = principal_amount * (igtf_percentage / 100)
+
+        result = invoice.amount_residual + (invoice.amount_residual * self.igtf_percentage / 100)
+
+        if result == invoice.amount_residual :
+            
+            return 0.0
+        
+        igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
+
+        igtf_top = invoice.igtf_top_aply - igtf_unrounded
+        
+
+        if igtf_top != 0 and igtf_unrounded > igtf_top:
+            #raise UserError(igtf_top)
+            return 0.0
+        igtf= currency.round(igtf_unrounded)
         return max(igtf, 0.0)
 
     def _init_payments(self, to_process, edit_mode=False):

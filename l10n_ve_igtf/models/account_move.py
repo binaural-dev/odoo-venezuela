@@ -52,6 +52,12 @@ class AccountMove(models.Model):
         compute="_compute_amount_residual_igtf",
         copy=False,
     )
+    igtf_top_aply = fields.Float('igtf_top_aply', compute ="top_igtf", store=True)
+
+    @api.depends('amount_total')
+    def top_igtf(self):
+        for rec in self:
+            rec.igtf_top_aply = rec.amount_total * (self.company_id.igtf_percentage / 100)
 
 
     #OVERRIDES ODOO COMPUTE METHOD
