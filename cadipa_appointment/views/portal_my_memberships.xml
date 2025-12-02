@@ -11,7 +11,7 @@
                t-attf-id="binaural_min_child_age"
                class="binaural_min_child_age"
                t-att-value="company.minimum_child_age or 0"/>
-        <input
+        <input type="hidden"
                t-attf-id="binaural_max_child_age"
                class="binaural_max_child_age"
                t-att-value="company.maximum_child_age or 0"/>

@@ -130,7 +130,6 @@ class ActionPartner(models.Model):
 
         start_date = self.membership_start_date or fields.Date.today()
 
-        # Lógica de seguridad para fechas en Full Sync
         if self.state in ["suspended", "canceled"]:
             end_date = fields.Date.today()
         else:

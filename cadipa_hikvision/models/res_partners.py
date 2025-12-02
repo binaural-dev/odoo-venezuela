@@ -27,7 +27,7 @@ class ResPartner(models.Model):
                 [("partner_id", "=", partner.id)]
             )
             for hik_user in hik_users:
-                hik_user.action_revoke_access_fast()
+                hik_user.action_revoke_access()
 
     def action_sync_hikcentral_beneficiary(self):
         """
