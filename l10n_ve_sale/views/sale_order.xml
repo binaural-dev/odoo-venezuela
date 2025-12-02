@@ -123,13 +123,6 @@
                     groups="!l10n_ve_sale.payment_terms_sale_order_group" />
             </field>
 
-            <xpath expr="//notebook/page[1]//list/field[@name='price_unit']" position="replace">
-                <field name="price_unit" readonly="1"
-                    groups="l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
-                <field name="price_unit"
-                    groups="!l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
-            </xpath>
-
         </field>
     </record>
 
