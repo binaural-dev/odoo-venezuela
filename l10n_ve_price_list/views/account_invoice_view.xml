@@ -5,12 +5,12 @@
         <field name="inherit_id" ref="account_invoice_pricelist.view_account_move_customer_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='pricelist_id'][1]" position="attributes">
-                <attribute name="readonly">not can_edit_pricelist</attribute>
+                <attribute name="readonly">invoice_origin and not can_edit_pricelist</attribute>
                 <attribute name="invisible">0</attribute>
             </xpath>
             <xpath expr="//field[@name='pricelist_id'][2]" position="attributes">
                 <attribute name="invisible">0</attribute>
-                <attribute name="readonly">not can_edit_pricelist</attribute>
+                <attribute name="readonly">invoice_origin and not can_edit_pricelist</attribute>
             </xpath>
         </field>
     </record>
