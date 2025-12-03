@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hikcentral_department_tree_inherit" model="ir.ui.view">
+        <field name="name">hikcentral.department.tree.inherit</field>
+        <field name="model">hikcentral.department</field>
+        <field name="inherit_id" ref="binaural_hikvision.view_hikcentral_department_tree"/>
+        <field name="arch" type="xml">
+            <field name="org_index_code" position="after">
+                <field name="default_membership_dept"/>
+            </field>
+        </field>
+    </record>
+</odoo>

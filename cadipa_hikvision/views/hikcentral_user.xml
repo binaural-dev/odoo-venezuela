@@ -10,6 +10,7 @@
                 <field name="comes_from_calendar_reservation" invisible="1"/>
                 <field name="event_id" options="{'no_create': True}" invisible="not comes_from_calendar_reservation"/>
                 <field name="appointment_guest_id" options="{'no_create': True}" invisible="not comes_from_calendar_reservation"/>
+                <field name="parent_user_id" invisible="not parent_user_id"/>
             </xpath>
 
         </field>

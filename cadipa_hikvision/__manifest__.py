@@ -16,6 +16,11 @@
         'data/mail_template.xml',
         'views/calendar_view.xml',
         'views/hikcentral_user.xml',
+        'views/portal_templates.xml',
+        'views/action_partner.xml',
+        'views/hikcentral_department.xml',
+        'views/hikcentral_access_level_views.xml',
+        'views/membership_type_plan.xml',
     ],
     'assets': {
         'web.assets_frontend': [
