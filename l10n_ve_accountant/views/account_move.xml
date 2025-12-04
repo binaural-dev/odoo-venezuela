@@ -52,6 +52,9 @@
                     </div>
                 </div>
             </xpath>
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='account_id']" position="attributes">
+                <attribute name='optional'>Hide</attribute>
+            </xpath>
             <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">
                 <attribute name='invisible'>True</attribute>
             </xpath>
@@ -82,7 +85,7 @@
                     invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')" />
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Foreign currency" name="foreign_currency">
+                <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_accountant.group_foreign_currency_view_accountant">
                     <group>
                         <field name="foreign_currency_id" invisible='1' />
                         <field name="manually_set_rate" invisible="1" />

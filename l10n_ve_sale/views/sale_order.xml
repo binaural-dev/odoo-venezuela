@@ -44,7 +44,7 @@
             </xpath>
 
             <xpath expr="//notebook" position="inside">
-                <page string="Foreign currency" name="foreign_currency">
+                <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_sale.group_foreign_currency_view_sales">
                     <group>
                         <field name="foreign_currency_id" invisible="1" />
                         <field
