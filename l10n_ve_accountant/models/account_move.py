@@ -326,7 +326,6 @@ class AccountMove(models.Model):
             title.
         """
         foreign_currency_id = self.env.company.foreign_currency_id.id
-
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
@@ -334,17 +333,24 @@ class AccountMove(models.Model):
                 [("id", "=", int(foreign_currency_id))]
             )
             foreign_currency_symbol = foreign_currency_record.symbol or ""
+            foreign_currency_name = foreign_currency_record.name or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
                 ).id
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
+                foreign_subtotal_line = doc.xpath("//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='foreign_subtotal']")
+                foreign_price_line = doc.xpath("//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='foreign_price']")
+                if foreign_subtotal_line:
+                    foreign_subtotal_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
+                if foreign_price_line:
+                    foreign_price_line[0].set("string", _("Price") + " " + foreign_currency_name)
                 if page:
                     page[0].set(
                         "string", _("Foreign Currency ") + " " + foreign_currency_symbol
                     )
-                    res["arch"] = etree.tostring(doc, encoding="unicode")
+                res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
     @api.model_create_multi

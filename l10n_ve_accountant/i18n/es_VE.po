@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251118\n"
+"Project-Id-Version: Odoo Server 19.0+e-20251202\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-01 14:10+0000\n"
-"PO-Revision-Date: 2025-12-01 14:10+0000\n"
+"POT-Creation-Date: 2025-12-04 14:51+0000\n"
+"PO-Revision-Date: 2025-12-04 14:51+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -543,6 +543,11 @@ msgid "Foreign Currency "
 msgstr "Moneda alterna"
 
 #. module: l10n_ve_accountant
+#: model:res.groups,name:l10n_ve_accountant.group_foreign_currency_view_accountant
+msgid "Foreign Currency View Accountant"
+msgstr "Visualizar moneda extranjera en facturación"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_debit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_debit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_debit
@@ -997,6 +1002,12 @@ msgid "Payments"
 msgstr "Pagos"
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Price"
+msgstr "Precio"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_invoices_details_views
 msgid "Print"
 msgstr "Imprimir"
@@ -1020,17 +1031,6 @@ msgstr "Línea de la orden de compra"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Purchase Tax Rates"
 msgstr "Tasas de Impuestos de Compras"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
-msgid "RIF"
-msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
-msgid "RIF/CI/PAS."
-msgstr "CI/RIF"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
@@ -1173,9 +1173,11 @@ msgstr "Calle"
 
 #. module: l10n_ve_accountant
 #. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/static/src/components/tax_totals/tax_totals.xml:0
 msgid "Subtotal"
-msgstr ""
+msgstr "Subtotal"
 
 #. module: l10n_ve_accountant
 #: model:res.groups,name:l10n_ve_accountant.group_support_user
@@ -1205,6 +1207,13 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_accountant.model_account_tax
 msgid "Tax"
 msgstr "Impuesto"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
+msgid "Tax ID"
+msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
 
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_tax_unit
@@ -1280,7 +1289,8 @@ msgid ""
 "The conversion rate between the move currency and the company currency at "
 "the move date."
 msgstr ""
-"La tasa de conversión entre la moneda del asiento y la moneda de la compañía en la fecha del asiento."
+"La tasa de conversión entre la moneda del asiento y la moneda de la compañía"
+" en la fecha del asiento."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1445,6 +1455,12 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "You can only register payments for one foreign rate at a time."
 msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid "You cannot set a currency other than 'VEF' as the system base currency."
+msgstr "No puedes colocar una moneda distinta a 'VEF' como la base del sistema."
 
 #. module: l10n_ve_accountant
 #. odoo-python
