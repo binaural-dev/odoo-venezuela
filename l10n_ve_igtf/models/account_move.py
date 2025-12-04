@@ -131,6 +131,16 @@ class AccountMove(models.Model):
                     payment_id = self.env['account.move'].browse(move_id)
                     if not payment_id:
                         continue
+
+                    # --- INICIO DE LA MODIFICACIÓN ---
+                    payment_record = payment_id.payment_id
+                    
+                    # Excluir si el pago es una retención
+                    if payment_record and 'is_retention' in payment_record._fields and payment_record.is_retention:
+                        _logger.info(f'Saltando pago {payment_record.id} porque es una retención.')
+                        continue # Pasa a la siguiente iteración
+                    # --- FIN DE LA MODIFICACIÓN ---
+
                     is_igtf = payment_id.line_ids.filtered(
                         lambda l: l.account_id == self.env.company.customer_account_igtf_id or l.account_id == self.env.company.supplier_account_igtf_id
                     )
