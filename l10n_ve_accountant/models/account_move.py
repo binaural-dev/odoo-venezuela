@@ -201,7 +201,7 @@ class AccountMove(models.Model):
         for move in self:
             move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
             move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
-            move.foreign_balance = move.foreign_currency_id.round(move.foreign_debit - move.foreign_credit)
+            move.foreign_balance = move.foreign_currency_id.round((move.foreign_debit - move.foreign_credit))
 
     def _get_journal_income_account(self, journal):
         """
@@ -1035,7 +1035,7 @@ class AccountMove(models.Model):
                             round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
-        for move in self:
+        """ for move in self:
 
             precision = move.currency_id.decimal_places if move.currency_id else 2
 
@@ -1044,7 +1044,7 @@ class AccountMove(models.Model):
             if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
                 move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit_no_format")), precision_digits=precision)
                 if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
-                    raise UserError(_("Your transaction cannot be processed because the debit must match the credit."))
+                    raise UserError(_("Your transaction cannot be processed because the debit must match the credit.")) """
             
         return super().action_post()
 
