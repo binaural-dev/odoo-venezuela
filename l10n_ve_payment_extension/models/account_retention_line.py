@@ -67,11 +67,17 @@ class AccountRetentionLine(models.Model):
     payment_concept_id = fields.Many2one(
         "payment.concept", "Payment concept", ondelete="cascade", index=True
     )
+    
     code = fields.Char(
-        related="payment_concept_id.line_payment_concept_ids.code"
+        string='Code',
+        compute='_compute_code',
+        store=True, 
+        readonly=False
     )
-    code_visible=fields.Boolean(
+
+    code_visible = fields.Boolean(
         related='company_id.code_visible')
+    
     economic_activity_id = fields.Many2one(
         "economic.activity",
         ondelete="cascade",
@@ -128,6 +134,18 @@ class AccountRetentionLine(models.Model):
     foreign_iva_amount = fields.Float(string="Foreign IVA")
     foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate")
+
+    @api.depends("payment_concept_id")
+    def _compute_code(self):
+        for rec in self:
+            if rec.retention_id.partner_id and rec.payment_concept_id:
+                codes = rec.payment_concept_id.line_payment_concept_ids.filtered(
+                    lambda l: l.type_person_id == rec.retention_id.partner_id.type_person_id
+                ).mapped('code')
+
+                rec.code = codes[0] if codes else ''
+            else:
+                rec.code = ''
 
 
     @api.onchange("move_id")
@@ -196,6 +214,8 @@ class AccountRetentionLine(models.Model):
                     
                 break
 
+
+   
 
     @api.depends("retention_id.type_retention", "move_id")
     def _compute_name(self):
@@ -444,7 +464,7 @@ class AccountRetentionLine(models.Model):
         "invoice_amount",
         "foreign_invoice_amount",
     )
-    def _constraint_amounts(self):
+    def _constraint_amounts_in_zero(self):
         for record in self:
             if any(
                 (
@@ -455,14 +475,19 @@ class AccountRetentionLine(models.Model):
                     record.foreign_invoice_amount == 0,
                 )
             ):
-                raise ValidationError(_("You can not create a retention with 0 amount."))
+                raise ValidationError(
+                    _("You can not create a retention with 0 amount.")
+                )
 
-            is_vef_the_base_currency = self.env.company.currency_id == self.env.ref("base.VEF")
-            is_client_retention = record.retention_id.type == "out_invoice"
+    def check_retention_amount(self):
+        for record in self:
+            is_vef_the_base_currency = record.env.company.currency_id == record.env.ref("base.VEF")
+            is_client_retention = record.retention_id and record.retention_id.type == "out_invoice"
             if (
                 is_vef_the_base_currency
                 and is_client_retention
-                and record.retention_amount > record.move_id.amount_residual
+                and record.move_id.payment_state not in ("in_payment", "paid")
+                and abs(record.retention_amount) > abs(record.move_id.amount_residual)
             ):
                 raise ValidationError(
                     _(
@@ -471,11 +496,23 @@ class AccountRetentionLine(models.Model):
                     )
                 )
 
+    def write(self, vals):
+        res = super().write(vals)
+        if "retention_amount" in vals or "invoice_amount" in vals:
+            self.check_retention_amount()
+        return res
+
+    @api.model
+    def create(self, vals):
+        record = super().create(vals)
+        if "retention_amount" in vals or "invoice_amount" in vals:
+            record.check_retention_amount()
+        return record
+
     def get_invoice_paid_amount_not_related_with_retentions(self):
         """
         Returns the amount paid on the invoice that is not related with the retentions for the ISLR
-        supplier retention lines.
-        """
+        supplier retention lines. """
         # We need to get the lines without duplicate invoices because the invoice can have more
         # than one retention line.
         lines_without_duplicate_invoices = self.env[self._name]
