@@ -10,10 +10,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     _inherit = "account.payment.register"
 
     is_igtf = fields.Boolean(string="IGTF", 
-                             help="IGTF", store=True)
+                             help="IGTF")
+                             
     amount_with_igtf = fields.Float(
         string="Amount with IGTF", 
-        store=True
     )
 
     def _default_igtf_percent_from_company(self):
@@ -28,7 +28,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     igtf_amount = fields.Float(
         string="IGTF Amount", 
-        store=True, help="IGTF Amount"
+        help="IGTF Amount"
     )
 
     is_igtf_on_foreign_exchange = fields.Boolean(
@@ -40,7 +40,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     amount_without_difference = fields.Float(
         string="Amount without Difference",
-        store=True,
     )
 
     payment_difference = fields.Monetary(
@@ -114,10 +113,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for rec in self:
                 id=self.env.context.get("active_id",False)
                 move_id=self.env['account.move'].browse(id)
-                if rec.amount == move_id.amount_residual + move_id.amount_residual * (rec.igtf_percentage / 100) :
-                    rec.amount_without_difference = rec.amount - rec.igtf_to_show
 
-                elif rec.amount < move_id.amount_residual + move_id.amount_residual * (rec.igtf_percentage / 100):
+                if rec.amount <= move_id.amount_residual + move_id.amount_residual * (rec.igtf_percentage / 100):
                         rec.amount_without_difference = rec.amount - rec.igtf_to_show
                 
                 elif rec.amount > move_id.amount_residual + move_id.amount_residual * (rec.igtf_percentage / 100) :

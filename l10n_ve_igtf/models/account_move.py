@@ -51,7 +51,7 @@ class AccountMove(models.Model):
         compute="_compute_amount_residual_igtf",
         copy=False,
     )
-    igtf_top_aply = fields.Float('igtf_top_aply')
+    igtf_top_aply = fields.Float('Max Igtf amount to be apply')
 
    
 

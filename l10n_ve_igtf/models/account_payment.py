@@ -173,7 +173,7 @@ class AccountPaymentIgtf(models.Model):
            
             credit_line = currency.round(credit_line_unrounded)
             
-            credit_amount = -credit_line # El débito o crédito es el negativo del amount_currency
+            credit_amount = -credit_line
 
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 credit_amount = currency.round(-credit_line * self.foreign_rate)

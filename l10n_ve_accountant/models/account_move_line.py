@@ -354,18 +354,6 @@ class AccountMoveLine(models.Model):
                 abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
             )
 
-    # @api.depends("foreign_rate", "balance")
-    # def _compute_amount_currency(self):
-    #     _logger.warning(
-    #         "Source code: %s", inspect.getsource(super()_compute_amount_currency)
-    #     )
-    #     res = super()._compute_amount_currency()
-    #     # for line in self:
-    #     #     if line.amount_currency is False:
-    #     #         line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
-    #     #     if line.currency_id == line.company_id.currency_id:
-    #     #         line.amount_currency = line.balance
-    #     return res
 
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
