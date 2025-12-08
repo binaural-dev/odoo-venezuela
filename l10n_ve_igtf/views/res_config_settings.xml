@@ -40,10 +40,12 @@
                 </div>
 
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_amount_wizard">
-                    <div class="o_setting_left_pane"/>
+                    <div class="o_setting_left_pane">
+                        <field name="apply_igtf_in_wizard_payment" />
+                    </div>
                     <div class="o_setting_right_pane">
                         <label for="apply_igtf_in_wizard_payment" class="col-6"/>
-                        <field name="apply_igtf_in_wizard_payment" />
+                        
                     </div>
                 </div>
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_customer_account_igtf_id">
