@@ -1,11 +1,11 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError, UserError
 
 
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
-    unique_tax = fields.Boolean(
-        related="company_id.unique_tax", readonly=False)
+    unique_tax = fields.Boolean(related="company_id.unique_tax", readonly=False)
 
     show_discount_on_moves = fields.Boolean(
         related="company_id.show_discount_on_moves", readonly=False
