@@ -489,7 +489,7 @@
 
         <template id="template_invoice_free_form_l10n_ve_invoice">
             <t t-call="web.html_container">
-                 <t t-set="requested_doc_ids" t-value="[docs.env.context.get('active_id')] if docs.env.context.get('active_id') else []"/>
+                 <t t-set="requested_doc_ids" t-value="docs.env.context.get('active_ids') or docs.env.context.get('doc_ids') or []"/>
 
                 <t t-if="requested_doc_ids">
 
@@ -503,7 +503,7 @@
                     <t t-set="o" t-value="invoice.with_context(lang=lang)" />
                     <t t-set="doc" t-value="o" />
                     <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
-                    <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
+                    <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/> <!-- So that it appears in the footer of the report instead of the company VAT if it's set -->
                     <t t-call="web.basic_layout">
                         <t t-call="l10n_ve_invoice.report_freeform_document" t-lang="lang"/>
                     </t>
