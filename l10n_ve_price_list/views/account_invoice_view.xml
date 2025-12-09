@@ -1,0 +1,35 @@
+<odoo>
+    <record id="view_account_move_form_inherit_pricelist" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.pricelist</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account_invoice_pricelist.view_account_move_customer_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='pricelist_id'][1]" position="attributes">
+                <attribute name="readonly">invoice_origin and not can_edit_pricelist</attribute>
+                <attribute name="invisible">0</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pricelist_id'][2]" position="attributes">
+                <attribute name="invisible">0</attribute>
+                <attribute name="readonly">invoice_origin and not can_edit_pricelist</attribute>
+            </xpath>
+            
+        </field>
+    </record>
+
+    <record id="view_account_move_form_l10n_ve_accountant" model="ir.ui.view">
+        <field name="name">view.account.move.form.l10n.ve.invoice</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
+                position="attributes">
+                <attribute name="readonly">not can_edit_prices</attribute>
+            </xpath>
+            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='foreign_price']"
+                position="attributes">
+                <attribute name="readonly">not can_edit_prices</attribute>
+            </xpath>
+            
+        </field>
+    </record>
+</odoo>
