@@ -351,6 +351,23 @@ class AccountMove(models.Model):
                         "string", _("Foreign Currency ") + " " + foreign_currency_symbol
                     )
                 res["arch"] = etree.tostring(doc, encoding="unicode")
+
+            if view_type == "list":
+                view_id = self.env.ref(
+                    "l10n_ve_accountant.l10n_ve_accountant_view_invoice_tree_inherit"
+                ).id
+                doc = etree.XML(res["arch"])
+                foreign_total_billed_column = doc.xpath("//list/field[@name='foreign_total_billed']")
+                foreign_untaxed_total_column = doc.xpath("//list/field[@name='foreign_untaxed_total']")
+                if foreign_total_billed_column:
+                    foreign_total_billed_column[0].set(
+                        "string", _("Total") + " " + foreign_currency_name
+                    )
+                if foreign_untaxed_total_column:
+                    foreign_untaxed_total_column[0].set(
+                        "string", _("Untaxed Total") + " " + foreign_currency_name
+                    )
+                res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
     @api.model_create_multi
