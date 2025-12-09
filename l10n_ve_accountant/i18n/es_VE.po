@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251201\n"
+"Project-Id-Version: Odoo Server 19.0+e-20251202\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-09 15:07+0000\n"
-"PO-Revision-Date: 2025-12-09 15:07+0000\n"
+"POT-Creation-Date: 2025-12-09 01:56+0000\n"
+"PO-Revision-Date: 2025-12-09 01:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -40,6 +40,16 @@ msgstr ""
 "<span class=\"o_form_label\" style=\"font-size: 14px; white-space: nowrap;\">\n"
 "                        Una vez confirmado, el sistema generará las secuencias y el documento no podrá ser editado posteriormente. \n"
 "                    </span>"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
+msgid "<span>1</span>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
+msgid "<span>=</span>"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
@@ -143,12 +153,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Amount in Currency"
 msgstr "Importe en moneda"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.constraint,message:l10n_ve_accountant.constraint_account_move_unique_name
-#: model:ir.model.constraint,message:l10n_ve_accountant.constraint_account_move_unique_name_ve
-msgid "Another entry with the same name already exists."
-msgstr "Ya existe un asiento con el mismo nombre."
 
 #. module: l10n_ve_accountant
 #: model:ir.actions.report,name:l10n_ve_accountant.action_account_report
@@ -258,22 +262,22 @@ msgid "Configuraciones fiscales usuario"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Configuration Taxes:"
 msgstr "Configuraciones Impuestos:"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Configuration Taxes: Non-Deductible"
 msgstr "Configuración Impuestos: No Deducibles"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Configuration Taxes: Taxes Sales/Purchase"
 msgstr "Configuración Impuestos: Ventas/Compras"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Configuration: Accountant Books"
 msgstr "Configuración: Libros Contables"
 
@@ -283,7 +287,7 @@ msgid "Contact"
 msgstr "Contacto"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Core Settings"
 msgstr "Configuración Principal"
 
@@ -291,6 +295,11 @@ msgstr "Configuración Principal"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__country_id
 msgid "Country"
 msgstr "País"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,website_form_label:l10n_ve_accountant.model_res_partner
+msgid "Create a Customer"
+msgstr "Crear un cliente"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_uid
@@ -339,7 +348,7 @@ msgid "Date of issue:"
 msgstr "Fecha de emisión:"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Deductibility"
 msgstr "Deducibilidad"
 
@@ -372,15 +381,34 @@ msgid "Discount"
 msgstr "Descuento"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_term__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_tax__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_purchase_order_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_report_l10n_ve_accountant_account_related_report_call__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_report_l10n_ve_accountant_account_report_call__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_report_l10n_ve_accountant_financial_all_payments__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_report_l10n_ve_accountant_report_account_invoices_details__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_currency__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_sale_order_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__display_name
 msgid "Display Name"
-msgstr "Nombre"
+msgstr "Nombre en pantalla"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Display Options"
 msgstr ""
 
@@ -400,12 +428,12 @@ msgid "Elaborado por:"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Enable Non-Deductible Taxes"
 msgstr "Habilitar impuestos no deducibles"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Enable discount column visibility on invoice lines"
 msgstr "Habilitar visibilidad de la columna de descuento en líneas de factura"
 
@@ -415,7 +443,7 @@ msgid "End Date"
 msgstr "Fecha de fin"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Exempt Aliquot"
 msgstr "Alícuota exenta"
 
@@ -444,7 +472,7 @@ msgid "Extend Aliquot Sale"
 msgstr "Alícuota extendida ventas"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Extended Aliquot"
 msgstr "Alícuota extendida"
 
@@ -513,6 +541,11 @@ msgstr "Moneda alterna"
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "Foreign Currency "
 msgstr "Moneda alterna"
+
+#. module: l10n_ve_accountant
+#: model:res.groups,name:l10n_ve_accountant.group_foreign_currency_view_accountant
+msgid "Foreign Currency View Accountant"
+msgstr "Visualizar moneda extranjera en facturación"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_debit
@@ -648,7 +681,7 @@ msgid "From"
 msgstr "Desde"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "General Aliquot"
 msgstr "Alícuota general"
 
@@ -675,19 +708,38 @@ msgid "Hasta:"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Hide Extended Aliquot"
 msgstr "Ocultar alícuota extendida"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Hide Reduced Aliquot"
 msgstr "Ocultar alícuota reducida"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_term__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_tax__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_purchase_order_line__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_report_l10n_ve_accountant_account_related_report_call__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_report_l10n_ve_accountant_account_report_call__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_report_l10n_ve_accountant_financial_all_payments__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_report_l10n_ve_accountant_report_account_invoices_details__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_currency__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_sale_order_line__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__id
 msgid "ID"
 msgstr ""
@@ -785,6 +837,11 @@ msgid "Manually Set Rate"
 msgstr "Actualizar Tasa Manualmente"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__ves_currency_id
+msgid "Moneda VES"
+msgstr ""
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
 msgid "Monto"
 msgstr ""
@@ -798,6 +855,12 @@ msgstr "Movimiento"
 #: model:ir.model,name:l10n_ve_accountant.model_move_action_post_alert_wizard
 msgid "Move Action Post Alert"
 msgstr "Alerta al Postear Movimiento"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__move_currency_to_company_currency_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__move_currency_to_company_currency_rate
+msgid "Move Currency to Company Currency Rate"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
@@ -829,12 +892,6 @@ msgstr "No Deducible Aliquota Reducida (Compra)"
 
 #. module: l10n_ve_accountant
 #. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_tax.py:0
-msgid "No foreign currency configured in the company"
-msgstr "No hay moneda extranjera configurada en la empresa"
-
-#. module: l10n_ve_accountant
-#. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid ""
 "No se ha confirmado la factura. Límite de crédito excedido. La cuenta por "
@@ -844,7 +901,7 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Non-Deductible Rates"
 msgstr "Tasas no deducibles"
 
@@ -945,6 +1002,12 @@ msgid "Payments"
 msgstr "Pagos"
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Price"
+msgstr "Precio"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_invoices_details_views
 msgid "Print"
 msgstr "Imprimir"
@@ -955,7 +1018,7 @@ msgid "Proveedor"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Purchase Book"
 msgstr "Libro de Compras"
 
@@ -965,20 +1028,9 @@ msgid "Purchase Order Line"
 msgstr "Línea de la orden de compra"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Purchase Tax Rates"
 msgstr "Tasas de Impuestos de Compras"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
-msgid "RIF"
-msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
-msgid "RIF/CI/PAS."
-msgstr "CI/RIF"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
@@ -1009,7 +1061,7 @@ msgid "Recompute foreign debit and credit of journal entries"
 msgstr "Recalcular debito y credito alterno de apuntes contables"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Reduced Aliquot"
 msgstr "Alícuota Reducida"
 
@@ -1052,7 +1104,7 @@ msgid "Sale Details"
 msgstr "Detalle de ventas"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Sales Book"
 msgstr "Libro de Ventas"
 
@@ -1074,7 +1126,7 @@ msgid "Sales Report"
 msgstr "Informe de Ventas"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Sales Tax Rates"
 msgstr ""
 
@@ -1121,9 +1173,11 @@ msgstr "Calle"
 
 #. module: l10n_ve_accountant
 #. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/static/src/components/tax_totals/tax_totals.xml:0
-msgid "Subtotal pinga"
-msgstr ""
+msgid "Subtotal"
+msgstr "Subtotal"
 
 #. module: l10n_ve_accountant
 #: model:res.groups,name:l10n_ve_accountant.group_support_user
@@ -1136,9 +1190,30 @@ msgid "Support views"
 msgstr "Soporte"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__company_currency_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__company_currency_rate
+msgid ""
+"Tasa de la moneda seleccionada en la compañía (campo inverse_rate_company de"
+" res.currency)"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__company_currency_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__company_currency_rate
+msgid "Tasa de moneda de la compañía"
+msgstr ""
+
+#. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_account_tax
 msgid "Tax"
 msgstr "Impuesto"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
+msgid "Tax ID"
+msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
 
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_tax_unit
@@ -1152,7 +1227,7 @@ msgid "Tax Unit Description"
 msgstr "Descripción de Unidad Tributaria"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_taxes
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Tax is mandatory on order and invoice lines, only one tax allowed"
 msgstr ""
 
@@ -1181,6 +1256,11 @@ msgid "Taxpayer Type"
 msgstr "Tipo de contribuyente"
 
 #. module: l10n_ve_accountant
+#: model:res.groups.privilege,name:l10n_ve_accountant.res_groups_privilege_category_hidden
+msgid "Technically"
+msgstr "Técnicamente"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__vat
 #: model:ir.model.fields,help:l10n_ve_accountant.field_res_partner__vat
 #: model:ir.model.fields,help:l10n_ve_accountant.field_res_users__vat
@@ -1203,11 +1283,11 @@ msgstr ""
 "multimoneda."
 
 #. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__move_currency_to_company_currency_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__move_currency_to_company_currency_rate
 msgid ""
-"The operation cannot be completed: Another entry with the same name already "
-"exists."
+"The conversion rate between the move currency and the company currency at "
+"the move date."
 msgstr ""
 "La tasa de conversión entre la moneda del asiento y la moneda de la compañía"
 " en la fecha del asiento."
@@ -1274,10 +1354,12 @@ msgstr "Estos productos debe tener un solo impuesto."
 
 #. module: l10n_ve_accountant
 #. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/static/src/components/tax_totals/tax_totals.xml:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Total"
-msgstr ""
+msgstr "Total"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
@@ -1313,6 +1395,22 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__unique_tax
 msgid "Unique Tax"
 msgstr "Impuesto único"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__price_unit_ves
+msgid "Unit Price VES"
+msgstr "Precio unitario VES"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__price_unit_ves
+msgid "Unit Price in VES currency"
+msgstr "Precio unitario en moneda VES"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Untaxed Total"
+msgstr "Total sin impuestos"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
@@ -1368,9 +1466,9 @@ msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
 
 #. module: l10n_ve_accountant
 #. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
-msgid "You cannot place a currency other than the base of the system."
-msgstr "No puede colocar una moneda que no sea la base del sistema."
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid "You cannot set a currency other than 'VEF' as the system base currency."
+msgstr "No puedes colocar una moneda distinta a 'VEF' como la base del sistema."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1431,6 +1529,12 @@ msgid "fecha"
 msgstr ""
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_untaxed_total
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_untaxed_total
+msgid "foreign untaxed total"
+msgstr "Total alterno sin impuestos"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
 msgid "nombre"
 msgstr ""
@@ -1439,6 +1543,12 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_accountant.model_payment_report
 msgid "payment.report"
 msgstr "Reporte de pagos"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "rate"
+msgstr "Tasa"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
@@ -1469,3 +1579,15 @@ msgstr "Informe de Detalles de Facturas de Cuentas"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "to"
 msgstr "Hasta"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__amount_total_signed
+#: model:ir.model.fields,field_description:account.field_account_move__amount_total_signed
+msgid "Total Signed"
+msgstr "Total BS"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_bank_statement_line__amount_untaxed_signed
+#: model:ir.model.fields,field_description:account.field_account_move__amount_untaxed_signed
+msgid "Untaxed Amount Signed"
+msgstr "Total sin impuestos BS"

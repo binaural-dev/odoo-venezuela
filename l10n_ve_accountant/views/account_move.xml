@@ -52,6 +52,9 @@
                     </div>
                 </div>
             </xpath>
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='account_id']" position="attributes">
+                <attribute name='optional'>Hide</attribute>
+            </xpath>
             <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">
                 <attribute name='invisible'>True</attribute>
             </xpath>
@@ -82,7 +85,7 @@
                     invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')" />
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Foreign currency" name="foreign_currency">
+                <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_accountant.group_foreign_currency_view_accountant">
                     <group>
                         <field name="foreign_currency_id" invisible='1' />
                         <field name="manually_set_rate" invisible="1" />
@@ -150,7 +153,7 @@
                 <attribute name="readonly">1</attribute>
             </xpath>
 
-            <xpath expr="//page/field[@name='journal_line_ids']/list/field[@name='balance']"
+            <xpath expr="//field[@name='balance']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field
@@ -197,6 +200,20 @@
                     options="{'currency_field': 'foreign_currency_id'}"
                     decoration-bf="1"
                     optional="hide" />
+            </xpath>
+        </field>
+    </record>
+    <record id="l10n_ve_accountant_view_invoice_tree_inherit" model="ir.ui.view">
+        <field name="name">account.move.list.inherit.l10n_ve_accountant</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='amount_total_in_currency_signed']" position="before">
+                <field name="foreign_currency_id" column_invisible="True"/>
+                <field name="amount_total_signed" optional="hide"/>
+                <field name="amount_untaxed_signed" optional="hide"/>
+                <field name="foreign_total_billed" widget="monetary" optional="hide"/>
+                <field name="foreign_untaxed_total" widget="monetary" optional="hide"/>
             </xpath>
         </field>
     </record>
