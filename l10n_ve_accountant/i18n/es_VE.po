@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 18.0+e-20250806\n"
+"Project-Id-Version: Odoo Server 19.0+e-20251201\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-29 18:36+0000\n"
-"PO-Revision-Date: 2025-08-29 18:36+0000\n"
+"POT-Creation-Date: 2025-12-09 15:07+0000\n"
+"PO-Revision-Date: 2025-12-09 15:07+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -1209,8 +1209,8 @@ msgid ""
 "The operation cannot be completed: Another entry with the same name already "
 "exists."
 msgstr ""
-"La operación no se puede completar: Ya existe otro asiento con el mismo "
-"nombre."
+"La tasa de conversión entre la moneda del asiento y la moneda de la compañía"
+" en la fecha del asiento."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1379,6 +1379,12 @@ msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "You must set the invoice date before adding products."
+msgstr "Debes establecer la fecha de la factura antes de agregar productos."
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "____________________________________________"
 msgstr ""
@@ -1463,8 +1469,3 @@ msgstr "Informe de Detalles de Facturas de Cuentas"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "to"
 msgstr "Hasta"
-
-#. module: l10n_ve_accountant
-#: model:ir.rule,name:l10n_ve_accountant.account_move_unlink_draft_only
-msgid "delete invoice if draft"
-msgstr "Eliminar factura si está en borrador"
