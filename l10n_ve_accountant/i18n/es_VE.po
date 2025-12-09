@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251202\n"
+"Project-Id-Version: Odoo Server 19.0+e-20251201\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-09 01:56+0000\n"
-"PO-Revision-Date: 2025-12-09 01:56+0000\n"
+"POT-Creation-Date: 2025-12-09 15:07+0000\n"
+"PO-Revision-Date: 2025-12-09 15:07+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -1475,6 +1475,12 @@ msgstr "No puedes colocar una moneda distinta a 'VEF' como la base del sistema."
 #: code:addons/l10n_ve_accountant/models/account_journal.py:0
 msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "You must set the invoice date before adding products."
+msgstr "Debes establecer la fecha de la factura antes de agregar productos."
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
