@@ -8,7 +8,6 @@ from datetime import date, datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
-
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
@@ -882,10 +881,15 @@ class StockPicking(models.Model):
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
                 continue
-
+            elif picking.document == "dispatch_guide":
+                picking.is_dispatch_guide = True
+                continue
             elif (
                 picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id or picking.transfer_reason_id.id == other_causes_reason.id
+                and (
+                    picking.transfer_reason_id.id == consignment_reason.id
+                    or picking.transfer_reason_id.id == other_causes_reason.id
+                )
             ):
                 picking.is_dispatch_guide = True
 

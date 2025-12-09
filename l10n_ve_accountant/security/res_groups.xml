@@ -18,4 +18,7 @@
     <record id="group_support_user" model="res.groups">
         <field name="name">Support User (Journals)</field>
     </record>
+    <record id="group_foreign_currency_view_accountant" model="res.groups">
+        <field name="name">Foreign Currency View Accountant</field>
+    </record>
 </odoo>
