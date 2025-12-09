@@ -17,7 +17,6 @@
         "account_debit_note",
     ],
     "data": [
-        "security/l10n_ve_invoice_groups.xml",
         "security/ir.model.access.csv",
         "security/ir_rule.xml",
         "data/account_data.xml",

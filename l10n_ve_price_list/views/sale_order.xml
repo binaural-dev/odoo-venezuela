@@ -1,0 +1,16 @@
+<odoo>
+        <record id="view_sale_order_form_l10n_ve_sales" model="ir.ui.view">
+        <field name="name">view.sale.order.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="l10n_ve_sale.view_sale_order_form_l10n_ve_sales" />
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page[1]//list/field[@name='price_unit']" position="attributes">
+                <attribute name="readonly">not can_edit_prices</attribute>
+            </xpath>
+
+            <xpath expr="//notebook/page[1]//list/field[@name='foreign_price']" position="attributes">
+                <attribute name="readonly">not can_edit_prices</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
