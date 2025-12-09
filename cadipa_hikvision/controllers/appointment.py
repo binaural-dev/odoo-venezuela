@@ -21,7 +21,7 @@ class CadipaWebsiteAppointment(AppointmentControllerMulti):
 
         if created_events:
             try:
-                created_events._create_hikcentral_visitor_users()
+                created_events.sudo()._create_hikcentral_visitor_users()
             except Exception as e:
                 _logger.error(
                     "Failed to initiate synchronization with HikCentral from the hook: %s",
