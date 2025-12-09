@@ -792,6 +792,12 @@ class AccountMove(models.Model):
             raise ValidationError(_("The rate entered cannot be zero."))
 
 
+    @api.constrains("invoice_line_ids")
+    def _check_invoice_date_before_adding_product(self):
+        for move in self:
+            if move.invoice_line_ids and not move.invoice_date:
+                raise ValidationError(_("You must set the invoice date before adding products."))
+
     def _get_payments(self, line_ids):
         self.ensure_one()
 
