@@ -177,7 +177,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <t t-foreach="o.move_ids_without_package" t-as="line">
+                            <t t-foreach="o.move_ids" t-as="line">
                                 <t t-set="line_values"
                                     t-value="line._get_line_values(use_foreign_currency=o.get_foreign_currency_is_vef())" />
 
