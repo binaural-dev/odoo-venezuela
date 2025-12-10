@@ -30,6 +30,11 @@ class ResConfigSettings(models.TransientModel):
         readonly=False
     )
 
+    mandatory_contact_in_payable_or_receivable_accounting_accounts = fields.Boolean(
+        related="company_id.mandatory_contact_in_payable_or_receivable_accounting_accounts",
+        readonly=False
+    )
+
     @api.onchange("group_sales_invoicing_series")
     def onchange_group_sales_invoicing_series(self):
         ir_sequence = self.env["ir.sequence"].sudo()
