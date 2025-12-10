@@ -22,7 +22,6 @@ class ResCurrency(models.Model):
         self, to_currency = self or to_currency, to_currency or self
         assert self, "convert amount from unknown currency"
         assert to_currency, "convert amount to unknown currency"
-
         if self == to_currency:
             rate = 1.0
         elif custom_rate > 0:
