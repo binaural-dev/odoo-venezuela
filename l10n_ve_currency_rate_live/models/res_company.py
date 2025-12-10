@@ -41,7 +41,7 @@ class ResCompany(models.Model):
         Raises:
             UserError: Error to connect with BCV, please check your internet connection or try again later
 
-        Returns:
+        Return:
             tuple (float: rate of the day, date: date of the rate)
         """
         disable_warnings(InsecureRequestWarning)
