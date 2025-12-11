@@ -11,6 +11,7 @@
     "depends": [
         "l10n_ve_invoice",
         "loyalty",
+        "sale"
     ],
     "data": [
     ],
