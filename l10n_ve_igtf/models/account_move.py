@@ -52,7 +52,7 @@ class AccountMove(models.Model):
         copy=False,
     )
     igtf_top_aply = fields.Float('Max Igtf amount to be apply')
-
+    alter_bi_igtf = fields.Float('Alter BI IGTF')
    
 
     #OVERRIDES ODOO COMPUTE METHOD
@@ -153,13 +153,13 @@ class AccountMove(models.Model):
             final_payment_moves = payment_moves.filtered(lambda m: m.state == 'posted' and m.id != rec.id)
             total_bi_igtf = 0.0
             igtf_top = 0.0
-
+            alter_bi_igtf = 0.0
             for payment_move in final_payment_moves:
                 
                 igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
                 bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.account_type in ['asset_cash','bank'])
 
-                if not igtf_line and bank_line:
+                if not igtf_line and bank_line: #bolivares
                     
                     igtf_top += abs(bank_line[0].balance)
 
@@ -169,10 +169,15 @@ class AccountMove(models.Model):
                   
                     base_pago = abs(bank_line[0].foreign_balance) if bank_line[0].currency_id == self.env.ref("base.VEF") else abs(bank_line[0].balance)
                     
+                if igtf_line:
+                    
+                    alter_bi_igtf += abs(bank_line[0].foreign_balance) if bank_line[0].currency_id == self.env.ref("base.VEF") else abs(igtf_line[0].balance)
                 total_bi_igtf += base_pago
+            
             apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
             rec.write({
-                'igtf_top_aply': apply
+                'igtf_top_aply': apply,
+                'alter_bi_igtf': alter_bi_igtf
             })
             rec.bi_igtf = total_bi_igtf
                     
