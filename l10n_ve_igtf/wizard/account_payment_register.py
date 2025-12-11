@@ -67,7 +67,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 move_id=self.env['account.move'].browse(id)
                 
                 igtf = wizard.calculate_igtf_for_payment(move_id,amount,wizard.igtf_percentage)
-                
                 sum = amount + igtf
                 if move_id.amount_residual < sum:
                     amount += igtf
@@ -171,8 +170,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                 payment.igtf_amount = payment.calculate_igtf_for_payment(
                     move_id, payment_amount, payment.igtf_percentage
-                ) 
-
+                )
     @api.onchange("journal_id", "is_igtf", "is_igtf_on_foreign_exchange", 'amount')
     def _compute_igtf_amount(self):
         for payment in self:
@@ -198,16 +196,21 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         principal_amount = min(payment_amount, principal_debt)
         
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
-
+        
         igtf_top = currency.round(invoice.igtf_top_aply) 
+        alter_bi_igtf = currency.round(invoice.alter_bi_igtf)
         igtf= currency.round(igtf_unrounded)
-
     
         if igtf > 0 and igtf_top == invoice.amount_residual:
             return 0.0
         if igtf > igtf_top and igtf_top >= 0.0:
-
+        
             return 0.0
+        
+        residual_igtf = (invoice.amount_total * (self.env.company.igtf_percentage / 100)) - alter_bi_igtf
+        if igtf > residual_igtf and residual_igtf != 0.0:
+            igtf = residual_igtf
+            
         return max(igtf, 0.0)
 
     def _init_payments(self, to_process, edit_mode=False):
