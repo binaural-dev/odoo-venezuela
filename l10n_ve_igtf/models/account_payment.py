@@ -24,8 +24,6 @@ class AccountPaymentIgtf(models.Model):
 
     igtf_amount = fields.Float(
         string="IGTF Amount",
-        compute="_compute_igtf_amount",
-        store=True,
         help="IGTF Amount",
     )
 
@@ -45,15 +43,7 @@ class AccountPaymentIgtf(models.Model):
             if payment.journal_id.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
 
-    @api.depends("is_igtf_on_foreign_exchange")
-    def _compute_igtf_amount(self):
-        for payment in self:
-         
-            if payment.is_igtf_on_foreign_exchange:
-                id=self.env.context.get("active_id",False)
-                move_id=self.env['account.move'].browse(id)
-
-                payment.igtf_amount = payment.calculate_igtf_for_payment(move_id,payment.amount,payment.company_id.igtf_percentage)
+   
                    
     def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
        
