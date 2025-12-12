@@ -6,7 +6,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.25",
+    "version": "17.0.0.0.26",
     "depends": [
         "base",
         "account",
