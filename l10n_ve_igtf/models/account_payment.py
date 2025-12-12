@@ -29,7 +29,7 @@ class AccountPaymentIgtf(models.Model):
 
     payment_from_wizard = fields.Boolean()
     amount_residual_from_payment = fields.Float()
-    
+
     @api.depends("partner_id")
     def _compute_igtf_percentage(self):
         for payment in self:

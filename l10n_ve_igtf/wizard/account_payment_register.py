@@ -153,32 +153,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.onchange("journal_id", "is_igtf", "is_igtf_on_foreign_exchange", 'amount')
     def _compute_igtf_amount(self):
-        """Compute the igtf amount of the payment"""
-        for payment in self:
-            id=self.env.context.get("active_id",False)
-            move_id=self.env['account.move'].browse(id)
-            payment.igtf_amount = 0.0
-            if (
-                payment.journal_id.is_igtf
-                and payment.currency_id.id == self.env.ref("base.USD").id
-                and payment.is_igtf_on_foreign_exchange
-            ):
-                payment_amount = payment.amount
-                if payment.payment_difference <=0:
-                 
-                    payment_amount = payment.amount + payment.payment_difference
-
-                payment.igtf_amount = payment.calculate_igtf_for_payment(
-                    move_id, payment_amount, payment.igtf_percentage
-                )
-    @api.onchange("journal_id", "is_igtf", "is_igtf_on_foreign_exchange", 'amount')
-    def _compute_igtf_amount(self):
         for payment in self:
                 id=self.env.context.get("active_id",False)
                 move_id=self.env['account.move'].browse(id)
                 payment.igtf_to_show = payment.calculate_igtf_for_payment(
                         move_id, payment.amount, payment.igtf_percentage
                     )
+                payment.igtf_amount = payment.igtf_to_show
 
     @api.onchange('journal_id')
     def _compute_is_igtf_journal(self):
