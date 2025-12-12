@@ -30,3 +30,7 @@ class ResConfigSettings(models.TransientModel):
     show_igtf_suggested_sale_order = fields.Boolean(
         related="company_id.show_igtf_suggested_sale_order", readonly=False
     )
+
+    apply_igtf_in_wizard_payment = fields.Boolean(
+        related="company_id.apply_igtf_in_wizard_payment", readonly=False
+    )
