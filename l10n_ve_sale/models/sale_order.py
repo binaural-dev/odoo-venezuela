@@ -245,9 +245,9 @@ class SaleOrder(models.Model):
                     sale.foreign_currency_id.id,
                     sale.date_order
                 )   
-                if rate_values.get("foreign_rate", 0) != self.foreign_rate:
+                if rate_values.get("foreign_rate", 0) != sale.foreign_rate:
                     sale.foreign_rate = rate_values.get("foreign_rate", 0) 
-                if rate_values.get("foreign_inverse_rate", 0) != self.foreign_inverse_rate:
+                if rate_values.get("foreign_inverse_rate", 0) != sale.foreign_inverse_rate:
                     sale.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0) 
             else:
                 sale.foreign_rate = 0.0

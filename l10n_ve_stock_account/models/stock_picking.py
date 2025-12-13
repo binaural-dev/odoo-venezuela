@@ -1182,7 +1182,16 @@ class StockPicking(models.Model):
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):
-        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
+        consignment_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_consignment",
+            raise_if_not_found=False,
+        )
+
+        if not consignment_reason:
+            for picking in self:
+                picking.partner_required = False
+            return
+
         for picking in self:
             picking.partner_required = (
                 picking.transfer_reason_id.id == consignment_reason.id
