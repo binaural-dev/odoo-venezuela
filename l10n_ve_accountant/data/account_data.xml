@@ -8,17 +8,22 @@
             <field name="digits">2</field>
         </record>
 
-         <record forcecreate="True" id="alternative_rate" model="decimal.precision">
+        <record forcecreate="True" id="alternative_rate" model="decimal.precision">
             <field name="name">Tasa</field>
-            <field name="digits">2</field>
+            <field name="digits">6</field>
         </record>
 
-         <record forcecreate="True" id="alternative_price_product" model="decimal.precision">
+        <record forcecreate="True" id="alternative_price_product" model="decimal.precision">
             <field name="name">Foreign Product Price</field>
-            <field name="digits">2</field>
+            <field name="digits">6</field>
         </record>
-        
+
     </data>
     
-
+    <data noupdate="0">
+        <record id="product.decimal_price" model="decimal.precision">
+            <field name="name">Product Price</field>
+            <field name="digits">6</field>
+        </record>
+    </data>
 </odoo>
