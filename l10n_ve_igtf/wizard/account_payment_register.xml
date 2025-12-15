@@ -9,9 +9,7 @@
                     <field name="is_igtf_on_foreign_exchange" invisible="1" />
                     <field name="apply_igtf_in_wizard_payment" invisible="1"/>
                     <group name="igtf_group"  invisible ="not is_igtf">
-
-                        
-                        
+                       
                         <group name="igtf_1">
                             <field name="is_igtf" readonly="1" force_save = "1" />
                             <label for="igtf_percentage"/>
@@ -27,12 +25,26 @@
                             
                             <field name="amount_without_difference"  readonly="1"
                                 options="{'currency_field': 'currency_id'}" force_save="1"/>
-                            
                         </group>
 
                         
                       
                     </group>
+                </xpath>
+
+                <xpath expr="//label[@for='amount']" position="attributes">
+                    <attribute name="invisible"/> 
+                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                </xpath>
+
+                <xpath expr="//div[@name='amount_div']" position="attributes">
+                    <attribute name="invisible"/> 
+                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                </xpath>
+                
+                <xpath expr="//div[@name='amount_div']/field[@name='amount']" position="attributes">
+                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                    <attribute name="force_save">1</attribute>
                 </xpath>
             </field>
         </record>

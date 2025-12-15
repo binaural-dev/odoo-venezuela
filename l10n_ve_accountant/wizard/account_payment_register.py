@@ -124,55 +124,6 @@ class AccountPaymentRegister(models.TransientModel):
             else:
                 wizard.payment_difference = 0.0
 
-    """ def _get_total_amount_in_wizard_currency_to_full_reconcile(
-        self, batch_result, early_payment_discount=True
-    ):
-      
-        
-        self.ensure_one()
-        comp_curr = self.company_id.currency_id
-        if self.source_currency_id == self.currency_id:
-            # Same currency (manage the early payment discount).
-            return self._get_total_amount_using_same_currency(
-                batch_result, early_payment_discount=early_payment_discount
-            )
-        elif self.source_currency_id != comp_curr and self.currency_id == comp_curr:
-            # Foreign currency on source line but the company currency one on the opposite line.
-            return (
-                self.source_currency_id._convert(
-                    self.source_amount_currency,
-                    comp_curr,
-                    self.company_id,
-                    self.payment_date,
-                ),
-                False,
-            )
-        elif self.source_currency_id == comp_curr and self.currency_id != comp_curr:
-            # Company currency on source line but a foreign currency one on the opposite line.
-            return (
-                abs(
-                    sum(
-                        comp_curr._convert(
-                            aml.amount_residual, 
-                            self.currency_id,
-                            self.company_id,
-                            self.payment_date,
-                            custom_rate=self.foreign_inverse_rate,
-                        )
-                        for aml in batch_result["lines"]
-                    )
-                ),
-                False,
-            )
-        else:
-            # Foreign currency on payment different than the one set on the journal entries.
-            return (
-                comp_curr._convert(
-                    self.source_amount,
-                    self.currency_id,
-                    self.company_id,
-                    self.payment_date,
-                ),
-                False,
-            )
- """
+
+
+    
