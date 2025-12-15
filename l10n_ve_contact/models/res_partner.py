@@ -116,7 +116,10 @@ class ResPartner(models.Model):
                 error_message = _(
                     "A partner with the same VAT number already exists for this company."
                 )
-
+            else:
+                 error_message = _(
+                    "There is already a partner with the same VAT number for this company."
+                )
             existing_partner = self.env["res.partner"].search(domain)
             if existing_partner:
                 raise ValidationError(error_message)
