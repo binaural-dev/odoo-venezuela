@@ -120,15 +120,7 @@ class CalendarEvent(models.Model):
                 if created_users_count > 0:
                     event_group.write({"hikcentral_synced": True})
                     primary_event.message_post(
-                        body=_(
-                            "HikCentral Sync: %s visitors processed"
-                        )
-                        % (
-                            created_users_count,
-                            (
-                                default_dept.name
-                            ),
-                        )
+                       body=_("HikCentral Sync: %s visitors processed") % (created_users_count,)
                     )
 
             except Exception as e:
