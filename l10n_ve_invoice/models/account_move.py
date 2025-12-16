@@ -14,6 +14,12 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
+
+    invoice_date = fields.Date(
+        string="Invoice Date",
+        default=fields.Date.today,
+        help="Date of the invoice. Defaults to today when creating a new invoice."
+    )
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
@@ -56,8 +62,6 @@ class AccountMove(models.Model):
     @api.onchange("move_type")
     def _onchange_move_type(self):
         if self.move_type == "out_invoice":
-            self.invoice_date = False
-        elif not self.invoice_date:
             self.invoice_date = fields.Date.today()
 
     def action_post(self):
