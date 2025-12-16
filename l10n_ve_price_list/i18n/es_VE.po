@@ -59,7 +59,7 @@ msgstr "Edicion de precios en cotizaciones"
 #. module: l10n_ve_price_list
 #: model:res.groups,name:l10n_ve_price_list.group_pricelist_see_permission
 msgid "Pricelist See Permission"
-msgstr "Permiso para ver listas de precios en productos"
+msgstr "Permiso para ver precio de venta en ficha productos"
 
 #. module: l10n_ve_price_list
 #: model:ir.model,name:l10n_ve_price_list.model_product_template
