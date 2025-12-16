@@ -21,13 +21,9 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
-                position="attributes">
-                <attribute name="readonly">not can_edit_prices</attribute>
-            </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='foreign_price']"
                 position="attributes">
-                <attribute name="readonly">not can_edit_prices</attribute>
+                <attribute name="readonly">not (move_type in ('in_invoice', 'in_refund')) and not can_edit_prices</attribute>
             </xpath>
             
         </field>
