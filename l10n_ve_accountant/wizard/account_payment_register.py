@@ -185,3 +185,29 @@ class AccountPaymentRegister(models.TransientModel):
         self._compute_validation_currency_amount()
 
         return super().action_create_payments()
+
+
+    def _compute_validation_currency_amount(self):
+        """
+        Validates that the journal's currency matches the payment amount's currency, unless the journal has no currency.
+        If the journal's currency is defined and differs from the payment currency, raises a ValidationError.
+        """
+        for payment in self:
+            journal_currency = payment.journal_id.currency_id
+            payment_currency = payment.currency_id
+            if not journal_currency:
+                continue
+            if journal_currency and payment_currency and journal_currency != payment_currency:
+                raise UserError(_(
+                    "La moneda del diario debe ser igual a la moneda del importe. Diario: %s, Importe: %s"
+                ) % (journal_currency.name, payment_currency.name))
+            
+
+    def action_create_payments(self):
+        """
+        Override the action_create_payments method to add the foreign rate and the foreign inverse rate to the payment
+        values that are used to create the payment from the wizard.
+        """
+        self._compute_validation_currency_amount()
+
+        return super().action_create_payments()
