@@ -634,6 +634,13 @@ msgid "Foreign Rate"
 msgstr "Tasa"
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/wizard/account_payment_register.py:0
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_rate_display
+msgid "Foreign Rate Display"
+msgstr "Tasa"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_invoice_report__foreign_rate
 msgid "Foreign Rate of the invoice"
 msgstr "Tasa alterna de la factura"
@@ -862,6 +869,14 @@ msgstr "Apunte contable"
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "La cantidad de"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/wizard/account_payment_register.py:0
+msgid ""
+"La moneda del diario debe ser igual a la moneda del importe. Diario: %s, "
+"Importe: %s"
 msgstr ""
 
 #. module: l10n_ve_accountant
@@ -1138,6 +1153,17 @@ msgstr "Línea de la orden de compra"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Purchase Tax Rates"
 msgstr "Tasas de Impuestos de Compras"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
+msgid "RIF"
+msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
+msgid "RIF/CI/PAS."
+msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate

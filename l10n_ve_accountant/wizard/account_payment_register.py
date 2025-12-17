@@ -1,3 +1,4 @@
+from odoo.exceptions import UserError
 from odoo import api, fields, models, _
 import logging
 _logger = logging.getLogger(__name__)
@@ -7,18 +8,44 @@ class AccountPaymentRegister(models.TransientModel):
 
     def default_alternate_currency(self):
         """
-        This method is used to get the foreign currency of the company and set it as the default value of the foreign currency field
+        This method is used to always return the USD currency as default.
+
+        Returns
+        -------
+        type = int
+            The id of the USD currency
+        """
+        usd_currency = self.env.ref('base.USD', raise_if_not_found=False)
+        return usd_currency.id
+    
+
+    def default_alternate_rate(self):
+        """
+        This method is used to get the foreign currency of the company and set it as the default
+        value of the foreign currency field.
 
         Returns
         -------
         type = int
             The id of the foreign currency of the company
-
         """
-        alternate_currency = self.env.company.foreign_currency_id.id
-        if alternate_currency:
-            return alternate_currency
-        return False
+        return self.env.company.foreign_currency_id.id or False
+    
+    def default_alternate_rate_display_amount(self):
+        """
+        This method is used to get the foreign currency of the company and set it as the default
+        value of the foreign currency field.
+
+        Returns
+        -------
+        type = int
+            The id of the foreign currency of the company
+        """
+        return self.env.company.foreign_currency_id.inverse_company_rate or False
+
+    foreign_currency_id = fields.Many2one(
+        "res.currency", default=default_alternate_currency
+    )
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -28,8 +55,8 @@ class AccountPaymentRegister(models.TransientModel):
     foreign_rate = fields.Float(
         help="The rate of the payment",
         digits="Tasa",
-        compute="_compute_rates",
-        store=True, 
+        default=default_alternate_rate_display_amount,
+        store=True,
     )
     
     foreign_rate_display = fields.Float(
@@ -84,7 +111,7 @@ class AccountPaymentRegister(models.TransientModel):
             rate_values = Rate.compute_rate(
                 currency_to_use, payment.payment_date
             )
-            payment.foreign_rate = rate_values.get("foreign_rate", 0.0)
+            # payment.foreign_rate = rate_values.get("foreign_rate", 0.0)
             payment.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0.0)
             
 
@@ -133,4 +160,28 @@ class AccountPaymentRegister(models.TransientModel):
 
     
 
-    
+
+    def _compute_validation_currency_amount(self):
+        """
+        Validates that the journal's currency matches the payment amount's currency, unless the journal has no currency.
+        If the journal's currency is defined and differs from the payment currency, raises a ValidationError.
+        """
+        for payment in self:
+            journal_currency = payment.journal_id.currency_id
+            payment_currency = payment.currency_id
+            if not journal_currency:
+                continue
+            if journal_currency and payment_currency and journal_currency != payment_currency:
+                raise UserError(_(
+                    "La moneda del diario debe ser igual a la moneda del importe. Diario: %s, Importe: %s"
+                ) % (journal_currency.name, payment_currency.name))
+            
+
+    def action_create_payments(self):
+        """
+        Override the action_create_payments method to add the foreign rate and the foreign inverse rate to the payment
+        values that are used to create the payment from the wizard.
+        """
+        self._compute_validation_currency_amount()
+
+        return super().action_create_payments()
