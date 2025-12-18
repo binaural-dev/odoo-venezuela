@@ -921,7 +921,7 @@ class AccountRetention(models.Model):
             payment.action_post()
             if payment.partner_type == "supplier":
                 self._reconcile_supplier_payment(payment)
-            if payment.partner_type == "customer":
+            elif payment.partner_type == "customer":
                 self._reconcile_customer_payment(payment)
 
 
