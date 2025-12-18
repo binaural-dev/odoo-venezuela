@@ -21,24 +21,29 @@ class SerialInterface(SerialInterface):
     def get_devices(self):
         _logger.info("Getting serial devices")
         serial_devices = {}
-        pinpad_ports = []
+        try:
+            if platform.system() == "Windows":
+                server = helpers.get_odoo_server_url()
+                urllib3.disable_warnings()
+                http = urllib3.PoolManager(cert_reqs="CERT_NONE")
+                waiting = http.request(
+                    "GET",
+                    server + "/iot_blacklist/ports",
+                )
 
-        if platform.system() == "Windows":
-            server = helpers.get_odoo_server_url()
-            mac = helpers.get_mac_address()
-            urllib3.disable_warnings()
-            http = urllib3.PoolManager(cert_reqs="CERT_NONE")
-            try:
-                resp = http.request("GET", server + "/iot_pinpad/ports")
-                if resp.status == 200:
-                    data = json.loads(resp.data.decode("utf-8"))
-                    pinpad_ports = data.get(mac, [])
-            except Exception as e:
-                _logger.error("Error getting pinpad ports: %s", e)
+                b_body = waiting._body
+                body = json.loads(b_body.decode("utf-8"))
 
             for port in serial.tools.list_ports.comports():
                 if pinpad_ports and port.device in pinpad_ports:
                     continue
                 serial_devices[port.device] = {"identifier": port.device}
 
-            return serial_devices
+                    serial_devices[port.device] = {
+                        'identifier': port.device
+                    }
+
+                return serial_devices
+
+        except Exception as e:
+            return super().get_devices()
