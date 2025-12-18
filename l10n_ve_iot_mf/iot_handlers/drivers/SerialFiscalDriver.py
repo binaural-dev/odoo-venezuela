@@ -1232,9 +1232,9 @@ class SerialFiscalDriver(SerialDriver):
 
             result = self.send_command(command)
             
-            self.data["value"] = result
+            self.data["value"] = {"valid": result}
             event_manager.device_changed(self)
-            return self.data["value"]
+            return{"valid": result}
         except Exception as _e:
             _logger.error(f"Error al imprimir la reimpresión: {_e}")
             self.data["value"] = {"valid": False, "message": str(_e)}
