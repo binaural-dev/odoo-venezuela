@@ -5,6 +5,9 @@ from odoo.tools import date_utils
 from datetime import datetime
 import functools
 import json
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ApiIoT(http.Controller):
