@@ -145,6 +145,21 @@ class AccountMove(models.Model):
         )
         return rate_values.get("foreign_rate", 0)
 
+    def default_rate(self):
+        """
+        This method is used to get the rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            fields.Date.today(),
+        )
+        return rate_values.get("foreign_rate", 0)
+
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",

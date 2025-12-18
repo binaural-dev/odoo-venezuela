@@ -1617,3 +1617,4 @@ msgstr "Total BS"
 #: model:ir.model.fields,field_description:account.field_account_move__amount_untaxed_signed
 msgid "Untaxed Amount Signed"
 msgstr "Total sin impuestos BS"
+
