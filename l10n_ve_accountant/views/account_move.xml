@@ -10,21 +10,17 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
-            <xpath expr="//div[@class='d-flex gap-1 text-muted'][1]" position="after">
-                <!-- TODO REGRESAR A REPLACE Y CAMBIAR EL XPR A //div[@class='w-100'][1] descomentar
-                el codigo de abajo.
-            ESTO CUANDO CULMINEN LAS PRUEBAS DE LA GIRALDA
-             -->
+            <xpath expr="//div[@name='currency_div']" position="replace">
                 <div name="currency_div"
                     groups="base.group_multi_currency"
                     class="w-100"
                     invisible="move_type == 'entry'">
                     <div class="d-flex gap-1">
-                        <!-- <field name="currency_id"
+                        <field name="currency_id"
                                readonly="state != 'draft'"
                                class="oe_inline"
                                options="{'no_create': True}"
-                               context="{'search_default_active': 1, 'search_default_inactive': 1}"/> -->
+                               context="{'search_default_active': 1, 'search_default_inactive': 1}"/>
                     </div>
                     <div name="currency_conversion_div"
                         class="d-flex gap-1 text-muted"

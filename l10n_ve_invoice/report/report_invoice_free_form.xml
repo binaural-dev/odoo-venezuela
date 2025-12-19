@@ -2,7 +2,7 @@
 
     <data>
         <record id="action_invoice_free_form_l10n_ve_invoice" model="ir.actions.report">
-            <field name="name">Free Form</field>
+            <field name="name">Free Form Binaural</field>
             <field name="model">account.move</field>
             <field name="report_type">qweb-pdf</field>
             <field name="report_name">l10n_ve_invoice.template_invoice_free_form_l10n_ve_invoice</field>
