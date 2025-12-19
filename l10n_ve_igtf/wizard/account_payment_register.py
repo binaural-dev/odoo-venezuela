@@ -45,7 +45,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     payment_difference = fields.Monetary(
         compute='_compute_payment_difference',readonly=False)
 
-    #apply_igtf_in_wizard_payment = fields.Boolean(related='company_id.apply_igtf_in_wizard_payment')
 
     igtf_to_show = fields.Float(string="Amount with IGTF")
 
@@ -166,8 +165,14 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             for rec in move_ids:
                 invoice = rec
                 amount = amount + payment.calculate_igtf_for_payment(invoice, payment.amount, payment.igtf_percentage)
-            payment.igtf_to_show = amount
-            payment.igtf_amount = payment.igtf_to_show
+            if payment.is_igtf:
+                payment.igtf_to_show = amount
+            
+                payment.igtf_amount = payment.igtf_to_show
+            else:
+                payment.igtf_to_show = 0.0
+                payment.igtf_amount = 0.0
+
 
     @api.onchange('journal_id')
     def _compute_is_igtf_journal(self):
