@@ -45,7 +45,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     payment_difference = fields.Monetary(
         compute='_compute_payment_difference',readonly=False)
 
-    apply_igtf_in_wizard_payment = fields.Boolean(related='company_id.apply_igtf_in_wizard_payment')
+    #apply_igtf_in_wizard_payment = fields.Boolean(related='company_id.apply_igtf_in_wizard_payment')
 
     igtf_to_show = fields.Float(string="Amount with IGTF")
 
@@ -69,7 +69,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             
             final_amount = base_amount
             
-            if wizard.is_igtf and wizard.apply_igtf_in_wizard_payment:
+            if wizard.is_igtf:
                 
                 total_igtf_amount = 0.0
                
@@ -109,7 +109,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     ._get_total_amount_in_wizard_currency_to_full_reconcile(batch_result, early_payment_discount=False)[0]
 
                 expected_amount = total_residual
-                if wizard.company_id.apply_igtf_in_wizard_payment and wizard.igtf_to_show > 0.00:
+                if wizard.is_igtf and wizard.igtf_to_show > 0.00:
                     expected_amount += wizard.igtf_to_show
                     
                 raw_difference = expected_amount - wizard.amount
@@ -145,23 +145,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         """ Check if the company is a ordinary contributor"""
         for payment in self:
             payment.is_igtf = False
-            if payment.journal_id.is_igtf :
-
-                for line in payment.line_ids:
-                    if (
-                        self.env.company.taxpayer_type == "ordinary"
-                        and line.move_id.move_type == "out_invoice"
-                        
-                    ):
-                        continue
-                    if (
-                        self.env.company.taxpayer_type == "ordinary"
-                        and line.move_id.partner_id.taxpayer_type == "ordinary"
-                        and line.move_id.move_type == "in_invoice"
-                    ):
-                        continue
-                    payment.is_igtf = True
-
+            if payment.journal_id.is_igtf and payment.partner_id:
+                move_ids=self.get_moves()
+                for move_id in move_ids:
+                    if payment.partner_id._check_igtf_apply_improved(move_id.move_type):
+                        payment.is_igtf = True
 
     @api.onchange("amount", "igtf_to_show")
     def _compute_amount_with_igtf(self):
