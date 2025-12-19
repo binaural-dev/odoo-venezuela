@@ -88,7 +88,7 @@ class AccountPaymentIgtf(models.Model):
 
         for payment in self:
             
-            if payment.is_igtf_on_foreign_exchange:
+            if payment.is_igtf:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
 
@@ -111,6 +111,7 @@ class AccountPaymentIgtf(models.Model):
             igtf_amount = rec.igtf_amount
             account_id = igtf_account if rec.igtf_percentage else None
             if igtf_amount > 0.0:
+                
                 vals.append(
                     {
                         "name": "IGTF",
