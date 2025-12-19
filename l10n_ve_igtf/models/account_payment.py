@@ -51,7 +51,7 @@ class AccountPaymentIgtf(models.Model):
                 force_balance
             )
             if rec.payment_from_wizard:
-                if rec.igtf_percentage and rec.journal_id.is_igtf:
+                if rec.igtf_percentage and rec.igtf_amount:
                     rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
 
             return vals
@@ -88,7 +88,7 @@ class AccountPaymentIgtf(models.Model):
 
         for payment in self:
             
-            if payment.is_igtf:
+            if payment.igtf_amount:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
 
