@@ -447,12 +447,12 @@ export class IoTFiscalMachineComponent extends Component {
         check_print_type,
         [move_id]
       );
-      console.log("Request: ", request)
+
       this.device = new DeviceController(
         this.env.services.iot_longpolling,
         { iot_ip: request.iot_ip, identifier: request.identifier }
       );
-      console.log("Device: ", this.device)
+
       const deviceResponse = await this.device_response(print_type, request);
       if (!deviceResponse.valid) {
         throw new Error(deviceResponse.message || "Error desconocido");

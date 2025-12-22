@@ -201,7 +201,7 @@ class SerialFiscalDriver(SerialDriver):
                 _logger.info("DLL cargada exitosamente y Tfhka inicializado")
             except Exception as e:
                 _logger.error("Error al cargar la DLL: %s", e)
-                _logger.error(f"Problema del la clase Tfhka: {Tfhka}")
+                _logger.error(f"Problema de la clase Tfhka: {Tfhka}")
 
 
             if platform.system() == "Windows":
@@ -550,7 +550,7 @@ class SerialFiscalDriver(SerialDriver):
         if price_unit < 0:
             return None, abs(price_unit)
         
-        code = f'|{item["defaul_code"]}|' if item.get("defaul_code") else ""
+        code = f'|{item["default_code"]}|' if item.get("default_code") else ""
         
         amount_i, amount_d = self.split_amount(round(price_unit, max_amount_decimal), max_amount_decimal)
         qty_i, qty_d = self.split_amount(item.get("quantity", 0), max_qty_decimal)
@@ -741,7 +741,7 @@ class SerialFiscalDriver(SerialDriver):
             return status
         except Exception as e:
             _logger.error(f"Error al obtener estado de la impresora: {e}")
-            raise
+            raise UserError(f"Error al obtener estado de la impresora: {e}")
     
     def print_out_refund(self, invoice):        
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -1261,7 +1261,7 @@ class SerialFiscalDriver(SerialDriver):
             
             response = {
                 "valid": True,
-                "data": {"sequence": "10", "serial_machine": machine_number, "number":number, "report_z": number_z},
+                "data": {"sequence": number, "serial_machine": machine_number, "number":number, "report_z": number_z},
             }
 
             self.data["value"] = response
@@ -1288,8 +1288,7 @@ class SerialFiscalDriver(SerialDriver):
                             
             response = {
                 "valid": True,
-                "data": {"sequence": "10", "serial_machine": machine_number, "number":number, "report_z": number_z},
-                # "data": {"sequence": number, "serial_machine": machine_number},
+                "data": {"sequence": number, "serial_machine": machine_number, "number":number, "report_z": number_z},
             }
 
             self.data["value"] = response
@@ -1479,7 +1478,7 @@ class SerialFiscalDriver(SerialDriver):
             return result
         
         except Exception as e:
-            raise
+            raise UserError(f"Error al validar factura: {e}")
     
     def programacion(self, data):
         try:

@@ -107,8 +107,15 @@ patch(PosStore.prototype, {
             "date": format_date,
           }
         }
-      } catch (e) {
-        console.log(e)
+      } catch (err) {
+        console.log("MF error: ", err)
+        if (!err.valid) { 
+          this.env.services.popup.add(ErrorPopup, {
+            title: _t("MF error"),
+            body: _t(err.message ? err.message : "Internal MF error"),
+          });
+          return err
+        }
       }
     }
 
@@ -172,9 +179,15 @@ patch(PosStore.prototype, {
       }
       return deviceResponse;
 
-    }catch(error){
-      console.log("Error", error)
-      return { valid: false, message: "Error interno al imprimir documento"};
+    } catch (err) {
+        console.log("MF error: ", err)
+        if (!err.valid) { 
+          this.env.services.popup.add(ErrorPopup, {
+            title: _t("MF error"),
+            body: _t(err.message ? err.message : "Internal MF error"),
+          });
+          return { valid: false, message: "Error interno al imprimir documento"};
+        }
     }
   },
 
@@ -217,7 +230,7 @@ patch(PosStore.prototype, {
       }
 
       const response = await this.print_document(`print_${data.type}`, data)
-      console.log(response)
+
       if (!response?.valid) {
         throw response
       }
@@ -237,16 +250,7 @@ patch(PosStore.prototype, {
           title: _t("MF error"),
           body: _t(err.message ? err.message : "Internal MF error"),
         });
-        
         return err
-      
-      } else {
-        console.log("MF error: ", err)
-        this.env.services.popup.add(ErrorPopup, {
-          title: _t("MF error"),
-          body: _t(err.status ? err.status : "Internal MF error"),
-        });
-        return err;
       }
     }
   },
