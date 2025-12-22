@@ -6,10 +6,10 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.28",
+    "version": "17.0.0.0.29",
     "depends": [
         "base",
-        "account",
+        "l10n_ve_accountant",
         "l10n_ve_rate",
         "l10n_ve_tax",
         "l10n_ve_invoice",

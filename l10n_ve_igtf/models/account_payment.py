@@ -59,20 +59,23 @@ class AccountPaymentIgtf(models.Model):
     def calculate_igtf_for_payment(self, invoice, payment_amount, igtf_percentage=False):
        
         currency = self.env.company.currency_id
-        
         principal_debt = invoice.amount_residual
         principal_amount = min(payment_amount, principal_debt)
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
         igtf_top = currency.round(invoice.igtf_top_aply) 
+        alter_bi_igtf = currency.round(invoice.alter_bi_igtf)
         igtf= currency.round(igtf_unrounded)
+    
         if igtf > 0 and igtf_top == invoice.amount_residual:
-            
             return 0.0
         if igtf > igtf_top and igtf_top >= 0.0:
-            
+        
             return 0.0
         
-
+        residual_igtf = (invoice.amount_total * (self.env.company.igtf_percentage / 100)) - alter_bi_igtf
+        if igtf > residual_igtf and residual_igtf != 0.0:
+            igtf = residual_igtf
+            
         return max(igtf, 0.0)
     
     def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
