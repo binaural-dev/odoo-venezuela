@@ -1,4 +1,5 @@
 <odoo>
+    
     <record id="view_account_move_form_inherit_pricelist" model="ir.ui.view">
         <field name="name">account.move.form.inherit.pricelist</field>
         <field name="model">account.move</field>
