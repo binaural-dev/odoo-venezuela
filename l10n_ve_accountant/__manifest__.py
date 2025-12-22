@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "1.15",
+    "version": "1.22",
     "depends": [
         "base",
         "web",
@@ -27,6 +27,7 @@
         "data/ir_actions_server.xml",
         "data/paperformats.xml",
         "data/tax_unit_data.xml",
+        "data/res_company_data.xml",
         "views/account_invoice_report.xml",
         "views/account_move.xml",
         "views/account_move_line.xml",
@@ -55,4 +56,5 @@
     },
     "application": True,
     "pre_init_hook": "pre_init_hook",
+    "post_init_hook": "set_main_company_currency_to_vef",
 }

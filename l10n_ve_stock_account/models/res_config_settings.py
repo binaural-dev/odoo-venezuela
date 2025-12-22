@@ -14,3 +14,7 @@ class ResConfigSettings(models.TransientModel):
 
     invoice_cron_type = fields.Selection(related="company_id.invoice_cron_type", readonly=False)
     invoice_cron_time = fields.Float(related="company_id.invoice_cron_time", readonly=False)
+
+    indexed_dispatch_guide = fields.Boolean(
+        related="company_id.indexed_dispatch_guide", readonly=False
+    )  

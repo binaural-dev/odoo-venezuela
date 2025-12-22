@@ -128,23 +128,57 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
-        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
+        self.invoice_date = fields.Date.today()
+
+    def default_rate(self):
+        """
+        This method is used to get the rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            fields.Date.today(),
+        )
+        return rate_values.get("foreign_rate", 0)
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
+        default=default_rate,
         store=True,
         tracking=True,
     )
+    
+
+
+    def default_inverse_rate(self):
+        """
+        This method is used to get the inverse rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The inverse rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            fields.Date.today(),
+        )
+        return rate_values.get("foreign_inverse_rate", 0)
+    
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
+        default=default_inverse_rate,
         store=True,
         index=True,
     )
+
 
     move_currency_to_company_currency_rate = fields.Float(
         string="Move Currency to Company Currency Rate",
@@ -204,6 +238,8 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
+    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
+                                            compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -217,6 +253,23 @@ class AccountMove(models.Model):
         context = self.with_context(active_test=False)
         return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
     
+    @api.depends('tax_totals')
+    def _compute_foreign_untaxed_total(self):
+        """
+        Compute the foreign total untaxed of the invoice using the tax_totals
+        """
+        for move in self:
+            move.foreign_untaxed_total = 0
+            if not (
+                move.invoice_line_ids
+                and move.is_invoice(include_receipts=True)
+                and move.tax_totals
+            ):
+                continue
+            move.foreign_untaxed_total = move.tax_totals.get(
+                "base_amount_foreign_currency", 0
+            )
+         
     @api.depends('currency_id', 'invoice_date')
     def _compute_move_currency_to_company_currency_rate(self):
         '''
@@ -307,7 +360,6 @@ class AccountMove(models.Model):
             title.
         """
         foreign_currency_id = self.env.company.foreign_currency_id.id
-
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
@@ -315,17 +367,41 @@ class AccountMove(models.Model):
                 [("id", "=", int(foreign_currency_id))]
             )
             foreign_currency_symbol = foreign_currency_record.symbol or ""
+            foreign_currency_name = foreign_currency_record.name or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
                 ).id
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
+                foreign_subtotal_line = doc.xpath("//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='foreign_subtotal']")
+                foreign_price_line = doc.xpath("//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='foreign_price']")
+                if foreign_subtotal_line:
+                    foreign_subtotal_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
+                if foreign_price_line:
+                    foreign_price_line[0].set("string", _("Price") + " " + foreign_currency_name)
                 if page:
                     page[0].set(
                         "string", _("Foreign Currency ") + " " + foreign_currency_symbol
                     )
-                    res["arch"] = etree.tostring(doc, encoding="unicode")
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+
+            if view_type == "list":
+                view_id = self.env.ref(
+                    "l10n_ve_accountant.l10n_ve_accountant_view_invoice_tree_inherit"
+                ).id
+                doc = etree.XML(res["arch"])
+                foreign_total_billed_column = doc.xpath("//list/field[@name='foreign_total_billed']")
+                foreign_untaxed_total_column = doc.xpath("//list/field[@name='foreign_untaxed_total']")
+                if foreign_total_billed_column:
+                    foreign_total_billed_column[0].set(
+                        "string", _("Total") + " " + foreign_currency_name
+                    )
+                if foreign_untaxed_total_column:
+                    foreign_untaxed_total_column[0].set(
+                        "string", _("Untaxed Total") + " " + foreign_currency_name
+                    )
+                res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
     @api.model_create_multi
@@ -748,7 +824,6 @@ class AccountMove(models.Model):
             raise ValidationError(_("The rate entered cannot be negative."))
         elif self.foreign_inverse_rate == 0:
             raise ValidationError(_("The rate entered cannot be zero."))
-
 
     def _get_payments(self, line_ids):
         self.ensure_one()

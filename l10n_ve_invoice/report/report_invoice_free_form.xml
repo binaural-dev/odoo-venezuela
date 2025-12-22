@@ -2,7 +2,7 @@
 
     <data>
         <record id="action_invoice_free_form_l10n_ve_invoice" model="ir.actions.report">
-            <field name="name">Free Form</field>
+            <field name="name">Free Form Binaural</field>
             <field name="model">account.move</field>
             <field name="report_type">qweb-pdf</field>
             <field name="report_name">l10n_ve_invoice.template_invoice_free_form_l10n_ve_invoice</field>
@@ -251,7 +251,7 @@
                         
                     </div>
                     <div name="coletilla"> 
-                        <span t-if="o.company_id.show_tag_on_usd_invoice">
+                        <span t-if="o.company_id.show_tag_on_usd_invoice and o.currency_id.name != 'VEF'">
                             A los efectos de lo previsto en el <strong>Art. 25</strong> de la Ley de
                             Impuesto al Valor Agregado se expresa el monto total
                             de la factura en <strong><span t-out="o.currency_id.name"/></strong> calculado a la tasa de cambio
@@ -428,18 +428,10 @@
                 <t t-set="total" t-value="o.tax_totals"/>
                     <t t-call="l10n_ve_invoice.tax_groups_totals_ve" t-lang="lang"/>
                 <t t-set="has_rounding" t-value="'formatted_amount_total_rounded' in tax_totals"/>
-                <!--Total amount with all taxes-->
-                <tr style="border-top:1.5px solid black;border-bottom:1.5px solid black;" class="o_total">
-                    <t t-if="has_rounding"><td>Total</td></t>
-                    <t t-else=""><td><strong>Total</strong></td></t>
-                    <td class="text-end">
-                        <span t-out="total['formatted_total_amount_currency_ves']"/>
-                    </td>
-                </tr>
 
                 <tr style="border-bottom:1.5px solid black;" class="o_total" t-if="o.company_id.show_total_on_usd_invoice">
                     <t t-if="has_rounding"><td>Total en <span t-out="o.env.ref('base.VEF').name"/> </td></t>
-                    <t t-else=""><td><strong>Total en <span t-out="o.env.ref('base.VEF').name"/></strong></td></t>
+                    <t t-else=""><td><strong>Total en BS</strong></td></t>
                     <td class="text-end">
                         <span t-out="total['formatted_total_amount_currency_ves']"/>
                     </td>
@@ -469,14 +461,7 @@
 
 
             <t t-set="has_rounding" t-value="'formatted_amount_total_rounded' in tax_totals"/>
-            <!--Total amount with all taxes-->
-            <tr style="border-top:1.5px solid black;border-bottom:1.5px solid black;" class="o_total">
-                <t t-if="has_rounding"><td>Total</td></t>
-                <t t-else=""><td><strong>Total</strong></td></t>
-                <td class="text-end">
-                    <span t-out="total['formatted_total_amount_currency']"/>
-                </td>
-            </tr>
+            
             <tr style="border-bottom:1.5px solid black;" class="o_total" t-if="o.company_id.show_total_on_usd_invoice">
                 <t t-if="has_rounding"><td>Total en <span t-out="o.currency_id.name"/></td></t>
                 <t t-else=""><td><strong>Total en <span t-out="o.currency_id.name"/></strong></td></t>

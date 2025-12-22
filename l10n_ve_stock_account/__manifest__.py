@@ -7,12 +7,13 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "1.4",
+    "version": "1.6",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_invoice",
         "l10n_ve_accountant",
         "l10n_ve_sale",
+        "sale_stock",
         "web",
     ],
     "data": [
