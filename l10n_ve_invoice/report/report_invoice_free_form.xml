@@ -249,7 +249,6 @@
                         </div>
 
                         
-                    </div>
                     <div name="coletilla"> 
                         <span t-if="o.company_id.show_tag_on_usd_invoice and o.currency_id.name != 'VEF'">
                             A los efectos de lo previsto en el <strong>Art. 25</strong> de la Ley de
@@ -489,21 +488,14 @@
 
         <template id="template_invoice_free_form_l10n_ve_invoice">
             <t t-call="web.html_container">
-                 <t t-set="requested_doc_ids" t-value="docs.env.context.get('active_ids') or docs.env.context.get('doc_ids') or []"/>
-
-                <t t-if="requested_doc_ids">
-
-                    <t t-set="requested_doc_ids" t-value="list(dict.fromkeys(requested_doc_ids))"/>
-
-                </t>
-
-                <t t-set="docs_to_print" t-value="docs.env['account.move'].browse(requested_doc_ids) if requested_doc_ids else docs"/>
-                <t t-foreach="docs_to_print" t-as="invoice">
+                <t t-set="active_id" t-value="docs.env.context.get('active_id')"/>
+                <t t-if="active_id">
+                    <t t-set="invoice" t-value="docs.env['account.move'].browse(active_id)"/>
                     <t t-set="lang" t-value="invoice.partner_id.lang"/>
                     <t t-set="o" t-value="invoice.with_context(lang=lang)" />
                     <t t-set="doc" t-value="o" />
                     <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
-                    <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/> <!-- So that it appears in the footer of the report instead of the company VAT if it's set -->
+                    <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
                     <t t-call="web.basic_layout">
                         <t t-call="l10n_ve_invoice.report_freeform_document" t-lang="lang"/>
                     </t>
