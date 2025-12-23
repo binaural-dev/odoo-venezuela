@@ -99,7 +99,6 @@ patch(PosStore.prototype, {
         if (response.length > 0) {
           const date = new Date(response[0].date_order);
           const format_date = date.toLocaleDateString('es-ES');
-          console.log(format_date);
 
           invoice["invoice_affected"] = {
             "number": response[0].mf_invoice_number,
@@ -108,7 +107,7 @@ patch(PosStore.prototype, {
           }
         }
       } catch (err) {
-        console.log("MF error: ", err)
+        console.error("MF error: ", err)
         if (!err.valid) { 
           this.env.services.popup.add(ErrorPopup, {
             title: _t("MF error"),
@@ -180,7 +179,7 @@ patch(PosStore.prototype, {
       return deviceResponse;
 
     } catch (err) {
-        console.log("MF error: ", err)
+        console.error("MF error: ", err)
         if (!err.valid) { 
           this.env.services.popup.add(ErrorPopup, {
             title: _t("MF error"),
@@ -244,7 +243,7 @@ patch(PosStore.prototype, {
       }
     
     } catch (err) {
-      console.log("MF error: ", err)
+      console.error("MF error: ", err)
       if (!err.valid) { 
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
