@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - reglas para listas de precio",
-    "version": "1.7",
+    "version": "1.8",
     "license": "LGPL-3",
     "summary": "Módulo para gestionar reglas de listas de precio en Venezuela",
     "description": """
@@ -9,7 +9,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Purchase",
-    "depends": ["account", "account_invoice_pricelist", "l10n_ve_sale"],
+    "depends": ["account", "account_invoice_pricelist", "l10n_ve_sale", "binaural_purchase"],
     "data": [
         "security/pricelist_security.xml",
         "views/account_invoice_view.xml",
