@@ -58,7 +58,7 @@ class AccountPaymentIgtf(models.Model):
 
     def calculate_igtf_for_payment(self, invoice, payment_amount, igtf_percentage=False):
        
-        currency = self.currency_id 
+        currency = invoice.currency_id 
 
         principal_debt = invoice.amount_residual
 

@@ -149,6 +149,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 for move_id in move_ids:
                     if payment.partner_id._check_igtf_apply_improved(move_id.move_type):
                         payment.is_igtf = True
+                        self = self.with_context(ignore_igtf=True)
 
     @api.onchange("amount", "igtf_to_show")
     def _compute_amount_with_igtf(self):
