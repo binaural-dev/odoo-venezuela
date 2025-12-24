@@ -5,10 +5,11 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Technical",
-    "version": "17.0.0.0.0",
+    "version": "17.0.0.0.1",
     "depends": ["web"],
     "data": [
         "security/ir.model.access.csv",
     ],
+    "pre_init_hook": "pre_init_hook",
    
 }

@@ -185,21 +185,22 @@ class AccountMove(models.Model):
                 
                 igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
                 bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.account_type in ['asset_cash'])
-
-                if not igtf_line and bank_line: #bolivares
-                    
+                cxc = [payment_move.partner_id.property_account_receivable_id.id, payment_move.partner_id.property_account_payable_id.id]
+                cxc_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in cxc)
+  
+                if not igtf_line and bank_line:
                     igtf_top += abs(bank_line[0].balance)
-
-                base_pago = 0.0
+                amount_base_payment = 0.0
 
                 if igtf_line and bank_line:
-                  
-                    base_pago = abs(bank_line[0].foreign_balance) if bank_line[0].currency_id == self.env.ref("base.VEF") else abs(bank_line[0].balance)
-                    
+             
+                    amount_base_payment = abs(cxc_line[0].foreign_balance) if cxc_line[0].currency_id == self.env.ref("base.VEF") else abs(cxc_line[0].balance)
+                
                 if igtf_line:
                     
                     alter_bi_igtf += abs(bank_line[0].foreign_balance) if bank_line[0].currency_id == self.env.ref("base.VEF") else abs(igtf_line[0].balance)
-                total_bi_igtf += base_pago
+
+                total_bi_igtf += amount_base_payment
             
             apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
             rec.write({
