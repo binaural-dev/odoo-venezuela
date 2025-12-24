@@ -123,3 +123,7 @@ class AccountPaymentRegister(models.TransientModel):
                 )
             else:
                 wizard.payment_difference = 0.0
+
+
+
+    

@@ -181,7 +181,7 @@ class AccountTax(models.Model):
             for payment in content
             if 'account_payment_id' in payment and payment['account_payment_id'] in payments_igtf.ids
         ]
-        total_amount_to_igtf = sum(amount_to_igtf)  # Calcular la suma de los montos
+        total_amount_to_igtf = sum(amount_to_igtf)  
 
         return total_amount_to_igtf
 

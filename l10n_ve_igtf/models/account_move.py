@@ -76,15 +76,40 @@ class AccountMove(models.Model):
                         foreign_currency = False
 
                     #-----------------BINAURAL--------------
-                    is_igtf = counterpart_line.payment_id.is_igtf_on_foreign_exchange
+                    #is_igtf = counterpart_line.payment_id.is_igtf_on_foreign_exchange
                     #-----------------BINAURAL--------------
+
+                    amount_igtf = 0.0
+                    amount_igtf_alter=0.0
+                    igtf_account_ids = [
+                        self.company_id.customer_account_igtf_id.id,
+                        self.company_id.supplier_account_igtf_id.id
+                    ]
+                    advance_account = [self.company_id.advance_customer_account_id.id,
+                        self.company_id.advance_supplier_account_id.id]
+                    igtf_line = counterpart_line.move_id.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
+                    advance = counterpart_line.move_id.line_ids.filtered(lambda line: line.account_id.id in advance_account)
+                    to_compare = reconciled_partial['amount'] + abs(igtf_line.balance)
+                    to_compare_alter = reconciled_partial.get('foreign_amount',0.0) + abs(igtf_line.foreign_balance)
+                    #raise UserError(reconciled_partials)
+                    if  to_compare > counterpart_line.move_id.amount_total:
+                        amount_igtf = 0.0
+                        amount_igtf_alter = 0.0
+                        
+                    else:
+                        amount_igtf = to_compare
+                        amount_igtf_alter = to_compare_alter
+
+                    if advance:
+                        amount_igtf = abs(advance.balance)
+                        amount_igtf_alter = abs(advance.foreign_balance)
 
                     reconciled_vals.append({
                         'name': counterpart_line.name,
                         'journal_name': counterpart_line.journal_id.name,
                         'company_name': counterpart_line.journal_id.company_id.name if counterpart_line.journal_id.company_id != move.company_id else False,
                         #-----------------BINAURAL--------------
-                        'amount': reconciled_partial['amount'] + move.amount_to_pay_igtf if is_igtf else reconciled_partial['amount'], 
+                        'amount': amount_igtf if igtf_line else reconciled_partial['amount'],  
                         #-----------------BINAURAL--------------
                         'currency_id': move.company_id.currency_id.id if reconciled_partial['is_exchange'] else reconciled_partial['currency'].id,
                         'date': counterpart_line.date,
@@ -96,7 +121,9 @@ class AccountMove(models.Model):
                         # these are necessary for the views to change depending on the values
                         'is_exchange': reconciled_partial['is_exchange'],
                         'amount_company_currency': formatLang(self.env, abs(counterpart_line.balance), currency_obj=counterpart_line.company_id.currency_id),
-                        'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency)
+                        'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency),
+                        "foreign_id": counterpart_line.foreign_currency_id.id,
+                        "foreign_amount": abs(amount_igtf_alter) if igtf_line else abs(counterpart_line.foreign_amount_residual_currency)
                     })
                 payments_widget_vals['content'] = reconciled_vals
 
@@ -157,7 +184,7 @@ class AccountMove(models.Model):
             for payment_move in final_payment_moves:
                 
                 igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
-                bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.account_type in ['asset_cash','bank'])
+                bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.account_type in ['asset_cash'])
 
                 if not igtf_line and bank_line: #bolivares
                     
