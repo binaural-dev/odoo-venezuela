@@ -36,7 +36,7 @@ class MainCalendar(http.Controller):
     website=True,
     )
     def website_reservation_calendar(self, **kw):
-        reservation_zones = request.env["appointment.type"].sudo().search([("active", "=", True)])
+        reservation_zones = request.env["appointment.type"].sudo().search([("active", "=", True), ("is_published", "=", True)])
         return request.render(
             "cadipa_reservation_calendar.cadipa_reservation_calendar",
             {
