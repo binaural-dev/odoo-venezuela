@@ -214,7 +214,7 @@
                         </div>
 
                         
-                    <div name="coletilla"> 
+                    <div name="coletilla" style="margin-top: 20px;"> 
                         <span t-if="o.company_id.show_tag_on_usd_invoice and o.currency_id.name != 'VEF'">
                             A los efectos de lo previsto en el <strong>Art. 25</strong> de la Ley de
                             Impuesto al Valor Agregado se expresa el monto total
@@ -364,7 +364,20 @@
                     </td>
                 </tr>
                 <t t-foreach="tax_groups" t-as="group">
-                    
+                    <tr class="ve-totals-table" style="line-height:1.3;">
+                        <td>
+                            <span t-if="group.get('tax_amount_currency', 0.0) != 0.0" t-out="'Total G ' + group.get('group_name', '')"/>
+                            <span t-else="">Exento</span>
+                        </td>
+                        <td class="text-end o_price_total">
+                            <span class="text-nowrap"
+                                t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0"
+                                t-out="base_vef and group.get('formatted_base_amount_currency', group.get('formatted_base_amount_currency', 0.0)) or group.get('formatted_base_amount_currency', group.get('formatted_base_amount_currency', 0.0))"/>
+                            <span 
+                            t-else="" 
+                            t-out="group.get('formatted_base_amount_currency')"></span>
+                        </td>
+                    </tr>
 
                     <tr t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0" class="ve-totals-table" style="line-height:1.6;">
                         <td>
