@@ -62,6 +62,17 @@ class ResCompany(models.Model):
         default=30
     )
 
+    restrict_appointment_to_members = fields.Boolean(
+        string="Restrict appointments to members only",
+        default=False
+    )
+
+    appointment_lead_time_days = fields.Integer(
+        string="Appointment Lead Time (days)",
+        default=1,
+        help="Minimum number of days in advance to book an appointment."
+    )
+
     def toggle_sync_cron(self):
         """
         Toggle the synchronization cron job for the company.
