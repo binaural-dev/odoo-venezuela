@@ -12,6 +12,15 @@
                        string="Foto"
                        optional="show"/>
             </xpath>
+
+            <xpath expr="//button[@name='action_confirm']" position="after">
+                <button string="Sync to HikCentral" 
+                        name="action_sync_owner_to_hikcentral"
+                        help="Manually synchronize membership Owner to HikCentral."
+                        type="object" 
+                        class="btn-primary" 
+                        invisible="state == 'draft'"/>
+            </xpath>
         </field>
     </record>
 
@@ -25,6 +34,22 @@
                 <attribute name="editable"></attribute>
             </xpath>
 
+            <xpath expr="//field[@name='beneficiary_partner_ids']/tree" position="inside">
+
+                <button name="sync_beneficiary_to_hikcentral" 
+                    type="object" 
+                    icon="fa-cloud-upload"
+                    invisible="guest_state != 'confirmed'"
+                    help="Synchronize Beneficiaries to HikCentral"
+                    class="btn-outline-primary"/>
+
+                <button name="remove_beneficiary_from_hikcentral" 
+                    type="object" 
+                    icon="fa-times"
+                    invisible="guest_state != 'confirmed'"
+                    help="Remove Beneficiary from HikCentral"
+                    class="btn-outline-danger"/>                
+            </xpath>
     </field>
 </record>
 </odoo>
