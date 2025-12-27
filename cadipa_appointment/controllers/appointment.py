@@ -238,7 +238,7 @@ class AppointmentControllerMulti(AppointmentController):
             current_start, current_duration = slots[0][0], slots[0][1]
             current_end = current_start + relativedelta(hours=current_duration)
             total_hours = current_duration
-            for slot_start, slot_duration, _ in slots[1:]:
+            for slot_start, slot_duration, __ in slots[1:]:
                 slot_end = slot_start + relativedelta(hours=slot_duration)
                 total_hours += slot_duration
                 if slot_start == current_end:
@@ -272,7 +272,10 @@ class AppointmentControllerMulti(AppointmentController):
                     customer.write({'phone':phone})
             
             appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
-            
+
+            first_slot_start = ranges[0][0]
+            self._check_appointment_frequency_limit(customer, appointment_type, first_slot_start)
+
             staff_user = None
             first_slot_params = slots[0][2]
             resource_id = None
@@ -441,4 +444,39 @@ class AppointmentControllerMulti(AppointmentController):
         customer.appointments_count += 1
         return event
     
-    
+    def _check_appointment_frequency_limit(self, customer, appointment_type, target_datetime):
+        """
+        Valida frecuencia basada en configuración de EMPRESA, pero aplicada por TIPO.
+        """
+
+        company = request.env.company
+        _logger.info("AJJJJJJJJJJJJJJJJJG company %s", company )
+        
+        restrict_appointment_to_members = company.restrict_appointment_to_members
+        restricted_days = company.appointment_lead_time_days 
+        
+        if not restrict_appointment_to_members:
+            return
+
+        if not restricted_days or restricted_days <= 0:
+            return
+
+        start_bound = target_datetime - relativedelta(days=restricted_days)
+        end_bound = target_datetime + relativedelta(days=restricted_days)
+
+
+        domain = [
+            ('partner_ids', 'in', [customer.id]),
+            ('appointment_booker_id', '=', customer.id),
+            ('appointment_type_id', '=', appointment_type.id),
+            ('start', '>=', start_bound),
+            ('start', '<=', end_bound),
+        ]
+
+        existing_count = request.env['calendar.event'].sudo().search_count(domain)
+
+        if existing_count > 0:
+            raise ValidationError(
+                _("Due to company policy, you cannot schedule another appointment of this type (%s) within a %s-day period.")
+                % (appointment_type.name, restricted_days)
+            )

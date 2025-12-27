@@ -8,26 +8,57 @@ _logger = logging.getLogger(__name__)
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
-    def action_confirm_beneficiary(self):
+    def sync_beneficiary_to_hikcentral(self):
         """
-        Public method required by action.partner.
-        Used for the confirmation cascade.
+        Public method to manually sync beneficiary to HikCentral.
         """
-        super(ResPartner, self).action_confirm_beneficiary()
-        self.action_sync_hikcentral_beneficiary()
+        for partner in self:
+            if not partner.guest_state == "confirmed" and partner.associate_action:
+                raise UserError(
+                    _("Only confirmed beneficiaries linked to an action can be synced.")
+                )
+            partner._sync_beneficiary_to_hikcentral()
 
-    def action_cancel_beneficiary(self):
+    def remove_beneficiary_from_hikcentral(self):
         """
-        Public method required by action.partner.
-        Used for the cancellation cascade.
+        Public method to manually remove beneficiary from HikCentral.
         """
-        super(ResPartner, self).action_cancel_beneficiary()
         for partner in self:
             hik_users = self.env["hikcentral.users"].search(
                 [("partner_id", "=", partner.id)]
             )
+            if not hik_users:
+                raise UserError(
+                    _(
+                        "No HikCentral user found for beneficiary %s. Please sync the beneficiary first."
+                    )
+                    % partner.name
+                )
+
             for hik_user in hik_users:
                 hik_user.action_revoke_access()
+
+    def action_cancel_beneficiary(self):
+        """
+        Public method for action.partner to cancel beneficiary access.
+        """
+        res = super(ResPartner, self).action_cancel_beneficiary()
+
+        for partner in self:
+            hik_users = self.env["hikcentral.users"].search(
+                [("partner_id", "=", partner.id)]
+            )
+
+            if not hik_users:
+                _logger.warning(
+                    f"No HikCentral user found for beneficiary {partner.name}. Skipping revocation."
+                )
+                continue
+
+            for hik_user in hik_users:
+                hik_user.action_revoke_access()
+
+        return res
 
     def action_sync_hikcentral_beneficiary(self):
         """

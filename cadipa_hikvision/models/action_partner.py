@@ -9,14 +9,13 @@ _logger = logging.getLogger(__name__)
 class ActionPartner(models.Model):
     _inherit = "action.partner"
 
-    def action_confirm(self):
+
+    def action_sync_owner_to_hikcentral(self):
         """
-        Confirms the action and creates/synchronizes the Owner in HikCentral.
+        Manual synchronization of the Owner to HikCentral.
         """
         if not self.membership_start_date or not self.membership_end_date:
             raise ValidationError(_("Membership start and end dates must be defined."))
-
-        super(ActionPartner, self).action_confirm()
 
         for record in self:
             if record.owner_id:

@@ -1,0 +1,460 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* cadipa_hikvision
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20250917\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-12-27 14:38+0000\n"
+"PO-Revision-Date: 2025-12-27 14:38+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "<i class=\"fa fa-download me-1\"/> Download Image"
+msgstr ""
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "<i class=\"fa fa-paper-plane me-1\"/> <span>Re send</span>"
+msgstr ""
+
+#. module: cadipa_hikvision
+#: model:mail.template,body_html:cadipa_hikvision.mail_template_visitor_qr_invitation_base
+msgid ""
+"<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"padding-top: 16px; background-color: #F1F1F1; font-family: Verdana, Arial, sans-serif; color: #454748; width: 100%; border-collapse: separate;\">\n"
+"    <tr>\n"
+"        <td align=\"center\">\n"
+"            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"padding: 16px; background-color: #FFFFFF; color: #454748; border-collapse: separate;\">\n"
+"                <tbody>\n"
+"                    <tr>\n"
+"                        <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: #00A09D; padding: 10px 20px; border-collapse: separate; border-radius: 8px 8px 0 0;\">\n"
+"                                <tr>\n"
+"                                    <td valign=\"middle\">\n"
+"                                        <h2 style=\"font-size: 24px; color: #FFFFFF; margin: 0;\">Invitación a la Cita</h2>\n"
+"                                    </td>\n"
+"                                </tr>\n"
+"                            </table>\n"
+"                        </td>\n"
+"                    </tr>\n"
+"                    <tr>\n"
+"                        <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; padding: 20px; border-collapse: separate;\">\n"
+"                                <tr>\n"
+"                                    <td valign=\"top\" style=\"font-size: 14px; line-height: 1.6;\">\n"
+"                                        <p>Hola <strong>{{ object.first_name }} {{ object.last_name or '' }}</strong>,</p>\n"
+"                                        <p>Nos complace confirmar tu visita. Para agilizar tu acceso a nuestras instalaciones, hemos generado el siguiente código QR personal.</p>\n"
+"                                        \n"
+"                                        <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%; background-color: #F8F8F8; border: 1px solid #EAEAEA; border-radius: 5px; margin: 20px 0; padding: 15px;\">\n"
+"                                            <tr>\n"
+"                                                <td style=\"padding: 5px 0;\"><strong>Evento:</strong></td>\n"
+"                                                <td style=\"padding: 5px 0;\">{{ ctx.get('event_name') }}</td>\n"
+"                                            </tr>\n"
+"                                            <tr>\n"
+"                                                <td style=\"padding: 5px 0;\"><strong>Fecha y Hora:</strong></td>\n"
+"                                                <td style=\"padding: 5px 0;\">{{ ctx.get('event_start_str') }}</td>\n"
+"                                            </tr>\n"
+"                                            <tr>\n"
+"                                                <td style=\"padding: 5px 0;\"><strong>Anfitrión:</strong></td>\n"
+"                                                <td style=\"padding: 5px 0;\">{{ ctx.get('event_host') }}</td>\n"
+"                                            </tr>\n"
+"                                        </table>\n"
+"                                        \n"
+"                                        <p style=\"text-align: center;\">Por favor, presenta este código QR a tu llegada:</p>\n"
+"                                        \n"
+"                                        <div style=\"text-align: center; margin: 25px 0;\">\n"
+"                                            <img src=\"cid:qr_code_image\" alt=\"Código QR de Acceso\" style=\"max-width: 250px; border: 1px solid #ddd; padding: 5px; background-color: white;\">\n"
+"                                        </div>\n"
+"\n"
+"                                        <p>¡Te esperamos!</p>\n"
+"                                    </td>\n"
+"                                </tr>\n"
+"                            </table>\n"
+"                        </td>\n"
+"                    </tr>\n"
+"                    <tr>\n"
+"                            <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: #F1F1F1; color: #454748; padding: 8px; border-collapse: separate; border-radius: 0 0 8px 8px;\">\n"
+"                                <tr>\n"
+"                                    <td style=\"text-align: center; font-size: 12px; opacity: 0.7;\">\n"
+"                                        Este es un correo generado automáticamente. Por favor, no respondas a este mensaje.\n"
+"                                        <br>\n"
+"                                        Gestionado por <strong>{{ ctx.get('company_name', 'tu empresa') }}</strong>\n"
+"                                    </td>\n"
+"                                </tr>\n"
+"                            </table>\n"
+"                        </td>\n"
+"                    </tr>\n"
+"                </tbody>\n"
+"            </table>\n"
+"        </td>\n"
+"    </tr>\n"
+"</table>\n"
+msgstr ""
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "Acces:"
+msgstr "Acceso:"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "Actualizar y Reenviar"
+msgstr "Actualizar y Reenviar"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__appointment_guest_id
+msgid "Appointment Guest"
+msgstr "Invitado a la Cita"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_calendar_event
+msgid "Calendar Event"
+msgstr "Calendario de eventos"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "Close"
+msgstr "Cerrar"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__comes_from_calendar_reservation
+msgid "Comes From Calendar Reservation"
+msgstr "Proviene de la Reserva de Calendario"
+
+#. module: cadipa_hikvision
+#. odoo-javascript
+#: code:addons/cadipa_hikvision/static/src/js/guest_resend_email.js:0
+#, python-format
+msgid "Connection error while validating the guest."
+msgstr "Error de conexión al validar el invitado."
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_access_level__default_membership_access_level
+msgid "Default Membership Access Level"
+msgstr "Nivel de Acceso de Membresía Predeterminado"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_department__default_membership_dept
+msgid "Default Membership Department"
+msgstr "Departamento de Membresía Predeterminado"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "Eliminar Invitado y Acceso HikCentral"
+msgstr "Eliminar Invitado y Acceso HikCentral"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "Email updated and QR resent successfully."
+msgstr "Correo actualizado y QR reenviado con éxito."
+
+#. module: cadipa_hikvision
+#. odoo-javascript
+#: code:addons/cadipa_hikvision/static/src/js/appointment_guest_delete.js:0
+#, python-format
+msgid "Error al eliminar: "
+msgstr "Error al eliminar: "
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__event_id
+msgid "Event"
+msgstr "Evento"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "Event not found or invalid token."
+msgstr "Evento no encontrado o token inválido."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "Event not found."
+msgstr "Evento no encontrado."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_visitor_appointment__calendar_event_ids
+msgid "Eventos de Calendario Origen"
+msgstr "Eventos de Calendario Origen"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/calendar_event.py:0
+#, python-format
+msgid "Failed to process visitor sync: %s"
+msgstr "Error al procesar la sincronización de visitantes: %s"
+
+#. module: cadipa_hikvision
+#. odoo-javascript
+#: code:addons/cadipa_hikvision/static/src/xml/access_status_screen.xml:0
+#: code:addons/cadipa_hikvision/static/src/xml/access_status_screen.xml:0
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_photo
+#, python-format
+msgid "Foto"
+msgstr "Foto"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.portal_memberships_inherit_photo
+msgid "Foto de Perfil"
+msgstr "Foto de Perfil"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "Guest added locally, but HikCentral sync failed: %s"
+msgstr "Invitado agregado localmente, pero la sincronización con HikCentral falló: %s"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "Guest not found in this event."
+msgstr "Invitado no encontrado en este evento."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "Guest not found."
+msgstr "Invitado no encontrado."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_calendar_event__guest_ids
+msgid "Guests"
+msgstr "Invitados"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_hikcentral_access_level
+msgid "HikCentral Access Level"
+msgstr "Nivel de Acceso de HikCentral"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_hikcentral_department
+msgid "HikCentral Departments"
+msgstr "Departamentos de HikCentral"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/calendar_event.py:0
+#, python-format
+msgid "HikCentral Sync: %s visitors processed"
+msgstr "HikCentral Sync: %s visitantes procesados"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_hikcentral_visitor_appointment
+msgid "HikCentral Visitor Appointment"
+msgstr "Cita de Visitante de HikCentral"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_hikcentral_users__parent_user_id
+msgid ""
+"HikCentral user who represents the holder of this beneficiary's membership."
+msgstr "El usuario de HikCentral que representa al titular de la membresía de este beneficiario."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_membership_type_plan__hikcentral_department_id
+msgid "HikCentral Department"
+msgstr "Departamento de HikCentral"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_membership_type_plan_form_inherit_hikcentral
+msgid "HikCentral Settings"
+msgstr "Configuración de HikCentral"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_calendar_event__hikcentral_synced
+msgid "Hikcentral Synced"
+msgstr "Sincronizado con Hikcentral"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_hikcentral_users
+msgid "Hikcentral User"
+msgstr "Usuario de Hikcentral"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "ID:"
+msgstr "ID:"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_hikcentral_access_level__default_membership_access_level
+msgid ""
+"If checked, this access level will be assigned to new members by default."
+msgstr "Si está marcado, este nivel de acceso se asignará a los nuevos miembros por defecto."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_hikcentral_department__default_membership_dept
+msgid ""
+"If checked, this department will be used by default when creating member "
+"users."
+msgstr "Si está marcado, este departamento se utilizará por defecto al crear usuarios miembros."
+
+#. module: cadipa_hikvision
+#: model:mail.template,name:cadipa_hikvision.mail_template_visitor_qr_invitation_base
+msgid "Invitación de Visitante con QR (Base)"
+msgstr "Invitación de Visitante con QR (Base)"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/action_partner.py:0
+#, python-format
+msgid "Membership start and end dates must be defined."
+msgstr "Las fechas de inicio y fin de la membresía deben estar definidas."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/res_partners.py:0
+#, python-format
+msgid "No HikCentral department available for beneficiary."
+msgstr "No hay un departamento de HikCentral disponible para el beneficiario."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/action_partner.py:0
+#, python-format
+msgid ""
+"No HikCentral department defined for membership plan '%s' and no default "
+"department set in HikCentral departments."
+msgstr "No se ha definido un departamento de HikCentral para el plan de membresía '%s' y no se ha establecido un departamento predeterminado en los departamentos de HikCentral."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/res_partners.py:0
+#, python-format
+msgid ""
+"No HikCentral user found for beneficiary %s. Please sync the beneficiary "
+"first."
+msgstr "No se encontró un usuario de HikCentral para el beneficiario %s. Por favor, sincroniza primero al beneficiario."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/action_partner.py:0
+#, python-format
+msgid ""
+"No default HikCentral access levels for memberships defined. Please set one "
+"access level as default for memberships."
+msgstr "No se han definido niveles de acceso predeterminados para las membresías. Por favor, establezca un nivel de acceso como predeterminado para las membresías."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/res_partners.py:0
+#, python-format
+msgid "No default access levels defined."
+msgstr "No hay niveles de acceso predeterminados definidos."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "No synchronized user found in HikCentral."
+msgstr "No se encontró un usuario sincronizado en HikCentral."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/res_partners.py:0
+#, python-format
+msgid "Only confirmed beneficiaries linked to an action can be synced."
+msgstr "Solo los beneficiarios confirmados vinculados a una acción pueden ser sincronizados."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/hikcentral_access_level.py:0
+#, python-format
+msgid "Only one access level can be set as the default visitor access level."
+msgstr "Solo se puede establecer un nivel de acceso como el nivel de acceso predeterminado para visitantes."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/hikcentral_department.py:0
+#, python-format
+msgid "Only one department can be set as the default membership department."
+msgstr "Solo se puede establecer un departamento como el departamento de membresía predeterminado."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__parent_user_id
+msgid "Parent User"
+msgstr "Usuario Principal"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_action_partner
+msgid "Partner Action"
+msgstr "Membresía de Beneficiario"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "QR"
+msgstr "QR"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "Remove Guest"
+msgstr "Eliminar Invitado"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.portal_memberships_inherit_photo
+msgid "Sube una foto clara del rostro para el reconocimiento facial."
+msgstr "Sube una foto clara del rostro para el reconocimiento facial."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_membership_type_plan__hikcentral_department_id
+msgid "The HikCentral department associated with this membership type plan."
+msgstr "El departamento de HikCentral asociado con este plan de tipo de membresía."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "The guest %s (%s - %s) already has another booking on this day."
+msgstr "El invitado %s (%s - %s) ya tiene otra reserva en este día."
+
+#. module: cadipa_hikvision
+#: model:mail.template,subject:cadipa_hikvision.mail_template_visitor_qr_invitation_base
+msgid "Tu Invitación para: {{ ctx.get('event_name') }}"
+msgstr "Tu Invitación para: {{ ctx.get('event_name') }}"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_membership_type_plan
+msgid "Type Of Membership Plan"
+msgstr "Tipo de plan de membresía"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "Wrong email? Edit it and resend the QR:"
+msgstr "¿Correo incorrecto? Edítalo y reenvía el QR:"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/controllers/appointment.py:0
+#, python-format
+msgid "You cannot delete the last guest. The booking cannot be empty."
+msgstr "No puedes eliminar al último invitado. La reserva no puede estar vacía."
+
+#. module: cadipa_hikvision
+#. odoo-javascript
+#: code:addons/cadipa_hikvision/static/src/js/appointment_guest_delete.js:0
+#, python-format
+msgid "You sure that you want to delete this guest from the appointment?"
+msgstr "¿Estás seguro de que quieres eliminar a este invitado de la cita?"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
+msgid "nuevo@correo.com"
+msgstr "nuevo@correo.com"
