@@ -238,7 +238,7 @@ class AppointmentControllerMulti(AppointmentController):
             current_start, current_duration = slots[0][0], slots[0][1]
             current_end = current_start + relativedelta(hours=current_duration)
             total_hours = current_duration
-            for slot_start, slot_duration, _ in slots[1:]:
+            for slot_start, slot_duration, __ in slots[1:]:
                 slot_end = slot_start + relativedelta(hours=slot_duration)
                 total_hours += slot_duration
                 if slot_start == current_end:

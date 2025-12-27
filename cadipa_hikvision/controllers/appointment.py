@@ -28,6 +28,18 @@ class CadipaWebsiteAppointment(AppointmentControllerMulti):
                     e,
                 )
 
+    def _is_last_attendee(self, event):
+        """
+        Auxiliary function to check if the event has only one attendee left
+        (combining guests and partners).
+        """
+        if not event:
+            return True
+        total_count = len(event.guest_ids) + len(event.partner_ids)
+        _logger.info("Total attendees (guests + partners): %d", total_count)
+
+        return total_count <= 1
+
     @http.route(
         ["/appointment/guest/resend_email_json"],
         type="json",
@@ -102,6 +114,9 @@ class CadipaWebsiteAppointment(AppointmentControllerMulti):
         if not guest:
             return {"error": _("Guest not found.")}
 
+        if self._is_last_attendee(event):
+            return {"error": _("You cannot delete the last guest. The booking cannot be empty.")}
+        
         try:
             hik_user = (
                 request.env["hikcentral.users"]
