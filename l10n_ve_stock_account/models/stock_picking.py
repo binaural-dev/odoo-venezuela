@@ -217,6 +217,7 @@ class StockPicking(models.Model):
                             "transfer_ids": self,
                             "from_picking": True,
                             "fiscal_position_id": picking_id.sale_id.fiscal_position_id.id if picking_id.sale_id.fiscal_position_id else False,
+                            "invoice_payment_term_id": picking_id.sale_id.payment_term_id.id if picking_id.sale_id.payment_term_id else False,
                         }
                     )
                 else:
@@ -924,10 +925,15 @@ class StockPicking(models.Model):
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
                 continue
-
+            elif picking.document == "dispatch_guide":
+                picking.is_dispatch_guide = True
+                continue
             elif (
                 picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id or picking.transfer_reason_id.id == other_causes_reason.id
+                and (
+                    picking.transfer_reason_id.id == consignment_reason.id
+                    or picking.transfer_reason_id.id == other_causes_reason.id
+                )
             ):
                 picking.is_dispatch_guide = True
 

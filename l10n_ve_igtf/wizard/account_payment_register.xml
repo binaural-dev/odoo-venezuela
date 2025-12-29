@@ -5,23 +5,45 @@
             <field name="model">account.payment.register</field>
             <field name="inherit_id" ref="account.view_account_payment_register_form" />
             <field name="arch" type="xml">
-                <xpath expr="//group[@name='group3']" position="after">
-                    <group name="igtf_group">
-                        <field name="is_igtf" invisible="1" />
-                        <field name="is_igtf_on_foreign_exchange"
-                            invisible="1" />
-                        <div invisible="not is_igtf_on_foreign_exchange"
-                            style="display: flex; align-items: baseline; gap: 4px; white-space: nowrap;">
-                            <span style="vertical-align: middle;">IGTF (</span>
-                            <field name="igtf_percentage" readonly="1"
-                                style="border: none; background: transparent; width: 40px;vertical-align: middle;" />
-                            <span style="vertical-align: middle;">%):</span>
-                            <field name="igtf_amount"
-                                widget="monetary"
-                                options="{'currency_field': 'currency_id'}"
-                                style="vertical-align: middle;" />
-                        </div>
+                <xpath expr="//form/group[1]" position="after">
+                    <field name="is_igtf_on_foreign_exchange" invisible="1" />
+                    <group name="igtf_group"  invisible ="not is_igtf">
+                       
+                        <group name="igtf_1">
+                            <field name="is_igtf" readonly="1" force_save = "1" />
+                            <label for="igtf_percentage"/>
+                            <div class="o_row"><field name="igtf_percentage"  readonly="1"/> <span>%</span></div>
+                            
+                        </group>
+
+                        <group name="igtf_2" >
+                            <field name="igtf_amount" invisible="1"/>
+
+                            <field name="igtf_to_show"  widget="monetary"  readonly="1"
+                                options="{'currency_field': 'currency_id'}" force_save="1" />
+                            
+                            <field name="amount_without_difference"  readonly="1"
+                                options="{'currency_field': 'currency_id'}" force_save="1"/>
+                        </group>
+
+                        
+                      
                     </group>
+                </xpath>
+
+                <xpath expr="//label[@for='amount']" position="attributes">
+                    <attribute name="invisible"/> 
+                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                </xpath>
+
+                <xpath expr="//div[@name='amount_div']" position="attributes">
+                    <attribute name="invisible"/> 
+                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                </xpath>
+                
+                <xpath expr="//div[@name='amount_div']/field[@name='amount']" position="attributes">
+                    <attribute name="readonly">not can_edit_wizard or can_group_payments</attribute>
+                    <attribute name="force_save">1</attribute>
                 </xpath>
             </field>
         </record>

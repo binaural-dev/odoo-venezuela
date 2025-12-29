@@ -50,8 +50,9 @@ msgstr ""
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_with_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_with_igtf
-msgid "Amount with IGTF"
-msgstr "Monto con IGTF"
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_to_show
+msgid "Amount IGTF"
+msgstr "Monto IGTF"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_without_difference
@@ -281,3 +282,17 @@ msgstr "Total con IGTF"
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__bi_igtf
 msgid "subtotal with igtf"
 msgstr "Subtotal con IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__igtf_top_aply
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__igtf_top_aply
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_top_aply
+msgid "Max Igtf amount to be apply"
+msgstr "Monto maximo de IGTF a ser aplicado"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__apply_igtf_in_wizard_payment
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__apply_igtf_in_wizard_payment
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__apply_igtf_in_wizard_payment
+msgid "Apply Igtf In Wizard Payment"
+msgstr "Incluir Monto IGTF en importe de wizard de pagos cuando se usa un diario que aplica IGTF."

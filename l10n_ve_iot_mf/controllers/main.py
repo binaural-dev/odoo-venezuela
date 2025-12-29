@@ -5,6 +5,9 @@ from odoo.tools import date_utils
 from datetime import datetime
 import functools
 import json
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ApiIoT(http.Controller):
@@ -17,7 +20,16 @@ class ApiIoT(http.Controller):
         for iot in iot_ids:
             response[iot.identifier] = iot.fiscal_port_ids.mapped(lambda x: x.name)
         return json.dumps(response)
-
+    
+    @http.route(
+        "/iot_pinpad/ports", type="http", auth="public", methods=["GET"], csrf=False
+    )
+    def getPinpadPort(self, **kw):
+        iot_id = request.env["iot.box"].sudo().search([("has_pinpad_machine", "=", True)])
+        response = {}
+        for iot in iot_id:
+            response[iot.identifier] = [iot.pinpad_port_id.name] if iot.pinpad_port_id else []
+        return json.dumps(response)
 
     @http.route(
         "/iot_blacklist/ports", type="http", auth="public", methods=["GET"], csrf=False
