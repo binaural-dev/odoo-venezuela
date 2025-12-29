@@ -22,4 +22,36 @@ class ResCurrency(models.Model):
                 and record.env.user.has_group(
                     "l10n_ve_accountant.group_fiscal_config_support"
                 )
+<<<<<<< HEAD
             )
+=======
+            )
+
+    def _convert(self, from_amount, to_currency, company=None, date=None, round=True):  
+        
+        self, to_currency = self or to_currency, to_currency or self
+        assert self, "convert amount from unknown currency"
+        assert to_currency, "convert amount to unknown currency"
+        if from_amount:
+            to_amount = from_amount * self._get_conversion_rate(self, to_currency, company, date)
+        else:
+            return 0.0
+
+        return to_amount
+
+
+    def round(self, amount):
+        
+        self.ensure_one()
+        amount_float = float(amount)
+
+        try:
+            amount_float = float(amount)
+        except (ValueError, TypeError):
+            return super(ResCurrency, self).round(amount)
+
+        if abs(amount_float - round(amount_float, 6)) > 1e-9:
+            return amount_float
+
+        return super(ResCurrency, self).round(amount_float)
+>>>>>>> bbbad54d4ccdf022b696a8b3d6b2f2e5491b881b
