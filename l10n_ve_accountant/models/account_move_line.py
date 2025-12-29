@@ -226,6 +226,7 @@ class AccountMoveLine(models.Model):
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
+        "foreign_inverse_rate",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
@@ -307,8 +308,22 @@ class AccountMoveLine(models.Model):
                     line.foreign_credit = abs(balance) if balance > 0 else 0.0
                     continue
 
-                line.foreign_debit = line.debit * line.foreign_inverse_rate
-                line.foreign_credit = line.credit * line.foreign_inverse_rate
+                if line.currency_id and line.currency_id != line.company_id.foreign_currency_id and line.currency_id != line.company_id.currency_id:
+                     line.foreign_debit = line.company_id.currency_id._convert(
+                         line.debit,
+                         line.company_id.foreign_currency_id,
+                         line.company_id,
+                         line.date or fields.Date.context_today(line)
+                     )
+                     line.foreign_credit = line.company_id.currency_id._convert(
+                         line.credit,
+                         line.company_id.foreign_currency_id,
+                         line.company_id,
+                         line.date or fields.Date.context_today(line)
+                     )
+                else:
+                    line.foreign_debit = line.debit * line.foreign_inverse_rate
+                    line.foreign_credit = line.credit * line.foreign_inverse_rate
                 continue
 
             if line.display_type == "product":
