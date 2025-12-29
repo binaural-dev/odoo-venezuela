@@ -1,9 +1,11 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 import logging
 
 _logger = logging.getLogger(__name__)
-
+from odoo.fields import Monetary
+from odoo.tools import float_repr
 
 class ResCurrency(models.Model):
     _inherit = "res.currency"
