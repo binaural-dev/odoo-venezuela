@@ -22,9 +22,6 @@ class ResCurrency(models.Model):
                 and record.env.user.has_group(
                     "l10n_ve_accountant.group_fiscal_config_support"
                 )
-<<<<<<< HEAD
-            )
-=======
             )
 
     def _convert(self, from_amount, to_currency, company=None, date=None, round=True):  
@@ -54,4 +51,3 @@ class ResCurrency(models.Model):
             return amount_float
 
         return super(ResCurrency, self).round(amount_float)
->>>>>>> bbbad54d4ccdf022b696a8b3d6b2f2e5491b881b
