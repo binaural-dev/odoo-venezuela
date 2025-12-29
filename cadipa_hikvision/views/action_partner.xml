@@ -19,7 +19,7 @@
                         help="Manually synchronize membership Owner to HikCentral."
                         type="object" 
                         class="btn-primary" 
-                        invisible="state == 'draft'"/>
+                        invisible="state in ['draft', 'pending']"/>
             </xpath>
         </field>
     </record>
@@ -39,14 +39,14 @@
                 <button name="sync_beneficiary_to_hikcentral" 
                     type="object" 
                     icon="fa-cloud-upload"
-                    invisible="guest_state != 'confirmed'"
+                    invisible="guest_state != 'confirmed' or parent.state in ['draft', 'pending']"
                     help="Synchronize Beneficiaries to HikCentral"
                     class="btn-outline-primary"/>
 
                 <button name="remove_beneficiary_from_hikcentral" 
                     type="object" 
                     icon="fa-times"
-                    invisible="guest_state != 'confirmed'"
+                    invisible="guest_state != 'confirmed' or parent.state in ['draft', 'pending']"
                     help="Remove Beneficiary from HikCentral"
                     class="btn-outline-danger"/>                
             </xpath>

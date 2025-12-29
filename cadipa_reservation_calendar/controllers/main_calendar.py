@@ -68,6 +68,7 @@ class MainCalendar(http.Controller):
         domain = [
             ('product_id', '!=', False),
             ('active', '=', True),
+            ("is_published", "=", True)
         ]
         if ids:
             domain.append(('id', 'in', ids))

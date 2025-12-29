@@ -23,7 +23,7 @@ class ActionPartner(models.Model):
 
     def cancel_membership(self):
         """
-        [MODIFICADO] Override para usar la revocación RÁPIDA al cancelar.
+        Override to use fast revocation on membership cancellation.
         """
         super(ActionPartner, self).cancel_membership()
 
@@ -43,7 +43,7 @@ class ActionPartner(models.Model):
                     if ben_hik_user:
                         ben_hik_user.action_revoke_access()
 
-    @api.constrains("suspended_membership")
+    @api.constrains("suspended_membership", "state")
     def _check_suspended_membership(self):
         super(ActionPartner, self)._check_suspended_membership()
 
