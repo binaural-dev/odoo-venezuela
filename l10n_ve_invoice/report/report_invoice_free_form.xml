@@ -342,7 +342,7 @@
                                 t-out="base_vef and group.get('formatted_base_amount_currency_ves', group.get('formatted_base_amount_currency_ves', 0.0)) or group.get('formatted_base_amount_currency_ves', group.get('formatted_base_amount_currency_ves', 0.0))"/>
                             <span 
                             t-else="" 
-                            t-out="'0 ' + 'Bs.F'"></span>
+                            t-out="'0 Bs.F'"></span>
                         </td>
                     </tr>
 
