@@ -3,7 +3,7 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
-    "version": "1.7",
+    "version": "1.13",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
