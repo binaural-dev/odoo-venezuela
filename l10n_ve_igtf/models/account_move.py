@@ -1,6 +1,5 @@
 from odoo import api, fields, models, _
 from odoo.tools.sql import column_exists, create_column
-from odoo.tools import formatLang
 import logging
 from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
@@ -51,86 +50,8 @@ class AccountMove(models.Model):
         compute="_compute_amount_residual_igtf",
         copy=False,
     )
-    igtf_top_aply = fields.Float('Max Igtf amount to be apply')
-    alter_bi_igtf = fields.Float('Alter BI IGTF')
-   
-
-    #OVERRIDES ODOO COMPUTE METHOD
-    @api.depends('move_type', 'line_ids.amount_residual')
-    def _compute_payments_widget_reconciled_info(self):
-        for move in self:
-            payments_widget_vals = {'title': _('Less Payment'), 'outstanding': False, 'content': []}
-
-            if move.state == 'posted' and move.is_invoice(include_receipts=True):
-                reconciled_vals = []
-                reconciled_partials = move.sudo()._get_all_reconciled_invoice_partials()
-                for reconciled_partial in reconciled_partials:
-                    counterpart_line = reconciled_partial['aml']
-                    if counterpart_line.move_id.ref:
-                        reconciliation_ref = '%s (%s)' % (counterpart_line.move_id.name, counterpart_line.move_id.ref)
-                    else:
-                        reconciliation_ref = counterpart_line.move_id.name
-                    if counterpart_line.amount_currency and counterpart_line.currency_id != counterpart_line.company_id.currency_id:
-                        foreign_currency = counterpart_line.currency_id
-                    else:
-                        foreign_currency = False
-
-                    #-----------------BINAURAL--------------
-                    #is_igtf = counterpart_line.payment_id.is_igtf_on_foreign_exchange
-                    #-----------------BINAURAL--------------
-
-                    amount_igtf = 0.0
-                    amount_igtf_alter=0.0
-                    igtf_account_ids = [
-                        self.company_id.customer_account_igtf_id.id,
-                        self.company_id.supplier_account_igtf_id.id
-                    ]
-                    advance_account = [self.company_id.advance_customer_account_id.id,
-                        self.company_id.advance_supplier_account_id.id]
-                    igtf_line = counterpart_line.move_id.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
-                    advance = counterpart_line.move_id.line_ids.filtered(lambda line: line.account_id.id in advance_account)
-                    to_compare = reconciled_partial['amount'] + abs(igtf_line.balance)
-                    to_compare_alter = reconciled_partial.get('foreign_amount',0.0) + abs(igtf_line.foreign_balance)
-                    #raise UserError(reconciled_partials)
-                    if  to_compare > counterpart_line.move_id.amount_total:
-                        amount_igtf = 0.0
-                        amount_igtf_alter = 0.0
-                        
-                    else:
-                        amount_igtf = to_compare
-                        amount_igtf_alter = to_compare_alter
-
-                    if advance:
-                        amount_igtf = abs(advance.balance)
-                        amount_igtf_alter = abs(advance.foreign_balance)
-
-                    reconciled_vals.append({
-                        'name': counterpart_line.name,
-                        'journal_name': counterpart_line.journal_id.name,
-                        'company_name': counterpart_line.journal_id.company_id.name if counterpart_line.journal_id.company_id != move.company_id else False,
-                        #-----------------BINAURAL--------------
-                        'amount': amount_igtf if igtf_line else reconciled_partial['amount'],  
-                        #-----------------BINAURAL--------------
-                        'currency_id': move.company_id.currency_id.id if reconciled_partial['is_exchange'] else reconciled_partial['currency'].id,
-                        'date': counterpart_line.date,
-                        'partial_id': reconciled_partial['partial_id'],
-                        'account_payment_id': counterpart_line.payment_id.id,
-                        'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
-                        'move_id': counterpart_line.move_id.id,
-                        'ref': reconciliation_ref,
-                        # these are necessary for the views to change depending on the values
-                        'is_exchange': reconciled_partial['is_exchange'],
-                        'amount_company_currency': formatLang(self.env, abs(counterpart_line.balance), currency_obj=counterpart_line.company_id.currency_id),
-                        'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency),
-                        "foreign_id": counterpart_line.foreign_currency_id.id,
-                        "foreign_amount": abs(amount_igtf_alter) if igtf_line else abs(counterpart_line.foreign_amount_residual_currency)
-                    })
-                payments_widget_vals['content'] = reconciled_vals
-
-            if payments_widget_vals['content']:
-                move.invoice_payments_widget = payments_widget_vals
-            else:
-                move.invoice_payments_widget = False
+    igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
+    alter_bi_igtf = fields.Float('Alter BI IGTF',copy=False)
 
 
     @api.depends("tax_totals")
@@ -164,9 +85,13 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self:
-
-            rec.igtf_top_aply = rec.currency_id.round((rec.amount_total * (self.company_id.igtf_percentage / 100)))
-
+            
+            amount = rec.amount_total
+            if rec.company_currency_id == self.env.ref("base.VEF"):
+                    
+                amount = rec.foreign_total_billed
+            rec.igtf_top_aply = rec.company_currency_id.round((amount * (self.company_id.igtf_percentage / 100)))
+            
             receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
             account = [self.company_id.customer_account_igtf_id.id,self.company_id.supplier_account_igtf_id.id ]
@@ -181,24 +106,51 @@ class AccountMove(models.Model):
             total_bi_igtf = 0.0
             igtf_top = 0.0
             alter_bi_igtf = 0.0
+            bank_amount = 0.0
+            cxc_amount = 0.0
+           
             for payment_move in final_payment_moves:
-                
+                igtf_amount = 0.0
                 igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
                 bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.account_type in ['asset_cash'])
                 cxc = [payment_move.partner_id.property_account_receivable_id.id, payment_move.partner_id.property_account_payable_id.id]
                 cxc_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in cxc)
+
+                if bank_line:
+                    if bank_line[0].company_currency_id == self.env.ref("base.VEF"):
+                        bank_amount = abs(bank_line[0].foreign_balance) 
+                    else:
+                        bank_amount = abs(bank_line[0].balance)
+
+                if cxc_line:
+                    if cxc_line[0].company_currency_id == self.env.ref("base.VEF"):
+                        cxc_amount = abs(cxc_line[0].foreign_balance) 
+                    else:
+                        cxc_amount = abs(cxc_line[0].balance)
+
+                if igtf_line:
+                    if igtf_line[0].company_currency_id == self.env.ref("base.VEF"):
+                        igtf_amount = abs(igtf_line[0].foreign_balance) 
+                    else:
+                        igtf_amount = abs(igtf_line[0].balance)
+
   
                 if not igtf_line and bank_line:
-                    igtf_top += abs(bank_line[0].balance)
+                   
+                    igtf_top += bank_amount
                 amount_base_payment = 0.0
 
                 if igtf_line and bank_line:
-             
-                    amount_base_payment = abs(cxc_line[0].foreign_balance) if cxc_line[0].currency_id == self.env.ref("base.VEF") else abs(cxc_line[0].balance)
-                
+                   
+                    if (bank_amount* (rec.company_id.igtf_percentage / 100)) > igtf_amount:
+
+                        amount_base_payment = cxc_amount
+                    else:
+                        amount_base_payment = bank_amount
+
                 if igtf_line:
                     
-                    alter_bi_igtf += abs(bank_line[0].foreign_balance) if bank_line[0].currency_id == self.env.ref("base.VEF") else abs(igtf_line[0].balance)
+                    alter_bi_igtf += igtf_amount
 
                 total_bi_igtf += amount_base_payment
             
