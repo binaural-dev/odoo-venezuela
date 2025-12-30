@@ -99,8 +99,3 @@ class AccountPayment(models.Model):
                 payment.foreign_rate
             )
 
-    # @api.model
-    # def _get_trigger_fields_to_synchronize(self):
-    #     original_fields = super()._get_trigger_fields_to_synchronize()
-    #     additional_fields = ("foreign_rate", "foreign_inverse_rate")
-    #     return original_fields + additional_fields
