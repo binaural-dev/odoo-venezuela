@@ -29,14 +29,12 @@ class AccountPaymentRegister(models.TransientModel):
 
     foreign_rate = fields.Float(
         help="The rate of the payment",
-        digits="Tasa",
     )
     foreign_inverse_rate = fields.Float(
         help=(
             "Rate that will be used as factor to multiply of the foreign currency for the payment "
             "and the moves created by the wizard."
         ),
-        digits=(16, 15),
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
@@ -126,4 +124,29 @@ class AccountPaymentRegister(models.TransientModel):
 
 
 
-    
+    @api.model
+    def _get_wizard_values_from_batch(self, batch_result):
+        ''' Extract values from the batch passed as parameter (see '_get_batches')
+        to be mounted in the wizard view.
+        :param batch_result:    A batch returned by '_get_batches'.
+        :return:                A dictionary containing valid fields
+        '''
+        payment_values = batch_result['payment_values']
+        lines = batch_result['lines']
+        company = min(lines.company_id, key=lambda c: len(c.sudo().parent_ids)) if not self._from_sibling_companies(lines) else lines.company_id.root_id
+
+        source_amount = abs(sum(lines.mapped('amount_residual')))
+        if payment_values['currency_id'] == company.currency_id.id:
+            source_amount_currency = source_amount
+        else:
+            source_amount_currency = abs(sum(lines.mapped('amount_residual_currency')))
+
+        return {
+            'company_id': company.id,
+            'partner_id': payment_values['partner_id'],
+            'partner_type': payment_values['partner_type'],
+            'payment_type': payment_values['payment_type'],
+            'source_currency_id': payment_values['currency_id'],
+            'source_amount': source_amount,
+            'source_amount_currency': source_amount_currency,
+        }
