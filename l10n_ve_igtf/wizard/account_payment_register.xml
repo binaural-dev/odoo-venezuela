@@ -24,12 +24,15 @@
                             
                             <field name="amount_without_difference"  readonly="1"
                                 options="{'currency_field': 'currency_id'}" force_save="1"/>
+                                <field name="last_computed_amount" invisible="1"/>
                         </group>
 
                         
                       
                     </group>
                 </xpath>
+
+                
 
                 <xpath expr="//label[@for='amount']" position="attributes">
                     <attribute name="invisible"/> 
