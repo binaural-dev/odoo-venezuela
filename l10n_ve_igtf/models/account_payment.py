@@ -208,7 +208,7 @@ class AccountPaymentIgtf(models.Model):
                 precision = currency.rounding
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
-                   
+
                 rec._create_outbound_move_line_igtf_vals(vals)
             
     @api.depends('journal_id')

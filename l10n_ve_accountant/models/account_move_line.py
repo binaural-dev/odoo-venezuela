@@ -935,9 +935,9 @@ class AccountMoveLine(models.Model):
             credit_amount, credit_amount_currency = amounts_map.get((line._origin.id, 'credit'), (0.0, 0.0))
 
             # Subtract the values from the account.partial.reconcile to compute the residual amounts.
-            line.amount_residual = line.balance - (debit_amount + credit_amount)
-            line.amount_residual_currency = line.amount_currency - (debit_amount_currency + credit_amount_currency)
+            line.amount_residual = line.balance - debit_amount + credit_amount
+            line.amount_residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
 
-            line.reconciled = (
-                comp_curr.is_zero(line.amount_residual)
-                and foreign_curr.is_zero(line.amount_residual_currency))
+            # Para determinar si está conciliado, usamos una tolerancia mínima 
+            # en lugar de un cero absoluto, o comparamos directamente.
+            line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
