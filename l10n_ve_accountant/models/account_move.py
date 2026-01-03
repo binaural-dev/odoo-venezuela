@@ -169,8 +169,12 @@ class AccountMove(models.Model):
     @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
     def _compute_foreign_amount_residual(self):
         for rec in self:
-          
-            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+            if rec.amount_residual and rec.company_currency_id and rec.company_currency_id == self.env.ref("base.VEF"):
+                rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+            else:
+                rec.foreign_amount_residual = rec.amount_residual
+                
+            #rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
          
 
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
