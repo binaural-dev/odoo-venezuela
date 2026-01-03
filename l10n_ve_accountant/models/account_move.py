@@ -173,8 +173,7 @@ class AccountMove(models.Model):
                 rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
             else:
                 rec.foreign_amount_residual = rec.amount_residual
-                
-            #rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+
          
 
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
