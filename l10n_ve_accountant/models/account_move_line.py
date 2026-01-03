@@ -937,7 +937,19 @@ class AccountMoveLine(models.Model):
             # Subtract the values from the account.partial.reconcile to compute the residual amounts.
             line.amount_residual = line.balance - debit_amount + credit_amount
             line.amount_residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
-
             # Para determinar si está conciliado, usamos una tolerancia mínima 
             # en lugar de un cero absoluto, o comparamos directamente.
             line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
+
+
+    @api.onchange('amount_currency', 'currency_id')
+    def _inverse_amount_currency(self):
+        for line in self:
+            if line.currency_id == line.company_id.currency_id and line.balance != line.amount_currency:
+                line.balance = line.amount_currency
+            elif (
+                line.currency_id != line.company_id.currency_id
+                and not line.move_id.is_invoice(True)
+                and not self.env.is_protected(self._fields['balance'], line)
+            ):
+                line.balance = line.amount_currency / line.currency_rate

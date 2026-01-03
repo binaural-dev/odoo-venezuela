@@ -164,7 +164,7 @@ class AccountPaymentIgtf(models.Model):
                     {
                         "name": "IGTF",
                         "currency_id": rec.currency_id.id,
-                        "amount_currency": igtf_amount,
+                        "amount_currency": -igtf_amount,
                         "account_id": account_id,
                         "partner_id": rec.partner_id.id,
                     }
@@ -183,12 +183,11 @@ class AccountPaymentIgtf(models.Model):
                 credit_amount = -credit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     
-                    credit_amount = (-credit_line / rec.foreign_inverse_rate)
+                    credit_amount = -(credit_line / rec.foreign_inverse_rate)
                 currency = rec.currency_id 
                 precision = currency.rounding
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
-                   
                 rec._create_inbound_move_line_igtf_vals(vals)
                 
     def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
@@ -200,10 +199,10 @@ class AccountPaymentIgtf(models.Model):
                 currency = rec.currency_id
                 debit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
                 debit_line = debit_line_unrounded
-                debit_amount = -debit_line
+                debit_amount = debit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     
-                    debit_amount = (-debit_line / rec.foreign_inverse_rate)
+                    debit_amount = debit_line / rec.foreign_inverse_rate
                 currency = rec.currency_id 
                 precision = currency.rounding
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
