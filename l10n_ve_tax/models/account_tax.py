@@ -169,7 +169,6 @@ class AccountTax(models.Model):
 
         amounts = []
         invoice_payments = move.invoice_payments_widget
-        igtf_amount = 0
         if not invoice_payments:
             return amounts
 
@@ -179,15 +178,12 @@ class AccountTax(models.Model):
             move_id = payment.get('move_id')
             payment_id = self.env['account.move'].browse(move_id)
             foreign_amt = 0.0
-            igtf_amount = 0.0
             for line in payment_id.line_ids:
                 if line.account_id == self.env.company.customer_account_igtf_id or line.account_id == self.env.company.supplier_account_igtf_id:
-                    igtf_amount = abs(line.balance) if line.company_currency_id == self.env.ref("base.VEF") else abs(line.foreign_balance)
                 
                     foreign_amt = payment_id.amount_total if line.company_currency_id == self.env.ref("base.VEF") else payment_id.amount_total_signed
                 
             foreign_amt = foreign_amt
-            _logger.info(foreign_amt)
             amounts.append(foreign_amt)
         return amounts
 
