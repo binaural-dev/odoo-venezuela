@@ -56,7 +56,14 @@ class AccountMove(models.Model):
             if move.state == "cancel":
                 continue
 
-            if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
+            if move.move_type in ("in_invoice", "in_refund", "in_receipt"):
+                move.entry_in_period = True
+                continue
+
+            if move.move_type in ("out_invoice", "out_refund"):
+                if not move.invoice_date:
+                    continue
+
                 if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
                     if taxpayer_type == "special" and move.invoice_date.day < 15 < period_limit.day:
                         move.entry_in_period = False
