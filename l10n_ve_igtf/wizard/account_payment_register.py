@@ -59,7 +59,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date')
     def _compute_amount(self):
-        self.__class__._is_computing = True
         
         for wizard in self:
             
@@ -309,6 +308,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         source_amount = wizard_values['source_amount'] 
         
         lines = batch_result['lines']
+
+        sign = -1 if wizard_values.get('payment_type') == 'outbound' else 1
         
         if create and create.journal_id.is_igtf:
             total_igtf_amount = 0.0
@@ -321,7 +322,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     self.igtf_percentage
                 )
                 total_igtf_amount += igtf_for_invoice
-            final_amount_with_igtf = source_amount + total_igtf_amount
+            base_abs = abs(source_amount)
+            final_amount_with_igtf = (base_abs + total_igtf_amount) * sign
             
             wizard_values['source_amount'] = final_amount_with_igtf
             wizard_values['source_amount_currency'] = final_amount_with_igtf

@@ -174,6 +174,8 @@ class AccountMove(models.Model):
             else:
                 rec.foreign_amount_residual = rec.amount_residual
 
+         
+
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
     def _compute_inverse_rate_vef(self):
         Rate = self.env['res.currency.rate']
@@ -1073,3 +1075,6 @@ class AccountMove(models.Model):
                     and line.display_type == "product"
                 ):
                     raise ValidationError(_("All added lines must indicate the product."))
+                
+
+  
