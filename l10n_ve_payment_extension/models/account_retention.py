@@ -1057,12 +1057,15 @@ class AccountRetention(models.Model):
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []
         tax_groups = invoice_id.tax_totals["subtotals"][0]["tax_groups"]
+        
         for tax_group in tax_groups:
             taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["id"])
             if not taxes:
                 continue
             tax = taxes[0]
             retention_amount = tax_group["tax_amount"] * (withholding_amount / 100)
+
+        
             line_data = {
                 "name": _("Iva Retention"),
                 "invoice_type": invoice_id.move_type,
@@ -1070,7 +1073,10 @@ class AccountRetention(models.Model):
                 "payment_id": payment.id if payment else None,
                 "aliquot": tax.amount,
                 "iva_amount": tax_group["tax_amount"],
-                "invoice_total": invoice_id.tax_totals["total_amount_currency"],
+                "invoice_total": float_round(
+                    invoice_id.tax_totals["ves_amount_total"],
+                    precision_digits=4,
+                ),
                 "related_percentage_tax_base": withholding_amount,
                 "invoice_amount": tax_group["base_amount"],
                 "foreign_currency_rate": invoice_id.foreign_rate,
