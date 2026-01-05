@@ -9,6 +9,7 @@
     "depends": [
         "appointment_account_payment",
         "binaural_appointment",
+        "binaural_memberships",
         "web",
         "web_gantt",
         "calendar",
