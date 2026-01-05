@@ -10,21 +10,17 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
-            <xpath expr="//div[@class='d-flex gap-1 text-muted'][1]" position="after">
-                <!-- TODO REGRESAR A REPLACE Y CAMBIAR EL XPR A //div[@class='w-100'][1] descomentar
-                el codigo de abajo.
-            ESTO CUANDO CULMINEN LAS PRUEBAS DE LA GIRALDA
-             -->
+            <xpath expr="//div[@name='currency_div']" position="replace">
                 <div name="currency_div"
                     groups="base.group_multi_currency"
                     class="w-100"
                     invisible="move_type == 'entry'">
                     <div class="d-flex gap-1">
-                        <!-- <field name="currency_id"
+                        <field name="currency_id"
                                readonly="state != 'draft'"
                                class="oe_inline"
                                options="{'no_create': True}"
-                               context="{'search_default_active': 1, 'search_default_inactive': 1}"/> -->
+                               context="{'search_default_active': 1, 'search_default_inactive': 1}"/>
                     </div>
                     <div name="currency_conversion_div"
                         class="d-flex gap-1 text-muted"
@@ -51,6 +47,9 @@
                             options="{'no_open': True}" class="w-auto" />
                     </div>
                 </div>
+            </xpath>
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='account_id']" position="attributes">
+                <attribute name='optional'>Hide</attribute>
             </xpath>
             <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">
                 <attribute name='invisible'>True</attribute>
@@ -82,7 +81,7 @@
                     invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')" />
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Foreign currency" name="foreign_currency">
+                <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_accountant.group_foreign_currency_view_accountant">
                     <group>
                         <field name="foreign_currency_id" invisible='1' />
                         <field name="manually_set_rate" invisible="1" />
