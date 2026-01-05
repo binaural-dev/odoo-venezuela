@@ -69,6 +69,12 @@ class TestStockMoveDispatchGuideVES(TransactionCase):
             'currency_id': cls.currency_usd.id,
             'company_id': cls.company.id,
         })
+        
+        cls.pricelist_ves = cls.env['product.pricelist'].create({
+            'name': 'Tarifa VES',
+            'currency_id': cls.currency_vef.id,
+            'company_id': cls.company.id,
+        })
 
         # =========================================================
         # ESCENARIO A: Venta en USD (Usando la Pricelist)
@@ -88,7 +94,7 @@ class TestStockMoveDispatchGuideVES(TransactionCase):
         
         cls.so_usd.action_confirm()
         cls.so_usd.write({'date_order': cls.dt_past}) 
-
+        
         cls.move_usd = cls.so_usd.picking_ids.move_ids[0]
         cls.so_usd.picking_ids.write({'date_done': cls.dt_now})
 
@@ -99,6 +105,7 @@ class TestStockMoveDispatchGuideVES(TransactionCase):
             'name': 'SO-VES',
             'partner_id': cls.partner.id,
             'currency_id': cls.currency_vef.id,
+            'pricelist_id': cls.pricelist_ves.id,
             'date_order': cls.dt_past,
             'order_line': [Command.create({
                 'product_id': cls.product.id,
