@@ -42,6 +42,7 @@ const websiteReservationCalendar = publicWidget.Widget.extend({
   _onReservationClick: function(ev) {
     const $target = $(ev.currentTarget);
 
+    // --- Lectura de datos básicos (sin cambios) ---
     const reservationId = $target.data('reservation-id');
     const partnerName = $target.data('partner-name');
     const startTime = $target.data('start-time');
@@ -50,25 +51,64 @@ const websiteReservationCalendar = publicWidget.Widget.extend({
     const courtId = $target.data('court-id');
     const description = $target.data('description');
 
+    const guestsData = $target.data('guests');
+    let guests = [];
+    if (typeof guestsData === 'string') {
+        try {
+            guests = JSON.parse(guestsData);
+        } catch (e) {
+            console.error("Error parsing guest data:", e, guestsData);
+        }
+    } else if (Array.isArray(guestsData)) {
+        guests = guestsData;
+    }
+
     $('#modalCourtName').text(courtName);
     $('#modalPartnerName').text(partnerName);
     $('#modalReservationTime').text(`${startTime} - ${stopTime}`);
+    
     let formattedDescription = '';
-        if (description) {
-            const lines = description.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-            if (lines.length > 0) {
-                formattedDescription = '<ul>' + lines.map(line => `<li>${line}</li>`).join('') + '</ul>';
-            } else {
-                formattedDescription = `<p>${description}</p>`;
-            }
+    if (description) {
+        const lines = description.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        if (lines.length > 0) {
+            formattedDescription = '<ul>' + lines.map(line => `<li>${line}</li>`).join('') + '</ul>';
         } else {
-            formattedDescription = '<p>No hay descripción disponible.</p>';
+            formattedDescription = `<p>${description}</p>`;
         }
+    } else {
+        formattedDescription = '<p>No hay descripción disponible.</p>';
+    }
+    $('#modalDescription').html(formattedDescription);
 
-        $('#modalDescription').html(formattedDescription);
+
+    const $guestList = $('#modalGuestsList');
+    const $noGuestsMsg = $('#modalNoGuests');
+    const $guestsSection = $('#modalGuestsSection');
+    
+    $guestList.empty();
+
+    if (guests && guests.length > 0) {
+        guests.forEach(guest => {
+            const vat_str = guest.prefix_vat ? `${guest.prefix_vat}-${guest.vat}` : (guest.vat || 'N/A');
+            const name_str = guest.name || 'Invitado sin nombre';
+            
+            $guestList.append(
+                `<li class="list-group-item">${name_str} (CI: ${vat_str})</li>`
+            );
+        });
+        
+        $noGuestsMsg.hide();
+        $guestList.show();
+        $guestsSection.show();
+    } else {
+        $guestList.hide();
+        $noGuestsMsg.show();
+        $guestsSection.show();
+    }
 
     $('#reservationDetailsModal').modal('show');
   },
+
   _onNavigateDay: function(ev) {
     const $target = $(ev.currentTarget);
     if ($target.is('#btn-prev-day')) {
@@ -207,7 +247,7 @@ _searchReservationsPartners: async function() {
 
       let hoursCol  = '<div class="timesheet__col timesheet__col-time">';
       let hourKeys  = [];
-      for (let h = +open; h < +close; h++) {
+      for (let h = +open; h <= +close; h++) {
         const key   = h.toString().padStart(2, '0');
         const ampm  = h < 12 ? 'am' : 'pm';
         const show  = (h % 12 || 12) + ':00 ' + ampm;
@@ -219,45 +259,57 @@ _searchReservationsPartners: async function() {
     },
 
     _BuildColumnsWithReservationZone: async function (zones, hourKeys) {
-    const partners = await this._searchReservationsPartners();
-    const { open, close } = await jsonrpc('/get_opening_and_closing_time');
-    const minutesTotal = ((+close + 1) - open) * 60;
-    let html = '';
+        const partners = await this._searchReservationsPartners();
+        const { open, close } = await jsonrpc('/get_opening_and_closing_time');
+        const minutesTotal = ((+close + 1) - open) * 60; 
+        let html = '';
 
-    zones.forEach(zone => {
-        let col = `<div class="timesheet__col" data-court="${zone.id}">`;
-        hourKeys.forEach(k => {
-            col += `<div class="timesheet__block" data-hour="${k}"></div>`;
+        zones.forEach(zone => {
+            let col = `<div class="timesheet__col" data-court="${zone.id}">`;
+            
+            hourKeys.forEach(k => {
+                col += `<div class="timesheet__block" data-hour="${k}"></div>`;
+            });
+
+            const resForCourt = partners.filter(p => p.appointment_type_id.id === zone.id);
+            
+            resForCourt.forEach(r => {
+                const offsetMin = this._getMinuteOffset(r.start, +open);
+                const durMin    = this._getDuration(r.start, r.stop);
+                
+                const guestsJson = JSON.stringify(r.guest_details || []);
+                const canViewExtra = r.can_view_extra;
+                
+                const topPct    = offsetMin  / minutesTotal * 100;
+                const hPct      = durMin     / minutesTotal * 100;
+
+                const clickClass = canViewExtra ? 'js-reservation-click' : 'schedule-no-click';
+                const bookerName = r.appointment_booker_id.name;
+                const displayText = canViewExtra ? bookerName : 'Reservado';
+                
+                col += `
+                  <div class="schedule bg-primary ${clickClass}"
+                       style="top:${topPct}%; height:${hPct}%"
+                       data-reservation-id="${r.id}"
+                       data-partner-name="${bookerName}"
+                       data-start-time="${r.start}"
+                       data-stop-time="${r.stop}"
+                       data-court-name="${zone.name}"
+                       data-court-id="${zone.id}"
+                       data-description="${r.description}"
+                       data-guests='${guestsJson}'
+                       data-can-view-extra="${canViewExtra}"> 
+                       
+                       <strong>${r.start} - ${r.stop}</strong><br/>
+                       ${displayText}
+                  </div>`;
+            });
+
+            col += '</div>';
+            html += col;
         });
-
-        const resForCourt = partners.filter(p => p.appointment_type_id.id === zone.id);
-        resForCourt.forEach(r => {
-            const offsetMin = this._getMinuteOffset(r.start, +open);
-            const durMin    = this._getDuration(r.start, r.stop);
-
-            const topPct    = offsetMin  / minutesTotal * 100;
-            const hPct      = durMin     / minutesTotal * 100;
-
-            col += `
-              <div class="schedule bg-primary js-reservation-click"
-                   style="top:${topPct}%; height:${hPct}%"
-                   data-reservation-id="${r.id}"
-                   data-partner-name="${r.partner_id.name}"
-                   data-start-time="${r.start}"
-                   data-stop-time="${r.stop}"
-                   data-court-name="${zone.name}"
-                   data-court-id="${zone.id}"
-                   data-description="${r.description}">
-                   <strong>${r.start} - ${r.stop}</strong><br/>
-                   ${r.partner_id.name}
-              </div>`;
-        });
-
-        col += '</div>';
-        html += col;
-    });
-    return html;
-},
+        return html;
+    },
 
     _BuildPartnersInColumns: async function(zones, hourKeys) {
       const partners = await this._searchReservationsPartners();

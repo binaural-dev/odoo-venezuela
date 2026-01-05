@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_member_club_auto_suspend" model="ir.cron">
+        <field name="name">Automatically Suspend Club Members</field>
+        <field name="model_id" ref="binaural_club_socios.model_action_partner"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_suspend_club_members()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">24</field>
+        <field name="interval_type">hours</field>
+        <field name="numbercall">-1</field>
+        <field name="doall" eval="False"/>
+        <field name="active" eval="False"/>
+    </record>
+</odoo>

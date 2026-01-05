@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_memberships_inherit_photo" inherit_id="binaural_memberships.portal_memberships">
+        
+        <xpath expr="//form[contains(@t-att-action, '/my/memberships/add_guest/')]" position="attributes">
+            <attribute name="enctype">multipart/form-data</attribute>
+        </xpath>
+
+        <xpath expr="//div[hasclass('family-relation-field')]/.." position="after">
+            <div class="mb-3">
+                <label class="form-label">Foto de Perfil</label>
+                <input type="file" required="True" class="form-control" name="profile_image" accept="image/*" />
+                <div class="form-text text-muted">
+                    Sube una foto clara del rostro para el reconocimiento facial.
+                </div>
+            </div>
+        </xpath>
+
+    </template>
+</odoo>

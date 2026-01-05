@@ -1,0 +1,8 @@
+<odoo>
+    <data noupdate="1">
+        <record id="extra_info_calendar_view" model="res.groups">
+            <field name="name">Usuarios que pueden ver información adicional en el calendario</field>
+        </record>
+    </data>
+</odoo>
+

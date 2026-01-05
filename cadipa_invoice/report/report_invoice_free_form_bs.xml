@@ -165,8 +165,8 @@
                 </table>
 
                 <div class="clearfix mb-4">
-                    <div class="col-6 offset-6">
-                        <div class="col-6">
+                    <div id="total" class="row">
+                        <div class="col-6 offset-6">
                             <table class="table table-borderless" style="page-break-inside: avoid;">
                                 <t t-set="tax_totals" t-value="o.tax_totals"/>
                                 <t t-call="cadipa_invoice.document_tax_totals_bsf"/>
@@ -322,8 +322,9 @@
                     </table>
     
                     <div class="clearfix mb-4">
-                        <div class="col-6 offset-6">
-                            <div class="col-6">
+                        <div id="total" class="row">
+                            <div class="col-6 offset-6">
+
                                 <table class="table table-borderless" style="page-break-inside: avoid;">
                                     <t t-set="tax_totals" t-value="o.tax_totals"/>
                                     <t t-call="cadipa_invoice.document_tax_totals_bsf"/>
@@ -386,7 +387,7 @@
     </template>
     
     <record id="cadipa_invoice.action_invoice_free_form_bsf" model="ir.actions.report">
-        <field name="name">Forma Libre BS</field>
+        <field name="name">Factura Forma Libre BS</field>
         <field name="model">account.move</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">cadipa_invoice.template_invoice_free_form_bsf_cadipa_invoice</field>

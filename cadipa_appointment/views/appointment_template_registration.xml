@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="appointment_form_family_members_cadipa"
+        name="Website Appointment: family members picker cadipa"
+        inherit_id="binaural_appointment.appointment_form_family_members">
+        <xpath expr="//t[@t-if='membership and membership.membership_type_plan.applies_multi_members']" position="after">
+            <div class="row mb-4 mt-1">
+                <div class="col-sm-9 offset-sm-3">
+                    <div class="form-check">
+                        <input type="checkbox" 
+                               class="form-check-input" 
+                               id="attend_reservation" 
+                               name="attend_reservation" 
+                               checked="checked" 
+                               value="True"/>
+                        <label class="form-check-label fw-normal" for="attend_reservation">
+                            I will attend the reservation
+                        </label>
+                    </div>
+                </div>
+            </div>            
+        </xpath>
+    </template>
+</odoo>
