@@ -2,7 +2,7 @@
 import logging
 from odoo.tests import TransactionCase, tagged
 from odoo import Command
-from odoo.fields import Date, Datetime
+from odoo.fields import Datetime
 from datetime import timedelta
 
 _logger = logging.getLogger(__name__)
