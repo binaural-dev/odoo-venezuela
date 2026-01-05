@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_form_action_partner_inherit_photo" model="ir.ui.view">
+        <field name="name">action.partner.view.form.inherit.photo</field>
+        <field name="model">action.partner</field>
+        <field name="inherit_id" ref="binaural_club_socios.binaural_club_socios_view_form_action_partner"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='beneficiary_partner_ids']/tree/field[@name='name']" position="before">
+                <field name="image_128" 
+                       widget="image" 
+                       options="{'zoom': true, 'size': [40, 40]}" 
+                       string="Foto"
+                       optional="show"/>
+            </xpath>
+
+            <xpath expr="//button[@name='action_confirm']" position="after">
+                <button string="Sync to HikCentral" 
+                        name="action_sync_owner_to_hikcentral"
+                        help="Manually synchronize membership Owner to HikCentral."
+                        type="object" 
+                        class="btn-primary" 
+                        invisible="state in ['draft', 'pending']"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_form_action_partner_inherit_remove_editable" model="ir.ui.view">
+        <field name="name">action.partner.view.form.inherit.remove.editable</field>
+        <field name="model">action.partner</field>
+        <field name="inherit_id" ref="binaural_club_socios.binaural_club_socios_view_form_action_partner"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//field[@name='beneficiary_partner_ids']/tree" position="attributes">
+                <attribute name="editable"></attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='beneficiary_partner_ids']/tree" position="inside">
+
+                <button name="sync_beneficiary_to_hikcentral" 
+                    type="object" 
+                    icon="fa-cloud-upload"
+                    invisible="guest_state != 'confirmed' or parent.state in ['draft', 'pending']"
+                    help="Synchronize Beneficiaries to HikCentral"
+                    class="btn-outline-primary"/>
+
+                <button name="remove_beneficiary_from_hikcentral" 
+                    type="object" 
+                    icon="fa-times"
+                    invisible="guest_state != 'confirmed' or parent.state in ['draft', 'pending']"
+                    help="Remove Beneficiary from HikCentral"
+                    class="btn-outline-danger"/>                
+            </xpath>
+    </field>
+</record>
+</odoo>

@@ -10,6 +10,8 @@ from odoo import _, http, fields
 from odoo.http import request
 from odoo.osv import expression
 
+import logging
+_logger = logging.getLogger(__name__)
 
 FIELDSRESERVATION = ["name", "product_id"]
 FIELDSRESERVATIONMADE = [
@@ -34,7 +36,7 @@ class MainCalendar(http.Controller):
     website=True,
     )
     def website_reservation_calendar(self, **kw):
-        reservation_zones = request.env["appointment.type"].sudo().search([("active", "=", True)])
+        reservation_zones = request.env["appointment.type"].sudo().search([("active", "=", True), ("is_published", "=", True)])
         return request.render(
             "cadipa_reservation_calendar.cadipa_reservation_calendar",
             {
@@ -66,6 +68,7 @@ class MainCalendar(http.Controller):
         domain = [
             ('product_id', '!=', False),
             ('active', '=', True),
+            ("is_published", "=", True)
         ]
         if ids:
             domain.append(('id', 'in', ids))
@@ -78,6 +81,9 @@ class MainCalendar(http.Controller):
         data = {"status": 200, "msg": _("Success")}
         reservation_list = []
         try:
+            can_view_extra = request.env.user.has_group(
+                'cadipa_reservation_calendar.extra_info_calendar_view'
+            )
             domain_for_events = self._domain_reservation_made(date=date)
 
             reservations = request.env["calendar.event"].sudo().search(
@@ -85,7 +91,16 @@ class MainCalendar(http.Controller):
                 order="appointment_type_id asc"
             )
             for res in reservations:
-                res_dict = self._info_partner_with_reservation(res)
+                res_dict = self._info_partner_with_reservation(res)                
+                guest_details = []
+                for guest in res.guest_ids:
+                    guest_details.append({
+                        'name': guest.name,
+                        'vat': guest.vat,
+                        'prefix_vat': guest.prefix_vat,
+                    })                
+                res_dict['guest_details'] = guest_details
+                res_dict['can_view_extra'] = can_view_extra              
                 reservation_list.append(res_dict)
         except Exception as e:
             data.update(
@@ -158,6 +173,9 @@ class MainCalendar(http.Controller):
     def _info_partner_with_reservation(self, reservation):
         partner_id = {}
         invoice = {}
+        if not reservation:
+            return False
+        
         if reservation.invoice_ids:
             invoice = {
                 "id": reservation.invoice_ids[0].id,
@@ -165,11 +183,8 @@ class MainCalendar(http.Controller):
                 "state": reservation.invoice_ids[0].state,
                 "payment_state": reservation.invoice_ids[0].payment_state,
             }
-        if reservation.partner_ids:
-            for partner in reservation.partner_ids.filtered(
-                lambda p: p.id != reservation.partner_id.id
-            ):
-                partner_id = {"id": partner.id, "name": partner.name}
+        partner_id = {"id": reservation.partner_id.id, "name": reservation.partner_id.name}
+        booker_id = {"id": reservation.appointment_booker_id.id, "name": reservation.appointment_booker_id.name} 
         start_time_12h = reservation.start.astimezone(pytz.timezone(request.env.user.tz)).strftime(
             "%I:%M %p"
         )
@@ -208,6 +223,7 @@ class MainCalendar(http.Controller):
             "categ_ids": {"id": reservation.categ_ids[0].id, "name": reservation.categ_ids[0].name} if reservation.categ_ids else {},
             "responsible": {"id": reservation.partner_id.id, "name": reservation.partner_id.name},
             "partner_id": partner_id,
+            "appointment_booker_id": booker_id,
             "message": {
                 "question": question.name if question else '',
                 "answer": answer,

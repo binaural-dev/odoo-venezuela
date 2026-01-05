@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240313\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250917\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-11 19:53+0000\n"
-"PO-Revision-Date: 2024-04-11 19:53+0000\n"
+"POT-Creation-Date: 2025-12-27 16:03+0000\n"
+"PO-Revision-Date: 2025-12-27 16:03+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,6 +17,8 @@ msgstr ""
 
 #. module: cadipa_appointment
 #. odoo-javascript
+#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
+#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #, python-format
@@ -119,15 +121,39 @@ msgid "Appointment Close Hour"
 msgstr "Hora de cierre"
 
 #. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__appointment_lead_time_days
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_config_settings__appointment_lead_time_days
+msgid "Appointment Lead Time (days)"
+msgstr "Tiempo de restricción para el espacio (días)"
+
+#. module: cadipa_appointment
 #: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__appointment_open_hour
 #: model:ir.model.fields,field_description:cadipa_appointment.field_res_config_settings__appointment_open_hour
 msgid "Appointment Open Hour"
 msgstr "Hora de apertura"
 
 #. module: cadipa_appointment
+#: model:ir.model,name:cadipa_appointment.model_appointment_type
+msgid "Appointment Type"
+msgstr "Tipo de cita"
+
+#. module: cadipa_appointment
+#: model:ir.actions.server,name:cadipa_appointment.ir_cron_member_club_auto_suspend_ir_actions_server
+msgid "Automatically Suspend Club Members"
+msgstr "Suspender automáticamente a los miembros del club"
+
+#. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
-msgid "Cadipa Appoinment Configuration"
-msgstr "Configuración de Reservas"
+msgid ""
+"Automatically suspend memberships that are inactive for a certain period."
+msgstr ""
+"Suspender automáticamente las membresías inactivas durante un cierto "
+"período."
+
+#. module: cadipa_appointment
+#: model:ir.model,name:cadipa_appointment.model_calendar_event
+msgid "Calendar Event"
+msgstr "Calendario de eventos"
 
 #. module: cadipa_appointment
 #: model:ir.model,name:cadipa_appointment.model_res_company
@@ -140,18 +166,148 @@ msgid "Config Settings"
 msgstr "Opciones de configuración"
 
 #. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
+msgid "Configuración de Reservas"
+msgstr ""
+
+#. module: cadipa_appointment
 #. odoo-javascript
-#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
+#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
+#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
+#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
+#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
 #, python-format
-msgid "Create"
+msgid "Confirmar selección ("
 msgstr ""
 
 #. module: cadipa_appointment
 #. odoo-javascript
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
+#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
+#, python-format
+msgid "Create"
+msgstr "Crear"
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__membership_suspension_delay_days
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_config_settings__membership_suspension_delay_days
+msgid "Days of delay before suspension"
+msgstr "Días de demora antes de la suspensión"
+
+#. module: cadipa_appointment
+#. odoo-python
+#: code:addons/cadipa_appointment/controllers/appointment.py:0
+#, python-format
+msgid ""
+"Due to company policy, you cannot schedule another appointment of this type "
+"(%s) within a %s-day period."
+msgstr "Debido a la política de la empresa, no puede programar otra cita en este espacio "
+"(%s) dentro de un período de %s días."
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__membership_auto_suspend
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_config_settings__membership_auto_suspend
+msgid "Enable automatic suspension of memberships"
+msgstr "Habilitar la suspensión automática de membresías"
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_calendar_event__guest_ids
+msgid "Guests"
+msgstr "Invitados"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.appointment_form_family_members_cadipa
+msgid "I will attend the reservation"
+msgstr "Asistiré a la reserva"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.view_calendar_event_form_inherit_guests
+msgid "Invitados del evento"
+msgstr ""
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__maximum_child_age
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_config_settings__maximum_child_age
+msgid "Maximum age (years)"
+msgstr "Edad máxima (años)"
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,help:cadipa_appointment.field_res_company__maximum_child_age
+#: model:ir.model.fields,help:cadipa_appointment.field_res_config_settings__maximum_child_age
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
+msgid ""
+"Maximum age in years that a minor can have to be included in a membership."
+msgstr ""
+"Edad máxima en años que puede tener un menor para ser incluido en una "
+"membresía."
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__minimum_child_age
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_config_settings__minimum_child_age
+msgid "Minimum age (years)"
+msgstr "Edad mínima (años)"
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,help:cadipa_appointment.field_res_company__minimum_child_age
+#: model:ir.model.fields,help:cadipa_appointment.field_res_config_settings__minimum_child_age
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
+msgid ""
+"Minimum age in years that a minor must have to be included in a membership."
+msgstr ""
+"Edad mínima en años que debe tener un menor para ser incluido en una "
+"membresía."
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,help:cadipa_appointment.field_res_company__appointment_lead_time_days
+#: model:ir.model.fields,help:cadipa_appointment.field_res_config_settings__appointment_lead_time_days
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
+msgid "Minimum number of days in advance to book an appointment."
+msgstr "Número de días para reservar una cita en el mismo espacio."
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
+msgid "Number of days before an inactive membership is suspended."
+msgstr "Número de días antes de que se suspenda una membresía inactiva."
+
+#. module: cadipa_appointment
+#: model:ir.model,name:cadipa_appointment.model_action_partner
+msgid "Partner Action"
+msgstr "Membresia de Beneficiario"
+
+#. module: cadipa_appointment
+#. odoo-javascript
+#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
+#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #, python-format
 msgid "Plan existing"
 msgstr "Plan existen"
+
+#. module: cadipa_appointment
+#: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
+msgid "Restrict appointment booking to active members only."
+msgstr ""
+
+#. module: cadipa_appointment
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__restrict_appointment_to_members
+#: model:ir.model.fields,field_description:cadipa_appointment.field_res_config_settings__restrict_appointment_to_members
+msgid "Restrict appointments to members only"
+msgstr "Restringir las citas a miembros"
+
+#. module: cadipa_appointment
+#. odoo-javascript
+#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
+#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
+#, python-format
+msgid "Selecciona uno o más horarios disponibles"
+msgstr ""
+
+#. module: cadipa_appointment
+#. odoo-python
+#: code:addons/cadipa_appointment/controllers/appointment.py:0
+#: code:addons/cadipa_appointment/controllers/appointment.py:0
+#, python-format
+msgid "The number of guests exceeds the resource capacity."
+msgstr "El número de invitados excede la capacidad del recurso."
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
@@ -162,3 +318,10 @@ msgstr ""
 "La hora de apertura afectará la vista Gantt del evento del calendario para "
 "mostrar solo las horas desde este valor de Hora de apertura de cita hasta la"
 " Hora de cierre de cita."
+
+#. module: cadipa_appointment
+#. odoo-python
+#: code:addons/cadipa_appointment/controllers/appointment.py:0
+#, python-format
+msgid "You must select at least one guest or attend yourself."
+msgstr "Debes seleccionar al menos un invitado o asistir tú mismo."

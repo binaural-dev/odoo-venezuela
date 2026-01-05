@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hikcentral_users_form_simple_inherit" model="ir.ui.view">
+        <field name="name">view.hikcentral.users.form.simple.inherit</field>
+        <field name="model">hikcentral.users</field>
+        <field name="inherit_id" ref="binaural_hikvision.view_hikcentral_users_form_simple"/>
+        <field name="arch" type="xml">
+        
+            <xpath expr="//field[@name='hikcentral_person_api_id']" position="after">
+                <field name="comes_from_calendar_reservation" invisible="1"/>
+                <field name="event_id" options="{'no_create': True}" invisible="not comes_from_calendar_reservation"/>
+                <field name="appointment_guest_id" options="{'no_create': True}" invisible="not comes_from_calendar_reservation"/>
+                <field name="parent_user_id" invisible="not parent_user_id"/>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

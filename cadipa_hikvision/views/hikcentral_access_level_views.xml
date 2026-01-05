@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hikcentral_access_level_tree_inherit" model="ir.ui.view">
+        <field name="name">hikcentral.access.level.tree.inherit</field>
+        <field name="model">hikcentral.access.level</field>
+        <field name="inherit_id" ref="binaural_hikvision.view_hikcentral_access_level_tree"/>
+        <field name="arch" type="xml">
+            <field name="access_level_id" position="after">
+                <field name="default_membership_access_level"/>
+            </field>
+        </field>
+    </record>
+</odoo>

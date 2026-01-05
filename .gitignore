@@ -51,3 +51,4 @@ setup/win32/static/postgresql*.exe
 /enterprise
 docker-compose.yml
 .env
+!.mergify.yml

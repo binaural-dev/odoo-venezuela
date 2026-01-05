@@ -13,3 +13,32 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.appointment_close_hour',
         readonly=False
     )
+
+    minimum_child_age = fields.Integer(
+        related='company_id.minimum_child_age',
+        readonly=False,
+    )
+
+    maximum_child_age = fields.Integer(
+        related='company_id.maximum_child_age',
+        readonly=False,
+    )
+
+    membership_auto_suspend = fields.Boolean(
+        related='company_id.membership_auto_suspend',
+        readonly=False,
+    )
+    membership_suspension_delay_days = fields.Integer(
+        related='company_id.membership_suspension_delay_days',
+        readonly=False,
+    )
+
+    restrict_appointment_to_members = fields.Boolean(
+        related='company_id.restrict_appointment_to_members',
+        readonly=False,
+    )
+
+    appointment_lead_time_days = fields.Integer(
+        related='company_id.appointment_lead_time_days',
+        readonly=False,
+    )

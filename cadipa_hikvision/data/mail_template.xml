@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <record id="mail_template_visitor_qr_invitation_base" model="mail.template">
+            <field name="name">Invitación de Visitante con QR (Base)</field>
+            <field name="model_id" ref="binaural_hikvision.model_hikcentral_visitor_info"/>
+            <field name="subject">Tu Invitación para: {{ ctx.get('event_name') }}</field>
+            <field name="email_to">{{ object.email }}</field>
+            <field name="body_html" type="html">
+<table border="0" cellpadding="0" cellspacing="0" style="padding-top: 16px; background-color: #F1F1F1; font-family: Verdana, Arial, sans-serif; color: #454748; width: 100%; border-collapse: separate;">
+    <tr>
+        <td align="center">
+            <table border="0" cellpadding="0" cellspacing="0" width="590" style="padding: 16px; background-color: #FFFFFF; color: #454748; border-collapse: separate;">
+                <tbody>
+                    <tr>
+                        <td align="center" style="min-width: 590px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: #00A09D; padding: 10px 20px; border-collapse: separate; border-radius: 8px 8px 0 0;">
+                                <tr>
+                                    <td valign="middle">
+                                        <h2 style="font-size: 24px; color: #FFFFFF; margin: 0;">Invitación a la Cita</h2>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="min-width: 590px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: white; padding: 20px; border-collapse: separate;">
+                                <tr>
+                                    <td valign="top" style="font-size: 14px; line-height: 1.6;">
+                                        <p>Hola <strong>{{ object.first_name }} {{ object.last_name or '' }}</strong>,</p>
+                                        <p>Nos complace confirmar tu visita. Para agilizar tu acceso a nuestras instalaciones, hemos generado el siguiente código QR personal.</p>
+                                        
+                                        <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #F8F8F8; border: 1px solid #EAEAEA; border-radius: 5px; margin: 20px 0; padding: 15px;">
+                                            <tr>
+                                                <td style="padding: 5px 0;"><strong>Evento:</strong></td>
+                                                <td style="padding: 5px 0;">{{ ctx.get('event_name') }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0;"><strong>Fecha y Hora:</strong></td>
+                                                <td style="padding: 5px 0;">{{ ctx.get('event_start_str') }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0;"><strong>Anfitrión:</strong></td>
+                                                <td style="padding: 5px 0;">{{ ctx.get('event_host') }}</td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <p style="text-align: center;">Por favor, presenta este código QR a tu llegada:</p>
+                                        
+                                        <div style="text-align: center; margin: 25px 0;">
+                                            <img src="cid:qr_code_image" alt="Código QR de Acceso" style="max-width: 250px; border: 1px solid #ddd; padding: 5px; background-color: white;"/>
+                                        </div>
+
+                                        <p>¡Te esperamos!</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                            <td align="center" style="min-width: 590px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: #F1F1F1; color: #454748; padding: 8px; border-collapse: separate; border-radius: 0 0 8px 8px;">
+                                <tr>
+                                    <td style="text-align: center; font-size: 12px; opacity: 0.7;">
+                                        Este es un correo generado automáticamente. Por favor, no respondas a este mensaje.
+                                        <br/>
+                                        Gestionado por <strong>{{ ctx.get('company_name', 'tu empresa') }}</strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+</table>
+</field>
+        </record>
+
+    </data>
+</odoo>

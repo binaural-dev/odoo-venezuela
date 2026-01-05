@@ -36,4 +36,24 @@
             />
         </field>
     </record>
+
+    <record id="view_calendar_event_form_inherit_guests" model="ir.ui.view">
+        <field name="name">calendar.event.form.inherit.guests</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Invitados del evento" name="page_custom_guests">
+                    <field name="guest_ids" nolabel="1" readonly="1">
+                        <tree>
+                            <field name="name"/>
+                            <field name="prefix_vat" optional="show"/>
+                            <field name="vat"/>
+                            <field name="email" optional="show"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
 </odoo>
