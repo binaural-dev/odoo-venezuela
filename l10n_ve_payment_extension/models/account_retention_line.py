@@ -45,6 +45,7 @@ class AccountRetentionLine(models.Model):
     display_invoice_number = fields.Char(
         string="Invoice Number", compute="_compute_display_invoice_number", store=True
     )
+    
     invoice_amount = fields.Float(
         string="Taxable income",
         digits="Tasa",
@@ -52,7 +53,9 @@ class AccountRetentionLine(models.Model):
         store=True,
         readonly=False,
     )
-    invoice_total = fields.Float(string="Total invoiced", digits="Tasa", store=True)
+
+    invoice_total = fields.Float(string="Total invoiced Bs", digits="Tasa", store=True)
+
     iva_amount = fields.Float(string="IVA", digits=(16, 2))
 
     retention_amount = fields.Float(
