@@ -26,6 +26,19 @@ class StockMove(models.Model):
         """
         self.ensure_one()
 
+        if not self.sale_line_id:
+            return {
+                "quantity": self.quantity or 0.0,
+                "discount_percentage": 0.0,
+                "discount_amount": 0.0,
+                "tax_percentage": 0.0,
+                "tax_amount": 0.0,
+                "subtotal": 0.0,
+                "subtotal_after_discount": 0.0,
+                "price_unit": 0.0,
+                "total_with_tax": 0.0,
+            }
+
         price_unit = self.price_unit_ves_for_dispatch_guide()
 
         quantity = self.quantity or 0.0
@@ -70,6 +83,9 @@ class StockMove(models.Model):
             float: The unit price converted to VES for the dispatch guide.
         """
         self.ensure_one()
+        if not self.sale_line_id:
+            return 0.0
+
         currency = self.sale_line_id.currency_id or self.sale_line_id.order_id.currency_id
        
         if currency == self.env.company.currency_id:
