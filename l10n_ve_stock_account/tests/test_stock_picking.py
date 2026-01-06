@@ -1,4 +1,4 @@
-from odoo import _
+from odoo import _, fields
 from odoo.tests import Form
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
@@ -51,7 +51,7 @@ class TestStockPickingInvoice(TransactionCase):
                 "amount_type": "percent",
                 "type_tax_use": "sale",
                 "tax_group_id": self.tax_group.id,
-                "country_id": self.env.ref("base.ve").id,
+                "company_id": self.company.id,
             }
         )
 
@@ -175,29 +175,26 @@ class TestStockPickingInvoice(TransactionCase):
         return order
 
     def create_purchase_order(self):
-        rate = 5.0
         order = self.env["purchase.order"].create(
             {
                 "partner_id": self.partner.id,
-            }
-        )
-
-        order_line_01 = self.env["purchase.order.line"].create(
-            {
-                "product_id": self.product.id,
-                "product_uom_qty": 2,
-                "price_unit": 100,
-                "taxes_id": [(6, 0, [self.tax_iva16.id])],
-                "order_id": order.id,
+                "company_id": self.company.id,
                 "currency_id": self.currency_vef.id,
-                "display_type": False,
-                "name": "Test Product Line",
-            }
-        )
-
-        order.write(
-            {
-                "order_line": [order_line_01.id],
+                "order_line": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "Test Product Line",
+                            "product_id": self.product.id,
+                            "product_qty": 2.0,
+                            "product_uom": self.product.uom_id.id,
+                            "price_unit": 100.0,
+                            "taxes_id": [(6, 0, [self.tax_iva16.id])],
+                            "date_planned": fields.Datetime.now(),
+                        },
+                    )
+                ],
             }
         )
         return order
