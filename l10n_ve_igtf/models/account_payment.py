@@ -164,7 +164,7 @@ class AccountPaymentIgtf(models.Model):
                     {
                         "name": "IGTF",
                         "currency_id": rec.currency_id.id,
-                        "amount_currency": -igtf_amount,
+                        "amount_currency": igtf_amount,
                         "account_id": account_id,
                         "partner_id": rec.partner_id.id,
                     }
@@ -178,7 +178,7 @@ class AccountPaymentIgtf(models.Model):
             lines = [line for line in vals]
             if rec.payment_type == "inbound":
                 currency = rec.currency_id
-                credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
+                credit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
                 credit_line = credit_line_unrounded
                 credit_amount = -credit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
@@ -197,7 +197,7 @@ class AccountPaymentIgtf(models.Model):
             if rec.payment_type == "outbound":
 
                 currency = rec.currency_id
-                debit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
+                debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
                 debit_line = debit_line_unrounded
                 debit_amount = debit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
