@@ -31,7 +31,7 @@ class AccountPaymentRegister(models.TransientModel):
             The id of the foreign currency of the company
         """
         return self.env.company.foreign_currency_id.id or False
-    
+
     def default_alternate_rate_display_amount(self):
         """
         This method is used to get the foreign currency of the company and set it as the default
@@ -42,7 +42,22 @@ class AccountPaymentRegister(models.TransientModel):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.foreign_currency_id.inverse_company_rate or False
+        company = self.env.company
+        foreign_currency = company.foreign_currency_id
+
+        if not foreign_currency:
+            return 0.0
+
+        rate_record = self.env['res.currency.rate'].search([
+            ('currency_id', '=', foreign_currency.id),
+            ('company_id', '=', company.id),
+            ('name', '<=', fields.Date.today())
+        ], limit=1, order="name desc")
+
+        if rate_record:
+            return rate_record.inverse_company_rate
+
+        return 0.0
 
     foreign_currency_id = fields.Many2one(
         "res.currency", default=default_alternate_currency

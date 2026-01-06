@@ -1,9 +1,8 @@
-from odoo.tools.float_utils import float_round
 from odoo import api, models, _
-from odoo.exceptions import ValidationError
 from odoo.tools.misc import formatLang
 
 import logging
+import re
 
 _logger = logging.getLogger(__name__)
 
@@ -16,9 +15,6 @@ class AccountTax(models.Model):
         self, base_lines, currency, company, cash_rounding=None
     ):
         
-        
-        
-
         ## Base currency
         res = super()._get_tax_totals_summary(
             base_lines, currency, company, cash_rounding
@@ -129,8 +125,6 @@ class AccountTax(models.Model):
             currency_obj=currency_id
         )
 
-        
-
         #only VES amounts
         res['formatted_base_amount_currency_ves'] = formatLang(
             env=self.env,
@@ -147,7 +141,16 @@ class AccountTax(models.Model):
             value=res.get('total_amount', 0.0),
             currency_obj=ves_currency
         )
-    
+
+        # Extrae solo el monto numérico de 'formatted_total_amount_currency_ves' (sin símbolo)
+        formatted_total_ves = res.get("formatted_total_amount_currency_ves", "")
+        # Quita cualquier carácter que no sea número, punto o coma
+        try:
+            only_amount_ves = "".join(re.findall(r"[\d.,]+", formatted_total_ves))
+            only_amount_ves = only_amount_ves.rstrip('.').replace(',', '')
+            res["ves_amount_total"] = float(only_amount_ves)
+        except ValueError:
+            res["ves_amount_total"] = 0.0
     
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
