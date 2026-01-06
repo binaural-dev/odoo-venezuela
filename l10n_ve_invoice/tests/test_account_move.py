@@ -3,6 +3,8 @@ import datetime
 from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from unittest.mock import patch
+from datetime import date as real_date
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -173,6 +175,37 @@ class TestAccountMove(TransactionCase):
 
         return invoice
 
+    def _assert_entry_in_period(self, invoice_date, today_date, taxpayer_type, expected):
+        """Helper to create a move, patch today's date and assert entry_in_period."""
+        # Set taxpayer type
+        self.company.write({"taxpayer_type": taxpayer_type})
+        # Create move
+        move = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            move_type="out_refund",
+            invoice_date=invoice_date,
+            journal=self.purchase_journal,
+        )
+
+        class FakeDate(real_date):
+            @classmethod
+            def today(cls):
+                return today_date
+
+        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date', FakeDate):
+            move._compute_entry_in_period()
+
+        if expected:
+            self.assertTrue(move.entry_in_period)
+        else:
+            self.assertFalse(move.entry_in_period)
+
     def test_01_create_in_invoice(self):
         
         invoice = self._create_invoice(
@@ -218,3 +251,31 @@ class TestAccountMove(TransactionCase):
             f"The error message should indicate that: {exception}",
         )
         _logger.info("test_02_error_create_in_invoice --- successfully.")
+
+    def test_03_normal_taxpayer_invoice_in_period(self):
+        """Regular taxpayer: invoice from the same month before the deadline -> True"""
+        self.company.write({"taxpayer_type": "formal"})
+        invoice_date = real_date(2026, 1, 4)
+        today_date = real_date(2026, 1, 3)
+        self._assert_entry_in_period(invoice_date, today_date, 'formal', True)
+
+    def test_04_special_taxpayer_before_15_in_period(self):
+        """Special taxpayer, today < 15 -> deadline period day 15 -> invoice day 10 considered IN period (True)"""
+        self.company.write({'taxpayer_type': 'special'})
+        invoice_date = real_date(2026, 1, 10)
+        today_date = real_date(2026, 1, 10)
+        self._assert_entry_in_period(invoice_date, today_date, 'special', True)
+
+    def test_05_special_taxpayer_after_15_out_of_period(self):
+        """Special taxpayer, today >= 15 -> last day of the deadline period -> invoice date <15 remains OUT period (False)"""
+        self.company.write({'taxpayer_type': 'special'})
+        invoice_date = real_date(2026, 1, 10)
+        today_date = real_date(2026, 1, 20)
+        self._assert_entry_in_period(invoice_date, today_date, 'special', False)
+
+    def test_06_invoice_different_month_not_in_period(self):
+        """Invoice from previous month -> outside the fiscal period"""
+        self.company.write({'taxpayer_type': False})
+        invoice_date = real_date(2025, 12, 31)
+        today_date = real_date(2026, 1, 5)
+        self._assert_entry_in_period(invoice_date, today_date, False, False)
