@@ -97,10 +97,6 @@
                             <span t-out="o.partner_id.contact_address or ''" />
 
                         </td>
-                        <td class="w-50 pb-0 my-0 pt-1">
-                            <span class="fw-bold">Tasa:</span>
-                            <span t-out="o.sale_id.foreign_rate or ''" />
-                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -165,14 +161,14 @@
                         <t t-set="operation_code" t-value="o.operation_code"/>
                         <thead>
                             <tr>
-                                <th class="text-center">Item</th>
+                                <th class="text-center">Cod.</th>
                                 <th class="text-center">Descripción</th>
                                 <th class="text-center">Cant.</th>
                                 <th class="text-center">Unidad</th>
-                                <th class="text-center">Peso</th>
+                                <th class="text-center" t-if='o.operation_code != "internal" and not o.company_id.hide_weight_field_dispatch_guide'>Peso</th>
                                 <th class="text-center" t-if="o.operation_code != 'internal'">Precio</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">Dscto.</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">Impuesto</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">Dscto.</th>
+                                <th class="text-center" t-if="o.operation_code != 'internal'">IVA</th>
                                 <th class="text-center" t-if="o.operation_code != 'internal'">Total</th>
                             </tr>
                         </thead>
@@ -201,7 +197,7 @@
                                         <t t-out="line.product_uom.name" />
                                     </td>
                                     <!-- weight -->
-                                    <td class="text-center">
+                                    <td class="text-center" t-if='o.operation_code != "internal" and not o.company_id.hide_weight_field_dispatch_guide'>
                                         <t
                                             t-out="(line.product_id.weight or 0) * (line.quantity or 0)" />
                                     </td>
@@ -217,7 +213,7 @@
                                         </t>
                                     </td>
                                     <!-- discount percentage -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                    <td class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">
                                         <t t-out="line_values['discount_percentage'] or 0" />%
                                     </td>
                                     <!-- tax percentage  -->
@@ -233,17 +229,7 @@
                                     </td>
                                     <!-- total -->
                                     <td class="text-center" t-if="o.operation_code != 'internal'">
-                                        <t 
-                                            t-out="line_values['total_with_tax']"
-                                            t-options='{"widget": "float", "precision": o.get_digits()}' 
-                                        />
-                                        <t t-if="o.get_foreign_currency_is_vef()">                                           
-                                            <t t-set="foreign_symbol" t-value="request.env.ref('base.VEF').symbol"/>
-                                            <t t-out="foreign_symbol"/>
-                                        </t>
-                                        <t t-else="">
-                                            <t t-out="o.company_id.currency_id.symbol"/>
-                                        </t>
+                                        <t t-out="line_values['total_with_tax']"/>
                                     </td>
                                 </tr>
                             </t>
@@ -270,9 +256,9 @@
         <div class="footer container-fluid">
 
             <!-- Tabla de Firmas -->
-            <div class="row mt-4">
+            <div class="row">
                 <div class="col-12">
-                    <table class="table table-bordered text-center">
+                    <table class="table table-bordered text-center table-sm">
                         <thead class="table-light">
                             <tr>
                                 <th>Transporte (Conductor)</th>
@@ -283,27 +269,37 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="text-start">
+                                <td class="text-start" style="border-bottom: none; vertical-align: top;">
                                     <strong>Nombre:</strong> <br /> C.I: <br /> Marca vehículo: <br />
                                     Placa batea: <br /> Placa chasis: <br />
-        <br />
-        <strong>Firma:</strong>
-                                    ________________________ </td>
-                                <td class="text-start">
+                                </td>
+                                <td class="text-start" style="border-bottom: none; vertical-align: top;">
                                     <strong>Nombre:</strong> <br /> C.I: <br /> Fecha: <br />
-        <br />
-        <strong>
-                                    Firma:</strong> ________________________ </td>
-                                <td class="text-start">
+                                </td>
+                                <td class="text-start" style="border-bottom: none; vertical-align: top;">
                                     <strong>Nombre:</strong> <br /> C.I: <br /> Fecha: <br />
-        <br />
-        <strong>
-                                    Firma:</strong> ________________________ </td>
-                                <td class="text-start">
+                                </td>
+                                <td class="text-start" style="border-bottom: none; vertical-align: top;">
                                     <strong>Nombre:</strong> <br /> C.I: <br /> Fecha: <br />
-        <br />
-        <strong>Firma
-                                    y sello:</strong> ________________________ </td>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-start" style="border-top: none; vertical-align: bottom;">
+                                    <br/>
+                                    <strong>Firma:</strong> ________________________
+                                </td>
+                                <td class="text-start" style="border-top: none; vertical-align: bottom;">
+                                    <br/>
+                                    <strong>Firma:</strong> ________________________
+                                </td>
+                                <td class="text-start" style="border-top: none; vertical-align: bottom;">
+                                    <br/>
+                                    <strong>Firma:</strong> ________________________
+                                </td>
+                                <td class="text-start" style="border-top: none; vertical-align: bottom;">
+                                    <br/>
+                                    <strong>Firma y sello:</strong> ________________________
+                                </td>
                             </tr>
                         </tbody>
                     </table>
