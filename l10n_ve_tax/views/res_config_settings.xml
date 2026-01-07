@@ -155,6 +155,9 @@
                                 <field name="not_show_general_aliquot_purchase_international" invisible="not_show_international_purchase_in_book"/>
                                 <field name="not_show_reduced_aliquot_purchase_international" invisible="not_show_international_purchase_in_book"/>
                                 <field name="not_show_extend_aliquot_purchase_international" invisible="not_show_international_purchase_in_book"/>
+                                <field name="not_show_total_purchases_with_international_iva" invisible="not_show_international_purchase_in_book"/>
+                                <field name="not_show_exempt_total_purchases" invisible="not_show_international_purchase_in_book"/>
+
                             </div>
                             <div class="o_setting_right_pane" >
                                 <label for="not_show_international_purchase_in_book"/>
@@ -162,6 +165,8 @@
                                 <label for="not_show_general_aliquot_purchase_international" invisible="not_show_international_purchase_in_book"/>
                                 <label for="not_show_reduced_aliquot_purchase_international" invisible="not_show_international_purchase_in_book"/>
                                 <label for="not_show_extend_aliquot_purchase_international" invisible="not_show_international_purchase_in_book"/>
+                                <label for="not_show_total_purchases_with_international_iva" invisible="not_show_international_purchase_in_book"/>
+                                <label for="not_show_exempt_total_purchases" invisible="not_show_international_purchase_in_book"/>
                             </div>
                         </div>
                     </block>
