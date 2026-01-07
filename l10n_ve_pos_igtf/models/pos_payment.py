@@ -56,16 +56,11 @@ class PosPayment(models.Model):
                 {"amount": payment.amount},
                 payment.payment_date,
             )
-            amount_igtf = float_round(
-                payment.igtf_amount,
-                precision_rounding=payment.currency_id.rounding,
-            )
+            amount_igtf = payment.igtf_amount
+                
             if payment.include_igtf:
                 if not (amounts["amount"] - amount_igtf == 0):
-                    amount_without_igtf = float_round(
-                        payment.foreign_amount - payment.foreign_igtf_amount,
-                        precision_rounding=payment.currency_id.rounding,
-                    )
+                    amount_without_igtf = payment.foreign_amount - payment.foreign_igtf_amount
                     add_credit_line_vals = pos_session._credit_amounts(
                         {
                             "account_id": accounting_partner.with_company(
@@ -73,13 +68,7 @@ class PosPayment(models.Model):
                             ).property_account_receivable_id.id,
                             "partner_id": accounting_partner.id,
                             "move_id": payment_move.id,
-                            "not_foreign_recalculate": True,
-                            "foreign_debit": abs(amount_without_igtf)
-                            if amount_without_igtf < 0
-                            else 0,
-                            "foreign_credit": abs(amount_without_igtf)
-                            if amount_without_igtf > 0
-                            else 0,
+                            
                         },
                         amounts["amount"] - amount_igtf,
                         amounts["amount_converted"] - amount_igtf,
@@ -90,13 +79,7 @@ class PosPayment(models.Model):
                         "account_id": self.env.company.customer_account_igtf_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
-                        "not_foreign_recalculate": True,
-                        "foreign_debit": abs(payment.foreign_igtf_amount)
-                        if payment.foreign_igtf_amount < 0
-                        else 0,
-                        "foreign_credit": abs(payment.foreign_igtf_amount)
-                        if payment.foreign_igtf_amount > 0
-                        else 0,
+                        
                     },
                     amount_igtf,
                     amount_igtf,
@@ -109,13 +92,7 @@ class PosPayment(models.Model):
                         ).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
-                        "not_foreign_recalculate": True,
-                        "foreign_debit": abs(payment.foreign_amount)
-                        if payment.foreign_amount < 0
-                        else 0,
-                        "foreign_credit": abs(payment.foreign_amount)
-                        if payment.foreign_amount > 0
-                        else 0,
+                       
                     },
                     amounts["amount"],
                     amounts["amount_converted"],
@@ -142,13 +119,7 @@ class PosPayment(models.Model):
                     "partner_id": accounting_partner.id
                     if is_split_transaction and is_reverse
                     else False,
-                    "not_foreign_recalculate": True,
-                    "foreign_debit": abs(payment.foreign_amount)
-                    if payment.foreign_amount > 0
-                    else 0,
-                    "foreign_credit": abs(payment.foreign_amount)
-                    if payment.foreign_amount < 0
-                    else 0,
+                    
                 },
                 amounts["amount"],
                 amounts["amount_converted"],
