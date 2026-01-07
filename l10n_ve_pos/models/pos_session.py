@@ -49,7 +49,11 @@ class PosSession(models.Model):
         """
         res = super()._loader_params_res_currency()
         res["search_params"]["domain"] = [
-            ("id", "in", [self.config_id.currency_id.id, self.config_id.foreign_currency_id.id])
+            (
+                "id",
+                "in",
+                [self.config_id.currency_id.id, self.config_id.foreign_currency_id.id],
+            )
         ]
         res["search_params"]["fields"].append("inverse_rate")
         return res
@@ -97,7 +101,7 @@ class PosSession(models.Model):
         :param custom_search_params: a dictionary containing params of a search_read()
         """
         params = self._loader_params_product_product()
-        self = self.with_context(**params['context'])
+        self = self.with_context(**params["context"])
         # custom_search_params will take priority
         params["search_params"] = {**params["search_params"], **custom_search_params}
         products = (
@@ -148,7 +152,7 @@ class PosSession(models.Model):
     #                     order_payment.payment_method_id.cross_account_journal
     #                     and order_payment.payment_method_id.cross_journal
     #                 ):
-                        
+
     #                     if order_payment.amount < 0:
     #                         line_vals = session._line_vals_move_cross_outgoing(order_payment)
     #                     else:
@@ -291,17 +295,24 @@ class PosSession(models.Model):
     #         return move_lines
 
     def _get_pos_ui_product_category(self, params):
-        categories = self.env['product.category'].search_read(**params['search_params'])
-        category_by_id = {category['id']: category for category in categories}
-        
+        categories = self.env["product.category"].search_read(**params["search_params"])
+        category_by_id = {category["id"]: category for category in categories}
+
         for category in categories:
             try:
-                category['parent'] = category_by_id[category['parent_id'][0]] if category['parent_id'] else None
+                category["parent"] = (
+                    category_by_id[category["parent_id"][0]]
+                    if category["parent_id"]
+                    else None
+                )
             except KeyError as e:
-                raise ValueError(_(f"The category %s does not belong to this company.") % category['parent_id'][1]) from e
-                
+                raise ValueError(
+                    _(f"The category %s does not belong to this company.")
+                    % category["parent_id"][1]
+                ) from e
+
         return categories
-    
+
     def _process_pos_ui_product_product(self, products):
         """
         Modify the list of products to add the categories as well as adapt the lst_price
@@ -309,36 +320,41 @@ class PosSession(models.Model):
         """
         if self.config_id.currency_id != self.company_id.currency_id:
             for product in products:
-                product['lst_price'] = self.company_id.currency_id._convert(
-                    product['lst_price'], 
+                product["lst_price"] = self.company_id.currency_id._convert(
+                    product["lst_price"],
                     self.config_id.currency_id,
-                    self.company_id, 
-                    fields.Date.today()
+                    self.company_id,
+                    fields.Date.today(),
                 )
-        
-        categories = self._get_pos_ui_product_category(self._loader_params_product_category())
-        product_category_by_id = {category['id']: category for category in categories}
+
+        categories = self._get_pos_ui_product_category(
+            self._loader_params_product_category()
+        )
+        product_category_by_id = {category["id"]: category for category in categories}
 
         for product in products:
-            categ_id = product['categ_id'][0]
+            categ_id = product["categ_id"][0]
             if categ_id in product_category_by_id:
-                product['categ'] = product_category_by_id[categ_id]
+                product["categ"] = product_category_by_id[categ_id]
             else:
-                raise ValueError(_(f"The category %s does not belong to this company.") % product['categ_id'][1])
+                raise ValueError(
+                    _(f"The category %s does not belong to this company.")
+                    % product["categ_id"][1]
+                )
 
-            product['image_128'] = bool(product['image_128'])
+            product["image_128"] = bool(product["image_128"])
 
     def _create_cross_move(self, payment, line_vals):
         """
-         This method create the move for the transitory account sets zero.
+             This method create the move for the transitory account sets zero.
 
-    #     Args:
-    #         payment (pos.payment): payment from PoS
-    #         line_vals (account.move.line): move line to move cross
+        #     Args:
+        #         payment (pos.payment): payment from PoS
+        #         line_vals (account.move.line): move line to move cross
 
-    #     Returns:
-    #         account.move: Pos payment method adjustment move.
-    #     """
+        #     Returns:
+        #         account.move: Pos payment method adjustment move.
+        #"""
 
     #     move = self.env["account.move"].create(
     #         {
@@ -354,14 +370,21 @@ class PosSession(models.Model):
     #     )
     #     return move
 
-    def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
+    def action_pos_session_close(
+        self,
+        balancing_account=False,
+        amount_to_balance=0,
+        bank_payment_method_diffs=None,
+    ):
         """
         When the session is closed, the cross move is created, and the rounding issue is corrected.
         """
-        res = super().action_pos_session_close(balancing_account, amount_to_balance, bank_payment_method_diffs)
+        res = super().action_pos_session_close(
+            balancing_account, amount_to_balance, bank_payment_method_diffs
+        )
 
         # Obtener todas las órdenes de esta sesión de POS
-        orders = self.env['pos.order'].search([('session_id', '=', self.id)])
+        orders = self.env["pos.order"].search([("session_id", "=", self.id)])
 
         for order in orders:
             # Ajuste de redondeo en el total de la orden
@@ -383,11 +406,11 @@ class PosSession(models.Model):
         return res
 
     def _apply_rounding(self, amount):
-        """ Aplica el redondeo a dos decimales (ajusta según la moneda) """
+        """Aplica el redondeo a dos decimales (ajusta según la moneda)"""
         return amount
 
     def _adjust_accounting_entries(self, order):
-        """ Ajusta o crea los apuntes contables asociados a la orden """
+        """Ajusta o crea los apuntes contables asociados a la orden"""
         # Aquí puedes añadir la lógica de ajustes contables si es necesario
         pass
 
@@ -404,7 +427,6 @@ class PosSession(models.Model):
     #                     line.price_subtotal = self._apply_rounding(line.price_subtotal / (1 + (tax.amount / 100)))
     #                     line.price_total = self._apply_rounding(line.price_total / (1 + (tax.amount / 100)))
     #                     break
-
 
     # def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
     #     res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
@@ -431,9 +453,9 @@ class PosSession(models.Model):
     #     return res
 
     def _create_split_account_payment(self, payment, amounts):
-        res = super(PosSession, self.with_context(from_pos=True))._create_split_account_payment(
-            payment, amounts
-        )
+        res = super(
+            PosSession, self.with_context(from_pos=True)
+        )._create_split_account_payment(payment, amounts)
         account_payment = res.move_id.payment_id
 
         account_payment.write(
@@ -537,7 +559,10 @@ class PosSession(models.Model):
     #         return move_lines
 
     def _create_account_move(
-        self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None
+        self,
+        balancing_account=False,
+        amount_to_balance=0,
+        bank_payment_method_diffs=None,
     ):
         """
         This function was overwritten to assign the cash rate since it was previously assigned
@@ -618,13 +643,15 @@ class PosSession(models.Model):
                                 order.date_order,
                             )
                         else:
-                            combine_invoice_receivables[payment_method] = self._update_amounts(
-                                combine_invoice_receivables[payment_method],
-                                {
-                                    "amount": 0,
-                                    "foreign_amount": payment.foreign_amount,
-                                },
-                                order.date_order,
+                            combine_invoice_receivables[payment_method] = (
+                                self._update_amounts(
+                                    combine_invoice_receivables[payment_method],
+                                    {
+                                        "amount": 0,
+                                        "foreign_amount": payment.foreign_amount,
+                                    },
+                                    order.date_order,
+                                )
                             )
 
         data.update(
@@ -640,16 +667,38 @@ class PosSession(models.Model):
         return data
 
     def _update_amounts(
-        self, old_amounts, amounts_to_add, date, round=True, force_company_currency=False
+        self,
+        old_amounts,
+        amounts_to_add,
+        date,
+        round=False,
+        force_company_currency=False,
     ):
         new_amounts = super()._update_amounts(
             old_amounts, amounts_to_add, date, round, force_company_currency
         )
+        _logger.warning("new amounts %s", new_amounts)
         foreign_amount = amounts_to_add.get("foreign_amount", 0)
         new_amounts.update(
             {"foreign_amount": old_amounts.get("foreign_amount", 0) + foreign_amount}
         )
         return new_amounts
+
+    def _credit_amounts(
+        self,
+        partial_move_line_vals,
+        amount,
+        amount_converted,
+        force_company_currency=False,
+    ):
+        res = super()._credit_amounts(
+            partial_move_line_vals,
+            amount,
+            amount_converted,
+            force_company_currency=False,
+        )
+        _logger.warning("res %s", res)
+        return res
 
     def _create_invoice_receivable_lines(self, data):
         res = super()._create_invoice_receivable_lines(data)
@@ -680,7 +729,9 @@ class PosSession(models.Model):
     def _create_bank_payment_moves(self, data):
         res = super()._create_bank_payment_moves(data)
         payment_to_receivable_lines = res.get("payment_to_receivable_lines")
-        payment_method_to_receivable_lines = res.get("payment_method_to_receivable_lines")
+        payment_method_to_receivable_lines = res.get(
+            "payment_method_to_receivable_lines"
+        )
         combine_receivables_bank = data.get("combine_receivables_bank")
 
         for payment_method, amounts in combine_receivables_bank.items():
@@ -716,12 +767,16 @@ class PosSession(models.Model):
         for payment, amounts in split_receivables_cash.items():
             lines = split_cash_receivable_lines + split_cash_statement_lines
             for line in lines:
-                self.set_foreign_amount_in_line(line, amounts["foreign_amount"], amounts["amount"])
+                self.set_foreign_amount_in_line(
+                    line, amounts["foreign_amount"], amounts["amount"]
+                )
 
         for payment_method, amounts in combine_receivables_cash.items():
             lines = combine_cash_receivable_lines + combine_cash_statement_lines
             for line in lines:
-                self.set_foreign_amount_in_line(line, amounts["foreign_amount"], amounts["amount"])
+                self.set_foreign_amount_in_line(
+                    line, amounts["foreign_amount"], amounts["amount"]
+                )
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
@@ -733,8 +788,11 @@ class PosSession(models.Model):
             if (
                 abs(line.credit) > 0
                 and float_compare(
-                    line.credit, abs(amount), precision_rounding=self.currency_id.rounding
-                ) == 0
+                    line.credit,
+                    abs(amount),
+                    precision_rounding=self.currency_id.rounding,
+                )
+                == 0
             ):
                 line.not_foreign_recalculate = True
                 line.foreign_credit = abs(foreign_amount)
@@ -742,22 +800,40 @@ class PosSession(models.Model):
                     other_line.foreign_debit = abs(line.foreign_credit)
             if (
                 abs(line.debit) > 0
-                and float_compare(line.debit, abs(amount), precision_rounding=self.currency_id.rounding) == 0
+                and float_compare(
+                    line.debit,
+                    abs(amount),
+                    precision_rounding=self.currency_id.rounding,
+                )
+                == 0
             ):
                 line.not_foreign_recalculate = True
                 line.foreign_debit = abs(foreign_amount)
                 if other_line.foreign_credit != line.foreign_debit:
                     other_line.foreign_credit = abs(line.foreign_debit)
 
-    #@override
+    # @override
     def _loader_params_res_company(self):
         return {
-            'search_params': {
-                'domain': [('id', '=', self.company_id.id)],
-                'fields': [
-                    'currency_id', 'email', 'street', 'website', 'company_registry', 'vat', 'name', 'phone', 'partner_id',
-                    'country_id', 'state_id', 'tax_calculation_rounding_method', 'nomenclature_id', 'point_of_sale_use_ticket_qr_code',
-                    'point_of_sale_ticket_unique_code', 'account_fiscal_country_id',
+            "search_params": {
+                "domain": [("id", "=", self.company_id.id)],
+                "fields": [
+                    "currency_id",
+                    "email",
+                    "street",
+                    "website",
+                    "company_registry",
+                    "vat",
+                    "name",
+                    "phone",
+                    "partner_id",
+                    "country_id",
+                    "state_id",
+                    "tax_calculation_rounding_method",
+                    "nomenclature_id",
+                    "point_of_sale_use_ticket_qr_code",
+                    "point_of_sale_ticket_unique_code",
+                    "account_fiscal_country_id",
                 ],
             }
         }
