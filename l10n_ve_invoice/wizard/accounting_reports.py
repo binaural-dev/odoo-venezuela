@@ -144,7 +144,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         }
 
         fields_purchase_book_line.update(
-            {
+            {   
+                "total_purchases_iva_international": taxes.get("international_amount_taxed", 0),
+                "total_purchases_not_iva_international": taxes.get("international_tax_base_exempt_aliquot", 0) * multiplier,
                 "amount_reduced_aliquot_international": taxes.get("amount_reduced_aliquot_international", 0) * multiplier,
                 "amount_general_aliquot_international": taxes.get("amount_general_aliquot_international", 0) * multiplier,
                 "amount_extend_aliquot_international": taxes.get("amount_extend_aliquot_international", 0) * multiplier,
@@ -785,6 +787,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "amount_reduced_aliquot": 0.0,
                 "amount_general_aliquot": 0.0,
                 "amount_extend_aliquot": 0.0,
+                "international_amount_taxed":0.0,
+                "international_tax_base_exempt_aliquot": 0.0,
                 "tax_base_reduced_aliquot_international": 0,
                 "amount_reduced_aliquot_international": 0,
                 "tax_base_general_aliquot_international": 0,
@@ -834,6 +838,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             else tax_totals.get(fields_taxed[1])
         ) if tax_totals else 0
 
+        international_amount_taxed = (
+            tax_totals.get(fields_taxed[1]) * -1
+            if is_credit_note and tax_totals.get(fields_taxed[1])
+            else tax_totals.get(fields_taxed[1])
+        ) if tax_totals and move.journal_id.is_purchase_international else 0
 
         tax_result.update(
             {
@@ -847,6 +856,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "amount_general_aliquot": 0,
                 "tax_base_extend_aliquot": 0,
                 "amount_extend_aliquot": 0,
+                "international_amount_taxed":international_amount_taxed if move.journal_id.is_purchase_international else 0,
+                "international_tax_base_exempt_aliquot": 0.0,
                 "tax_base_reduced_aliquot_international": 0,
                 "amount_reduced_aliquot_international": 0,
                 "tax_base_general_aliquot_international": 0,
@@ -910,7 +921,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         reduced_aliquot = self.company_id.reduced_aliquot_purchase_international.tax_group_id.id
 
                     if not self.company_id.not_show_extend_aliquot_purchase_international:
-                        exent_aliquot = self.company_id.extend_aliquot_purchase_international.tax_group_id.id
+                        extend_aliquot = self.company_id.extend_aliquot_purchase_international.tax_group_id.id
                    
                     
                 else:
@@ -987,6 +998,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         elif group_id and group_id == extend_aliquot_no_deductible_id:
                             tax_result["tax_base_extend_aliquot_no_deductible"] = base
                             tax_result["amount_extend_aliquot_no_deductible"] = tax
+                is_exempt = tax_group_id == exent_aliquot
+                if is_exempt:
+                    tax_result.update(
+                        {
+                            "tax_base_exempt_aliquot": tax.get("tax_group_base_amount"),
+                            "amount_exempt_aliquot": tax.get("tax_group_amount"),
+                            "international_tax_base_exempt_aliquot": tax.get("tax_group_base_amount") if move.journal_id.is_purchase_international else 0
+                        }
+                    )
 
         tax_result.update({
             "amount_untaxed": amount_untaxed,
@@ -1550,6 +1570,22 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 {"name": "Alicuota Int. (31%)", "field": "extend_aliquot", "format": "percent"},
                 {"name": "IVA Int. 31%", "field": "amount_extend_aliquot_international", "format": "number"}
             ])
+
+        international_total_fields = [
+        ]
+
+        if not company.not_show_total_purchases_with_international_iva:
+            international_total_fields.append(            
+                {"name": "Total compras con IVA", "field": "total_purchases_iva_international", "format": "number"},
+            )
+
+        if not company.not_show_exempt_total_purchases:
+            international_total_fields.append(            
+                {"name": "Total compras exentas", "field": "total_purchases_not_iva_international", "format": "number"},
+            )
+
+        if international_total_fields:
+            purchase_groups.append({'header': 'TOTALES INTERNACIONALES', 'fields': international_total_fields})
 
         if international_fields:
             purchase_groups.append({'header': 'COMPRAS INTERNACIONALES', 'fields': international_fields})
