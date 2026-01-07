@@ -6,8 +6,8 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.31",
-    "depends": [
+    "version": "17.0.0.0.35",
+        "depends": [
         "base",
         "l10n_ve_accountant",
         "l10n_ve_rate",
@@ -15,12 +15,13 @@
         "l10n_ve_invoice",
         "l10n_ve_tax_payer",
     ],
+       
+    
     "data": [
         "views/account_journal.xml",
         "views/res_config_settings.xml",
         "report/invoice_free_form.xml",
         "wizard/account_payment_register.xml",
-        "data/ir_actions_server.xml",
     ],
     "images": ["static/description/icon.png"],
     "assets": {
