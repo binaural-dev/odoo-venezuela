@@ -27,9 +27,12 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
             person_api_id = event_details.get("personCode")
 
             if event_type == "198914" and person_api_id and person_api_id != "-1":
+                _logger.info("""CADIPA: Procesando revocación automática para %s""", person_api_id)
                 hik_user = hik_users_model.search(
-                    [("hikcentral_person_api_id", "=", person_api_id)], limit=1
+                    [("hikcentral_person_code", "=", person_api_id)], limit=1
                 )
+
+                _logger.info("CADIPA: Usuario Hikcentral encontrado: %s", hik_user)
 
                 if hik_user:
                     try:
