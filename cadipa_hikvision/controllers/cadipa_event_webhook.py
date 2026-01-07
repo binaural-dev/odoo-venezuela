@@ -49,11 +49,6 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 if not hik_user.is_visitor:
                     return
 
-                _logger.info(
-                    "CADIPA: Usuario encontrado: %s. Usando credenciales de: %s",
-                    hik_user.name,
-                    company_creds.name,
-                )
                 try:
                     if company_creds:
                         hik_user.with_company(
