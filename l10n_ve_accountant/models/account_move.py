@@ -112,6 +112,7 @@ class AccountMove(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         store=True,
+        digits='Tasa',
         tracking=True,
         readonly=False,
     )
@@ -732,8 +733,8 @@ class AccountMove(models.Model):
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.foreign_rate = rate_values.get("foreign_rate", 0)
-            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            move.foreign_rate = rate_values.get("foreign_rate")
+            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
             
 
     @api.depends("tax_totals")
