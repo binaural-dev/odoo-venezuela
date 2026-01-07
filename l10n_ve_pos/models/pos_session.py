@@ -384,7 +384,7 @@ class PosSession(models.Model):
 
     def _apply_rounding(self, amount):
         """ Aplica el redondeo a dos decimales (ajusta según la moneda) """
-        return round(amount, 2)
+        return amount
 
     def _adjust_accounting_entries(self, order):
         """ Ajusta o crea los apuntes contables asociados a la orden """
