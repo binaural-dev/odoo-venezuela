@@ -20,15 +20,15 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
         hik_users_model = request.env["hikcentral.users"].sudo()
         company_model = request.env["res.company"].sudo()
 
-        company_creds = company_model.search(
-            [("hikcentral_base_url", "!=", False)], limit=1
-        )
+        company_creds = company_model.search([
+            ("hikcentral_base_url", "!=", False),
+            ("hikcentral_user_key", "!=", False),
+            ("hikcentral_user_secret", "!=", False)
+        ], limit=1)
 
         if not company_creds:
-            company_creds = request.env.ref(
-                "base.main_company", raise_if_not_found=False
-            )
-
+            return
+        
         for event_data in events_list:
             event_type = str(event_data.get("eventType", ""))
             event_details = (event_data or {}).get("data", {}) or {}
@@ -49,11 +49,6 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 if not hik_user.is_visitor:
                     return
 
-                _logger.info(
-                    "CADIPA: Usuario encontrado: %s. Usando credenciales de: %s",
-                    hik_user.name,
-                    company_creds.name,
-                )
                 try:
                     if company_creds:
                         hik_user.with_company(
