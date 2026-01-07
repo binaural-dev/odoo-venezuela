@@ -54,7 +54,17 @@ class AccountMove(models.Model):
             self.invoice_date = fields.Date.today()
 
     def action_post(self):
+        
         for record in self:
+            # Validación: Solo si existe documento de origen (compra o venta)
+            if record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+                for line in record.invoice_line_ids:
+                    if line.display_type in ("line_section", "line_note"):
+                        continue
+                    if not line.tax_ids:
+                        # Agregue un impuesto a cada línea de producto. No se permite confirmar la factura si alguna línea de producto no tiene impuesto.
+                        raise ValidationError(_("Add a tax to each product line. You cannot confirm the invoice if any product line is missing a tax."))
+
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 
