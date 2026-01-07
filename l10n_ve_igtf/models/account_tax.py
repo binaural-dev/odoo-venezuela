@@ -92,7 +92,7 @@ class AccountTax(models.Model):
 
                 foreign_base_igtf = invoice.bi_igtf
                 base_igtf =  invoice.bi_igtf / rate
-
+            
 
         igtf_base_amount = base_igtf 
         igtf_foreign_base_amount = foreign_base_igtf 

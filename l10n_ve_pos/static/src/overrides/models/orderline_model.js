@@ -5,7 +5,6 @@ import { patch } from "@web/core/utils/patch";
 import {
   formatFloat,
   roundDecimals as round_di,
-  roundPrecision as round_pr,
   floatIsZero,
 } from "@web/core/utils/numbers";
 
