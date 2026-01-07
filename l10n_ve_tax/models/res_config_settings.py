@@ -84,13 +84,19 @@ class ResConfigSettings(models.TransientModel):
 
     not_show_extend_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_extend_aliquot_purchase_international", readonly=False)
 
+    not_show_total_purchases_with_international_iva = fields.Boolean(related="company_id.not_show_total_purchases_with_international_iva", readonly=False)
+
+    not_show_exempt_total_purchases = fields.Boolean(related="company_id.not_show_exempt_total_purchases", readonly=False)
+
     not_show_international_purchase_in_book = fields.Boolean(string ="Hide international alicuotes", related="company_id.not_show_international_purchase_in_book", readonly=False)
 
 
     @api.onchange(
         'not_show_reduced_aliquot_purchase_international',
         'not_show_extend_aliquot_purchase_international',
-        'not_show_general_aliquot_purchase_international')
+        'not_show_general_aliquot_purchase_international',
+        'not_show_total_purchases_with_international_iva',
+        'not_show_international_purchase_in_book')
     def _onchange_international_purchase(self):
       
         for rec in self:
