@@ -12,7 +12,6 @@
     <data noupdate="1">
         <record id="group_edit_invoice_tax_ids" model="res.groups">
             <field name="name">Edit Taxes on Invoice Lines</field>
-            <field name="category_id" ref="base.module_category_accounting"/>
         </record>
     </data>
 </odoo>
