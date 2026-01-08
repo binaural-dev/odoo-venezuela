@@ -2,6 +2,7 @@
 
 import { Navbar } from "@point_of_sale/app/navbar/navbar";
 import { patch } from "@web/core/utils/patch";
+import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 
 patch(Navbar.prototype, {
   async _on_click_mf_test() {
@@ -16,7 +17,8 @@ patch(Navbar.prototype, {
 
       }
     } catch (e) {
-      this.showPopup("ErrorPopup", {
+      console.error("Error al probar la conexión con la máquina fiscal: ", e);
+      return this.env.services.popup.add(ErrorPopup, {
         title: "No se ha podido conectar a la Maquina fiscal",
       });
     }
