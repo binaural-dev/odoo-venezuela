@@ -169,6 +169,7 @@ class ActionPartner(models.Model):
             "partner_id": self.owner_id.id,
             "is_visitor": False,
             "start_date": start_date,
+            "comment": self.number,
             "end_date": end_date,
             "department_id": department_id,
             "access_level_ids": [(6, 0, default_access_levels.ids)],
