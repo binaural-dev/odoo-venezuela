@@ -8,7 +8,7 @@
             <field name="model">account.retention</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
-                <form string="Retention">
+                <form string="Retention" duplicate="false">
                     <header>
                         <button name="action_draft" type="object"
                             string="Convert to draft"
@@ -22,6 +22,9 @@
                     <sheet>
                         <group colspan="4" col="4">
                             <!-- Invisible fields -->
+                            <field name="name" invisible="1" force_save="1" />
+                            <field name="available_invoice_ids" invisible="1" />
+                            <field name="actual_invoice_ids" invisible="1" />
                             <field name="base_currency_is_vef" invisible="1" />
                             <field name="company_currency_id" invisible="1" />
                             <field name="foreign_currency_id" invisible="1" />
@@ -42,7 +45,7 @@
                                 invisible="1"
                                 readonly="type == 'in_invoice'" />
                             <field name="date"
-                                readonly="state in ['emitted', 'cancel']" />
+                                readonly="type == 'in_invoice' or state in ['emitted', 'cancel']" />
                         </group>
                         <notebook colspan="4">
                             <page name="retention_lines" string="Retention Lines">
@@ -50,10 +53,14 @@
                                     invisible="not partner_id"
                                     readonly="state in ['emitted', 'cancel']">
                                     <tree editable="bottom">
+                                        <field name="company_currency_id" column_invisible="True" />
+                                        <field name="foreign_currency_id" column_invisible="True" />
                                         <field name="name" readonly="1" force_save="1" />
                                         <field
                                             name="move_id"
-                                            domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('islr_voucher_number', '=',False)]"
+                                            options="{'no_create': True}"
+                                            force_save="1"
+                                            domain="[('id', 'in', parent.allowed_lines_move_ids), ('islr_voucher_number', '=',False)]"
                                         />
                                         <field name="code"
                                             column_invisible="not parent.code_visible" />
@@ -170,7 +177,7 @@
                                     readonly="state in ['emitted', 'cancel']">
                                     <tree string="Payments" editable="bottom">
                                         <field name="date" />
-                                        <field name="name" />
+                                        <field name="name" readonly="1" force_save="1" />
                                         <field name="currency_id" column_invisible="True" />
                                         <field name="amount" widget="monetary"
                                             options="{'currency_field': 'currency_id'}" />
