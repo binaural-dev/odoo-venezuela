@@ -50,6 +50,9 @@ class ActionPartner(models.Model):
         for record in self:
             HikUsers = self.env["hikcentral.users"]
 
+            if record.state == 'draft':
+                continue
+
             if record.state in ["suspended", "canceled"] or record.suspended_membership:
                 if record.owner_id:
                     owner_hik = HikUsers.search(
