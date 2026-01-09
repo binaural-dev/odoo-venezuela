@@ -4,16 +4,29 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250821\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-05 13:26+0000\n"
-"PO-Revision-Date: 2025-09-05 13:26+0000\n"
+"POT-Creation-Date: 2025-12-02 15:48+0000\n"
+"PO-Revision-Date: 2025-12-02 15:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#, python-format
+msgid ""
+"\n"
+"                        <div>\n"
+"                            <ul>%s</ul>\n"
+"                        </div>\n"
+"                        "
+msgstr ""
 
 #. module: l10n_ve_invoice
 #: model:ir.actions.report,print_report_name:l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice
@@ -202,12 +215,14 @@ msgstr "Asistente para agregar nota de débito"
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid "An invoice already exists with the Control Number: %s"
 msgstr "Ya existe una factura con el Número de Control: %s"
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid "An invoice cannot have a line with a price of zero"
@@ -232,6 +247,8 @@ msgstr "Libro de Compras"
 #. odoo-python
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #, python-format
 msgid "Check the move %s does not have an invoice date and its id is %s"
 msgstr "Verifique el asiento %s no tiene una fecha de factura"
@@ -239,7 +256,7 @@ msgstr "Verifique el asiento %s no tiene una fecha de factura"
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__company_id
@@ -249,7 +266,7 @@ msgstr "Compañía"
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
@@ -258,6 +275,7 @@ msgstr "Configuración de Facturación: General"
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid ""
@@ -425,6 +443,11 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: l10n_ve_invoice
+#: model:ir.model,name:l10n_ve_invoice.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__last_payment_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__last_payment_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__last_payment_date
@@ -449,6 +472,12 @@ msgid ""
 msgstr ""
 "Limitar la cantidad de líneas que se pueden imprimir en una factura\n"
 "forma libre"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__mandatory_contact_in_payable_or_receivable_accounting_accounts
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__mandatory_contact_in_payable_or_receivable_accounting_accounts
+msgid "Mandatory Contact In Payable Or Receivable Accounting Accounts"
+msgstr "Contacto obligatorio en cuentas por pagar o por cobrar"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__max_product_invoice
@@ -482,6 +511,11 @@ msgstr "Advertencia: la fecha de la factura es anterior a la actual"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
 msgid "Nro de Pedido"
 msgstr ""
+
+#. module: l10n_ve_invoice
+#: model:ir.model,name:l10n_ve_invoice.model_account_payment
+msgid "Payments"
+msgstr "Pagos"
 
 #. module: l10n_ve_invoice
 #: model:ir.actions.act_window,name:l10n_ve_invoice.action_accounting_report_purchase
@@ -567,12 +601,14 @@ msgstr "Mostrar total en USD en forma libre"
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid "The accounting date cannot be earlier than the invoice date."
 msgstr "La fecha contable no puede ser anterior a la fecha de la factura."
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid ""
@@ -583,6 +619,38 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move_line.py:0
+#: code:addons/l10n_ve_invoice/models/account_move_line.py:0
+#, python-format
+msgid ""
+"The partner field is mandatory for accounting entries with payable or "
+"receivable accounts."
+msgstr ""
+"El campo de contacto es obligatorio para los asientos contables con cuentas "
+"por pagar o por cobrar."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_payment.py:0
+#, python-format
+msgid "The partner field is mandatory for advance payments"
+msgstr "El campo de contacto es obligatorio para los anticipos."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_payment.py:0
+#: code:addons/l10n_ve_invoice/models/account_payment.py:0
+#, python-format
+msgid ""
+"The partner field is mandatory for payments with payable or receivable "
+"accounts."
+msgstr ""
+"El campo de contacto es obligatorio para los pagos con cuentas por pagar o "
+"por cobrar."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid "The sale's series sequence must be in the selected journal."
@@ -600,12 +668,22 @@ msgid "Total en USD"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
+msgid ""
+"When activated, the contact field will be mandatory in payments and "
+"accounting entries with accounts payable or receivable."
+msgstr ""
+"Una vez activado, el campo de contacto será obligatorio en los pagos y en "
+"los asientos contables con cuentas por pagar o por cobrar."
+
+#. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_wizard_accounting_reports
 msgid "Wizard para generar reportes de libro de compra y ventas"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
 msgid "You can not add more than %s products to the invoice."
@@ -616,14 +694,7 @@ msgstr "No puede agregar más de %s productos a la factura."
 msgid "control number"
 msgstr "Número de control"
 
-#. module: account
-#: model:ir.actions.act_window,name:account.action_move_in_refund_type
-#: model:ir.actions.act_window,name:account.action_move_out_refund_type
-#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
-#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
-#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
-msgid "Credit Notes"
-msgstr "Notas de Crédito"
+
 
 #. module: account
 #: model:ir.actions.act_window,name:account.action_move_in_refund_type
@@ -634,14 +705,6 @@ msgstr "Notas de Crédito"
 msgid "Credit Notes"
 msgstr "Notas de Crédito"
 
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
-msgid "Debit note"
-msgstr "Notas de Débito"
 
-#. module: l10n_ve_invoice
-#. odoo-python
-#: code:addons/l10n_ve_invoice/models/account_move.py:0
-#, python-format
-msgid "An invoice cannot have a line with a price of zero"
-msgstr "Una factura no puede tener una linea con precio en cero"
+
+

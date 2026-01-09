@@ -26,7 +26,6 @@ class AccountPayment(models.Model):
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        digits="Tasa",
         default=0.0,
         store=True,
         readonly=False,
@@ -34,7 +33,6 @@ class AccountPayment(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
         default=0.0,
         store=True,
         readonly=False,
@@ -74,6 +72,7 @@ class AccountPayment(models.Model):
                 }
             )
         return res
+    
 
     @api.depends("date")
     def _compute_rate(self):
@@ -100,8 +99,3 @@ class AccountPayment(models.Model):
                 payment.foreign_rate
             )
 
-    # @api.model
-    # def _get_trigger_fields_to_synchronize(self):
-    #     original_fields = super()._get_trigger_fields_to_synchronize()
-    #     additional_fields = ("foreign_rate", "foreign_inverse_rate")
-    #     return original_fields + additional_fields
