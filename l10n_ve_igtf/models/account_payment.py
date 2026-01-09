@@ -159,7 +159,7 @@ class AccountPaymentIgtf(models.Model):
             currency = self.currency_id 
             precision = currency.rounding
             if float_compare(igtf_amount, 0.0, precision_rounding=precision) > 0.0:
-
+               
                 vals.append(
                     {
                         "name": "IGTF",
@@ -171,6 +171,19 @@ class AccountPaymentIgtf(models.Model):
                 )
 
         return vals
+    
+    def get_moves(self):
+        """ Return the moves to pay from the context.
+        Overridden to ensure that we always get the moves from the context,
+        even if we are in edit mode.
+        """
+        ids=self.env.context.get("active_id") or self.env.context.get("active_ids")
+
+        if isinstance(ids, int):
+            return self.env["account.move"].browse([ids])
+        else:
+            move_lines = self.env["account.move.line"].browse(ids)
+            return set(move_lines.mapped("move_id"))
 
     def _prepare_inbound_move_line_igtf_vals(self, vals, write_off_line_vals = False):
     
@@ -178,7 +191,7 @@ class AccountPaymentIgtf(models.Model):
             lines = [line for line in vals]
             if rec.payment_type == "inbound":
                 currency = rec.currency_id
-                credit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
+                credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
                 credit_line = credit_line_unrounded
                 credit_amount = -credit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
@@ -209,7 +222,7 @@ class AccountPaymentIgtf(models.Model):
                     vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
 
                 rec._create_outbound_move_line_igtf_vals(vals)
-            
+
     @api.depends('journal_id')
     def _compute_is_igtf_journal(self):
         for record in self:
