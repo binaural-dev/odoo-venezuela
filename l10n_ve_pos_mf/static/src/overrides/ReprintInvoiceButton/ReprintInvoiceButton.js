@@ -4,7 +4,7 @@ import { Component } from "@odoo/owl";
 import { usePos } from "@point_of_sale/app/store/pos_hook";
 
 export class ReprintInvoiceButton extends Component {
-  static template = "binaural_pos_mf.ReprintInvoiceButton";
+  static template = "l10n_ve_pos_mf.ReprintInvoiceButton";
   setup() {
     super.setup();
     this.pos = usePos()
@@ -26,6 +26,6 @@ export class ReprintInvoiceButton extends Component {
         action: `reprint`,
         data: data,
       }).th
-    } catch (err) {}
+    } catch (err) { }
   }
 }
