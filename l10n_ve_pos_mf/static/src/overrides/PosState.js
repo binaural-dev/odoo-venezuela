@@ -5,7 +5,7 @@ import { patch } from "@web/core/utils/patch";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
-import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
+import { ReprintInvoiceButton } from "@l10n_ve_pos_mf/overrides/ReprintInvoiceButton/ReprintInvoiceButton";
 
 patch(TicketScreen, {
   components: {
@@ -150,16 +150,16 @@ patch(PosStore.prototype, {
 
     const normalized = text.normalize("NFKD");
     const noSpecialChars = normalized
-        .replace(/[\u0300-\u036f]/g, "")  
-        .replace(/[^\w\s]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
     return noSpecialChars;
   },
-  
+
   async print_out_invoice(data) {
-    
+
     const fdm = this.useFiscalMachine();
 
     if (!fdm) {
@@ -174,10 +174,10 @@ patch(PosStore.prototype, {
 
       const listener = (data) => {
 
-        if (data.request_data.action === request_data.action) {          
+        if (data.request_data.action === request_data.action) {
           if (data.status.status === "connected") {
             if (data.value && data.value.message === "No se ha completado") {
-                return;
+              return;
             }
             fdm.removeListener(listener);
             return resolve(data);
@@ -189,13 +189,13 @@ patch(PosStore.prototype, {
       };
 
       fdm.addListener(listener);
-      
+
       try {
         const response = await fdm.action(request_data);
 
-        if (!response.result) {            
-          fdm.removeListener(listener);            
-          reject({  
+        if (!response.result) {
+          fdm.removeListener(listener);
+          reject({
             valid: false,
             message: _t("Error connecting to the fiscal machine, check if it is turned on or connected to the IoT"),
             printer_connection: false
@@ -205,11 +205,11 @@ patch(PosStore.prototype, {
 
         fdm.removeListener(listener);
         reject({
-            valid: false,
-            message: error.statusText === "timeout" 
-                ? _t("The tax machine did not respond in time")
-                : _t("Error with the tax machine"),
-            printer_connection: false
+          valid: false,
+          message: error.statusText === "timeout"
+            ? _t("The tax machine did not respond in time")
+            : _t("Error with the tax machine"),
+          printer_connection: false
         });
       }
     });
@@ -222,7 +222,7 @@ patch(PosStore.prototype, {
   },
 
   async pushToMF(order) {
-    try {      
+    try {
       let data = await this.get_data_invoice(order)
       if (!data["valid"]) {
         throw data["message"]
@@ -230,29 +230,29 @@ patch(PosStore.prototype, {
 
       const response = await this.print_out_invoice(data)
       const { value } = response
-      
+
       if (!value.valid) {
         throw value
       }
 
       this.set_data_from_fiscal_machine(order, value)
-      
-      return {  
+
+      return {
         valid: true,
         message: "",
         printer_connection: true
       }
-    
+
     } catch (err) {
 
-      if (!err.valid) { 
+      if (!err.valid) {
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
           body: _t(err.message ? err.message : "Internal MF error"),
         });
-        
+
         return err
-      
+
       } else {
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
@@ -264,12 +264,12 @@ patch(PosStore.prototype, {
   },
   async push_single_order(order, opts) {
     if (this.useFiscalMachine() && !order.mf_invoice_number) {
-      
+
       const response = await this.pushToMF(order)
 
-    if (response.printer_connection == false || !("printer_connection" in response)) {
-      return
-    }
+      if (response.printer_connection == false || !("printer_connection" in response)) {
+        return
+      }
 
     }
     return await super.push_single_order.apply(this, [order, opts]);

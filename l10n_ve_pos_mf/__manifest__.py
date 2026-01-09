@@ -26,9 +26,7 @@
     ],
     "assets": {
         "point_of_sale._assets_pos": [
-            "l10n_ve_pos_mf/static/src/js/*.js",
-            "l10n_ve_pos_mf/static/src/xml/*.xml",
-            "l10n_ve_pos_mf/static/src/css/*.css",
+            "l10n_ve_pos_mf/static/src/**/*",
         ],
     },
     "images": ["static/description/icon.png"],
