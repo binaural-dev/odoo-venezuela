@@ -25,7 +25,7 @@ export class ReprintInvoiceButton extends Component {
       await fdm.action({
         action: `reprint`,
         data: data,
-      })
+      }).th
     } catch (err) { }
   }
 }
