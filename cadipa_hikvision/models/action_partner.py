@@ -50,7 +50,7 @@ class ActionPartner(models.Model):
         for record in self:
             HikUsers = self.env["hikcentral.users"]
 
-            if record.state == 'draft':
+            if record.state == 'draft' or record.env.context.get('skip_hik_sync'):
                 continue
 
             if record.state in ["suspended", "canceled"] or record.suspended_membership:
@@ -177,3 +177,7 @@ class ActionPartner(models.Model):
             "department_id": department_id,
             "access_level_ids": [(6, 0, default_access_levels.ids)],
         }
+
+
+    def action_confirm(self):
+        return super(ActionPartner, self.with_context(skip_hik_sync=True)).action_confirm()
