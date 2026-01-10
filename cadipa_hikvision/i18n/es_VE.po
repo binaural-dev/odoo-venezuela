@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250917\n"
+"Project-Id-Version: Odoo Server 17.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-27 14:38+0000\n"
-"PO-Revision-Date: 2025-12-27 14:38+0000\n"
+"POT-Creation-Date: 2026-01-10 16:21+0000\n"
+"PO-Revision-Date: 2026-01-10 16:21+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -107,7 +107,7 @@ msgstr "Acceso:"
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "Actualizar y Reenviar"
-msgstr "Actualizar y Reenviar"
+msgstr ""
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__appointment_guest_id
@@ -154,7 +154,7 @@ msgstr "Departamento de Membresía Predeterminado"
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "Eliminar Invitado y Acceso HikCentral"
-msgstr "Eliminar Invitado y Acceso HikCentral"
+msgstr ""
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -168,7 +168,7 @@ msgstr "Correo actualizado y QR reenviado con éxito."
 #: code:addons/cadipa_hikvision/static/src/js/appointment_guest_delete.js:0
 #, python-format
 msgid "Error al eliminar: "
-msgstr "Error al eliminar: "
+msgstr ""
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__event_id
@@ -192,7 +192,7 @@ msgstr "Evento no encontrado."
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_visitor_appointment__calendar_event_ids
 msgid "Eventos de Calendario Origen"
-msgstr "Eventos de Calendario Origen"
+msgstr ""
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -208,19 +208,21 @@ msgstr "Error al procesar la sincronización de visitantes: %s"
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_photo
 #, python-format
 msgid "Foto"
-msgstr "Foto"
+msgstr ""
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.portal_memberships_inherit_photo
 msgid "Foto de Perfil"
-msgstr "Foto de Perfil"
+msgstr ""
 
 #. module: cadipa_hikvision
 #. odoo-python
 #: code:addons/cadipa_hikvision/controllers/appointment.py:0
 #, python-format
 msgid "Guest added locally, but HikCentral sync failed: %s"
-msgstr "Invitado agregado localmente, pero la sincronización con HikCentral falló: %s"
+msgstr ""
+"Invitado agregado localmente, pero la sincronización con HikCentral falló: "
+"%s"
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -267,17 +269,19 @@ msgstr "Cita de Visitante de HikCentral"
 #: model:ir.model.fields,help:cadipa_hikvision.field_hikcentral_users__parent_user_id
 msgid ""
 "HikCentral user who represents the holder of this beneficiary's membership."
-msgstr "El usuario de HikCentral que representa al titular de la membresía de este beneficiario."
+msgstr ""
+"El usuario de HikCentral que representa al titular de la membresía de este "
+"beneficiario."
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_membership_type_plan__hikcentral_department_id
-msgid "HikCentral Department"
+msgid "Hikcentral Department"
 msgstr "Departamento de HikCentral"
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_membership_type_plan_form_inherit_hikcentral
-msgid "HikCentral Settings"
-msgstr "Configuración de HikCentral"
+msgid "Hikcentral Settings"
+msgstr "Configuraciones de HikCentral"
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_calendar_event__hikcentral_synced
@@ -292,25 +296,34 @@ msgstr "Usuario de Hikcentral"
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "ID:"
-msgstr "ID:"
+msgstr ""
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,help:cadipa_hikvision.field_hikcentral_access_level__default_membership_access_level
 msgid ""
 "If checked, this access level will be assigned to new members by default."
-msgstr "Si está marcado, este nivel de acceso se asignará a los nuevos miembros por defecto."
+msgstr ""
+"Si está marcado, este nivel de acceso se asignará a los nuevos miembros por "
+"defecto."
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,help:cadipa_hikvision.field_hikcentral_department__default_membership_dept
 msgid ""
 "If checked, this department will be used by default when creating member "
 "users."
-msgstr "Si está marcado, este departamento se utilizará por defecto al crear usuarios miembros."
+msgstr ""
+"Si está marcado, este departamento se utilizará por defecto al crear "
+"usuarios miembros."
 
 #. module: cadipa_hikvision
 #: model:mail.template,name:cadipa_hikvision.mail_template_visitor_qr_invitation_base
 msgid "Invitación de Visitante con QR (Base)"
-msgstr "Invitación de Visitante con QR (Base)"
+msgstr ""
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_photo
+msgid "Manually synchronize membership Owner to HikCentral."
+msgstr "Sincronizar manualmente el propietario de la membresía con HikCentral."
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -333,7 +346,10 @@ msgstr "No hay un departamento de HikCentral disponible para el beneficiario."
 msgid ""
 "No HikCentral department defined for membership plan '%s' and no default "
 "department set in HikCentral departments."
-msgstr "No se ha definido un departamento de HikCentral para el plan de membresía '%s' y no se ha establecido un departamento predeterminado en los departamentos de HikCentral."
+msgstr ""
+"No se ha definido un departamento de HikCentral para el plan de membresía "
+"'%s' y no se ha establecido un departamento predeterminado en los "
+"departamentos de HikCentral."
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -342,7 +358,9 @@ msgstr "No se ha definido un departamento de HikCentral para el plan de membres�
 msgid ""
 "No HikCentral user found for beneficiary %s. Please sync the beneficiary "
 "first."
-msgstr "No se encontró un usuario de HikCentral para el beneficiario %s. Por favor, sincroniza primero al beneficiario."
+msgstr ""
+"No se encontró un usuario de HikCentral para el beneficiario %s. Por favor, "
+"sincroniza primero al beneficiario."
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -351,7 +369,10 @@ msgstr "No se encontró un usuario de HikCentral para el beneficiario %s. Por fa
 msgid ""
 "No default HikCentral access levels for memberships defined. Please set one "
 "access level as default for memberships."
-msgstr "No se han definido niveles de acceso predeterminados para las membresías. Por favor, establezca un nivel de acceso como predeterminado para las membresías."
+msgstr ""
+"No se han definido niveles de acceso predeterminados para las membresías. "
+"Por favor, establezca un nivel de acceso como predeterminado para las "
+"membresías."
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -372,21 +393,27 @@ msgstr "No se encontró un usuario sincronizado en HikCentral."
 #: code:addons/cadipa_hikvision/models/res_partners.py:0
 #, python-format
 msgid "Only confirmed beneficiaries linked to an action can be synced."
-msgstr "Solo los beneficiarios confirmados vinculados a una acción pueden ser sincronizados."
+msgstr ""
+"Solo los beneficiarios confirmados vinculados a una acción pueden ser "
+"sincronizados."
 
 #. module: cadipa_hikvision
 #. odoo-python
 #: code:addons/cadipa_hikvision/models/hikcentral_access_level.py:0
 #, python-format
 msgid "Only one access level can be set as the default visitor access level."
-msgstr "Solo se puede establecer un nivel de acceso como el nivel de acceso predeterminado para visitantes."
+msgstr ""
+"Solo se puede establecer un nivel de acceso como el nivel de acceso "
+"predeterminado para visitantes."
 
 #. module: cadipa_hikvision
 #. odoo-python
 #: code:addons/cadipa_hikvision/models/hikcentral_department.py:0
 #, python-format
 msgid "Only one department can be set as the default membership department."
-msgstr "Solo se puede establecer un departamento como el departamento de membresía predeterminado."
+msgstr ""
+"Solo se puede establecer un departamento como el departamento de membresía "
+"predeterminado."
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__parent_user_id
@@ -396,12 +423,17 @@ msgstr "Usuario Principal"
 #. module: cadipa_hikvision
 #: model:ir.model,name:cadipa_hikvision.model_action_partner
 msgid "Partner Action"
-msgstr "Membresía de Beneficiario"
+msgstr "Membresia de Beneficiario"
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "QR"
-msgstr "QR"
+msgstr ""
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_remove_editable
+msgid "Remove Beneficiary from HikCentral"
+msgstr "Eliminar Beneficiario de HikCentral"
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
@@ -411,12 +443,23 @@ msgstr "Eliminar Invitado"
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.portal_memberships_inherit_photo
 msgid "Sube una foto clara del rostro para el reconocimiento facial."
-msgstr "Sube una foto clara del rostro para el reconocimiento facial."
+msgstr ""
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_photo
+msgid "Sync to HikCentral"
+msgstr "Sincronizar con HikCentral"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_remove_editable
+msgid "Synchronize Beneficiaries to HikCentral"
+msgstr "Sincronizar Beneficiarios con HikCentral"
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,help:cadipa_hikvision.field_membership_type_plan__hikcentral_department_id
-msgid "The HikCentral department associated with this membership type plan."
-msgstr "El departamento de HikCentral asociado con este plan de tipo de membresía."
+msgid "The Hikcentral department associated with this membership type plan."
+msgstr ""
+"El departamento de HikCentral asociado con este plan de tipo de membresía."
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -445,7 +488,8 @@ msgstr "¿Correo incorrecto? Edítalo y reenvía el QR:"
 #: code:addons/cadipa_hikvision/controllers/appointment.py:0
 #, python-format
 msgid "You cannot delete the last guest. The booking cannot be empty."
-msgstr "No puedes eliminar al último invitado. La reserva no puede estar vacía."
+msgstr ""
+"No puedes eliminar al último invitado. La reserva no puede estar vacía."
 
 #. module: cadipa_hikvision
 #. odoo-javascript
@@ -457,4 +501,4 @@ msgstr "¿Estás seguro de que quieres eliminar a este invitado de la cita?"
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "nuevo@correo.com"
-msgstr "nuevo@correo.com"
+msgstr ""
