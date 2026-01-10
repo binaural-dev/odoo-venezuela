@@ -1,6 +1,6 @@
 {
     'name': 'Hikvision Cadipa Integration',
-    'version': '17.0.1.0.5',
+    'version': '17.0.1.0.12',
     'summary': '',
     'author': 'Binaural',
     'depends': [

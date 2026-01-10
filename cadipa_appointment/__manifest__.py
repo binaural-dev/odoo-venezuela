@@ -1,7 +1,7 @@
 {
     "name": "Cadipa Reservas",
     "summary": "Modulo para personalizaciones de reservas de CADIPA",
-    "version": "17.0.1.0.24",
+    "version": "17.0.1.0.25",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
@@ -14,6 +14,7 @@
         "web_gantt",
         "calendar",
         "l10n_ve_rate",
+        "binaural_memberships",
     ],
     "data": [
         "data/cron.xml",
@@ -21,6 +22,7 @@
         "views/calendar_event_views.xml",
         "views/portal_my_memberships.xml",
         "views/appointment_template_registration.xml",
+        "views/secuence_menuitem.xml"
     ],
     "images": [
         "static/description/icon.png"
