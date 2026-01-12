@@ -108,7 +108,7 @@ patch(PosStore.prototype, {
         }
       } catch (err) {
         console.error("MF error: ", err)
-        if (!err.valid) { 
+        if (!err.valid) {
           this.env.services.popup.add(ErrorPopup, {
             title: _t("MF error"),
             body: _t(err.message ? err.message : "Internal MF error"),
@@ -169,67 +169,24 @@ patch(PosStore.prototype, {
     return noSpecialChars;
   },
 
-  async print_out_invoice(data) {
-
-    const fdm = this.useFiscalMachine();
-
   async print_document(print_type, data) {
     try {
       const deviceResponse = await this.device_response(print_type, data);
 
-    return new Promise(async (resolve, reject) => {
-
-      const listener = (data) => {
-
-        if (data.request_data.action === request_data.action) {
-          if (data.status.status === "connected") {
-            if (data.value && data.value.message === "No se ha completado") {
-              return;
-            }
-            fdm.removeListener(listener);
-            return resolve(data);
-          } else {
-            fdm.removeListener(listener);
-            return reject(data);
-          }
-        }
-      };
-
-      fdm.addListener(listener);
-
-      try {
-        const response = await fdm.action(request_data);
-
-        if (!response.result) {
-          fdm.removeListener(listener);
-          reject({
-            valid: false,
-            message: _t("Error connecting to the fiscal machine, check if it is turned on or connected to the IoT"),
-            printer_connection: false
-          });
-        }
-      } catch (error) {
-
-        fdm.removeListener(listener);
-        reject({
-          valid: false,
-          message: error.statusText === "timeout"
-            ? _t("The tax machine did not respond in time")
-            : _t("Error with the tax machine"),
-          printer_connection: false
-        });
+      if (print_type == "print_invoice" && !deviceResponse?.valid) {
+        return { "valid": false, "message": deviceResponse?.message || "Error al imprimir" }
       }
       return deviceResponse;
 
     } catch (err) {
-        console.error("MF error: ", err)
-        if (!err.valid) { 
-          this.env.services.popup.add(ErrorPopup, {
-            title: _t("MF error"),
-            body: _t(err.message ? err.message : "Internal MF error"),
-          });
-          return { valid: false, message: "Error interno al imprimir documento"};
-        }
+      console.error("MF error: ", err)
+      if (!err.valid) {
+        this.env.services.popup.add(ErrorPopup, {
+          title: _t("MF error"),
+          body: _t(err.message ? err.message : "Internal MF error"),
+        });
+        return { valid: false, message: "Error interno al imprimir documento" };
+      }
     }
   },
 
@@ -240,13 +197,13 @@ patch(PosStore.prototype, {
       if (!fdm) {
         return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
       }
-      const listener = ({value}) => {
+      const listener = ({ value }) => {
         fdm.removeListener(listener);
         resolve(value);
       };
-  
+
       fdm.addListener(listener);
-  
+
       fdm.action({
         action: action,
         data: data,
@@ -271,14 +228,13 @@ patch(PosStore.prototype, {
         throw data["message"]
       }
 
-      const response = await this.print_out_invoice(data)
-      const { value } = response
+      const response = await this.print_document(`print_${data.type}`, data)
 
-      if (!value.valid) {
-        throw value
+      if (!response?.valid) {
+        throw response
       }
 
-      this.set_data_from_fiscal_machine(order, value)
+      this.set_data_from_fiscal_machine(order, response)
 
       return {
         valid: true,
@@ -287,21 +243,13 @@ patch(PosStore.prototype, {
       }
 
     } catch (err) {
-
+      console.error("MF error: ", err)
       if (!err.valid) {
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
           body: _t(err.message ? err.message : "Internal MF error"),
         });
-
         return err
-
-      } else {
-        this.env.services.popup.add(ErrorPopup, {
-          title: _t("MF error"),
-          body: _t(err.status ? err.status : "Internal MF error"),
-        });
-        return err;
       }
     }
   },
