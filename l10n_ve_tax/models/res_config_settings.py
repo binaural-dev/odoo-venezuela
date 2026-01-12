@@ -101,18 +101,6 @@ class ResConfigSettings(models.TransientModel):
       
         for rec in self:
             all_sub_aliquots_hidden = (
-<<<<<<< HEAD
-                rec.not_show_general_aliquot_purchase_international and
-                rec.not_show_reduced_aliquot_purchase_international and
-                rec.not_show_extend_aliquot_purchase_international
-            )
-            
-            if all_sub_aliquots_hidden and not rec.not_show_international_purchase_in_book:
-                rec.not_show_international_purchase_in_book = True
-            
-            if not all_sub_aliquots_hidden and rec.not_show_international_purchase_in_book:
-                rec.not_show_international_purchase_in_book = False
-=======
                     rec.not_show_general_aliquot_purchase_international and
                     rec.not_show_reduced_aliquot_purchase_international and
                     rec.not_show_extend_aliquot_purchase_international and
@@ -128,18 +116,11 @@ class ResConfigSettings(models.TransientModel):
                  rec.company_id.not_show_international_purchase_in_book = False
                  rec.not_show_international_purchase_in_book = False
 
->>>>>>> 923043a3 (FEAT #62152: l10n_ve_tax)
 
     
     @api.onchange('not_show_international_purchase_in_book')
     def _onchange_international_purchase_all(self):
         for rec in self:
-<<<<<<< HEAD
-            is_hidden = rec.not_show_international_purchase_in_book
-            rec.not_show_general_aliquot_purchase_international = is_hidden
-            rec.not_show_reduced_aliquot_purchase_international = is_hidden
-            rec.not_show_extend_aliquot_purchase_international = is_hidden
-=======
             if rec.not_show_international_purchase_in_book:
                 rec.company_id.not_show_general_aliquot_purchase_international = True
                 rec.company_id.not_show_reduced_aliquot_purchase_international = True
@@ -164,7 +145,6 @@ class ResConfigSettings(models.TransientModel):
                 rec.not_show_extend_aliquot_purchase_international = False
                 rec.not_show_total_purchases_with_international_iva = False
                 rec.not_show_exempt_total_purchases = False
->>>>>>> 923043a3 (FEAT #62152: l10n_ve_tax)
 
 
 
