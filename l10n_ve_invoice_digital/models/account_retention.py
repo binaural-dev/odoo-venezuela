@@ -298,18 +298,6 @@ class AccountRetention(models.Model):
                 document_series_ret = ''.join([c for c in serie if c.isalpha()])
                 document_number_ret = str(''.join([c for c in serie if c.isdigit()]))
 
-                if record.base_currency_is_vef:
-                    invoice_total = str(round(line.invoice_total, 2))
-                    invoice_amount = str(round(line.invoice_amount, 2))
-                    retention_amount = str(round(line.retention_amount, 2))
-                    iva_amount = str(round(line.iva_amount, 2))
-
-                else:
-                    invoice_total = str(round(line.foreign_invoice_total, 2))
-                    invoice_amount = str(round(line.foreign_invoice_amount, 2))
-                    retention_amount = str(round(line.foreign_retention_amount, 2))
-                    iva_amount = str(round(line.foreign_iva_amount, 2))
-
                 retention_data = {
                     "numeroLinea": str(counter), 
                     "fechaDocumento": line.move_id.invoice_date.strftime("%d/%m/%Y"), 
