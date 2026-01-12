@@ -6,6 +6,8 @@ import {
   formatFloat,
   roundDecimals as round_di,
   floatIsZero,
+  roundDecimals as round_di,
+  roundPrecision as round_pr,
 } from "@web/core/utils/numbers";
 
 // New orders are now associated with the current table, if any.
