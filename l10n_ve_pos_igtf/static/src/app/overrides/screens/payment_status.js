@@ -5,6 +5,7 @@ import { usePos } from "@point_of_sale/app/store/pos_hook";
 import { patch } from "@web/core/utils/patch";
 import {
   roundPrecision as round_pr,
+  roundDecimals as round_di,
 } from "@web/core/utils/numbers";
 
 
@@ -55,11 +56,11 @@ patch(PaymentScreenStatus.prototype, {
     const igtfAmount = (totalWithTax * (this.pos.config.igtf_percentage / 100)) + roundingApplied;
     
     return this.env.utils.formatCurrency(igtfAmount, 'Product Price');
-  },  
-  get suggestedIgtf(){
-      var rounding = this.pos.currency.rounding;
-      var result = round_pr(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100),rounding);
-      return this.env.utils.formatCurrency(result);
+  },
+  get suggestedIgtf() {
+    var rounding = this.pos.currency.rounding;
+    var result = round_di(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), 4);
+    return this.env.utils.formatCurrency(result);
   },
   get foreignTotalDueTextWithIGTF() {
     return this.env.utils.formatForeignCurrency(
@@ -81,7 +82,7 @@ patch(PaymentScreenStatus.prototype, {
   },
   get totalDueTextWithIGTFDisplay() {
     var rounding = this.pos.currency.rounding;
-    var result = round_pr(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100),rounding);
+    var result = round_di(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), rounding);
     return this.env.utils.formatCurrency(
       (this.props.order.get_total_with_tax()+result)
     );
