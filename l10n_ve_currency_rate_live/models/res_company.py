@@ -1,5 +1,9 @@
 from odoo import api, fields, models, _
 from ...tools import binaural_bcv_query
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class ResCompany(models.Model):
     _inherit = "res.company"
@@ -12,17 +16,23 @@ class ResCompany(models.Model):
 
     @api.model
     def _parse_bcv_data(self, availible_currencies):
-        companies = self.env['res.company'].search([])
+        companies = self.env["res.company"].search([])
         for company in companies:
+            rates_bcv = {}
             can_update_habil_days = company.can_update_habil_days
             current_date = fields.Date.context_today(self)
             day = current_date.isoweekday()
             is_habil_day = day <= 5
             invalid_update_in_habil_day = not is_habil_day and can_update_habil_days
             if invalid_update_in_habil_day:
-                return
-            usd_rate_bcv = binaural_bcv_query.get_usd_rate_of_the_day_bcv(self)
-            is_valid_update_date = str(usd_rate_bcv[1]) == str(current_date)
-            if not is_valid_update_date:
-                return
-            return {"USD": (1, usd_rate_bcv[1]), "VEF": usd_rate_bcv}
+                return {}
+            rates_bcv = binaural_bcv_query.get_currency_rates_of_the_day_bcv(self)
+            if isinstance(rates_bcv, tuple):
+                return {}
+
+            final_rates = {"VEF": (1.0, current_date)}
+            for currency_code, rate_data in rates_bcv.items():
+                rate, date = rate_data
+                if str(date) == str(current_date) and rate:
+                    final_rates[currency_code] = (1.0 / rate, date)
+            return final_rates
