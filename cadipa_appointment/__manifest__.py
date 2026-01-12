@@ -9,6 +9,7 @@
     "depends": [
         "appointment_account_payment",
         "binaural_appointment",
+        "binaural_memberships",
         "web",
         "web_gantt",
         "calendar",
@@ -26,6 +27,12 @@
     "images": [
         "static/description/icon.png"
     ],
+    "assets": {
+        "web.assets_frontend": [
+            "cadipa_appointment/static/src/xml/appointment_slots.xml",
+            "cadipa_appointment/static/src/js/appointment_slot.js",
+        ],
+    },
     "application": True,
     "auto_install": True,
     "assets": {
