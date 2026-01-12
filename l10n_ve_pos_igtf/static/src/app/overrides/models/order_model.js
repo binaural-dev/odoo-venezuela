@@ -4,9 +4,9 @@ import { Order, Payment } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import {
   formatFloat,
+  floatIsZero,
   roundDecimals as round_di,
   roundPrecision as round_pr,
-  floatIsZero,
 } from "@web/core/utils/numbers";
 
 // New orders are now associated with the current table, if any.
@@ -113,21 +113,17 @@ patch(Order.prototype, {
           return true;
         });
 
-        if (payment_without_change.length > 0) {
-          payment_without_change.forEach((payment) => {
-            if (!payment.include_igtf) {
-              payment.set_igtf_amount(
-                igtf_amount / payment_without_change.length,
-              );
-              payment.set_foreign_igtf_amount(
-                foreign_igtf_amount / payment_without_change.length,
-              );
-              return;
-            }
-            // payment.set_igtf_amount(igtf_amount / payment_without_change.length)
-            // payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
-          });
-        }
+        let total_payment_amount = payment_without_change.reduce((acc, p) => acc + p.amount, 0);
+        payment_without_change.forEach((payment) => {
+          let factor = total_payment_amount ? (payment.amount / total_payment_amount) : 0;
+          if (!payment.include_igtf) {
+            payment.set_igtf_amount(igtf_amount * factor);
+            payment.set_foreign_igtf_amount(foreign_igtf_amount * factor);
+            return;
+          }
+          payment.set_igtf_amount(igtf_amount * factor);
+          payment.set_foreign_igtf_amount(foreign_igtf_amount * factor);
+        });
         return;
       }
 
@@ -151,9 +147,9 @@ patch(Order.prototype, {
       }
 
       if (!is_change) {
-        payment.set_igtf_amount(this.compute_igtf_amount(amount_to_pay));
+        payment.set_igtf_amount(this.compute_igtf_amount(amount_to_pay, false));
         payment.set_foreign_igtf_amount(
-          this.compute_igtf_amount(foreign_amount_to_pay),
+          this.compute_igtf_amount(foreign_amount_to_pay, true),
         );
 
         igtf_amount += payment.igtf_amount;
@@ -170,8 +166,8 @@ patch(Order.prototype, {
     ) {
       bi_igtf = this.get_total_without_igtf();
       foreign_bi_igtf = this.get_foreign_total_without_igtf();
-      igtf_amount = this.compute_igtf_amount(bi_igtf);
-      foreign_igtf_amount = this.compute_igtf_amount(foreign_bi_igtf);
+      igtf_amount = this.compute_igtf_amount(bi_igtf, false);
+      foreign_igtf_amount = this.compute_igtf_amount(foreign_bi_igtf, true);
 
       let payment_without_change = paymentlines.filter((payment) => {
         if (!bi_payments.includes(payment.cid)) {
@@ -193,38 +189,36 @@ patch(Order.prototype, {
       });
 
       if (payment_without_change.length > 0) {
+        let remaining_taxable_base = bi_igtf;
         payment_without_change.forEach((payment) => {
+          let allocatable_amount = Math.min(payment.amount, remaining_taxable_base);
+          if (allocatable_amount < 0) {
+            allocatable_amount = 0;
+          }
+          remaining_taxable_base = Math.max(0, remaining_taxable_base - allocatable_amount);
+
           if (!payment.include_igtf) {
             return;
           }
-          // payment.set_igtf_amount(igtf_amount / payment_without_change.length)
-          // payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
+
+          let ratio = payment.amount ? (allocatable_amount / payment.amount) : 0;
+          payment.set_igtf_amount(this.compute_igtf_amount(allocatable_amount, false));
+          payment.set_foreign_igtf_amount(this.compute_igtf_amount(payment.get_foreign_amount() * ratio, true));
         });
       }
     }
 
-    if (igtf_payment_methods.length > 0) {
-      let amount_sum = 0;
-      let foreign_amount_sum = 0;
-      let igtf_amount_sum = 0;
-      let foreign_igtf_amount_sum = 0;
 
-      for (let payments of igtf_payment_methods) {
-        amount_sum += payments.amount;
-        foreign_amount_sum += payments.foreign_amount;
-        igtf_amount_sum += payments.igtf_amount;
-        foreign_igtf_amount_sum += payments.foreign_igtf_amount;
-      }
-      this.bi_igtf = amount_sum;
-      this.foreign_bi_igtf = foreign_amount_sum;
-      this.igtf_amount = igtf_amount_sum;
-      this.foreign_igtf_amount = foreign_igtf_amount_sum;
-    }
+
+    this.bi_igtf = bi_igtf;
+    this.foreign_bi_igtf = foreign_bi_igtf;
+    this.igtf_amount = igtf_amount;
+    this.foreign_igtf_amount = foreign_igtf_amount;
     return this.igtf_amount;
   },
-  compute_igtf_amount(amount) {
-    var rounding = this.pos.currency.rounding;
-    return amount * (this.pos.config.igtf_percentage / 100);
+  compute_igtf_amount(amount, use_foreign_rounding = false) {
+    var rounding = use_foreign_rounding ? this.pos.foreign_currency.rounding : this.pos.currency.rounding;
+    return round_pr(amount * (this.pos.config.igtf_percentage / 100), rounding);
   },
 
   get_bi_igtf() {
@@ -281,7 +275,7 @@ patch(Order.prototype, {
   },
   get_max_total_with_igtf() {
     const result =
-      this.compute_igtf_amount(super.get_foreign_total_with_tax()) +
+      this.compute_igtf_amount(super.get_foreign_total_with_tax(), true) +
       this.props.order.get_foreign_rounding_applied();
     return result;
   },
@@ -302,8 +296,11 @@ patch(Order.prototype, {
       is_change = this.get_due() > 0;
     }
 
+    var rounding = this.pos.currency.rounding;
     if (
-      !payment_method.apply_igtf || this.get_due() <= this.get_igtf_amount() || is_change
+      !payment_method.apply_igtf ||
+      round_pr(this.get_due(), rounding) <= round_pr(this.get_igtf_amount(), rounding) ||
+      is_change
     ) {
       let res = super.add_paymentline(...arguments);
       this.update_igtf();
