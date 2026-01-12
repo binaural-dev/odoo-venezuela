@@ -2,6 +2,8 @@
 
 import { Navbar } from "@point_of_sale/app/navbar/navbar";
 import { patch } from "@web/core/utils/patch";
+import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
+import { FiscalMachinePopup } from "@l10n_ve_pos_mf/overrides/components/FiscalMachine/FiscalMachinePopup";
 
 patch(Navbar.prototype, {
   async _on_click_mf_test() {
@@ -16,7 +18,7 @@ patch(Navbar.prototype, {
 
       }
     } catch (e) {
-      this.showPopup("ErrorPopup", {
+      this.popup.add(ErrorPopup, {
         title: "No se ha podido conectar a la Maquina fiscal",
       });
     }
@@ -28,6 +30,6 @@ patch(Navbar.prototype, {
     return this.pos.config.access_button_mf
   },
   async showFiscalMachinePopup() {
-    await this.showPopup('FiscalMachinePopup');
+    await this.popup.add(FiscalMachinePopup);
   }
 })
