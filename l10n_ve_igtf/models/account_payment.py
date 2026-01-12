@@ -89,6 +89,8 @@ class AccountPaymentIgtf(models.Model):
 
         residual_igtf = igtf_top - alter_bi_igtf
 
+        if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
+            return 0.0
         
         if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
             igtf = residual_igtf
