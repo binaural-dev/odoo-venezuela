@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250917\n"
+"Project-Id-Version: Odoo Server 17.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-27 16:03+0000\n"
-"PO-Revision-Date: 2025-12-27 16:03+0000\n"
+"POT-Creation-Date: 2026-01-09 14:33+0000\n"
+"PO-Revision-Date: 2026-01-09 14:33+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -201,8 +201,9 @@ msgstr "Días de demora antes de la suspensión"
 msgid ""
 "Due to company policy, you cannot schedule another appointment of this type "
 "(%s) within a %s-day period."
-msgstr "Debido a la política de la empresa, no puede programar otra cita en este espacio "
-"(%s) dentro de un período de %s días."
+msgstr ""
+"Debido a la política de la empresa, no puede programar otra cita en este "
+"espacio (%s) dentro de un período de %s días."
 
 #. module: cadipa_appointment
 #: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__membership_auto_suspend
@@ -284,14 +285,19 @@ msgstr "Plan existen"
 
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.res_config_settings_cadipa_appointment
-msgid "Restrict appointment booking to active members only."
-msgstr ""
+msgid "Restrict appointment booking to members."
+msgstr "Restringir la reserva de citas a miembros."
 
 #. module: cadipa_appointment
 #: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__restrict_appointment_to_members
 #: model:ir.model.fields,field_description:cadipa_appointment.field_res_config_settings__restrict_appointment_to_members
 msgid "Restrict appointments to members only"
 msgstr "Restringir las citas a miembros"
+
+#. module: cadipa_appointment
+#: model:ir.ui.menu,name:cadipa_appointment.menu_binaural_beneficiary_secuence_configuration
+msgid "Secuence Configuration"
+msgstr "Configuración de secuencia"
 
 #. module: cadipa_appointment
 #. odoo-javascript
