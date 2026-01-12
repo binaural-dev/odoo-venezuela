@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="appointment_validated_inherit_binaural"
+        inherit_id="appointment.appointment_validated"
+        name="Website Appointment: Appointment Confirmed (Custom Binaural)">
+
+        <xpath expr="//strong[@t-out='datetime_start']/ancestor::div[1]"
+            position="replace">
+            <div class="col-9 col-lg-6">
+                <strong t-out="time_locale" />
+                <span class="text-muted"> (<t t-out="request.session.timezone" />)</span>
+            </div>
+        </xpath>
+
+        <xpath expr="//t[@t-out='event.duration']" position="replace">
+            <div class="col-9 col-lg-6">
+                <t t-call="cadipa_appointment.duration_display" />
+            </div>
+        </xpath>
+
+    </template>
+</odoo>
