@@ -97,7 +97,7 @@ class AccountMoveLine(models.Model):
         help="When setted, this field will be used to fill the foreign credit field",
     )
 
-    config_deductible_tax = fields.Boolean(related='company_id.config_deductible_tax')
+    config_deductible_tax = fields.Boolean(related="company_id.config_deductible_tax")
 
     not_deductible_tax = fields.Boolean(default=False)
 
@@ -300,7 +300,9 @@ class AccountMoveLine(models.Model):
         res = super()._compute_amount_currency()
         for line in self:
             if line.amount_currency is False:
-                line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
+                line.amount_currency = line.currency_id.round(
+                    line.balance * line.currency_rate
+                )
             if line.currency_id == line.company_id.currency_id:
                 line.amount_currency = line.balance
         return res
