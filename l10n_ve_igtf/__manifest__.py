@@ -16,7 +16,6 @@
         "l10n_ve_tax_payer",
     ],
     "data": [
-        "data/ir_actions_server.xml",
         "views/account_journal.xml",
         "views/account_payment.xml",
         "views/res_config_settings.xml",
