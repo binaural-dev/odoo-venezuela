@@ -110,7 +110,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             
                 "amount_reduced_aliquot_international", "amount_general_aliquot_international", "amount_extend_aliquot_international",
                 "tax_base_reduced_aliquot_international", "tax_base_general_aliquot_international", "tax_base_extend_aliquot_international",
-              
+                "international_tax_base_exempt_aliquot", "international_amount_taxed"
             ]
 
             total_tax_value = sum(taxes.get(key, 0) for key in tax_keys_to_check)
