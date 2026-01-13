@@ -18,7 +18,6 @@
        
     
     "data": [
-        "data/ir_actions_server.xml",
         "views/account_journal.xml",
         "views/res_config_settings.xml",
         "report/invoice_free_form.xml",
