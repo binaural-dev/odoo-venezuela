@@ -31,3 +31,15 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.show_igtf_suggested_sale_order", readonly=False
     )
 
+    not_show_bi_igtf_sale_order = fields.Boolean(
+        related="company_id.not_show_bi_igtf_sale_order", readonly=False
+    )
+    not_show_bi_igtf_purchase_order = fields.Boolean(
+        related="company_id.not_show_bi_igtf_purchase_order", readonly=False
+    )
+    not_show_igtf_sale_order = fields.Boolean(
+        related="company_id.not_show_igtf_sale_order", readonly=False
+    )
+    not_show_igtf_purchase_order = fields.Boolean(
+        related="company_id.not_show_igtf_purchase_order", readonly=False
+    )
