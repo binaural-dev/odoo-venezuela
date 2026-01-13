@@ -401,13 +401,12 @@ class StockPicking(models.Model):
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
         invoice_line_list = []
-        for move_id in self.move_ids_without_package:
+        for move_id in self.move_ids:
             price_unit = move_id.product_id.list_price
             tax_ids = [(6, 0, [self.company_id.account_sale_tax_id.id])]
             if move_id.sale_line_id:
                 price_unit = move_id.sale_line_id.price_unit
-                tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
-
+                tax_ids = [(6, 0, move_id.sale_line_id.tax_ids.ids)]
             vals = (
                 0,
                 0,
