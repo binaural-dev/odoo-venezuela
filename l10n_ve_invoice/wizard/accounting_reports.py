@@ -1198,6 +1198,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
                 )
         
+            if field.get("field") == "bi_igtf":
+                worksheet.write(
+                total_idx, index, f"=SUM({col}8:{col}{total_idx})*3/100", cell_formats.get("number")
+            )
+        
         
         merge_format_base = workbook.add_format(
             {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray", "locked": True}
@@ -1329,6 +1334,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 col = utility.xl_col_to_name(index)
                 worksheet.write_formula(
                 total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
+            )
+                
+            if field.get("field") == "bi_igtf":
+                worksheet.write(
+                total_idx, index, f"=SUM({col}8:{col}{total_idx})*3/100", cell_formats.get("number")
             )
         
         self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats, last_col_index)
