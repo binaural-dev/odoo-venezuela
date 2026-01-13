@@ -39,7 +39,7 @@ class AccountMove(models.Model):
 
     @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
-        """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
+        """Computing that allows determining whether an account move (invoice, debit/credit note or receipt) is within the current fiscal period."""
         today = date.today()
         taxpayer_type = self.env.company.taxpayer_type
         period_limit = self._get_period_limit(today, taxpayer_type)
