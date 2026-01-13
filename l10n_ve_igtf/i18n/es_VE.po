@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250522\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-20 14:09+0000\n"
-"PO-Revision-Date: 2026-02-20 14:09+0000\n"
+"POT-Creation-Date: 2026-01-13 12:29+0000\n"
+"PO-Revision-Date: 2026-01-13 12:29+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,6 +17,10 @@ msgstr ""
 
 #. module: l10n_ve_igtf
 #. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
@@ -76,6 +80,10 @@ msgstr "Diario disponible"
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__bi_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__bi_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__bi_igtf
@@ -117,7 +125,25 @@ msgid "Foreign Alter BI IGTF"
 msgstr ""
 
 #. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__foreign_alter_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__foreign_alter_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__foreign_alter_bi_igtf
+msgid "Foreign Alter BI IGTF"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__foreign_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__foreign_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__foreign_bi_igtf
+msgid "Foreign Bi Igtf"
+msgstr ""
+
+#. module: l10n_ve_igtf
 #. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
@@ -219,18 +245,18 @@ msgid "Last Computed Amount"
 msgstr ""
 
 #. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+#, python-format
+msgid "Less Payment"
+msgstr ""
+
+#. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__igtf_top_aply
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__igtf_top_aply
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_top_aply
 msgid "Max Igtf amount to be apply"
 msgstr "Monto maximo de IGTF a ser aplicado"
-
-#. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__alter_igtf_top_aply
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__alter_igtf_top_aply
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__alter_igtf_top_aply
-msgid "Max Igtf amount to be apply alter"
-msgstr ""
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_bi_igtf_purchase_order
@@ -248,13 +274,13 @@ msgstr "No mostrar BI Igtf (Ventas)"
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_igtf_purchase_order
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_igtf_purchase_order
 msgid "Not Show Igtf Purchase Order"
-msgstr "No mostrar IGTF (Compras Nacionales)"
+msgstr "No mostrar Igtf (Compras Nacionales)"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_igtf_sale_order
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_igtf_sale_order
 msgid "Not Show Igtf Sale Order"
-msgstr "No mostrar IGTF (Ventas)"
+msgstr "No mostrar Igtf (Ventas)"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_paid
@@ -360,6 +386,8 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #, python-format
 msgid "Total with IGTF"
 msgstr "Total con IGTF"
@@ -370,17 +398,10 @@ msgid "Wizard para generar reportes de libro de compra y ventas"
 msgstr ""
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__foreign_bi_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__foreign_bi_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__foreign_bi_igtf
-msgid "foreign BI IGTF"
-msgstr ""
-
-#. module: l10n_ve_igtf
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__foreign_bi_igtf
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__foreign_bi_igtf
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__foreign_bi_igtf
-msgid "foreign subtotal with igtf "
+msgid "foreign subtotal with igtf"
 msgstr ""
 
 #. module: l10n_ve_igtf
