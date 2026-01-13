@@ -6,7 +6,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.37",
+    "version": "17.0.0.0.38",
         "depends": [
         "base",
         "l10n_ve_accountant",
@@ -18,7 +18,6 @@
        
     
     "data": [
-        "data/ir_actions_server.xml",
         "views/account_journal.xml",
         "views/res_config_settings.xml",
         "report/invoice_free_form.xml",
