@@ -65,12 +65,12 @@ class AccountMove(models.Model):
                         move.entry_in_period = True
 
     def _get_period_limit(self, today, taxpayer_type):
-            """Returns the tax period deadline according to the taxpayer type."""
-            if taxpayer_type == "special":
-                if today.day < 15:
-                    return today.replace(day=15)
-            last_day = calendar.monthrange(today.year, today.month)[1]
-            return date(today.year, today.month, last_day)
+        """Returns the tax period deadline according to the taxpayer type."""
+        if taxpayer_type == "special":
+            if today.day < 15:
+                return today.replace(day=15)
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        return date(today.year, today.month, last_day)
 
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
