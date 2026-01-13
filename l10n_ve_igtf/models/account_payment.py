@@ -58,6 +58,7 @@ class AccountPaymentIgtf(models.Model):
 
             return vals
 
+    
     def calculate_igtf_for_payment(self, invoice, payment_amount, igtf_percentage=False):
         
         currency = invoice.currency_id
@@ -94,8 +95,7 @@ class AccountPaymentIgtf(models.Model):
         
         if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
             igtf = residual_igtf
-     
-
+        
         return igtf
     
     def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
