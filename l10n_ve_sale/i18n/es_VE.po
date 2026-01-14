@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-04 14:55+0000\n"
-"PO-Revision-Date: 2025-12-04 14:55+0000\n"
+"POT-Creation-Date: 2026-01-14 19:37+0000\n"
+"PO-Revision-Date: 2026-01-14 19:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -102,6 +102,11 @@ msgid "Companies"
 msgstr "Empresas"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__company_currency_id
+msgid "Company Currency"
+msgstr ""
+
+#. module: l10n_ve_sale
 #: model:ir.model,name:l10n_ve_sale.model_res_config_settings
 msgid "Config Settings"
 msgstr "Ajustes de configuración"
@@ -115,6 +120,15 @@ msgstr "Configuración Ventas: Generales"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
 msgid "Create Invoice"
 msgstr "Crear factura"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_pricelist_item__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -245,6 +259,15 @@ msgstr "Ocultar Plazos de pago (venta)"
 #: model:res.groups,name:l10n_ve_sale.pricelist_sale_order_group
 msgid "Hide pricelist (sale)"
 msgstr "Ocultar Tarifas (venta)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_pricelist_item__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__id
+msgid "ID"
+msgstr ""
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__pricelist_id
@@ -472,6 +495,17 @@ msgstr ""
 "actualmente establecida."
 
 #. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+msgid "Total"
+msgstr "Total"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__amount_total_signed
+msgid "Total Signed"
+msgstr "Total firmado"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__total_taxed
 msgid "Total Taxed"
 msgstr "Total gravado"
@@ -482,10 +516,21 @@ msgid "Total Taxed of the invoice"
 msgstr "Total gravado de la factura"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__amount_untaxed_total_signed
+msgid "Total Untaxed Signed"
+msgstr "Total sin impuesto firmado"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__block_order_invoice_total_amount_overdue
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__block_order_invoice_total_amount_overdue
 msgid "Total amount overdue"
 msgstr "Monto total vencido"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+msgid "Untaxed Total"
+msgstr "Total sin impuesto"
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
@@ -527,8 +572,18 @@ msgstr ""
 "esté establecida, no se actualizará."
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_untaxed_total
+msgid "foreign untaxed total"
+msgstr "Total sin impuesto foraneo" 
+
+#. module: l10n_ve_sale
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
-#, python-format
+msgid "rate"
+msgstr "tasa"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid "{}. Only has {} units of the {} demanded."
 msgstr "{}. Solo tiene {} unidades de {} exigidas."
