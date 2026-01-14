@@ -53,18 +53,9 @@ patch(Orderline.prototype, {
     return res;
   },
   set_unit_price(price) {
-    this.order.assert_editable();
-    var parsed_price = !isNaN(price)
-      ? price
-      : isNaN(parseFloat(price))
-        ? 0
-        : oParseFloat("" + price);
-    this.price = round_di(
-      parsed_price || 0,
-      this.pos.dp["Foreign Product Price"],
-    );
+    super.set_unit_price(price);
     this.foreign_price = round_di(
-      parsed_price * this.get_rate() || 0,
+      this.get_unit_price() * this.get_rate() || 0,
       this.pos.dp["Foreign Product Price"],
     );
   },
@@ -120,7 +111,7 @@ patch(Orderline.prototype, {
       qty,
       this.pos.foreign_currency.rounding,
     );
-    all_taxes.taxes.forEach(function(tax) {
+    all_taxes.taxes.forEach(function (tax) {
       taxtotal += tax.amount;
       taxdetail[tax.id] = {
         amount: tax.amount,
