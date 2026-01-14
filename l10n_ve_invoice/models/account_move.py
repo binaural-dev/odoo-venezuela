@@ -50,9 +50,9 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
-    @api.depends("invoice_date", "entry_in_period", "state")
+    @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
-        """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
+        """Computing that allows determining whether an account move (invoice, debit/credit note or receipt) is within the current fiscal period."""
         today = date.today()
         taxpayer_type = self.env.company.taxpayer_type
         period_limit = self._get_period_limit(today, taxpayer_type)
@@ -78,12 +78,12 @@ class AccountMove(models.Model):
                         move.entry_in_period = True
 
     def _get_period_limit(self, today, taxpayer_type):
-            """Returns the tax period deadline according to the taxpayer type."""
-            if taxpayer_type == "special":
-                if today.day < 15:
-                    return today.replace(day=15)
-            last_day = calendar.monthrange(today.year, today.month)[1]
-            return date(today.year, today.month, last_day)
+        """Returns the tax period deadline according to the taxpayer type."""
+        if taxpayer_type == "special":
+            if today.day < 15:
+                return today.replace(day=15)
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        return date(today.year, today.month, last_day)
 
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
