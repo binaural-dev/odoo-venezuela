@@ -85,7 +85,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
             "extend_aliquot": 0.31,
-            "total_sales_iva": taxes.get("amount_taxed", 0),
+            "total_sales_iva": taxes.get("amount_taxed", 0) - (taxes.get("tax_base_exempt_aliquot", 0) * multiplier),
             "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
             "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0)
             * multiplier,
@@ -133,19 +133,19 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "reduced_aliquot": 0.08,
             "extend_aliquot": 0.31,
             "general_aliquot": 0.16,
-            "total_purchases_iva": taxes.get("amount_taxed", 0) + taxes.get("amount_untaxed", 0),
-            "total_purchases_not_iva": taxes.get("tax_base_exempt_aliquot", 0) ,
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) ,
-            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) ,
-            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) ,
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) ,
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) ,
-            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) ,
+            "total_purchases_iva": taxes.get("amount_taxed", 0) - (taxes.get("tax_base_exempt_aliquot", 0) * multiplier),
+            "total_purchases_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
+            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
+            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
+            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) * multiplier,
+            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
+            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
+            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) * multiplier,
         }
 
         fields_purchase_book_line.update(
             {   
-                "total_purchases_iva_international": taxes.get("international_amount_taxed", 0),
+                "total_purchases_iva_international": taxes.get("international_amount_taxed", 0) - (taxes.get("international_tax_base_exempt_aliquot", 0) * multiplier),
                 "total_purchases_not_iva_international": taxes.get("international_tax_base_exempt_aliquot", 0) * multiplier,
                 "amount_reduced_aliquot_international": taxes.get("amount_reduced_aliquot_international", 0) * multiplier,
                 "amount_general_aliquot_international": taxes.get("amount_general_aliquot_international", 0) * multiplier,
