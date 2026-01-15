@@ -70,7 +70,13 @@ class AccountMove(models.Model):
         from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
-                if not from_pos:
+                from_loyalty = self.env.context.get('from_loyalty', False)
+                if (
+                    self.env.company.sale_discount_product_id
+                    and line.product_id == self.env.company.sale_discount_product_id
+                ):
+                    continue
+                if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
     def action_post(self):
@@ -80,10 +86,10 @@ class AccountMove(models.Model):
 
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
-            if invoices and record.move_type in ["out_invoice","out_refund"]:
+            """ if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
             if record.invoice_date and record.date and record.date < record.invoice_date:
-                raise ValidationError(_("The accounting date cannot be earlier than the invoice date."))
+                raise ValidationError(_("The accounting date cannot be earlier than the invoice date.")) """
         return super().action_post()
 
     @api.constrains("correlative", "is_contingency")

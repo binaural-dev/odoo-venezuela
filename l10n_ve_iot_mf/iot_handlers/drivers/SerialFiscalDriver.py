@@ -146,14 +146,14 @@ def install_package(package_name):
     try:
         # Intenta importar el paquete para verificar si ya está instalado
         __import__(package_name)
-        print(f"'{package_name}' ya está instalado.")
+        print("'%s' ya está instalado.", package_name)
     except ImportError:
-        print(f"'{package_name}' no está instalado. Instalando...")
+        print("'%s' no está instalado. Instalando...", package_name)
         # Instala el paquete usando pip
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", package_name, "--user"])
         except subprocess.CalledProcessError as e:
-            print(f"Error al instalar el paquete: {e}")
+            print("Error al instalar el paquete: %s", e)
 
 try:
     import clr
@@ -186,7 +186,7 @@ class SerialFiscalDriver(SerialDriver):
             condition = False
             
             try:
-                dll_path = file_path(f"hw_drivers/iot_handlers/lib/TfhkaNet.dll")
+                dll_path = file_path("hw_drivers/iot_handlers/lib/TfhkaNet.dll")
                 if not os.path.exists(dll_path):
                     _logger.error(
                         "DLL no encontrada en la ruta especificada: %s", dll_path
@@ -197,16 +197,16 @@ class SerialFiscalDriver(SerialDriver):
                 from TfhkaNet.IF.VE import Tfhka  # Importa la clase desde la DLL
 
                 device_manager = Tfhka()
-                # Tfhka = device_manager
+
                 _logger.info("DLL cargada exitosamente y Tfhka inicializado")
             except Exception as e:
                 _logger.error("Error al cargar la DLL: %s", e)
-                _logger.error(f"Problema del la clase Tfhka: {Tfhka}")
+                _logger.error("Problema de la clase Tfhka: %s", Tfhka)
 
 
             if platform.system() == "Windows":
                 
-                _logger.info(f"Verificando en Linux - Identificador del dispositivo: {device['identifier']}")
+                _logger.info("Verificando en Linux - Identificador del dispositivo: %s", device['identifier'])
                 
                 device_manager.CloseFpCtrl()
                 condition = device_manager.OpenFpCtrl(device["identifier"])
@@ -214,13 +214,13 @@ class SerialFiscalDriver(SerialDriver):
 
             elif platform.system() == "Linux":
                 
-                _logger.info(f"Verificando en Linux - Identificador del dispositivo: {device['identifier']}")
+                _logger.info("Verificando en Linux - Identificador del dispositivo: %s", device['identifier'])
                 
                 condition = device["identifier"].__contains__(DEVICE_NAME) or device[
                     "identifier"
                 ].__contains__(DEVICE_SHORT_NAME)
                 
-                _logger.info(f"Resultado de condition: {condition}")
+                _logger.info("Resultado de condition: %s", condition)
 
             if condition and check:
                 try:
@@ -248,7 +248,7 @@ class SerialFiscalDriver(SerialDriver):
         """
         self.dll_path = file_path(f'hw_drivers/iot_handlers/lib/TfhkaNet.dll')
         if not os.path.exists(self.dll_path):
-            _logger.error(f"No se encontró la DLL en la ruta: {self.dll_path}")
+            _logger.error("No se encontró la DLL en la ruta: %s", self.dll_path)
             return
 
         try:
@@ -256,10 +256,10 @@ class SerialFiscalDriver(SerialDriver):
             AddReference('TfhkaNet')
             from TfhkaNet.IF.VE import Tfhka
         except Exception as e:
-            _logger.error(f"Error al cargar la DLL o importar Tfhka: {e}")
+            _logger.error("Error al cargar la DLL o importar Tfhka: %s", e)
             return
 
-        self.tfhka = Tfhka()  # Aquí se inicializa self.tfhka correctamente.
+        self.tfhka = Tfhka()
         _logger.info("DLL TfhkaNet cargada correctamente.")
         
     def connect(self, port):
@@ -267,18 +267,18 @@ class SerialFiscalDriver(SerialDriver):
         Establece conexión con la impresora fiscal.
         """
         if not self.tfhka.OpenFpCtrl(port):
-            _logger.error(f"No se pudo abrir el puerto: {port}")
+            _logger.error("No se pudo abrir el puerto: %s", port)
         self.port = port
-        _logger.info(f"Conexión exitosa al puerto {port}")
+        _logger.info("Conexión exitosa al puerto %s", port)
     
     def disconnect(self):
         """Cierra la conexión con la impresora fiscal."""
         try:
             if self.tfhka:
                 self.tfhka.CloseFpCtrl()
-                _logger.info(f"Puerto {self.port} cerrado correctamente")
+                _logger.info("Puerto %s cerrado correctamente", self.port)
         except Exception as e:
-            _logger.error(f"Error al cerrar el puerto: {e}")
+            _logger.error("Error al cerrar el puerto: %s", e)
 
     def _set_actions(self):
         self._actions.update(
@@ -390,7 +390,7 @@ class SerialFiscalDriver(SerialDriver):
             self.data["value"] = {"valid": "true"}
             event_manager.device_changed(self)
         except Exception as e:
-            _logger.error(f"Error en configure_device: {e}")
+            _logger.error("Error en configure_device: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
@@ -425,16 +425,16 @@ class SerialFiscalDriver(SerialDriver):
             
             if estado_s1:
                 machine_number = estado_s1.RegisteredMachineNumber 
-                self.device_name = f"Impresora TFHKA: {model} - {country} - {machine_number}"
+                self.device_name = "Impresora TFHKA: %s - %s - %s", model, country, machine_number
             else:
-                self.device_name = f"Impresora TFHKA: {model} - {country} - Registro desconocido"
+                self.device_name = "Impresora TFHKA: {model} - {country} - Registro desconocido", 
 
             self.device_manufacturer = "The Factory HKA"
 
-            _logger.info(f" Nombre del dispositivo establecido: {self.device_name}")
+            _logger.info(" Nombre del dispositivo establecido: %s", self.device_name)
         
         except Exception as e:
-            _logger.error(f"Error al establecer el nombre del dispositivo: {e}")
+            _logger.error("Error al establecer el nombre del dispositivo: %s", e)
             self.device_name = "Desconocido - Impresora Fiscal HKAs"
 
     def test(self, data):
@@ -456,7 +456,7 @@ class SerialFiscalDriver(SerialDriver):
             
             # self.get_z_number(data)
         except Exception as e:
-            _logger.error(f"Error executing test command: {e}")
+            _logger.error("Error executing test command: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
@@ -467,10 +467,10 @@ class SerialFiscalDriver(SerialDriver):
         """
         try:
             result = self.tfhka.SendCmd(command)
-            _logger.info(f"Comando '{command}' enviado con éxito: {result}")
+            _logger.info("Comando '%s' enviado con éxito: %s", command, result)
             return result
         except Exception as e:
-            _logger.error(f"Error al enviar el comando '{command}': {e}")
+            _logger.error("Error al enviar el comando '%s': %s", command, e)
             raise
 
     def get_z_number(self, data):
@@ -482,12 +482,12 @@ class SerialFiscalDriver(SerialDriver):
             estado_s1 = self.get_s1_printer_data()
             if estado_s1:
                 z_counter = estado_s1.DailyClosureCounter
-                _logger.info(f"Cierre: {z_counter}")
+                _logger.info("Cierre: %s", z_counter)
                 return {"valid": True, "data": {"report_z": z_counter}}
             else:
                 return {"valid": False, "message": "No se pudo obtener el número de la última factura Z."}
         except Exception as e:
-            _logger.error(f"Error al obtener el número de la última factura Z: {e}")
+            _logger.error("Error al obtener el número de la última factura Z: %s", e)
             return {"valid": False, "message": str(e)}
         
     def logger(self, data):
@@ -503,7 +503,7 @@ class SerialFiscalDriver(SerialDriver):
             self.data["value"] = {"valid": "true"}
             event_manager.device_changed(self)
         except Exception as e:
-            _logger.error(f"Error en logger: {e}")
+            _logger.error("Error en logger: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
@@ -550,7 +550,7 @@ class SerialFiscalDriver(SerialDriver):
         if price_unit < 0:
             return None, abs(price_unit)
         
-        code = f'|{item["defaul_code"]}|' if item.get("defaul_code") else ""
+        code = f'|{item["default_code"]}|' if item.get("default_code") else ""
         
         amount_i, amount_d = self.split_amount(round(price_unit, max_amount_decimal), max_amount_decimal)
         qty_i, qty_d = self.split_amount(item.get("quantity", 0), max_qty_decimal)
@@ -667,7 +667,7 @@ class SerialFiscalDriver(SerialDriver):
             }
 
         except Exception as _e:
-            _logger.error(f"Error al preparar los datos de la factura: {_e}")
+            _logger.error("Error al preparar los datos de la factura: %s", _e)
             return {"valid": False, "message": str(_e)}
         
     def send_invoice_commands(self, cmd):
@@ -690,7 +690,7 @@ class SerialFiscalDriver(SerialDriver):
                 result = self.send_command(command)
                 
                 if not result and command not in ["101","199"]:
-                    msg.append(f"Fallo al enviar comando: {command}")
+                    msg.append("Fallo al enviar comando: %s",command)
                     self.send_command("199")
                     return {"valid": False, "message": msg}
 
@@ -699,7 +699,7 @@ class SerialFiscalDriver(SerialDriver):
             return self.data["value"]
 
         except Exception as _e:
-            _logger.error(f"Error al enviar los comandos de la factura: {_e}")
+            _logger.error("Error al enviar los comandos de la factura: %s", _e)
             return {"valid": False, "message": str(_e), "continue": False}
         
     def finalize_invoice(self, data):
@@ -737,11 +737,11 @@ class SerialFiscalDriver(SerialDriver):
         """        
         try:
             status = self.tfhka.GetPrinterStatus()
-            _logger.info(f"Estado de la impresora: {status.PrinterStatusDescription}")
+            _logger.info("Estado de la impresora: %s", status.PrinterStatusDescription)
             return status
         except Exception as e:
-            _logger.error(f"Error al obtener estado de la impresora: {e}")
-            raise
+            _logger.error("Error al obtener estado de la impresora: %s", e)
+            raise UserError("Error al obtener estado de la impresora: %s", e)
     
     def print_out_refund(self, invoice):        
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -769,10 +769,13 @@ class SerialFiscalDriver(SerialDriver):
             raise UserError(_(
                 "¡Error de impresora fiscal! "
                 "La impresora fiscal actual no coincide con la usada en la factura original. "
-                f"Serial de la factura: {invoice['data']['invoice_affected']['serial_machine']}. "
-                f"Serial de la impresora conectada: {machine_number}."
+                "Serial de la factura: %s. "
+                "Serial de la impresora conectada: %s."
+            ) % (
+                invoice['data']['invoice_affected']['serial_machine'],
+                machine_number,
             ))
-                    
+        
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
         _invoice = invoice.get("data", False)
         if _invoice:
@@ -1009,8 +1012,8 @@ class SerialFiscalDriver(SerialDriver):
     
     def _print_out_refund(self, invoice):
         """
-        Imprime una nota de crédito utilizando los datos proporcionados.
-        :param invoice: Diccionario con los datos de la nota de crédito.
+        Prints a credit note using the provided data.
+        :param invoice: Dictionary containing the credit note data.
         """
         try:
             
@@ -1105,7 +1108,7 @@ class SerialFiscalDriver(SerialDriver):
                 result = self.send_command(command) 
                 
                 if not result:
-                    _logger.error(f"Fallo al enviar comando: {command}")
+                    _logger.error("Fallo al enviar comando: %s", command)
                     
             msg = "Nota de crédito impresa correctamente"
             
@@ -1122,7 +1125,7 @@ class SerialFiscalDriver(SerialDriver):
                 return {"valid": False, "message": "No se pudo obtener el número de la última nota de crédito."}
 
         except Exception as _e:
-            _logger.error(f"Error al imprimir la nota de crédito: {_e}")
+            _logger.error("Error al imprimir la nota de crédito: %s", _e)
             return {"valid": False, "message": str(_e)}
 
     def print_resume(self, data):
@@ -1142,7 +1145,7 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return self.data["value"]
         except Exception as _e:
-            _logger.error(f"Error al imprimir el resumen: {_e}")
+            _logger.error("Error al imprimir el resumen: %s", _e)
             self.data["value"] = {"valid": False, "message": str(_e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(_e)}
@@ -1171,7 +1174,7 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return self.data["value"]
         except Exception as _e:
-            _logger.error(f"Error al imprimir la reimpresión por fecha: {_e}")
+            _logger.error("Error al imprimir la reimpresión por fecha: %s", _e)
             self.data["value"] = {"valid": False, "message": str(_e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(_e)}
@@ -1201,7 +1204,7 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return self.data["value"]
         except Exception as _e:
-            _logger.error(f"Error al imprimir la reimpresión por tipo: {_e}")
+            _logger.error("Error al imprimir la reimpresión por tipo: %s", _e)
             self.data["value"] = {"valid": False, "message": str(_e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(_e)}
@@ -1236,7 +1239,7 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return{"valid": result}
         except Exception as _e:
-            _logger.error(f"Error al imprimir la reimpresión: {_e}")
+            _logger.error("Error al imprimir la reimpresión: %s", _e)
             self.data["value"] = {"valid": False, "message": str(_e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(_e)}
@@ -1261,7 +1264,7 @@ class SerialFiscalDriver(SerialDriver):
             
             response = {
                 "valid": True,
-                "data": {"sequence": "10", "serial_machine": machine_number, "number":number, "report_z": number_z},
+                "data": {"sequence": number, "serial_machine": machine_number, "number":number, "report_z": number_z},
             }
 
             self.data["value"] = response
@@ -1288,8 +1291,7 @@ class SerialFiscalDriver(SerialDriver):
                             
             response = {
                 "valid": True,
-                "data": {"sequence": "10", "serial_machine": machine_number, "number":number, "report_z": number_z},
-                # "data": {"sequence": number, "serial_machine": machine_number},
+                "data": {"sequence": number, "serial_machine": machine_number, "number":number, "report_z": number_z},
             }
 
             self.data["value"] = response
@@ -1479,7 +1481,7 @@ class SerialFiscalDriver(SerialDriver):
             return result
         
         except Exception as e:
-            raise
+            raise UserError("Error al validar factura: %s", e)
     
     def programacion(self, data):
         try:
@@ -1501,7 +1503,7 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return self.data["value"]
         except Exception as e:
-            _logger.error(f"Error al enviar el comando de programación: {e}")
+            _logger.error("Error al enviar el comando de programación: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
             event_manager.device_changed(self)
             return self.data["value"]
@@ -1622,13 +1624,13 @@ class SerialFiscalDriver(SerialDriver):
                 raise Exception(status["data"]["status"]["msg"])
             
             status = status["status"]
-            _logger.info(f"Estado de la impresora: {status.PrinterStatusDescription}")
+            _logger.info("Estado de la impresora: %s", status.PrinterStatusDescription)
             self.data["value"] = {"valid": True, "message": "Estado de la impresora: " + status.PrinterStatusDescription}
             event_manager.device_changed(self)
 
             return status
         except Exception as e:
-            _logger.error(f"Error al obtener estado de la impresora: {e}")
+            _logger.error("Error al obtener estado de la impresora: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
@@ -1666,7 +1668,7 @@ class SerialFiscalDriver(SerialDriver):
                 }
 
         except Exception as e:
-            _logger.error(f"Error al leer estado fiscal: {e}")
+            _logger.error("Error al leer estado fiscal: %s", e)
             status = self._GetStatusError(0, 128)
             return {
                 "valid": False,
@@ -1851,7 +1853,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S1 obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S1: {e}")
+            _logger.error("Error al obtener los datos S1: %s", e)
             raise
 
     def GetS2PrinterData(self):
@@ -1860,7 +1862,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S2 obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S2: {e}")
+            _logger.error("Error al obtener los datos S2: %s", e)
             raise
 
     def GetS25PrinterData(self):
@@ -1869,7 +1871,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S25 obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S25: {e}")
+            _logger.error("Error al obtener los datos S25: %s", e)
             raise
 
     def GetS3PrinterData(self):
@@ -1878,7 +1880,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S3 obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S3: {e}")
+            _logger.error("Error al obtener los datos S3: %s", e)
             raise
 
     def GetS4PrinterData(self):
@@ -1887,7 +1889,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S4 obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S4: {e}")
+            _logger.error("Error al obtener los datos S4: %s", e)
             raise
 
     def GetS5PrinterData(self):
@@ -1896,7 +1898,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S5 obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S5: {e}")
+            _logger.error("Error al obtener los datos S5: %s", e)
             raise
 
     def GetS6PrinterData(self):
@@ -1905,7 +1907,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S6 obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S6: {e}")
+            _logger.error("Error al obtener los datos S6: %s", e)
             raise
 
     def GetS7PrinterData(self):
@@ -1914,7 +1916,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S7 obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S7: {e}")
+            _logger.error("Error al obtener los datos S7: %s", e)
             raise
 
     def GetS8EPrinterData(self):
@@ -1923,7 +1925,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S8E obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S8E: {e}")
+            _logger.error("Error al obtener los datos S8E: %s", e)
             raise
 
     def GetS8PPrinterData(self):
@@ -1932,7 +1934,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.info("Datos del estado S8P obtenidos correctamente. : %s", data)
             return data
         except Exception as e:
-            _logger.error(f"Error al obtener los datos S8P: {e}")
+            _logger.error("Error al obtener los datos S8P: %s", e)
             raise
 
     def GetXReport(self):
@@ -2013,7 +2015,7 @@ class SerialFiscalDriver(SerialDriver):
             return {"valid": True, "message": "Reporte X impreso correctamente."}
 
         except Exception as e:
-            _logger.error(f"Error al imprimir el reporte X: {e}")
+            _logger.error("Error al imprimir el reporte X: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
@@ -2032,7 +2034,7 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return {"valid": True, "message": "Reporte Z impreso correctamente."}
         except Exception as e:
-            _logger.error(f"Error al imprimir el reporte Z: {e}")
+            _logger.error("Error al imprimir el reporte Z: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
