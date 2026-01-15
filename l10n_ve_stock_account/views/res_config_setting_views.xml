@@ -88,6 +88,19 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_stock_donation_account">
+                        <div class="o_setting_right_pane">
+                            <label for="donation_account_id" />
+                            <div class="text-muted">
+                                Donation Account
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="donation_account_id" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </block>
             </xpath>
         </field>

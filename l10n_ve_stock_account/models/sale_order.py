@@ -30,6 +30,11 @@ class SaleOrder(models.Model):
         help="Indicates if this sale order is a consignation sale.",
     )
 
+    @api.onchange("is_donation")
+    def _onchange_is_donation(self):
+        if self.is_donation:
+            self.partner_id = self.company_id.partner_id
+
     ### COMPUTES ###
     @api.depends("warehouse_id", "document")
     def _compute_is_consignation(self):

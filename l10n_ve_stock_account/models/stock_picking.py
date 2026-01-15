@@ -82,7 +82,23 @@ class StockPicking(models.Model):
         compute="_compute_allowed_reason_ids",
     )
 
-    is_donation = fields.Boolean(related="sale_id.is_donation")
+    is_donation = fields.Boolean(string="Is Donation",readonly=False,tracking=True)
+
+    @api.onchange("transfer_reason_id")
+    def _onchange_is_donation(self):
+        donation_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_donation", raise_if_not_found=False)
+        for picking in self:
+            picking.is_donation = picking.transfer_reason_id == donation_reason or picking.transfer_reason_id
+    
+    see_donation_field = fields.Boolean(string="See Donation Field", compute="_compute_see_donation_field")
+    
+    @api.depends("transfer_reason_id")
+    def _compute_see_donation_field(self):
+        donation_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_donation", raise_if_not_found=False)
+        self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        target_reasons = donation_reason | self_consumption_reason
+        for picking in self:
+            picking.see_donation_field = picking.transfer_reason_id in target_reasons
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
@@ -192,6 +208,7 @@ class StockPicking(models.Model):
                     "invoice_line_ids": lines,
                     "transfer_ids": [(6, 0, pickings.ids)],
                     "from_picking": True,
+                    "is_donation": self.is_donation,
                 }
             )
             for picking_id in pickings:
@@ -219,6 +236,7 @@ class StockPicking(models.Model):
                             "from_picking": True,
                             "fiscal_position_id": picking_id.sale_id.fiscal_position_id.id if picking_id.sale_id.fiscal_position_id else False,
                             "invoice_payment_term_id": picking_id.sale_id.payment_term_id.id if picking_id.sale_id.payment_term_id else False,
+                            "is_donation": picking_id.is_donation,
                         }
                     )
                 else:
@@ -244,6 +262,7 @@ class StockPicking(models.Model):
                         "invoice_line_ids": invoice_line_list,
                         "transfer_ids": self,
                         "from_picking": True,
+                        "is_donation": picking_id.is_donation,
                     }
                     )
             if invoice:
@@ -1178,8 +1197,6 @@ class StockPicking(models.Model):
             result = date(hoy.year, hoy.month, last_day)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
-    def get_foreign_currency_is_vef(self):
-        return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):

@@ -33,9 +33,18 @@ class ResCompany(models.Model):
     )
 
     optional_internal_movement_guidance = fields.Boolean(
-        "Internal picking with dispatched guidance ptional",
-        default=False
+        "Internal picking with dispatched guidance ptional", default=False
     )
     invoice_cron_time = fields.Float(required=True, default=18.0)
 
     hide_price_on_dispatch_guide = fields.Boolean()
+
+    donation_account_id = fields.Many2one(
+        "account.account",
+        check_company=True,
+        string="Donation Account",
+        readonly=False,
+        domain=[
+            ("account_type", "=", "expense"),
+        ],
+    )
