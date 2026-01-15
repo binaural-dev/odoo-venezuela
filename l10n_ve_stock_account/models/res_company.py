@@ -39,3 +39,13 @@ class ResCompany(models.Model):
         default=False,
         help="If enabled, dispatch guide amounts will use the date of the stock picking for currency conversion.",
     )
+    
+    donation_account_id = fields.Many2one(
+        "account.account",
+        check_company=True,
+        string="Donation Account",
+        readonly=False,
+        domain=[
+            ("account_type", "=", "expense"),
+        ],
+    )
