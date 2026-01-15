@@ -530,7 +530,7 @@ msgstr "Monto total vencido"
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid "Untaxed Total"
-msgstr "Total sin impuesto"
+msgstr "Total sin impuestos"
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
