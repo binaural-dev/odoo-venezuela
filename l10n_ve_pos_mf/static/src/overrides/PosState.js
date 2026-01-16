@@ -17,7 +17,7 @@ patch(TicketScreen, {
 patch(PosStore.prototype, {
   open_cashbox() {
     if (this.useFiscalMachine() && this.config.has_cashbox) {
-      const fdm = this.useFiscalMachine();
+    const fdm = this.useFiscalMachine();
       fdm.action({
         action: `logger`,
         data: "0",
