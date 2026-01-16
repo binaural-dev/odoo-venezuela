@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-07 15:30+0000\n"
-"PO-Revision-Date: 2026-01-07 15:30+0000\n"
+"POT-Creation-Date: 2026-01-16 18:27+0000\n"
+"PO-Revision-Date: 2026-01-16 18:27+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -252,11 +252,6 @@ msgid "Not Show General Aliquot Purchase International"
 msgstr "No mostrar alícuota general compras internacionales"
 
 #. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_international_purchase_in_book
-msgid "Not Show International Purchase In Book"
-msgstr "No mostrar compras internacionales en el libro"
-
-#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_purchase
 msgid "Not Show Reduced Aliquot Purchase"
@@ -273,6 +268,12 @@ msgstr "No mostrar alícuota reducida compras internacionales"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_sale
 msgid "Not Show Reduced Aliquot Sale"
 msgstr "No mostrar alícuota reducida (Ventas)"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_total_purchases_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_total_purchases_international
+msgid "Not Show Total Purchases International"
+msgstr "No mostrar total compras internacionales"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_total_purchases_with_international_iva
@@ -328,7 +329,7 @@ msgstr "Mostrar descuento en facturas"
 #. odoo-javascript
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_tax/static/src/components/tax_totexentasals/tax_totals.xml:0
+#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #, python-format
 msgid "Subtotal"
