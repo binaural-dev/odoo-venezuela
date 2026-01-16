@@ -251,6 +251,10 @@ class AccountMove(models.Model):
 
                 total_bi_igtf += amount_base_payment
             
+            if rec.reversed_entry_id and rec.move_type in ['out_refund','in_refund']:
+                alter_bi_igtf = rec.reversed_entry_id.foreign_alter_bi_igtf
+                total_bi_igtf = rec.reversed_entry_id.foreign_bi_igtf
+
             apply = igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
             rec.foreign_alter_bi_igtf = alter_bi_igtf
             rec.foreign_bi_igtf = total_bi_igtf
