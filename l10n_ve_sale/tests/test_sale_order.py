@@ -40,6 +40,7 @@ class TestSaleOrderInvoice(TransactionCase):
             {
                 "name": "IVA",
                 "sequence": 10,
+                "company_id": self.company.id,
             }
         )
 
@@ -51,7 +52,7 @@ class TestSaleOrderInvoice(TransactionCase):
                 "amount_type": "percent",
                 "type_tax_use": "sale",
                 "tax_group_id": self.tax_group.id,
-                "country_id": self.env.ref("base.ve").id,
+                "company_id": self.company.id,
             }
         )
 
