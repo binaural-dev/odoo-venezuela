@@ -1095,7 +1095,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         
             if field.get("field") == "bi_igtf":
                 worksheet.write(
-                total_idx, index, f"=SUM({col}8:{col}{total_idx})*3/100", cell_formats.get("number")
+                total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")*3/100', cell_formats.get("number")
+            )
+            if field.get("field") == "igtf":
+                worksheet.write(
+                total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")', cell_formats.get("number")
             )
         
         
@@ -1233,7 +1237,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 
             if field.get("field") == "bi_igtf":
                 worksheet.write(
-                total_idx, index, f"=SUM({col}8:{col}{total_idx})*3/100", cell_formats.get("number")
+                total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")*3/100', cell_formats.get("number")
+            )
+            if field.get("field") == "igtf":
+                worksheet.write(
+                total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")', cell_formats.get("number")
             )
         
         self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats, last_col_index)
