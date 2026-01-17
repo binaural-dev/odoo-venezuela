@@ -46,13 +46,6 @@ class TestStockPickingInvoice(TransactionCase):
             "country_id": ve.id,
         })
 
-        # self.tax_group = self.env["account.tax.group"].create(
-        #     {
-        #         "name": "IVA",
-        #         "sequence": 10,
-        #     }
-        # )
-
         # Crear impuesto IVA 16%
         self.tax_iva16 = self.env["account.tax"].create(
             {
@@ -61,7 +54,10 @@ class TestStockPickingInvoice(TransactionCase):
                 "amount_type": "percent",
                 "type_tax_use": "sale",
                 "tax_group_id": self.tax_group.id,
+<<<<<<< HEAD
                 "country_id": ve.id,
+=======
+>>>>>>> e756e55e (corrigiendo prueba unitaria)
                 "company_id": self.company.id,
             }
         )
@@ -201,4 +197,3 @@ class TestStockPickingInvoice(TransactionCase):
             len(invoice.invoice_line_ids) == len(order.order_line),
             "The invoice created from the sales orders dispatch guide must have the same number of lines as the sales order.",
         )
-        _logger.info("test_01_generate_invoice_from_dispatch_guide --- successfully.")
