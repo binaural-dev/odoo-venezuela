@@ -180,8 +180,13 @@ class AccountTax(models.Model):
 
             if not payment_id:
                 continue
+            
+            company_fields = self.env['res.company']._fields
             for line in payment_id.line_ids:
-                if line.account_id == self.env.company.customer_account_igtf_id or line.account_id == self.env.company.supplier_account_igtf_id:
+                if (
+                    ('customer_account_igtf_id' in company_fields and line.account_id == self.env.company.customer_account_igtf_id) or 
+                    ('supplier_account_igtf_id' in company_fields and line.account_id == self.env.company.supplier_account_igtf_id)
+                ):
                     igtf_amount = line.credit or line.debit
                 
             if self.env.company.currency_id == self.env.ref("base.VEF"): 
