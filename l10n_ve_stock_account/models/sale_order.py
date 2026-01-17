@@ -21,6 +21,23 @@ class SaleOrder(models.Model):
         help="Document type for the sale order.",
     )
 
+    compute_document = fields.Selection(
+        [
+            ("invoice", "Invoice"),
+        ],
+        compute="_compute_document",
+        string="Document",
+        required=True,
+        tracking=True,
+        help="Document type for the sale order.",
+    )
+
+    show_document = fields.Boolean(
+        compute="_compute_show_document",
+        string="Show Document",
+        store=False,
+    )
+
     is_donation = fields.Boolean(string="Is Donation", default=False, tracking=True)
 
     is_consignation = fields.Boolean(
@@ -39,6 +56,21 @@ class SaleOrder(models.Model):
             )
             if order.warehouse_id and order.warehouse_id.is_consignation_warehouse:
                 order.document = "invoice"
+
+    @api.depends("compute_document", "document")
+    def _compute_document(self):
+        for order in self:
+            order.compute_document = order._default_document()
+                
+            if order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide'):
+                order.document = order.compute_document or order._default_document()
+
+    @api.depends("show_document", "state")
+    def _compute_show_document(self):
+        for order in self:
+            order.show_document = False
+            if order.state == "draft":
+                order.show_document = order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide')
 
     ### DEFAULTS ###
     @api.model

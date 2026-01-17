@@ -158,8 +158,7 @@ class AccountPaymentRegister(models.TransientModel):
                 abs(
                     sum(
                         comp_curr._convert(
-                            # aml.amount_residual,
-                            self.foreign_total_billed_vef, 
+                            aml.amount_residual, 
                             self.currency_id,
                             self.company_id,
                             self.payment_date,

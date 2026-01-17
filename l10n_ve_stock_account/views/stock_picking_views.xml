@@ -24,7 +24,9 @@
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="partner_required" invisible='1'/>
+                <field name="is_dispatch_guide" invisible="1"/>
             </xpath>
+
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
                 <attribute name="required">partner_required or is_dispatch_guide</attribute> 
                 <attribute name="readonly">order_is_consignment or partner_required</attribute>
@@ -46,7 +48,8 @@
                 <field 
                     name="is_dispatch_guide"
                     invisible="operation_code not in ['internal','outgoing']" force_save="1"
-                    readonly="not reasons_optional_guide_dispatch or state == 'done'"/>
+                    readonly="not reasons_optional_guide_dispatch or state == 'done'"
+                    groups="!l10n_ve_stock_account.group_not_dispatch_guide"/>
 
 
                 <field name="is_consignment_readonly" invisible="1"/>
@@ -54,16 +57,18 @@
                     name="transfer_reason_id"
                     invisible="operation_code != 'internal'"
                     readonly="state == 'done' or is_consignment_readonly"
-                    required="operation_code == 'internal'" />
+                    required="operation_code == 'internal'" 
+                    groups="!l10n_ve_stock_account.group_not_dispatch_guide"/>
                 <field name="other_causes_transfer_reason" invisible="1"/>
                 <field name="show_other_causes_transfer_reason" invisible="1"/>
-                <field name="is_consignment" />
+                <field name="is_consignment" groups="!l10n_ve_stock_account.group_not_dispatch_guide"/>
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="is_donation" invisible="1" />
                 <field 
                     name="transfer_reason_id"
                     invisible="operation_code != 'outgoing'"
-                    readonly="is_donation or state == 'done'"/>
+                    readonly="is_donation or state == 'done'"
+                    groups="!l10n_ve_stock_account.group_not_dispatch_guide"/>
                 <field
                     name="other_causes_transfer_reason"
                     invisible="not show_other_causes_transfer_reason"

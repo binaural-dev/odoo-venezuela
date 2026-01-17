@@ -4,6 +4,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.osv import expression
 from datetime import date, datetime, timedelta
+import calendar
 
 _logger = logging.getLogger(__name__)
 
@@ -217,6 +218,7 @@ class StockPicking(models.Model):
                             "transfer_ids": self,
                             "from_picking": True,
                             "fiscal_position_id": picking_id.sale_id.fiscal_position_id.id if picking_id.sale_id.fiscal_position_id else False,
+                            "invoice_payment_term_id": picking_id.sale_id.payment_term_id.id if picking_id.sale_id.payment_term_id else False,
                         }
                     )
                 else:
@@ -920,14 +922,23 @@ class StockPicking(models.Model):
         
         for picking in self:
 
+            if self.env.user.has_group("l10n_ve_stock_account.group_not_dispatch_guide"):
+                picking.is_dispatch_guide = False
+                continue
+
             picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
                 continue
-
+            elif picking.document == "dispatch_guide":
+                picking.is_dispatch_guide = True
+                continue
             elif (
                 picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id or picking.transfer_reason_id.id == other_causes_reason.id
+                and (
+                    picking.transfer_reason_id.id == consignment_reason.id
+                    or picking.transfer_reason_id.id == other_causes_reason.id
+                )
             ):
                 picking.is_dispatch_guide = True
 
@@ -1162,22 +1173,24 @@ class StockPicking(models.Model):
                 result = hoy.replace(day=15)
             else:
                 # Si es 15 o después: último día del mes
-                result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-                result = result - timedelta(days=1)
+                last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+                result = date(hoy.year, hoy.month, last_day)
 
         elif taxpayer_type in ("ordinary", "formal"):
             # Siempre último día del mes para estos tipos
-            result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-            result = result - timedelta(days=1)
+            last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+            result = date(hoy.year, hoy.month, last_day)
 
+        if self.env.user.has_group("l10n_ve_stock_account.group_not_dispatch_guide"):
+            return
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):
-        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
-        for picking in self:
+        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment', raise_if_not_found=False)
+        for picking in self.filtered(lambda p: p.transfer_reason_id):
             picking.partner_required = (
                 picking.transfer_reason_id.id == consignment_reason.id
                 and picking.is_dispatch_guide
