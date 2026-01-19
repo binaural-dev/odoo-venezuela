@@ -121,7 +121,7 @@ class AccountPaymentIgtf(models.Model):
                 if payment.payment_type == "outbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
-                        payment._prepare_outbound_move_line_igtf_vals(vals,write_off_line_vals)
+                        payment._prepare_outbound_move_line_igtf_vals(vals, write_off_line_vals)
 
     def _create_inbound_move_line_igtf_vals(self, vals):
         
@@ -195,7 +195,7 @@ class AccountPaymentIgtf(models.Model):
 
                 currency = rec.currency_id 
                 precision = currency.rounding
-
+                
                 credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
                 credit_line = credit_line_unrounded
                 credit_amount = -credit_line
@@ -209,9 +209,13 @@ class AccountPaymentIgtf(models.Model):
                 
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] + rec.igtf_amount
-                    vals[2].update({"amount_currency": actual_value, "balance": actual_value})
+                    balance = actual_value
+                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    
+                        balance = actual_value / rec.foreign_inverse_rate
+                    vals[2].update({"amount_currency": actual_value, "balance": balance})
 
-                rec._create_inbound_move_line_igtf_vals(vals,write_off_line_vals)
+                rec._create_inbound_move_line_igtf_vals(vals)
 
     def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
         
@@ -235,9 +239,13 @@ class AccountPaymentIgtf(models.Model):
 
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] - rec.igtf_amount
-                    vals[2].update({"amount_currency": actual_value, "balance": actual_value})
+                    balance = actual_value
+                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    
+                        balance = actual_value / rec.foreign_inverse_rate
+                    vals[2].update({"amount_currency": actual_value, "balance": balance})
 
-                rec._create_outbound_move_line_igtf_vals(vals,write_off_line_vals)
+                rec._create_outbound_move_line_igtf_vals(vals)
                 
 
     @api.depends('journal_id')
