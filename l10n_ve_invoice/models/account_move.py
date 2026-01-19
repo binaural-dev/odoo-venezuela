@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import json
 import logging
-
+import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import format_date
@@ -38,6 +38,46 @@ class AccountMove(models.Model):
         compute="_compute_is_debit_journal",
         store=True
     )
+
+    entry_in_period = fields.Boolean(
+        compute="_compute_entry_in_period",
+    )
+
+    @api.depends("invoice_date", "state")
+    def _compute_entry_in_period(self):
+        """Computing that allows determining whether an account move (invoice, debit/credit note or receipt) is within the current fiscal period."""
+        today = date.today()
+        taxpayer_type = self.env.company.taxpayer_type
+        period_limit = self._get_period_limit(today, taxpayer_type)
+
+        for move in self:
+            move.entry_in_period = False
+
+            if move.state == "cancel":
+                continue
+
+            if move.move_type in ("in_invoice", "in_refund", "in_receipt"):
+                move.entry_in_period = True
+                continue
+
+            if move.move_type in ("out_invoice", "out_refund"):
+                if not move.invoice_date:
+                    continue
+
+                if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
+                    if taxpayer_type == "special" and move.invoice_date.day < 15 < period_limit.day:
+                        move.entry_in_period = False
+                    else:
+                        move.entry_in_period = True
+
+    def _get_period_limit(self, today, taxpayer_type):
+        """Returns the tax period deadline according to the taxpayer type."""
+        if taxpayer_type == "special":
+            if today.day < 15:
+                return today.replace(day=15)
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        return date(today.year, today.month, last_day)
+
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
         from_pos = self.env.context.get('from_pos', False)
@@ -58,7 +98,17 @@ class AccountMove(models.Model):
             self.invoice_date = fields.Date.today()
 
     def action_post(self):
+        
         for record in self:
+            # Validación: Solo si existe documento de origen (compra o venta)
+            if record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+                for line in record.invoice_line_ids:
+                    if line.display_type in ("line_section", "line_note"):
+                        continue
+                    if not line.tax_ids:
+                        # Agregue un impuesto a cada línea de producto. No se permite confirmar la factura si alguna línea de producto no tiene impuesto.
+                        raise ValidationError(_("Add a tax to each product line. You cannot confirm the invoice if any product line is missing a tax."))
+
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 

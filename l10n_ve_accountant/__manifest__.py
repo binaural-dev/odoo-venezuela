@@ -18,6 +18,8 @@
         "l10n_ve_base",
         "l10n_ve_rate",
         "l10n_ve_contact",
+        "account_invoice_pricelist",
+        "account_invoice_pricelist_sale"
     ],
     "data": [
         "security/res_groups.xml",

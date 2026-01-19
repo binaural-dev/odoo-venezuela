@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-18 13:23+0000\n"
-"PO-Revision-Date: 2025-12-18 13:23+0000\n"
+"POT-Creation-Date: 2026-01-06 15:48+0000\n"
+"PO-Revision-Date: 2026-01-06 15:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -42,6 +42,20 @@ msgstr "\"Guía de Despacho \" + object.name"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "(SIN DERECHO A CRÉDITO FISCAL)"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
+msgid ""
+"<br/>\n"
+"                                    <strong>Firma y sello:</strong> ________________________"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
+msgid ""
+"<br/>\n"
+"                                    <strong>Firma:</strong> ________________________"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -125,11 +139,6 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<span class=\"fw-bold\">Tasa:</span>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Teléfono:</span>"
 msgstr ""
 
@@ -149,30 +158,14 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
-msgid ""
-"<strong>Nombre:</strong> <br/> C.I: <br/> Fecha: <br/>\n"
-"        <br/>\n"
-"        <strong>\n"
-"                                    Firma:</strong> ________________________"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
-msgid ""
-"<strong>Nombre:</strong> <br/> C.I: <br/> Fecha: <br/>\n"
-"        <br/>\n"
-"        <strong>Firma\n"
-"                                    y sello:</strong> ________________________"
+msgid "<strong>Nombre:</strong> <br/> C.I: <br/> Fecha: <br/>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid ""
 "<strong>Nombre:</strong> <br/> C.I: <br/> Marca vehículo: <br/>\n"
-"                                    Placa batea: <br/> Placa chasis: <br/>\n"
-"        <br/>\n"
-"        <strong>Firma:</strong>\n"
-"                                    ________________________"
+"                                    Placa batea: <br/> Placa chasis: <br/>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -271,6 +264,11 @@ msgstr "No se puede vender más de lo disponible en el stock de consignación."
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Cant."
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
+msgid "Cod."
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -550,6 +548,18 @@ msgid "Has Document"
 msgstr "¿Tiene documento?"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__hide_disc_field_dispatch_guide
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__hide_disc_field_dispatch_guide
+msgid "Hide discount field in dispatch guide"
+msgstr "Ocultar campo de descuento en guía de despacho"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__hide_weight_field_dispatch_guide
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
+msgid "Hide weight field in dispatch guide"
+msgstr "Ocultar campo de peso en guía de despacho"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move_line__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__id
@@ -581,14 +591,40 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
-msgid "Impuesto"
+msgid "IVA"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__indexed_dispatch_guide
-msgid "Indexed Dispatch Guide"
-msgstr "Guía de despacho indexada"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "If checked, the discount field will be hidden in the dispatch guide."
+msgstr "Si está marcado, el campo de descuento se ocultará en la guía de despacho."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "If checked, the weight field will be hidden in the dispatch guide."
+msgstr "Si está marcado, el campo de peso se ocultará en la guía de despacho."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__indexed_dispatch_guide
+msgid ""
+"If enabled, dispatch guide amounts will use the date of the stock picking "
+"for currency conversion."
+msgstr ""
+"Si está habilitado, los montos de la guía de despacho utilizarán la fecha "
+"efectiva del picking de stock para la conversión de moneda."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_disc_field_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_disc_field_dispatch_guide
+msgid "If enabled, the discount field will be hidden in the dispatch guide."
+msgstr "Si está habilitado, el campo de descuento se ocultará en la guía de despacho."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_weight_field_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
+msgid "If enabled, the weight field will be hidden in the dispatch guide."
+msgstr "Si está habilitado, el campo de peso se ocultará en la guía de despacho."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_sale_order__is_consignation
@@ -690,11 +726,6 @@ msgid "Is Return"
 msgstr "Es devolución"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
-msgid "Item"
-msgstr "Artículo"
-
-#. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
@@ -755,6 +786,11 @@ msgstr "Ubicación"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "Los datos del cliente no existen"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__match_guide_dispatch_domain
+msgid "Match Guide Dispatch Domain"
 msgstr ""
 
 #. module: l10n_ve_stock_account
