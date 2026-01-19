@@ -25,7 +25,7 @@ class TestRateLive(TransactionCase):
         self.currency_vef.active = True
         self.currency_cny.active = True
         with patch(
-            "odoo.addons.l10n_ve_currency_rate_live.models.res_company.binaural_bcv_query.get_currency_rates_of_the_day_bcv"
+            "odoo.addons.l10n_ve_currency_rate_live.models.res_company.ResCompany._get_bcv_currency_rates"
         ) as mock_bcv:
             mock_bcv.return_value = {
                 "USD": (30, fields.Date.today()),
