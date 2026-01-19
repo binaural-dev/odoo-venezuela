@@ -192,38 +192,53 @@ class AccountPaymentIgtf(models.Model):
         for rec in self:
             lines = [line for line in vals]
             if rec.payment_type == "inbound":
-                currency = rec.currency_id
+
+                currency = rec.currency_id 
+                precision = currency.rounding
+
                 credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
                 credit_line = credit_line_unrounded
                 credit_amount = -credit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     
                     credit_amount = -(credit_line / rec.foreign_inverse_rate)
-                currency = rec.currency_id 
-                precision = currency.rounding
-                if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
-                    vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
-                rec._create_inbound_move_line_igtf_vals(vals)
                 
+                if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
+                    if not write_off_line_vals:
+                        vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
+                
+                if write_off_line_vals:
+                    actual_value = vals[2]["amount_currency"] + rec.igtf_amount
+                    vals[2].update({"amount_currency": actual_value, "balance": actual_value})
+
+                rec._create_inbound_move_line_igtf_vals(vals,write_off_line_vals)
+
     def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
         
         for rec in self:
             lines = [line for line in vals]
             if rec.payment_type == "outbound":
-
+                
                 currency = rec.currency_id
+                precision = currency.rounding
+
                 debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
                 debit_line = debit_line_unrounded
                 debit_amount = debit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     
                     debit_amount = debit_line / rec.foreign_inverse_rate
-                currency = rec.currency_id 
-                precision = currency.rounding
+                
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
-                    vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
+                    if not write_off_line_vals:
+                        vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
 
-                rec._create_outbound_move_line_igtf_vals(vals)
+                if write_off_line_vals:
+                    actual_value = vals[2]["amount_currency"] - rec.igtf_amount
+                    vals[2].update({"amount_currency": actual_value, "balance": actual_value})
+
+                rec._create_outbound_move_line_igtf_vals(vals,write_off_line_vals)
+                
 
     @api.depends('journal_id')
     def _compute_is_igtf_journal(self):
