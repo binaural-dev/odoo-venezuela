@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-09 01:56+0000\n"
-"PO-Revision-Date: 2025-12-09 01:56+0000\n"
+"POT-Creation-Date: 2026-01-17 00:39+0000\n"
+"PO-Revision-Date: 2026-01-17 00:39+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -321,6 +321,16 @@ msgstr "Creado en"
 #: model:ir.model,name:l10n_ve_accountant.model_res_currency
 msgid "Currency"
 msgstr "Moneda"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__company_currency_symbol
+msgid "Currency sign, to be used when printing amounts."
+msgstr "Signo de moneda, para ser utilizado cuando se imprimen los montos."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__custom_rate_currency_name
+msgid "Custom Rate Currency Name"
+msgstr "Nombre de la moneda personalizada"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_payment_search_inherit_l10n_ve_accountant
@@ -778,6 +788,11 @@ msgid "Invoices Statistics"
 msgstr "Estadísticas de facturas"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__is_foreign_currency
+msgid "Is Foreign Currency"
+msgstr "Es moneda extranjera"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_reset_to_draft_for_price_change
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_reset_to_draft_for_price_change
 msgid "Is Reset To Draft For Price Change"
@@ -948,6 +963,16 @@ msgstr ""
 #: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__taxpayer_type__ordinary
 msgid "Ordinary"
 msgstr "Ordinario"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__other_rate
+msgid "Other Rate"
+msgstr "Tasa"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__other_rate_inverse
+msgid "Other Rate Inverse"
+msgstr "Tasa inversa"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__payment_report__payment_type__outbound
@@ -1188,7 +1213,7 @@ msgstr "Calle"
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/static/src/components/tax_totals/tax_totals.xml:0
 msgid "Subtotal"
-msgstr "Subtotal"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:res.groups,name:l10n_ve_accountant.group_support_user
@@ -1199,6 +1224,11 @@ msgstr "Usuario de Soporte (Diarios)"
 #: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_account_support_views
 msgid "Support views"
 msgstr "Soporte"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__company_currency_symbol
+msgid "Symbol"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__company_currency_rate
@@ -1333,6 +1363,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_rate_display
 msgid "The rate of the payment"
 msgstr "La tasa del pago"
 
@@ -1350,6 +1381,30 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__other_rate_inverse
+msgid ""
+"This field is shown when the payment is different from the company currency "
+"and the company foreign currency. Show the inverse rate of the currency of "
+"the payment. NOTE: This field is not the same as the foreign_inverse_rate "
+"field."
+msgstr ""
+"Este campo se muestra cuando el pago es diferente de la moneda de la compañía "
+"y de la moneda alterna de la compañía. Muestra la tasa inversa de la moneda "
+"del pago. NOTA: Este campo no es el mismo que el campo foreign_inverse_rate. Y no se usa para ningún cálculo."
+
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__other_rate
+msgid ""
+"This field is shown when the payment is different from the company currency "
+"and the company foreign currency. Show the rate of the currency of the "
+"payment. NOTE: This field is not the same as the foreign_rate field."
+msgstr ""
+"Este campo se muestra cuando el pago es diferente de la moneda de la compañía "
+"y de la moneda alterna de la compañía. Muestra la tasa de la moneda del "
+"pago. NOTA: Este campo no es el mismo que el campo foreign_rate. Y no se usa para ningún cálculo."
+
+#. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "This product must have only one tax."
@@ -1362,7 +1417,7 @@ msgstr "Estos productos debe tener un solo impuesto."
 #: code:addons/l10n_ve_accountant/static/src/components/tax_totals/tax_totals.xml:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Total"
-msgstr "Total"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
