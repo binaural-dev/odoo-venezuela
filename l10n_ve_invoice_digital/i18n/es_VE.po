@@ -43,6 +43,11 @@ msgid "Code"
 msgstr "Código"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_currency__code_tfhka
+msgid "Code TFHKA"
+msgstr "Código TFHKA"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_company
 msgid "Companies"
 msgstr "Empresas"
@@ -93,6 +98,16 @@ msgstr "Descripción"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Digital invoice (TFHKA)"
 msgstr "Factura digital (TFHKA)"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__digitalization_with_payment_tfhka
+msgid "Digital invoicing with payment registration"
+msgstr "Facturación digital con registro de pagos"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__digitalization_with_payment_tfhka
+msgid "Digitalization With Payment Tfhka"
+msgstr "Digitalización con Pago Tfhka"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__is_digitalized
@@ -515,6 +530,11 @@ msgid ""
 msgstr ""
 "Este código identifica la forma de pago. Se utiliza para digitalizar y "
 "vincular la forma de pago correspondiente."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_currency__code_tfhka
+msgid "This is the currency code that is sent when scanning a document."
+msgstr "Este es el código de moneda que se envía al digitalizar un documento."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_currency__code_tfhka

@@ -9,6 +9,7 @@ class ResConfigSettings(models.TransientModel):
     invoice_digital_tfhka = fields.Boolean(related="company_id.invoice_digital_tfhka", string="Invoice Digital", readonly=False)
     dispatch_guide_digital_tfhka = fields.Boolean(related="company_id.dispatch_guide_digital_tfhka", string="Dispatch Guide Digital", readonly=False)
     sequence_validation_tfhka = fields.Boolean(related="company_id.sequence_validation_tfhka", string="Sequence Validation", readonly=False)
+    digitalization_with_payment_tfhka = fields.Boolean(related="company_id.digitalization_with_payment_tfhka", string="Digital invoicing with payment registration", readonly=False)
 
     def action_generate_token_tfhka(self):
         self.company_id.generate_token_tfhka()
