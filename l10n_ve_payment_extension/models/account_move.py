@@ -58,6 +58,35 @@ class AccountMoveRetention(models.Model):
         default=False,
     )
 
+    not_edit_municipal_retention_lines = fields.Boolean(
+        string="Edit Municipal Retention Lines?",
+        compute="_compute_state_retentions_lines",
+    )
+
+    not_edit_islr_retention_lines = fields.Boolean(
+        string="Edit ISLR Retention Lines?", compute="_compute_state_retentions_lines"
+    )
+
+    @api.depends(
+        "retention_islr_line_ids.state",
+        "retention_iva_line_ids.state",
+        "retention_municipal_line_ids.state",
+    )
+    def _compute_state_retentions_lines(self):
+        for record in self:
+            edit_islr_retention_lines = record.retention_islr_line_ids.filtered(
+                lambda l: l.state == "emitted"
+            )
+            edit_municipal_retention_lines = (
+                record.retention_municipal_line_ids.filtered(
+                    lambda l: l.state == "emitted"
+                )
+            )
+            record.not_edit_islr_retention_lines = bool(edit_islr_retention_lines)
+            record.not_edit_municipal_retention_lines = bool(
+                edit_municipal_retention_lines
+            )
+
     def _compute_currency_fields(self):
         for retention in self:
             retention.base_currency_is_vef = (
@@ -88,13 +117,25 @@ class AccountMoveRetention(models.Model):
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
 
-            if move.retention_islr_line_ids and not move.islr_voucher_number:
+            if (
+                move.retention_islr_line_ids
+                and not move.islr_voucher_number
+                and move.retention_islr_line_ids.filtered(
+                    lambda l: l.state != "emitted"
+                )
+            ):
                 move._validate_islr_retention()
                 retention = move._create_supplier_retention("islr")
                 retention.action_post()
                 move.islr_voucher_number = retention.number
 
-            if move.retention_municipal_line_ids:
+            if (
+                move.retention_municipal_line_ids
+                and not move.municipal_voucher_number
+                and move.retention_municipal_line_ids.filtered(
+                    lambda l: l.state != "emitted"
+                )
+            ):
                 move._validate_municipal_retention()
                 retention = move._create_supplier_retention("municipal")
                 retention.action_post()
@@ -124,26 +165,41 @@ class AccountMoveRetention(models.Model):
             raise UserError(
                 _("The company must have a journal for ISLR supplier retention.")
             )
+        islr_retention = self.retention_islr_line_ids
+        sum_invoice_amount = sum(
+            islr_retention.filtered(lambda rl: rl.state != "cancel").mapped(
+                "invoice_amount"
+            )
+        )
+        if sum_invoice_amount > self.tax_totals["amount_untaxed"]:
+            raise UserError(
+                _(
+                    "The amount of the retention is greater than the total amount of the invoice %s."
+                )
+            )
         sum_invoice_amount = sum(
             self.retention_islr_line_ids.filtered(
                 lambda rl: rl.state != "cancel"
             ).mapped("invoice_amount")
         )
-        self._check_retention_vs_move(sum_invoice_amount)
+        self._check_retention_vs_move(islr_retention)
 
         if not self.partner_id.type_person_id:
             raise UserError(_("The partner must have a type of person"))
         if sum_invoice_amount <= 0:
             raise UserError(_("The amount of the retention must be greater than zero."))
 
-    def _check_retention_vs_move(self, sum_invoice_amount):
-        if sum_invoice_amount > self.tax_totals.get("amount_untaxed", 0.0):
-            raise UserError(
-                _(
-                    "The amount of the retention is greater than the total amount of the invoice %s."
+    @api.model
+    def _check_retention_vs_move(self, islr_retention_lines):
+        for line in islr_retention_lines:
+            move = line.move_id
+            invoice_base = move.tax_totals.get("amount_untaxed", 0.0)
+            if line.invoice_amount > invoice_base:
+                raise UserError(
+                    _(
+                        "The taxable base of one of the withholding lines is greater than the taxable base of the invoice"
+                    )
                 )
-                % self.name
-            )
 
     def _validate_iva_retention(self):
         """
@@ -219,6 +275,7 @@ class AccountMoveRetention(models.Model):
             "foreign_rate": self.foreign_rate,
             "foreign_inverse_rate": self.foreign_inverse_rate,
             "currency_id": self.env.user.company_id.currency_id.id,
+            
         }
         if type_retention == "islr":
             payment_vals["retention_line_ids"] = self.retention_islr_line_ids.filtered(

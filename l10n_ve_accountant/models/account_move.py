@@ -163,13 +163,34 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
-    amount = fields.Float(tracking=True)
+    
+    foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
+
+    @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
+    def _compute_inverse_rate_vef(self):
+        Rate = self.env['res.currency.rate']
+        for move in self:
+            currency = move.company_id.currency_foreign_id
+            rate = False
+
+            if currency:
+                date = move.invoice_date or move.date
+
+                if date:
+                    rate = Rate.search([
+                        ('currency_id', '=', currency.id),
+                        ('name', '<=', date),
+                    ], order='name desc', limit=1)
+
+            move.foreign_inverse_rate_vef = rate.inverse_company_rate if rate else 0.0
+
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         context = self.with_context(active_test=False)
         return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
 
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
+
 
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -179,8 +200,8 @@ class AccountMove(models.Model):
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
         for move in self:
-            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
-            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
+            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
+            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
             move.foreign_balance = move.foreign_debit - move.foreign_credit
 
     def _get_journal_income_account(self, journal):
@@ -946,13 +967,28 @@ class AccountMove(models.Model):
         """
         Add the foreign rate and foreign inverse rate to the context of the action_register_payment.
         """
+        
+        total_foreign_paid = 0
+        
+        foreign_currency_id = self.env.company.currency_foreign_id
+        
+        total_decimal_places = foreign_currency_id.decimal_places if foreign_currency_id else 2
+        
+        for move in self:
+            move._compute_inverse_rate_vef()
+            total_foreign_paid += move.tax_totals['foreign_total_amount_paid'] - move.tax_totals['foreign_amount_total']
+
         if len(set(self.mapped("foreign_rate"))) > 1:
             raise UserError(
                 _("You can only register payments for one foreign rate at a time.")
             )
+        
         res = super().action_register_payment()
         res["context"]["default_foreign_rate"] = self[0].foreign_rate
         res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
+        res["context"]["default_foreign_inverse_rate_vef"] = self[0].foreign_inverse_rate_vef
+        res["context"]["default_foreign_total_billed"] = float_round(total_foreign_paid,precision_digits=total_decimal_places)
+        
         return res
 
     def action_update_account_id(self):
@@ -969,6 +1005,7 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
+    # TO-DO: Modify the digital invoicing module (l10n_ve_invoice digital) if this wizard is deleted
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
@@ -1000,6 +1037,17 @@ class AccountMove(models.Model):
                             round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
+        for move in self:
+
+            precision = move.currency_id.decimal_places if move.currency_id else 2
+
+            move.foreign_debit = float_round(sum(move.line_ids.mapped("foreign_debit")), precision_digits=precision)
+            move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit")), precision_digits=precision)
+            if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
+                move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit_no_format")), precision_digits=precision)
+                if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
+                    raise UserError(_("Your transaction cannot be processed because the debit must match the credit."))
+            
         return super().action_post()
 
     @api.depends(
@@ -1068,9 +1116,9 @@ class AccountMove(models.Model):
         return res
 
     def button_draft(self):
-
-        if self.move_type == "in_invoice":
-            self.is_reset_to_draft_for_price_change = True
+        for rec in self:
+            if rec.move_type == "in_invoice":
+                rec.is_reset_to_draft_for_price_change = True
 
         return super().button_draft()
 
