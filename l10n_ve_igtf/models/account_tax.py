@@ -84,15 +84,14 @@ class AccountTax(models.Model):
 
         if invoice.bi_igtf:
             if invoice.company_currency_id != self.env.ref("base.VEF"):
-                amount_to_igtf = invoice.bi_igtf
+               
+                base_igtf = invoice.bi_igtf
+                foreign_base_igtf =invoice.foreign_bi_igtf
 
-                base_igtf = amount_to_igtf
-                foreign_base_igtf = base_igtf * rate
             else:
 
                 foreign_base_igtf = invoice.bi_igtf
-                base_igtf =  invoice.bi_igtf / rate
-            
+                base_igtf =  invoice.foreign_bi_igtf
 
         igtf_base_amount = base_igtf 
         igtf_foreign_base_amount = foreign_base_igtf 
