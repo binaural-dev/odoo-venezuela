@@ -56,6 +56,11 @@ class PosOrder(models.Model):
         res = super()._get_invoice_lines_values(line_values, pos_order_line)
         res["foreign_price"] = pos_order_line.foreign_price
         return res
+    @api.model
+    def create_from_ui(self, orders, draft=False):
+        context = dict(self.env.context)
+        context['from_pos'] = True
+        return super(PosOrder, self.with_context(context)).create_from_ui(orders, draft)
 
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"

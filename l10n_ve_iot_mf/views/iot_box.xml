@@ -11,6 +11,8 @@
                 <!-- <field name="ip_public"/> -->
                 <field name="has_fiscal_machine"/>
                 <field name="fiscal_port_ids" invisible="not has_fiscal_machine"/>
+                <field name="has_pinpad_machine"/>
+                <field name="pinpad_port_id" invisible="not has_pinpad_machine"/>
             </xpath>
         </field>
     </record>
