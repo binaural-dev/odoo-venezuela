@@ -438,6 +438,7 @@ class PosSession(models.Model):
                 if other_line.foreign_credit != line.foreign_debit:
                     other_line.foreign_credit = abs(line.foreign_debit)
 
+
     def _validate_cross_move(self):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
         for session in self:
@@ -505,45 +506,16 @@ class PosSession(models.Model):
         return res
 
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
-        # Se sobreescribe esta funcion para poder reasignar la cuenta de destino del account_payment, ya que odoo base la sobreescribe luego de crearla
-        outstanding_account = payment_method.outstanding_account_id or self.company_id.account_journal_payment_debit_account_id
-        destination_account = self._get_receivable_account(payment_method)
-        pos_receivable_account = destination_account
-
-        if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
-            # revert the accounts because account.payment doesn't accept negative amount.
-            outstanding_account, destination_account = destination_account, outstanding_account
-
-        account_payment = self.env['account.payment'].with_context(pos_payment=True).create({
-            'amount': abs(amounts['amount']),
-            'journal_id': payment_method.journal_id.id,
-            'force_outstanding_account_id': outstanding_account.id,
-            'destination_account_id':  destination_account.id,
-            'ref': _('Combine %s POS payments from %s', payment_method.name, self.name),
-            'pos_payment_method_id': payment_method.id,
-            'pos_session_id': self.id,
-            'company_id': self.company_id.id,
-        })
-
-        diff_amount_compare_to_zero = self.currency_id.compare_amounts(diff_amount, 0)
-        if diff_amount_compare_to_zero != 0:
-            self._apply_diff_on_account_payment_move(account_payment, payment_method, diff_amount)
-
-        account_payment.action_post()
+        res = super(
+            PosSession, self.with_context(from_pos=True)
+        )._create_combine_account_payment(payment_method, amounts, diff_amount)
+        account_payment = res.move_id.payment_id
         account_payment.with_context(skip_account_move_synchronization=True).write(
             {
                 "foreign_rate": self.config_id.foreign_rate,
                 "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-                "destination_account_id": destination_account.id,
             }
         )
-
-        res = account_payment.move_id.line_ids.filtered(lambda line: line.account_id == account_payment.destination_account_id)
-
-        if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
-            res = account_payment.move_id.line_ids.filtered(
-                lambda line: line.account_id == pos_receivable_account
-            )
 
         for line in account_payment.move_id.line_ids:
             if line.credit > 0 and amounts.get("foreign_amount", False):
@@ -578,18 +550,11 @@ class PosSession(models.Model):
                 line.not_foreign_recalculate = True
                 line.foreign_debit = abs(payment.foreign_amount)
 
-        if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
-            accounting_partner = self.env["res.partner"]._find_accounting_partner(payment.partner_id)
-            partner_receivable = accounting_partner.property_account_receivable_id
-            res = account_payment.move_id.line_ids.filtered(
-                lambda line: line.account_id == partner_receivable
-            )
-
         if account_payment.pos_payment_method_id.split_transactions:
-            self._create_cross_move_payment(res, amounts)
+            self._create_cross_move_payment(res)
         return res
 
-    def _create_cross_move_payment(self, move, amounts):
+    def _create_cross_move_payment(self, move):
         account_payment = move.move_id.payment_id
 
         partner_id = (
@@ -601,11 +566,7 @@ class PosSession(models.Model):
             if account_payment.pos_order_id
             else account_payment.name
         )
-        line_ids = []
-        if amounts.get("amount", 0) > 0:
-            line_ids = self._line_vals_move_cross_payment_incoming(move, amounts)
-        else:
-            line_ids = self._line_vals_move_cross_payment_outgoing(move, amounts)
+
         move_ref_value = _("Cross Move per Operation - Session: %s") % self.name
         move = self.env["account.move"].create(
             {
@@ -613,7 +574,7 @@ class PosSession(models.Model):
                 "date": move.move_id.create_date,
                 "journal_id": move.move_id.payment_id.pos_payment_method_id.cross_account_journal.id,
                 "state": "draft",
-                "line_ids": line_ids,
+                "line_ids": self._line_vals_move_cross_payment_incoming(move),
                 "foreign_currency_id": move.move_id.foreign_currency_id.id,
                 "foreign_rate": move.move_id.foreign_rate,
                 "partner_id": partner_id,
@@ -639,57 +600,76 @@ class PosSession(models.Model):
         )
         return move
 
-    def _create_cross_move_aggregated(self, payment_method, line_vals, amounts):
+    def _line_vals_move_cross_payment_incoming(self, move):
         """
-         This method create the move for the transitory account sets zero, using aggregated data.
+        This method creates the move_lines for the move_cross when the payment is incoming.
 
         Args:
-            payment_method (pos.payment.method): payment method object
-            line_vals (account.move.line): move line to move cross
-            amounts (dict): aggregated amounts
+            payment (account.payment): payment generate from PoS
 
         Returns:
-            account.move: Pos payment method adjustment move.
+            account.move.line: move line to move cross
         """
+        credit_account = 0
+        debit_account = 0
+        move_lines = []
+        for account in move.move_id.payment_id.pos_payment_method_id:
+            debit_account = account.outstanding_account_id.id
 
-        foreign_currency_id = amounts["foreign_currency_id"]
-        foreign_rate = amounts["foreign_rate"]
+        for (
+            account_method
+        ) in move.move_id.payment_id.pos_payment_method_id.cross_journal:
+            credit_account = (
+                account_method.inbound_payment_method_line_ids.payment_account_id.id
+            )
+            currency = (
+                account_method.currency_id.id
+                if account_method.currency_id
+                else self.env.company.currency_id.id
+            )
+            move_lines.extend(
+                [
+                    Command.create(
+                        {
+                            "name": _("PoS Payment Method Adjustment"),
+                            "account_id": credit_account,
+                            "amount_currency": (
+                                abs(move.credit)
+                                if currency == self.env.company.currency_id.id
+                                else abs(move.foreign_credit)
+                            ),
+                            "credit": 0.0,
+                            "foreign_credit": 0.0,
+                            "debit": abs(move.credit),
+                            "foreign_debit": abs(move.foreign_credit),
+                            "not_foreign_recalculate": True,
+                            "foreign_rate": move.move_id.payment_id.foreign_rate,
+                            "currency_id": currency,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": _("PoS Payment Method Adjustment"),
+                            "account_id": debit_account,
+                            "amount_currency": (
+                                -move.credit
+                                if currency == self.env.company.currency_id.id
+                                else -move.foreign_credit
+                            ),
+                            "debit": 0.0,
+                            "foreign_debit": 0.0,
+                            "credit": abs(move.credit),
+                            "foreign_credit": abs(move.foreign_credit),
+                            "not_foreign_recalculate": True,
+                            "foreign_rate": move.move_id.payment_id.foreign_rate,
+                            "currency_id": currency,
+                        }
+                    ),
+                ]
+            )
 
-        move_name_value = self.name
-        move_ref_value = _("Unique PoS Cross Move - Sesión: %s") % self.name
+            return move_lines
 
-        move = self.env["account.move"].create(
-            {
-                "name": move_name_value,
-                "ref": move_ref_value,
-                "date": fields.Date.today(),
-                "journal_id": payment_method.cross_account_journal.id,
-                "state": "draft",
-                "line_ids": line_vals,
-                "foreign_currency_id": foreign_currency_id,
-                "foreign_rate": foreign_rate,
-                "company_id": self.company_id.id,
-                **(
-                    {
-                        "account_analytic_id": (
-                            (
-                                getattr(self, "sh_analytic_account", False)
-                                or getattr(self.config_id, "sh_analytic_account", False)
-                            ).id
-                        )
-                    }
-                    if (
-                        getattr(self, "sh_analytic_account", False)
-                        or getattr(self.config_id, "sh_analytic_account", False)
-                    )
-                    else {}
-                ),
-                "is_pos_cross_move": True,
-            }
-        )
-        return move
-        # METHODS OF THE account.move.line #
-    
     def _line_vals_move_cross_incoming_aggregated(self, payment_method, amounts):
         """
         Creates move_lines for the aggregated cross move when payment is incoming.
@@ -705,11 +685,8 @@ class PosSession(models.Model):
         debit_account = 0
         move_lines = []
 
-        debit_account = (
-            payment_method.outstanding_account_id.id
-            if payment_method.type == "bank"
-            else payment_method.cross_journal.suspense_account_id.id
-        )
+        debit_account = payment_method.outstanding_account_id.id
+
         for account_method in payment_method.cross_journal:
             credit_account = (
                 account_method.inbound_payment_method_line_ids.payment_account_id.id
@@ -801,6 +778,7 @@ class PosSession(models.Model):
 
             original_amount = amounts["amount"]
             original_foreign_amount = amounts["foreign_amount"]
+
             move_lines.extend(
                 [
                     Command.create(
@@ -843,155 +821,53 @@ class PosSession(models.Model):
             )
 
             return move_lines
-    
-    def _line_vals_move_cross_payment_incoming(self, move, amounts):
+
+    def _create_cross_move_aggregated(self, payment_method, line_vals, amounts):
         """
-        This method creates the move_lines for the move_cross when the payment is incoming(Sale Payment).
+         This method create the move for the transitory account sets zero, using aggregated data.
 
         Args:
-            payment (account.payment): payment generate from PoS
+            payment_method (pos.payment.method): payment method object
+            line_vals (account.move.line): move line to move cross
+            amounts (dict): aggregated amounts
 
         Returns:
-            account.move.line: move line to move cross
+            account.move: Pos payment method adjustment move.
         """
 
-        credit_account = 0
-        debit_account = 0
-        move_lines = []
-        payment_method = move.move_id.payment_id.pos_payment_method_id
-        debit_account = payment_method.outstanding_account_id.id
+        foreign_currency_id = amounts["foreign_currency_id"]
+        foreign_rate = amounts["foreign_rate"]
 
-        for (
-            account_method
-        ) in payment_method.cross_journal:
-            credit_account = (
-                account_method.inbound_payment_method_line_ids.payment_account_id.id
-            )
-            currency = (
-                account_method.currency_id.id
-                if account_method.currency_id
-                else self.env.company.currency_id.id
-            )
-            total_amount = amounts["amount"]
-            total_foreign_amount = amounts["foreign_amount"]
-            foreign_rate = amounts.get("foreign_rate", move.move_id.payment_id.foreign_rate)
-            
-            move_lines.extend(
-                [
-                    Command.create(
-                        {
-                            "name": _("PoS Payment Method Adjustment"),
-                            "account_id": credit_account,
-                            "amount_currency": (
-                                total_amount
-                                if currency == self.env.company.currency_id.id
-                                else total_foreign_amount
-                            ),
-                            "credit": 0.0,
-                            "foreign_credit": 0.0,
-                            "debit": total_amount,
-                            "foreign_debit": total_foreign_amount,
-                            "not_foreign_recalculate": True,
-                            "foreign_rate": foreign_rate,
-                            "currency_id": currency,
-                        }
-                    ),
-                    Command.create(
-                        {
-                            "name": _("PoS Payment Method Adjustment"),
-                            "account_id": debit_account,
-                            "amount_currency": (
-                                -total_amount
-                                if currency == self.env.company.currency_id.id
-                                else -total_foreign_amount
-                            ),
-                            "debit": 0.0,
-                            "foreign_debit": 0.0,
-                            "credit": total_amount,
-                            "foreign_credit": total_foreign_amount,
-                            "not_foreign_recalculate": True,
-                            "foreign_rate": foreign_rate,
-                            "currency_id": currency,
-                        }
-                    ),
-                ]
-            )
+        move_name_value = self.name
+        move_ref_value = _("Unique PoS Cross Move - Sesión: %s") % self.name
 
-            return move_lines
-
-    def _line_vals_move_cross_payment_outgoing(self, move, amounts):
-        """
-        This method creates the move_lines for the move_cross when the payment is outgoing(Refund Payment).
-
-        Args:
-            payment (account.payment): payment generate from PoS
-
-        Returns:
-            account.move.line: move line to move cross
-        """
-        credit_account = 0
-        debit_account = 0
-        move_lines = []
-        for account in move.move_id.payment_id.pos_payment_method_id:
-            debit_account = account.outstanding_account_id.id
-
-        for (
-            account_method
-        ) in move.move_id.payment_id.pos_payment_method_id.cross_journal:
-            credit_account = (
-                account_method.outbound_payment_method_line_ids.payment_account_id.id
-            )
-            currency = (
-                account_method.currency_id.id
-                if account_method.currency_id
-                else self.env.company.currency_id.id
-            )
-            total_amount = abs(amounts["amount"])
-            total_foreign_amount = abs(amounts["foreign_amount"])
-            foreign_rate = amounts.get("foreign_rate", move.move_id.payment_id.foreign_rate)
-
-            original_amount = amounts["amount"]
-            original_foreign_amount = amounts["foreign_amount"]
-            
-            move_lines.extend(
-                [
-                    Command.create(
-                        {
-                            "name": _("PoS Payment Method Adjustment"),
-                            "account_id": debit_account,
-                            "amount_currency": (
-                                total_amount
-                                if currency == self.env.company.currency_id.id
-                                else total_foreign_amount
-                            ),
-                            "credit": 0.0,
-                            "foreign_credit": 0.0,
-                            "debit": total_amount,
-                            "foreign_debit": total_foreign_amount,
-                            "not_foreign_recalculate": True,
-                            "foreign_rate": foreign_rate,
-                            "currency_id": currency,
-                        }
-                    ),
-                    Command.create(
-                        {
-                            "name": _("PoS Payment Method Adjustment"),
-                            "account_id": credit_account,
-                            "amount_currency": (
-                                original_amount
-                                if currency == self.env.company.currency_id.id
-                                else original_foreign_amount
-                            ),
-                            "debit": 0.0,
-                            "foreign_debit": 0.0,
-                            "credit": total_amount,
-                            "foreign_credit": total_foreign_amount,
-                            "not_foreign_recalculate": True,
-                            "foreign_rate": foreign_rate,
-                            "currency_id": currency,
-                        }
-                    ),
-                ]
-            )
-
-            return move_lines
+        move = self.env["account.move"].create(
+            {
+                "name": move_name_value,
+                "ref": move_ref_value,
+                "date": fields.Date.today(),
+                "journal_id": payment_method.cross_account_journal.id,
+                "state": "draft",
+                "line_ids": line_vals,
+                "foreign_currency_id": foreign_currency_id,
+                "foreign_rate": foreign_rate,
+                "company_id": self.company_id.id,
+                **(
+                    {
+                        "account_analytic_id": (
+                            (
+                                getattr(self, "sh_analytic_account", False)
+                                or getattr(self.config_id, "sh_analytic_account", False)
+                            ).id
+                        )
+                    }
+                    if (
+                        getattr(self, "sh_analytic_account", False)
+                        or getattr(self.config_id, "sh_analytic_account", False)
+                    )
+                    else {}
+                ),
+                "is_pos_cross_move": True,
+            }
+        )
+        return move
