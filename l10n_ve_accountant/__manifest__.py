@@ -40,6 +40,7 @@
         "views/res_company_views.xml",
         "views/tax_unit.xml",
         "views/res_config_settings_views.xml",
+        "views/account_journal_views.xml",
         "views/menuitem_views.xml",
         "report/account_invoice_details.xml",
         "report/all_payment_report.xml",

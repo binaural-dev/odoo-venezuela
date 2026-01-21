@@ -70,3 +70,16 @@ class ResCompany(models.Model):
                 raise ValidationError(
                     _("You cannot set a currency other than 'VEF' as the system base currency.")
                 )
+
+    exent_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
+    general_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
+    reduced_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
+    extend_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
+
+    not_show_general_aliquot_purchase_international = fields.Boolean()
+
+    not_show_reduced_aliquot_purchase_international = fields.Boolean()
+
+    not_show_extend_aliquot_purchase_international = fields.Boolean()
+
+    not_show_international_purchase_in_book = fields.Boolean()

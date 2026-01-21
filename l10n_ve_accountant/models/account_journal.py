@@ -1,5 +1,5 @@
 from odoo.exceptions import UserError
-from odoo import api, models, _
+from odoo import api, models, _, fields
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -17,6 +17,24 @@ class AccountJournal(models.Model):
             self._validate_support_user_group(vals)
 
         return super().create(vals_list)
+
+    is_purchase_international = fields.Boolean(string="International purchase",default=False)
+
+    @api.constrains('is_purchase_international')
+    def _check_single_international_purchase_journal(self):
+        
+        for record in self:
+            if record.is_purchase_international:
+                domain = [
+                    ('is_purchase_international', '=', True),
+                    ('id', '!=', record.id),
+                ]
+                
+                if self.search_count(domain) > 0:
+                    raise ValidationError(
+                        _("An International Purchase Journal is already enabled. Only one is allowed.")
+                    )
+
 
     def write(self, vals):
         for record in self:
