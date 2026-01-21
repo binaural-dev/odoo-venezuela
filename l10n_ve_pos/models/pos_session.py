@@ -438,7 +438,6 @@ class PosSession(models.Model):
                 if other_line.foreign_credit != line.foreign_debit:
                     other_line.foreign_credit = abs(line.foreign_debit)
 
-
     def _validate_cross_move(self):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
         for session in self:
@@ -685,8 +684,11 @@ class PosSession(models.Model):
         debit_account = 0
         move_lines = []
 
-        debit_account = payment_method.outstanding_account_id.id if payment_method == "bank" else payment_method.cross_journal.suspense_account_id.id
-
+        debit_account = (
+            payment_method.outstanding_account_id.id
+            if payment_method.type == "bank"
+            else payment_method.cross_journal.suspense_account_id.id
+        )
         for account_method in payment_method.cross_journal:
             credit_account = (
                 account_method.inbound_payment_method_line_ids.payment_account_id.id
