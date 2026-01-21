@@ -14,14 +14,12 @@ class PosConfig(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for moves.",
         compute="_compute_rate",
-        digits=(16, 15),
-        default=0.0,
         readonly=False,
+        digits=(16, 15),
     )
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
         readonly=False,
     )
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty")
