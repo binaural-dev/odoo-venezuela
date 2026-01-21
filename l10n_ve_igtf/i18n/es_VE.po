@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 17:30+0000\n"
-"PO-Revision-Date: 2025-03-27 17:30+0000\n"
+"POT-Creation-Date: 2026-01-13 12:29+0000\n"
+"PO-Revision-Date: 2026-01-13 12:29+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,6 +17,10 @@ msgstr ""
 
 #. module: l10n_ve_igtf
 #. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
@@ -50,8 +54,9 @@ msgstr ""
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_with_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_with_igtf
-msgid "Amount with IGTF"
-msgstr "Monto con IGTF"
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_to_show
+msgid "Amount IGTF"
+msgstr "Monto IGTF"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_without_difference
@@ -59,7 +64,16 @@ msgid "Amount without Difference"
 msgstr "Monto sin IGTF"
 
 #. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__available_journal_ids
+msgid "Available Journal"
+msgstr "Diario disponible"
+
+#. module: l10n_ve_igtf
 #. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
@@ -83,6 +97,11 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__customer_account_igtf_id
 msgid "Customer Account Igtf"
 msgstr "Cuenta de cliente de IGTF"
@@ -98,7 +117,25 @@ msgid "Fix Venezuela BI IGTF Invoices"
 msgstr "Recalcular BI de IGTF en Facturas"
 
 #. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__foreign_alter_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__foreign_alter_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__foreign_alter_bi_igtf
+msgid "Foreign Alter BI IGTF"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__foreign_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__foreign_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__foreign_bi_igtf
+msgid "Foreign Bi Igtf"
+msgstr ""
+
+#. module: l10n_ve_igtf
 #. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
@@ -140,6 +177,11 @@ msgstr "IGTF Pagado"
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__igtf_percentage
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__igtf_percentage
 msgid "IGTF Percentage"
+msgstr "Porcentaje de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_percentage
+msgid "IGTF Percentage Aplicado"
 msgstr "Porcentaje de IGTF"
 
 #. module: l10n_ve_igtf
@@ -194,6 +236,49 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__last_computed_amount
+msgid "Last Computed Amount"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+#, python-format
+msgid "Less Payment"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__igtf_top_aply
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__igtf_top_aply
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_top_aply
+msgid "Max Igtf amount to be apply"
+msgstr "Monto maximo de IGTF a ser aplicado"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_bi_igtf_purchase_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_bi_igtf_purchase_order
+msgid "Not Show Bi Igtf Purchase Order"
+msgstr "No mostrar BI Igtf (Compras Nacionales)"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_bi_igtf_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_bi_igtf_sale_order
+msgid "Not Show Bi Igtf Sale Order"
+msgstr "No mostrar BI Igtf (Ventas)"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_igtf_purchase_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_igtf_purchase_order
+msgid "Not Show Igtf Purchase Order"
+msgstr "No mostrar Igtf (Compras Nacionales)"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_igtf_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_igtf_sale_order
+msgid "Not Show Igtf Sale Order"
+msgstr "No mostrar Igtf (Ventas)"
+
+#. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_paid
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__amount_paid
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_paid
@@ -202,6 +287,16 @@ msgstr "Asiento contable"
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__amount_paid
 msgid "Paid"
 msgstr "Importe pagado"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__payment_difference
+msgid "Payment Difference"
+msgstr "Diferencia de pago"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__payment_from_wizard
+msgid "Payment From Wizard"
+msgstr ""
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__payment_igtf_id
@@ -271,9 +366,23 @@ msgstr "Total con IGTF"
 #. odoo-javascript
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
 #, python-format
 msgid "Total with IGTF"
 msgstr "Total con IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_wizard_accounting_reports
+msgid "Wizard para generar reportes de libro de compra y ventas"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__foreign_bi_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__foreign_bi_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__foreign_bi_igtf
+msgid "foreign subtotal with igtf"
+msgstr ""
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__bi_igtf
@@ -281,3 +390,17 @@ msgstr "Total con IGTF"
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__bi_igtf
 msgid "subtotal with igtf"
 msgstr "Subtotal con IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__igtf_top_aply
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__igtf_top_aply
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_top_aply
+msgid "Max Igtf amount to be apply"
+msgstr "Monto maximo de IGTF a ser aplicado"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__apply_igtf_in_wizard_payment
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__apply_igtf_in_wizard_payment
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__apply_igtf_in_wizard_payment
+msgid "Apply Igtf In Wizard Payment"
+msgstr "Incluir Monto IGTF en importe de wizard de pagos cuando se usa un diario que aplica IGTF."

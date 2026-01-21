@@ -4,7 +4,7 @@ import { AbstractAwaitablePopup } from "@point_of_sale/app/popup/abstract_awaita
 import { _t } from '@web/core/l10n/translation';
 
 export class FiscalMachinePopup extends AbstractAwaitablePopup {
-  static template = 'binaural_pos_mf.FiscalMachinePopup'
+  static template = 'l10n_ve_pos_mf.FiscalMachinePopup'
   static defaultProps = {
     cancelText: _t('Cancel'),
     title: _t('Fiscal Reports'),
