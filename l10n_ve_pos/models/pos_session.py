@@ -685,7 +685,7 @@ class PosSession(models.Model):
         debit_account = 0
         move_lines = []
 
-        debit_account = payment_method.outstanding_account_id.id
+        debit_account = payment_method.outstanding_account_id.id if payment_method == "bank" else payment_method.cross_journal.suspense_account_id.id
 
         for account_method in payment_method.cross_journal:
             credit_account = (
