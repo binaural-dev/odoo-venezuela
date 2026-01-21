@@ -19,6 +19,8 @@ class TestIGTFBasic(IGTFTestCommon):
     def test01_basic_igtf_flow(self):
         invoice = self._create_invoice_usd(1000)
 
+        invoice.with_context(move_action_post_alert=True).action_post()
+
         ig_tf = round(invoice.amount_total *
                       self.company.igtf_percentage / 100, 2)
         pay1 = self._create_payment(amount=invoice.amount_total, is_igtf_on_foreign_exchange=True)
@@ -26,11 +28,7 @@ class TestIGTFBasic(IGTFTestCommon):
         line_to_match = pay1.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
         )
-        _logger.warning("line_to_match %s", line_to_match)
-        _logger.warning("state of line %s", line_to_match.parent_state)
-        _logger.warning("pay1 %s", pay1.state)
         invoice.js_assign_outstanding_line(line_to_match.id)
-
         self.assertAlmostEqual(invoice.amount_residual, ig_tf, 2)
 
         usd_to_bsf = 35
@@ -57,6 +55,7 @@ class TestIGTFBasic(IGTFTestCommon):
         # 1) Factura con decimales
         # ──────────────────────────────
         invoice = self._create_invoice_usd(1234.56)
+        invoice.with_context(move_action_post_alert=True).action_post()
         pct = self.company.igtf_percentage  # 3 %
         ig_tf = round(invoice.amount_total * pct / 100, 2)  # 37.04 USD
 
@@ -178,6 +177,7 @@ class TestIGTFBasic(IGTFTestCommon):
         """
 
         invoice = self._create_invoice_usd(500)
+        invoice.with_context(move_action_post_alert=True).action_post()
 
         pay_zero = self._create_payment(amount=0.0, is_igtf_on_foreign_exchange=True)
         self.assertEqual(pay_zero.igtf_amount, 0.0)
@@ -230,6 +230,7 @@ class TestIGTFBasic(IGTFTestCommon):
     def test_05_multiple_partial_igtf_payments(self):
         """La factura se liquida con dos pagos parciales que incluyen IGTF."""
         invoice = self._create_invoice_usd(1000.00)
+        invoice.with_context(move_action_post_alert=True).action_post()
         pct = self.company.igtf_percentage
         rate_factor = 1 - pct / 100
 
@@ -294,6 +295,7 @@ class TestIGTFBasic(IGTFTestCommon):
         (bi_igtf) quede en cero.
         """
         invoice = self._create_invoice_usd(1000)
+        invoice.with_context(move_action_post_alert=True).action_post()
 
         pay = self._create_payment(amount=500, is_igtf_on_foreign_exchange=True)
 
@@ -338,13 +340,14 @@ class TestIGTFBasic(IGTFTestCommon):
         """
         invoice = self._create_invoice_usd(1000)
 
+        invoice.with_context(move_action_post_alert=True).action_post()
+
         pay = self._create_payment(amount=1000, is_igtf_on_foreign_exchange=True)
 
         pay_line = pay.move_id.line_ids.filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
-        )
+        )   
         invoice.js_assign_outstanding_line(pay_line.id)
-
         ig_tf = round(invoice.amount_total *
                       self.company.igtf_percentage / 100, 2)
         self.assertAlmostEqual(invoice.amount_residual, ig_tf, 2)
@@ -375,6 +378,7 @@ class TestIGTFBasic(IGTFTestCommon):
     def test_08_two_usd_payments(self):
         """La factura recibe dos pagos en USD con IGTF."""
         invoice = self._create_invoice_usd(1000.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
         pct = self.company.igtf_percentage
         rate_factor = 1 - pct / 100
 

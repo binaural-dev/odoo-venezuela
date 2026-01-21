@@ -5,9 +5,6 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//button[@name='button_draft']" position="attributes">
-                <attribute name="invisible">not show_reset_to_draft_button or is_digitalized</attribute>
-            </xpath>
             <xpath expr="//header" position="inside">
                 <field name="show_digital_invoice" invisible="1"/>
                 <field name="show_digital_credit_note" invisible="1"/>
