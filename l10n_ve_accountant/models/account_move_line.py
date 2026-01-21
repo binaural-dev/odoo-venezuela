@@ -28,6 +28,7 @@ class AccountMoveLine(models.Model):
     foreign_price = fields.Float(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
+        digits="Foreign Product Price",
         store=True,
         readonly=False,
     )
@@ -35,12 +36,14 @@ class AccountMoveLine(models.Model):
         help="Foreign Subtotal of the line",
         compute="_compute_foreign_subtotal",
         currency_field="foreign_currency_id",
+        digits="Foreign Product Price",
         store=True,
     )
     foreign_price_total = fields.Monetary(
         help="Foreign Total of the line",
         compute="_compute_foreign_subtotal",
         currency_field="foreign_currency_id",
+        digits="Foreign Product Price",
         store=True,
     )
     amount_currency = fields.Monetary(precompute=False)
