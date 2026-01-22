@@ -9,13 +9,13 @@ class TestInvoiceTaxConstraint(TransactionCase):
         self.company = self.env.ref("base.main_company")
         self.partner = self.env["res.partner"].create({"name": "Cliente"})
         self.journal = self.env["account.journal"].create({
-            "name": "Ventas",
+            "name": "Sales Journal",
             "type": "sale",
             "code": "VTS",
             "company_id": self.company.id,
         })
         self.account = self.env["account.account"].create({
-            "name": "Ventas",
+            "name": "Sales Journal",
             "code": "700000",
             "account_type": "income",
             "company_ids": [(6, 0, [self.company.id])],
@@ -28,7 +28,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
             "company_id": self.company.id,
         })
         self.product = self.env["product.product"].create({
-            "name": "Producto Test",
+            "name": "Test Product",
             "type": "service",
             "list_price": 100,
             "taxes_id": [(6, 0, [self.tax.id])],
@@ -73,11 +73,11 @@ class TestInvoiceTaxConstraint(TransactionCase):
         """Debe ignorar líneas tipo sección y nota aunque no tengan impuesto."""
         invoice = self._create_new_invoice("out_invoice", [
             (0, 0, {
-                "name": "Sección",
+                "name": "Section",
                 "display_type": "line_section",
             }),
             (0, 0, {
-                "name": "Nota",
+                "name": "Note",
                 "display_type": "line_note",
             }),
             (0, 0, {
@@ -94,11 +94,11 @@ class TestInvoiceTaxConstraint(TransactionCase):
         """Debe lanzar ValidationError si hay línea de producto sin impuesto, aunque existan secciones o notas."""
         invoice = self._create_new_invoice("out_invoice", [
             (0, 0, {
-                "name": "Sección",
+                "name": "Section",
                 "display_type": "line_section",
             }),
             (0, 0, {
-                "name": "Nota",
+                "name": "Note",
                 "display_type": "line_note",
             }),
             (0, 0, {
