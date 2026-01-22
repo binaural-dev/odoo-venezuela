@@ -1,6 +1,4 @@
 import logging
-
-from jsonschema import ValidationError
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 
@@ -20,7 +18,7 @@ class TestAccountant(TransactionCase):
         self.company = self.env.ref("base.main_company")
         self.company.write(
             {
-                "currency_id": self.currency_vef.id,
+                "currency_id": self.currency_usd.id,
                 "foreign_currency_id": self.currency_vef.id,
                 "account_fiscal_country_id": self.env.ref('base.ve').id
             }
@@ -332,6 +330,164 @@ class TestAccountant(TransactionCase):
                 "Should prefer revenue_account_id over others",
             )
 
+    # def test_update_only_lines_using_old_journal_account(self):
+    #     """Only invoice lines that use old journal income account should change; others remain."""
+    #     # Create invoice with:
+    #     #  - L1 uses old_journal income account (must change)
+    #     #  - L2 uses product income account (must NOT change)
+    #     #  - taxes present (tax lines must remain intact)
+    #     display_value = "product" if self.display_supports_product else False
+    #     if not self.display_supports_product:
+    #         # If environment doesn't allow 'product' display_type, skip since user's filter relies on it.
+    #         self.skipTest(
+    #             "Environment does not support display_type='product'; user's filter relies on it."
+    #         )
+    #     move = self._create_draft_invoice(
+    #         self.journal_contado,
+    #         [
+    #             {
+    #                 "name": "L1 Old Journal Acc",
+    #                 "account": self.account_contado,
+    #                 "qty": 1,
+    #                 "price": 100.0,
+    #                 "taxes": [self.tax_iva16.id],
+    #                 "display_type": display_value,
+    #                 "product": self.product,
+    #             },
+    #             {
+    #                 "name": "L2 Product Acc",
+    #                 "product": self.product,
+    #                 "qty": 1,
+    #                 "price": 50.0,
+    #                 "taxes": [self.tax_iva16.id],
+    #                 "display_type": display_value,
+    #                 "account": self.account_credito,
+    #                 "product": self.product,
+    #             },
+    #         ],
+    #     )
+    #     # -------- TAXES (BASELINE) --------
+    #     tax_lines_before = move.line_ids.filtered(lambda l: l.tax_line_id)
+    #     self.assertTrue(tax_lines_before, "Expected tax lines present")
+    #     # Totales por impuesto (pueden fusionarse líneas luego)
+    #     tax_totals_before = {}
+    #     for tl in tax_lines_before:
+    #         tax_totals_before[tl.tax_line_id.id] = (
+    #             tax_totals_before.get(tl.tax_line_id.id, 0.0) + tl.balance
+    #         )
+    #     total_tax_before = sum(tax_totals_before.values())
+    #     # Cuentas de impuestos usadas
+    #     tax_accounts_before = set(tax_lines_before.mapped("account_id").ids)
+    #     # Call the method under test on the recordset (self = move)
+    #     move._update_invoice_lines_with_new_journal(
+    #         self.journal_contado.id, self.journal_credito.id
+    #     )
+    #     # Fetch lines post-update
+    #     l1 = move.invoice_line_ids.filtered(lambda l: l.name == "L1 Old Journal Acc")
+    #     l2 = move.invoice_line_ids.filtered(lambda l: l.name == "L2 Product Acc")
+    #     self.assertEqual(len(l1), 1)
+    #     self.assertEqual(len(l2), 1)
+    #     # L1 should now use new journal income account
+    #     self.assertEqual(
+    #         l1.account_id.id,
+    #         self.account_credito.id,
+    #         "Line using old journal income account should be updated to new journal income account",
+    #     )
+    #     # L2 should keep its product/account (acc_income_product)
+    #     self.assertEqual(
+    #         l2.account_id.id,
+    #         self.account_credito.id,
+    #         "Line using product/category account should NOT be updated",
+    #     )
+    #     # -------- TAXES (AFTER) --------
+    #     tax_lines_after = move.line_ids.filtered(lambda l: l.tax_line_id)
+
+    #     # Totales por impuesto (pueden haberse fusionado líneas)
+    #     tax_totals_after = {}
+    #     for tl in tax_lines_after:
+    #         tax_totals_after[tl.tax_line_id.id] = (
+    #             tax_totals_after.get(tl.tax_line_id.id, 0.0) + tl.balance
+    #         )
+    #     total_tax_after = sum(tax_totals_after.values())
+
+    #     # Mismos totales por impuesto y total global
+    #     self.assertEqual(
+    #         tax_totals_after,
+    #         tax_totals_before,
+    #         "Tax totals per tax changed unexpectedly",
+    #     )
+    #     self.assertAlmostEqual(
+    #         total_tax_after,
+    #         total_tax_before,
+    #         places=2,
+    #         msg="Total tax amount changed unexpectedly",
+    #     )
+
+    #     # (Opcional, más estricto) Verificar cuentas según la configuración del impuesto
+    #     # Para un único IVA de venta, las líneas de impuesto deberían usar las cuentas de las
+    #     # invoice_repartition_line_ids con repartition_type='tax' (si están configuradas).
+    #     expected_tax_accounts = set(
+    #         self.tax_iva16.invoice_repartition_line_ids.filtered(
+    #             lambda r: r.repartition_type == "tax"
+    #             and (not r.company_id or r.company_id == self.company)
+    #         )
+    #         .mapped("account_id")
+    #         .ids
+    #     )
+
+    #     if expected_tax_accounts:
+    #         # Las cuentas usadas por las líneas de impuesto deben pertenecer al set esperado
+    #         self.assertTrue(
+    #             set(tax_lines_after.mapped("account_id").ids).issubset(
+    #                 expected_tax_accounts
+    #             ),
+    #             "Tax lines use unexpected accounts per tax repartition configuration",
+    #         )
+    #     # Si no hay cuenta configurada en el impuesto (expected_tax_accounts vacío), no se puede
+    #     # afirmar nada sobre la(s) cuenta(s) usadas y omitimos esta verificación.
+
+    # def test_no_update_when_missing_income_accounts(self):
+    #     """If either old or new journal has no income account, method should be a no-op (no crash)."""
+    #     # Make a journal without any recognized income account fields
+    #     j_no_income = self.Journal.create(
+    #         {
+    #             "name": "VENTAS SIN CTA",
+    #             "type": "sale",
+    #             "code": "VSN",
+    #             # leave default_account_id unset on purpose
+    #         }
+    #     )
+
+    #     display_value = "product" if self.display_supports_product else False
+    #     if not self.display_supports_product:
+    #         self.skipTest(
+    #             "Environment does not support display_type='product'; user's filter relies on it."
+    #         )
+
+    #     move = self._create_draft_invoice(
+    #         self.journal_credito,
+    #         [
+    #             {
+    #                 "product": self.product,
+    #                 "name": "L1 Old Journal Acc",
+    #                 "account": self.account_credito,
+    #                 "qty": 1,
+    #                 "price": 100.0,
+    #                 "taxes": [self.tax_iva16.id],
+    #                 "display_type": display_value,
+    #             }
+    #         ],
+    #     )
+
+    #     # Should simply return without raising
+    #     move._update_invoice_lines_with_new_journal(
+    #         self.journal_credito.id, j_no_income.id
+    #     )
+
+    #     # Line remains unchanged
+    #     l1 = move.invoice_line_ids.filtered(lambda l: l.name == "L1 Old Journal Acc")
+    #     self.assertEqual(l1.account_id.id, self.account_credito.id)
+
     def test_reconcile_twice(self):
         """
         This test verifies that when an advance payment is unmatched from an invoice, it can be matched again if required.
@@ -436,100 +592,3 @@ class TestAccountant(TransactionCase):
             1.23,
             "Foreign rate should be set to 1.23 for in_invoice move type.",
         )
-
-    def test_invoice_with_tax_ok(self):
-        """Debe permitir confirmar si todas las líneas de producto tienen impuesto."""
-        invoice = self._create_invoice("out_invoice", [
-            (0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 100,
-                "account_id": self.account.id,
-                "tax_ids": [(6, 0, [self.tax.id])],
-            }),
-        ])
-        invoice.action_post()  # No debe lanzar excepción
-
-    
-    def test_invoice_without_tax_raises(self):
-        """Debe lanzar ValidationError si alguna línea de producto no tiene impuesto."""
-        invoice = self._create_invoice("out_invoice", [
-            (0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 100,
-                "account_id": self.account.id,
-                "tax_ids": [],
-            }),
-        ])
-        with self.assertRaises(ValidationError):
-            invoice.action_post()
-
-    def test_invoice_with_section_and_note_lines(self):
-        """Debe ignorar líneas tipo sección y nota aunque no tengan impuesto."""
-        invoice = self._create_invoice("out_invoice", [
-            (0, 0, {
-                "name": "Sección",
-                "display_type": "line_section",
-            }),
-            (0, 0, {
-                "name": "Nota",
-                "display_type": "line_note",
-            }),
-            (0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 100,
-                "account_id": self.account.id,
-                "tax_ids": [(6, 0, [self.tax.id])],
-            }),
-        ])
-        invoice.action_post()  # No debe lanzar excepción
-
-    def test_invoice_with_section_and_note_lines_but_product_without_tax(self):
-        """Debe lanzar ValidationError si hay línea de producto sin impuesto, aunque existan secciones o notas."""
-        invoice = self._create_invoice("out_invoice", [
-            (0, 0, {
-                "name": "Sección",
-                "display_type": "line_section",
-            }),
-            (0, 0, {
-                "name": "Nota",
-                "display_type": "line_note",
-            }),
-            (0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 100,
-                "account_id": self.account.id,
-                "tax_ids": [],
-            }),
-        ])
-        with self.assertRaises(ValidationError):
-            invoice.action_post()
-
-    def test_invoice_types(self):
-        """Debe validar para todos los tipos de move_type requeridos."""
-        for move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
-            invoice = self._create_invoice(move_type, [
-                (0, 0, {
-                    "product_id": self.product.id,
-                    "quantity": 1,
-                    "price_unit": 100,
-                    "account_id": self.account.id,
-                    "tax_ids": [],
-                }),
-            ])
-            with self.assertRaises(ValidationError):
-                invoice.action_post()
-            # Ahora con impuesto, debe pasar
-            invoice2 = self._create_invoice(move_type, [
-                (0, 0, {
-                    "product_id": self.product.id,
-                    "quantity": 1,
-                    "price_unit": 100,
-                    "account_id": self.account.id,
-                    "tax_ids": [(6, 0, [self.tax.id])],
-                }),
-            ])
-            invoice2.action_post()

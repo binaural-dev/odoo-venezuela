@@ -34,7 +34,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
             "taxes_id": [(6, 0, [self.tax.id])],
         })
 
-    def _create_invoice(self, move_type, lines):
+    def _create_new_invoice(self, move_type, lines):
         return self.env["account.move"].create({
             "move_type": move_type,
             "partner_id": self.partner.id,
@@ -44,7 +44,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
 
     def test_invoice_with_tax_ok(self):
         """Debe permitir confirmar si todas las líneas de producto tienen impuesto."""
-        invoice = self._create_invoice("out_invoice", [
+        invoice = self._create_new_invoice("out_invoice", [
             (0, 0, {
                 "product_id": self.product.id,
                 "quantity": 1,
@@ -57,7 +57,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
 
     def test_invoice_without_tax_raises(self):
         """Debe lanzar ValidationError si alguna línea de producto no tiene impuesto."""
-        invoice = self._create_invoice("out_invoice", [
+        invoice = self._create_new_invoice("out_invoice", [
             (0, 0, {
                 "product_id": self.product.id,
                 "quantity": 1,
@@ -71,7 +71,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
 
     def test_invoice_with_section_and_note_lines(self):
         """Debe ignorar líneas tipo sección y nota aunque no tengan impuesto."""
-        invoice = self._create_invoice("out_invoice", [
+        invoice = self._create_new_invoice("out_invoice", [
             (0, 0, {
                 "name": "Sección",
                 "display_type": "line_section",
@@ -92,7 +92,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
 
     def test_invoice_with_section_and_note_lines_but_product_without_tax(self):
         """Debe lanzar ValidationError si hay línea de producto sin impuesto, aunque existan secciones o notas."""
-        invoice = self._create_invoice("out_invoice", [
+        invoice = self._create_new_invoice("out_invoice", [
             (0, 0, {
                 "name": "Sección",
                 "display_type": "line_section",
@@ -115,7 +115,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
     def test_invoice_types(self):
         """Debe validar para todos los tipos de move_type requeridos."""
         for move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
-            invoice = self._create_invoice(move_type, [
+            invoice = self._create_new_invoice(move_type, [
                 (0, 0, {
                     "product_id": self.product.id,
                     "quantity": 1,
@@ -127,7 +127,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
             with self.assertRaises(ValidationError):
                 invoice.action_post()
             # Ahora con impuesto, debe pasar
-            invoice2 = self._create_invoice(move_type, [
+            invoice2 = self._create_new_invoice(move_type, [
                 (0, 0, {
                     "product_id": self.product.id,
                     "quantity": 1,
