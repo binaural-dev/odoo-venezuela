@@ -7,7 +7,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
     def setUp(self):
         super(TestInvoiceTaxConstraint, self).setUp()
         self.company = self.env.ref("base.main_company")
-        self.partner = self.env["res.partner"].create({"name": "Cliente"})
+        self.partner = self.env["res.partner"].create({"name": "Test customer"})
         self.journal = self.env["account.journal"].create({
             "name": "Sales Journal",
             "type": "sale",
@@ -114,6 +114,12 @@ class TestInvoiceTaxConstraint(TransactionCase):
 
     def test_invoice_types(self):
         """Debe validar para todos los tipos de move_type requeridos."""
+        self.journal = self.env["account.journal"].create({
+            "name": "Sales Journal",
+            "type": "purchase",
+            "code": "VTS",
+            "company_id": self.company.id,
+        })
         for move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
             invoice = self._create_new_invoice(move_type, [
                 (0, 0, {
