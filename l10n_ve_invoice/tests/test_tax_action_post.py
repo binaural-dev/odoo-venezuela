@@ -116,3 +116,29 @@ class TestInvoiceTaxConstraint(TransactionCase):
         ])
         with self.assertRaises(ValidationError):
             invoice.action_post()
+
+    def test_invoice_types(self):
+        """Debe validar para todos los tipos de move_type requeridos."""
+        for move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+            invoice = self._create_new_invoice(move_type, [
+                (0, 0, {
+                    "product_id": self.product.id,
+                    "quantity": 1,
+                    "price_unit": 100,
+                    "account_id": self.account.id,
+                    "tax_ids": [],
+                }),
+            ])
+            with self.assertRaises(ValidationError):
+                invoice.action_post()
+            # Ahora con impuesto, debe pasar
+            invoice2 = self._create_new_invoice(move_type, [
+                (0, 0, {
+                    "product_id": self.product.id,
+                    "quantity": 1,
+                    "price_unit": 100,
+                    "account_id": self.account.id,
+                    "tax_ids": [(6, 0, [self.tax.id])],
+                }),
+            ])
+            invoice2.action_post()
