@@ -96,6 +96,16 @@ class IotDeviceInherit(models.Model):
     resume_range_from = fields.Date(default=fields.Date().today())
     resume_range_to = fields.Date(default=fields.Date().today())
 
+    custom_header = fields.Boolean(
+        string="Activate Custom Header",
+        default=False,
+        help="This check box allow to configure a custom header for the invoice",
+    )
+
+    ph01_header = fields.Char(
+        string="Header of Invoice",
+        help="This field allow to configure a custom header for the invoice for the Fiscal machines without fabric configuration",
+    )
 
     def _compute_manufacturer_type(self):
         for record in self:
