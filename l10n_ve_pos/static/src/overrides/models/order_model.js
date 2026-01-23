@@ -5,9 +5,9 @@ import { patch } from "@web/core/utils/patch";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import {
   formatFloat,
-  floatIsZero,
   roundDecimals as round_di,
   roundPrecision as round_pr,
+  floatIsZero,
 } from "@web/core/utils/numbers";
 import { _t } from "@web/core/l10n/translation";
 
@@ -38,7 +38,7 @@ patch(Order.prototype, {
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
     if (this.pos.currency.name == "VEF") {
-      return this.pos.config.foreign_inverse_rate;
+      return round_di(this.pos.config.foreign_inverse_rate, this.pos.currency.decimal_places);
     }
     if (this.pos.currency.name == "USD") {
       return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
@@ -65,42 +65,6 @@ patch(Order.prototype, {
 
     return this.init_conversion_rate;
   },
-
-  // get_orderlines() {
-  //   if (!this.cid || !this.pos.get_order()) {
-  //     return this.orderlines
-  //   }
-
-  //   if (this.cid != this.pos.get_order().cid) {
-  //     return this.orderlines;
-  //   }
-
-  //   if (this.orderlines.length < 1) {
-  //     this.lock_toggle_receipt_invoice = false
-  //     return this.orderlines
-  //   }
-
-  //   let line = this.orderlines[0]
-
-  //   if (!line.refunded_orderline_id) {
-  //     return this.orderlines
-  //   }
-
-  //   if (this.lock_toggle_receipt_invoice) {
-  //     return this.orderlines
-  //   }
-
-  //   this.pos.env.services.rpc({
-  //     model: 'pos.order.line',
-  //     method: 'search_read',
-  //     domain: [['id', '=', line.refunded_orderline_id]],
-  //   }).then((el) => {
-  //     this.to_receipt = el[0].to_receipt
-  //     this.lock_toggle_receipt_invoice = true
-  //   })
-
-  //   return this.orderlines;
-  // },
 
   reload_taxes() {
     this.orderlines.forEach((el) => {
@@ -434,7 +398,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.dp["Foreign Product Price"],
     );
   },
   get_foreign_change(paymentline) {
@@ -453,7 +417,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
+    return round_di(Math.max(0, change), this.pos.dp["Foreign Product Price"]);
   },
   get_foreign_due(paymentline) {
     if (!paymentline) {
@@ -472,7 +436,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(due, this.pos.foreign_currency.rounding);
+    return round_di(due, this.pos.dp["Foreign Product Price"]);
   },
 
   get_qty_products() {
