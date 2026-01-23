@@ -882,4 +882,23 @@ msgstr "Debes llenar el campo de inicio o fin, si lo hay, repite el número"
 #. module: l10n_ve_iot_mf
 #: model:ir.model,name:l10n_ve_iot_mf.model_iot_port
 msgid "iot.port"
+msgstr "Puerto IoT"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__custom_header
+msgid "Activate Custom Header"
+msgstr "Activar Encabezado Personalizado"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__ph01_header
+msgid ""
+"This field allow to configure a custom header for the invoice for the Fiscal"
+" machines without fabric configuration"
 msgstr ""
+"Este campo permite configurar un encabezado personalizado para la factura en "
+"las máquinas fiscales sin configuración de fábrica."
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__ph01_header
+msgid "Header of Invoice"
+msgstr "Encabezado de las facturas"

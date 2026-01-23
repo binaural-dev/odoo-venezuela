@@ -193,6 +193,7 @@ class AccountMoveInh(models.Model):
                 )
 
             _data = {
+                "header": data.iot_mf.ph01_header if data.iot_mf.custom_header else False,
                 "flag_21": data.iot_mf.flag_21,
                 "identifier": data.iot_mf.identifier,
                 "iot_ip": data.iot_box.ip,
@@ -302,6 +303,7 @@ class AccountMoveInh(models.Model):
                 )
 
             _data = {
+                "header": data.iot_mf.ph01_header if data.iot_mf.custom_header else False,
                 "flag_21": data.iot_mf.flag_21,
                 "identifier": data.iot_mf.identifier,
                 "iot_ip": data.iot_box.ip,
