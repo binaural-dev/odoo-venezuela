@@ -83,3 +83,7 @@ class ResCompany(models.Model):
     not_show_extend_aliquot_purchase_international = fields.Boolean()
 
     not_show_international_purchase_in_book = fields.Boolean()
+
+    not_show_total_purchases_with_international_iva = fields.Boolean()
+
+    not_show_exempt_total_purchases = fields.Boolean()
