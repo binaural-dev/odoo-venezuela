@@ -11,6 +11,7 @@ class PosOrder(models.Model):
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
     foreign_amount_total = fields.Float(string="Foreign Total", readonly=True, required=True)
     foreign_currency_rate = fields.Float(readonly=True, required=False)
+    foreign_inverse_rate = fields.Float(readonly=True, required=False)
     
     def _process_order(self, order, draft, existing_order):
         res = super()._process_order(order, draft, existing_order)
@@ -23,6 +24,7 @@ class PosOrder(models.Model):
         _logger.info("UI ORDER: %s", ui_order)
         res["foreign_amount_total"] = ui_order["foreign_amount_total"]
         res["foreign_currency_rate"] = ui_order["foreign_currency_rate"]
+        res["foreign_inverse_rate"] = ui_order["foreign_inverse_rate"]
         return res
 
     def _payment_fields(self, order, ui_paymentline):
@@ -37,7 +39,7 @@ class PosOrder(models.Model):
         res.update(
             {
                 "foreign_rate": self.foreign_currency_rate,
-                "foreign_inverse_rate": self.foreign_currency_rate,
+                "foreign_inverse_rate": self.foreign_inverse_rate,
                 "manually_set_rate": True,
             }
         )
