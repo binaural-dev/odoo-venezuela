@@ -134,21 +134,53 @@
                         </div>
 
                         <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <field name="not_show_general_aliquot_purchase_international" />
-                                <field name="not_show_reduced_aliquot_purchase_international" />
-                                <field name="not_show_extend_aliquot_purchase_international" />
-                                <field name="not_show_total_purchases_with_international_iva" />
-                                <field name="not_show_exempt_total_purchases" />
-                                <field name="not_show_total_purchases_international" />
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_general_aliquot_purchase_international" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_general_aliquot_purchase_international" />
+                                </div>
                             </div>
-                            <div class="o_setting_right_pane" >
-                                <label for="not_show_general_aliquot_purchase_international" />
-                                <label for="not_show_reduced_aliquot_purchase_international" />
-                                <label for="not_show_extend_aliquot_purchase_international" />
-                                <label for="not_show_total_purchases_with_international_iva" />
-                                <label for="not_show_exempt_total_purchases" />
-                                <label for="not_show_total_purchases_international" />
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_reduced_aliquot_purchase_international" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_reduced_aliquot_purchase_international" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_extend_aliquot_purchase_international" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_extend_aliquot_purchase_international" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_total_purchases_with_international_iva" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_total_purchases_with_international_iva" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_exempt_total_purchases" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_exempt_total_purchases" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_total_purchases_international" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_total_purchases_international" />
+                                </div>
                             </div>
                         </div>
                     </block>
