@@ -592,7 +592,9 @@ class SerialFiscalDriver(SerialDriver):
             max_qty_int, max_qty_decimal = flag_21_config["max_qty_int"], flag_21_config["max_qty_decimal"]
             max_payment_amount_int, max_payment_amount_decimal =  flag_21_config["max_payment_amount_int"], flag_21_config["max_payment_amount_decimal"]
             disc_int, disc_decimal =  flag_21_config["disc_int"], flag_21_config["disc_decimal"]
-
+            
+            if invoice_data.get("header"):
+                cmd.append(f"PH01{invoice_data['header']}")
             cmd.append(f"iR*{invoice_data['partner_id']['vat']}")
             cmd.append(f"iS*{invoice_data['partner_id']['name']}")
             
@@ -658,7 +660,7 @@ class SerialFiscalDriver(SerialDriver):
             cmd.append(str("199"))
             
             self.data["value"] = {"valid": True, "data": cmd}
-            
+            _logger.info("CMD data: %s", cmd)
             return {
                 "valid": True,
                 "cmd": cmd,
@@ -815,7 +817,8 @@ class SerialFiscalDriver(SerialDriver):
             if status["data"]["status"]["code"] not in ["1", "4"]:
                 raise Exception(status["data"]["status"]["msg"])
 
-            _logger.warning("print_out_refound %s", invoice)
+            if invoice.get("header"):
+                cmd.append(f"PH01{invoice['header']}")
             cmd.append(str("iR*" + invoice["partner_id"]["vat"]))
             cmd.append(str("iS*" + invoice["partner_id"]["name"]))
             cmd.append(str("iF*" + invoice["invoice_affected"]["number"]))
@@ -1088,9 +1091,10 @@ class SerialFiscalDriver(SerialDriver):
                     amount_i_filled = amount_i.zfill(10)  
                     payment_command = f"2{item['payment_method']}{amount_i_filled}{amount_d}"
                     payment_commands.append(payment_command)
-
-            cmd2 = [
-                    'PH01Encabezado 1',
+            cmd2 = []
+            if invoice.get("header"):
+                cmd2.append(f"PH01{invoice["header"]}")
+            cmd2 += [
                     cmd_number_invoice_affected,
                     cmd_fecha, 
                     cmd_serial,
