@@ -117,7 +117,7 @@ patch(PosStore.prototype, {
       );
     };
 
-    var base = round_pr(price_unit * quantity, initial_currency_rounding);
+    var base = round_pr(price_unit * quantity, currency_rounding);
 
     var sign = 1;
     if (base < 0) {
@@ -175,7 +175,7 @@ patch(PosStore.prototype, {
 
     var total_excluded = round_pr(
       recompute_base(base, incl_tax_amounts),
-      initial_currency_rounding
+      currency_rounding
     );
     var total_included = total_excluded;
 
@@ -233,7 +233,6 @@ patch(PosStore.prototype, {
       total_included += factorized_tax_amount;
       i += 1;
     });
-
     return {
       taxes: taxes_vals,
       total_excluded: sign * round_pr(total_excluded, initial_currency_rounding),
