@@ -5,9 +5,9 @@ import { patch } from "@web/core/utils/patch";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import {
   formatFloat,
-  floatIsZero,
   roundDecimals as round_di,
   roundPrecision as round_pr,
+  floatIsZero,
 } from "@web/core/utils/numbers";
 import { _t } from "@web/core/l10n/translation";
 
@@ -38,14 +38,14 @@ patch(Order.prototype, {
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
     if (this.pos.currency.name == "VEF") {
-      return this.pos.config.foreign_inverse_rate;
+      return round_di(this.pos.config.foreign_inverse_rate, this.pos.currency.decimal_places);
     }
     if (this.pos.currency.name == "USD") {
-      return this.pos.config.foreign_rate;
+      return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
     }
   },
   get_display_rate() {
-    return this.pos.config.foreign_rate;
+    return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
   },
 
   add_orderline(line) {
@@ -167,8 +167,8 @@ patch(Order.prototype, {
   },
   /* ---- Payment Status --- */
   get_foreign_subtotal() {
-    return round_di(
-      this.orderlines.reduce(function (sum, orderLine) {
+    return round_pr(
+      this.orderlines.reduce(function(sum, orderLine) {
         return sum + orderLine.get_display_foreign_price();
       }, 0),
       this.pos.dp["Foreign Product Price"],
@@ -178,8 +178,8 @@ patch(Order.prototype, {
     return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
   },
   get_foreign_total_without_tax() {
-    return round_di(
-      this.orderlines.reduce(function (sum, orderLine) {
+    return round_pr(
+      this.orderlines.reduce(function(sum, orderLine) {
         return sum + orderLine.get_foreign_price_without_tax();
       }, 0),
       this.pos.dp["Foreign Product Price"],
@@ -187,7 +187,7 @@ patch(Order.prototype, {
   },
   get_foreign_total_discount() {
     const ignored_product_ids = this._get_ignored_product_ids_total_discount();
-    return round_di(
+    return round_pr(
       this.orderlines.reduce((sum, orderLine) => {
         if (!ignored_product_ids.includes(orderLine.product.id)) {
           sum +=
@@ -213,7 +213,7 @@ patch(Order.prototype, {
       // 2. Round that result
       // 3. Sum all those rounded amounts
       var groupTaxes = {};
-      this.orderlines.forEach(function (line) {
+      this.orderlines.forEach(function(line) {
         var taxDetails = line.get_foreign_tax_details();
         var taxIds = Object.keys(taxDetails);
         for (var t = 0; t < taxIds.length; t++) {
@@ -234,7 +234,7 @@ patch(Order.prototype, {
       return sum;
     } else {
       return round_pr(
-        this.orderlines.reduce(function (sum, orderLine) {
+        this.orderlines.reduce(function(sum, orderLine) {
           return sum + orderLine.get_foreign_tax();
         }, 0),
         this.pos.foreign_currency.rounding,
@@ -245,7 +245,7 @@ patch(Order.prototype, {
     var details = {};
     var fulldetails = [];
 
-    this.orderlines.forEach(function (line) {
+    this.orderlines.forEach(function(line) {
       var ldetails = line.get_foreign_tax_details();
       for (var id in ldetails) {
         if (Object.hasOwnProperty.call(ldetails, id)) {
@@ -427,8 +427,8 @@ patch(Order.prototype, {
   },
 
   get_foreign_total_paid() {
-    return round_di(
-      this.paymentlines.reduce(function (sum, paymentLine) {
+    return round_pr(
+      this.paymentlines.reduce(function(sum, paymentLine) {
         if (paymentLine.is_done()) {
           sum += paymentLine.get_foreign_amount();
         }
@@ -453,7 +453,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_di(Math.max(0, change), this.pos.dp["Foreign Product Price"]);
+    return round_pr(Math.max(0, change), this.pos.dp["Foreign Product Price"]);
   },
   get_foreign_due(paymentline) {
     if (!paymentline) {
@@ -472,7 +472,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_di(due, this.pos.dp["Foreign Product Price"]);
+    return round_pr(due, this.pos.dp["Foreign Product Price"]);
   },
 
   get_qty_products() {
