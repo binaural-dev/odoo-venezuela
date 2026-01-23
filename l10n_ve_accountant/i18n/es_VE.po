@@ -1313,3 +1313,9 @@ msgstr "<b>Monto debito alterno:</b> de %s a %s"
 #, python-format
 msgid "<b>The accounting line has been updated:</b>"
 msgstr "<b>La linea contable ha sido actualizada:</b>"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+msgid "Tax excl."
+msgstr "Subtotal"
+
