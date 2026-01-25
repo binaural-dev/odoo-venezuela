@@ -36,7 +36,7 @@
 
                     <block title="Configuration Taxes: Taxes Sales/Purchase" name="l10n_ve_tax_block_tax_rates">
                         <h2>Sales Tax Rates</h2>
-                        <div class="col-12 col-lg-6 o_setting_box" iid="l10n_ve_tax_div_tax_rates_sales">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sales">
 
                             <div class="o_setting_left_pane">
                             </div>
