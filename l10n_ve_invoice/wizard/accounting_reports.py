@@ -876,7 +876,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         reduced_aliquot = self.company_id.reduced_aliquot_purchase_international.tax_group_id.id
 
                     if not self.company_id.not_show_extend_aliquot_purchase_international:
-                        exent_aliquot = self.company_id.extend_aliquot_purchase_international.tax_group_id.id
+                        extend_aliquot = self.company_id.extend_aliquot_purchase_international.tax_group_id.id
                    
                     
                 else:
