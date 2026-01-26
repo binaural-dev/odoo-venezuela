@@ -39,7 +39,7 @@ patch(Orderline.prototype, {
         ? this.pos.currency.decimal_places
         : this.pos.foreign_currency.decimal_places;
 
-    return round_di(rate, decimal_places);
+    return rate;
   },
   get currency_rate_display() {
     return this.order.get_display_rate;
@@ -126,9 +126,6 @@ patch(Orderline.prototype, {
         base: tax.base,
       };
     });
-    console.log("pricewithtax", all_taxes.total_included)
-    console.log("price without tax", all_taxes.total_excluded)
-    console.log("taxdetails", taxdetail)
     return {
       priceWithTax: all_taxes.total_included,
       priceWithoutTax: all_taxes.total_excluded,
