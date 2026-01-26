@@ -577,7 +577,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ]
 
     def _get_domain(self):
-        
         search_domain = []
         is_purchase = self.report == "purchase"
 
