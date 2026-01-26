@@ -43,7 +43,6 @@ patch(Payment.prototype, {
 	},
 	set_foreign_amount(amount, only = false) {
 		this.foreign_amount = amount;
-		console.log("rate", this.pos.foreign_currency.rate)
 		if (!only) {
 			if (this.pos.currency.name == "VEF") {
 				if (this.payment_method.is_foreign_currency) {
