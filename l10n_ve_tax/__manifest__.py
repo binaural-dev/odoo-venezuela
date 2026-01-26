@@ -13,6 +13,7 @@
     "data": [
         "views/res_config_settings.xml",
         "views/account_move.xml",
+        "views/account_joural.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,

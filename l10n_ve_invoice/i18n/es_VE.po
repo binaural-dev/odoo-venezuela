@@ -704,7 +704,3 @@ msgstr "Número de control"
 #: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
 msgid "Credit Notes"
 msgstr "Notas de Crédito"
-
-
-
-

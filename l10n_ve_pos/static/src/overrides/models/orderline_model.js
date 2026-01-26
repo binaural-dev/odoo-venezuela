@@ -4,8 +4,9 @@ import { Orderline } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import {
   formatFloat,
-  roundDecimals as round_di,
   floatIsZero,
+  roundDecimals as round_di,
+  roundPrecision as round_pr,
 } from "@web/core/utils/numbers";
 
 // New orders are now associated with the current table, if any.
@@ -21,17 +22,24 @@ patch(Orderline.prototype, {
     this.foreign_currency_rate_display = false;
   },
   get_rate() {
+    let rate = 0;
     if (this.order._isRefundOrder() && this.get_refund_orderline()) {
-      return this.get_refund_orderline().orderline.foreign_currency_rate;
-    }
-
-    if (
+      rate = this.get_refund_orderline().orderline.foreign_currency_rate;
+    } else if (
       this.foreign_currency_rate &&
       this.foreign_currency_rate != this.order.init_conversion_rate
-    )
-      return this.foreign_currency_rate;
+    ) {
+      rate = this.foreign_currency_rate;
+    } else {
+      rate = this.order.init_conversion_rate;
+    }
 
-    return this.order.init_conversion_rate;
+    let decimal_places =
+      this.pos.currency.name === "VEF"
+        ? this.pos.currency.decimal_places
+        : this.pos.foreign_currency.decimal_places;
+
+    return rate;
   },
   get currency_rate_display() {
     return this.order.get_display_rate;
@@ -118,7 +126,6 @@ patch(Orderline.prototype, {
         base: tax.base,
       };
     });
-
     return {
       priceWithTax: all_taxes.total_included,
       priceWithoutTax: all_taxes.total_excluded,

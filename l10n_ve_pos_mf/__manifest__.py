@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
-    "version": "17.0.1.0.3",
+    "version": "17.0.1.0.4",
     "category": "Accounting",
     "summary": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
     "description": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
@@ -26,9 +26,7 @@
     ],
     "assets": {
         "point_of_sale._assets_pos": [
-            "l10n_ve_pos_mf/static/src/js/*.js",
-            "l10n_ve_pos_mf/static/src/xml/*.xml",
-            "l10n_ve_pos_mf/static/src/css/*.css",
+            "l10n_ve_pos_mf/static/src/**/*",
         ],
     },
     "images": ["static/description/icon.png"],
