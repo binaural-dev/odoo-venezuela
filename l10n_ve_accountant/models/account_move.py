@@ -112,13 +112,14 @@ class AccountMove(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         store=True,
-        digits='Tasa',
+        digits="Tasa",
         tracking=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
+        digits=(16, 15),
         store=True,
         index=True,
         readonly=False,
@@ -165,15 +166,15 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
-    foreign_amount_residual = fields.Float('foreigh residual amount',copy=False, compute = "_compute_foreign_amount_residual", readonly=False)
+    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_foreign_amount_residual", currency_field="foreign_currency_id",readonly=False)
 
     @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
     def _compute_foreign_amount_residual(self):
         for rec in self:
-            if rec.amount_residual and rec.company_currency_id and rec.company_currency_id == self.env.ref("base.VEF"):
-                rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+            if rec.amount_residual and self.env.company.currency_foreign_id and self.env.company.currency_foreign_id == self.env.ref("base.VEF"):
+                rec.foreign_amount_residual = rec.amount_residual / rec.foreign_inverse_rate
             else:
-                rec.foreign_amount_residual = rec.amount_residual
+                rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
 
          
 

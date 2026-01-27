@@ -28,6 +28,7 @@ class AccountMoveLine(models.Model):
     foreign_price = fields.Float(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
+        digits="Foreign Product Price",
         store=True,
         readonly=False,
     )
@@ -35,12 +36,14 @@ class AccountMoveLine(models.Model):
         help="Foreign Subtotal of the line",
         compute="_compute_foreign_subtotal",
         currency_field="foreign_currency_id",
+        digits="Foreign Product Price",
         store=True,
     )
     foreign_price_total = fields.Monetary(
         help="Foreign Total of the line",
         compute="_compute_foreign_subtotal",
         currency_field="foreign_currency_id",
+        digits="Foreign Product Price",
         store=True,
     )
     amount_currency = fields.Monetary(precompute=False)
@@ -109,7 +112,7 @@ class AccountMoveLine(models.Model):
         for line in self:
            
             if line.price_unit and line.foreign_inverse_rate:
-                if line._origin.price_unit or line.foreign_inverse_rate != line._origin.foreign_inverse_rate:
+                if line._origin.price_unit != line.price_unit or line.foreign_inverse_rate != line._origin.foreign_inverse_rate:
                    
                     line.foreign_price = line.price_unit * line.foreign_inverse_rate
             else:
@@ -935,8 +938,11 @@ class AccountMoveLine(models.Model):
             credit_amount, credit_amount_currency = amounts_map.get((line._origin.id, 'credit'), (0.0, 0.0))
 
             # Subtract the values from the account.partial.reconcile to compute the residual amounts.
-            line.amount_residual = line.balance - debit_amount + credit_amount
-            line.amount_residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
+            residual = line.balance - debit_amount + credit_amount
+            residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
+            
+            line.amount_residual = comp_curr.round(residual)
+            line.amount_residual_currency = foreign_curr.round(residual_currency)
             # Para determinar si está conciliado, usamos una tolerancia mínima 
             # en lugar de un cero absoluto, o comparamos directamente.
             line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
