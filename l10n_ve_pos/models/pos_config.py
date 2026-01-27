@@ -15,10 +15,11 @@ class PosConfig(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for moves.",
         compute="_compute_rate",
         readonly=False,
+        digits=(16, 15),
     )
     foreign_rate = fields.Float(
         compute="_compute_rate",
-       
+        digits="Tasa",
         readonly=False,
     )
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty")

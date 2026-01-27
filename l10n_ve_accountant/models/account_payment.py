@@ -21,12 +21,13 @@ class AccountPayment(models.Model):
         return self.env.company.currency_foreign_id.id or False
 
     foreign_currency_id = fields.Many2one(
-        "res.currency", default=default_alternate_currency
+        "res.currency", default=default_alternate_currency,
     )
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
         default=0.0,
+        digits="Tasa",
         store=True,
         readonly=False,
     )
@@ -34,6 +35,7 @@ class AccountPayment(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         default=0.0,
+        digits=(16, 15),
         store=True,
         readonly=False,
     )
