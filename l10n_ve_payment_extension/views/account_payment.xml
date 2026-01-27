@@ -7,7 +7,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//group[@name='group2']" position="after">
                     <field name="is_retention" string="Is retention" invisible="1"/>
-                    <field name="payment_type_retention" string="Payment type retention" invisible="not is_retention"/>
+                    <field name="payment_type_retention" string="Payment type retention" invisible="not is_retention" readonly="1"/>
                     <field name="retention_ref" string="Retention ref" invisible="not is_retention"/>
                     <notebook invisible="not is_retention">
                         <page name="retention_lines" string="Retention lines">
@@ -15,7 +15,7 @@
                                 <tree editable="bottom">
                                     <field name="name"/>
                                     <field name="move_id"/>
-                                    <field name="payment_concept_id"/>
+                                    <field name="payment_concept_id" column_invisible="parent.payment_type_retention != 'islr'"/>
                                     <field name="invoice_amount"/>
                                 </tree>
                             </field>
