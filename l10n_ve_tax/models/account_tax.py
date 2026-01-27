@@ -146,7 +146,6 @@ class AccountTax(models.Model):
             currency_obj=foreign_currency
         )            
         
-        #raise UserError(format(res))
         return res
     
     def _get_move_from_base_lines(self, base_lines):
@@ -179,9 +178,9 @@ class AccountTax(models.Model):
             payment_id = self.env['account.move'].browse(move_id)
             foreign_amt = 0.0
             for line in payment_id.line_ids:
-                if line.account_id == self.env.company.customer_account_igtf_id or line.account_id == self.env.company.supplier_account_igtf_id:
+              
                 
-                    foreign_amt = payment_id.amount_total if line.company_currency_id == self.env.ref("base.VEF") else payment_id.amount_total_signed
+                foreign_amt = payment_id.amount_total if line.company_currency_id == self.env.ref("base.VEF") else payment_id.amount_total_signed
                 
             foreign_amt = foreign_amt
             amounts.append(foreign_amt)

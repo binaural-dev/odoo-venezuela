@@ -83,19 +83,18 @@ class AccountPaymentIgtf(models.Model):
             
             return 0.0
         
-        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
-            
-            return 0.0
-        
 
         residual_igtf = igtf_top - alter_bi_igtf
 
         if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
             return 0.0
         
-        if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
+        if igtf > residual_igtf and not float_is_zero(residual_igtf, precision_rounding=precision):
             igtf = residual_igtf
-        
+
+        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
+            return 0.0
+ 
         return igtf
     
     def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
