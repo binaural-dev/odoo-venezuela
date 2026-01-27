@@ -38,6 +38,7 @@ patch(Payment.prototype, {
 				return res;
 			}
 			this.foreign_amount = round_di(amount * this.pos.foreign_currency.rate, this.pos.dp["Foreign Product Price"]); 
+
 		}
 		return res;
 	},
