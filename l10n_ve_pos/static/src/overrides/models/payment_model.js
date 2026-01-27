@@ -37,7 +37,7 @@ patch(Payment.prototype, {
 				this.set_foreign_amount(this.order.get_foreign_total_with_tax() + this.order.get_foreign_rounding_applied(), true);
 				return res;
 			}
-			this.foreign_amount = amount * round_pr(this.pos.foreign_currency.rate, this.pos.currency.rounding); 
+			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
 		}
 		return res;
 	},
