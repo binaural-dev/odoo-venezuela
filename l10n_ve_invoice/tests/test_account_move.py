@@ -191,6 +191,7 @@ class TestAccountMove(TransactionCase):
             invoice_date=invoice_date,
             journal=self.purchase_journal,
         )
+        move.state = 'posted'
 
         class FakeDate(real_date):
             @classmethod
