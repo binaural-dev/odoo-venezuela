@@ -9,6 +9,7 @@
     "category": "Stock Account",
     "version": "17.0.0.1.16",
     "depends": [
+        "purchase_stock",
         "l10n_ve_stock",
         "l10n_ve_invoice",
         "l10n_ve_accountant",
