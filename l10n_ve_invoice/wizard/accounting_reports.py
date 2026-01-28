@@ -664,8 +664,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ] and move.state in ["cancel"]:
             return "03-ANU"
 
-    def search_moves(self):
-        
+    def search_moves(self):        
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
