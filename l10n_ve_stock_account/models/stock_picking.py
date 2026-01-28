@@ -4,6 +4,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.osv import expression
 from datetime import date, datetime, timedelta
+import calendar
 
 _logger = logging.getLogger(__name__)
 
@@ -1168,13 +1169,13 @@ class StockPicking(models.Model):
                 result = hoy.replace(day=15)
             else:
                 # Si es 15 o después: último día del mes
-                result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-                result = result - timedelta(days=1)
+                last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+                result = date(hoy.year, hoy.month, last_day)
 
         elif taxpayer_type in ("ordinary", "formal"):
             # Siempre último día del mes para estos tipos
-            result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-            result = result - timedelta(days=1)
+            last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+            result = date(hoy.year, hoy.month, last_day)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     def get_foreign_currency_is_vef(self):
