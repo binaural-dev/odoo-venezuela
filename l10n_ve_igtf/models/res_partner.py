@@ -17,6 +17,5 @@ class ResPartner(models.Model):
             elif invoice_type == "in_invoice":
                 partner_taxpayer_type = rec.taxpayer_type
                 
-                return partner_taxpayer_type == 'special'
-                
+                return partner_taxpayer_type in ['special','formal']
             return False
