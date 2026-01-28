@@ -24,11 +24,12 @@
                 <label for="correlative"
                     style="font-weight: bold;"
                     invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund')" />
-
-                <field name="correlative"
+                <field name="is_purchase_international" invisible="1"/>
+                 <field name="correlative"
                     invisible="move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']"
-                    readonly="(move_type in ['out_invoice', 'out_refund'] and not is_contingency) or state == 'posted'"
-                    required="move_type in ['in_invoice', 'in_refund']" />
+                    readonly="(move_type in ['out_invoice', 'out_refund'] and not is_contingency) or state == 'posted' or is_purchase_international"
+                    required="move_type in ['in_invoice', 'in_refund'] and not is_purchase_international"
+                    force_save="1"/>
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_reception_date"
