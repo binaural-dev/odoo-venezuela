@@ -218,6 +218,10 @@ class TestStockPickingInvoice(TransactionCase):
             len(invoice.invoice_line_ids) == len(order.order_line),
             "The invoice created from the sales orders dispatch guide must have the same number of lines as the sales order.",
         )
+        self.assertTrue(
+            invoice.picking_ids == dispatch_guide,
+            "The invoice must be linked to the dispatch guide from which it was created.",
+        )
         _logger.info("test_01_generate_invoice_from_dispatch_guide --- successfully.")
 
     def test_02_generate_dispatch_guide_from_purchase_order(self):
