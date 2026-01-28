@@ -195,7 +195,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                    
                     amount = amount + payment.calculate_igtf_for_payment(invoice, payment.amount, payment.igtf_percentage)
             if payment.is_igtf:
-                #raise UserError(amount)
                 payment.igtf_to_show = amount
                 payment.igtf_amount = amount
                 
