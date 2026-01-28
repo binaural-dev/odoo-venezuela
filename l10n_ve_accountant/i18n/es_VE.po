@@ -535,6 +535,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_amount
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__foreign_amount
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_line_form_l10n_ve_invoice
 msgid "Foreign Amount"
 msgstr "Importe Alterno"
@@ -567,6 +568,8 @@ msgstr "Ajuste de crédito alterno"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__credit_foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__debit_foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_currency_id
 msgid "Foreign Currency"
