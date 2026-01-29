@@ -6,7 +6,11 @@
         <field name="arch" type="xml">
             <field name="invoice_has_outstanding" position="after">
                 <field name="is_contingency" invisible="1" />
+                <field name="entry_in_period" invisible="1" />
             </field>
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="attributes">
+                <attribute name="invisible">not entry_in_period and (not id or state != 'draft' or move_type == 'entry')</attribute>
+            </xpath>
             <xpath expr="//field[@name='invoice_user_id']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
