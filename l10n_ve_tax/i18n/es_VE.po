@@ -370,7 +370,73 @@ msgid "Total to pay"
 msgstr "Total a pagar"
 
 #. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__unique_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__unique_tax
-msgid "Unique Tax"
-msgstr "Impuesto único"
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__exent_aliquot_purchase_international
+msgid "Exent Aliquot Purchase International"
+msgstr "Alícuota exenta compras internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__extend_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__extend_aliquot_purchase_international
+msgid "Extend Aliquot Purchase International"
+msgstr "Alícuota extendida compras internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_purchase_international
+msgid "General Aliquot Purchase International"
+msgstr "Alícuota general compras internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_international_purchase_in_book
+msgid "Hide international alicuotes"
+msgstr "Ocultar alícuotas internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_account_journal__is_purchase_international
+msgid "International purchase"
+msgstr "Compra internacional"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_international_purchase_in_book
+msgid "Not Show International Purchase In Book"
+msgstr "No mostrar compras internacionales en el libro"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_purchase_international
+msgid "Not Show Reduced Aliquot Purchase International"
+msgstr "No mostrar alícuota reducida compras internacionales"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Purchase Tax International Rates"
+msgstr "Tasas de Impuestos de Compras Internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__reduced_aliquot_purchase_international
+msgid "Reduced Aliquot Purchase International"
+msgstr "Alícuota reducida compras internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_general_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_general_aliquot_purchase_international
+msgid "Not Show General Aliquot Purchase International"
+msgstr "No mostrar alícuota general compras internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_purchase_international
+msgid "Not Show Extend Aliquot Purchase International"
+msgstr "No mostrar alícuota extendida compras internacionales"
+
+#. module: l10n_ve_tax
+#. odoo-python
+#: code:addons/l10n_ve_tax/models/account_journal.py:0
+#, python-format
+msgid ""
+"An International Purchase Journal is already enabled. Only one is allowed."
+msgstr ""
+"Ya se ha habilitado un Diario de Compras Internacional. Solo se permite uno."
+
