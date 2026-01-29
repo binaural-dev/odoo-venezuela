@@ -54,10 +54,6 @@ class TestStockPickingInvoice(TransactionCase):
                 "amount_type": "percent",
                 "type_tax_use": "sale",
                 "tax_group_id": self.tax_group.id,
-<<<<<<< HEAD
-                "country_id": ve.id,
-=======
->>>>>>> e756e55e (corrigiendo prueba unitaria)
                 "company_id": self.company.id,
             }
         )
