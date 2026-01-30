@@ -258,7 +258,7 @@ class AccountMoveLine(models.Model):
                     line.company_id.currency_id, 
                     foreign_currency,          
                     line.company_id,           
-                    line.move_id.origin_payment_advanced_payment_id.date if line.move_id.origin_payment_advanced_payment_id else line.date #asientos de cruce toman tasa del pago          
+                    #line.move_id.origin_payment_advanced_payment_id.date if line.move_id.origin_payment_advanced_payment_id else line.date #asientos de cruce toman tasa del pago          
                 )
 
                 inverse_rate_to_use = rate if inverse_rate_to_use <= 0.0 else rate
