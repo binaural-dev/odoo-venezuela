@@ -1107,10 +1107,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
                 )
         
-            if field.get("field") == "bi_igtf":
-                worksheet.write(
-                total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")*3/100', cell_formats.get("number")
-            )
+            # if field.get("field") == "bi_igtf":
+            #     worksheet.write(
+            #     total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")*3/100', cell_formats.get("number")
+            # )
             if field.get("field") == "igtf":
                 worksheet.write(
                 total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")', cell_formats.get("number")
@@ -1249,10 +1249,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
             )
                 
-            if field.get("field") == "bi_igtf":
-                worksheet.write(
-                total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")*3/100', cell_formats.get("number")
-            )
+            # if field.get("field") == "bi_igtf":
+            #     worksheet.write(
+            #     total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")*3/100', cell_formats.get("number")
+            # )
             if field.get("field") == "igtf":
                 worksheet.write(
                 total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")', cell_formats.get("number")
