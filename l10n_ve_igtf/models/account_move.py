@@ -96,7 +96,7 @@ class AccountMove(models.Model):
 
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
-        for rec in self:
+        for rec in self.filtered(lambda rec: rec.move_type in ['out_invoice','in_invoice','out_refund','in_refund']):
             
             amount = rec.amount_total
             if rec.company_currency_id == self.env.ref("base.VEF"):
