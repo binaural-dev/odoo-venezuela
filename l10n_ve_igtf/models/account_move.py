@@ -121,19 +121,44 @@ class AccountMove(models.Model):
 
             foreign_bank_amount = 0.0
             foreign_igtf_amount = 0.0
-            
+            target_account = False
+
+            partial_amount = 0.0
+            partial_foreign_amount = 0.0
+            partner_context = rec.partner_id.with_company(rec.company_id)
             for payment_move in final_payment_moves:
                 igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
                 bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.account_type in ['asset_cash','asset_receivable'])
+                
+                if rec.move_type in ['out_invoice', 'out_refund']:
+                    target_account = partner_context.property_account_receivable_id
+                else:
+                    target_account = partner_context.property_account_payable_id
 
+                factura_line = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
+
+                pago_line = payment_move.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
+                
+                partial = self.env['account.partial.reconcile'].search([
+                    '|',
+                    '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', pago_line.id),
+                    '&', ('debit_move_id', '=', pago_line.id), ('credit_move_id', '=', factura_line.id)
+                ], limit=1)
+
+                if partial:
+                    if bank_line[0].company_currency_id == self.env.ref("base.VEF") :
+                        partial_amount = abs(partial.foreign_amount) 
+                        partial_foreign_amount = abs(partial.amount) 
+                    else:
+                        partial_amount =  abs(partial.amount) 
+                        partial_foreign_amount = abs(partial.foreign_amount) 
+
+                    
 
                 if bank_line:
-                    if bank_line[0].company_currency_id == self.env.ref("base.VEF") :
-                        bank_amount = abs(bank_line[0].foreign_balance) 
-                        foreign_bank_amount = abs(bank_line[0].balance) 
-                    else:
-                        bank_amount = abs(bank_line[0].balance)
-                        foreign_bank_amount = abs(bank_line[0].foreign_balance) 
+                   
+                    bank_amount = partial_amount
+                    foreign_bank_amount = partial_foreign_amount
                         
                
                 if igtf_line:
@@ -146,14 +171,23 @@ class AccountMove(models.Model):
 
 
                 if not igtf_line and bank_line:
-                   
+                    
                     igtf_top += bank_amount
+
+
 
                 amount_base_payment = 0.0
                 foreign_amount_base_payment = 0.0
 
                 if igtf_line and bank_line:
-                    if (bank_amount* (rec.company_id.igtf_percentage / 100)) < igtf_amount:
+
+                    if payment_move.payment_id and payment_move.payment_id.reconciled_invoices_count > 1:
+
+                        amount_base_payment = partial_amount
+                        foreign_amount_base_payment = partial_foreign_amount
+                    
+
+                    elif (bank_amount* (rec.company_id.igtf_percentage / 100)) < igtf_amount:
                         if (bank_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
                             
                             amount_base_payment = bank_amount
@@ -180,7 +214,7 @@ class AccountMove(models.Model):
                     foreign_alter_bi_igtf += foreign_igtf_amount
 
                 total_bi_igtf += amount_base_payment
-                total_foreign_bi_igtf = foreign_amount_base_payment
+                total_foreign_bi_igtf += foreign_amount_base_payment
             
             apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
             rec.write({
