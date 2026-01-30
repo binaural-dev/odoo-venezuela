@@ -195,7 +195,7 @@ class AccountMoveLine(models.Model):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
                 _logger.info("Calculating from payment_term or tax")
-                self._calculate_from_balance(line)
+                self._calculate_for_non_invoice(line)
             elif line.currency_id == line.company_id.currency_foreign_id and line.amount_currency:
                 _logger.info("Calculating from amount_currency")
                 self._calculate_from_amount_currency(line)
@@ -210,7 +210,7 @@ class AccountMoveLine(models.Model):
                 self._calculate_from_product(line)
             else:
                 _logger.info("Calculating from balance")
-                self._calculate_from_balance(line)
+                self._calculate_for_non_invoice(line)
 
     def _calculate_from_adjustment(self, line):
         new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
@@ -230,15 +230,6 @@ class AccountMoveLine(models.Model):
             line.foreign_debit = 0.0
         if line.foreign_credit != 0.0:
             line.foreign_credit = 0.0
-
-    def _calculate_from_balance(self, line):
-        new_foreign_debit = abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-        if line.foreign_debit != new_foreign_debit:
-            line.foreign_debit = new_foreign_debit
-
-        new_foreign_credit = abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-        if line.foreign_credit != new_foreign_credit:
-            line.foreign_credit = new_foreign_credit
 
     def _calculate_from_amount_currency(self, line):
         new_foreign_debit = abs(line.amount_currency) if line.amount_currency > 0 else 0.0
@@ -328,8 +319,6 @@ class AccountMoveLine(models.Model):
         for line in self:
         
             line.foreign_balance = line.foreign_debit - line.foreign_credit
-            
-               
 
     def _inverse_foreign_balance(self):
         for line in self:
