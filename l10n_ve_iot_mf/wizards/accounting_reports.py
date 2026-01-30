@@ -2,9 +2,10 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime
 from io import BytesIO
 from odoo import models, fields
+from odoo.exceptions import UserError
 import xlsxwriter
-
-
+import logging
+_logger = logging.getLogger(__name__)
 class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     _inherit = "wizard.accounting.reports"
 
@@ -14,31 +15,53 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res = super()._get_domain()
         if not self.with_fiscal_machine:
             return res
+        res = [d for d in res if d != ('correlative', 'not in', ['/', False])]
         res.append(("mf_invoice_number", "!=", False))
         res.append(("mf_reportz", "!=", False))
         res.append(("mf_serial", "!=", False))
         return res
 
     def search_moves(self):
-        if not self.with_fiscal_machine:
-            return super().search_moves()
+        if self.with_fiscal_machine:
+            res = super().search_moves()
+            res = res.filtered_domain([("mf_serial", "!=", False)])
+            return res
 
         move_model = self.env["account.move"]
         domain = self._get_domain()
         moves = move_model.search(domain, order="invoice_date asc")
         return moves
+    
+    def _get_sale_book_field_groups(self):
+        sale_groups = super()._get_sale_book_field_groups()
 
-    def sale_book_fields(self):
-        res = super().sale_book_fields()
         if not self.with_fiscal_machine:
-            return res
-        for i, field in enumerate(res):
-            if field.get("field", False) == "correlative":
-                del res[i]
-                break
-        res.insert(4, {"name": "Reporte Z", "field": "mf_reportz"})
-        res.insert(4, {"name": "Serial de Maquina", "field": "mf_serial"})
-        return res
+            return sale_groups
+
+        new_fields = [
+            {"name": "Reporte Z", "field": "mf_reportz", "size": 16},
+            {"name": "Serial de Maquina", "field": "mf_serial", "size": 16},
+        ]
+
+        for group in sale_groups:
+            if group.get('header') == 'DETALLE DEL DOCUMENTO':
+                basic_fields = group['fields']
+                
+                insertion_index = -1
+                for i, field_dict in enumerate(basic_fields):
+                    if field_dict.get('field') == 'move_type':
+                        insertion_index = i + 1  
+                        break
+                
+                if insertion_index != -1:
+                   
+                    basic_fields.insert(insertion_index, new_fields[1]) 
+                    
+                    basic_fields.insert(insertion_index, new_fields[0]) 
+
+                break 
+
+        return sale_groups
 
     def _fields_sale_book_line(self, move, taxes):
         res = super()._fields_sale_book_line(move, taxes)
