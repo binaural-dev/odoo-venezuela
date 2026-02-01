@@ -1,7 +1,9 @@
-/** @odoo-module */
+// /** @odoo-module */
 
-import { Orderline } from "@point_of_sale/app/store/models";
+import { Orderline } from "@point_of_sale/app/generic_components/orderline/orderline";
+import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
 import { patch } from "@web/core/utils/patch";
+import { accountTaxHelpers } from "@account/helpers/account_tax";
 import {
   formatFloat,
   roundDecimals as round_di,
@@ -10,6 +12,113 @@ import {
 } from "@web/core/utils/numbers";
 
 // New orders are now associated with the current table, if any.
+
+
+patch(PosOrderline.prototype, {
+    get_foreign_currency(){
+        return this.config.foreign_currency_id;
+    },
+    get_foreign_price_without_tax() {
+    const foreign_currency = this.get_foreign_currency();
+    const digits = foreign_currency ? foreign_currency.decimal_places : 2;
+    console.log('get_foreign_unit_price', this.get_foreign_unit_price());
+    console.log('get_quantity', this.get_quantity());
+    return round_pr(
+      this.get_foreign_unit_price() * this.get_quantity(),
+      digits
+    );
+    },
+    get_foreign_tax_details() {
+    return this.get_all_foreign_prices().taxDetails;
+    },
+    get_foreign_price_with_tax() {
+        return this.get_all_foreign_prices().priceWithTax;
+
+    },
+    get_foreign_total_tax() {
+        
+      return round_pr(
+        this.get_foreign_price_without_tax() * (this.get_tax() / 100),
+        this.foreign_currency.rounding,
+      );
+    },
+    // get_foreign_price_without_tax() {
+    //   return this.get_all_foreign_prices().priceWithoutTax;
+    // },
+
+    get_foreign_unit_price() {
+      const foreign_currency = this.get_foreign_currency();
+      const digits = foreign_currency ? foreign_currency.decimal_places : 2;
+      console.log('this.foreign_price', this);
+      // round and truncate to mimic _symbol_set behavior
+      return parseFloat(
+        round_di(this.foreign_price || 0, digits).toFixed(digits),
+      );
+    },
+
+    get_foreign_price(){
+        
+    },
+
+
+    get_all_foreign_prices(qty = this.get_quantity()) {
+      const company = this.company;
+      const product = this.get_product();
+      const taxes = this.tax_ids || product.taxes_id;
+
+      // Usar el precio unitario foráneo y la moneda foránea
+      const baseLine = accountTaxHelpers.prepare_base_line_for_taxes_computation(
+          this,
+          this.prepareBaseLineForTaxesComputationExtraValues({
+              quantity: qty,
+              tax_ids: taxes,
+              price_unit: this.get_foreign_unit_price(), // <--- precio foráneo
+              currency: this.get_foreign_currency(),     // <--- moneda foránea
+          })
+      );
+      accountTaxHelpers.add_tax_details_in_base_line(baseLine, company);
+      accountTaxHelpers.round_base_lines_tax_details([baseLine], company);
+
+      // Sin descuento
+      const baseLineNoDiscount = accountTaxHelpers.prepare_base_line_for_taxes_computation(
+          this,
+          this.prepareBaseLineForTaxesComputationExtraValues({
+              quantity: qty,
+              tax_ids: taxes,
+              discount: 0.0,
+              price_unit: this.get_foreign_unit_price(), // <--- precio foráneo
+              currency: this.get_foreign_currency(),     // <--- moneda foránea
+          })
+      );
+      accountTaxHelpers.add_tax_details_in_base_line(baseLineNoDiscount, company);
+      accountTaxHelpers.round_base_lines_tax_details([baseLineNoDiscount], company);
+
+      // Tax details.
+      const taxDetails = {};
+      for (const taxData of baseLine.tax_details.taxes_data) {
+          taxDetails[taxData.tax.id] = {
+              amount: taxData.tax_amount_currency,
+              base: taxData.base_amount_currency,
+          };
+      }
+
+      return {
+          priceWithTax: baseLine.tax_details.total_included_currency,
+          priceWithoutTax: baseLine.tax_details.total_excluded_currency,
+          priceWithTaxBeforeDiscount: baseLineNoDiscount.tax_details.total_included_currency,
+          priceWithoutTaxBeforeDiscount: baseLineNoDiscount.tax_details.total_excluded_currency,
+          tax:
+              baseLine.tax_details.total_included_currency -
+              baseLine.tax_details.total_excluded_currency,
+          taxDetails: taxDetails,
+          taxesData: baseLine.tax_details.taxes_data,
+      };
+    },
+})  ;
+
+
+
+
 patch(Orderline.prototype, {
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
@@ -83,61 +192,13 @@ patch(Orderline.prototype, {
     );
   },
 
-  get_foreign_unit_price() {
-    var digits = this.pos.dp["Foreign Product Price"];
-    // round and truncate to mimic _symbol_set behavior
-    return parseFloat(
-      round_di(this.foreign_price || 0, digits).toFixed(digits),
-    );
-  },
+  
 
   get_all_prices(qty = this.get_quantity()) {
     return super.get_all_prices(qty);
   },
 
-  get_all_foreign_prices(qty = this.get_quantity()) {
-    var price_unit =
-      this.get_foreign_unit_price() * (1.0 - this.get_discount() / 100.0);
-    var taxtotal = 0;
-
-    var product = this.get_product();
-    var taxes_ids = this.tax_ids || product.taxes_id;
-    taxes_ids = taxes_ids.filter((t) => t in this.pos.taxes_by_id);
-    var taxdetail = {};
-    var product_taxes = this.pos.get_taxes_after_fp(
-      taxes_ids,
-      this.order.fiscal_position,
-    );
-
-    var all_taxes = this.compute_all(
-      product_taxes,
-      price_unit,
-      qty,
-      this.pos.foreign_currency.rounding,
-    );
-    var all_taxes_before_discount = this.compute_all(
-      product_taxes,
-      this.get_foreign_unit_price(),
-      qty,
-      this.pos.foreign_currency.rounding,
-    );
-    all_taxes.taxes.forEach(function(tax) {
-      taxtotal += tax.amount;
-      taxdetail[tax.id] = {
-        amount: tax.amount,
-        base: tax.base,
-      };
-    });
-
-    return {
-      priceWithTax: all_taxes.total_included,
-      priceWithoutTax: all_taxes.total_excluded,
-      priceWithTaxBeforeDiscount: all_taxes_before_discount.total_included,
-      priceWithoutTaxBeforeDiscount: all_taxes_before_discount.total_excluded,
-      tax: taxtotal,
-      taxDetails: taxdetail,
-    };
-  },
+  
 
   get_foreign_price_without_tax() {
     return this.get_all_foreign_prices().priceWithoutTax;
@@ -165,10 +226,6 @@ patch(Orderline.prototype, {
     } else {
       return this.get_all_foreign_prices(1).priceWithoutTax;
     }
-  },
-
-  get_foreign_tax_details() {
-    return this.get_all_foreign_prices().taxDetails;
   },
 
   get_foreign_total_taxes_included_in_price() {
