@@ -33,7 +33,7 @@
             name="view_ids" 
             eval="[
                 (5, 0, 0), 
-                (0, 0, {'view_mode': 'list', 'view_id': ref('l10n_ve_stock_account.stock_move_line_consignation_report_list')}),
+                (0, 0, {'view_mode': 'list', 'view_id': ref('l10n_ve_stock_account.stock_move_line_consignation_report_tree')}),
             ]"
         />
         <field name="context">{'search_default_guide_number': 1}</field>
@@ -45,4 +45,3 @@
             ]
         </field>
     </record>
-</odoo>

@@ -1,7 +1,7 @@
 <odoo>
-  <record id="group_stock_account" model="res.groups"> 
+  <record id="group_stock_account" model="res.groups">
     <field name="name">Ver botón "Crear Factura"</field>
-    <field name="category_id" ref="base.module_category_accounting_accounting" />
-    <field name="users" eval="[(4, ref('base.user_root')),(4,ref('base.user_admin'))]" />
+    <field name="privilege_id" ref="account.res_groups_privilege_accounting" />
+    <field name="implied_ids" eval="[(4, ref('base.group_user'))]" />
   </record>
 </odoo>

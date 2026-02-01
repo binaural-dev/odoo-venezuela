@@ -5,7 +5,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "18.0.0.0.1",
+    "version": "1.0",
     "depends": ["base", "l10n_ve_rate", "l10n_ve_accountant"],
     "data": [
         "views/res_partner.xml",

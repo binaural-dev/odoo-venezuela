@@ -5,7 +5,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "18.0.0.0.2",
+    "version": "1.0",
     "depends": [
         "base",
         "account_accountant",

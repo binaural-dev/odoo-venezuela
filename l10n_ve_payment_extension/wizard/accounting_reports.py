@@ -2,7 +2,7 @@ from datetime import datetime
 
 import xlsxwriter
 from odoo import _, api, models
-from odoo.osv import expression
+from odoo.fields import Domain
 
 import logging
 
@@ -48,7 +48,7 @@ class WizardAccountingReports(models.TransientModel):
                             )
                         )
                     )
-                    * -1
+                    
                     for move in credit_notes
                 ]
             )

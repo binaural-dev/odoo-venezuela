@@ -110,12 +110,12 @@
             />
     </record>
     <record id="stock.action_unreserve_picking" model="ir.actions.server">
-        <field name="groups_id" eval="[Command.link(ref('l10n_ve_stock.group_hide_override_button_for_inventory_transfers'))]"/>
+        <field name="group_ids" eval="[Command.link(ref('l10n_ve_stock.group_hide_override_button_for_inventory_transfers'))]"/>
     </record>
     <record id="stock.action_toggle_is_locked" model="ir.actions.server">
-        <field name="groups_id" eval="[Command.link(ref('l10n_ve_stock.group_hide_override_button_for_inventory_transfers'))]"/>
+        <field name="group_ids" eval="[Command.link(ref('l10n_ve_stock.group_hide_override_button_for_inventory_transfers'))]"/>
     </record>
     <record id="stock.action_scrap" model="ir.actions.server">
-        <field name="groups_id" eval="[Command.link(ref('l10n_ve_stock.group_hide_discard_inventory_transfers_button'))]"/>
+        <field name="group_ids" eval="[Command.link(ref('l10n_ve_stock.group_hide_discard_inventory_transfers_button'))]"/>
     </record>
 </odoo>

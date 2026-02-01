@@ -15,84 +15,122 @@ class TestAccountRetention(TransactionCase):
         self.company = self.env.ref("base.main_company")
         self.currency_usd = self.env.ref("base.USD")
         self.currency_vef = self.env.ref("base.VEF")
+        self.company = self.env.ref("base.main_company")
+        iva_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "Secuencia de iva para proveedores",
+                "code": "payment.retention.iva",
+                "prefix": "",
+                "padding": 8,
+                "number_next_actual": 2,
+            }
+        )
+
+        bank_account = self.env["account.account"].search(
+            [("account_type", "=", "liquidity")], limit=1
+        )
+        transitory_account = self.env["account.account"].search(
+            [("account_type", "=", "other")], limit=1
+        )
+        profit_account = self.env["account.account"].search(
+            [("account_type", "=", "income")], limit=1
+        )
+        loss_account = self.env["account.account"].search(
+            [("account_type", "=", "expense")], limit=1
+        )
+
+        self.iva_journal = self.env["account.journal"].create(
+            {
+                "name": "Retenciones IVA",
+                "code": "RETIVA",
+                "type": "bank",
+                "sequence_id": iva_sequence.id,
+                "company_id": self.env.company.id,
+                "bank_account_id": bank_account.id,
+                "default_account_id": transitory_account.id,
+                "profit_account_id": profit_account.id,
+                "loss_account_id": loss_account.id,
+            }
+        )
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "foreign_currency_id": self.currency_vef.id,
+                "currency_foreign_id": self.currency_vef.id,
+                "iva_supplier_retention_journal_id": self.iva_journal.id,
             }
         )
 
-        self.liquidity_account = self.env["account.account"].create(
-            {
-                "name": "Banco Retenciones",
-                "code": "101999",
-                "account_type": "asset_cash",
-                "company_ids": [(6, 0, [self.company.id])],
-            }
-        )
-        self.retention_journal = self.env["account.journal"].create(
-            {
-                "name": "Diario Retenciones",
-                "type": "bank",
-                "code": "RETEN",
-                "company_id": self.company.id,
-                "autocheck_on_post": True,
-            }
-        )
-        manual_in = self.env.ref("account.account_payment_method_manual_in")
-        manual_out = self.env.ref("account.account_payment_method_manual_out")
-        self.inbound_method_line = self.env["account.payment.method.line"].create(
-            {
-                "name": "Manual IN",
-                "journal_id": self.retention_journal.id,
-                "payment_method_id": manual_in.id,
-                "payment_type": "inbound",
-                "sequence": 10,
-                "company_id": self.company.id,
-                "payment_account_id": self.liquidity_account.id,
+        self.tax_group_iva16 = self.env["account.tax.group"].create({"name": "IVA 16%"})
 
-            }
-        )
-        self.outbound_method_line = self.env["account.payment.method.line"].create(
+        self.tax_iva16 = self.env["account.tax"].create(
             {
-                "name": "Manual OUT",
-                "journal_id": self.retention_journal.id,
-                "payment_method_id": manual_out.id,
-                "payment_type": "outbound",
-                "sequence": 10,
-                "company_id": self.company.id,
-                "payment_account_id": self.liquidity_account.id,
-
-            }
-        )
-        self.retention_journal.write(
-            {
-                "inbound_payment_method_line_ids": [(6, 0, [self.inbound_method_line.id])],
-                "outbound_payment_method_line_ids": [(6, 0, [self.outbound_method_line.id])],
+                "name": "IVA 16%",
+                "amount": 16,
+                "amount_type": "percent",
+                "type_tax_use": "purchase",
+                "tax_group_id": self.tax_group_iva16.id,
             }
         )
 
-        self.purchase_journal = self.env["account.journal"].create(
+        self.product = self.env["product.product"].create(
             {
-                "name": "Purchase Journal",
-                "code": "PUR",
+                "name": "Producto Prueba",
+                "type": "service",
+                "list_price": 100,
+                "barcode": "123456789",
+                "purchase_ok": True,
+                "supplier_taxes_id": [(6, 0, [self.tax_iva16.id])],
+                "taxes_id": [(6, 0, [self.tax_iva16.id])],
+            }
+        )
+
+        self.type_person = self.env["type.person"].create(
+            {
+                "name": "PN Residente",
+                "state": True,
+            }
+        )
+
+        self.partner_a = self.env["res.partner"].create(
+            {
+                "name": "Test Partner A",
+                "customer_rank": 1,
+                "type_person_id": self.type_person.id,
+                "withholding_type_id": self.env["account.withholding.type"]
+                .search([("name", "=", "75%")], limit=1)
+                .id,
+            }
+        )
+
+        sequence = self.env["ir.sequence"].create(
+            {
+                "name": "Secuencia Factura",
+                "code": "account.move",
+                "prefix": "INV/",
+                "padding": 8,
+                "number_next_actual": 2,
+            }
+        )
+        refund_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "nota de credito",
+                "code": "",
+                "prefix": "NC/",
+                "padding": 8,
+                "number_next_actual": 2,
+            }
+        )
+
+        self.journal = self.env["account.journal"].create(
+            {
+                "name": "Diario de Ventas",
+                "code": "VEN",
                 "type": "purchase",
-                "company_id": self.company.id,
+                "sequence_id": sequence.id,
+                "refund_sequence_id": refund_sequence.id,
+                "company_id": self.env.company.id,
             }
         )
-        self.sales_journal = self.env["account.journal"].create(
-            {
-                "name": "Sales Journal",
-                "code": "SAL",
-                "type": "sale",
-                "company_id": self.company.id,
-            }
-        )
-
-        self.company.iva_supplier_retention_journal_id = self.retention_journal.id
-        self.company.iva_customer_retention_journal_id = self.retention_journal.id
-        self.company.islr_supplier_retention_journal_id = self.retention_journal.id
-        self.company.islr_customer_retention_journal_id = self.retention_journal.id
 
         self.partner = self.env["res.partner"].create(
             {
@@ -145,30 +183,41 @@ class TestAccountRetention(TransactionCase):
         journal = self.purchase_journal if move_type == "in_invoice" else self.sales_journal
         invoice = self.env["account.move"].create(
             {
-                "move_type": move_type,
-                "partner_id": self.partner.id,
-                "journal_id": journal.id,
-                "invoice_date": "2025-08-22",
+                "move_type": "in_invoice",
+                "partner_id": self.partner_a.id,
+                "journal_id": self.journal.id,
+                "invoice_date": fields.Date.today(),
                 "invoice_line_ids": [
                     (
                         0,
                         0,
                         {
                             "product_id": self.product.id,
-                            "quantity": 1,
+                            "quantity": 2,
                             "price_unit": 100,
-                            "tax_ids": [(6, 0, [tax.id])],
+                            "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                            "price_subtotal": 200,
+                            "price_total": 232,
+                            "foreign_rate": 2.0,
+                            "foreign_price": 200,
+                            "foreign_subtotal": 400,
+                            "foreign_price_total": 464,
                         },
-                    )
+                    ),
                 ],
             }
         )
-        invoice.action_post()
+
         return invoice
 
     def _create_retention(self, invoice, type_retention):
         today = fields.Date.today()
-        payment_concept = self.env["payment.concept"].create({"name": "Test Payment Concept"})
+        payment_concept = self.env["payment.concept"].create(
+            {
+                "name": "Test Payment Concept",
+            }
+        )
+
         _logger.warning("Creating retention for invoice %s", invoice.amount_total)
         rate = 0.16 if type_retention == "iva" else 0.02
         return self.env["account.retention"].create(
@@ -187,10 +236,10 @@ class TestAccountRetention(TransactionCase):
                             "invoice_total": invoice.amount_total,
                             "invoice_amount": invoice.amount_untaxed,
                             "retention_amount": float_round(
-                                invoice.amount_untaxed * rate, precision_rounding=0.01
+                                invoice.amount_untaxed * 0.16, precision_rounding=0.01
                             ),
                             "foreign_retention_amount": float_round(
-                                invoice.amount_untaxed * rate, precision_rounding=0.01
+                                invoice.amount_untaxed * 0.16, precision_rounding=0.01
                             ),
                             "foreign_invoice_amount": invoice.amount_untaxed,
                             "payment_concept_id": payment_concept.id,
@@ -200,37 +249,37 @@ class TestAccountRetention(TransactionCase):
             }
         )
 
-    def test_create_supplier_iva_retention(self):
-        invoice = self._create_invoice(self.tax_iva_purchase, "in_invoice")
-        retention = self._create_retention(invoice, "iva")
-        self.assertEqual(retention.type_retention, "iva")
-        self.assertEqual(retention.type, "in_invoice")
-
-    def test_create_customer_iva_retention(self):
-        invoice = self._create_invoice(self.tax_iva_sale, "out_invoice")
-        retention = self._create_retention(invoice, "iva")
-        self.assertEqual(retention.type_retention, "iva")
-        self.assertEqual(retention.type, "out_invoice")
-
-    def test_create_supplier_islr_retention(self):
-        invoice = self._create_invoice(self.tax_islr_purchase, "in_invoice")
-        retention = self._create_retention(invoice, "islr")
-        self.assertEqual(retention.type_retention, "islr")
-        self.assertEqual(retention.type, "in_invoice")
-
-    def test_create_customer_islr_retention(self):
-        invoice = self._create_invoice(self.tax_islr_sale, "out_invoice")
-        retention = self._create_retention(invoice, "islr")
-        self.assertEqual(retention.type_retention, "islr")
-        self.assertEqual(retention.type, "out_invoice")
-
-    def test_sequence_created_on_create_iva(self):
-        invoice = self._create_invoice(self.tax_iva_purchase, "in_invoice")
-        retention = self._create_retention(invoice, "iva")
+    def test_01_sequence_created_on_create_iva(self):
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+        retention = self._create_retention(invoice)
         retention.number = "0123456789"
+        retention.type_retention = "iva"
+
         with self.assertRaises(ValidationError) as e:
             retention.action_post()
         self.assertIn(
-            "IVA retention: Number must be exactly 14 numeric digits.",
-            str(e.exception),
+            "IVA retention: Number must be exactly 14 numeric digits.", str(e.exception)
+        )
+
+    def test_02_generate_iva_retention_withholding_from_invoice(self):
+        invoice = self._create_invoice_simple()
+        invoice.generate_iva_retention = True
+        invoice.action_post()
+        retention = invoice.retention_iva_line_ids
+        self.assertTrue(retention, "IVA retention should be created from the invoice.")
+        _logger.info(
+            "test_02_generate_iva_retention_withholding_from_invoice --- successfully."
+        )
+
+    def test_03_not_generate_iva_retention_withholding_from_invoice(self):
+        invoice = self._create_invoice_simple()
+        invoice.generate_iva_retention = False
+        invoice.action_post()
+        retention = invoice.retention_iva_line_ids
+        self.assertTrue(
+            not retention, "VAT withholding should not be made from the invoice."
+        )
+        _logger.info(
+            "test_03_not_generate_iva_retention_withholding_from_invoice --- successfully."
         )

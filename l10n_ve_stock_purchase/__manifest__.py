@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Inventario/Compras",
-    "version": "18.0.0.0.0",
+    "version": "1.1",
     "license": "LGPL-3",
     "summary": "Módulo para gestionar inventario/compras en Venezuela",
     "description": """

@@ -6,6 +6,6 @@
         <field name="code">model._cron_generate_invoices_from_pickings()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">days</field>
+        <field name="priority">5</field>
         <field name="active">False</field>
     </record>
-</odoo>

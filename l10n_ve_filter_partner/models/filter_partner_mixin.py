@@ -2,7 +2,7 @@ import logging
 import json
 
 from odoo import _, api, fields, models
-from odoo.osv import expression
+from odoo.fields import Domain
 
 _logger = logging.getLogger(__name__)
 FILTER_PARTNER = {
@@ -46,5 +46,5 @@ class FilterPartnerMixin(models.AbstractModel):
         if not extend:
             return FILTER_PARTNER.get(self.filter_partner, [])
         if conditional == "&":
-            return expression.AND([FILTER_PARTNER.get(self.filter_partner, []), extend])
-        return expression.OR([FILTER_PARTNER.get(self.filter_partner, []), extend])
+            return Domain.AND([FILTER_PARTNER.get(self.filter_partner, []), extend])
+        return Domain.OR([FILTER_PARTNER.get(self.filter_partner, []), extend])

@@ -5,9 +5,11 @@
 			<field name="model">res.partner</field>
 			<field name="inherit_id" ref="base.view_partner_form" />
 			<field name="arch" type="xml">
-
-				<xpath expr="//form/sheet/group[1]/group[1]/div[@class='o_address_format']" position="replace">
-					<div class=''>
+				<xpath expr="//form/sheet/group[1]/group[1]/div[@class='o_address_format']" position="attributes">
+					<attribute name="invisible">1</attribute>
+				</xpath>
+				<xpath expr="//form/sheet/group[1]/group[1]/div[@class='o_address_format']" position="after">
+					<div class='' name='l10n_ve_address_format'>
 						<field name="street" placeholder='Calle'/>
 						<field name="street2" placeholder='Calle 2'/>
 						<div class="o_row">
@@ -75,4 +77,3 @@
 			
 		</record>
 	</data>
-</odoo>
