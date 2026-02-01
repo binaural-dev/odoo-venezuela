@@ -5,7 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
-from odoo.tools.float_utils import float_round
+from odoo.tools.float_utils import float_round,float_compare
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -906,12 +906,12 @@ class AccountRetention(models.Model):
                 self._reconcile_customer_payment(payment)
 
     def _reconcile_supplier_payment(self, payment):
-
+        precision = self.company_currency_id.rounding
         if payment.payment_type == "outbound":
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "liability_payable"
-                and l.debit > 0
+                and float_compare(l.debit, 0.0, precision_rounding=precision) == 1
             )
             if not lines:
                 raise ValidationError(
@@ -927,7 +927,7 @@ class AccountRetention(models.Model):
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "liability_payable"
-                and l.credit > 0
+                and float_compare(l.credit, 0.0, precision_rounding=precision) == 1
             )
             if not lines:
                 raise ValidationError(
@@ -940,12 +940,12 @@ class AccountRetention(models.Model):
             )
 
     def _reconcile_customer_payment(self, payment):
-
+        precision = self.company_currency_id.rounding
         if payment.payment_type == "outbound":
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "asset_receivable"
-                and l.debit > 0
+                and float_compare(l.debit, 0.0, precision_rounding=precision) == 1
             )
 
             if not lines:
@@ -961,7 +961,7 @@ class AccountRetention(models.Model):
         elif payment.payment_type == "inbound":
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "asset_receivable"
-                and l.credit > 0
+                and float_compare(l.credit, 0.0, precision_rounding=precision) == 1
             )
 
             if not lines:
