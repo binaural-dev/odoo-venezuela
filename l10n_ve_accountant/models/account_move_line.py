@@ -179,37 +179,29 @@ class AccountMoveLine(models.Model):
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
-            _logger.info("Computing foreign debit and credit for line %s", line.id)
             if line.not_foreign_recalculate:
-                _logger.info("Skipping recalculation for line %s", line.id)
                 if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                     self._calculate_from_adjustment(line)
                 continue
 
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
-                _logger.info("Calculating from foreign_debit_adjustment or foreign_credit_adjustment")
                 self._calculate_from_adjustment(line)
 
              
             elif line.display_type in ("line_section", "line_note"):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
-                _logger.info("Calculating from payment_term or tax")
                 self._calculate_for_non_invoice(line)
             elif line.currency_id == line.company_id.currency_foreign_id and line.amount_currency:
-                _logger.info("Calculating from amount_currency")
                 self._calculate_from_amount_currency(line)
 
             elif line.move_id.payment_id and "retention_foreign_amount" in self.env["account.payment"]._fields and line.move_id.payment_id.is_retention:
                 self._calculate_from_retention(line)
             elif not line.move_id.is_invoice(include_receipts=True):
-                _logger.info("Calculating for non-invoice")
                 self._calculate_for_non_invoice(line)
             elif line.display_type == "product":
-                _logger.info("Calculating from product")
                 self._calculate_from_product(line)
             else:
-                _logger.info("Calculating from balance")
                 self._calculate_for_non_invoice(line)
 
     def _calculate_from_adjustment(self, line):
