@@ -864,6 +864,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _determinate_amount_taxeds(self, move):
         is_posted = move.state == "posted"
+
         if not is_posted:
             fields_in_zero = {
                 "amount_untaxed": 0.0,
@@ -876,7 +877,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "amount_reduced_aliquot": 0.0,
                 "amount_general_aliquot": 0.0,
                 "amount_extend_aliquot": 0.0,
-                "international_amount_taxed":0.0,
+                "international_amount_taxed": 0.0,
                 "amount_import_international": 0,
                 "international_tax_base_exempt_aliquot": 0.0,
                 "tax_base_reduced_aliquot_international": 0,
@@ -886,6 +887,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "tax_base_extend_aliquot_international": 0,
                 "amount_extend_aliquot_international": 0,
             }
+
             if self.company_id.config_deductible_tax and self.report == "purchase":
                 fields_in_zero.update(
                     {
@@ -897,79 +899,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         "amount_extend_aliquot_no_deductible": 0.0,
                     }
                 )
-            return fields_in_zero
-
-        is_credit_note = move.move_type in ["out_refund", "in_refund"]
-
-        tax_totals = move.tax_totals
-
-        tax_result = {}
-
-        is_check_currency_system = self.currency_system
-
-        if is_check_currency_system:
-            fields_taxed = ("amount_untaxed", "amount_total", "groups_by_subtotal")
-        else:
-            fields_taxed = (
-                "foreign_amount_untaxed",
-                "foreign_amount_total",
-                "groups_by_foreign_subtotal",
-            )
-
-        amount_untaxed = (
-            tax_totals.get(fields_taxed[0]) * -1
-            if is_credit_note and tax_totals.get(fields_taxed[0])
-            else tax_totals.get(fields_taxed[0])
-        ) if tax_totals else 0
-
-        amount_taxed = (
-            tax_totals.get(fields_taxed[1]) * -1
-            if is_credit_note and tax_totals.get(fields_taxed[1])
-            else tax_totals.get(fields_taxed[1])
-        ) if tax_totals else 0
-
-        international_amount_taxed = (
-            tax_totals.get(fields_taxed[1]) * -1
-            if is_credit_note and tax_totals.get(fields_taxed[1])
-            else tax_totals.get(fields_taxed[1])
-        ) if tax_totals and move.journal_id.is_purchase_international else 0
-
-        tax_result.update(
-            {
-                "amount_untaxed": amount_untaxed,
-                "amount_taxed": amount_taxed,
-                "tax_base_exempt_aliquot": 0,
-                "amount_exempt_aliquot": 0,
-                "tax_base_reduced_aliquot": 0,
-                "amount_reduced_aliquot": 0,
-                "tax_base_general_aliquot": 0,
-                "amount_general_aliquot": 0,
-                "tax_base_extend_aliquot": 0,
-                "amount_extend_aliquot": 0,
-                "international_amount_taxed":international_amount_taxed if move.journal_id.is_purchase_international else 0,
-                "amount_import_international": 0,
-                "international_tax_base_exempt_aliquot": 0.0,
-                "tax_base_reduced_aliquot_international": 0,
-                "amount_reduced_aliquot_international": 0,
-                "tax_base_general_aliquot_international": 0,
-                "amount_general_aliquot_international": 0,
-                "tax_base_extend_aliquot_international": 0,
-                "amount_extend_aliquot_international": 0,
-            }
-        )
-        if not tax_totals:
-            return tax_result
-
-        if self.company_id.config_deductible_tax and self.report == "purchase":
-            tax_result.update(
-                {
-                    "tax_base_reduced_aliquot_no_deductible": 0.0,
-                    "tax_base_general_aliquot_no_deductible": 0.0,
-                    "tax_base_extend_aliquot_no_deductible": 0.0,
-                    "amount_reduced_aliquot_no_deductible": 0.0,
-                    "amount_general_aliquot_no_deductible": 0.0,
-                    "amount_extend_aliquot_no_deductible": 0.0,
-                })
             return fields_in_zero
 
         is_credit_note = move.move_type in ["out_refund", "in_refund"]
@@ -997,34 +926,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             if is_credit_note:
                 amount_untaxed *= -1
                 amount_taxed *= -1
-            if self.report == "sale":
-                exent_aliquot = self.company_id.exent_aliquot_sale.tax_group_id.id
-                reduced_aliquot = self.company_id.reduced_aliquot_sale.tax_group_id.id
-                general_aliquot = self.company_id.general_aliquot_sale.tax_group_id.id
-                extend_aliquot = self.company_id.extend_aliquot_sale.tax_group_id.id
-            else:
-                if move.journal_id.is_purchase_international:
-                    exent_aliquot = self.company_id.exent_aliquot_purchase_international.tax_group_id.id
-                    if not self.company_id.not_show_general_aliquot_purchase_international:
-                        general_aliquot = self.company_id.general_aliquot_purchase_international.tax_group_id.id
 
-                    if not self.company_id.not_show_reduced_aliquot_purchase_international:
-                        reduced_aliquot = self.company_id.reduced_aliquot_purchase_international.tax_group_id.id
-
-                    if not self.company_id.not_show_extend_aliquot_purchase_international:
-                        extend_aliquot = self.company_id.extend_aliquot_purchase_international.tax_group_id.id
-                   
-                    
-                else:
-                    exent_aliquot = self.company_id.exent_aliquot_purchase.tax_group_id.id
-                    reduced_aliquot = self.company_id.reduced_aliquot_purchase.tax_group_id.id
-                    general_aliquot = self.company_id.general_aliquot_purchase.tax_group_id.id
-                    extend_aliquot = self.company_id.extend_aliquot_purchase.tax_group_id.id
-
-                if self.company_id.config_deductible_tax:
-                    general_aliquot_no_deductible = self.company_id.no_deductible_general_aliquot_purchase.tax_group_id.id
-                    reduced_aliquot_no_deductible = self.company_id.no_deductible_reduced_aliquot_purchase.tax_group_id.id
-                    extend_aliquot_no_deductible = self.company_id.no_deductible_extend_aliquot_purchase.tax_group_id.id
 
         # Obtener los IDs de los grupos de impuestos desde la configuración de la compañía
         exent_aliquot_id = reduced_aliquot_id = general_aliquot_id = extend_aliquot_id = None
@@ -1039,14 +941,31 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             if hasattr(self.company_id, "extend_aliquot_sale") and self.company_id.extend_aliquot_sale:
                 extend_aliquot_id = getattr(self.company_id.extend_aliquot_sale.tax_group_id, "id", None)
         else:
-            if hasattr(self.company_id, "exent_aliquot_purchase") and self.company_id.exent_aliquot_purchase:
-                exent_aliquot_id = getattr(self.company_id.exent_aliquot_purchase.tax_group_id, "id", None)
-            if hasattr(self.company_id, "reduced_aliquot_purchase") and self.company_id.reduced_aliquot_purchase:
-                reduced_aliquot_id = getattr(self.company_id.reduced_aliquot_purchase.tax_group_id, "id", None)
-            if hasattr(self.company_id, "general_aliquot_purchase") and self.company_id.general_aliquot_purchase:
-                general_aliquot_id = getattr(self.company_id.general_aliquot_purchase.tax_group_id, "id", None)
-            if hasattr(self.company_id, "extend_aliquot_purchase") and self.company_id.extend_aliquot_purchase:
-                extend_aliquot_id = getattr(self.company_id.extend_aliquot_purchase.tax_group_id, "id", None)
+            if move.journal_id.is_purchase_international:
+                if hasattr(self.company_id, "exent_aliquot_purchase_international") and self.company_id.exent_aliquot_purchase_international:
+                    exent_aliquot_id = getattr(self.company_id.exent_aliquot_purchase_international.tax_group_id, "id", None)
+                
+                if not self.company_id.not_show_general_aliquot_purchase_international:
+                    if hasattr(self.company_id, "general_aliquot_purchase_international") and self.company_id.general_aliquot_purchase_international:
+                        general_aliquot_id = getattr(self.company_id.general_aliquot_purchase_international.tax_group_id, "id", None)
+                
+                if not self.company_id.not_show_reduced_aliquot_purchase_international:
+                    if hasattr(self.company_id, "reduced_aliquot_purchase_international") and self.company_id.reduced_aliquot_purchase_international:
+                        reduced_aliquot_id = getattr(self.company_id.reduced_aliquot_purchase_international.tax_group_id, "id", None)
+                
+                if not self.company_id.not_show_extend_aliquot_purchase_international:
+                    if hasattr(self.company_id, "extend_aliquot_purchase_international") and self.company_id.extend_aliquot_purchase_international:
+                        extend_aliquot_id = getattr(self.company_id.extend_aliquot_purchase_international.tax_group_id, "id", None)
+            else:
+                if hasattr(self.company_id, "exent_aliquot_purchase") and self.company_id.exent_aliquot_purchase:
+                    exent_aliquot_id = getattr(self.company_id.exent_aliquot_purchase.tax_group_id, "id", None)
+                if hasattr(self.company_id, "reduced_aliquot_purchase") and self.company_id.reduced_aliquot_purchase:
+                    reduced_aliquot_id = getattr(self.company_id.reduced_aliquot_purchase.tax_group_id, "id", None)
+                if hasattr(self.company_id, "general_aliquot_purchase") and self.company_id.general_aliquot_purchase:
+                    general_aliquot_id = getattr(self.company_id.general_aliquot_purchase.tax_group_id, "id", None)
+                if hasattr(self.company_id, "extend_aliquot_purchase") and self.company_id.extend_aliquot_purchase:
+                    extend_aliquot_id = getattr(self.company_id.extend_aliquot_purchase.tax_group_id, "id", None)
+
             if self.company_id.config_deductible_tax:
                 if hasattr(self.company_id, "no_deductible_general_aliquot_purchase") and self.company_id.no_deductible_general_aliquot_purchase:
                     general_aliquot_no_deductible_id = getattr(self.company_id.no_deductible_general_aliquot_purchase.tax_group_id, "id", None)
@@ -1069,6 +988,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     if group_id and group_id == exent_aliquot_id:
                         tax_base_exempt_aliquot += base
                         amount_exempt_aliquot += tax
+                        if move.journal_id.is_purchase_international:
+                            tax_result["international_tax_base_exempt_aliquot"] = tax_result.get("international_tax_base_exempt_aliquot", 0.0) + base
                     elif group_id and group_id == reduced_aliquot_id:
                         tax_base_reduced_aliquot += base
                         amount_reduced_aliquot += tax
@@ -1081,23 +1002,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     # No deducibles
                     if self.company_id.config_deductible_tax and self.report == "purchase":
                         if group_id and group_id == reduced_aliquot_no_deductible_id:
-                            tax_result["tax_base_reduced_aliquot_no_deductible"] = base
-                            tax_result["amount_reduced_aliquot_no_deductible"] = tax
+                            tax_result["tax_base_reduced_aliquot_no_deductible"] = tax_result.get("tax_base_reduced_aliquot_no_deductible", 0.0) + base
+                            tax_result["amount_reduced_aliquot_no_deductible"] = tax_result.get("amount_reduced_aliquot_no_deductible", 0.0) + tax
                         elif group_id and group_id == general_aliquot_no_deductible_id:
-                            tax_result["tax_base_general_aliquot_no_deductible"] = base
-                            tax_result["amount_general_aliquot_no_deductible"] = tax
+                            tax_result["tax_base_general_aliquot_no_deductible"] = tax_result.get("tax_base_general_aliquot_no_deductible", 0.0) + base
+                            tax_result["amount_general_aliquot_no_deductible"] = tax_result.get("amount_general_aliquot_no_deductible", 0.0) + tax
                         elif group_id and group_id == extend_aliquot_no_deductible_id:
-                            tax_result["tax_base_extend_aliquot_no_deductible"] = base
-                            tax_result["amount_extend_aliquot_no_deductible"] = tax
-                is_exempt = tax_group_id == exent_aliquot
-                if is_exempt:
-                    tax_result.update(
-                        {
-                            "tax_base_exempt_aliquot": tax.get("tax_group_base_amount"),
-                            "amount_exempt_aliquot": tax.get("tax_group_amount"),
-                            "international_tax_base_exempt_aliquot": tax.get("tax_group_base_amount") if move.journal_id.is_purchase_international else 0
-                        }
-                    )
+                            tax_result["tax_base_extend_aliquot_no_deductible"] = tax_result.get("tax_base_extend_aliquot_no_deductible", 0.0) + base
+                            tax_result["amount_extend_aliquot_no_deductible"] = tax_result.get("amount_extend_aliquot_no_deductible", 0.0) + tax
 
         tax_result.update({
             "amount_untaxed": amount_untaxed,
@@ -1112,6 +1024,25 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "amount_extend_aliquot": amount_extend_aliquot,
         })
 
+        if move.journal_id.is_purchase_international:
+            tax_result.update({
+                "tax_base_reduced_aliquot_international": tax_result.get("tax_base_reduced_aliquot", 0.0),
+                "amount_reduced_aliquot_international": tax_result.get("amount_reduced_aliquot", 0.0),
+                "tax_base_general_aliquot_international": tax_result.get("tax_base_general_aliquot", 0.0),
+                "amount_general_aliquot_international": tax_result.get("amount_general_aliquot", 0.0),
+                "tax_base_extend_aliquot_international": tax_result.get("tax_base_extend_aliquot", 0.0),
+                "amount_extend_aliquot_international": tax_result.get("amount_extend_aliquot", 0.0),
+                # Zero out domestic
+                "tax_base_reduced_aliquot": 0.0,
+                "amount_reduced_aliquot": 0.0,
+                "tax_base_general_aliquot": 0.0,
+                "amount_general_aliquot": 0.0,
+                "tax_base_extend_aliquot": 0.0,
+                "amount_extend_aliquot": 0.0,
+                "tax_base_exempt_aliquot": 0.0,
+                "amount_exempt_aliquot": 0.0,
+             })
+
         # Inicializar en cero los campos no deducibles si no se asignaron
         if self.company_id.config_deductible_tax and self.report == "purchase":
             for k in [
@@ -1123,73 +1054,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "amount_extend_aliquot_no_deductible",
             ]:
                 tax_result.setdefault(k, 0.0)
-                is_reduced_aliquot = tax_group_id == reduced_aliquot
-                if is_reduced_aliquot:
-                    base_key = "tax_base_reduced_aliquot_international" if move.journal_id.is_purchase_international else "tax_base_reduced_aliquot"
-                    amount_key = "amount_reduced_aliquot_international" if move.journal_id.is_purchase_international else "amount_reduced_aliquot"
-                    tax_result.update(
-                        {
-                            base_key: tax.get("tax_group_base_amount"),
-                            amount_key: tax.get("tax_group_amount"),
-                        }
-                    )
-                    continue
 
-                is_general_aliquot = tax_group_id == general_aliquot
-                if is_general_aliquot:
-                    base_key = "tax_base_general_aliquot_international" if move.journal_id.is_purchase_international else "tax_base_general_aliquot"
-                    amount_key = "amount_general_aliquot_international" if move.journal_id.is_purchase_international else "amount_general_aliquot"
-                    tax_result.update(
-                        {
-                            base_key: tax.get("tax_group_base_amount"),
-                            amount_key: tax.get("tax_group_amount"),
-                        }
-                    )
-                    continue
+        amount_import_international = 0.0
+        if move.journal_id.is_purchase_international:
+            amount_import_international += tax_result.get("international_tax_base_exempt_aliquot", 0.0)
+            if not self.company_id.not_show_general_aliquot_purchase_international:
+                amount_import_international += tax_result.get("tax_base_general_aliquot_international", 0.0) + tax_result.get("amount_general_aliquot_international", 0.0)
+            
+            if not self.company_id.not_show_reduced_aliquot_purchase_international:
+                amount_import_international += tax_result.get("tax_base_reduced_aliquot_international", 0.0) + tax_result.get("amount_reduced_aliquot_international", 0.0)
+                
+            if not self.company_id.not_show_extend_aliquot_purchase_international:
+                amount_import_international += tax_result.get("tax_base_extend_aliquot_international", 0.0) + tax_result.get("amount_extend_aliquot_international", 0.0)
 
-                is_extend_aliquot = tax_group_id == extend_aliquot
-                if is_extend_aliquot:
-                    base_key = "tax_base_extend_aliquot_international" if move.journal_id.is_purchase_international else "tax_base_extend_aliquot"
-                    amount_key = "amount_extend_aliquot_international" if move.journal_id.is_purchase_international else "amount_extend_aliquot"
-                    tax_result.update(
-                        {
-                            base_key: tax.get("tax_group_base_amount"),
-                            amount_key: tax.get("tax_group_amount"),
-                        }
-                    )
-
-                if self.company_id.config_deductible_tax and self.report == "purchase":
-
-                    is_reduced_aliquot_no_deductible = tax_group_id == reduced_aliquot_no_deductible
-                    if is_reduced_aliquot_no_deductible:
-                        tax_result.update(
-                            {
-                                "tax_base_reduced_aliquot_no_deductible": tax.get("tax_group_base_amount"),
-                                "amount_reduced_aliquot_no_deductible": tax.get("tax_group_amount"),
-                            }
-                        )
-
-                        continue
-
-                    is_general_aliquot_no_deductible = tax_group_id == general_aliquot_no_deductible
-                    if is_general_aliquot_no_deductible:
-                        tax_result.update(
-                            {
-                                "tax_base_general_aliquot_no_deductible": tax.get("tax_group_base_amount"),
-                                "amount_general_aliquot_no_deductible": tax.get("tax_group_amount"),
-                            }
-                        )
-
-                        continue
-
-                    is_extend_aliquot_no_deductible = tax_group_id == extend_aliquot_no_deductible
-                    if is_extend_aliquot_no_deductible:
-                        tax_result.update(
-                            {
-                                "tax_base_extend_aliquot_no_deductible": tax.get("tax_group_base_amount"),
-                                "amount_extend_aliquot_no_deductible": tax.get("tax_group_amount"),
-                            }
-                        )
+        tax_result['amount_import_international'] = amount_import_international
 
         amount_import_international = 0.0
         if move.journal_id.is_purchase_international:
