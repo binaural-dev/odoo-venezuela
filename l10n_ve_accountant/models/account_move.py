@@ -256,6 +256,10 @@ class AccountMove(models.Model):
     foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
                                             compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
+    
+    declaration_unique_of_customs = fields.Char('Declaration unique of customs',copy=False)
+    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
+
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         context = self.with_context(active_test=False)
@@ -445,6 +449,9 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
+
+            if move.is_purchase_international and move.declaration_unique_of_customs and not move.correlative:
+                move.correlative = move.declaration_unique_of_customs
         return moves
 
     def write(self, vals):
@@ -474,6 +481,13 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
+            
+            if move.is_purchase_international and move.declaration_unique_of_customs:
+                if move.correlative != move.declaration_unique_of_customs:
+                    move.correlative = move.declaration_unique_of_customs
+            elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
+                move.correlative = False
+                move.declaration_unique_of_customs = False
         return res
 
     @api.constrains("invoice_line_ids")
