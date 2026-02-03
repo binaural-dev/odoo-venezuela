@@ -4,16 +4,23 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250728\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250522\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-12 15:10+0000\n"
-"PO-Revision-Date: 2025-08-12 15:10+0000\n"
+"POT-Creation-Date: 2025-11-08 16:19+0000\n"
+"PO-Revision-Date: 2025-11-08 16:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
+#, python-format
+msgid "%s%s"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.actions.report,print_report_name:l10n_ve_stock.action_packaging_picking
@@ -32,6 +39,29 @@ msgstr "- Còdigo de barras \"%s\" ya ha sido asignado al producto(s): %s"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_form_view_procurement_button
 msgid "<span class=\"o_stat_text\">Available Quantity To Sale</span>"
 msgstr "<span class=\"o_stat_text\">Cantidad Disponible para Vender</span>"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid "<span>Do not allow negative stock in internal movements</span>"
+msgstr "<span>No permite stock negativo en movimientos internos</span>"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid ""
+"<strong>When marked:</strong> Negative inventory adjustments (from both the product and inventory/operations views) will not be allowed.<br/>\n"
+"                                <strong>When unchecked:</strong> Negative inventory adjustments will be allowed (both from the product view and from inventory/operations)."
+msgstr ""
+"<strong>Al estar marcado:</strong> No se permitirán ajustes de inventario negativos (tanto desde la vista del producto como desde la del inventario/operaciones).<br/>\n"
+"                            <strong>Al estar desmarcado:</strong> Se permitirán ajustes de inventario negativos (tanto desde la vista del producto como desde el inventario/operaciones)."
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid ""
+"<strong>When marked:</strong> No more than what is manufactured in an order may be scrapped.<br/>\n"
+"                                <strong>When unchecked:</strong> More than what is manufactured in an order may be scrapped."
+msgstr ""
+"<strong>Al estar marcado:</strong> No se podrá desechar más de lo que se fabrique en un pedido.<br/>\n"
+"                                <strong>Al estar desmarcado:</strong> Se podrá desechar más de lo que se fabrica en un pedido."
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
@@ -86,6 +116,12 @@ msgid "All Warehouse"
 msgstr "Todos los Almacenes"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__allow_scrap_more_than_available
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__allow_scrap_more_than_available
+msgid "Allow Scrap More Than Available"
+msgstr "Permitir desechar más de lo disponible"
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__validate_without_product_quantity
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__validate_without_product_quantity
 msgid "Allow Validate Without Product Quantity"
@@ -95,6 +131,11 @@ msgstr "Permitir Validar Sin Cantidad de Producto"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid "Allow changing weight during picking"
 msgstr "Permitir cambiar de peso durante la Picking"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid "Allow to scrap more than available quantity in stock."
+msgstr "Permitir desechar más que la cantidad disponible en inventario."
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
@@ -122,6 +163,11 @@ msgstr "Còdigo alterno para el producto"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Artículo"
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__partner_id
+msgid "Assigned Customer"
+msgstr "Cliente"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_attachment_count
@@ -211,6 +257,11 @@ msgstr "Órdenes de Despacho"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Descripción"
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid "Dispatch Guide"
+msgstr "Configuración de guía de despacho"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_quantity_history_inherit_binaural_stock
@@ -342,6 +393,21 @@ msgstr ""
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
+#, python-format
+msgid ""
+"Insufficient stock:\n"
+"%s\n"
+"\n"
+"Adjust quantitys or request stock for this location."
+msgstr ""
+"Stock Insuficiente:\n"
+"%s\n"
+"\n"
+"Ajuste las cantidades o solicite más stock para esta ubicación."
+
+#. module: l10n_ve_stock
+#. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
 #, python-format
 msgid "Internal Transfers"
@@ -410,6 +476,11 @@ msgid "My Activity Deadline"
 msgstr "Mi fecha límite de actividad"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "Próximo evento de calendario de actividad"
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_date_deadline
 msgid "Next Activity Deadline"
 msgstr "Fecha límite para la próxima actividad"
@@ -423,6 +494,30 @@ msgstr "Resumen de la siguiente actividad"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_type_id
 msgid "Next Activity Type"
 msgstr "Siguiente tipo de actividad"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_scrap.py:0
+#, python-format
+msgid "No more than what is manufactured can be discarded in this operation."
+msgstr "En esta operación no se puede desechar más de lo fabricado."
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__not_allow_negative_inventory_adjustments
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__not_allow_negative_inventory_adjustments
+msgid "Not Allow Negative Inventory Adjustments"
+msgstr "No permitir ajustes de inventario negativos"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__not_allow_negative_stock_movement
+msgid "Not Allow Negative Stock Movement"
+msgstr "No permitir movimientos de stock negativos"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__not_allow_scrap_more_than_what_was_manufactured
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__not_allow_scrap_more_than_what_was_manufactured
+msgid "Not Allow Scrap More Than What Was Manufactured"
+msgstr "No permitir que se deseche más de lo fabricado"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.packaging_picking_item
@@ -515,11 +610,6 @@ msgid "Packs Count"
 msgstr "Cantidad de Packs"
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__partner_id
-msgid "Partner"
-msgstr "Cliente"
-
-#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__physical_location_id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__physical_location_id
 msgid "Physical Location"
@@ -547,6 +637,11 @@ msgstr "Tipo de recolección"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__picks_count
 msgid "Picks Count"
 msgstr "Cantidad de Picks"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__not_allow_negative_stock_movement
+msgid "Prevent internal movement with negative stock"
+msgstr "Evita movimientos internos con stock negativo"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_kanban_view
@@ -620,7 +715,7 @@ msgstr "Cantidad"
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quant
 msgid "Quants"
-msgstr ""
+msgstr "Cantidades"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
@@ -658,6 +753,11 @@ msgstr "Error de entrega de SMS"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_tree_view
 msgid "Sales Price"
 msgstr "Precio de Venta + Impuesto"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_scrap
+msgid "Scrap"
+msgstr "Desechar"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__group_product_available_quantity_on_sale
@@ -721,6 +821,12 @@ msgid "The priority must be greater than 0."
 msgstr "La prioridad debe ser mayor que 0."
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__partner_id
+msgid "This location is assigned to a specific customer for consignation."
+msgstr ""
+"Esta ubicación está asignada a un cliente específico para consignación."
+
+#. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_template.py:0
 #, python-format
@@ -735,7 +841,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir "
+msgstr "Transferencia"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__type_delivery_step
@@ -795,11 +901,6 @@ msgid "VALOR DEL INVENTARIO A PARTIR DE UNA FECHA"
 msgstr ""
 
 #. module: l10n_ve_stock
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
-msgid "Validate"
-msgstr "Validar"
-
-#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_warehouse
 msgid "Warehouse"
 msgstr "Almacén"
@@ -847,6 +948,23 @@ msgstr "No puedes hacer transferencias mayores que la demanda"
 #, python-format
 msgid "You cannot make transfers larger than the reserved quantity"
 msgstr "No puedes hacer transferencias mayores que la cantidad reservada"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_scrap.py:0
+#, python-format
+msgid ""
+"You cannot scrap more than the available product quantity in this location."
+msgstr ""
+"No puedes desechar más cantidad de producto que la disponible en esta "
+"ubicación."
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_quant.py:0
+#, python-format
+msgid "You cannot set the physical quantity of '%s' to a negative value."
+msgstr "No puedes ajustar la cantidad física de '%s' a un valor negativo."
 
 #. module: l10n_ve_stock
 #. odoo-python

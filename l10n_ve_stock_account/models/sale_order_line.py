@@ -31,18 +31,7 @@ class SaleOrderLine(models.Model):
         for line in self:
             warehouse = line.order_id.warehouse_id
             if warehouse and warehouse.is_consignation_warehouse:
-                stock_available = self.env["stock.quant"].read_group(
-                    domain=[
-                        ("product_id", "=", line.product_id.id),
-                        ("location_id.partner_id", "=", line.order_id.partner_id.id),
-                        ("location_id.usage", "=", "internal"),
-                    ],
-                    fields=["quantity:sum"],
-                    groupby=[],
-                )
-                total_stock = stock_available[0]["quantity"] if stock_available else 0
-
-                if line.product_uom_qty > total_stock:
+                if line.product_uom_qty > line.free_qty_today:
                     raise ValidationError(
                         _("Cannot sell more than the available consignation stock.")
                     )
