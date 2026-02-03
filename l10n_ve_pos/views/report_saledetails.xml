@@ -88,12 +88,12 @@
                     </table>
                 </div>
             </xpath>
-            <xpath expr="//div[@t-if='opening_note or closing_note']" position="replace">
+            <!-- <xpath expr='//div[@t-if="opening_note or closing_note"]' position="replace" required="0">
+            </xpath> -->
+            <!-- <xpath expr="//t[@id='closing_session']" position="replace" required="0">
             </xpath>
-            <xpath expr="//t[@id='closing_session']" position="replace">
-            </xpath>
-            <xpath expr="//t[@id='invoices']" position='replace'>
-            </xpath>
+            <xpath expr="//t[@id='invoices']" position='replace' required="0">
+            </xpath> -->
         </template>
     </data>
 </odoo>
