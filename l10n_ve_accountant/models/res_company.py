@@ -63,13 +63,6 @@ class ResCompany(models.Model):
     no_deductible_extend_aliquot_purchase = fields.Many2one(
         "account.tax", domain=[("type_tax_use", "=", "purchase")]
     )
-    @api.constrains("currency_id")
-    def _check_currency_id(self):
-        for record in self:
-            if record.currency_id.id != self.env.ref("base.VEF").id:
-                raise ValidationError(
-                    _("You cannot set a currency other than 'VEF' as the system base currency.")
-                )
 
     exent_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
     general_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])

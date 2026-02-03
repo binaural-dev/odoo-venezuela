@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-23 19:49+0000\n"
-"PO-Revision-Date: 2026-01-23 19:49+0000\n"
+"POT-Creation-Date: 2026-02-03 20:48+0000\n"
+"PO-Revision-Date: 2026-02-03 20:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -361,6 +361,12 @@ msgid "Date of issue:"
 msgstr "Fecha de emisión:"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__declaration_unique_of_customs
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__declaration_unique_of_customs
+msgid "Declaration unique of customs"
+msgstr "Declaración Única de Aduana"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Deductibility"
 msgstr "Deducibilidad"
@@ -525,7 +531,6 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_amount
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__foreign_amount
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_line_form_l10n_ve_invoice
 msgid "Foreign Amount"
 msgstr "Importe Alterno"
@@ -558,8 +563,6 @@ msgstr "Ajuste de crédito alterno"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_currency_id
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__credit_foreign_currency_id
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__debit_foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_currency_id
 msgid "Foreign Currency"
@@ -819,6 +822,17 @@ msgid "Invoices Statistics"
 msgstr "Estadísticas de facturas"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__is_foreign_currency
+msgid "Is Foreign Currency"
+msgstr "Es moneda extranjera"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_purchase_international
+msgid "Is International Purchase"
+msgstr "Es Compra Internacional"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_reset_to_draft_for_price_change
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_reset_to_draft_for_price_change
 msgid "Is Reset To Draft For Price Change"
@@ -1016,6 +1030,11 @@ msgstr "No mostrar total compras internacionales"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_total_purchases_with_international_iva
 msgid "Not Show Total Purchases With International Iva"
 msgstr "No mostrar total compras con IVA internacional"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_filter_l10n_ve_accountant
+msgid "Number of Declaration Unique of Customs"
+msgstr "Declaración Única de Aduana"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
@@ -1575,14 +1594,6 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "You can only register payments for one foreign rate at a time."
 msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
-
-#. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/res_company.py:0
-msgid ""
-"You cannot set a currency other than 'VEF' as the system base currency."
-msgstr ""
-"No puedes colocar una moneda distinta a 'VEF' como la base del sistema."
 
 #. module: l10n_ve_accountant
 #. odoo-python
