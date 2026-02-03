@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 @tagged("igtf_providers_usd", "igtf_run", "-at_install", "post_install")
 class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
 
-    def test01_payment_from_invoice_with_igtf_journal(self):
+    def test01_payment_from_invoice_with_igtf_journal(self,create_reversal=False):
         
         invoice_amount = float(2681.20)
         payment_amount = float(2000.00)
@@ -63,6 +63,9 @@ class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
             2, 
             f"El monto residual de la factura debe ser ${expected_residual}, pero es ${invoice.amount_residual}"
         )
+
+        if create_reversal:
+            self._reverse_invoice_usd(invoice)
 
     def get_purchases_book_wizard(self):
 
@@ -204,3 +207,28 @@ class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
     #     igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
 
     #     self.assertIsNone(igtf_group, "No debe existir grupo IGTF si ambos están ocultos")
+
+
+    def test_reversal_purchase_book_line_fields_with_igtf(self):
+        """Test that IGTF values are injected correctly into purchase book line."""
+
+        self.test01_payment_from_invoice_with_igtf_journal(create_reversal=True)
+        invoice = self.env['account.move'].search([('move_type','=','in_refund')], order="id desc", limit=1)
+
+        wizard = self.get_purchases_book_wizard()
+
+        taxes = wizard._determinate_amount_taxeds(invoice)
+
+        line_fields = wizard._fields_purchase_book_line(invoice, taxes)
+
+        self.assertIsInstance(line_fields, dict)
+
+        # self.assertIn("bi_igtf", line_fields)
+        self.assertIn("igtf", line_fields)
+
+        if wizard.currency_system:
+            # self.assertEqual(line_fields["bi_igtf"], invoice.bi_igtf)
+            self.assertEqual(line_fields["igtf"], (invoice.alter_bi_igtf * -1))
+        else:
+            # self.assertEqual(line_fields["bi_igtf"], invoice.foreign_bi_igtf)
+            self.assertEqual(line_fields["igtf"], (invoice.foreign_alter_bi_igtf * -1))

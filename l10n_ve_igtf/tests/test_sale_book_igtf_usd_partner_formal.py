@@ -12,7 +12,7 @@ from .test_common_sale_book_igtf_usd_partner_formal import IGTFTestCommonSaleBoo
 @tagged("igtf_partnert", "igtf_run", "-at_install", "post_install")
 class TestIgtfSalesBook(IGTFTestCommonSaleBook):
 
-    def test01_payment_from_invoice_with_igtf_journal(self):
+    def test01_payment_from_invoice_with_igtf_journal(self,create_reversal=False):
         
         invoice_amount = float(2681.20)
         payment_amount = float(2000.00)
@@ -49,6 +49,9 @@ class TestIgtfSalesBook(IGTFTestCommonSaleBook):
         
         self.assertTrue(payment_move, "Debe haberse creado el asiento de pago asociado al payment.")
         self.assertAlmostEqual(payment.igtf_amount, expected_igtf, 2, "El IGTF calculado debe ser $60.00.")
+
+        if create_reversal:
+            self._reverse_invoice_usd(invoice)
 
     def get_sales_book_wizard(self):
 
@@ -190,3 +193,27 @@ class TestIgtfSalesBook(IGTFTestCommonSaleBook):
     #     igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
 
     #     self.assertIsNone(igtf_group, "No debe existir grupo IGTF si ambos están ocultos")
+
+    def test_reversal_sale_book_line_fields_with_igtf(self):
+        """Test that IGTF values are injected correctly into sale book line."""
+
+        self.test01_payment_from_invoice_with_igtf_journal(create_reversal=True)
+        invoice = self.env['account.move'].search([('move_type','=','out_refund')], order="id desc", limit=1)
+
+        wizard = self.get_sales_book_wizard()
+
+        taxes = wizard._determinate_amount_taxeds(invoice)
+
+        line_fields = wizard._fields_sale_book_line(invoice, taxes)
+
+        self.assertIsInstance(line_fields, dict)
+
+        # self.assertIn("bi_igtf", line_fields)
+        self.assertIn("igtf", line_fields)
+
+        if wizard.currency_system:
+            # self.assertEqual(line_fields["bi_igtf"], invoice.bi_igtf)
+            self.assertEqual(line_fields["igtf"], (invoice.alter_bi_igtf * -1))
+        else:
+            # self.assertEqual(line_fields["bi_igtf"], invoice.foreign_bi_igtf)
+            self.assertEqual(line_fields["igtf"], (invoice.foreign_alter_bi_igtf * -1))
