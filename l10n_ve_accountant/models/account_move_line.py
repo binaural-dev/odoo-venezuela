@@ -831,28 +831,7 @@ class AccountMoveLine(models.Model):
                 preferred_candidates.append(credit_foreign_amount_currency)
 
         partial_foreign_amount = 0.0
-        if preferred_candidates:
-            partial_foreign_amount = max(preferred_candidates)
-        else:
-            fallback_candidates = []
-            rounding = False
-            if company_foreign_currency:
-                rounding = company_foreign_currency.rounding
-            elif line_for_company:
-                rounding = line_for_company.company_currency_id.rounding
-
-            for amount in (debit_foreign_amount, credit_foreign_amount):
-                if amount and not (
-                    rounding
-                    and float_is_zero(
-                        amount,
-                        precision_rounding=rounding,
-                    )
-                ):
-                    fallback_candidates.append(amount)
-
-            if fallback_candidates:
-                partial_foreign_amount = max(fallback_candidates)
+        partial_foreign_amount = partial_vals.get("amount") *line_for_company.foreign_inverse_rate if company_foreign_currency == self.env.ref("base.VEF") else partial_vals.get("amount") / line_for_company.foreign_inverse_rate
 
         partial_vals.update(
             {
