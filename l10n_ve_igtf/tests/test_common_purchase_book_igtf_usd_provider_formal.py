@@ -170,7 +170,7 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
         )
         self.tax_group = self.env['account.tax.group'].create({
             'name': 'IVA',
-            'country_id': self.company.country_id.id
+            'company_id':self.company.id
         })
        
         self.tax_iva_exent = self.env['account.tax'].create({
@@ -178,8 +178,6 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
             'type_tax_use': 'purchase', # Usar para compra
             'company_id': self.company.id,
             'tax_group_id': self.tax_group.id,  # <--- Esta es la clave
-            'country_id': self.company.country_id.id,
-
         })
 
         self.product = self.env["product.product"].create(
@@ -219,3 +217,35 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
 
 
         return inv
+    
+    def _reverse_invoice_usd(self, move,date=None):
+
+        move_reversal = self.env['account.move.reversal'].with_context(active_model="account.move", active_ids=move.ids).create({
+            'date': date or fields.Date.today(),
+            'journal_id': move.journal_id.id,
+        })
+
+        reversal = move_reversal.reverse_moves()
+        reversed_move = self.env['account.move'].browse(reversal['res_id'])
+        reversed_move.action_post()
+
+        action_data = reversed_move.action_register_payment()
+
+        payment_amount = float(2000.00)
+        
+        with Form(
+            self.env['account.payment.register'].with_context(
+               action_data['context']  
+            )
+        ) as pay_form:
+            
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = fields.Date.today()
+            pay_form.foreign_currency_id = self.currency_usd
+            pay_form.foreign_rate = reversed_move.foreign_rate
+            pay_form.save()
+            pay_form.amount = payment_amount
+
+        payment_register_wiz_2 = pay_form.record
+
+        action = payment_register_wiz_2.action_create_payments()
