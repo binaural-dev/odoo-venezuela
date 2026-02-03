@@ -174,7 +174,7 @@ class AccountMove(models.Model):
             if rec.amount_residual and self.env.company.currency_foreign_id and self.env.company.currency_foreign_id == self.env.ref("base.VEF"):
                 rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
             else:
-                rec.foreign_amount_residual = rec.amount_residual
+                rec.foreign_amount_residual = rec.amount_residual / rec.foreign_inverse_rate
 
          
 

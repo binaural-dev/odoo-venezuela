@@ -228,10 +228,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             
             return 0.0
         
-        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
-            
-            return 0.0
-        
 
         residual_igtf = igtf_top - alter_bi_igtf
 
@@ -240,6 +236,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
             igtf = residual_igtf
+
+        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
+            return 0.0
         
         return igtf
         
@@ -310,7 +309,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         lines = batch_result['lines']
 
-        sign = -1 if wizard_values.get('payment_type') == 'outbound' else 1
+      
         
         if create and create.journal_id.is_igtf:
             total_igtf_amount = 0.0
@@ -324,7 +323,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 )
                 total_igtf_amount += igtf_for_invoice
             base_abs = abs(source_amount)
-            final_amount_with_igtf = (base_abs + total_igtf_amount) * sign
+            final_amount_with_igtf = (base_abs + total_igtf_amount) 
             
             wizard_values['source_amount'] = final_amount_with_igtf
             wizard_values['source_amount_currency'] = final_amount_with_igtf
