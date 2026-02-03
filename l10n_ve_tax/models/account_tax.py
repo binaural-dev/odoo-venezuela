@@ -180,7 +180,7 @@ class AccountTax(models.Model):
             for line in payment_id.line_ids:
               
                 
-                foreign_amt = payment_id.amount_total if line.company_currency_id == self.env.ref("base.VEF") else payment_id.amount_total_signed
+                foreign_amt = abs(line.foreign_balance)
                 
             foreign_amt = foreign_amt
             amounts.append(foreign_amt)
