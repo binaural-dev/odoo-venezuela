@@ -168,8 +168,7 @@ class AccountMove(models.Model):
 
     foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_foreign_amount_residual", currency_field="foreign_currency_id",readonly=False)
 
-    declaration_unique_of_customs = fields.Char('Declaration unique of customs',copy=False)
-    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
+
 
 
     @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
@@ -388,8 +387,6 @@ class AccountMove(models.Model):
                     % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
 
-            if move.is_purchase_international and move.declaration_unique_of_customs and not move.correlative:
-                move.correlative = move.declaration_unique_of_customs
         return moves
 
     @api.onchange("partner_id")
@@ -430,12 +427,7 @@ class AccountMove(models.Model):
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
             
-            if move.is_purchase_international and move.declaration_unique_of_customs:
-                if move.correlative != move.declaration_unique_of_customs:
-                    move.correlative = move.declaration_unique_of_customs
-            elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
-                move.correlative = False
-                move.declaration_unique_of_customs = False
+
 
             new_journal_id = move.journal_id.id
             if old_journal_id and new_journal_id and old_journal_id != new_journal_id:
