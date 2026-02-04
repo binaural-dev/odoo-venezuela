@@ -214,7 +214,7 @@ class AccountMove(models.Model):
                     foreign_alter_bi_igtf += foreign_igtf_amount
 
                 total_bi_igtf += amount_base_payment
-                total_foreign_bi_igtf = foreign_amount_base_payment
+                total_foreign_bi_igtf += foreign_amount_base_payment
             
             apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
             rec.write({
