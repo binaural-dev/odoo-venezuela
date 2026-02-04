@@ -303,12 +303,6 @@ msgstr "Fecha de Fin"
 msgid "Date of issue:"
 msgstr "Fecha de emisión:"
 
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__declaration_unique_of_customs
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__declaration_unique_of_customs
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__declaration_unique_of_customs
-msgid "Declaration unique of customs"
-msgstr "Declaración Única de Aduana"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__name
@@ -630,12 +624,7 @@ msgstr "Facturas Detalladas"
 msgid "Invoices Statistics"
 msgstr "Estadísticas de facturas"
 
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__is_purchase_international
-msgid "Is International Purchase"
-msgstr "Es Compra Internacional"
+
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_reset_to_draft_for_price_change
@@ -740,10 +729,6 @@ msgstr ""
 msgid "Not Foreign Recalculate"
 msgstr "No es extranjero Recalcular"
 
-#. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_filter_l10n_ve_accountant
-msgid "Number of Declaration Unique of Customs"
-msgstr "Declaración Única de Aduana"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
