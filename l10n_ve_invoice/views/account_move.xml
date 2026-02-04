@@ -35,6 +35,10 @@
                     required="move_type in ['in_invoice', 'in_refund'] and not is_purchase_international"
                     force_save="1"/>
             </xpath>
+            <xpath expr="//div[@class='d-flex'][1]" position="after">
+                <field name="is_purchase_international" invisible="1"/>
+                <field name="declaration_unique_of_customs" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
+            </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_reception_date"
                     options="{'datepicker': {'warn_future': true}}"
@@ -177,6 +181,18 @@
             <xpath expr="//field[@name='name']" position="after">
                 <field name="correlative" optional="hide" />
             </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_move_filter_l10n_ve_invoice" model="ir.ui.view">
+        <field name="name">view.account.move.filter.l10n.ve.invoice</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <search>
+                <field name="declaration_unique_of_customs" string="Number of Declaration Unique of Customs"/>
+                <filter name="declaration_unique_of_customs" string="Number of Declaration Unique of Customs" domain="[('declaration_unique_of_customs', '!=' , False)]"/>
+            </search>
         </field>
     </record>
 </odoo>
