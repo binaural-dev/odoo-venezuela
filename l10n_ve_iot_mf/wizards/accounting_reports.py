@@ -239,4 +239,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                             range_last = move.mf_invoice_number
                             continue
                         range_last = move.mf_invoice_number
+        sale_book_lines = sorted(
+                    sale_book_lines,
+                    key=lambda row: (
+                        datetime.strptime(row['document_date'], "%d/%m/%Y"),
+                        int(row.get('mf_reportz', 0) or 0)
+                    )
+                )                       
         return sale_book_lines
