@@ -103,9 +103,17 @@ class RetentionLineReport(models.Model):
         """
 
     def _where(self):
-        return """
-            r.type_retention = 'iva'
-        """
+        company_ids = tuple(self.env.companies.ids)
+        
+        if len(company_ids) == 1:
+            return f"""
+                r.type_retention = 'iva' 
+                AND r.company_id = {company_ids[0]}
+            """
+        else:
+            return f"""
+                r.type_retention = 'iva' 
+                AND r.company_id IN {company_ids}
 
     @api.depends("raw_aliquot", "raw_retention_percentage")
     def _compute_percentages(self):
