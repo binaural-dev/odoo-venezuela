@@ -315,6 +315,7 @@ class AccountMove(models.Model):
         return action
 
     def write(self, vals):
+        res = super().write(vals)
         for move in self:
             if move.is_purchase_international and move.declaration_unique_of_customs:
                 if move.correlative != move.declaration_unique_of_customs:
@@ -322,5 +323,4 @@ class AccountMove(models.Model):
             elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
                 move.correlative = False
                 move.declaration_unique_of_customs = False
-        return super().write(vals)
-        
+        return res
