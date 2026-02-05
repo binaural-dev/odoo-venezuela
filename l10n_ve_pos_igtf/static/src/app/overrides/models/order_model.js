@@ -131,8 +131,8 @@ patch(Order.prototype, {
         return;
       }
 
-      bi_igtf += payment.amount;
-      foreign_bi_igtf += payment.get_foreign_amount();
+      bi_igtf += round_pr(payment.amount, rounding);
+      foreign_bi_igtf += round_pr(payment.get_foreign_amount(), rounding);
       repeat_same_method.push(payment.payment_method.id);
       bi_payments.push(payment.cid);
 
@@ -222,11 +222,11 @@ patch(Order.prototype, {
     }
     return this.igtf_amount;
   },
+
   compute_igtf_amount(amount) {
     var rounding = this.pos.currency.rounding;
-    return amount * (this.pos.config.igtf_percentage / 100);
+    return round_pr(amount * (this.pos.config.igtf_percentage / 100), rounding);
   },
-
   get_bi_igtf() {
     return this.bi_igtf;
   },
