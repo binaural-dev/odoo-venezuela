@@ -1320,3 +1320,8 @@ msgstr "<b>Monto debito alterno:</b> de %s a %s"
 #, python-format
 msgid "<b>The accounting line has been updated:</b>"
 msgstr "<b>La linea contable ha sido actualizada:</b>"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_amount_residual
+msgid "Foreign Amount Residual"
+msgstr "Cantidad por pagar"

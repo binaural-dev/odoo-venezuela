@@ -20,5 +20,6 @@ patch(PaymentScreenPaymentLines.prototype, {
     } else {
       return foreign_amount + " / " + amount
     }
+    
   }
 })

@@ -129,6 +129,7 @@ patch(Order.prototype, {
     let json = super.export_as_JSON();
     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
     json["foreign_currency_rate"] = this.get_conversion_rate();
+    json["foreign_inverse_rate"] = this.init_conversion_rate;
     json["to_receipt"] = this.is_to_receipt();
     return json;
   },

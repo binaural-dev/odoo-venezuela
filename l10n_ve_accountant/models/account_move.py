@@ -111,8 +111,8 @@ class AccountMove(models.Model):
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        digits="Tasa",
         store=True,
+        digits="Tasa",
         tracking=True,
         readonly=False,
     )
@@ -166,8 +166,17 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
+    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_foreign_amount_residual", currency_field="foreign_currency_id",readonly=False)
 
+    @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
+    def _compute_foreign_amount_residual(self):
+        for rec in self:
+            if rec.amount_residual and self.env.company.currency_foreign_id and self.env.company.currency_foreign_id == self.env.ref("base.VEF"):
+                rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+            else:
+                rec.foreign_amount_residual = rec.amount_residual / rec.foreign_inverse_rate
 
+         
 
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
     def _compute_inverse_rate_vef(self):
@@ -180,6 +189,7 @@ class AccountMove(models.Model):
                 date = move.invoice_date or move.date
 
                 if date:
+                    
                     rate = Rate.search([
                         ('currency_id', '=', currency.id),
                         ('name', '<=', date),
@@ -195,17 +205,13 @@ class AccountMove(models.Model):
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
 
-    @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
-        context = self.with_context(active_test=False)
-        return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
 
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
         for move in self:
             move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
             move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
-            move.foreign_balance = move.foreign_debit - move.foreign_credit
+            move.foreign_balance = move.foreign_currency_id.round((move.foreign_debit - move.foreign_credit))
 
     def _get_journal_income_account(self, journal):
         """
@@ -309,63 +315,6 @@ class AccountMove(models.Model):
                 }
             )
 
-    def _auto_init(self):
-        res = super()._auto_init()
-        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
-            # we can add the following UNIQUE INDEX
-            self.env.cr.execute(
-                """
-                WITH duplicated_sequence AS (
-                    SELECT name, partner_id, state, journal_id
-                      FROM account_move
-                     WHERE state = 'posted'
-                       AND name != '/'
-                       AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
-                  GROUP BY partner_id, journal_id, name, state
-                    HAVING COUNT(*) > 1
-                ),
-                to_update AS (
-                    SELECT move.id,
-                           move.name,
-                           move.state,
-                           move.date,
-                           row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
-                      FROM duplicated_sequence
-                      JOIN account_move move ON move.name = duplicated_sequence.name
-                                            AND move.partner_id = duplicated_sequence.partner_id
-                                            AND move.state = duplicated_sequence.state
-                                            AND move.journal_id = duplicated_sequence.journal_id
-                ),
-               new_vals AS (
-                    SELECT id,
-                           name || ' (' || (row_seq-1)::text || ')' AS name
-                      FROM to_update
-                     WHERE row_seq > 1
-                )
-                UPDATE account_move
-                   SET name = new_vals.name
-                  FROM new_vals
-                 WHERE account_move.id = new_vals.id;
-            """
-            )
-
-            self.env.cr.execute(
-                """
-                CREATE UNIQUE INDEX account_move_unique_name
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-                CREATE UNIQUE INDEX account_move_unique_name_ve
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-            """
-            )
-        return res
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -782,14 +731,16 @@ class AccountMove(models.Model):
         """
         Rate = self.env["res.currency.rate"]
 
+        
         for move in documents:
             if move.manually_set_rate:
                 continue
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.foreign_rate = rate_values.get("foreign_rate", 0)
-            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            move.foreign_rate = rate_values.get("foreign_rate")
+            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
+            
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -1012,7 +963,6 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
-    # TO-DO: Modify the digital invoicing module (l10n_ve_invoice digital) if this wizard is deleted
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
@@ -1044,16 +994,7 @@ class AccountMove(models.Model):
                             round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
-        for move in self:
-
-            precision = move.currency_id.decimal_places if move.currency_id else 2
-
-            move.foreign_debit = float_round(sum(move.line_ids.mapped("foreign_debit")), precision_digits=precision)
-            move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit")), precision_digits=precision)
-            if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
-                move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit_no_format")), precision_digits=precision)
-                if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
-                    raise UserError(_("Your transaction cannot be processed because the debit must match the credit."))
+        
             
         return super().action_post()
 
@@ -1140,3 +1081,6 @@ class AccountMove(models.Model):
                     and line.display_type == "product"
                 ):
                     raise ValidationError(_("All added lines must indicate the product."))
+                
+
+  
