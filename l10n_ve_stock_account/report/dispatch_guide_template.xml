@@ -1,30 +1,29 @@
 <odoo>
     <template id="dispatch_guide_template" name="dispatch_guide_template_name">
-        <t t-name="l10n_ve_stock_account.dispatch_guide_template_report">
-            <t t-call="web.html_container">
-                <t t-set="o" t-value="docs[0]" />
-                <!-- Inicializar variables acumuladoras UNA SOLA VEZ -->
-
-                <t t-foreach="docs" t-as="o">
-                    <t t-call="l10n_ve_stock_account.dispatch_guide_custom_layout" />
-                </t>
-
-                <t t-call="web.basic_layout">
-                    <div style="page-break-after:always;">
-                        <t t-call="l10n_ve_stock_account.dispatch_layout_body" />
-                    </div>
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="l10n_ve_stock_account.dispatch_guide_custom_layout">
+                    <t t-call="l10n_ve_stock_account.dispatch_layout_body" />
                 </t>
             </t>
         </t>
     </template>
 
     <template id="dispatch_guide_custom_layout" name="dispatch_guide_custom_layout1">
-        <t t-call="l10n_ve_stock_account.dispatch_layout_header" />
-        <t t-call="l10n_ve_stock_account.dispatch_layout_footer" />
+        <t t-call="web.basic_layout">
+            <div class="page">
+                <t t-call="l10n_ve_stock_account.dispatch_layout_header" />
+                <div class="row">
+                    <div class="col-12"><br/></div>
+                </div>
+                <t t-out="0"/>
+                <t t-call="l10n_ve_stock_account.dispatch_layout_footer" />
+            </div>
+        </t>
     </template>
 
     <template id="dispatch_layout_header">
-        <div class="container-fluid header">
+        <div class="container-fluid dispatch-header">
             <div class="row mb-4">
                 <div class="col-12 d-flex align-items-center flex-wrap">
                     <div class="me-3 flex-shrink-0">
@@ -246,7 +245,7 @@
     </template>
 
     <template id="dispatch_layout_footer">
-        <div class="footer container-fluid">
+        <div class="dispatch-footer container-fluid">
 
             <!-- Tabla de Firmas -->
             <div class="row">
