@@ -50,4 +50,3 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "pre_init_hook": "pre_init_hook",
-}

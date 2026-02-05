@@ -5,9 +5,9 @@ import { patch } from "@web/core/utils/patch";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import {
   formatFloat,
+  floatIsZero,
   roundDecimals as round_di,
   roundPrecision as round_pr,
-  floatIsZero,
 } from "@web/core/utils/numbers";
 import { _t } from "@web/core/l10n/translation";
 
@@ -38,14 +38,20 @@ patch(Order.prototype, {
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
     if (this.pos.currency.name == "VEF") {
-      return round_di(this.pos.config.foreign_inverse_rate, this.pos.currency.decimal_places);
+      return this.pos.config.foreign_inverse_rate
     }
     if (this.pos.currency.name == "USD") {
-      return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
+      return round_di(
+        this.pos.config.foreign_rate,
+        this.pos.foreign_currency.decimal_places,
+      );
     }
   },
   get_display_rate() {
-    return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
+    return round_di(
+      this.pos.config.foreign_rate,
+      this.pos.foreign_currency.decimal_places,
+    );
   },
 
   add_orderline(line) {

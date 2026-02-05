@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20250522\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-17 13:53+0000\n"
-"PO-Revision-Date: 2025-07-17 13:53+0000\n"
+"POT-Creation-Date: 2026-01-28 03:36+0000\n"
+"PO-Revision-Date: 2026-01-28 03:36+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -303,6 +303,7 @@ msgstr "Fecha de Fin"
 msgid "Date of issue:"
 msgstr "Fecha de emisión:"
 
+
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__name
 msgid "Description"
@@ -382,6 +383,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_amount
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__foreign_amount
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_line_form_l10n_ve_invoice
 msgid "Foreign Amount"
 msgstr "Importe Alterno"
@@ -416,6 +418,8 @@ msgstr "Ajuste de crédito alterno"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__credit_foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__debit_foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_currency_id
 msgid "Foreign Currency"
@@ -620,6 +624,8 @@ msgstr "Facturas Detalladas"
 msgid "Invoices Statistics"
 msgstr "Estadísticas de facturas"
 
+
+
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_reset_to_draft_for_price_change
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_reset_to_draft_for_price_change
@@ -723,6 +729,7 @@ msgstr ""
 msgid "Not Foreign Recalculate"
 msgstr "No es extranjero Recalcular"
 
+
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Nº Documento"
@@ -746,7 +753,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_account_partial_reconcile
 msgid "Partial Reconcile"
-msgstr "Conciliación Parcial"
+msgstr "Conciliación parcial"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__use_partner_credit_limit_order

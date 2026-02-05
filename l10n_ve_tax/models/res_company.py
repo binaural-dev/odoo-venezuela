@@ -59,4 +59,3 @@ class ResCompany(models.Model):
 
     not_show_total_purchases_international = fields.Boolean()
 
-    
