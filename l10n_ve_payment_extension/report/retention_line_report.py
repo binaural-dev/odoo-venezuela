@@ -114,6 +114,7 @@ class RetentionLineReport(models.Model):
             return f"""
                 r.type_retention = 'iva' 
                 AND r.company_id IN {company_ids}
+                """
 
     @api.depends("raw_aliquot", "raw_retention_percentage")
     def _compute_percentages(self):
