@@ -712,6 +712,7 @@ msgstr "Notas de Crédito"
 msgid "There are no moves to show"
 msgstr "No se encontraron registros para mostrar"
 
+#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__declaration_unique_of_customs
 msgid "Declaration unique of customs"
 msgstr "Declaración Única de Aduana"
