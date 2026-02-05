@@ -1,6 +1,6 @@
 from odoo.tools.float_utils import float_round, float_compare
 from odoo import api, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from odoo.tools.misc import formatLang
 
 import logging
@@ -126,6 +126,7 @@ class AccountTax(models.Model):
 
         amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
 
+       
         res["foreign_total_amount_paid"] = float_round(
             sum(amounts),
             precision_digits=foreign_currency.decimal_places
@@ -167,8 +168,6 @@ class AccountTax(models.Model):
 
         amounts = []
         invoice_payments = move.invoice_payments_widget
-        igtf_amount = 0
-
         if not invoice_payments:
             return amounts
 
@@ -177,32 +176,13 @@ class AccountTax(models.Model):
             
             move_id = payment.get('move_id')
             payment_id = self.env['account.move'].browse(move_id)
-
-            if not payment_id:
-                continue
+            foreign_amt = 0.0
             for line in payment_id.line_ids:
-                if line.account_id == self.env.company.customer_account_igtf_id or line.account_id == self.env.company.supplier_account_igtf_id:
-                    igtf_amount = line.credit or line.debit
+              
                 
-            if self.env.company.currency_id == self.env.ref("base.VEF"): 
-                if payment_id.currency_id == foreign_currency:
-                    foreign_amt = payment_id.amount_total
-                    
-                else:
-                    foreign_amt = float_round(payment_id.amount_total * payment_id.foreign_inverse_rate, precision_digits=foreign_currency.decimal_places)
-            
-            else:
-                if payment_id.currency_id == foreign_currency:
-
-                    foreign_amt = payment_id.amount_total
-
-                else:
-                    foreign_amt = float_round((payment_id.amount_total) * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
-
-                    if  igtf_amount > 0:
-                        foreign_amt = float_round((payment_id.amount_total - igtf_amount) * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
-                    else:
-                        foreign_amt = float_round(payment_id.amount_total * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
+                foreign_amt = abs(line.foreign_balance)
+                
+            foreign_amt = foreign_amt
             amounts.append(foreign_amt)
         return amounts
 
