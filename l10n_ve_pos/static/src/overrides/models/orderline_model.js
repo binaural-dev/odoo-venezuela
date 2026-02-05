@@ -64,7 +64,6 @@ patch(Orderline.prototype, {
     super.set_unit_price(price);
     this.foreign_price = round_di(
       this.get_unit_price() * this.get_rate() || 0,
-      this.pos.dp["Foreign Product Price"],
     );
   },
 
@@ -75,17 +74,17 @@ patch(Orderline.prototype, {
       : isNaN(parseFloat(price))
         ? 0
         : oParseFloat("" + price);
-    this.foreign_price = round_di(
+    this.foreign_price = round_pr(
       parsed_price || 0,
-      this.pos.dp["Foreign Product Price"],
+      this.pos.foreign_currency.rounding,
     );
   },
 
   get_foreign_unit_price() {
-    var digits = this.pos.dp["Foreign Product Price"];
+    var digits = this.pos.foreign_currency.rounding;
     // round and truncate to mimic _symbol_set behavior
     return parseFloat(
-      round_di(this.foreign_price || 0, digits).toFixed(digits),
+      round_pr(this.foreign_price || 0, digits).toFixed(digits),
     );
   },
 
@@ -119,7 +118,7 @@ patch(Orderline.prototype, {
       qty,
       this.pos.foreign_currency.rounding,
     );
-    all_taxes.taxes.forEach(function (tax) {
+    all_taxes.taxes.forEach(function(tax) {
       taxtotal += tax.amount;
       taxdetail[tax.id] = {
         amount: tax.amount,
