@@ -59,7 +59,7 @@ patch(PaymentScreenStatus.prototype, {
   },
   get suggestedIgtf() {
     var rounding = this.pos.currency.rounding;
-    var result = round_di(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), 4);
+    var result = round_pr(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), rounding);
     return this.env.utils.formatCurrency(result);
   },
   get foreignTotalDueTextWithIGTF() {
@@ -82,7 +82,7 @@ patch(PaymentScreenStatus.prototype, {
   },
   get totalDueTextWithIGTFDisplay() {
     var rounding = this.pos.currency.rounding;
-    var result = round_di(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), rounding);
+    var result = round_pr(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), rounding);
     return this.env.utils.formatCurrency(
       (this.props.order.get_total_with_tax()+result)
     );
