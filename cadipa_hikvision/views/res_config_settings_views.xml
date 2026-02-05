@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_config_settings_cadipa_hikvision" model="ir.ui.view">
+        <field name="name">res.config.settings.cadipa.hikvision</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="binaural_hikvision.view_res_config_settings_external_hikcentral"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='hikcentral_configuration_block']" position="inside">
+                
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-12 o_setting_box">
+                        <span class="o_form_label">CADIPA Realtime Monitor Configuration</span>
+                        <div class="o_setting_right_pane">
+                            <div class="content-group">
+                                <group>
+                                    <field name="cadipa_waiting_message" 
+                                           placeholder="Esperando..."
+                                           help="Default message to display on the waiting screen."/>
+                                    <field name="cadipa_waiting_color" 
+                                           widget="color"
+                                           help="Default background color for the waiting screen (hexadecimal format)."/>
+                                    <field name="cadipa_overdue_limit" 
+                                           help="Limit of overdue entries allowed before showing warning message."/>
+                                </group>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </xpath>
+        </field>
+    </record>
+</odoo>

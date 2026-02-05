@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="cadipa_hikvision.Root">
+        <div class="cadipa_hikvision_root d-flex align-items-center justify-content-center min-vh-100"
+             t-att-class="state.isWaiting ? 'cadipa_hikvision_waiting' : 'cadipa_hikvision_message'"
+             t-att-style="state.isWaiting ? `background-color: ${state.waitingColor};` : (state.backgroundColor ? `background-color: ${state.backgroundColor};` : '')">
+            <div class="text-center px-4">
+                <t t-if="state.isWaiting">
+                    <p class="cadipa_hikvision_waiting_text mb-0" t-esc="state.waitingMessage"/>
+                </t>
+                <t t-else="">
+                    <t t-if="state.currentMessage and state.currentMessage.message">
+                        <p class="cadipa_hikvision_message_text mb-0" t-esc="state.currentMessage.message"/>
+                    </t>
+                    <t t-elif="state.currentMessage and state.currentMessage.hikuser_name">
+                        <p class="cadipa_hikvision_message_text mb-0" t-esc="state.currentMessage.hikuser_name"/>
+                    </t>
+                    <t t-else="">
+                        <p class="cadipa_hikvision_message_text mb-0">Evento recibido</p>
+                    </t>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

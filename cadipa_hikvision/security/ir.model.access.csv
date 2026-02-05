@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_realtime_message_config_user,access.realtime.message.config.user,model_realtime_message_config,base.group_user,1,1,0,0
+access_cadipa_access_history_user,cadipa.access.history.user,model_cadipa_access_history,base.group_user,1,0,0,0

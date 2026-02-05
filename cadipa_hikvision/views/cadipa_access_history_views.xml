@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cadipa_access_history_tree" model="ir.ui.view">
+        <field name="name">cadipa.access.history.tree</field>
+        <field name="model">cadipa.access.history</field>
+        <field name="arch" type="xml">
+            <tree string="Access History" create="false" edit="false" delete="false">
+                <field name="occurred_at"/>
+                <field name="partner_id"/>
+                <field name="membership_number"/>
+                <field name="membership_id" optional="show"/>
+                <field name="device_id"/>
+                <field name="result"/>
+                <field name="access_status_code"/>
+                <field name="reason"/>
+                <field name="is_beneficiary"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_cadipa_access_history_form" model="ir.ui.view">
+        <field name="name">cadipa.access.history.form</field>
+        <field name="model">cadipa.access.history</field>
+        <field name="arch" type="xml">
+            <form string="Access History" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group string="Date &amp; Time">
+                            <field name="occurred_at"/>
+                        </group>
+                        <group string="Result">
+                            <field name="result"/>
+                            <field name="access_status_code"/>
+                            <field name="reason"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Person &amp; Membership">
+                            <field name="partner_id"/>
+                            <field name="membership_id"/>
+                            <field name="membership_number"/>
+                            <field name="is_beneficiary"/>
+                        </group>
+                        <group string="Device">
+                            <field name="device_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cadipa_access_history_search" model="ir.ui.view">
+        <field name="name">cadipa.access.history.search</field>
+        <field name="model">cadipa.access.history</field>
+        <field name="arch" type="xml">
+            <search string="Search Access History">
+                <field name="partner_id"/>
+                <field name="membership_number"/>
+                <field name="device_id"/>
+                <field name="result"/>
+                <field name="access_status_code"/>
+                <filter string="Allowed" name="allowed" domain="[('result', '=', 'allowed')]"/>
+                <filter string="Pending Payment" name="pending_payment" domain="[('result', '=', 'pending_payment')]"/>
+                <filter string="Denied" name="denied" domain="[('result', '=', 'denied')]"/>
+                <separator/>
+                <filter string="Beneficiaries" name="beneficiaries" domain="[('is_beneficiary', '=', True)]"/>
+                <filter string="Holders" name="holders" domain="[('is_beneficiary', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Person" name="groupby_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Device" name="groupby_device" context="{'group_by': 'device_id'}"/>
+                    <filter string="Result" name="groupby_result" context="{'group_by': 'result'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_cadipa_access_history" model="ir.actions.act_window">
+        <field name="name">Access History</field>
+        <field name="res_model">cadipa.access.history</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_cadipa_access_history_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No access attempts recorded yet.
+            </p>
+            <p>
+                Access history is created automatically when members or beneficiaries attempt access at configured devices.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_cadipa_access_history"
+        name="Access History"
+        parent="binaural_hikvision.menu_hikcentral_root"
+        action="action_cadipa_access_history"
+        sequence="55"/>
+</odoo>

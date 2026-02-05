@@ -6,3 +6,7 @@ from . import action_partner
 from . import hikcentral_department
 from . import hikcentral_access_level
 from . import membership_type_plan
+from . import realtime_message_config
+from . import res_company
+from . import res_config_settings
+from . import cadipa_access_history
