@@ -83,7 +83,7 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 not_solvent, revoke_access, membership = self._check_solvency_status(
                     hik_user, company_creds
                 )
-                
+
                 if revoke_access and membership:
                     root_user = request.env.ref("base.user_root")
                     membership.with_user(root_user).write(
@@ -171,8 +171,7 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 "is_beneficiary": is_beneficiary,
             }
         )
-        _logger.info("CADIPA: Access history created: %s", access_history)
-
+        
     def _is_device_configured(self, device):
         """Checks if the device is configured in at least one message rule.
 
