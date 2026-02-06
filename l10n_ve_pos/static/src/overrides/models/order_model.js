@@ -459,7 +459,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
+    return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding) ;
   },
   get_foreign_due(paymentline) {
     if (!paymentline) {
@@ -478,7 +478,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(due, this.pos.foreign_currency.rounding);
+    return round_pr(due,this.pos.foreign_currency.rounding) ;
   },
 
   get_qty_products() {
