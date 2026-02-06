@@ -46,6 +46,8 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 [("hikcentral_person_code", "=", person_api_id)], limit=1
             )
 
+            _logger.info("CADIPA: Hik user: %s", hik_user)
+
             if event_type == "198914" and person_api_id and person_api_id != "-1":
                 self._revoke_access_if_visitor_with_qr(
                     hik_user, person_api_id, company_creds
@@ -62,6 +64,11 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 )
 
                 if not device:
+                    _logger.info(
+                        "CADIPA: Device not found: %s (index_code: %s)",
+                        device_index,
+                        device_index,
+                    )
                     continue
 
                 if not self._is_device_configured(device):
@@ -76,6 +83,7 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 not_solvent, revoke_access, membership = self._check_solvency_status(
                     hik_user, company_creds
                 )
+                
                 if revoke_access and membership:
                     root_user = request.env.ref("base.user_root")
                     membership.with_user(root_user).write(
@@ -93,13 +101,14 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                     revoke_access=revoke_access,
                 )
 
+                _logger.info("CADIPA: Message config to send to bus: %s", message_config)
+
                 if message_config:
                     self._create_access_history(
                         event_data, hik_user, device, membership, message_config
                     )
-                    hikuser_name = self._get_hikuser_name(hik_user)
                     self._send_hikuser_name_to_bus(
-                        hikuser_name, person_api_id, event_type, message_config
+                        person_api_id, event_type, message_config
                     )
                 else:
                     _logger.info(
@@ -162,6 +171,7 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 "is_beneficiary": is_beneficiary,
             }
         )
+        _logger.info("CADIPA: Access history created: %s", access_history)
 
     def _is_device_configured(self, device):
         """Checks if the device is configured in at least one message rule.
@@ -187,32 +197,6 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                 "CADIPA: Error verificando si dispositivo está configurado: %s", e
             )
             return False
-
-    def _get_hikuser_name(self, hik_user):
-        """Gets the full name of a hikuser.
-
-        Args:
-            hik_user: Record of hikcentral.users
-
-        Returns:
-            str: Full name of the user or None if it cannot be retrieved
-        """
-
-        try:
-            if hik_user.is_visitor:
-                name_parts = []
-                if hik_user.visitor_name:
-                    name_parts.append(hik_user.visitor_name)
-                if hik_user.visitor_last_name:
-                    name_parts.append(hik_user.visitor_last_name)
-                return " ".join(name_parts) if name_parts else None
-            else:
-                if hik_user.partner_id:
-                    return hik_user.partner_id.name
-            return None
-        except Exception as e:
-            _logger.warning("CADIPA: Error obteniendo nombre del hikuser: %s", e)
-            return None
 
     def _get_message_config(
         self, hik_user, device, not_solvent=False, revoke_access=False
@@ -273,24 +257,21 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
             return None
 
     def _send_hikuser_name_to_bus(
-        self, hikuser_name, person_code, event_type, message_config=None
+        self, person_code, event_type, message_config=None
     ):
         """Sends the hikuser name to the notification bus with message configuration.
 
         Args:
-            hikuser_name (str): Full name of the user
             person_code (str): Person code
             event_type (str): Event type
             message_config: Record of realtime.message.config (optional)
         """
-        if not hikuser_name:
-            return
 
         try:
             channel = "cadipa_hikvision_test_channel"
 
+            _logger.info("CADIPA: Sending message configuration to bus: %s", message_config)
             bus_data = {
-                "hikuser_name": hikuser_name,
                 "person_code": person_code,
                 "event_type": event_type,
                 "timestamp": request.env.cr.now().isoformat(),
@@ -313,6 +294,7 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
             }
 
             request.env["bus.bus"]._sendone(channel, "notification", bus_message)
+            _logger.info("CADIPA: Message sent to bus: %s", bus_message)
         except Exception as e:
             _logger.warning("CADIPA: Error sending name to bus: %s", e)
 
