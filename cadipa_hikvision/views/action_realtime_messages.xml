@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cadipa_hikvision_realtime_messages" model="ir.actions.client">
+        <field name="name">Access Control Monitor</field>
+        <field name="tag">cadipa_hikvision_realtime_messages</field>
+        <field name="target">fullscreen</field>
+    </record>
+
+    <menuitem
+        id="menu_cadipa_hikvision_realtime_messages"
+        name="Access Control Monitor"
+        parent="binaural_hikvision.menu_hikcentral_root"
+        action="action_cadipa_hikvision_realtime_messages"
+        sequence="50"/>
+</odoo>
