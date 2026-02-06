@@ -266,4 +266,3 @@ patch(PosStore.prototype, {
     return await super.push_single_order.apply(this, [order, opts]);
   },
 })
-
