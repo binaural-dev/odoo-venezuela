@@ -17,12 +17,15 @@ class TestStockPickingInvoice(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.currency_vef = self.env.ref("base.VEF")
         self.company = self.env.ref("base.main_company")
-        self.company.write(
-            {
-                "currency_id": self.currency_vef.id,
-                "currency_foreign_id": self.currency_usd.id,
-            }
-        )
+        
+        ve = self.env.ref("base.ve")
+        
+        self.company.write({
+            "country_id": ve.id,
+            "account_fiscal_country_id": ve.id,  # <- clave para la validación de taxes
+            "currency_id": self.currency_vef.id,
+            "currency_foreign_id": self.currency_usd.id,
+        })
 
         self.partner = self.env["res.partner"].create(
             {
@@ -35,13 +38,13 @@ class TestStockPickingInvoice(TransactionCase):
                 "street": "Calle Falsa 123",
             }
         )
+        
 
-        self.tax_group = self.env["account.tax.group"].create(
-            {
-                "name": "IVA",
-                "sequence": 10,
-            }
-        )
+        self.tax_group = self.env["account.tax.group"].create({
+            "name": "IVA",
+            "sequence": 10,
+            "country_id": ve.id,
+        })
 
         # Crear impuesto IVA 16%
         self.tax_iva16 = self.env["account.tax"].create(
@@ -190,4 +193,3 @@ class TestStockPickingInvoice(TransactionCase):
             len(invoice.invoice_line_ids) == len(order.order_line),
             "The invoice created from the sales orders dispatch guide must have the same number of lines as the sales order.",
         )
-        _logger.info("test_01_generate_invoice_from_dispatch_guide --- successfully.")
