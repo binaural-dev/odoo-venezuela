@@ -23,7 +23,7 @@ def get_usd_rate_of_the_day_bcv(self):
     current_date = fields.Date.context_today(self)
 
     try:
-        html_content = requests.get(URL, verify=False, timeout=5)
+        html_content = requests.get(URL, verify=False, timeout=20)
         soup = BeautifulSoup(html_content.text, "html.parser")
 
         usd_container = soup.find(id="dolar")
