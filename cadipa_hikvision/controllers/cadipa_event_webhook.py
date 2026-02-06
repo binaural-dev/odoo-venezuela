@@ -103,7 +103,7 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
                     )
                 else:
                     _logger.info(
-                        "CADIPA: No se encontró configuración para dispositivo %s (index_code: %s)",
+                        "CADIPA: No configuration found for device %s (index_code: %s)",
                         device.name,
                         device_index,
                     )
@@ -198,7 +198,6 @@ class CadipaHikcentralWebhookController(HikcentralWebhookController):
             str: Full name of the user or None if it cannot be retrieved
         """
 
-        _logger.info("CADIPA: Obteniendo nombre del hikuser: %s", hik_user)
         try:
             if hik_user.is_visitor:
                 name_parts = []
