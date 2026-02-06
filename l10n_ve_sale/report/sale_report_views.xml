@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_product_pivot_l10n_ve_sale" model="ir.ui.view">
+        <field name="name">sale.report.pivot.l10n.ve.sale</field>
+        <field name="model">sale.report</field>
+        <field name="inherit_id" ref="sale.view_order_product_pivot"/>
+        <field name="arch" type="xml">
+            <field name="product_uom_qty" position="after">
+                <field name="foreign_untaxed_total" type="measure"/>
+                <field name="foreign_total_billed" type="measure"/>
+            </field>
+        </field>
+    </record>
+</odoo>

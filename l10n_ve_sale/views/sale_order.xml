@@ -132,13 +132,21 @@
         <field name="inherit_id" ref="sale.view_quotation_tree" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="foreign_rate" optional="hide" />
                 <field name="foreign_currency_id" column_invisible="True" />
+                <field name="foreign_untaxed_total" optional="hide" 
+                    options="{'currency_field': 'foreign_currency_id'}" />
                 <field
                     name="foreign_total_billed"
                     sum="Foreign Amount total"
                     widget="monetary"
                     options="{'currency_field': 'foreign_currency_id'}"
                     decoration-bf="1" />
+                <field name="company_currency_id" column_invisible="True"/>
+                <field name="amount_untaxed_total_signed" optional="hide" 
+                    options="{'currency_field': 'company_currency_id'}"/>
+                <field name="amount_total_signed" optional="hide" 
+                    options="{'currency_field': 'company_currency_id'}"/>
             </xpath>
         </field>
     </record>
