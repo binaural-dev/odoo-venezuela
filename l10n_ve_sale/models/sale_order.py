@@ -242,7 +242,7 @@ class SaleOrder(models.Model):
             foreign_currency_symbol = foreign_currency_id.symbol
             foreign_currency_name = foreign_currency_id.name
             company_currency_id = self.env.company.currency_id
-            company_currency_name = company_currency_id.name
+            company_currency_symbol = company_currency_id.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "l10n_ve_sale.view_sale_order_form_l10n_ve_sales"
@@ -272,11 +272,11 @@ class SaleOrder(models.Model):
 
                 total_signed = doc.xpath("//field[@name='amount_total_signed']")
                 if total_signed:
-                    total_signed[0].set("string", _("Total") + " " + "Bs")
+                    total_signed[0].set("string", _("Total") + " " + company_currency_symbol)
                 
                 untaxed_total_signed = doc.xpath("//field[@name='amount_untaxed_total_signed']")
                 if untaxed_total_signed:
-                    untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + "Bs")
+                    untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + company_currency_symbol)
                 
                 res["arch"] = etree.tostring(doc, encoding="unicode")
             elif view_type == "pivot":
@@ -292,11 +292,11 @@ class SaleOrder(models.Model):
 
                 total_signed = doc.xpath("//field[@name='amount_total_signed']")
                 if total_signed:
-                    total_signed[0].set("string", _("Total") + " " + "Bs")
+                    total_signed[0].set("string", _("Total") + " " + company_currency_symbol)
                 
                 untaxed_total_signed = doc.xpath("//field[@name='amount_untaxed_total_signed']")
                 if untaxed_total_signed:
-                    untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + "Bs")
+                    untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + company_currency_symbol)
                 
                 res["arch"] = etree.tostring(doc, encoding="unicode")
                 
