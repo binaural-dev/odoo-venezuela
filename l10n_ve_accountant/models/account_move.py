@@ -410,7 +410,7 @@ class AccountMove(models.Model):
                     )
                 if amount_untaxed_signed_column:
                     amount_untaxed_signed_column[0].set(
-                        "string", _("SubTotal") + " " + company_currency_symbol
+                        "string", _("Untaxed Total") + " " + company_currency_symbol
                     )
                 
                 res["arch"] = etree.tostring(doc, encoding="unicode")
