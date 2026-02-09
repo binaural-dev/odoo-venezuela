@@ -68,14 +68,14 @@
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" readonly="move_type != 'in_invoice'" force_save="1"/>
+                <field name="foreign_price" precision="Foreign Product Price" readonly="move_type != 'in_invoice'" force_save="1"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" force_save="1"/>
                 <field name="foreign_subtotal" force_save="1"
                 />
-                <field name="foreign_price_total" force_save="1"
+                <field name="foreign_price_total" options="{'precision': 'Foreign Product Price'}" force_save="1"
                     column_invisible="parent.tax_calculation_rounding_method == 'round_globally'" />
                 <field name="foreign_rate" optional="hide" force_save="1"/>
                 <field
@@ -152,6 +152,7 @@
             </xpath>
         </field>
     </record>
+
     <record id="view_account_move_filter_l10n_ve_accountant" model="ir.ui.view">
         <field name="name">view.account.move.filter.l10n.ve.accountant</field>
         <field name="model">account.move</field>
