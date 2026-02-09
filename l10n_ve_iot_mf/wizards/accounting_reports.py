@@ -51,6 +51,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if self.with_fiscal_machine:
             res = super().search_moves()
             res = res.filtered_domain([("mf_serial", "!=", False)])
+            res = res.sorted(key=lambda r: r.invoice_date)
             return res
 
         move_model = self.env["account.move"]
