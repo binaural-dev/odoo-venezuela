@@ -17,8 +17,13 @@ class TestStockPickingInvoice(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.currency_vef = self.env.ref("base.VEF")
         self.company = self.env.ref("base.main_company")
+
+        ve = self.env.ref("base.ve")
+
         self.company.write(
             {
+                "country_id": ve.id,
+                "account_fiscal_country_id": ve.id,  # <- clave para la validación de taxes
                 "currency_id": self.currency_vef.id,
                 "currency_foreign_id": self.currency_usd.id,
             }
@@ -40,6 +45,7 @@ class TestStockPickingInvoice(TransactionCase):
             {
                 "name": "IVA",
                 "sequence": 10,
+                "country_id": ve.id,
             }
         )
 
