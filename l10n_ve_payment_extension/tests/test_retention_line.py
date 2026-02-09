@@ -23,9 +23,12 @@ class TestRetentionFlows(TransactionCase):
         super(TestRetentionFlows, cls).setUpClass()
 
         cls.company = cls.env.company
+        cls.currency = cls.env.ref('base.VEF')
         cls.foreign_currency = cls.env.ref('base.USD')
-        if not cls.company.foreign_currency_id:
-            cls.company.foreign_currency_id = cls.foreign_currency.id
+        cls.company.write({
+            "currency_id": cls.currency.id,
+            "foreign_currency_id": cls.foreign_currency.id,
+        })
 
         cls.partner = cls.env["res.partner"].search([('name', '=', 'Test Partner')], limit=1) or \
         cls.env["res.partner"].create({"name": "Test Partner"})
