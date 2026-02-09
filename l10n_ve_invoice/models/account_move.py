@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import json
 import logging
-
+import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import format_date
@@ -14,6 +14,8 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
+    declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
+    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
@@ -32,12 +34,51 @@ class AccountMove(models.Model):
         compute="_compute_is_debit_journal",
         store=True
     )
+
+    entry_in_period = fields.Boolean(
+        compute="_compute_entry_in_period",
+    )
+
+    @api.depends("invoice_date", "entry_in_period", "state")
+    def _compute_entry_in_period(self):
+        """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
+        today = date.today()
+        taxpayer_type = self.env.company.taxpayer_type
+        period_limit = self._get_period_limit(today, taxpayer_type)
+
+        for move in self:
+            move.entry_in_period = False
+
+            if move.state == "cancel":
+                continue
+
+            if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
+                if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
+                    if taxpayer_type == "special" and move.invoice_date.day < 15 < period_limit.day:
+                        move.entry_in_period = False
+                    else:
+                        move.entry_in_period = True
+
+    def _get_period_limit(self, today, taxpayer_type):
+            """Returns the tax period deadline according to the taxpayer type."""
+            if taxpayer_type == "special":
+                if today.day < 15:
+                    return today.replace(day=15)
+            last_day = calendar.monthrange(today.year, today.month)[1]
+            return date(today.year, today.month, last_day)
+
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
         from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
-                if not from_pos:
+                from_loyalty = self.env.context.get('from_loyalty', False)
+                if (
+                    self.env.company.sale_discount_product_id
+                    and line.product_id == self.env.company.sale_discount_product_id
+                ):
+                    continue
+                if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
     def action_post(self):
@@ -47,11 +88,19 @@ class AccountMove(models.Model):
 
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
-            if invoices and record.move_type in ["out_invoice","out_refund"]:
+            """ if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
             if record.invoice_date and record.date and record.date < record.invoice_date:
-                raise ValidationError(_("The accounting date cannot be earlier than the invoice date."))
+                raise ValidationError(_("The accounting date cannot be earlier than the invoice date.")) """
         return super().action_post()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        for move in moves:
+            if move.is_purchase_international and move.declaration_unique_of_customs and not move.correlative:
+                move.correlative = move.declaration_unique_of_customs
+        return moves
 
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
@@ -255,6 +304,12 @@ class AccountMove(models.Model):
         res = super().write(vals)
 
         for move in self:
+            if move.is_purchase_international and move.declaration_unique_of_customs:
+                if move.correlative != move.declaration_unique_of_customs:
+                    move.correlative = move.declaration_unique_of_customs
+            elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
+                move.correlative = False
+                move.declaration_unique_of_customs = False
             if not move.is_invoice(include_receipts=True):
                 continue
 
@@ -271,7 +326,7 @@ class AccountMove(models.Model):
                         f"""
                             <li>
                                 <b>{product}</b><br/>
-                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes_display} ⟶</i></span>
+                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes_display} \u27F6</i></span>
                                 <span style="color:#007BFF;"><i>{new_taxes.display_name}</i></span>
                             </li>
                         """
