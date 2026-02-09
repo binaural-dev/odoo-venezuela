@@ -70,16 +70,10 @@ class AccountPaymentRegister(models.TransientModel):
             if not bool(payment.foreign_rate):
                 return
 
-            batch_result = payment._get_batches()[0]
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(
                 payment.foreign_rate
             )
-            total_amount_residual_in_wizard_currency = (
-                payment._get_total_amount_in_wizard_currency_to_full_reconcile(
-                    batch_result, early_payment_discount=False
-                )[0]
-            )
-            payment.amount = total_amount_residual_in_wizard_currency
+            
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):
@@ -108,23 +102,6 @@ class AccountPaymentRegister(models.TransientModel):
             }
         )
         return payment_vals
-
-    @api.depends("can_edit_wizard", "amount", "foreign_inverse_rate")
-    def _compute_payment_difference(self):
-        for wizard in self:
-            if wizard.can_edit_wizard:
-                batch_result = wizard._get_batches()[0]
-                total_amount_residual_in_wizard_currency = (
-                    wizard._get_total_amount_in_wizard_currency_to_full_reconcile(
-                        batch_result, early_payment_discount=False
-                    )[0]
-                )
-                wizard.payment_difference = (
-                    total_amount_residual_in_wizard_currency - wizard.amount
-                )
-            else:
-                wizard.payment_difference = 0.0
-
 
 
     @api.model
