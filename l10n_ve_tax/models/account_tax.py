@@ -1,6 +1,6 @@
 from odoo.tools.float_utils import float_round, float_compare
 from odoo import api, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from odoo.tools.misc import formatLang
 
 import logging
@@ -126,6 +126,7 @@ class AccountTax(models.Model):
 
         amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
 
+       
         res["foreign_total_amount_paid"] = float_round(
             sum(amounts),
             precision_digits=foreign_currency.decimal_places
@@ -162,53 +163,23 @@ class AccountTax(models.Model):
         return None
     
     def _get_total_paid_foreign(self, move, foreign_currency):
-        if not move:
+        if not move or not move.invoice_payments_widget:
             return []
-
+    
         amounts = []
-        invoice_payments = move.invoice_payments_widget
-        igtf_amount = 0
-
-        if not invoice_payments:
-            return amounts
-
-        content = invoice_payments.get('content') or []
+        # Odoo almacena esto como dict o como string JSON dependiendo de la versión/estado
+        widget_data = move.invoice_payments_widget
+        content = widget_data.get('content') or []
+        
         for payment in content:
+            # Extraemos directamente el valor que vemos en tu imagen
+            # Usamos .get() por seguridad si el campo no existe en algún pago
+            f_amount = payment.get('foreign_amount', 0.0)
             
-            move_id = payment.get('move_id')
-            payment_id = self.env['account.move'].browse(move_id)
-
-            if not payment_id:
-                continue
-            
-            company_fields = self.env['res.company']._fields
-            for line in payment_id.line_ids:
-                if (
-                    ('customer_account_igtf_id' in company_fields and line.account_id == self.env.company.customer_account_igtf_id) or 
-                    ('supplier_account_igtf_id' in company_fields and line.account_id == self.env.company.supplier_account_igtf_id)
-                ):
-                    igtf_amount = line.credit or line.debit
+            # Opcional: Validar que el pago sea de la moneda que buscas
+            # En tu imagen sale 'foreign_id': 2
+            amounts.append(f_amount)
                 
-            if self.env.company.currency_id == self.env.ref("base.VEF"): 
-                if payment_id.currency_id == foreign_currency:
-                    foreign_amt = payment_id.amount_total
-                    
-                else:
-                    foreign_amt = float_round(payment_id.amount_total * payment_id.foreign_inverse_rate, precision_digits=foreign_currency.decimal_places)
-            
-            else:
-                if payment_id.currency_id == foreign_currency:
-
-                    foreign_amt = payment_id.amount_total
-
-                else:
-                    foreign_amt = float_round((payment_id.amount_total) * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
-
-                    if  igtf_amount > 0:
-                        foreign_amt = float_round((payment_id.amount_total - igtf_amount) * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
-                    else:
-                        foreign_amt = float_round(payment_id.amount_total * payment_id.foreign_rate, precision_digits=foreign_currency.decimal_places)
-            amounts.append(foreign_amt)
         return amounts
 
     def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
