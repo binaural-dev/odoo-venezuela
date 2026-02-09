@@ -27,7 +27,7 @@ def get_default_name_by_vat(self, prefix_vat, vat):
         + str(vat)
     )
     try:
-        response = requests.get(URL, timeout=5)
+        response = requests.get(URL, timeout=20)
         soup = BeautifulSoup(response.text, "html.parser")
         info_table = soup.find_all("tr")
         for row in info_table:
