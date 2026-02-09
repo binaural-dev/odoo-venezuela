@@ -1,0 +1,23 @@
+<odoo>
+    <record id="move_action_cancel_advance_payment_wizard" model="ir.ui.view">
+        <field name="name">move.action.cancel.advance.payment.wizard.form</field>
+        <field name="model">move.action.cancel.advance.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Validation">
+                <group>
+                    <span class="o_form_label" style="font-size: 14px; white-space: nowrap;">
+                        Unreconciling/Canceling this payment/entry will cancel the cross-entry entries <br/>
+                        and the advance entry associated with it, as well as the current payment/entry.
+                        <field name="move_id" options="{'no_create': True}" readonly="1"/>
+                        <field name="cross_move_ids" widget="many2many_tags" options="{'no_create': True}" readonly="1"/>
+                        <field name="payment_id" readonly="1"/>
+                    </span>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Accept" type="object" class="oe_highlight" />
+                    <button name="action_cancel" string="Cancel" type="object" class="oe_secondary" />
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
