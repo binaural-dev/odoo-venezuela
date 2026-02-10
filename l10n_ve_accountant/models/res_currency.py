@@ -1,12 +1,4 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
-
-import logging
-
-_logger = logging.getLogger(__name__)
-from odoo.fields import Monetary
-from odoo.tools import float_repr
-
 class ResCurrency(models.Model):
     _inherit = "res.currency"
 
@@ -24,30 +16,24 @@ class ResCurrency(models.Model):
                 )
             )
 
-    def _convert(self, from_amount, to_currency, company=None, date=None, round=True):  
+    def _convert(self, from_amount, to_currency, company=None, date=None, round=False):  
+        """Returns the converted amount of ``from_amount``` from the currency
+           ``self`` to the currency ``to_currency`` for the given ``date`` and
+           company.
+
+           :param company: The company from which we retrieve the convertion rate
+           :param date: The nearest date from which we retriev the conversion rate.
+           :param round: Round the result or not
+        """
         
         self, to_currency = self or to_currency, to_currency or self
         assert self, "convert amount from unknown currency"
         assert to_currency, "convert amount to unknown currency"
+        # apply conversion rate
         if from_amount:
             to_amount = from_amount * self._get_conversion_rate(self, to_currency, company, date)
         else:
             return 0.0
 
-        return to_amount
-
-
-    def round(self, amount):
-        
-        self.ensure_one()
-        amount_float = float(amount)
-
-        try:
-            amount_float = float(amount)
-        except (ValueError, TypeError):
-            return super(ResCurrency, self).round(amount)
-
-        if abs(amount_float - round(amount_float, 6)) > 1e-9:
-            return amount_float
-
-        return super(ResCurrency, self).round(amount_float)
+        # apply rounding
+        return to_currency.round(to_amount) if round else to_amount
