@@ -239,6 +239,11 @@ msgstr "Alícuota reducida ventas"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Sale Tax International Rates"
+msgstr "Tasas de Impuestos de Ventas Internacionales"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
 msgid "Sales Book"
 msgstr "Libro de Ventas"
 
@@ -320,6 +325,11 @@ msgid "International purchase"
 msgstr "Compra internacional"
 
 #. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_account_journal__is_sale_international
+msgid "International sale"
+msgstr "Venta internacional"
+
+#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_international_purchase_in_book
 msgid "Not Show International Purchase In Book"
 msgstr "No mostrar compras internacionales en el libro"
@@ -362,3 +372,15 @@ msgid ""
 msgstr ""
 "Ya se ha habilitado un Diario de Compras Internacional. Solo se permite uno."
 
+#. module: l10n_ve_tax
+#. odoo-python
+#: code:addons/l10n_ve_tax/models/account_journal.py:0
+#, python-format
+msgid "An International Sale Journal is already enabled. Only one is allowed."
+msgstr "Ya se ha habilitado un Diario de Ventas Internacional. Solo se permite uno."
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__zero_aliquot_sale_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__zero_aliquot_sale_international
+msgid "Zero Aliquot Sale International"
+msgstr "Alícuota cero ventas internacionales"

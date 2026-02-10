@@ -42,6 +42,10 @@ class ResCompany(models.Model):
         "account.tax", domain=[("type_tax_use", "=", "purchase")]
     )
 
+    #International sale fields
+    zero_aliquot_sale_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "sale")])
+
+    #International purchase fields
     exent_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
     general_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
     reduced_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])

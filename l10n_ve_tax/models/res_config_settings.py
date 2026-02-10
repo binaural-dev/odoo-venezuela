@@ -69,6 +69,8 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
     )
 
+    zero_aliquot_sale_international = fields.Many2one("account.tax",
+        related="company_id.zero_aliquot_sale_international", readonly=False)
 
     exent_aliquot_purchase_international = fields.Many2one("account.tax",
         related="company_id.exent_aliquot_purchase_international", readonly=False)

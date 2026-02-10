@@ -79,6 +79,20 @@
                             </div>
                         </div>
 
+                        <h2>Sale Tax International Rates</h2>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sale_international">
+                            <div class="o_setting_left_pane">
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <div class="content-group">
+                                    <div class="row">
+                                        <label for="zero_aliquot_sale_international" class="col-lg-6 o_light_label"/>   
+                                        <field name="zero_aliquot_sale_international"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <h2>Purchases Tax Rates</h2>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_purchase">
                             <div class="o_setting_left_pane">
