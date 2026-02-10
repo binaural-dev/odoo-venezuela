@@ -18,9 +18,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     )
 
     def _get_domain_all_documents(self):
-        """
-        Returns two domains, one for free form documents and one for fiscal machine documents
-        
+        """ Get specific search domains for both free-form and fiscal machine documents.
+
+        This method generates two separate domains to allow retrieving documents 
+        from both sources independently:
+        1. domain_free_form: The standard domain for traditional invoices.
+        2. domain_fiscal_machine: A filtered domain that ensures the inclusion of 
+           fiscal machine specific data (Serial, Report Z, and Fiscal Number).
+
+        :return: A tuple containing (domain_free_form, domain_fiscal_machine).
+        :rtype: tuple(list, list)
         """
         domain_free_form = self._get_domain()
         domain_fiscal_machine = self._get_domain()
@@ -146,7 +153,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         }
 
     def parse_sale_book_data(self):
-        if not self.with_fiscal_machine and not self.all_documents:
+        if not self.with_fiscal_machine or self.all_documents:
             return super().parse_sale_book_data()
 
         sale_book_lines = []
