@@ -117,7 +117,7 @@ patch(PosStore.prototype, {
       );
     };
 
-    var base = round_di(price_unit * quantity, 4);
+    var base = round_pr(price_unit * quantity, currency_rounding);
 
     var sign = 1;
     if (base < 0) {
@@ -173,9 +173,9 @@ patch(PosStore.prototype, {
       });
     }
 
-    var total_excluded = round_di(
+    var total_excluded = round_pr(
       recompute_base(base, incl_tax_amounts),
-      4
+      currency_rounding
     );
     var total_included = total_excluded;
 
@@ -184,7 +184,7 @@ patch(PosStore.prototype, {
     base = total_excluded;
 
     var skip_checkpoint = false;
-
+    
     var taxes_vals = [];
     i = 0;
     var cumulated_tax_included_amount = 0;
@@ -233,7 +233,6 @@ patch(PosStore.prototype, {
       total_included += factorized_tax_amount;
       i += 1;
     });
-
     return {
       taxes: taxes_vals,
       total_excluded: sign * round_di(total_excluded, 4),
