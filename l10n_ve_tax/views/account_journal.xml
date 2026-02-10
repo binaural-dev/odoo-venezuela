@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             
             <field name="type" position="after">
+                <field name="is_sale_international" invisible="type != 'sale'"/>
                 <field name="is_purchase_international" invisible="type != 'purchase'"/>
             </field>
             
