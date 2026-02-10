@@ -2,7 +2,7 @@ import logging
 from odoo.tests import tagged, TransactionCase, Form
 from odoo import Command, fields
 from odoo.tools.float_utils import float_round
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError,UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -220,7 +220,7 @@ class TestAccountRetentionSequence(TransactionCase):
     def _create_retention(self, invoice,type_retention):
         today = fields.Date.today()
 
-        _logger.warning("Creatingaction_post retention for invoice %s", invoice.amount_total)
+        _logger.warning("Creating action_post retention for invoice %s", invoice.amount_total)
         _logger.warning("Creating retention for invoice %s", invoice.amount_untaxed)
         with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":'islr'})) as retention_form:
             retention_form.partner_id = self.partner_a
@@ -281,4 +281,40 @@ class TestAccountRetentionSequence(TransactionCase):
         self.assertEqual(retention.state, 'emitted')
         _logger.info(
             "test_05_approve_islr_retention --- successfully."
+        )
+
+    def test_06_approve_islr_without_payment_concept(self):
+        """Try creating a retention without payment_concept and attempt to get it approved."""
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        retention = self._create_retention(invoice,'islr')
+
+        #Identify the record to be changed
+        ret_line = retention.retention_line_ids[0]
+
+        retention.write({
+            "retention_line_ids": [Command.update(ret_line.id,{'payment_concept_id': False})]
+        })
+
+        with self.assertRaises(UserError):
+            retention.action_post()
+        _logger.info(
+            "test_06_approve_islr_without_payment_concept --- successfully."
+        )
+
+    def test_07_no_islr_supplier_journal_in_company(self):
+        """Try creating a retention with a company that does not have a ISLR supplier journal and attempt to get it approved."""
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        retention = self._create_retention(invoice,'islr')
+
+        #Edit de company
+        self.company.islr_supplier_retention_journal_id = False
+
+        with self.assertRaises(UserError):
+            retention.action_post()
+        _logger.info(
+            "test_06_approve_islr_without_payment_concept --- successfully."
         )
