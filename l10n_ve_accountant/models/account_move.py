@@ -112,14 +112,14 @@ class AccountMove(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         store=True,
-        digits="Tasa",
+       
         tracking=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
+        
         store=True,
         index=True,
         readonly=False,
@@ -171,11 +171,8 @@ class AccountMove(models.Model):
     @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
     def _compute_foreign_amount_residual(self):
         for rec in self:
-            if rec.amount_residual and self.env.company.currency_foreign_id and self.env.company.currency_foreign_id == self.env.ref("base.VEF"):
-                rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
-            else:
-                rec.foreign_amount_residual = rec.amount_residual / rec.foreign_inverse_rate
-
+            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+            
          
 
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
@@ -383,6 +380,7 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
+
         return moves
 
     @api.onchange("partner_id")
@@ -422,6 +420,9 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
+            
+
+
             new_journal_id = move.journal_id.id
             if old_journal_id and new_journal_id and old_journal_id != new_journal_id:
                 if move.is_invoice(include_receipts=True) and move.move_type in ('out_invoice', 'out_refund', 'out_receipt'):

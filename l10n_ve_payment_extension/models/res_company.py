@@ -46,3 +46,5 @@ class ResCompany(models.Model):
         string="Hide extra columns in Patent Municipal Report related to advances",
         default=False,
     )
+
+    hide_issue_date_of_municipal_withholding_receipt = fields.Boolean('Hide issue date of municipal withholding receipt',default=False)
