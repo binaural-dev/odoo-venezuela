@@ -18,16 +18,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     )
 
     def _get_domain_all_documents(self):
-        """ Get specific search domains for both free-form and fiscal machine documents.
-
-        This method generates two separate domains to allow retrieving documents 
-        from both sources independently:
-        1. domain_free_form: The standard domain for traditional invoices.
-        2. domain_fiscal_machine: A filtered domain that ensures the inclusion of 
-           fiscal machine specific data (Serial, Report Z, and Fiscal Number).
-
-        :return: A tuple containing (domain_free_form, domain_fiscal_machine).
-        :rtype: tuple(list, list)
+        """
+        Returns two domains, one for free form documents and one for fiscal machine documents
+        
         """
         domain_free_form = self._get_domain()
         domain_fiscal_machine = self._get_domain()
@@ -35,7 +28,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         domain_fiscal_machine.append(("mf_invoice_number", "!=", False))
         domain_fiscal_machine.append(("mf_reportz", "!=", False))
         domain_fiscal_machine.append(("mf_serial", "!=", False))
-        return domain_free_form, domain_fiscal_machine
+        return domain_free_form , domain_fiscal_machine
 
     def _get_domain(self):
         res = super()._get_domain()
@@ -53,16 +46,21 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             res = res.filtered_domain([("mf_serial", "!=", False)])
             res = res.sorted(key=lambda r: r.invoice_date)
             return res
-
+        if self.all_documents:
+            domain_free_form , domain_fiscal_machine = self._get_domain_all_documents()
+            account_moves_free_form = self.env["account.move"].search(domain_free_form, order="invoice_date asc")
+            account_moves_fiscal_machine = self.env["account.move"].search(domain_fiscal_machine, order="invoice_date asc")
+            moves = account_moves_free_form + account_moves_fiscal_machine
+            return moves.sorted(key=lambda r: r.invoice_date or r.date)
         move_model = self.env["account.move"]
         domain = self._get_domain()
         moves = move_model.search(domain, order="invoice_date asc")
         return moves
-    
+
     def _get_sale_book_field_groups(self):
         sale_groups = super()._get_sale_book_field_groups()
 
-        if not self.with_fiscal_machine:
+        if not self.with_fiscal_machine and not self.all_documents:
             return sale_groups
 
         new_fields = [
@@ -73,17 +71,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         for group in sale_groups:
             if group.get('header') == 'DETALLE DEL DOCUMENTO':
                 basic_fields = group['fields']
-                
+
                 insertion_index = -1
                 for i, field_dict in enumerate(basic_fields):
                     if field_dict.get('field') == 'move_type':
                         insertion_index = i + 1  
                         break
-                
+
                 if insertion_index != -1:
-                   
+
                     basic_fields.insert(insertion_index, new_fields[1]) 
-                    
+
                     basic_fields.insert(insertion_index, new_fields[0]) 
 
                 break 
@@ -149,7 +147,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         }
 
     def parse_sale_book_data(self):
-        if not self.with_fiscal_machine or self.all_documents:
+        if not self.with_fiscal_machine and not self.all_documents:
             return super().parse_sale_book_data()
 
         sale_book_lines = []

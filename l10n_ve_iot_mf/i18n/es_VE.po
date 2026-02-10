@@ -812,7 +812,7 @@ msgstr "La factura no fue impresa"
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__custom_header
 msgid "This check box allow to configure a custom header for the invoice"
-msgstr "Esta casilla de verificación permite configurar un encabezado personalizado para la factura"
+msgstr ""
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__ph01_header
@@ -921,20 +921,11 @@ msgid "iot.port"
 msgstr "Puerto IoT"
 
 #. module: l10n_ve_iot_mf
-#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__custom_header
-msgid "Activate Custom Header"
-msgstr "Activar Encabezado Personalizado"
-
-#. module: l10n_ve_iot_mf
-#: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__ph01_header
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/iot_handlers/drivers/SerialFiscalDriver.py:0
+#, python-format
 msgid ""
-"This field allow to configure a custom header for the invoice for the Fiscal"
-" machines without fabric configuration"
+"¡Error de impresora fiscal! La impresora fiscal actual no coincide con la "
+"usada en la factura original. Serial de la factura: %s. Serial de la "
+"impresora conectada: %s."
 msgstr ""
-"Este campo permite configurar un encabezado personalizado para la factura en "
-"las máquinas fiscales sin configuración de fábrica."
-
-#. module: l10n_ve_iot_mf
-#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__ph01_header
-msgid "Header of Invoice"
-msgstr "Encabezado de las facturas"
