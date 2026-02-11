@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250128\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251016\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-28 20:08+0000\n"
-"PO-Revision-Date: 2025-07-28 20:08+0000\n"
+"POT-Creation-Date: 2026-02-11 18:46+0000\n"
+"PO-Revision-Date: 2026-02-11 18:46+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -183,7 +183,6 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_location.py:0
-#: code:addons/l10n_ve_stock_account/models/stock_location.py:0
 #, python-format
 msgid "A consignation warehouse must have an assigned customer."
 msgstr "Un almacén de consignación debe tener un cliente asignado."
@@ -223,6 +222,13 @@ msgid "Allowed Reasons"
 msgstr "Razones Permitidas"
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_stock_inherit
+msgid "Apply only if transfer reason:\"Transfer between warehouses\" is selected."
+msgstr ""
+"Aplica unicamente si Motivo de traslado: \"Traslado entre almacenes\" está "
+"seleccionado."
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_location__partner_id
 msgid "Assigned Customer"
 msgstr "Cliente"
@@ -251,7 +257,6 @@ msgstr "Cancelada"
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
-#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid "Cannot sell more than the available consignation stock for product %s."
 msgstr ""
@@ -260,7 +265,6 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
 #: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
 #, python-format
 msgid "Cannot sell more than the available consignation stock."
@@ -290,11 +294,6 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_stock_account.model_res_config_settings
 msgid "Config Settings"
 msgstr "Ajustes de configuración"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_res_config_settings_l10n_ve_stock_account
-msgid "Configuration Dispatch Guide"
-msgstr "Configuración de Guía de Despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.actions.act_window,name:l10n_ve_stock_account.action_stock_move_line_consignation_report
@@ -469,6 +468,17 @@ msgid "Emited"
 msgstr "Emitida"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__is_subcontracting
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__is_subcontracting
+msgid "Enable Maquila option in Reason for Transfer"
+msgstr "Habilitar opción Maquila en Motivo de Transferencia"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_res_config_settings_l10n_ve_stock_account
+msgid "Enable the Maquila option in the Reasons for Transfer"
+msgstr "Habilitar la opción Maquila en los Motivos de Transferencia"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
 msgid "Exact time to generate the invoice"
 msgstr "Hora exacta para generar factura (ej: 18.5 = 18:30)"
@@ -582,6 +592,13 @@ msgid "Internal Journal"
 msgstr "Diario Interno"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__optional_internal_movement_guidance
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__optional_internal_movement_guidance
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__optional_internal_movement_guidance
+msgid "Internal picking with dispatched guidance ptional"
+msgstr "Traslado interno con guía de despacho opcional"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_location
 msgid "Inventory Locations"
 msgstr "Ubicaciones de inventario"
@@ -622,7 +639,6 @@ msgstr "Facturada"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_count
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_ids
@@ -693,7 +709,6 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/res_company.py:0
-#: code:addons/l10n_ve_stock_account/models/res_company.py:0
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_company__invoice_cron_type__last_business_day
 #, python-format
 msgid "Last Business Day"
@@ -701,7 +716,6 @@ msgstr "Último día hábil del mes"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/res_company.py:0
 #: code:addons/l10n_ve_stock_account/models/res_company.py:0
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_company__invoice_cron_type__last_day
 #, python-format
@@ -734,8 +748,12 @@ msgid "Los datos del cliente no existen"
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__match_guide_dispatch_domain
+msgid "Match Guide Dispatch Domain"
+msgstr ""
+
+#. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid ""
@@ -750,7 +768,6 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
-#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid ""
 "No default warehouse found. \n"
@@ -762,18 +779,12 @@ msgstr ""
 "y seleccione un almacén como 'Almacén Predeterminado'."
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_invoice_tree
-msgid "Guide Number"
-msgstr "Número de Guía"
-
-#. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__unique
 msgid "One invoice for all stock pickings"
 msgstr "Una factura para todas las guías de despacho"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_location.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_location.py:0
 #, python-format
 msgid ""
@@ -837,18 +848,12 @@ msgstr "Guías de Despacho"
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "Please configure the journal from settings"
 msgstr "Por favor configure el diario desde la configuración"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
@@ -859,7 +864,6 @@ msgstr "Por favor configure el diario desde la configuración."
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "Please select single type transfer"
 msgstr "Por favor seleccione un solo tipo de transferencia."
@@ -868,11 +872,6 @@ msgstr "Por favor seleccione un solo tipo de transferencia."
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__invoice_state__posted
 msgid "Posted"
 msgstr "Confirmada"
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__other_causes_transfer_reason
-msgid "Reason for transfer for other reasons"
-msgstr "Motivo del traslado por otros motivos"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -923,6 +922,16 @@ msgstr "Razón"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transfer_reason_id
 msgid "Reason for Transfer"
 msgstr "Motivo de traslado"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__other_causes_transfer_reason
+msgid "Reason for transfer for other reasons"
+msgstr "Motivo del traslado por otros motivos"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__reasons_optional_guide_dispatch
+msgid "Reasons Optional Guide Dispatch"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
@@ -1010,6 +1019,11 @@ msgid "Show Create Vendor Credit"
 msgstr "Show Crear crédito de proveedor"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_other_causes_transfer_reason
+msgid "Show Other Causes Transfer Reason"
+msgstr "Mostrar otras causas Motivo de transferencia"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__location_id
 msgid "Source Location"
 msgstr "Ubicación de origen"
@@ -1027,14 +1041,16 @@ msgid "State guide dispatch"
 msgstr "Estado de Guía"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_res_config_settings_l10n_ve_stock_account
-msgid "Stock Account Configuration"
-msgstr "Configuración de guía de despacho"
-
-#. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_move
 msgid "Stock Move"
 msgstr "Movimiento de stock"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__is_subcontracting
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__is_subcontracting
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_res_config_settings_l10n_ve_stock_account
+msgid "Subcontracting"
+msgstr "Maquila"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__has_document
@@ -1043,14 +1059,8 @@ msgstr ""
 "Campo técnico para verificar si el pedido de venta relacionado tiene un "
 "documento."
 
-#. module: l10n_ve_stock_accountAdd commentMore actions
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_other_causes_transfer_reason
-msgid "Show Other Causes Transfer Reason"
-msgstr "Mostrar otras causas Motivo de transferencia"
-
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid ""
@@ -1062,7 +1072,6 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid ""
@@ -1081,7 +1090,6 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
-#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 #, python-format
 msgid ""
 "The product %s is not available in the customer's consignation location."
@@ -1092,7 +1100,6 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
-#: code:addons/l10n_ve_stock_account/models/sale_order_line.py:0
 #, python-format
 msgid "The product is not available in the customer's consignation location."
 msgstr ""
@@ -1101,14 +1108,12 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_warehouse.py:0
-#: code:addons/l10n_ve_stock_account/models/stock_warehouse.py:0
 #, python-format
 msgid "There can only be one consignation warehouse."
 msgstr "Solo puede haber un almacén de consignación."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #, python-format
 msgid "This guide has at least one posted invoice, please check your invoice."
@@ -1189,6 +1194,20 @@ msgid "Unit of Measure"
 msgstr "Unidad de medida"
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_view_picking_form
+msgid ""
+"Upon confirmation, the system will generate the number of sequences of "
+"shipping guides."
+msgstr ""
+"Al confirmar esta operación, se generará automáticamente el número de "
+"secuencia de la guía de despacho correspondiente"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_view_picking_form
+msgid "Validate"
+msgstr "Validar"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
 msgid ""
 "Validating this operation with the reason <b>SELF CONSUMPTION</b> will "
@@ -1203,6 +1222,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__vendor_journal_id
 msgid "Vendor Journal"
 msgstr "Diario de proveedores"
+
+#. module: l10n_ve_stock_account
+#: model:res.groups,name:l10n_ve_stock_account.group_stock_account
+msgid "Ver botón \"Crear Factura\""
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_warehouse
@@ -1223,7 +1247,9 @@ msgstr "No puedes crear facturas para guías de despacho internas."
 #: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
 #, python-format
 msgid "You can only create invoices for pickings in the 'To Invoice' state."
-msgstr "Solamente puedes crear facturas para guías de despacho con el estado 'Por facturar'."
+msgstr ""
+"Solamente puedes crear facturas para guías de despacho con el estado 'Por "
+"facturar'."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -1231,45 +1257,13 @@ msgstr "Solamente puedes crear facturas para guías de despacho con el estado 'P
 #: code:addons/l10n_ve_stock_account/wizard/picking_invoice_wizard.py:0
 #, python-format
 msgid "You can only create invoices for pickings with the same partner."
-msgstr "Solamente se pueden crear facturas para guías de despacho con el mismo cliente"
+msgstr ""
+"Solamente se pueden crear facturas para guías de despacho con el mismo "
+"cliente"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-#, python-format
-msgid "You cannot create an invoice from this picking for this state."
-msgstr "No puede crear una factura de estos picking por el estado."
-
-#. module: l10n_ve_stock_account
-#. odoo-python
-#: code:addons/l10n_ve_stock_account/models/ir_actions_report.py:0
 #: code:addons/l10n_ve_stock_account/models/ir_actions_report.py:0
 #, python-format
 msgid "You cannot download a freeform from a vendor bill."
 msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_view_picking_form
-msgid "Validate"
-msgstr "Validar"
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__optional_internal_movement_guidance
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__optional_internal_movement_guidance
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__optional_internal_movement_guidance
-msgid "Internal picking with dispatched guidance ptional"
-msgstr "Traslado interno con guía de despacho opcional"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_view_picking_form
-msgid ""
-"Upon confirmation, the system will generate the number of sequences of "
-"shipping guides."
-msgstr ""
-"Al confirmar esta operación, se generará automáticamente el número de "
-"secuencia de la guía de despacho correspondiente"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_stock_inherit
-msgid "Apply only if transfer reason:\"Transfer between warehouses\" is selected."
-msgstr "Aplica unicamente si Motivo de traslado: \"Traslado entre almacenes\" está seleccionado."
