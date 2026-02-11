@@ -91,7 +91,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                     total_igtf_amount += igtf_for_invoice
                 final_amount = base_amount + total_igtf_amount
-            
             wizard.amount = final_amount
             wizard.igtf_amount = total_igtf_amount
             wizard.igtf_to_show = total_igtf_amount
@@ -117,7 +116,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 currency = wizard.currency_id 
                 precision = currency.rounding
                 batch_result = wizard.batches
-                
+        
                 expected_amount = 0.0
                 if isinstance(batch_result, dict) and 'lines' in batch_result:
                     amounts = wizard._get_total_amounts_to_pay(batch_result)
@@ -146,28 +145,26 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     wizard.payment_difference = rounded_difference
                     wizard.show_payment_difference = True
 
+
     @api.onchange("igtf_to_show")
     def _compute_amount_without_difference(self):
         for rec in self:
             
             amount_without_difference = 0.0
-
             move_ids=self.get_moves()
             for move_id in move_ids:
+                source_amount = self.source_amount
+                due_currency_id = self.source_currency_id
+                residual = due_currency_id._convert(source_amount,self.currency_id,company=move_id.company_id,date=self.payment_date) 
                 
-                if rec.company_currency_id and rec.company_currency_id != self.env.ref("base.VEF"):
-                    if rec.amount <= move_id.amount_residual + move_id.amount_residual * (rec.igtf_percentage / 100):
-                        amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
-                    
-                    elif rec.amount > move_id.amount_residual + move_id.amount_residual * (rec.igtf_percentage / 100) :
-                        amount_without_difference = amount_without_difference + move_id.amount_residual   
-                else:
-                    if rec.amount <= move_id.amount_residual_signed + move_id.amount_residual_signed * (rec.igtf_percentage / 100):
-                        amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
-                    
-                    elif rec.amount > move_id.amount_residual_signed + move_id.amount_residual_signed * (rec.igtf_percentage / 100) :
-                        amount_without_difference = amount_without_difference + move_id.amount_residual_signed  
+                if rec.amount <= residual + residual * (rec.igtf_percentage / 100):
+                    amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
+                
+                elif rec.amount > residual + residual * (rec.igtf_percentage / 100) :
+                    amount_without_difference = amount_without_difference + residual  
+            
             rec.amount_without_difference = amount_without_difference
+
                              
     @api.onchange("journal_id","currency_id")
     def _compute_check_igtf(self):
@@ -177,7 +174,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if payment.journal_id.is_igtf and payment.partner_id:
                 move_ids=self.get_moves()
                 for move_id in move_ids:
-                    if payment.partner_id._check_igtf_apply_improved(move_id.move_type):
+                    if payment.partner_id._check_igtf_apply_improved(move_id.move_type) and payment.currency_id != self.env.ref("base.VEF"):
                         payment.is_igtf = True
       
     @api.onchange("is_igtf", "igtf_to_show")
@@ -187,9 +184,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if payment.is_igtf:
                 payment.amount_with_igtf = payment.amount + payment.igtf_to_show
 
-    @api.onchange("amount")
+    @api.onchange("amount","payment_date")
     def _onchange_amount(self):
         for payment in self:
+            
             
             diff = payment.amount - payment.last_computed_amount
             if float_is_zero(diff, precision_rounding=payment.currency_id.rounding):
@@ -217,23 +215,44 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         currency = invoice.currency_id
         precision = currency.rounding
+        
+        due_currency_id = invoice.currency_id
+        due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,self.payment_date)
+
         payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,self.payment_date)
-        principal_debt = invoice.amount_total_signed
+        principal_debt = due_amount
 
         principal_amount = min(payment_amount, principal_debt)
         
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
 
-        igtf_top = invoice.igtf_top_aply
+        igtf_top =  invoice.igtf_top_aply
+
+        alter_bi_igtf = invoice.alter_bi_igtf
 
         igtf= igtf_unrounded
 
-        invoice_residual = invoice.amount_residual_signed
+        invoice_residual = due_amount
 
-        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top > invoice_residual:
+    
+        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
             
             return 0.0
         
+
+        residual_igtf = igtf_top - alter_bi_igtf
+
+        if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
+            return 0.0
+        
+        if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
+            
+            igtf = residual_igtf
+
+        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
+            
+            return 0.0 
+                
         if not base:
             return self.convert_to_external_currency(payment_currency, igtf, self.payment_date)
         else:
@@ -386,6 +405,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 "is_igtf_on_foreign_exchange": self.is_igtf_on_foreign_exchange
             }
         )
+
         return payment_vals
    
     def _create_payment_vals_from_batch(self, batch_result):
@@ -444,3 +464,170 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             for aml_values_list in early_payment_values.values():
                 payment_vals['write_off_line_vals'] += aml_values_list
         return payment_vals
+
+
+    def _create_payments(self):
+        """
+        This method is called when the wizard is submitted. It will create a move to reconcile with the payment difference
+
+        Returns:
+            list: account.payment
+        """
+        payments = super()._create_payments()
+        ignore_gtf = self.env.context.get("ignore_igtf", False)
+
+        
+        is_provider =  self.partner_type == 'supplier'
+
+        source_amount = self.source_amount
+        due_currency_id = self.source_currency_id
+        
+        due_amount = self.company_id.currency_id._convert( source_amount,self.currency_id,company=self.company_id,date=self.payment_date)
+        #raise UserError(_("source_amount: %s, due_currency_id: %s") % (source_amount, due_currency_id))
+       
+        for payment in payments:
+            
+            if payment.igtf_amount:
+
+                amount = payment.amount
+            
+                if not ignore_gtf:
+                    
+                    due_amount += payment.igtf_amount 
+
+
+                self.group_payment = False
+
+                #raise UserError(_("amount: %s, due_amount: %s") % (amount, due_amount))
+                if (
+                    float_compare(amount, due_amount, precision_rounding=self.currency_id.rounding) == 1
+                    and payment.igtf_amount 
+                    and self.payment_difference_handling != 'reconcile' 
+                    and not self.group_payment
+                ):
+                    difference = amount - due_amount
+                    
+                    move_to_reconcile_with_payment_difference = (
+                        self._create_move_to_reconcile_with_payment_difference(payment,difference,due_currency_id)
+                    )
+                    if move_to_reconcile_with_payment_difference:
+                        move_to_reconcile_with_payment_difference.action_post()
+                    
+                        if is_provider:
+                            self._reconcile_payment_provider_and_move_lines(
+                                payment, move_to_reconcile_with_payment_difference
+                            )
+                        else:
+                            self._reconcile_payment_and_move_lines(
+                                payment, move_to_reconcile_with_payment_difference
+                            )
+                        payment.write({"advanced_move_ids": [(4, move_to_reconcile_with_payment_difference.id)]})
+        return payments
+
+    def _create_move_to_reconcile_with_payment_difference(self, payment, diff,due_currency_id):
+        """
+        Create a move to reconcile with the payment difference
+
+        Args:
+            payment (account.payment): Payment object
+
+        Returns:
+            account.move: Move object
+        """
+        advance_account_id = (
+            self.env.company.advance_customer_account_id.id
+            if payment.partner_type == "customer"
+            else self.env.company.advance_supplier_account_id.id
+        )
+
+        partner_account_id = (
+            payment.partner_id.property_account_receivable_id.id
+            if payment.partner_type == "customer"
+            else payment.partner_id.property_account_payable_id.id
+        )
+
+        amount_currency = diff
+        currency = payment.currency_id
+       
+
+        
+        if abs(amount_currency) != 0.0:
+            payment_line_ids = [
+                Command.create(
+                    {
+                        "account_id": advance_account_id,
+                        "amount_currency": -amount_currency,
+                        "payment_id_advance": payment.id,
+                        "currency_id":currency.id
+                    },
+                ),
+                Command.create(
+                    {
+                        "account_id": partner_account_id,
+                        "amount_currency": amount_currency,
+                        "payment_id_advance": payment.id,
+                        "currency_id":currency.id
+                    },
+                ),
+            ]
+                
+            move_to_reconcile_with_payment_difference = self.env["account.move"].create(
+                {
+                    "journal_id": self.env.company.advance_payment_igtf_journal_id.id,
+                    "date": payment.date,
+                    "partner_id": payment.partner_id.id,
+                    "vat": payment.partner_id.vat,
+                    "ref": "RESTANTE DE PAGO EN DIVISA" + "(" + payment.name + ")",
+                    "is_advance_move": True,
+                    "line_ids": payment_line_ids,
+                    "origin_payment_advanced_payment_id": payment.id
+                }
+            )
+
+          
+            return move_to_reconcile_with_payment_difference
+        
+
+    def _reconcile_payment_and_move_lines(self, payment, move):
+        """
+        Reconcile payment and move lines
+
+        Args:
+            payment (account.payment): Payment object
+            move (account.move): Move object
+        """
+        asset_receivable_lines = move.line_ids.filtered(
+            lambda x: x.account_id.account_type == "asset_receivable" and not x.reconciled
+        )
+        payment_line = payment.move_id.line_ids.filtered(
+            lambda x: x.account_id.account_type == "asset_receivable" and not x.reconciled
+        )
+        if asset_receivable_lines and payment_line:
+            payment_line_to_reconcile = self.env["account.move.line"].browse([payment_line.id])
+            payment_line_to_reconcile |= asset_receivable_lines
+            payment_line_to_reconcile.reconcile()
+
+    
+    def _reconcile_payment_provider_and_move_lines(self, payment, move):
+        """
+        Reconcile payment and move lines from provider.
+
+        Args:
+            payment (account.payment): Payment object
+            move (account.move): Move object
+        """
+        liability_payable_lines = move.line_ids.filtered(
+            lambda x: x.account_id.account_type == "liability_payable" and not x.reconciled
+        )
+        payment_line = payment.line_ids.filtered(
+            lambda x: x.account_id.account_type == "liability_payable" and not x.reconciled
+        )
+        if liability_payable_lines and payment_line:
+            payment_line_to_reconcile = self.env["account.move.line"].browse([payment_line.id])
+            payment_line_to_reconcile |= liability_payable_lines
+            payment_line_to_reconcile.reconcile()
+
+   
+
+
+    

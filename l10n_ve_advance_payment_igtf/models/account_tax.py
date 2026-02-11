@@ -71,9 +71,6 @@ class AccountTax(models.Model):
             invoice.invoice_date
             )
 
-        
-            foreign_base_igtf =invoice.foreign_bi_igtf
-
         igtf_base_amount = base_igtf 
         igtf_foreign_base_amount = foreign_base_igtf 
 
@@ -131,29 +128,4 @@ class AccountTax(models.Model):
 
         return res
 
-    def process_payments_to_igtf(self,invoice):
-        invoice_payments_widget = invoice.invoice_payments_widget
-        content = invoice_payments_widget.get("content", False) if invoice_payments_widget else False
-
-        if not content:
-            return 0
-
-        payments_id = [
-            payment['account_payment_id']
-            for payment in content
-            if 'account_payment_id' in payment
-        ]
-
-        payments = self.env["account.payment"].browse(payments_id)
-
-        payments_igtf = payments.filtered(lambda p: p.is_igtf_on_foreign_exchange)
-
-        amount_to_igtf = [
-            payment["amount"]
-            for payment in content
-            if 'account_payment_id' in payment and payment['account_payment_id'] in payments_igtf.ids
-        ]
-        total_amount_to_igtf = sum(amount_to_igtf)  
-
-        return total_amount_to_igtf
 

@@ -251,13 +251,6 @@ msgstr "Porcentaje de IGTF"
 msgid "IGTF Percentage Aplicado"
 msgstr "Porcentaje de IGTF"
 
-#. module: l10n_ve_advance_payment_igtf
-#: model:ir.model.fields,field_description:l10n_ve_advance_payment_igtf.field_account_bank_statement_line__amount_residual_igtf
-#: model:ir.model.fields,field_description:l10n_ve_advance_payment_igtf.field_account_move__amount_residual_igtf
-#: model:ir.model.fields,help:l10n_ve_advance_payment_igtf.field_account_bank_statement_line__amount_residual_igtf
-#: model:ir.model.fields,help:l10n_ve_advance_payment_igtf.field_account_move__amount_residual_igtf
-msgid "IGTF Residual"
-msgstr "IGTF Restante"
 
 #. module: l10n_ve_advance_payment_igtf
 #: model:ir.model.fields,help:l10n_ve_advance_payment_igtf.field_account_payment_register__igtf_percentage
@@ -564,11 +557,12 @@ msgstr "Total con IGTF"
 #. module: l10n_ve_advance_payment_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_advance_payment_igtf.move_action_cancel_advance_payment_wizard
 msgid ""
-"Unreconciling/Canceling this payment/entry will cancel the cross-entry entries <br/>\n"
-"                        and the advance entry associated with it, as well as the current payment/entry."
+"Unreconciling or Canceling this Payment/Entry will cancel the cross-entry "
+"entries (or cross moves) related to the payment."
 msgstr ""
-"Al desconciliar/cancelar este pago/asiento se cancelarán los asientos cruzados <br/>\n"
-"                        y el asiento de anticipo asociado, así como el pago/asiento actual."
+"Desconciliar o Cancelar este Pago/Asiento contable cancelará los asientos de"
+" contrapartida (o movimientos cruzados) relacionados con el pago."
+
 
 #. module: l10n_ve_advance_payment_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_advance_payment_igtf.move_action_cancel_advance_payment_wizard

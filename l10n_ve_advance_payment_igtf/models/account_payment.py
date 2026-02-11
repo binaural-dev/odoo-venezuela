@@ -1,6 +1,7 @@
 from odoo import api, models, fields, _, Command
 from odoo.exceptions import UserError
 from odoo.tools import float_is_zero , float_compare
+from odoo.tools import SQL
 
 import logging
 
@@ -18,7 +19,7 @@ class AccountPaymentAndIgtf(models.Model):
         "account.move",
         "origin_payment_advanced_payment_id",
         string="Asientos de Anticipo",
-        domain="[('move_type', '=', 'entry')]",
+        domain="[('move_type', '=', 'entry'), ('state', 'not in', ('draft', 'cancel'))]",
         help="Anticipos (account.move) aplicados a este pago.",
         copy=False,
     )
@@ -43,16 +44,18 @@ class AccountPaymentAndIgtf(models.Model):
     )
 
     payment_from_wizard = fields.Boolean()
-
-    @api.onchange('is_advance_payment','destination_account_id')
-    def _onchange_destination_account(self):
-        for rec in self:
+                
+    @api.onchange('journal_id','destination_account_id')
+    def _onchange_journal_id(self):
+       for rec in self:
             customer_account = rec.company_id.advance_customer_account_id.id
             supplier_account = rec.company_id.advance_supplier_account_id.id
-            if rec.is_advance_payment and rec.destination_account_id.id not in [customer_account,supplier_account]:
-                raise UserError(_("Account Destination must be advance account configured in Settings"))
-                
-
+            if rec.journal_id and rec.journal_id.is_igtf:
+                if rec.destination_account_id.id not in [customer_account, supplier_account]:
+                    raise UserError(
+                        _(
+                            "The selected journal is configured for IGTF and fiscal, so the destination account must be either the advance customer account or the advance supplier account."
+                        ))
 
     @api.depends(
         "journal_id", "partner_id", "partner_type",  "is_advance_payment"
@@ -222,7 +225,7 @@ class AccountPaymentAndIgtf(models.Model):
     def _compute_is_igtf(self):
         for payment in self:
             payment.is_igtf_on_foreign_exchange = False
-            if payment.journal_id.is_igtf:
+            if payment.journal_id.is_igtf and payment.journal_id.currency_id and payment.journal_id.currency_id != self.env.ref("base.VEF"):
                 payment.is_igtf_on_foreign_exchange = True
                    
     def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
@@ -242,45 +245,50 @@ class AccountPaymentAndIgtf(models.Model):
         
         currency = invoice.currency_id
         precision = currency.rounding
-        payment_amount = self.convert_to_company_currency(payment_currency, amount_payment)
-        principal_debt = invoice.amount_total_signed
+        
+        due_currency_id = invoice.currency_id
+        due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,fields.Date.today())
+
+        payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,fields.Date.today())
+        principal_debt = due_amount
 
         principal_amount = min(payment_amount, principal_debt)
         
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
 
-        igtf_top = invoice.igtf_top_aply
+        igtf_top =  invoice.igtf_top_aply
 
         alter_bi_igtf = invoice.alter_bi_igtf
 
         igtf= igtf_unrounded
 
-        invoice_residual = invoice.amount_residual_signed
+        invoice_residual = due_amount
+
     
         if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
             
             return 0.0
         
-        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
-            
-            return 0.0
-        
-        #raise UserError(igtf)
 
-        """ residual_igtf = igtf_top - alter_bi_igtf
+        residual_igtf = igtf_top - alter_bi_igtf
 
         if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
             return 0.0
         
         if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
-            igtf = residual_igtf """
+            
+            igtf = residual_igtf
+
+        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
+            
+            return 0.0 
+                
         if not base:
-            #raise UserError(self.convert_to_external_currency(payment_currency, igtf))
-            return self.convert_to_external_currency(payment_currency, igtf)
+            return self.convert_to_external_currency(payment_currency, igtf, fields.Date.today())
         else:
             return igtf
     
-    def convert_to_company_currency(self, from_currency,amount):
+    def convert_to_company_currency(self, from_currency,amount,date =False):
         """
         Convierte un monto desde una moneda específica a la moneda base de la compañía.
         """
@@ -294,12 +302,12 @@ class AccountPaymentAndIgtf(models.Model):
             amount, 
             company_currency, 
             self.company_id, 
-            fields.Date.today()
+            date or fields.Date.today()
         )
         
         return converted_amount
     
-    def convert_to_external_currency(self, from_currency,amount):
+    def convert_to_external_currency(self, from_currency,amount,date =False):
      
         self.ensure_one()
         company_currency = self.company_id.currency_id
@@ -308,7 +316,7 @@ class AccountPaymentAndIgtf(models.Model):
             amount, 
             from_currency, 
             self.company_id, 
-            fields.Date.today()
+            date or fields.Date.today()
         )
         
         return converted_amount
@@ -347,7 +355,7 @@ class AccountPaymentAndIgtf(models.Model):
                 if rec.partner_type == "customer"
                 else self.env.company.supplier_account_igtf_id.id
             )
-            igtf_amount = currency.round(rec.igtf_amount)
+            igtf_amount = rec.igtf_amount
             account_id = igtf_account if rec.igtf_percentage else None
             
             precision = currency.rounding
@@ -362,6 +370,9 @@ class AccountPaymentAndIgtf(models.Model):
                         "partner_id": rec.partner_id.id,
                     }
                 )
+
+
+
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
@@ -423,10 +434,6 @@ class AccountPaymentAndIgtf(models.Model):
                 credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
                 credit_line = credit_line_unrounded
                 credit_amount = self.convert_to_company_currency(currency,-credit_line)
-                #credit_amount = -credit_line
-                """ if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    
-                    credit_amount = -(credit_line / rec.foreign_inverse_rate) """
                 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
@@ -449,10 +456,7 @@ class AccountPaymentAndIgtf(models.Model):
 
                 debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
                 debit_line = debit_line_unrounded
-                debit_amount = debit_line
-                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    
-                    debit_amount = debit_line / rec.foreign_inverse_rate
+                debit_amount = self.convert_to_company_currency(currency,debit_line)
                 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
@@ -483,13 +487,14 @@ class AccountPaymentAndIgtf(models.Model):
                         "views": [[False, "form"]],
                         "target": "new",
                         "context": {
-                            "default_move_id": False,
+                            "default_move_id": record.move_id.id,
                             "default_cross_move_ids": record.advanced_move_ids.ids,
                             "default_payment_id": record.id if record else False,
                             "default_partial_id": False,
                         },
                     }
-        return super(AccountPaymentAndIgtf, self).action_cancel()
+            
+            return super(AccountPaymentAndIgtf, self).action_cancel()
 
     def action_draft(self):
         for record in self:
@@ -502,10 +507,129 @@ class AccountPaymentAndIgtf(models.Model):
                         "views": [[False, "form"]],
                         "target": "new",
                         "context": {
-                            "default_move_id": False,
+                            "default_move_id": record.move_id.id,
                             "default_cross_move_ids": record.advanced_move_ids.ids,
                             "default_payment_id": record.id if record else False,
                             "default_partial_id": False,
                         },
                     }
-        return super(AccountPaymentAndIgtf, self).action_draft()
+            partial_id = False
+            move_lines = record.move_id.line_ids
+            partial_rec = (move_lines.matched_debit_ids | move_lines.matched_credit_ids)[:1]
+            if partial_rec:
+                partial_id = partial_rec.id
+                
+            if partial_id:
+                record.move_id.remove_igtf_from_account_move(partial_id)
+                record.move_id.line_ids.remove_move_reconcile()
+            return super(AccountPaymentAndIgtf, self).action_draft()
+    
+    #Overrida
+    @api.depends('move_id.line_ids.matched_debit_ids', 'move_id.line_ids.matched_credit_ids')
+    def _compute_stat_buttons_from_reconciliation(self):
+        ''' Retrieve the invoices reconciled to the payments through the reconciliation (account.partial.reconcile). '''
+        stored_payments = self.filtered('id')
+        if not stored_payments:
+            self.reconciled_invoice_ids = False
+            self.reconciled_invoices_count = 0
+            self.reconciled_invoices_type = False
+            self.reconciled_bill_ids = False
+            self.reconciled_bills_count = 0
+            self.reconciled_statement_line_ids = False
+            self.reconciled_statement_lines_count = 0
+            return
+
+        self.env['account.payment'].flush_model(fnames=['move_id', 'outstanding_account_id'])
+        self.env['account.move'].flush_model(fnames=['move_type', 'origin_payment_id', 'statement_line_id'])
+        self.env['account.move.line'].flush_model(fnames=['move_id', 'account_id', 'statement_line_id'])
+        self.env['account.partial.reconcile'].flush_model(fnames=['debit_move_id', 'credit_move_id'])
+
+        self.env.cr.execute('''
+            SELECT
+                payment.id,
+                ARRAY_AGG(DISTINCT invoice.id) AS invoice_ids,
+                invoice.move_type
+            FROM account_payment payment
+            JOIN account_move move ON move.id = payment.move_id
+            JOIN account_move_line line ON line.move_id = move.id
+            JOIN account_partial_reconcile part ON
+                part.debit_move_id = line.id
+                OR
+                part.credit_move_id = line.id
+            JOIN account_move_line counterpart_line ON
+                part.debit_move_id = counterpart_line.id
+                OR
+                part.credit_move_id = counterpart_line.id
+            JOIN account_move invoice ON invoice.id = counterpart_line.move_id
+            JOIN account_account account ON account.id = line.account_id
+            WHERE account.account_type IN ('asset_receivable', 'liability_payable')
+                AND payment.id IN %(payment_ids)s
+                AND line.id != counterpart_line.id
+                AND invoice.move_type in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')
+            GROUP BY payment.id, invoice.move_type
+        ''', {
+            'payment_ids': tuple(stored_payments.ids)
+        })
+        query_res = self.env.cr.dictfetchall()
+
+        for pay in self:
+            
+            pay.reconciled_invoice_ids = pay.invoice_ids.filtered(lambda m: m.is_sale_document(True))
+            pay.reconciled_bill_ids = pay.invoice_ids.filtered(lambda m: m.is_purchase_document(True))
+
+        if not query_res:
+            self.reconciled_invoice_ids = False
+            self.reconciled_invoices_count = 0
+            self.reconciled_invoices_type = False
+            self.reconciled_bill_ids = False
+            self.reconciled_bills_count = 0
+            self.reconciled_statement_line_ids = False
+            self.reconciled_statement_lines_count = 0
+            return
+        
+        for res in query_res:
+            pay = self.browse(res['id'])
+            
+            if res['move_type'] in self.env['account.move'].get_sale_types(True):
+                value = self.env['account.move'].browse(res.get('invoice_ids', []))
+                
+                pay.reconciled_invoice_ids |= self.env['account.move'].browse(res.get('invoice_ids', []))
+            else:
+                pay.reconciled_bill_ids |= self.env['account.move'].browse(res.get('invoice_ids', []))
+
+        for pay in self:
+            pay.reconciled_invoices_count = len(pay.reconciled_invoice_ids)
+            pay.reconciled_bills_count = len(pay.reconciled_bill_ids)
+
+        query_res = dict(self.env.execute_query(SQL('''
+            SELECT
+                payment.id,
+                ARRAY_AGG(DISTINCT counterpart_line.statement_line_id) AS statement_line_ids
+            FROM account_payment payment
+            JOIN account_move move ON move.id = payment.move_id
+            JOIN account_move_line line ON line.move_id = move.id
+            JOIN account_account account ON account.id = line.account_id
+            JOIN account_partial_reconcile part ON
+                part.debit_move_id = line.id
+                OR
+                part.credit_move_id = line.id
+            JOIN account_move_line counterpart_line ON
+                part.debit_move_id = counterpart_line.id
+                OR
+                part.credit_move_id = counterpart_line.id
+            WHERE account.id = payment.outstanding_account_id
+                AND payment.id IN %(payment_ids)s
+                AND line.id != counterpart_line.id
+                AND counterpart_line.statement_line_id IS NOT NULL
+            GROUP BY payment.id
+        ''', payment_ids=tuple(stored_payments.ids)
+        )))
+
+        for pay in self:
+            statement_line_ids = query_res.get(pay.id, [])
+            pay.reconciled_statement_line_ids = [Command.set(statement_line_ids)]
+            pay.reconciled_statement_lines_count = len(statement_line_ids)
+            if len(pay.reconciled_invoice_ids.mapped('move_type')) == 1 and pay.reconciled_invoice_ids[0].move_type == 'out_refund':
+                pay.reconciled_invoices_type = 'credit_note'
+            else:
+                pay.reconciled_invoices_type = 'invoice'

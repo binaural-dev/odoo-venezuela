@@ -4,14 +4,16 @@
         <field name="model">move.action.cancel.advance.payment.wizard</field>
         <field name="arch" type="xml">
             <form string="Validation">
+                <div class="oe_title"> 
+                    
+                    <h5>Unreconciling or Canceling this Payment/Entry will cancel the cross-entry entries (or cross moves) related to the payment.</h5>
+                    
+                </div>
                 <group>
-                    <span class="o_form_label" style="font-size: 14px; white-space: nowrap;">
-                        Unreconciling/Canceling this payment/entry will cancel the cross-entry entries <br/>
-                        and the advance entry associated with it, as well as the current payment/entry.
-                        <field name="move_id" options="{'no_create': True}" readonly="1"/>
-                        <field name="cross_move_ids" widget="many2many_tags" options="{'no_create': True}" readonly="1"/>
-                        <field name="payment_id" readonly="1"/>
-                    </span>
+                    
+                    <field name="move_id" string ="Factura" options="{'no_create': True}" readonly="1" force_save='True'/>
+                    <field name="cross_move_ids" string ="Asientos de Cruce" widget="many2many_tags" options="{'no_create': True}" readonly="1"/>
+                    <field name="payment_id" invisible="1" force_save='True'/>
                 </group>
                 <footer>
                     <button name="action_confirm" string="Accept" type="object" class="oe_highlight" />

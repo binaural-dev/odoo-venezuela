@@ -145,7 +145,6 @@ class AccountMove(models.Model):
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        digits="Tasa",
         store=True,
         tracking=True,
     )
@@ -169,11 +168,9 @@ class AccountMove(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=default_inverse_rate,
         store=True,
         index=True,
     )
-
 
     move_currency_to_company_currency_rate = fields.Float(
         string="Move Currency to Company Currency Rate",
@@ -223,10 +220,6 @@ class AccountMove(models.Model):
     foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
                                             compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
-    @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
-        context = self.with_context(active_test=False)
-        return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
 
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
@@ -505,12 +498,6 @@ class AccountMove(models.Model):
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
-
-        if "journal_id" in vals:
-            for move in self:
-                old_journal_id = move.journal_id.id
-        else:
-            old_journal_id = None
 
         res = super().write(vals)
         for move in self:

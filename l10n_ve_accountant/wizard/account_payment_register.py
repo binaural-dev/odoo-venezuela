@@ -110,7 +110,7 @@ class AccountPaymentRegister(models.TransientModel):
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
     )
     
-    @api.depends("currency_id")
+    @api.depends("currency_id","foreign_rate")
     def _compute_rates(self):
         """
         Compute the currency and compute the foreign rate

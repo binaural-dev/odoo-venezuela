@@ -29,7 +29,7 @@ class AccountMoveLine(models.Model):
     foreign_price = fields.Float(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
-        digits="Foreign Product Price",
+        #digits="Foreign Product Price",
         store=True,
         readonly=False,
     )
@@ -495,3 +495,75 @@ class AccountMoveLine(models.Model):
     def _onchange_price_unit(self):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
+
+    
+    @api.depends('debit', 'credit', 'amount_currency', 'account_id', 'currency_id', 'company_id',
+                 'matched_debit_ids', 'matched_credit_ids')
+    def _compute_amount_residual(self):
+        """ Computes the residual amount of a move line from a reconcilable account in the company currency and the line's currency.
+            This amount will be 0 for fully reconciled lines or lines from a non-reconcilable account, the original line amount
+            for unreconciled lines, and something in-between for partially reconciled lines.
+        """
+        need_residual_lines = self.filtered(lambda x: x.account_id.reconcile or x.account_id.account_type in ('asset_cash', 'liability_credit_card'))
+        # Run the residual amount computation on all lines stored in the db. By
+        # using _origin, new records (with a NewId) are excluded and the
+        # computation works automagically for virtual onchange records as well.
+        stored_lines = need_residual_lines._origin
+
+        if stored_lines:
+            self.env['account.partial.reconcile'].flush_model()
+            self.env['res.currency'].flush_model(['decimal_places'])
+
+            aml_ids = tuple(stored_lines.ids)
+            self._cr.execute('''
+                SELECT
+                    part.debit_move_id AS line_id,
+                    'debit' AS flag,
+                    COALESCE(SUM(part.amount), 0.0) AS amount,
+                    SUM(part.debit_amount_currency) AS amount_currency
+                FROM account_partial_reconcile part
+                JOIN res_currency curr ON curr.id = part.debit_currency_id
+                WHERE part.debit_move_id IN %s
+                GROUP BY part.debit_move_id, curr.decimal_places
+                UNION ALL
+                SELECT
+                    part.credit_move_id AS line_id,
+                    'credit' AS flag,
+                    COALESCE(SUM(part.amount), 0.0) AS amount,
+                    SUM(part.credit_amount_currency) AS amount_currency
+                FROM account_partial_reconcile part
+                JOIN res_currency curr ON curr.id = part.credit_currency_id
+                WHERE part.credit_move_id IN %s
+                GROUP BY part.credit_move_id, curr.decimal_places
+            ''', [aml_ids, aml_ids])
+            amounts_map = {
+                (line_id, flag): (amount, amount_currency)
+                for line_id, flag, amount, amount_currency in self.env.cr.fetchall()
+            }
+        else:
+            amounts_map = {}
+
+        # Lines that can't be reconciled with anything since the account doesn't allow that.
+        for line in self - need_residual_lines:
+            line.amount_residual = 0.0
+            line.amount_residual_currency = 0.0
+            line.reconciled = False
+
+        for line in need_residual_lines:
+            # Since this part could be call on 'new' records, 'company_currency_id'/'currency_id' could be not set.
+            comp_curr = line.company_currency_id or self.env.company.currency_id
+            foreign_curr = line.currency_id or comp_curr
+
+            # Retrieve the amounts in both foreign/company currencies. If the record is 'new', the amounts_map is empty.
+            debit_amount, debit_amount_currency = amounts_map.get((line._origin.id, 'debit'), (0.0, 0.0))
+            credit_amount, credit_amount_currency = amounts_map.get((line._origin.id, 'credit'), (0.0, 0.0))
+
+            # Subtract the values from the account.partial.reconcile to compute the residual amounts.
+            residual = line.balance - debit_amount + credit_amount
+            residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
+            
+            line.amount_residual = comp_curr.round(residual)
+            line.amount_residual_currency = foreign_curr.round(residual_currency)
+            # Para determinar si está conciliado, usamos una tolerancia mínima 
+            # en lugar de un cero absoluto, o comparamos directamente.
+            line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)

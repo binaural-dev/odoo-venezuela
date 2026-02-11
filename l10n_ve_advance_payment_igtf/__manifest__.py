@@ -25,20 +25,22 @@
         "l10n_ve_accountant",
         "l10n_ve_invoice",
         "l10n_ve_tax_payer",
+        "l10n_ve_base",
     ],
     "data": [
+        
+        "views/res_company.xml",
+        "views/res_config_settings.xml",
         "views/account_journal.xml",
         "views/account_move.xml",
-        "views/res_company.xml",
         "views/account_payment.xml",
-        "views/res_config_settings.xml",
         "wizard/account_payment_register.xml",
         "wizard/move_action_cancel_advance_payment.xml",
+        "security/ir.model.access.csv",
     ],
     "images": ["static/description/icon.png"],
     "assets": {
         "web.assets_backend": ["l10n_ve_advance_payment_igtf/static/src/components/**"],
     },
-    "pre_init_hook": "pre_init_hook",
     "application": True,
 }

@@ -10,53 +10,9 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    def _auto_init(self):
-        if not column_exists(self.env.cr, "account_move", "amount_to_pay_igtf"):
-            create_column(self.env.cr, "account_move", "amount_to_pay_igtf", "numeric")
-            self.env.cr.execute("""
-                UPDATE account_move
-                SET amount_to_pay_igtf = 0.0
-            """)
-        if not column_exists(self.env.cr, "account_move", "amount_residual_igtf"):
-            create_column(self.env.cr, "account_move", "amount_residual_igtf", "numeric")
-            self.env.cr.execute("""
-                UPDATE account_move
-                SET amount_residual_igtf = 0.0
-            """)
-        return super()._auto_init()
+
 
     bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", copy=False, compute='compute_bi_igtf',store=True)
-    amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", copy=False)
-
-    payment_igtf_id = fields.Many2one(
-        "account.payment",
-        string="Payment IGTF",
-        help="Payment IGTF",
-        readonly=True,
-        copy=False,
-    )
-
-    amount_to_pay_igtf = fields.Monetary(
-        string="IGTF Paid",
-        default=0.00,
-        help="IGTF Paid",
-        compute="_compute_amount_to_pay_igtf",
-        store=True,
-        copy=False,
-    )
-
-    amount_residual_igtf = fields.Monetary(
-        string="IGTF Residual",
-        default=0.00,
-        help="IGTF Residual",
-        compute="_compute_amount_residual_igtf",
-        copy=False,
-    )
-    igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
-    alter_bi_igtf = fields.Float('Alter BI IGTF',copy=False)
-
-    foreign_alter_bi_igtf = fields.Float('Foreign Alter BI IGTF',copy=False)
-    foreign_bi_igtf = fields.Float(string="foreign BI IGTF", help="foreign subtotal with igtf ", copy=False)
 
     def default_igtf_percentage(self):
         return self.env.company.igtf_percentage or 0.0
@@ -69,6 +25,19 @@ class AccountMove(models.Model):
         string="Is Advance Move?",
         store=True,
     )
+
+    payment_igtf_id = fields.Many2one(
+        "account.payment",
+        string="Payment IGTF",
+        help="Payment IGTF",
+        readonly=True,
+        copy=False,
+    )
+
+
+    
+    igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
+    alter_bi_igtf = fields.Float('IGTF Apply',copy=False)
 
     #Anticipoos
     invoice_outstanding_credits_debits_widget_advance_payment = fields.Binary(
@@ -286,8 +255,7 @@ class AccountMove(models.Model):
                         "digits": [69, move.currency_id.decimal_places],
                         "payment_date": fields.Date.to_string(line.date),
                         "currency_id": move.currency_id.id,
-                        #"foreign_id": line.foreign_currency_id.id if line.foreign_currency_id.id != line.company_currency_id.id else line.company_currency_id.id,
-                        #"foreign_amount": abs(line.foreign_amount_residual_currency)
+                      
                     })
 
             if not payments_widget_vals["content"]:
@@ -297,34 +265,7 @@ class AccountMove(models.Model):
             move.invoice_has_outstanding = True
 
 
-    @api.depends("tax_totals")
-    def _compute_amount_to_pay_igtf(self):
-        """
-        Compute the amount to pay of the IGTF
-        """
-        for move in self:
-            move.amount_to_pay_igtf = 0
-            if move.invoice_line_ids and move.is_invoice(include_receipts=True) and move.tax_totals:
-                if move.company_currency_id != self.env.ref("base.VEF"):
-
-                    move.amount_to_pay_igtf = move.tax_totals["igtf"]["igtf_amount"] - move.amount_paid
-
-                else:
-                    move.amount_to_pay_igtf = move.tax_totals["igtf"]["foreign_igtf_amount"] - move.amount_paid
-                    
-
-    @api.depends(
-        "amount_total", "amount_residual", "amount_residual_igtf", "amount_to_pay_igtf", "bi_igtf"
-    )
-    def _compute_amount_residual_igtf(self):
-        for record in self:
-            record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
-
-            if record.amount_residual and record.amount_to_pay_igtf:
-                record.amount_residual_igtf = record.amount_residual + record.amount_to_pay_igtf
-            else:
-                record.amount_residual_igtf = 0
-
+   
     @api.depends(
         "bi_igtf",
     )
@@ -368,11 +309,12 @@ class AccountMove(models.Model):
         base_amount_residual = self.amount_residual_signed 
         amount_residual = payment.convert_to_external_currency(self.currency_id,base_amount_residual)
 
+        
         if is_igtf_journal:
             
             igtf_amount = payment.calculate_igtf_for_payment(self, advance_amount, payment.currency_id)
 
-        #raise UserError(amount_residual)
+
         base_amount_applied = min(amount_residual, advance_amount)
 
         amount_line1 = base_amount_applied
@@ -438,7 +380,6 @@ class AccountMove(models.Model):
         common_vals = {
             "partner_id": self.partner_id.id,
             "payment_id_advance": payment.id,
-            #"foreign_rate": payment.foreign_rate if payment else 1.0,
             "reconciled": False,
         }
 
@@ -608,20 +549,21 @@ class AccountMove(models.Model):
         move_credit = partial.credit_move_id.move_id
         move_debit = partial.debit_move_id.move_id
         
-        origin_payment_id = False
+        payment_id = False
         if partial_move_id:
-            origin_payment_id = partial_move_id.origin_payment_id or partial_move_id.origin_payment_advanced_payment_id
+            payment_id = partial_move_id.origin_payment_id or partial_move_id.origin_payment_advanced_payment_id
       
         factura = None
-        if move_credit.move_type == 'out_invoice':
+        if move_credit.move_type in ['out_invoice', 'in_invoice']:
             factura = move_credit
-        elif move_debit.move_type == 'out_invoice':
+        elif move_debit.move_type in ['out_invoice', 'in_invoice']:
             factura = move_debit
 
 
-        if partial_move_id and origin_payment_id.advanced_move_ids:
-            cross_move_ids = origin_payment_id.advanced_move_ids.ids
-            if cross_move_ids and origin_payment_id.move_id.id == partial_move_id.id:
+
+        if partial_move_id and payment_id.advanced_move_ids:
+            cross_move_ids = payment_id.advanced_move_ids.filtered(lambda m: m.state not in ('draft', 'cancel')).ids
+            if cross_move_ids and payment_id.move_id.id == partial_move_id.id:
                 return {
                     "name": "Alerta",
                     "type": "ir.actions.act_window",
@@ -631,7 +573,7 @@ class AccountMove(models.Model):
                     "context": {
                         "default_move_id": factura.id,
                         "default_cross_move_ids": cross_move_ids,
-                        "default_payment_id": origin_payment_id.id if origin_payment_id else False,
+                        "default_payment_id": payment_id.id if payment_id else False,
                         "default_partial_id": partial_id,
                     },
                 }
@@ -640,7 +582,7 @@ class AccountMove(models.Model):
                 executed = self.remove_igtf_from_account_move(partial_id)
                 partial = self.env["account.partial.reconcile"].browse(partial_id)
                 if partial:
-                    self.cancel_advance_payment_transaction(origin_payment_id, partial_move_id)
+                    self.cancel_advance_payment_transaction(payment_id, partial_move_id)
                 return
             
         executed = self.remove_igtf_from_account_move(partial_id)
@@ -663,7 +605,7 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self:
-            if rec.amount_total_signed > 0 or rec.payment_state == 'paid':
+            if rec.amount_total_signed > 0 or rec.payment_state in ['paid','in_payment']: 
                 rec.igtf_top_aply = rec.amount_total_signed * (self.company_id.igtf_percentage / 100)
 
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
@@ -681,6 +623,9 @@ class AccountMove(models.Model):
                 total_bi_igtf = 0.0
                 igtf_top = 0.0
                 alter_bi_igtf = 0.0
+                bank_amount = 0.0
+
+                target_account = False
 
                 partial_amount = 0.0
                 partner_context = rec.partner_id.with_company(rec.company_id)
@@ -691,76 +636,78 @@ class AccountMove(models.Model):
                     bank_amount = 0.0
                     igtf_amount = 0.0
                     target_account = False
-
-                    if rec.move_type in ['out_invoice', 'out_refund']:
-                        target_account = partner_context.property_account_receivable_id
-                    else:
-                        target_account = partner_context.property_account_payable_id
-
-                    factura_line = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
-
-                    pago_line = payment_move.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
-                    
-                    partial = self.env['account.partial.reconcile'].search([
-                        '|',
-                        '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', pago_line.id),
-                        '&', ('debit_move_id', '=', pago_line.id), ('credit_move_id', '=', factura_line.id)
-                    ], limit=1)
-
-                    if partial:
-                        partial_amount = abs(partial.amount) 
-                    
-                    if bank_line:
-                    
-                        bank_amount = partial_amount
-                        
-                    if igtf_line:
-                    
-                        igtf_amount = abs(igtf_line[0].balance)
-                        
-                    igtf_top += bank_amount
                     amount_base_payment = 0.0
+                    if bank_line:
 
-                    if igtf_line and bank_line:
+                        if rec.move_type in ['out_invoice', 'out_refund']:
+                            target_account = partner_context.property_account_receivable_id
+                        else:
+                            target_account = partner_context.property_account_payable_id
 
-                        if payment_move.payment_id and payment_move.payment_id.reconciled_invoices_count > 1:
+                        factura_line = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
 
-                            amount_base_payment = bank_amount
+                        pago_line = payment_move.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
                         
+                        partial = self.env['account.partial.reconcile'].search([
+                            '|',
+                            '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', pago_line.id),
+                            '&', ('debit_move_id', '=', pago_line.id), ('credit_move_id', '=', factura_line.id)
+                        ], limit=1)
+
+                        if partial:
+                            partial_amount = abs(partial.amount) 
                         
-                        elif (bank_amount* (rec.company_id.igtf_percentage / 100)) < igtf_amount:
-                            if (bank_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
-                                
+                        if igtf_line:
+                        
+                            igtf_amount = abs(igtf_line[0].balance)
+
+                        bank_amount = partial_amount
+                            
+                        if not igtf_line and bank_line:
+                            
+                            igtf_top += bank_amount
+                            
+                        
+
+                        if igtf_line and bank_line:
+
+                            if payment_move.payment_id and payment_move.payment_id.reconciled_invoices_count > 1:
+
                                 amount_base_payment = bank_amount
+                            
+                            
+                            elif (bank_amount* (rec.company_id.igtf_percentage / 100)) < igtf_amount:
+                                if (bank_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
+                                    
+                                    amount_base_payment = bank_amount
+                                    
+                                else:
+                                    
+                                    amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
+
                                 
+                                if 'pos_payment_ids' in bank_line[0].move_id._fields:
+                                    if bank_line[0].move_id.pos_payment_ids:
+                                        amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
                             else:
                                 
                                 amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
 
+                        if igtf_line:
                             
-                            if 'pos_payment_ids' in bank_line[0].move_id._fields:
-                                if bank_line[0].move_id.pos_payment_ids:
-                                    amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
-                        else:
-                            
-                            amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
-
-                    if igtf_line:
-                        
-                        alter_bi_igtf += igtf_amount
+                            alter_bi_igtf += igtf_amount
 
                     total_bi_igtf += amount_base_payment
                 
                 
                 apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
-                #raise UserError(igtf_top)
                 rec.igtf_top_aply = apply
                 rec.alter_bi_igtf = alter_bi_igtf
                 rec.bi_igtf = total_bi_igtf
 
     def remove_igtf_from_account_move(self, partial_id):
 
-        partial_reconcile = self.env['account.partial.reconcile'].browse(partial_id)
+        partial_reconcile = self.env['account.partial.reconcile'].with_company(self.company_id).sudo().browse(partial_id).exists()
         
         related_moves = partial_reconcile.debit_move_id.move_id | partial_reconcile.credit_move_id.move_id
         
@@ -790,10 +737,12 @@ class AccountMove(models.Model):
             return False
         if payment_move.currency_id == self.env.ref("base.VEF") and not payment_move.origin_payment_advanced_payment_id:
             return 
+        
 
     
         try:
             payment_move.button_draft()
+
         except Exception:
             return False
         
@@ -802,10 +751,8 @@ class AccountMove(models.Model):
         receivable_payable_line = payment_move.line_ids.filtered(
             lambda line: line.account_id.id in [payment_move.partner_id.property_account_payable_id.id,payment_move.partner_id.property_account_receivable_id.id ]
         )[:1]
-
         if igtf_line and receivable_payable_line:
             
-            currency_rounding = payment_move.currency_id.rounding or 0.01
             igtf_line_balance = igtf_line.balance
 
             current_debit = receivable_payable_line.debit
@@ -850,12 +797,14 @@ class AccountMove(models.Model):
                 else:
                     new_lines_commands.append((1, line.id, {}))
             
-            if 'is_advance_payment' in payment_move.payment_id._fields:
+            if 'is_advance_payment' in payment_move.origin_payment_id._fields:
 
-                if payment_move.payment_id and not payment_move.payment_id.is_advance_payment:
+                if payment_move.origin_payment_id and not payment_move.origin_payment_id.is_advance_payment:
 
-                    payment_move.payment_id.write({
+                    payment_move.origin_payment_id.write({
                         'is_advance_payment':True,
+                    })
+                    payment_move.write({
                         'is_advance_move':True
                     })
             
@@ -866,12 +815,31 @@ class AccountMove(models.Model):
             
         try:
 
-            
             if payment_move.origin_payment_advanced_payment_id:
                 payment_move.button_cancel()
+            
             else:
                 payment_move.action_post()
         except Exception:
             return False
             
         return True 
+    
+
+    def button_draft(self):
+        """ Override Method to remove the reconciliation and set to draft the moves related to the advance payment when the invoice is reset to draft.
+        """
+        if any(move.state not in ('cancel', 'posted') for move in self):
+            raise UserError(_("Only posted/cancelled journal entries can be reset to draft."))
+        if any(move.need_cancel_request for move in self):
+            raise UserError(_("You can't reset to draft those journal entries. You need to request a cancellation instead."))
+
+        self._check_draftable()
+        # We remove all the analytics entries for this journal
+        self.line_ids.analytic_line_ids.with_context(skip_analytic_sync=True).unlink()
+        self.mapped('line_ids').remove_move_reconcile()
+        self.state = 'draft'
+        self.sending_data = False
+
+        self._detach_attachments()
+

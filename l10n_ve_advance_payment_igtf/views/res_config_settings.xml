@@ -5,91 +5,41 @@
         <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
         <field name="arch" type="xml">
             <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                
+                <block title="Advance Payment" name="binaural_advance_payment_settings">
+                    <setting help="Passive and reconcilable accounting account">
+                        <field name="advance_customer_account_id" />
+                    </setting>
+                    <setting help="Active and reconcilable accounting account">
+                        <field name="advance_supplier_account_id" />
+                    </setting>
+                </block>
 
-                <h2>Advance Payment</h2>
-                <div class="row mt16 o_settings_container"
-                    name="binaural_advance_payment_account_settings">
-                    <div class="o_setting_right_pane">
-                        <!-- Use separate groups for alignment -->
-                        <group colspan="0" col="0">
-                            <field name="advance_customer_account_id" />
-                            <div class="text-muted">
-                                Passive and reconcilable accounting account
-
-
-                            </div>
-                        </group>
-                        <group colspan="0" col="0">
-                            <field name="advance_supplier_account_id" />
-                            <div class="text-muted ">
-                                Active and reconcilable accounting account
-
-
-
-                            </div>
-                        </group>
-                    </div>
-                </div>
-
-                <h2>Advance Payment IGTF</h2>
-                <div class="row mt16 o_settings_container" name="binaural_advance_payment_account_settings">
-
-                     <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_advance_payment_igtf_journal">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="advance_payment_igtf_journal_id" class="col-6"/>
-                            <field name="advance_payment_igtf_journal_id" />
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_advance_payment_igtf_div_igtf_percentage">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="igtf_percentage" class="col-6"/>
-                            <field name="igtf_percentage" />
-                        </div>
-                    </div>
-               
-
-                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_advance_payment_igtf_div_show_igtf_suggested_sale_order">
-                        <div class="o_setting_left_pane">
-                            <field name="show_igtf_suggested_sale_order" />
-                        </div>
-                        <div class="o_setting_right_pane">
-                            <label for="show_igtf_suggested_sale_order" />
-                            <div class="text-muted">
-                                Show suggestion of the igtf amount based on the total amount of the Order
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_advance_payment_igtf_div_show_igtf_suggested_account_move">
-                        <div class="o_setting_left_pane">
-                            <field name="show_igtf_suggested_account_move" />
-                        </div>
-                        <div class="o_setting_right_pane">
-                            <label for="show_igtf_suggested_account_move" />
-                            <div class="text-muted">
-                                Show suggestion of the igtf amount based on the total amount of the Invoice
-                            </div>
-                        </div>
-                    </div>
-            
+                <block title="Advance Payment IGTF" name="binaural_igtf_settings">
                     
-                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_advance_payment_igtf_div_customer_account_igtf_id">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="customer_account_igtf_id"  class="col-6"/>
+                        <setting string="IGTF Journal">
+                            <field name="advance_payment_igtf_journal_id" domain="[('type', '=', 'general')]"/>
+                        </setting>
+                        <setting string="IGTF Percentage">
+                            <field name="igtf_percentage" />
+                        </setting>
+
+                        <setting string="Show in Sale Order" help="Show suggestion based on total amount of the Order">
+                            <field name="show_igtf_suggested_sale_order" />
+                        </setting>
+                        <setting string="Show in Invoice" help="Show suggestion based on total amount of the Invoice">
+                            <field name="show_igtf_suggested_account_move" />
+                        </setting>
+
+                        <setting string="Customer IGTF Account">
                             <field name="customer_account_igtf_id" />
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_advance_payment_igtf_div_supplier_account_igtf_id">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="supplier_account_igtf_id"  class="col-6"/>
+                        </setting>
+                        <setting string="Supplier IGTF Account">
                             <field name="supplier_account_igtf_id" />
-                        </div>
-                    </div>
-                 </div>
+                        </setting>
+                    
+                </block>
+
             </xpath>
         </field>
     </record>
