@@ -18,18 +18,16 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    _sql_constraints = [
-        (
-            "unique_name",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-        (
-            "unique_name_ve",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-    ]
+    
+    _unique_name= models.Constraint(
+        'unique (unique_name)',
+        'nother entry with the same name already exists.',
+    )
+
+    _unique_name_ve= models.Constraint(
+        'unique (unique_name_ve)',
+        'nother entry with the same name already exists.',
+    )
 
     company_currency_rate = fields.Float(
         string="Tasa de moneda de la compañía",
@@ -162,13 +160,9 @@ class AccountMove(models.Model):
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        digits="Tasa",
-        default=default_rate,
         store=True,
         tracking=True,
     )
-    
-
 
     def default_inverse_rate(self):
         """
@@ -189,11 +183,9 @@ class AccountMove(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=default_inverse_rate,
         store=True,
         index=True,
     )
-
 
     move_currency_to_company_currency_rate = fields.Float(
         string="Move Currency to Company Currency Rate",
@@ -229,19 +221,6 @@ class AccountMove(models.Model):
         store=True,
     )
 
-    _sql_constraints = [
-        (
-            "unique_name",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-        (
-            "unique_name_ve",
-            "",
-            "Another entry with the same name already exists.",
-        ),
-    ]
-
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
     foreign_debit = fields.Monetary(
@@ -256,10 +235,6 @@ class AccountMove(models.Model):
     foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
                                             compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
-    @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
-        context = self.with_context(active_test=False)
-        return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
 
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
@@ -428,11 +403,6 @@ class AccountMove(models.Model):
         moves = super().create(vals_list)
 
         for move in moves:
-            if move.move_type != "in_invoice":
-                move._compute_rate()
-            if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
-                move.foreign_rate = move.reversed_entry_id.foreign_rate
-                move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
@@ -446,18 +416,19 @@ class AccountMove(models.Model):
                     % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
         return moves
+    
+    @api.onchange("partner_id")
+    def onchange_date(self):
+        for rec in self:
+            if rec.partner_id:
+                rec.invoice_date = fields.Date.today()
+                rec.foreign_currency_id = rec.default_alternate_currency()
 
     def write(self, vals):
         """
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-        # move_currency_to_company_currency_rate = vals.get('move_currency_to_company_currency_rate', False)
-        # if move_currency_to_company_currency_rate:
-        #     for move in self:
-        #         vals.update({"last_foreign_rate": move.foreign_rate})
-        #         vals.update({"foreign_rate": move_currency_to_company_currency_rate})
-        #A REALIZAR PARA INTEGRA FLEXIBLE
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
@@ -742,19 +713,20 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat) if move.partner_id.vat else ''
             move.vat = vat.upper()
 
-    @api.depends("invoice_date")
+    @api.depends("invoice_date","foreign_currency_id","date")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
         """
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
-            is_sale=True,
-        )
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
-            is_sale=False,
-        )
+        for rec in self:
+            rec._compute_rate_for_documents(
+                rec.filtered(lambda m: m.is_sale_document(include_receipts=True)),
+                is_sale=True,
+            )
+            rec._compute_rate_for_documents(
+                rec.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
+                is_sale=False,
+            )
 
     @api.model
     def _compute_rate_for_documents(self, documents, is_sale):
@@ -766,7 +738,7 @@ class AccountMove(models.Model):
         for move in documents:
             if move.manually_set_rate:
                 continue
-            date_field = "invoice_date" if is_sale else "date"
+            date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
@@ -784,9 +756,6 @@ class AccountMove(models.Model):
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
-        """
-        Compute the foreign total billed of the invoice
-        """
         for move in self:
             move.foreign_total_billed = 0
             if not (
@@ -830,15 +799,17 @@ class AccountMove(models.Model):
                 return
             move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
 
-    @api.onchange("foreign_inverse_rate")
+    @api.onchange("foreign_inverse_rate","invoice_date")
     def _onchange_foreign_inverse_rate(self):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
-        if self.foreign_inverse_rate < 0:
-            raise ValidationError(_("The rate entered cannot be negative."))
-        elif self.foreign_inverse_rate == 0:
-            raise ValidationError(_("The rate entered cannot be zero."))
+        for rec in self:
+            if rec.foreign_currency_id and rec.foreign_inverse_rate:
+                if rec.foreign_inverse_rate < 0:
+                    raise ValidationError(_("The rate entered cannot be negative."))
+                elif rec.foreign_inverse_rate == 0:
+                    raise ValidationError(_("The rate entered cannot be zero."))
 
     def _get_payments(self, line_ids):
         self.ensure_one()
@@ -913,10 +884,6 @@ class AccountMove(models.Model):
         main_move_concept = self.ref
         main_move_payment_concept = ""
         payment_related_move_ids = []
-
-        main_move = {
-            "name": self.name,
-        }
 
         line_ids_ids = self._get_account_move_line_related()
         line_ids = self.env["account.move.line"].browse(line_ids_ids)

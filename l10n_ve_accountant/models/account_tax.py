@@ -46,11 +46,6 @@ class AccountTax(models.Model):
             currency_id = record.company_id.currency_id
             foreign_currency_id = self.env.company.foreign_currency_id
 
-        # FIXME: Evaluar escenarios en los que hay descuentos.
-        res_without_discount = res.copy()
-        #? QUESTION do i need to put the amount without discount?
-        
-        #total amount discount 
         
         formatted_total_discount = 0.0
         formatted_total_discount_ves = 0.0
@@ -73,18 +68,7 @@ class AccountTax(models.Model):
                 currency_obj=ves_currency
             )
         foreign_lines = []
-        #has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
-        # if has_discount:
-        #     base_without_discount = [line.copy() for line in base_lines if line]
-        #     for base_line in base_without_discount:
-        #         base_line["discount"] = 0
-
-        #     res_without_discount = super()._get_tax_totals_summary(
-        #         base_lines,
-        #         currency,
-        #         company,
-        #         cash_rounding
-        #     )
+        
         if record._name == 'account.move':
             foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
         elif record._name in ('sale.order','purchase.order'):
@@ -99,6 +83,7 @@ class AccountTax(models.Model):
             company,
             cash_rounding
         )
+        
         #amounts in foreign currency
         res['foreign_currency_id'] = foreign_res['currency_id']
         res['ves_currency_id'] = self.env.ref('base.VEF').id
@@ -125,7 +110,6 @@ class AccountTax(models.Model):
             currency_obj=currency_id
         )
 
-        #only VES amounts
         res['formatted_base_amount_currency_ves'] = formatLang(
             env=self.env,
             value=res.get('base_amount', 0.0),
@@ -142,9 +126,7 @@ class AccountTax(models.Model):
             currency_obj=ves_currency
         )
 
-        # Extrae solo el monto numérico de 'formatted_total_amount_currency_ves' (sin símbolo)
         formatted_total_ves = res.get("formatted_total_amount_currency_ves", "")
-        # Quita cualquier carácter que no sea número, punto o coma
         try:
             only_amount_ves = "".join(re.findall(r"[\d.,]+", formatted_total_ves))
             only_amount_ves = only_amount_ves.rstrip('.').replace(',', '')
@@ -222,10 +204,7 @@ class AccountTax(models.Model):
                 value=res_subtotal.get('total_amount_currency', 0.0),
                 currency_obj=currency_id
             )
-
-            #Amount discount
             
-
             for res_tax_group, foreign_tax_group in zip(res_subtotal.get("tax_groups", []), foreign_subtotal.get("tax_groups", [])):
                 res_tax_group["tax_amount_foreign_currency"] = foreign_tax_group.get("tax_amount_currency", 0.0)
                 res_tax_group["base_amount_foreign_currency"] = foreign_tax_group.get("base_amount_currency", 0.0)
@@ -281,6 +260,9 @@ class AccountTax(models.Model):
                 )
         return res
     
+   
+   
+
     @api.model
     def _prepare_foreign_base_line_for_taxes_computation(self, record, **kwargs):
         """ Convert any representation of a business object ('record') into a base line being a python
