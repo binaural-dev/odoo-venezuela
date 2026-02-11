@@ -220,13 +220,14 @@ class StockPicking(models.Model):
                         }
                     )
                 else:
+                    invoice_line_list = []
                     customer_journal_id = self.env.company.customer_journal_id or False
                     if not customer_journal_id:
                         raise UserError(_("Please configure the journal from settings"))
-
-                    invoice_line_list = picking_id._get_invoice_lines_for_invoice(
-                        from_picking_line=True
-                    )
+                    if picking_id.transfer_reason_id.code != "subcontracting":
+                        invoice_line_list = picking_id._get_invoice_lines_for_invoice(
+                            from_picking_line=True
+                        )
                     origin_name = self._get_origin_name(picking_id)
                     invoice = self.env["account.move"].create(
                     {
@@ -430,12 +431,14 @@ class StockPicking(models.Model):
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
         invoice_line_list = []
-        for order_line in self.sale_id.order_line:
+        source_lines = self.sale_id.order_line if self.sale_id else self.move_ids_without_package
+
+        for order_line in source_lines:
             tax_ids = [(6, 0, [self.company_id.account_sale_tax_id.id])]
 
-            if order_line.display_type:
+            if 'display_type' in order_line._fields and order_line.display_type:
                 move_id = order_line
-                vals_dict = {
+                invoice_line_list.append((0, 0, {
                     "name": move_id.name,
                     "product_id": move_id.product_id.id,
                     "price_unit": False,
@@ -443,32 +446,49 @@ class StockPicking(models.Model):
                     "quantity": 0,
                     "from_picking_line": from_picking_line,
                     "display_type": move_id.display_type,
-                }
+                }))
+                continue
             else:
-                move_id = self.move_ids_without_package.filtered(
-                    lambda m: m.sale_line_id and m.sale_line_id.id == order_line.id
+                if self.sale_id:
+                    move_id = self.move_ids_without_package.filtered(
+                        lambda m: m.sale_line_id == order_line
+                    )[:1]
+                    if not move_id:
+                        continue 
+                else:
+                    move_id = order_line
+
+                if self.sale_id and hasattr(order_line, 'price_unit'):
+                    price_unit = move_id.sale_line_id.price_unit
+                    tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
+                    quantity = move_id.quantity if move_id else order_line.product_uom_qty
+                else:
+                    price_unit = move_id.product_id.list_price
+                    tax_ids = [(6, 0, move_id.product_id.taxes_id.filtered(lambda t: t.company_id == self.company_id).ids)]
+                    quantity = move_id.quantity
+
+                product = move_id.product_id
+                account = (
+                    product.property_account_income_id or 
+                    product.categ_id.property_account_income_categ_id
                 )
-                move_id = move_id[0] if move_id else order_line
-                price_unit = move_id.sale_line_id.price_unit
-                tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
+
                 vals_dict = {
-                    "name": move_id.description_picking,
-                    "product_id": move_id.product_id.id,
+                    "name": move_id.description_picking or move_id.name or product.display_name,
+                    "product_id": product.id,
                     "price_unit": price_unit,
-                    "account_id": (
-                        move_id.product_id.property_account_income_id.id
-                        if move_id.product_id.property_account_income_id
-                        else move_id.product_id.categ_id.property_account_income_categ_id.id
-                    ),
+                    "account_id": account.id,
                     "tax_ids": tax_ids,
-                    "quantity": move_id.quantity,
+                    "quantity": quantity,
                     "from_picking_line": from_picking_line,
                 }
-            vals = (0, 0, vals_dict)
-            invoice_line_list.append(vals)
-        return invoice_line_list
-    
-    def _get_multiple_invoice_lines_for_invoice(self,pickings, from_picking_line=False):
+                
+                invoice_line_list.append((0, 0, vals_dict))
+            return invoice_line_list
+
+    def _get_multiple_invoice_lines_for_invoice(
+        self, pickings, from_picking_line=False
+    ):
         self.ensure_one()
         invoice_line_list = []
 
@@ -917,17 +937,33 @@ class StockPicking(models.Model):
             "l10n_ve_stock_account.transfer_reason_other_causes",
             raise_if_not_found=False,
         )
-        
+
+        external_storage_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_external_storage",
+            raise_if_not_found=False,
+        )
+
+        subcontracting_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_subcontracting",
+            raise_if_not_found=False,
+        )
+
         for picking in self:
 
             picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
                 continue
-
-            elif (
-                picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id or picking.transfer_reason_id.id == other_causes_reason.id
+            elif picking.document == "dispatch_guide":
+                picking.is_dispatch_guide = True
+                continue
+            elif picking.transfer_reason_id and (
+                picking.transfer_reason_id.id in [
+                    consignment_reason.id,
+                    other_causes_reason.id,
+                    external_storage_reason.id,
+                    subcontracting_reason.id,
+                ]
             ):
                 picking.is_dispatch_guide = True
 
@@ -950,6 +986,7 @@ class StockPicking(models.Model):
                 "repair_improvement": "l10n_ve_stock_account.transfer_reason_repair",
                 "external_storage": "l10n_ve_stock_account.transfer_reason_external_storage",
                 "other_causes": "l10n_ve_stock_account.transfer_reason_other_causes",
+                "subcontracting": "l10n_ve_stock_account.transfer_reason_subcontracting",
             }
 
             reasons = {
@@ -986,6 +1023,7 @@ class StockPicking(models.Model):
                 other_causes = reasons.get("other_causes")
                 repair_improvement = reasons.get("repair_improvement")
                 external_storage = reasons.get("external_storage")
+                subcontracting = reasons.get("subcontracting")
 
                 if self_consumption_reason:
                     allowed_reason_ids.append(self_consumption_reason.id)
@@ -995,7 +1033,9 @@ class StockPicking(models.Model):
                     allowed_reason_ids.append(repair_improvement.id)
                 if external_storage:
                     allowed_reason_ids.append(external_storage.id)
-                
+                if subcontracting and picking.env.company.is_subcontracting:
+                    allowed_reason_ids.append(subcontracting.id)
+
             # Internal
             elif picking.operation_code == "internal":
 
@@ -1004,6 +1044,7 @@ class StockPicking(models.Model):
                     "transfer_between_warehouses"
                 )
                 other_causes = reasons.get("other_causes")
+                subcontracting = reasons.get("subcontracting")
 
                 warehouse = picking.location_dest_id.warehouse_id
 
@@ -1015,6 +1056,8 @@ class StockPicking(models.Model):
                     allowed_reason_ids.append(transfer_between_warehouses_reason.id)
                 if other_causes:
                     allowed_reason_ids.append(other_causes.id)
+                if subcontracting and picking.env.company.is_subcontracting:
+                    allowed_reason_ids.append(subcontracting.id)
 
                 if (
                     consignment_reason
@@ -1058,7 +1101,7 @@ class StockPicking(models.Model):
 
                 if record.transfer_reason_id.code == "other_causes":
                     record.show_other_causes_transfer_reason = True
-                if record.transfer_reason_id.code == "self_consumption":
+                if record.transfer_reason_id.code in ["self_consumption", "repair_improvement"]:
                     record.is_dispatch_guide = False
             
 
