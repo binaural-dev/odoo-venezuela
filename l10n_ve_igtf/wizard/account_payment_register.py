@@ -139,22 +139,17 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for rec in self:
             
             amount_without_difference = 0.0
-
             move_ids=self.get_moves()
             for move_id in move_ids:
+                residual = move_id.company_currency_id._convert( move_id.amount_residual,self.currency_id,company=self.company_id,date=self.payment_date) if move_id.company_currency_id == self.env.ref("base.VEF") else move_id.amount_residual
                 
-                if rec.company_currency_id and rec.company_currency_id != self.env.ref("base.VEF"):
-                    if rec.amount <= move_id.amount_residual + move_id.amount_residual * (rec.igtf_percentage / 100):
-                        amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
-                    
-                    elif rec.amount > move_id.amount_residual + move_id.amount_residual * (rec.igtf_percentage / 100) :
-                        amount_without_difference = amount_without_difference + move_id.amount_residual   
-                else:
-                    if rec.amount <= move_id.foreign_amount_residual + move_id.foreign_amount_residual * (rec.igtf_percentage / 100):
-                        amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
-                    
-                    elif rec.amount > move_id.foreign_amount_residual + move_id.foreign_amount_residual * (rec.igtf_percentage / 100) :
-                        amount_without_difference = amount_without_difference + move_id.foreign_amount_residual  
+
+                if rec.amount <= residual + residual * (rec.igtf_percentage / 100):
+                    amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
+                
+                elif rec.amount > residual + residual * (rec.igtf_percentage / 100) :
+                    amount_without_difference = amount_without_difference + residual  
+               
             rec.amount_without_difference = amount_without_difference
                              
 
@@ -178,7 +173,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if payment.is_igtf:
                 payment.amount_with_igtf = payment.amount + payment.igtf_to_show
 
-    @api.onchange("amount")
+    @api.onchange("amount","payment_date")
     def _compute_igtf_amount(self):
         for payment in self:
             
@@ -209,27 +204,27 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         currency = self.currency_id
         precision = currency.rounding
-        
-        principal_debt = invoice.amount_residual if invoice.company_currency_id != self.env.ref("base.VEF") else invoice.foreign_amount_residual
+
+        due_amount = float(self.source_amount)
+
+        due_currency_id = self.source_currency_id
+
+        principal_debt = due_amount
 
         principal_amount = min(payment_amount, principal_debt)
         
 
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
 
-        igtf_top = invoice.igtf_top_aply
+        igtf_top = due_currency_id._convert( invoice.alter_igtf_top_aply,self.currency_id,company=self.company_id,date=self.payment_date) if invoice.company_currency_id == self.env.ref("base.VEF") else invoice.igtf_top_aply
 
         alter_bi_igtf = invoice.alter_bi_igtf
 
         igtf= igtf_unrounded
 
-        invoice_residual = invoice.amount_residual if self.company_currency_id != self.env.ref("base.VEF") else invoice.foreign_amount_residual
+        invoice_residual = due_amount
     
         if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
-            
-            return 0.0
-        
-        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
             
             return 0.0
         
@@ -240,7 +235,12 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             return 0.0
         
         if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
+            
             igtf = residual_igtf
+
+        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
+            
+            return 0.0
         
         return igtf
         
@@ -311,7 +311,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         lines = batch_result['lines']
 
-        sign = -1 if wizard_values.get('payment_type') == 'outbound' else 1
+      
         
         if create and create.journal_id.is_igtf:
             total_igtf_amount = 0.0
@@ -325,7 +325,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 )
                 total_igtf_amount += igtf_for_invoice
             base_abs = abs(source_amount)
-            final_amount_with_igtf = (base_abs + total_igtf_amount) * sign
+            final_amount_with_igtf = (base_abs + total_igtf_amount) 
             
             wizard_values['source_amount'] = final_amount_with_igtf
             wizard_values['source_amount_currency'] = final_amount_with_igtf

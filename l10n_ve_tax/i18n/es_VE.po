@@ -188,7 +188,6 @@ msgstr "Ocultar alícuotas internacionales"
 msgid "International purchase"
 msgstr "Compra internacional"
 
-
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_account_journal__is_sale_international
 msgid "International sale"
