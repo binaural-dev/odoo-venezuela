@@ -10,7 +10,7 @@
     "depends": [
         "base",
         "l10n_ve_pos",
-        "l10n_ve_igtf",
+        "l10n_ve_advance_payment_igtf",
     ],
     "data": [
         "views/pos_payment_method.xml",
