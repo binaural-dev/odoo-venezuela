@@ -171,7 +171,7 @@ patch(Order.prototype, {
       this.orderlines.reduce(function(sum, orderLine) {
         return sum + orderLine.get_display_foreign_price();
       }, 0),
-      this.pos.dp["Foreign Product Price"],
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_total_with_tax() {
@@ -182,7 +182,7 @@ patch(Order.prototype, {
       this.orderlines.reduce(function(sum, orderLine) {
         return sum + orderLine.get_foreign_price_without_tax();
       }, 0),
-      this.pos.dp["Foreign Product Price"],
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_total_discount() {
@@ -203,7 +203,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      this.pos.dp["Foreign Product Price"],
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_total_tax() {
@@ -434,7 +434,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      this.pos.dp["Foreign Product Price"],
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_change(paymentline) {
@@ -453,7 +453,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(Math.max(0, change), this.pos.dp["Foreign Product Price"]);
+    return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
   },
   get_foreign_due(paymentline) {
     if (!paymentline) {
@@ -472,7 +472,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(due, this.pos.dp["Foreign Product Price"]);
+    return round_pr(due, this.pos.foreign_currency.rounding);
   },
 
   get_qty_products() {
