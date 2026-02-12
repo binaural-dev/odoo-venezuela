@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 import logging
 
@@ -59,13 +60,10 @@ class AccountPayment(models.Model):
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        default=default_rate,
-        digits="Tasa",
         store=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
-        default=default_inverse_rate,
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
@@ -81,7 +79,6 @@ class AccountPayment(models.Model):
 
     other_rate = fields.Float(
         compute="_compute_other_rate",
-        digits="Tasa",
         store=True,
         readonly=False,
         help="This field is shown when the payment is different from the company currency and the company foreign currency. Show the rate of the currency of the payment. NOTE: This field is not the same as the foreign_rate field.",
@@ -116,11 +113,9 @@ class AccountPayment(models.Model):
                 payment.currency_id == payment.company_id.foreign_currency_id
             )
 
-    @api.model_create_multi
+    """ @api.model_create_multi
     def create(self, vals_list):
-        """
-        Override the create method to set the rate of the payment to its move.
-        """
+        
         payments = super().create(vals_list)
         for payment in payments.with_context(skip_account_move_synchronization=True):
             payment.move_id.write(
@@ -129,7 +124,7 @@ class AccountPayment(models.Model):
                     "foreign_inverse_rate": payment.foreign_inverse_rate,
                 }
             )
-        return payments
+        return payments """
 
     def _synchronize_to_moves(self, changed_fields):
         """
@@ -147,6 +142,7 @@ class AccountPayment(models.Model):
                     "foreign_inverse_rate": payment.foreign_inverse_rate,
                 }
             )
+        
         return res
 
     @api.depends("date", "currency_id")

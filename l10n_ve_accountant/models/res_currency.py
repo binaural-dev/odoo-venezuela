@@ -21,3 +21,5 @@ class ResCurrency(models.Model):
                     "l10n_ve_accountant.group_fiscal_config_support"
                 )
             )
+
+   

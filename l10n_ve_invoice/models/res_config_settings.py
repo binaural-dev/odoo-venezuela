@@ -30,6 +30,8 @@ class ResConfigSettings(models.TransientModel):
         readonly=False
     )
 
+   
+
     @api.onchange("group_sales_invoicing_series")
     def onchange_group_sales_invoicing_series(self):
         ir_sequence = self.env["ir.sequence"].sudo()

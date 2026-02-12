@@ -36,7 +36,7 @@ class AccountMove(models.Model):
 
     last_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
-    is_contingency = fields.Boolean(related="journal_id.is_contingency")
+    is_contingency = fields.Boolean(related="journal_id.is_contingency", store=True)
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 

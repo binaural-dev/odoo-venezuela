@@ -1,31 +1,14 @@
 {
-    "name": "Venezuela - IGTF",
-    "summary": "Módulo para campos del impuesto IGTF (Impuesto a las grandes transacciones financieras)",
+    "name": "Binaural  IGTF",
+    "summary": """
+       Modulo para IGTF en contabilidad Venezolana """,
     "license": "LGPL-3",
-    "description": "Módulo para campos del impuesto IGTF (Impuesto a las grandes transacciones financieras)",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "category": "Accounting/Accounting",
-    "version": "1.4",
-    "depends": [
-        "base",
-        "account",
-        "l10n_ve_rate",
-        "l10n_ve_invoice",
-        "l10n_ve_tax_payer",
-    ],
-    "data": [
-        "views/account_journal.xml",
-        "views/account_payment.xml",
-        "views/res_config_settings.xml",
-        "report/invoice_free_form.xml",
-        "wizard/account_payment_register.xml",
-        "data/ir_actions_server.xml",
-    ],
+    "category": "Accounting/Igtf",
+    "version": "19.0.1.0.1",
+    # any module necessary for this one to work correctly
     "images": ["static/description/icon.png"],
-    "assets": {
-        "web.assets_backend": ["l10n_ve_igtf/static/src/components/**/*"],
-    },
-    "pre_init_hook": "pre_init_hook",
-    "application": True,
+    
+    "auto_install": False,
 }
