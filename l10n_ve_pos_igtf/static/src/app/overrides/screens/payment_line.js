@@ -10,3 +10,4 @@ patch(PaymentScreenPaymentLines.prototype, {
     return igtf_amount + " / " + foreign_igtf_amount
   }
 })
+
