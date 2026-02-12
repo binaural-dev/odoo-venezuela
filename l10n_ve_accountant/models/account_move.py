@@ -112,7 +112,7 @@ class AccountMove(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         store=True,
-        
+        digits="Tasa",
         tracking=True,
         readonly=False,
     )
