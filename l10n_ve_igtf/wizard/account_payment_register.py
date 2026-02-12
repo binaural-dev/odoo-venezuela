@@ -218,7 +218,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
         igtf_top = due_currency_id._convert( invoice.alter_igtf_top_aply,self.currency_id,company=self.company_id,date=self.payment_date) if invoice.company_currency_id == self.env.ref("base.VEF") else invoice.igtf_top_aply
 
-        #raise UserError(igtf_top)
         alter_bi_igtf = invoice.alter_bi_igtf
 
         igtf= igtf_unrounded
