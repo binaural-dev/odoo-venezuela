@@ -161,6 +161,8 @@ class AccountMove(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         store=True,
+        digits="Tasa",
+        default=default_rate,
         tracking=True,
     )
 
@@ -183,6 +185,7 @@ class AccountMove(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
+        default=default_inverse_rate,
         store=True,
         index=True,
     )

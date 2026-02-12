@@ -10,7 +10,6 @@ class ResCompany(models.Model):
     supplier_account_igtf_id = fields.Many2one(
         "account.account", domain=[("account_type", "=", "expense")],copy=False
     )
-    igtf_two_percentage_account = fields.Many2one("account.account",copy=False)
     igtf_percentage = fields.Float(string="IGTF Percentage", default=3.00,copy=False)
 
     show_igtf_suggested_account_move = fields.Boolean(default=False,copy=False)
