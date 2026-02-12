@@ -61,5 +61,5 @@ class PosPayment(models.Model):
                         "foreign_credit":  abs(payment.foreign_amount) if line.credit > 0 else 0,
                     }
                 )
-            return move_id
+        return move_id
         
