@@ -207,7 +207,7 @@ class StockPicking(models.Model):
             invoice = None
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
-                if picking_id.sale_id:
+                if picking_id.sale_id and not picking_id.sale_id.is_subcontracting:
                     invoice = picking_id.sale_id._create_invoices(final=True)
                     invoice.write(
                         {
@@ -472,9 +472,16 @@ class StockPicking(models.Model):
                     product.property_account_income_id or 
                     product.categ_id.property_account_income_categ_id
                 )
+                name = move_id.description_picking or move_id.name or product.display_name
 
+                if not price_unit:
+                    raise UserError(_(
+                        "The product '%s' does not have a sales price defined in its product profile.\n\n"
+                        "Please set a sales price for this product to proceed with the operation."
+                    ) % name)
+            
                 vals_dict = {
-                    "name": move_id.description_picking or move_id.name or product.display_name,
+                    "name": name,
                     "product_id": product.id,
                     "price_unit": price_unit,
                     "account_id": account.id,
@@ -1002,6 +1009,7 @@ class StockPicking(models.Model):
                 donation_reason = reasons.get("donation")
                 sale_reason = reasons.get("sale")
                 export_reason = reasons.get("export")
+                subcontracting = reasons.get("subcontracting")
 
                 # Donations
                 if picking.is_donation and donation_reason:
@@ -1010,12 +1018,16 @@ class StockPicking(models.Model):
 
                 # Without Donations
                 else:
-                    if sale_reason:
-                        allowed_reason_ids.append(sale_reason.id)
-                        if not picking.transfer_reason_id:
-                            picking.transfer_reason_id = sale_reason.id
-                    if export_reason:
-                        allowed_reason_ids.append(export_reason.id)
+                    if picking.sale_id.is_subcontracting:
+                        if subcontracting:
+                            allowed_reason_ids.append(subcontracting.id)
+                    else:
+                        if sale_reason:
+                            allowed_reason_ids.append(sale_reason.id)
+                            if not picking.transfer_reason_id:
+                                picking.transfer_reason_id = sale_reason.id
+                        if export_reason:
+                            allowed_reason_ids.append(export_reason.id)
 
             # Outgoing without sale
             elif is_outgoing and not has_sale:

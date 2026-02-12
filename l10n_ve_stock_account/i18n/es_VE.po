@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20251016\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-11 18:46+0000\n"
-"PO-Revision-Date: 2026-02-11 18:46+0000\n"
+"POT-Creation-Date: 2026-02-12 16:16+0000\n"
+"PO-Revision-Date: 2026-02-12 16:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -678,6 +678,11 @@ msgid "Is Return"
 msgstr "Es devolución"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__is_subcontracting
+msgid "Is Subcontracting"
+msgstr "Es Maquila"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Item"
 msgstr "Artículo"
@@ -1019,6 +1024,11 @@ msgid "Show Create Vendor Credit"
 msgstr "Show Crear crédito de proveedor"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__show_is_subcontracting
+msgid "Show Is Subcontracting"
+msgstr ""
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_other_causes_transfer_reason
 msgid "Show Other Causes Transfer Reason"
 msgstr "Mostrar otras causas Motivo de transferencia"
@@ -1096,6 +1106,19 @@ msgid ""
 msgstr ""
 "El producto %s no está disponible en la ubicación de consignación del "
 "cliente."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The product '%s' does not have a sales price defined in its product profile.\n"
+"\n"
+"Please set a sales price for this product to proceed with the operation."
+msgstr ""
+"El producto '%s' no tiene un precio de venta definido en su ficha de producto.\n"
+"\n"
+"Por favor, establezca un precio de venta para este producto para continuar con la operación."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
