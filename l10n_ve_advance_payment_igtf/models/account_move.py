@@ -450,18 +450,24 @@ class AccountMove(models.Model):
         return move_to_reconcile_with_payment_difference
 
     def _reconcile_move_with_payment_difference(self, payment_move, cross_move):
-        """
-        Realiza una doble conciliación entre un asiento de factura (self) y un asiento de cruce/pago (cross_move).
 
-        El proceso concilia:
-        1. Las líneas de Cuentas de Anticipo (Advance Account) para marcar el uso del anticipo.
-        2. Las líneas de Cuentas por Cobrar/Pagar (A/R o A/P) para cerrar la deuda de la factura.
-
-        :param account.move payment_move: El asiento de pago/anticipo original (ya no usado, se usa self.line_ids).
-        :param account.move cross_move: El asiento de cruce de anticipo recién creado.
-        :return: True si la conciliación fue exitosa.
-        :rtype: bool
         """
+        Reconciles an adjustment entry (cross_move) with the original payment and the current invoice.
+
+        This method handles payment differences by performing a two-step reconciliation:
+        1. It reconciles the advance account lines between the original payment_move 
+        and the cross_move.
+        2. It reconciles the receivable/payable lines between the cross_move 
+        and the current record (self).
+
+        :param payment_move: recordset (account.move) representing the original payment.
+        :param cross_move: recordset (account.move) representing the adjustment or 
+                        write-off entry created to bridge the difference.
+        
+        :return: bool: True if the process completes successfully or if the move_type 
+                    is not applicable for reconciliation.
+        """
+        
         self.ensure_one()
 
         cross_move.action_post()

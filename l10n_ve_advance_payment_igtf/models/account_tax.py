@@ -15,7 +15,26 @@ class AccountTax(models.Model):
     def _get_tax_totals_summary(
         self, base_lines, currency, company, cash_rounding=None
     ):
- 
+        """
+        Extends the tax totals summary to include IGTF (Large Financial Transactions Tax) calculations.
+
+        This method overrides the standard Odoo tax summary logic to calculate and append 
+        IGTF-related data. It dynamically detects whether the source is an Invoice 
+        (account.move) or a Sales Order (sale.order) and computes the tax amounts in 
+        both local and foreign currencies based on the company's configuration and 
+        the inverse exchange rate.
+
+        :param list base_lines: List of dictionaries containing base lines for tax calculation.
+        :param recordset currency: The document's primary currency (res.currency).
+        :param recordset company: The company recordset used to retrieve IGTF settings.
+        :param float cash_rounding: Optional parameter for cash rounding logic.
+
+        :return: dict: Updated tax totals dictionary including an 'igtf' key with:
+                    - apply_igtf (bool): Whether the tax is applicable.
+                    - igtf_amount (float): Calculated tax amount in local currency.
+                    - foreign_igtf_amount (float): Calculated tax amount in foreign currency.
+                    - is_igtf_suggested (bool): Whether the amount is an informative suggestion.
+        """
         
         res = super()._get_tax_totals_summary(base_lines, currency, company, cash_rounding)
 
