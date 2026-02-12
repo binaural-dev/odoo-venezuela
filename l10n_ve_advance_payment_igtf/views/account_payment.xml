@@ -1,0 +1,25 @@
+
+<odoo>
+
+    <record id="view_account_payment_form_binaural_advance_payment" model="ir.ui.view">
+        <field name="name">view.account.payment.form.binaural.advance.payment</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_type']" position="before">
+                <field name="destination_account_id" />
+                <field name="is_advance_payment" string="Is advance payment" readonly="state == 'posted'"/>
+                <field name="advanced_move_ids" readonly="1" widget="many2many_tags" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="account.action_account_payments" model="ir.actions.act_window">
+        <field name="context" eval="{'default_payment_type': 'inbound', 'default_partner_type': 'customer', 'search_default_inbound_filter': 1, 'default_move_journal_types': ('bank', 'cash'), 'display_account_trust': True, 'default_is_advance_payment': True}"/>
+    </record>
+
+    <record id="account.action_account_payments_payable" model="ir.actions.act_window">
+        <field name="context" eval="{'default_payment_type': 'outbound', 'default_partner_type': 'supplier', 'search_default_outbound_filter': 1, 'default_move_journal_types': ('bank', 'cash'), 'display_account_trust': True, 'default_is_advance_payment': True}"/>
+    </record>
+
+</odoo>

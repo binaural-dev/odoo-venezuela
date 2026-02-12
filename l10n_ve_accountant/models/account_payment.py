@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 import logging
 
@@ -65,7 +66,7 @@ class AccountPayment(models.Model):
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
-        default=default_inverse_rate,
+        default = default_inverse_rate,
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
@@ -147,6 +148,7 @@ class AccountPayment(models.Model):
                     "foreign_inverse_rate": payment.foreign_inverse_rate,
                 }
             )
+        
         return res
 
     @api.depends("date", "currency_id")
