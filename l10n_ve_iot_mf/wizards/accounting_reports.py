@@ -57,7 +57,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             domain_free_form , domain_fiscal_machine = self._get_domain_all_documents()
             account_moves_free_form = self.env["account.move"].search(domain_free_form, order="invoice_date asc")
             account_moves_fiscal_machine = self.env["account.move"].search(domain_fiscal_machine, order="invoice_date asc")
-            moves = account_moves_free_form + account_moves_fiscal_machine
+            moves = account_moves_free_form | account_moves_fiscal_machine
             return moves.sorted(key=lambda r: r.invoice_date or r.date)
         move_model = self.env["account.move"]
         domain = self._get_domain()
