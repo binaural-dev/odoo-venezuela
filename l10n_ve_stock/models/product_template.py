@@ -35,6 +35,7 @@ class ProductTemplate(models.Model):
     alternate_code = fields.Char(
         string="Alternate Code",
         help="Alternate code for the product",
+        tracking=True,
     )
     physical_location_id = fields.Many2one(
         "stock.location",
