@@ -812,7 +812,7 @@ msgstr "La factura no fue impresa"
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__custom_header
 msgid "This check box allow to configure a custom header for the invoice"
-msgstr ""
+msgstr "Esta casilla de verificación permite configurar un encabezado personalizado para la factura"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__ph01_header
