@@ -925,7 +925,7 @@ class AccountMoveLine(models.Model):
             line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
 
 
-    @api.onchange('amount_currency', 'currency_id')
+    @api.onchange('amount_currency', 'currency_id','foreign_inverse_rate')
     def _inverse_amount_currency(self):
         for line in self:
             if line.currency_id == line.company_id.currency_id and line.balance != line.amount_currency:
@@ -935,13 +935,13 @@ class AccountMoveLine(models.Model):
                 and not line.move_id.is_invoice(True)
                 and not self.env.is_protected(self._fields['balance'], line)
             ):
-                line.balance = line.amount_currency / line.currency_rate
+                line.balance = line.amount_currency / line.foreign_inverse_rate if line.foreign_inverse_rate else line.currency_rate
 
 
     @api.depends('currency_rate', 'balance')
     def _compute_amount_currency(self):
         for line in self:
             if line.amount_currency is False:
-                line.amount_currency = line.balance * line.currency_rate
+                 line.amount_currency = line.balance * line.foreign_inverse_rate if line.foreign_inverse_rate else line.currency_rate
             if line.currency_id == line.company_id.currency_id:
                 line.amount_currency = line.balance
