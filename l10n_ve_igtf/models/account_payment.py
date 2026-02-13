@@ -64,9 +64,8 @@ class AccountPaymentIgtf(models.Model):
         currency = invoice.currency_id
         precision = currency.rounding
 
-        due_amount = invoice.amount_residual
+        due_amount = invoice.amount_residual if invoice.company_currency_id != self.env.ref("base.VEF") else invoice.amount_residual / invoice.foreign_inverse_rate
 
-        due_currency_id = invoice.currency_id
 
         principal_debt = due_amount
 
@@ -75,7 +74,7 @@ class AccountPaymentIgtf(models.Model):
 
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
 
-        igtf_top = due_currency_id._convert( invoice.alter_igtf_top_aply,invoice.currency_id,company=self.company_id,date=fields.Date.today()) if invoice.company_currency_id == self.env.ref("base.VEF") else invoice.igtf_top_aply
+        igtf_top = invoice.igtf_top_aply
 
         alter_bi_igtf = invoice.alter_bi_igtf
 
@@ -205,7 +204,6 @@ class AccountPaymentIgtf(models.Model):
                 credit_line = credit_line_unrounded
                 credit_amount = -credit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    
                     credit_amount = -(credit_line / rec.foreign_inverse_rate)
                 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
@@ -219,7 +217,6 @@ class AccountPaymentIgtf(models.Model):
                     
                         balance = actual_value / rec.foreign_inverse_rate
                     vals[2].update({"amount_currency": actual_value, "balance": balance})
-
                 rec._create_inbound_move_line_igtf_vals(vals)
 
     def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
