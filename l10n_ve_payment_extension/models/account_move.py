@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
-
+from odoo.tools.float_utils import float_compare
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -194,7 +194,8 @@ class AccountMoveRetention(models.Model):
         for line in islr_retention_lines:
             move = line.move_id
             invoice_base = move.tax_totals.get("amount_untaxed", 0.0)
-            if line.invoice_amount > invoice_base:
+            
+            if float_compare(line.invoice_amount, invoice_base, precision_digits=2) == 1:
                 raise UserError(
                     _(
                         "The taxable base of one of the withholding lines is greater than the taxable base of the invoice"
