@@ -63,8 +63,11 @@ class AccountPaymentIgtf(models.Model):
         
         currency = invoice.currency_id
         precision = currency.rounding
-        
-        principal_debt = invoice.amount_residual if invoice.company_currency_id != self.env.ref("base.VEF") else invoice.foreign_amount_residual
+
+        due_amount = invoice.amount_residual if invoice.company_currency_id != self.env.ref("base.VEF") else invoice.amount_residual / invoice.foreign_inverse_rate
+
+
+        principal_debt = due_amount
 
         principal_amount = min(payment_amount, principal_debt)
         
@@ -199,7 +202,6 @@ class AccountPaymentIgtf(models.Model):
                 credit_line = credit_line_unrounded
                 credit_amount = -credit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    
                     credit_amount = -(credit_line / rec.foreign_inverse_rate)
                 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
@@ -213,7 +215,6 @@ class AccountPaymentIgtf(models.Model):
                     
                         balance = actual_value / rec.foreign_inverse_rate
                     vals[2].update({"amount_currency": actual_value, "balance": balance})
-
                 rec._create_inbound_move_line_igtf_vals(vals)
 
     def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):

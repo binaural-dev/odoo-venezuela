@@ -112,9 +112,7 @@ class AccountMoveLine(models.Model):
         for line in self:
            
             if line.price_unit and line.foreign_inverse_rate:
-                if line._origin.price_unit != line.price_unit or line.foreign_inverse_rate != line._origin.foreign_inverse_rate:
-                   
-                    line.foreign_price = line.price_unit * line.foreign_inverse_rate
+                line.foreign_price = line.price_unit * line.foreign_inverse_rate
             else:
                 line.foreign_price = 0.0
 
@@ -279,9 +277,9 @@ class AccountMoveLine(models.Model):
         line.foreign_debit_no_format = line.debit * inverse_rate_to_use
         line.foreign_credit_no_format = line.credit * inverse_rate_to_use
         
-        if line.foreign_debit != new_foreign_debit:
+        if new_foreign_debit:
             line.foreign_debit = new_foreign_debit
-        if line.foreign_credit != new_foreign_credit:
+        if new_foreign_credit:
             line.foreign_credit = new_foreign_credit
 
     def _calculate_from_product(self, line):
@@ -920,8 +918,8 @@ class AccountMoveLine(models.Model):
             residual = line.balance - debit_amount + credit_amount
             residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
             
-            line.amount_residual = comp_curr.round(residual)
-            line.amount_residual_currency = foreign_curr.round(residual_currency)
+            line.amount_residual = residual
+            line.amount_residual_currency = residual_currency
             # Para determinar si está conciliado, usamos una tolerancia mínima 
             # en lugar de un cero absoluto, o comparamos directamente.
             line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
@@ -938,3 +936,12 @@ class AccountMoveLine(models.Model):
                 and not self.env.is_protected(self._fields['balance'], line)
             ):
                 line.balance = line.amount_currency / line.currency_rate
+
+
+    @api.depends('currency_rate', 'balance')
+    def _compute_amount_currency(self):
+        for line in self:
+            if line.amount_currency is False:
+                line.amount_currency = line.balance * line.currency_rate
+            if line.currency_id == line.company_id.currency_id:
+                line.amount_currency = line.balance
