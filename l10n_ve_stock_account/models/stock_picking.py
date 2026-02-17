@@ -95,7 +95,7 @@ class StockPicking(models.Model):
 
     def action_open_invoice_wizard(self):
         return {
-            "name": "Generate Invoice For Multiple Picking",
+            "name": _("Generate Invoice For Multiple Picking"),
             "view_type": "form",
             "view_mode": "form",
             "res_model": "picking.invoice.wizard",  
