@@ -1315,6 +1315,9 @@ msgid "<b>The accounting line has been updated:</b>"
 msgstr "<b>La linea contable ha sido actualizada:</b>"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_amount_residual
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_amount_residual
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_amount_residual
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_amount_residual
 msgid "Foreign Amount Residual"
 msgstr "Cantidad por pagar"

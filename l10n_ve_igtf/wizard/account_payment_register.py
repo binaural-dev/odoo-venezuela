@@ -39,8 +39,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
-    amount_without_difference = fields.Float(
+    amount_without_difference = fields.Monetary(
         string="Amount without Difference",
+        currency_field="foreign_currency_id",
     )
 
     payment_difference = fields.Monetary(
@@ -86,7 +87,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                     total_igtf_amount += igtf_for_invoice
                 final_amount = base_amount + total_igtf_amount
-            
             wizard.amount = final_amount
             wizard.igtf_amount = total_igtf_amount
             wizard.igtf_to_show = total_igtf_amount
@@ -396,11 +396,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     epd_aml_values_list.append({
                         'aml': aml,
                         'amount_currency': -aml.amount_residual_currency,
-                        'balance': currency._convert(-aml.amount_residual_currency, aml.company_currency_id, self.company_id, self.payment_date,self.foreign_inverse_rate),
+                        'balance': currency._convert(-aml.amount_residual_currency, aml.company_currency_id, self.company_id, self.payment_date),
                     })
 
             open_amount_currency = (batch_values['source_amount_currency'] - total_amount) * (-1 if batch_values['payment_type'] == 'outbound' else 1)
-            open_balance = currency._convert(open_amount_currency, aml.company_currency_id, self.company_id, self.payment_date,self.foreign_inverse_rate)
+            open_balance = currency._convert(open_amount_currency, aml.company_currency_id, self.company_id, self.payment_date)
             early_payment_values = self.env['account.move']\
                 ._get_invoice_counterpart_amls_for_early_payment_discount(epd_aml_values_list, open_balance)
             for aml_values_list in early_payment_values.values():
@@ -427,7 +427,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 comp_curr,
                 self.company_id,
                 self.payment_date,
-                self.foreign_inverse_rate
             ), False
         elif self.source_currency_id == comp_curr and self.currency_id != comp_curr:
             # Company currency on source line but a foreign currency one on the opposite line.
@@ -442,7 +441,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     self.currency_id,
                     self.company_id,
                     conversion_date,
-                    self.foreign_inverse_rate
                 )
             return abs(residual_amount), False
         else:
@@ -452,5 +450,4 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 self.currency_id,
                 self.company_id,
                 self.payment_date,
-                self.foreign_inverse_rate
             ), False
