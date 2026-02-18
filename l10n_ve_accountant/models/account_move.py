@@ -200,8 +200,8 @@ class AccountMove(models.Model):
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
         for move in self:
-            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
-            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
+            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
+            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
             move.foreign_balance = move.foreign_debit - move.foreign_credit
 
     def _get_journal_income_account(self, journal):
@@ -1045,6 +1045,7 @@ class AccountMove(models.Model):
             move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit")), precision_digits=precision)
             if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
                 move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit_no_format")), precision_digits=precision)
+                move.foreign_debit = float_round(sum(move.line_ids.mapped("foreign_debit_no_format")), precision_digits=precision)
                 if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
                     raise UserError(_("Your transaction cannot be processed because the debit must match the credit."))
             
