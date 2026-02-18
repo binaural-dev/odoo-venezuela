@@ -15,3 +15,4 @@ class ResCompany(models.Model):
 
     show_igtf_suggested_account_move = fields.Boolean(default=False)
     show_igtf_suggested_sale_order = fields.Boolean(default=False)
+

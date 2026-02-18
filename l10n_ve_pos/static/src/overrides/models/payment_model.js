@@ -30,16 +30,11 @@ patch(Payment.prototype, {
 		return this.foreign_amount || 0;
 	},
 	set_amount(amount, only = false) {
-		let is_due = amount == this.order.get_due();
-		let res = super.set_amount(...arguments);
-		if (!only) {
-			if (is_due) {
-				this.set_foreign_amount(this.order.get_foreign_due(), true);
-				return res;
-			}
-			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
-		}
-		return res;
+		
+		super.set_amount(...arguments);
+		this.foreign_amount = amount * this.pos.foreign_currency.rate; 
+		
+		
 	},
 	set_foreign_amount(amount, only = false) {
 		this.foreign_amount = amount;

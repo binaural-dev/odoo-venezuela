@@ -20,7 +20,7 @@ class PosPaymentMethod(models.Model):
     @api.constrains("apply_one_cross_move", "split_transactions")
     def _check_apply_one_cross_move(self):
         for record in self:
-            if record.split_transactions:
+            if record.split_transactions and record.apply_one_cross_move: 
                 raise ValidationError(
                     _(
                         "You cannot select 'Apply a single adjustment entry' if the 'Identify customer' option is enabled."
