@@ -319,7 +319,7 @@ class TestForeignBalance(TransactionCase):
             'payment_date': fields.Date.today(),
         })
         payment = payment_register._create_payments()
-        _logger.warning("Payment: %s", payment)
+        _logger.info("Payment: %s", payment)
         self.assertIn(payment.state, ['posted', 'paid'], "Payment failed to post")
         
         # Check Payment Move Lines
