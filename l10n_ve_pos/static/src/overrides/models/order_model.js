@@ -129,6 +129,7 @@ patch(Order.prototype, {
     let json = super.export_as_JSON();
     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
     json["foreign_currency_rate"] = this.get_conversion_rate();
+    json["foreign_inverse_rate"] = this.init_conversion_rate;
     json["to_receipt"] = this.is_to_receipt();
     return json;
   },
@@ -176,7 +177,7 @@ patch(Order.prototype, {
       this.orderlines.reduce(function(sum, orderLine) {
         return sum + orderLine.get_display_foreign_price();
       }, 0),
-      this.pos.foreign_currency.rounding,
+      4,
     );
   },
   get_foreign_total_with_tax() {
@@ -187,7 +188,7 @@ patch(Order.prototype, {
       this.orderlines.reduce(function(sum, orderLine) {
         return sum + orderLine.get_foreign_price_without_tax();
       }, 0),
-      this.pos.foreign_currency.rounding,
+      4,
     );
   },
   get_foreign_total_discount() {
@@ -208,7 +209,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      this.pos.foreign_currency.rounding,
+      4,
     );
   },
   get_foreign_total_tax() {
@@ -234,7 +235,7 @@ patch(Order.prototype, {
       var taxIds = Object.keys(groupTaxes);
       for (var j = 0; j < taxIds.length; j++) {
         var taxAmount = groupTaxes[taxIds[j]];
-        sum += round_pr(taxAmount, this.pos.foreign_currency.rounding);
+        sum += round_pr(taxAmount, this.pos.currency.rounding);
       }
       return sum;
     } else {
@@ -242,7 +243,7 @@ patch(Order.prototype, {
         this.orderlines.reduce(function(sum, orderLine) {
           return sum + orderLine.get_foreign_tax();
         }, 0),
-        this.pos.foreign_currency.rounding,
+        4,
       );
     }
   },
@@ -439,7 +440,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      this.pos.foreign_currency.rounding,
+      4,
     );
   },
   get_foreign_change(paymentline) {
@@ -458,7 +459,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
+    return round_di(Math.max(0, change), 4);
   },
   get_foreign_due(paymentline) {
     if (!paymentline) {
@@ -477,7 +478,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(due, this.pos.foreign_currency.rounding);
+    return round_di(due, 4);
   },
 
   get_qty_products() {
