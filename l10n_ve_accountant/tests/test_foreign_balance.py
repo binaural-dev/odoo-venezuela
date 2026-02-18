@@ -267,7 +267,7 @@ class TestForeignBalance(TransactionCase):
         self.assertGreater(sum_foreign_debit, 0)
         self.assertAlmostEqual(sum_foreign_debit, 127.6, delta=5.0)
 
-    def test_payment_foreign_balance_USD(self):
+    def test_payment_foreign_balance_usd(self):
         """ Test foreign debit/credit balance on a payment for a foreign currency invoice. """
         
         # Create Bank Journal in USD
