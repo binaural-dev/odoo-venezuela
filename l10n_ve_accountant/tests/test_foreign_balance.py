@@ -137,10 +137,7 @@ class TestForeignBalance(TransactionCase):
         )
 
     def test_invoice_foreign_balance_simple(self):
-        """ Test foreign debit/credit balance on an invoice in Foreign Currency (USD). 
-            (Since Company is VEF, 'simple' might imply Company currency, but typically simple implies the most basic foreign case if talking about foreign balance?)
-            Let's call this 'foreign_currency_invoice' effectively.
-        """
+        """Testea el balance de débito/crédito en divisa extranjera (USD) para una factura."""
         # Create invoice in USD (Foreign Currency now)
         invoice = self.env["account.move"].create(
             {
