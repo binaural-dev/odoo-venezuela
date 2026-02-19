@@ -302,6 +302,7 @@ class StockPicking(models.Model):
                         {
                             "name": move_ids_without_package.description_picking,
                             "product_id": move_ids_without_package.product_id.id,
+                            "product_uom_id": move_ids_without_package.product_id.uom_id.id,
                             "price_unit": move_ids_without_package.product_id.lst_price,
                             "account_id": (
                                 move_ids_without_package.product_id.property_account_income_id.id
@@ -359,6 +360,7 @@ class StockPicking(models.Model):
                         {
                             "name": move_ids_without_package.description_picking,
                             "product_id": move_ids_without_package.product_id.id,
+                            "product_uom_id": move_ids_without_package.product_id.uom_id.id,
                             "price_unit": move_ids_without_package.product_id.lst_price,
                             "account_id": (
                                 move_ids_without_package.product_id.property_account_income_id.id
@@ -515,6 +517,7 @@ class StockPicking(models.Model):
                 vals_dict = {
                     "name": name,
                     "product_id": product.id,
+                    "product_uom_id": product.uom_id.id,
                     "price_unit": price_unit,
                     "account_id": account.id,
                     "tax_ids": tax_ids,
@@ -545,6 +548,7 @@ class StockPicking(models.Model):
                     {
                         "name": move_id.description_picking,
                         "product_id": move_id.product_id.id,
+                        "product_uom_id": move_id.product_id.uom_id.id,
                         "price_unit": price_unit,
                         "account_id": (
                             move_id.product_id.property_account_income_id.id
@@ -657,7 +661,7 @@ class StockPicking(models.Model):
             "view_mode": "tree,form",
             "res_model": "account.move",
             "domain": [("transfer_ids", "in", self.id)],
-            "context": {"create": False},
+            "context": {"create": False, "default_move_type": "out_invoice", "journal_type": "sale"},
             "target": "current",
         }
 
@@ -684,6 +688,7 @@ class StockPicking(models.Model):
                                 {
                                     "name": move_ids_without_package.description_picking,
                                     "product_id": move_ids_without_package.product_id.id,
+                                    "product_uom_id": move_ids_without_package.product_id.uom_id.id,
                                     "price_unit": move_ids_without_package.product_id.lst_price,
                                     "account_id": (
                                         move_ids_without_package.product_id.property_account_income_id.id
@@ -740,6 +745,7 @@ class StockPicking(models.Model):
                                 {
                                     "name": move_ids_without_package.description_picking,
                                     "product_id": move_ids_without_package.product_id.id,
+                                    "product_uom_id": move_ids_without_package.product_id.uom_id.id,
                                     "price_unit": move_ids_without_package.product_id.lst_price,
                                     "account_id": (
                                         move_ids_without_package.product_id.property_account_income_id.id
