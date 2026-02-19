@@ -13,6 +13,12 @@ _logger = logging.getLogger(__name__)
 class AppointmentGuests(models.Model):
     _inherit = "hikcentral.users"
 
+    overdue_access_attempts = fields.Integer(
+        string="Overdue Access Attempts",
+        default=0,
+        help="Counter of access attempts while the user had pending (not yet due) membership invoices.",
+    )
+
     comes_from_calendar_reservation = fields.Boolean()
     
     event_id = fields.Many2one(

@@ -84,6 +84,8 @@ class ActionPartner(models.Model):
                     else:
                         record._sync_owner_to_hikcentral()
 
+                    owner_hik.overdue_access_attempts = 0
+
                 for beneficiary in record.beneficiary_partner_ids:
                     beneficiary.action_restore_beneficiary_fast(real_end_date)
 

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-10 16:21+0000\n"
-"PO-Revision-Date: 2026-01-10 16:21+0000\n"
+"POT-Creation-Date: 2026-02-05 21:47+0000\n"
+"PO-Revision-Date: 2026-02-05 21:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -18,12 +18,17 @@ msgstr ""
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "<i class=\"fa fa-download me-1\"/> Download Image"
-msgstr ""
+msgstr "<i class=\"fa fa-download me-1\"/> Descargar imagen"
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "<i class=\"fa fa-paper-plane me-1\"/> <span>Re send</span>"
-msgstr ""
+msgstr "<i class=\"fa fa-paper-plane me-1\"/> <span>Reenviar</span>"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_res_config_settings_cadipa_hikvision
+msgid "<span class=\"o_form_label\">CADIPA Realtime Monitor Configuration</span>"
+msgstr "<span class=\"o_form_label\">Configuración del monitor en tiempo real CADIPA</span>"
 
 #. module: cadipa_hikvision
 #: model:mail.template,body_html:cadipa_hikvision.mail_template_visitor_qr_invitation_base
@@ -105,9 +110,36 @@ msgid "Acces:"
 msgstr "Acceso:"
 
 #. module: cadipa_hikvision
+#: model:ir.actions.client,name:cadipa_hikvision.action_cadipa_hikvision_realtime_messages
+#: model:ir.ui.menu,name:cadipa_hikvision.menu_cadipa_hikvision_realtime_messages
+msgid "Access Control Monitor"
+msgstr "Monitor de control de acceso"
+
+#. module: cadipa_hikvision
+#: model:ir.actions.act_window,name:cadipa_hikvision.action_cadipa_access_history
+#: model:ir.ui.menu,name:cadipa_hikvision.menu_cadipa_access_history
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_form
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_tree
+msgid "Access History"
+msgstr "Historial de acceso al complejo"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.actions.act_window,help:cadipa_hikvision.action_cadipa_access_history
+msgid ""
+"Access history is created automatically when members or beneficiaries "
+"attempt access at configured devices."
+msgstr "El historial de acceso se crea automáticamente cuando miembros o beneficiarios intentan acceder en dispositivos configurados."
+
+#. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "Actualizar y Reenviar"
-msgstr ""
+msgstr "Actualizar y reenviar"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields.selection,name:cadipa_hikvision.selection__cadipa_access_history__result__allowed
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Allowed"
+msgstr "Permitido"
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__appointment_guest_id
@@ -115,9 +147,48 @@ msgid "Appointment Guest"
 msgstr "Invitado a la Cita"
 
 #. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_realtime_message_config__device_ids
+msgid "Associated devices (minimum 1 required when saving)"
+msgstr "Dispositivos asociados (mínimo 1 requerido al guardar)"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/realtime_message_config.py:0
+#, python-format
+msgid "At least one device must be associated with the configuration."
+msgstr "Al menos un dispositivo debe estar asociado a la configuración."
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Beneficiaries"
+msgstr "Beneficiarios"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_cadipa_access_history
+msgid "CADIPA Access History"
+msgstr "Historial de acceso CADIPA"
+
+#. module: cadipa_hikvision
 #: model:ir.model,name:cadipa_hikvision.model_calendar_event
 msgid "Calendar Event"
 msgstr "Calendario de eventos"
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/realtime_message_config.py:0
+#, python-format
+msgid ""
+"Cannot create new records. Only the 3 predefined configurations are allowed."
+" You can only modify existing records."
+msgstr "No se pueden crear nuevos registros. Solo se permiten las 3 configuraciones predefinidas. Solo puede modificar registros existentes."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/realtime_message_config.py:0
+#, python-format
+msgid ""
+"Cannot delete configuration records. You can only modify existing records."
+msgstr "No se pueden eliminar los registros de configuración. Solo puede modificar registros existentes."
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
@@ -125,9 +196,49 @@ msgid "Close"
 msgstr "Cerrar"
 
 #. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__code
+msgid "Code"
+msgstr "Código"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_cadipa_access_history__access_status_code
+msgid "Code 1, 2 or 3 (aligned with realtime.message.config)."
+msgstr "Código 1, 2 o 3 (alineado con realtime.message.config)."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__color
+msgid "Color"
+msgstr "Color"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_realtime_message_config__color
+msgid "Color in hexadecimal format (e.g. #27ae60)"
+msgstr "Color en formato hexadecimal (ej. #27ae60)"
+
+#. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__comes_from_calendar_reservation
 msgid "Comes From Calendar Reservation"
 msgstr "Proviene de la Reserva de Calendario"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__condition_description
+msgid "Condition Description"
+msgstr "Descripción de la condición"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.actions.act_window,help:cadipa_hikvision.action_realtime_message_config
+msgid "Configure messages for the realtime monitor"
+msgstr "Configurar mensajes para el monitor en tiempo real"
 
 #. module: cadipa_hikvision
 #. odoo-javascript
@@ -142,6 +253,31 @@ msgid "Contact"
 msgstr "Contacto"
 
 #. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_hikcentral_users__overdue_access_attempts
+msgid ""
+"Counter of access attempts while the user had pending (not yet due) "
+"membership invoices."
+msgstr "Contador de intentos de acceso mientras el usuario tenía facturas de membresía pendientes (no vencidas)."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__create_uid
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__create_date
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__create_date
+msgid "Created on"
+msgstr "Creado el"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__occurred_at
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_form
+msgid "Date & Time"
+msgstr "Fecha y hora"
+
+#. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_access_level__default_membership_access_level
 msgid "Default Membership Access Level"
 msgstr "Nivel de Acceso de Membresía Predeterminado"
@@ -152,9 +288,90 @@ msgid "Default Membership Department"
 msgstr "Departamento de Membresía Predeterminado"
 
 #. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_res_company__cadipa_waiting_color
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_res_config_settings__cadipa_waiting_color
+msgid "Default Waiting Color"
+msgstr "Color de espera predeterminado"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_res_company__cadipa_waiting_message
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_res_config_settings__cadipa_waiting_message
+msgid "Default Waiting Message"
+msgstr "Mensaje de espera predeterminado"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_res_config_settings_cadipa_hikvision
+msgid "Default background color for the waiting screen (hexadecimal format)."
+msgstr "Color de fondo predeterminado de la pantalla de espera (formato hexadecimal)."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_res_company__cadipa_waiting_color
+#: model:ir.model.fields,help:cadipa_hikvision.field_res_config_settings__cadipa_waiting_color
+msgid ""
+"Default background color for the waiting screen (hexadecimal format, e.g. "
+"#2c3e50)."
+msgstr "Color de fondo predeterminado de la pantalla de espera (formato hexadecimal, ej. #2c3e50)."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_res_company__cadipa_waiting_message
+#: model:ir.model.fields,help:cadipa_hikvision.field_res_config_settings__cadipa_waiting_message
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_res_config_settings_cadipa_hikvision
+msgid "Default message to display on the waiting screen."
+msgstr "Mensaje predeterminado a mostrar en la pantalla de espera."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields.selection,name:cadipa_hikvision.selection__cadipa_access_history__result__denied
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Denied"
+msgstr "Denegado"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_realtime_message_config__condition_description
+msgid "Description of the condition (for future reference)"
+msgstr "Descripción de la condición (para referencia futura)"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_realtime_message_config_form
+msgid "Description of the condition..."
+msgstr "Descripción de la condición..."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_realtime_message_config__name
+msgid "Descriptive name of the status"
+msgstr "Nombre descriptivo del estado"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__device_id
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_form
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Device"
+msgstr "Dispositivo"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__device_ids
+msgid "Devices"
+msgstr "Dispositivos"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__display_name
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__display_name
+msgid "Display Name"
+msgstr "Nombre a mostrar"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_cadipa_access_history__device_id
+msgid "Door/device where the attempt occurred."
+msgstr "Puerta o dispositivo donde ocurrió el intento."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__duration_ms
+msgid "Duration (ms)"
+msgstr "Duración (ms)"
+
+#. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "Eliminar Invitado y Acceso HikCentral"
-msgstr ""
+msgstr "Eliminar invitado y acceso HikCentral"
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -168,7 +385,12 @@ msgstr "Correo actualizado y QR reenviado con éxito."
 #: code:addons/cadipa_hikvision/static/src/js/appointment_guest_delete.js:0
 #, python-format
 msgid "Error al eliminar: "
-msgstr ""
+msgstr "Error al eliminar: "
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_res_config_settings_cadipa_hikvision
+msgid "Esperando..."
+msgstr "Esperando..."
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__event_id
@@ -190,9 +412,16 @@ msgid "Event not found."
 msgstr "Evento no encontrado."
 
 #. module: cadipa_hikvision
+#. odoo-javascript
+#: code:addons/cadipa_hikvision/static/src/realtime_monitor_component/root.xml:0
+#, python-format
+msgid "Evento recibido"
+msgstr "Evento recibido"
+
+#. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_visitor_appointment__calendar_event_ids
 msgid "Eventos de Calendario Origen"
-msgstr ""
+msgstr "Eventos de calendario origen"
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -204,23 +433,27 @@ msgstr "Error al procesar la sincronización de visitantes: %s"
 #. module: cadipa_hikvision
 #. odoo-javascript
 #: code:addons/cadipa_hikvision/static/src/xml/access_status_screen.xml:0
-#: code:addons/cadipa_hikvision/static/src/xml/access_status_screen.xml:0
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_photo
 #, python-format
 msgid "Foto"
-msgstr ""
+msgstr "Foto"
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.portal_memberships_inherit_photo
 msgid "Foto de Perfil"
-msgstr ""
+msgstr "Foto de perfil"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Group By"
+msgstr "Agrupar por"
 
 #. module: cadipa_hikvision
 #. odoo-python
 #: code:addons/cadipa_hikvision/controllers/appointment.py:0
 #, python-format
 msgid "Guest added locally, but HikCentral sync failed: %s"
-msgstr ""
+msgstr "Invitado agregado localmente, pero la sincronización con HikCentral falló: %s"
 "Invitado agregado localmente, pero la sincronización con HikCentral falló: "
 "%s"
 
@@ -294,15 +527,26 @@ msgid "Hikcentral User"
 msgstr "Usuario de Hikcentral"
 
 #. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Holders"
+msgstr "Titulares"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__id
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__id
+msgid "ID"
+msgstr "ID"
+
+#. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "ID:"
-msgstr ""
+msgstr "ID:"
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,help:cadipa_hikvision.field_hikcentral_access_level__default_membership_access_level
 msgid ""
 "If checked, this access level will be assigned to new members by default."
-msgstr ""
+msgstr "Si está marcado, este nivel de acceso se asignará a los nuevos miembros por defecto."
 "Si está marcado, este nivel de acceso se asignará a los nuevos miembros por "
 "defecto."
 
@@ -311,19 +555,69 @@ msgstr ""
 msgid ""
 "If checked, this department will be used by default when creating member "
 "users."
-msgstr ""
+msgstr "Si está marcado, este departamento se utilizará por defecto al crear usuarios miembros."
 "Si está marcado, este departamento se utilizará por defecto al crear "
 "usuarios miembros."
 
 #. module: cadipa_hikvision
 #: model:mail.template,name:cadipa_hikvision.mail_template_visitor_qr_invitation_base
 msgid "Invitación de Visitante con QR (Base)"
-msgstr ""
+msgstr "Invitación de visitante con QR (base)"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__is_beneficiary
+msgid "Is Beneficiary"
+msgstr "Es beneficiario"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__write_uid
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__write_date
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__write_date
+msgid "Last Updated on"
+msgstr "Última actualización el"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_res_company__cadipa_overdue_limit
+#: model:ir.model.fields,help:cadipa_hikvision.field_res_config_settings__cadipa_overdue_limit
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_res_config_settings_cadipa_hikvision
+msgid "Limit of overdue entries allowed before showing warning message."
+msgstr "Límite de entradas en mora permitidas antes de mostrar el mensaje de advertencia."
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_photo
 msgid "Manually synchronize membership Owner to HikCentral."
-msgstr "Sincronizar manualmente el propietario de la membresía con HikCentral."
+msgstr ""
+"Sincronizar manualmente el propietario de la membresía con HikCentral."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_cadipa_access_history__partner_id
+msgid "Member or beneficiary who attempted access."
+msgstr "Miembro o beneficiario que intentó el acceso."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__membership_id
+msgid "Membership"
+msgstr "Membresía"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_cadipa_access_history__membership_id
+msgid "Membership (action.partner) associated with this attempt."
+msgstr "Membresía (action.partner) asociada a este intento."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__membership_number
+msgid "Membership Number"
+msgstr "Número de membresía"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_cadipa_access_history__membership_number
+msgid "Membership number for listing and search."
+msgstr "Número de membresía para listados y búsqueda."
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -331,6 +625,41 @@ msgstr "Sincronizar manualmente el propietario de la membresía con HikCentral."
 #, python-format
 msgid "Membership start and end dates must be defined."
 msgstr "Las fechas de inicio y fin de la membresía deben estar definidas."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__message
+msgid "Message"
+msgstr "Mensaje"
+
+#. module: cadipa_hikvision
+#: model:ir.ui.menu,name:cadipa_hikvision.menu_realtime_message_config
+msgid "Message Configurations"
+msgstr "Configuraciones de mensajes de acceso al complejo"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_realtime_message_config__duration_ms
+msgid "Message duration in milliseconds"
+msgstr "Duración del mensaje en milisegundos"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_cadipa_access_history__reason
+msgid "Message shown (e.g. Welcome, You must pay, Access denied)."
+msgstr "Mensaje mostrado (ej. Bienvenido, Debes pagar, Acceso denegado)."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_realtime_message_config__message
+msgid "Message to display on screen"
+msgstr "Mensaje a mostrar en pantalla"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_realtime_message_config_form
+msgid "Message to display on screen..."
+msgstr "Mensaje a mostrar en pantalla..."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_realtime_message_config__name
+msgid "Name"
+msgstr "Nombre"
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -358,9 +687,14 @@ msgstr ""
 msgid ""
 "No HikCentral user found for beneficiary %s. Please sync the beneficiary "
 "first."
-msgstr ""
+msgstr "No se encontró usuario de HikCentral para el beneficiario %s. Por favor sincronice primero al beneficiario."
 "No se encontró un usuario de HikCentral para el beneficiario %s. Por favor, "
 "sincroniza primero al beneficiario."
+
+#. module: cadipa_hikvision
+#: model_terms:ir.actions.act_window,help:cadipa_hikvision.action_cadipa_access_history
+msgid "No access attempts recorded yet."
+msgstr "Aún no se han registrado intentos de acceso."
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -393,7 +727,7 @@ msgstr "No se encontró un usuario sincronizado en HikCentral."
 #: code:addons/cadipa_hikvision/models/res_partners.py:0
 #, python-format
 msgid "Only confirmed beneficiaries linked to an action can be synced."
-msgstr ""
+msgstr "Solo los beneficiarios confirmados vinculados a una acción pueden sincronizarse."
 "Solo los beneficiarios confirmados vinculados a una acción pueden ser "
 "sincronizados."
 
@@ -402,7 +736,7 @@ msgstr ""
 #: code:addons/cadipa_hikvision/models/hikcentral_access_level.py:0
 #, python-format
 msgid "Only one access level can be set as the default visitor access level."
-msgstr ""
+msgstr "Solo un nivel de acceso puede establecerse como nivel predeterminado para visitantes."
 "Solo se puede establecer un nivel de acceso como el nivel de acceso "
 "predeterminado para visitantes."
 
@@ -411,9 +745,20 @@ msgstr ""
 #: code:addons/cadipa_hikvision/models/hikcentral_department.py:0
 #, python-format
 msgid "Only one department can be set as the default membership department."
-msgstr ""
+msgstr "Solo un departamento puede establecerse como departamento de membresía predeterminado."
 "Solo se puede establecer un departamento como el departamento de membresía "
 "predeterminado."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__overdue_access_attempts
+msgid "Overdue Access Attempts"
+msgstr "Intentos de acceso en mora"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_res_company__cadipa_overdue_limit
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_res_config_settings__cadipa_overdue_limit
+msgid "Overdue Entries Limit"
+msgstr "Límite de entradas en mora"
 
 #. module: cadipa_hikvision
 #: model:ir.model.fields,field_description:cadipa_hikvision.field_hikcentral_users__parent_user_id
@@ -426,9 +771,43 @@ msgid "Partner Action"
 msgstr "Membresia de Beneficiario"
 
 #. module: cadipa_hikvision
+#: model:ir.model.fields.selection,name:cadipa_hikvision.selection__cadipa_access_history__result__pending_payment
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Pending Payment"
+msgstr "Pago pendiente"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__partner_id
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Person"
+msgstr "Persona"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_form
+msgid "Person & Membership"
+msgstr "Persona y membresía"
+
+#. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "QR"
-msgstr ""
+msgstr "QR"
+
+#. module: cadipa_hikvision
+#: model:ir.model,name:cadipa_hikvision.model_realtime_message_config
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_realtime_message_config_form
+msgid "Realtime Message Configuration"
+msgstr "Configuración de mensaje en tiempo real"
+
+#. module: cadipa_hikvision
+#: model:ir.actions.act_window,name:cadipa_hikvision.action_realtime_message_config
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_realtime_message_config_tree
+msgid "Realtime Message Configurations"
+msgstr "Configuraciones de mensajes en tiempo real"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__reason
+msgid "Reason"
+msgstr "Motivo"
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_remove_editable
@@ -441,9 +820,26 @@ msgid "Remove Guest"
 msgstr "Eliminar Invitado"
 
 #. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__result
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_form
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Result"
+msgstr "Resultado"
+
+#. module: cadipa_hikvision
+#: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_cadipa_access_history_search
+msgid "Search Access History"
+msgstr "Buscar historial de acceso"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_cadipa_access_history__access_status_code
+msgid "Status Code"
+msgstr "Código de estado"
+
+#. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.portal_memberships_inherit_photo
 msgid "Sube una foto clara del rostro para el reconocimiento facial."
-msgstr ""
+msgstr "Sube una foto clara del rostro para el reconocimiento facial."
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.view_form_action_partner_inherit_photo
@@ -458,8 +854,15 @@ msgstr "Sincronizar Beneficiarios con HikCentral"
 #. module: cadipa_hikvision
 #: model:ir.model.fields,help:cadipa_hikvision.field_membership_type_plan__hikcentral_department_id
 msgid "The Hikcentral department associated with this membership type plan."
-msgstr ""
-"El departamento de HikCentral asociado con este plan de tipo de membresía."
+msgstr "El departamento de HikCentral asociado con este plan de tipo de membresía."
+
+#. module: cadipa_hikvision
+#. odoo-python
+#: code:addons/cadipa_hikvision/models/realtime_message_config.py:0
+#: model:ir.model.constraint,message:cadipa_hikvision.constraint_realtime_message_config_code_unique
+#, python-format
+msgid "The code must be unique."
+msgstr "El código debe ser único."
 
 #. module: cadipa_hikvision
 #. odoo-python
@@ -469,14 +872,36 @@ msgid "The guest %s (%s - %s) already has another booking on this day."
 msgstr "El invitado %s (%s - %s) ya tiene otra reserva en este día."
 
 #. module: cadipa_hikvision
+#: model_terms:ir.actions.act_window,help:cadipa_hikvision.action_realtime_message_config
+msgid ""
+"These configurations define the messages, colors, and durations displayed \n"
+"                in the realtime access control monitor based on user access status."
+msgstr "Estas configuraciones definen los mensajes, colores y duraciones mostrados en el monitor de control de acceso en tiempo real según el estado de acceso del usuario."
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_cadipa_access_history__is_beneficiary
+msgid "True if the attempt was by a beneficiary; False if by the holder."
+msgstr "Verdadero si el intento fue de un beneficiario; Falso si fue del titular."
+
+#. module: cadipa_hikvision
 #: model:mail.template,subject:cadipa_hikvision.mail_template_visitor_qr_invitation_base
 msgid "Tu Invitación para: {{ ctx.get('event_name') }}"
-msgstr "Tu Invitación para: {{ ctx.get('event_name') }}"
+msgstr "Tu invitación para: {{ ctx.get('event_name') }}"
 
 #. module: cadipa_hikvision
 #: model:ir.model,name:cadipa_hikvision.model_membership_type_plan
 msgid "Type Of Membership Plan"
 msgstr "Tipo de plan de membresía"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_realtime_message_config__code
+msgid "Unique code identifier (1, 2, 3)"
+msgstr "Identificador de código único (1, 2, 3)"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_cadipa_access_history__occurred_at
+msgid "When the access attempt occurred."
+msgstr "Cuándo ocurrió el intento de acceso."
 
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
@@ -488,8 +913,7 @@ msgstr "¿Correo incorrecto? Edítalo y reenvía el QR:"
 #: code:addons/cadipa_hikvision/controllers/appointment.py:0
 #, python-format
 msgid "You cannot delete the last guest. The booking cannot be empty."
-msgstr ""
-"No puedes eliminar al último invitado. La reserva no puede estar vacía."
+msgstr "No puedes eliminar al último invitado. La reserva no puede estar vacía."
 
 #. module: cadipa_hikvision
 #. odoo-javascript
@@ -501,4 +925,4 @@ msgstr "¿Estás seguro de que quieres eliminar a este invitado de la cita?"
 #. module: cadipa_hikvision
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "nuevo@correo.com"
-msgstr ""
+msgstr "nuevo@correo.com"

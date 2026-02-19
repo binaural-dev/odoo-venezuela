@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="realtime_message_config_1" model="realtime.message.config">
+            <field name="code">1</field>
+            <field name="name">Allowed Access</field>
+            <field name="message">Welcome</field>
+            <field name="color">#27ae60</field>
+            <field name="duration_ms">5000</field>
+            <field name="condition_description">Default state when there are no access problems</field>
+        </record>
+
+        <record id="realtime_message_config_2" model="realtime.message.config">
+            <field name="code">2</field>
+            <field name="name">Pending Payment</field>
+            <field name="message">You must pay</field>
+            <field name="color">#f39c12</field>
+            <field name="duration_ms">5000</field>
+            <field name="condition_description">Pending condition to implement - future logic</field>
+        </record>
+
+        <record id="realtime_message_config_3" model="realtime.message.config">
+            <field name="code">3</field>
+            <field name="name">Denied Access</field>
+            <field name="message">Access denied</field>
+            <field name="color">#e74c3c</field>
+            <field name="duration_ms">5000</field>
+            <field name="condition_description">When the end_date of the hikcentral.user is less than the current date</field>
+        </record>
+    </data>
+</odoo>

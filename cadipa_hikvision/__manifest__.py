@@ -1,6 +1,6 @@
 {
     'name': 'Hikvision Cadipa Integration',
-    'version': '17.0.1.0.13',
+    'version': '17.0.1.0.16',
     'summary': '',
     'author': 'Binaural',
     'depends': [
@@ -10,10 +10,13 @@
         'cadipa_appointment',
         'calendar',
         'mail',
+        'binaural_hikvision',
         'binaural_hikvision_employee',
     ],
     'data': [
+        'security/ir.model.access.csv',
         'data/mail_template.xml',
+        'data/realtime_message_config_data.xml',
         'views/calendar_view.xml',
         'views/hikcentral_user.xml',
         'views/portal_templates.xml',
@@ -21,8 +24,18 @@
         'views/hikcentral_department.xml',
         'views/hikcentral_access_level_views.xml',
         'views/membership_type_plan.xml',
+        'views/action_realtime_messages.xml',
+        'views/realtime_message_config_views.xml',
+        'views/res_config_settings_views.xml',
+        'views/cadipa_access_history_views.xml',
     ],
     'assets': {
+        'web.assets_backend': [
+            'cadipa_hikvision/static/src/realtime_monitor_component/root.scss',
+            'cadipa_hikvision/static/src/realtime_monitor_component/root.xml',
+            'cadipa_hikvision/static/src/realtime_monitor_component/root.js',
+            'cadipa_hikvision/static/src/realtime_monitor_component/action_realtime_messages.js',
+        ],
         'web.assets_frontend': [
             'cadipa_hikvision/static/src/xml/access_status_screen.xml',
             'cadipa_hikvision/static/src/js/access_status_screen.js',

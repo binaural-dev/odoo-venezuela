@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_realtime_message_config_tree" model="ir.ui.view">
+        <field name="name">realtime.message.config.tree</field>
+        <field name="model">realtime.message.config</field>
+        <field name="arch" type="xml">
+            <tree string="Realtime Message Configurations" create="false" delete="false">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="message"/>
+                <field name="color" widget="color"/>
+                <field name="duration_ms"/>
+                <field name="device_ids" widget="many2many_tags" options="{'no_create': True}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_realtime_message_config_form" model="ir.ui.view">
+        <field name="name">realtime.message.config.form</field>
+        <field name="model">realtime.message.config</field>
+        <field name="arch" type="xml">
+            <form string="Realtime Message Configuration" create="false" delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code" readonly="1"/>
+                            <field name="name"/>
+                        </group>
+                        <group>
+                            <field name="color" widget="color"/>
+                            <field name="duration_ms"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="message" placeholder="Message to display on screen..."/>
+                    </group>
+                    <group>
+                        <field name="device_ids" widget="many2many_tags" 
+                               options="{'no_create': True}" 
+                               domain="[]"
+                               context="{'default_device_type': 'door'}"/>
+                    </group>
+                    <group>
+                        <field name="condition_description" placeholder="Description of the condition..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_realtime_message_config" model="ir.actions.act_window">
+        <field name="name">Realtime Message Configurations</field>
+        <field name="res_model">realtime.message.config</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure messages for the realtime monitor
+            </p>
+            <p>
+                These configurations define the messages, colors, and durations displayed 
+                in the realtime access control monitor based on user access status.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_realtime_message_config"
+        name="Message Configurations"
+        parent="binaural_hikvision.menu_hikcentral_config"
+        action="action_realtime_message_config"
+        sequence="60"/>
+</odoo>
