@@ -694,14 +694,7 @@ msgstr "No puede agregar más de %s productos a la factura."
 msgid "control number"
 msgstr "Número de control"
 
-#. module: account
-#: model:ir.actions.act_window,name:account.action_move_in_refund_type
-#: model:ir.actions.act_window,name:account.action_move_out_refund_type
-#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
-#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
-#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
-msgid "Credit Notes"
-msgstr "Notas de Crédito"
+
 
 #. module: account
 #: model:ir.actions.act_window,name:account.action_move_in_refund_type
@@ -712,10 +705,6 @@ msgstr "Notas de Crédito"
 msgid "Credit Notes"
 msgstr "Notas de Crédito"
 
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
-msgid "Debit note"
-msgstr "Notas de Débito"
 
 #. module: l10n_ve_invoice
 #. odoo-python
@@ -730,3 +719,18 @@ msgstr "Una factura no puede tener una linea con precio en cero"
 #, python-format
 msgid "There are no moves to show"
 msgstr "No se encontraron registros para mostrar"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__declaration_unique_of_customs
+msgid "Declaration unique of customs"
+msgstr "Declaración Única de Aduana"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_purchase_international
+msgid "Is International Purchase"
+msgstr "Es Compra Internacional"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_filter_l10n_ve_invoice
+msgid "Number of Declaration Unique of Customs"
+msgstr "Declaración Única de Aduana"
