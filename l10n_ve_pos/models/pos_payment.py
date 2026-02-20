@@ -48,8 +48,18 @@ class PosPayment(models.Model):
 
             payment_move.write(
                 {
+                    "foreign_rate": payment.foreign_rate,
+                    "foreign_inverse_rate": payment.foreign_rate,
                     "manually_set_rate": True,
                 }
             )
-            
+            for line in payment_move.line_ids:
+                line.write(
+                    {
+                        "not_foreign_recalculate": True,
+                        "foreign_debit": abs(payment.foreign_amount) if line.debit > 0 else 0,
+                        "foreign_credit":  abs(payment.foreign_amount) if line.credit > 0 else 0,
+                    }
+                )
         return move_id
+        
