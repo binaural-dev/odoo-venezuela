@@ -164,7 +164,7 @@ class TestAccountingReports(TransactionCase):
 
         data = wizard.parse_sale_book_data()
 
-        self.assertTrue(len(data) > 0)
+        self.assertGreater(len(data), 0)
 
         fiscal_line = next(
             (line for line in data if line.get("document_number") == "0001"), None
