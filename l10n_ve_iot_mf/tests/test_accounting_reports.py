@@ -1,9 +1,6 @@
 import logging
 from datetime import date
 from odoo.tests import TransactionCase, tagged
-from odoo.addons.l10n_ve_invoice.wizard.accounting_reports import (
-    WizardAccountingReportsBinauralInvoice,
-)
 
 _logger = logging.getLogger(__name__)
 
