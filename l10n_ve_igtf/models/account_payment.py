@@ -204,13 +204,16 @@ class AccountPaymentIgtf(models.Model):
                 credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
                 credit_line = credit_line_unrounded
                 credit_amount = -credit_line
+                amount = 0.0
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    
-                    credit_amount = -(credit_line / rec.foreign_inverse_rate)
-                
+                    igtf_amount = rec.igtf_amount / rec.foreign_inverse_rate
+                    credit_amount = (lines[1]["credit"])
+
+                    amount =  credit_amount -igtf_amount
+
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
-                        vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
+                        vals[1].update({"amount_currency": credit_line, "credit": amount})
                 
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] + rec.igtf_amount
@@ -234,13 +237,16 @@ class AccountPaymentIgtf(models.Model):
                 debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
                 debit_line = debit_line_unrounded
                 debit_amount = debit_line
+                amount = 0.0
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    
-                    debit_amount = debit_line / rec.foreign_inverse_rate
-                
+                    igtf_amount = rec.igtf_amount / rec.foreign_inverse_rate
+                    debit_amount = (lines[1]["debit"])
+
+                    amount =  debit_amount - igtf_amount
+
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
-                        vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
+                        vals[1].update({"amount_currency": debit_line, "debit": amount})
 
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] - rec.igtf_amount
