@@ -2,3 +2,4 @@ from . import test_sale_book_igtf_usd_partner_formal
 from . import test_purchase_book_igtf_usd_provider_formal
 from . import test_common_purchase_book_igtf_usd_provider_formal
 from . import test_common_sale_book_igtf_usd_partner_formal
+from . import test_igtf_bypass
