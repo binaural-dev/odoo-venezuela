@@ -163,27 +163,23 @@ class AccountTax(models.Model):
         return None
     
     def _get_total_paid_foreign(self, move, foreign_currency):
-        if not move:
+        if not move or not move.invoice_payments_widget:
             return []
-
+    
         amounts = []
-        invoice_payments = move.invoice_payments_widget
-        if not invoice_payments:
-            return amounts
-
-        content = invoice_payments.get('content') or []
+        # Odoo almacena esto como dict o como string JSON dependiendo de la versión/estado
+        widget_data = move.invoice_payments_widget
+        content = widget_data.get('content') or []
+        
         for payment in content:
+            # Extraemos directamente el valor que vemos en tu imagen
+            # Usamos .get() por seguridad si el campo no existe en algún pago
+            f_amount = payment.get('foreign_amount', 0.0)
             
-            move_id = payment.get('move_id')
-            payment_id = self.env['account.move'].browse(move_id)
-            foreign_amt = 0.0
-            for line in payment_id.line_ids:
-              
+            # Opcional: Validar que el pago sea de la moneda que buscas
+            # En tu imagen sale 'foreign_id': 2
+            amounts.append(f_amount)
                 
-                foreign_amt = payment_id.amount_total if line.company_currency_id == self.env.ref("base.VEF") else payment_id.amount_total_signed
-                
-            foreign_amt = foreign_amt
-            amounts.append(foreign_amt)
         return amounts
 
     def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
