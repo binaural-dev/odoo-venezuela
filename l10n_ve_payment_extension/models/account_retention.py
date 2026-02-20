@@ -374,6 +374,16 @@ class AccountRetention(models.Model):
         """
         Validate that the company has the journals configured for the retention type.
         """
+        _logger.info("================================")
+        _logger.info("================================")
+        _logger.info("================================")
+        _logger.info("================================")
+        _logger.info("_validate_retention_journals")
+        _logger.info("================================")
+        _logger.info("================================")
+        _logger.info("================================")
+        _logger.info("================================")
+        
         for retention in self:
             # IVA
             if (retention.type_retention, retention.type) == (
