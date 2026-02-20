@@ -35,7 +35,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         domain_fiscal_machine.append(("mf_invoice_number", "!=", False))
         domain_fiscal_machine.append(("mf_reportz", "!=", False))
         domain_fiscal_machine.append(("mf_serial", "!=", False))
-        return domain_free_form , domain_fiscal_machine
+        return domain_free_form, domain_fiscal_machine
 
     def _get_domain(self):
         res = super()._get_domain()
