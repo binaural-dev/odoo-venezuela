@@ -39,8 +39,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
-    amount_without_difference = fields.Float(
+    amount_without_difference = fields.Monetary(
         string="Amount without Difference",
+        currency_field="foreign_currency_id",
     )
 
     payment_difference = fields.Monetary(
@@ -86,7 +87,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                     total_igtf_amount += igtf_for_invoice
                 final_amount = base_amount + total_igtf_amount
-            
             wizard.amount = final_amount
             wizard.igtf_amount = total_igtf_amount
             wizard.igtf_to_show = total_igtf_amount
@@ -429,7 +429,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 comp_curr,
                 self.company_id,
                 self.payment_date,
-                self.foreign_inverse_rate
             ), False
         elif self.source_currency_id == comp_curr and self.currency_id != comp_curr:
             # Company currency on source line but a foreign currency one on the opposite line.
@@ -444,7 +443,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     self.currency_id,
                     self.company_id,
                     conversion_date,
-                    self.foreign_inverse_rate
                 )
             return abs(residual_amount), False
         else:
@@ -454,5 +452,4 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 self.currency_id,
                 self.company_id,
                 self.payment_date,
-                self.foreign_inverse_rate
             ), False
