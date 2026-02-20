@@ -74,7 +74,8 @@ class AccountMove(models.Model):
 
                 else:
                     move.amount_to_pay_igtf = move.tax_totals["igtf"]["foreign_igtf_amount"] - move.amount_paid
-                    
+            if move.journal_id.is_purchase_international:
+                move.amount_to_pay_igtf = 0.0
 
     @api.depends(
         "amount_total", "amount_residual", "amount_residual_igtf", "amount_to_pay_igtf", "bi_igtf"
@@ -97,6 +98,16 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self.filtered(lambda rec: rec.move_type in ['out_invoice','in_invoice','out_refund','in_refund']):
+            if rec.journal_id.is_purchase_international:
+                rec.write({
+                    'igtf_top_aply': 0.0,
+                    'alter_igtf_top_aply': 0.0,
+                    'alter_bi_igtf': 0.0,
+                    'foreign_alter_bi_igtf': 0.0,
+                    'foreign_bi_igtf': 0.0,
+                    'bi_igtf': 0.0
+                })
+                continue
             
             amount = rec.amount_total
             if rec.company_currency_id == self.env.ref("base.VEF"):
@@ -266,7 +277,11 @@ class AccountMove(models.Model):
                 - The total IGTF amount actually charged.
             7. Computes the adjusted IGTF amount by excluding payments without IGTF.
         """
-        for rec in self:            
+        for rec in self:
+            if rec.journal_id.is_purchase_international:
+                rec.foreign_alter_bi_igtf = 0.0
+                rec.foreign_bi_igtf = 0.0
+                continue            
             amount = rec.foreign_total_billed
 
             igtf_top_aply = rec.currency_id.round((amount * (self.company_id.igtf_percentage / 100)))

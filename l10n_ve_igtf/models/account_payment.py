@@ -136,6 +136,8 @@ class AccountPaymentIgtf(models.Model):
                 if rec.partner_type == "customer"
                 else self.env.company.supplier_account_igtf_id.id
             )
+            if not igtf_account and rec.igtf_percentage:
+                raise UserError(_("Please configure the IGTF accounts in the accounting settings."))
             igtf_amount = rec.igtf_amount
             account_id = igtf_account if rec.igtf_percentage else None
             currency = self.currency_id 
@@ -161,6 +163,8 @@ class AccountPaymentIgtf(models.Model):
                 if rec.partner_type == "customer"
                 else self.env.company.supplier_account_igtf_id.id
             )
+            if not igtf_account and rec.igtf_percentage:
+                raise UserError(_("Please configure the IGTF account in the accounting settings."))
             igtf_amount = rec.igtf_amount
             account_id = igtf_account if rec.igtf_percentage else None
             currency = self.currency_id 
