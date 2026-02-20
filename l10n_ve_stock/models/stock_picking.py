@@ -76,7 +76,7 @@ class StockPicking(models.Model):
             return self.env["stock.picking"]
         domain = [
             "&",
-            ("reference_ids", "=", self.reference_ids.id),
+            ("reference_ids", "in", self.reference_ids.ids),
             ("type_delivery_step", "=", "pick"),
             ("id", "!=", self.id),
         ]
@@ -93,7 +93,7 @@ class StockPicking(models.Model):
             return self.env["stock.picking"]
         domain = [
             "&",
-            ("reference_ids", "=", self.reference_ids.id),
+            ("reference_ids", "in", self.reference_ids.ids),
             ("type_delivery_step", "=", "pack"),
             ("id", "!=", self.id),
         ]
@@ -110,7 +110,7 @@ class StockPicking(models.Model):
             return self.env["stock.picking"]
         domain = [
             "&",
-            ("reference_ids", "=", self.reference_ids.id),
+            ("reference_ids", "in", self.reference_ids.ids),
             ("type_delivery_step", "=", "out"),
             ("id", "!=", self.id),
         ]
