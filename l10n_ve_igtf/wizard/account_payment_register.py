@@ -161,7 +161,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if payment.journal_id.is_igtf and payment.partner_id:
                 move_ids=self.get_moves()
                 for move_id in move_ids:
-                    if payment.partner_id._check_igtf_apply_improved(move_id.move_type):
+                    if payment.partner_id._check_igtf_apply_improved(move_id):
                         payment.is_igtf = True
 
             if payment.journal_id.is_purchase_international:
