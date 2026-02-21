@@ -31,7 +31,7 @@ class TestRateLive(TransactionCase):
                 "EUR": (35, fields.Date.today()),
                 "CNY": (1, fields.Date.today()),
             }
-            parse_data = self.company._parse_bcv_data(availible_currencies=None)
+            parse_data = self.company._parse_bcv_data(available_currencies=None)
             _logger.warning(parse_data)
             expected_data = {
                 "VEF": (1.0, fields.Date.today()),
