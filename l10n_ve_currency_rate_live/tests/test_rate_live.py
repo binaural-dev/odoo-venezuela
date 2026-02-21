@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 _logger = logging.getLogger(__name__)
 from odoo.tests import TransactionCase, tagged
-from odoo import fields, Command
+from odoo import fields
 
 
 @tagged("l10n_ve_currency_rate_live", "post_install", "-at_install")
