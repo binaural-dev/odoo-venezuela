@@ -72,7 +72,6 @@ class ResCompany(models.Model):
     def _parse_bcv_data(self, available_currencies):
         companies = self.env["res.company"].search([])
         for company in companies:
-            rates_bcv = {}
             can_update_habil_days = company.can_update_habil_days
             current_date = fields.Date.context_today(self)
             day = current_date.isoweekday()
