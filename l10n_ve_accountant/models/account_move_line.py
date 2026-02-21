@@ -101,7 +101,6 @@ class AccountMoveLine(models.Model):
 
     not_deductible_tax = fields.Boolean(default=False)
 
-
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
         lines_without_name = self.filtered(lambda l: not l.name)
