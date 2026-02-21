@@ -69,7 +69,7 @@ class ResCompany(models.Model):
             return (1, False)
 
     @api.model
-    def _parse_bcv_data(self, availible_currencies):
+    def _parse_bcv_data(self, available_currencies):
         companies = self.env["res.company"].search([])
         for company in companies:
             rates_bcv = {}
