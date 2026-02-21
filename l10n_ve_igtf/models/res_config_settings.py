@@ -30,3 +30,14 @@ class ResConfigSettings(models.TransientModel):
     show_igtf_suggested_sale_order = fields.Boolean(
         related="company_id.show_igtf_suggested_sale_order", readonly=False
     )
+
+    advance_payment_igtf_journal_id = fields.Many2one(
+        related="company_id.advance_payment_igtf_journal_id", readonly=False, store=True
+    )
+
+    advance_customer_account_id = fields.Many2one(
+        related="company_id.advance_customer_account_id", readonly=False, store=True
+    )
+    advance_supplier_account_id = fields.Many2one(
+        related="company_id.advance_supplier_account_id", readonly=False, store=True
+    )
