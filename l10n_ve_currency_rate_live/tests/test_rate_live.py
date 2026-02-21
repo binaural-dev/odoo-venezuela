@@ -1,11 +1,10 @@
 import logging
 from unittest.mock import patch
 
-_logger = logging.getLogger(__name__)
 from odoo.tests import TransactionCase, tagged
-from odoo import fields
+from odoo import fields, Command
 
-
+_logger = logging.getLogger(__name__)
 @tagged("l10n_ve_currency_rate_live", "post_install", "-at_install")
 class TestRateLive(TransactionCase):
     def setUp(self):
