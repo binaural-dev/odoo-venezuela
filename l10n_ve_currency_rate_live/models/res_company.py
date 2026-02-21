@@ -69,24 +69,32 @@ class ResCompany(models.Model):
             return (1, False)
 
     @api.model
-    def _parse_bcv_data(self, available_currencies):
-        companies = self.env["res.company"].search([])
-        for company in companies:
-            can_update_habil_days = company.can_update_habil_days
-            current_date = fields.Date.context_today(self)
-            day = current_date.isoweekday()
-            is_habil_day = day <= 5
-            invalid_update_in_habil_day = not is_habil_day and can_update_habil_days
-            if invalid_update_in_habil_day:
-                return {}
-            rates_bcv = self._get_bcv_currency_rates()
-            if isinstance(rates_bcv, tuple):
-                return {}
+    def _parse_bcv_data(self, availible_currencies):
+        """ This method receives the response from the bcv provider and formats it.
+        It also handles the validation to prevent updating rates on non-working days (weekends)
+        if the companies grouped by this provider have the 'can_update_habil_days' setting enabled.
 
-            final_rates = {"VEF": (1.0, current_date)}
-            for currency_code, rate_data in rates_bcv.items():
-                rate, date = rate_data
-                if str(date) == str(current_date) and rate:
-                    final_rates[currency_code] = (1.0 / rate, date)
-            _logger.warning("BCV rates: %s", final_rates)
-            return final_rates
+        :param availible_currencies: recordset of the currencies we want to get the rates of.
+        :return: dictionary with the currency codes as keys and the rate and date as values.
+                 Example: {"VEF": (1.0, '2023-01-01'), "USD": (0.025, '2023-01-01')}
+                 Returns {} if it's a non-working day and all companies block updates.
+                 Returns {} if there's a communication error with the provider.
+        """
+        companies = self if self else self.env.company
+        current_date = fields.Date.context_today(self)
+        day = current_date.isoweekday()
+        is_habil_day = day <= 5
+        
+        if not is_habil_day and all(company.can_update_habil_days for company in companies):
+            return {}
+        
+        rates_bcv = self._get_bcv_currency_rates()
+        if isinstance(rates_bcv, tuple):
+            return {}
+
+        final_rates = {"VEF": (1.0, current_date)}
+        for currency_code, rate_data in rates_bcv.items():
+            rate, date = rate_data
+            if str(date) == str(current_date) and rate:
+                final_rates[currency_code] = (1.0 / rate, date)
+        return final_rates
