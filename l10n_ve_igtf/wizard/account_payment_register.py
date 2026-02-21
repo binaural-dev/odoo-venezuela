@@ -175,7 +175,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 
                 elif rec.amount > residual + residual * (rec.igtf_percentage / 100) :
                     amount_without_difference = amount_without_difference + residual  
-
             rec.amount_without_difference = amount_without_difference
 
                              

@@ -32,9 +32,9 @@ class AccountMove(models.Model):
         string="Is Advance Move?",
         store=True,
     )
-
     igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
     alter_bi_igtf = fields.Float('IGTF Apply',copy=False)
+
     foreign_bi_igtf = fields.Float('Foreigh Base imp Igtf',copy=False)
 
     invoice_outstanding_credits_debits_widget_advance_payment = fields.Binary(
@@ -610,7 +610,6 @@ class AccountMove(models.Model):
         for line in advance_lines_to_reconcile:
             if not line.date_maturity:
                 line.date_maturity = line.date
-
                 
         advance_lines_to_reconcile.reconcile()
 
@@ -631,7 +630,6 @@ class AccountMove(models.Model):
             if not line.date_maturity:
                 line.date_maturity = line.date
 
-
         rp_lines_to_reconcile.reconcile()
 
         return True
@@ -640,7 +638,6 @@ class AccountMove(models.Model):
        
 
         self.ensure_one()
-
         outstanding_line = self.env["account.move.line"].browse(line_id)
         payment_move = outstanding_line.move_id
         
@@ -747,7 +744,6 @@ class AccountMove(models.Model):
                 target_account = False
 
                 partial_amount = 0.0
-
                 partner_context = rec.partner_id.with_company(rec.company_id)
                 for payment_move in final_payment_moves:
                     igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)

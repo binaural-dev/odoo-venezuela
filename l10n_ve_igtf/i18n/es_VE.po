@@ -297,6 +297,8 @@ msgid "IGTF Journal"
 msgstr "Diario de IGTF"
 
 #. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__igtf_percentage
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__igtf_percentage
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_percentage
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__igtf_percentage
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__igtf_percentage
@@ -351,6 +353,23 @@ msgstr "Widget de créditos y débitos de anticipos en facturas"
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__invoices_origin_ids
 msgid "Invoices Origin"
 msgstr "Factura origen del pago"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__is_advance_move
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__is_advance_move
+msgid "Is Advance Move?"
+msgstr "Es asiento de anticipo"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__is_advance_payment
+msgid "Is Advance Payment"
+msgstr "Es Anticipo"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__invoice_outstanding_credits_debits_widget_advance_payment
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__invoice_outstanding_credits_debits_widget_advance_payment
+msgid "Invoice Outstanding Credits Debits Widget Advance Payment"
+msgstr "Widget de créditos y débitos de anticipos en facturas"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__is_advance_move
