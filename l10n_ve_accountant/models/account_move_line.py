@@ -1,12 +1,7 @@
-import inspect
-from contextlib import ExitStack, contextmanager
-from odoo import api, fields, models, Command, _
+from odoo import api, fields, models, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import frozendict, formatLang, format_date, float_compare, Query
-from datetime import date, timedelta
-import traceback
-
+from odoo.tools import float_compare
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -18,6 +13,12 @@ class AccountMoveLine(models.Model):
     not_foreign_recalculate = fields.Boolean()
     foreign_currency_id = fields.Many2one(
         related="move_id.foreign_currency_id", store=True
+    )
+    ves_currency_id = fields.Many2one(
+        "res.currency",
+        string="Moneda VES",
+        compute="_compute_ves_currency_id",
+        store=True,
     )
     foreign_rate = fields.Float(related="move_id.foreign_rate", store=True)
     foreign_inverse_rate = fields.Float(
@@ -63,6 +64,30 @@ class AccountMoveLine(models.Model):
         store=True,
     )
 
+    price_unit_ves = fields.Monetary(
+        string="Unit Price VES",
+        currency_field="ves_currency_id",
+        help="Unit Price in VES currency",
+        compute="_compute_price_unit_ves",
+        store=True,
+    )
+
+    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
+    def _compute_price_unit_ves(self):
+        for line in self:
+            if line.currency_id and line.currency_id.name == "VEF":
+                line.price_unit_ves = line.price_unit
+            else:
+                line.price_unit_ves = line.price_unit / line.currency_id.rate
+
+    def _compute_ves_currency_id(self):
+        ves_currency = self.env["res.currency"].search([("name", "=", "VES")], limit=1)
+        for line in self:
+            if line.currency_id and ves_currency and line.currency_id == ves_currency:
+                line.ves_currency_id = ves_currency
+            else:
+                line.ves_currency_id = False
+
     foreign_debit_adjustment = fields.Monetary(
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign debit field",
@@ -75,44 +100,6 @@ class AccountMoveLine(models.Model):
     config_deductible_tax = fields.Boolean(related='company_id.config_deductible_tax')
 
     not_deductible_tax = fields.Boolean(default=False)
-    
-    @api.onchange("amount_currency", "currency_id")
-    def _inverse_amount_currency(self):
-        for line in self:
-            if (
-                line.currency_id == line.company_id.currency_id
-                and line.balance != line.amount_currency
-            ):
-                line.balance = line.amount_currency
-            elif (
-                line.currency_id != line.company_id.currency_id
-                and not line.move_id.is_invoice(True)
-                and not self.env.is_protected(self._fields["balance"], line)
-            ):
-                rate = (
-                    line.foreign_inverse_rate
-                    if line.currency_id
-                    in (self.env.ref("base.VEF"), self.env.ref("base.USD"))
-                    else line.currency_rate
-                )
-                line.balance = line.company_id.currency_id.round(
-                    line.amount_currency / rate
-                )
-            elif (
-                line.currency_id != line.company_id.currency_id
-                and not line.move_id.is_invoice(True)
-                and line.move_id.origin_payment_id
-            ):
-                if (
-                    line.move_id.origin_payment_id.foreign_inverse_rate != 0
-                    and line.amount_currency != 0
-                ):
-                    line.balance = line.company_id.currency_id.round(
-                        line.amount_currency
-                        / line.move_id.origin_payment_id.foreign_inverse_rate
-                    )
-                else:
-                    raise UserError(_("The rate should be greater than zero"))
 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
@@ -125,10 +112,23 @@ class AccountMoveLine(models.Model):
             line.name = line.move_id.name
         return res
 
-    @api.depends("price_unit", "foreign_inverse_rate")
+    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
     def _compute_foreign_price(self):
         for line in self:
-            line.foreign_price = line.price_unit * line.foreign_inverse_rate
+            company_currency = line.company_id.currency_id
+            foreign_currency = line.company_id.foreign_currency_id
+            if line.currency_id.id == company_currency.id:
+                line.foreign_price = line.price_unit * line.foreign_inverse_rate
+            elif line.currency_id.id == foreign_currency.id:
+                line.foreign_price = line.price_unit
+            else:
+                price_in_company = line.currency_id._convert(
+                    line.price_unit,
+                    company_currency,
+                    line.company_id,
+                    line.move_id.invoice_date or fields.Date.today(),
+                )
+                line.foreign_price = price_in_company * line.foreign_inverse_rate
 
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
@@ -161,6 +161,7 @@ class AccountMoveLine(models.Model):
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
+        "foreign_inverse_rate",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
@@ -242,8 +243,22 @@ class AccountMoveLine(models.Model):
                     line.foreign_credit = abs(balance) if balance > 0 else 0.0
                     continue
 
-                line.foreign_debit = line.debit * line.foreign_inverse_rate
-                line.foreign_credit = line.credit * line.foreign_inverse_rate
+                if line.currency_id and line.currency_id != line.company_id.foreign_currency_id and line.currency_id != line.company_id.currency_id:
+                     line.foreign_debit = line.company_id.currency_id._convert(
+                         line.debit,
+                         line.company_id.foreign_currency_id,
+                         line.company_id,
+                         line.date or fields.Date.context_today(line)
+                     )
+                     line.foreign_credit = line.company_id.currency_id._convert(
+                         line.credit,
+                         line.company_id.foreign_currency_id,
+                         line.company_id,
+                         line.date or fields.Date.context_today(line)
+                     )
+                else:
+                    line.foreign_debit = line.debit * line.foreign_inverse_rate
+                    line.foreign_credit = line.credit * line.foreign_inverse_rate
                 continue
 
             if line.display_type == "product":
@@ -261,7 +276,6 @@ class AccountMoveLine(models.Model):
             # line.foreign_credit = (
             #     abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
             # )
-
 
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):

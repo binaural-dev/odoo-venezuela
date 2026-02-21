@@ -197,7 +197,7 @@ msgstr "El campo Identificación fiscal solo admite números"
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "There is already a partner with the same VAT number for this company."
-msgstr "Ya existe un cliente con el mismo número de RIF para esta compañía."
+msgstr "Ya existe un cliente con el mismo número de RIF/CI para esta compañía."
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_supplier_payment_term_id

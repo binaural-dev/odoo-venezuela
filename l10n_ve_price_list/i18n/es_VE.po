@@ -1,0 +1,84 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_price_list
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20251124\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-28 19:26+0000\n"
+"PO-Revision-Date: 2025-11-28 19:26+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_price_list
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_account_move_line__can_edit_prices
+msgid "Can Edit Prices"
+msgstr "Puede editar precios en las lineas de factura"
+
+#. module: l10n_ve_price_list
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_template__display_name
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_sale_order_line__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
+
+#. module: l10n_ve_price_list
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_account_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_template__id
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_sale_order_line__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_price_list
+#: model:ir.model,name:l10n_ve_price_list.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_price_list
+#: model:ir.model,name:l10n_ve_price_list.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_price_list
+#: model:res.groups,name:l10n_ve_price_list.group_pricelist_change_permission
+msgid "Pricelist Change Permission"
+msgstr "Permiso para cambiar listas de precios"
+
+#. module: l10n_ve_price_list
+#: model:res.groups,name:l10n_ve_price_list.group_pricelist_see_permission
+msgid "Pricelist See Permission"
+msgstr "Permiso para ver listas de precios en productos"
+
+#. module: l10n_ve_price_list
+#: model:ir.model,name:l10n_ve_price_list.model_product_template
+msgid "Product"
+msgstr "Producto"
+
+#. module: l10n_ve_price_list
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_account_bank_statement_line__can_edit_pricelist
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_account_move__can_edit_pricelist
+msgid "Puede editar lista de precios"
+msgstr ""
+
+#. module: l10n_ve_price_list
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_sale_order_line__can_edit_prices
+msgid "Puede editar precios"
+msgstr ""
+
+#. module: l10n_ve_price_list
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_product__can_view_list_price_uom
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_template__can_view_list_price_uom
+msgid "Puede ver unidad de precio"
+msgstr ""
+
+#. module: l10n_ve_price_list
+#: model:ir.model,name:l10n_ve_price_list.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Línea de la orden de venta"
