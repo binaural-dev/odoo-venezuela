@@ -239,18 +239,29 @@ class AccountMove(models.Model):
             )
 
     def _post(self, soft=True):
-        res = super()._post(soft)
+        # Filtramos para asegurarnos de que solo intentamos publicar lo que está en borrador
+        # Esto evita el error de "debe ser un borrador" en procesos automáticos
+        draft_moves = self.filtered(lambda m: m.state == 'draft')
+        
+        # Si no hay nada en borrador (porque ya se publicó en un paso previo), 
+        # devolvemos el self original para no romper el flujo.
+        if not draft_moves:
+            return self
+
+        res = super(AccountMove, draft_moves)._post(soft)
+        
         for move in res:
-            
-            if "invoice_print_type" in move.company_id._fields:
-                invoice_print_type = move.company_id.invoice_print_type
-            else:
-                invoice_print_type = None
-            
-            if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
+            # Solo aplicamos número de control a facturas de cliente/notas crédito
+            # Evitamos tocar asientos de diferencia de cambio (entry) o pagos
+            if move.is_invoice(include_receipts=True):
+                if "invoice_print_type" in move.company_id._fields:
+                    invoice_print_type = move.company_id.invoice_print_type
+                else:
+                    invoice_print_type = None
                 
-                move.correlative = move.get_sequence()
-                
+                if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
+                    move.correlative = move.get_sequence()
+                    
         return res
         
 
