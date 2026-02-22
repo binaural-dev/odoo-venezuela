@@ -5,9 +5,24 @@ class TestSaleOrderForeignPricelist(TransactionCase):
     def setUp(self):
         super().setUp()
         company = self.env.ref('base.main_company')
-        usd = self.env['res.currency'].create({'name': 'USD', 'symbol': '$', 'rate': 1.0})
-        eur = self.env['res.currency'].create({'name': 'EUR', 'symbol': '€', 'rate': 0.9})
-        company.currency_id = usd.id
+        ves = self.env.ref('base.VES')
+        usd = self.env.ref('base.USD')
+        eur = self.env.ref('base.EUR')
+        
+        usd.write({'active': True})
+        eur.write({'active': True})
+
+        self.env['res.currency.rate'].search([
+            ('currency_id', 'in', (usd.id, eur.id)),
+            ('company_id', '=', company.id),
+        ]).unlink()
+
+        self.env['res.currency.rate'].create([
+            {'name': '2026-01-01', 'currency_id': usd.id, 'rate': 1.0, 'company_id': company.id},
+            {'name': '2026-01-01', 'currency_id': eur.id, 'rate': 0.9, 'company_id': company.id}
+        ])
+        company.currency_id = ves.id
+        company.foreign_currency_id = usd.id
 
         pricelist_eur = self.env['product.pricelist'].create({
             'name': 'EUR Pricelist',
