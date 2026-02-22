@@ -15,5 +15,5 @@ class ResConfigSettings(models.TransientModel):
             is_habil_day = current_date.isoweekday() <= 5
             if not is_habil_day:
                 raise UserError(_("You can not update currency rates manually in a non-habil day."))
-        
-            return super().update_currency_rates_manually()
+
+        return super().update_currency_rates_manually()
