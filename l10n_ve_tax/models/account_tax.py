@@ -101,18 +101,23 @@ class AccountTax(models.Model):
             res["foreign_discount_amount"] = foreign_taxes["amount_untaxed"] - foreign_taxes_without_discount["amount_untaxed"]
             res["foreign_formatted_discount_amount"] = formatLang(self.env, res["foreign_discount_amount"], currency_obj=foreign_currency)
 
+            foreign_total_amount_paid = 0.0
+            foreign_total_residual=0.0
+            foreign_formatted_total_residual = 0.0
             # 5. PAGOS Y RESIDUALES EXTRANJEROS
             move = self._get_move_from_base_lines(base_lines)
             if move:
                 amounts = self._get_total_paid_foreign(move, foreign_currency)
-                res["foreign_total_amount_paid"] = float_round(sum(amounts), precision_digits=foreign_currency.decimal_places)
+                foreign_total_amount_paid = float_round(sum(amounts), precision_digits=foreign_currency.decimal_places)
                 
                 f_total = res.get('foreign_amount_total', 0.0)
-                res["foreign_total_residual"] = float_round(f_total - res["foreign_total_amount_paid"], precision_digits=foreign_currency.decimal_places)
+                foreign_total_residual = float_round(f_total - res["foreign_total_amount_paid"], precision_digits=foreign_currency.decimal_places)
                 
                 res_val = max(0, res["foreign_total_residual"]) # Evita negativos por redondeo
-                res["foreign_formatted_total_residual"] = formatLang(self.env, res_val, currency_obj=foreign_currency)
-
+                foreign_formatted_total_residual = formatLang(self.env, res_val, currency_obj=foreign_currency)
+            res["foreign_total_residual"] = foreign_total_amount_paid
+            res["foreign_total_amount_paid"] = foreign_total_residual
+            res["foreign_formatted_total_residual"] = foreign_formatted_total_residual
         except Exception as e:
             _logger.error("Error en _prepare_tax_totals foreign: %s", str(e))
 
