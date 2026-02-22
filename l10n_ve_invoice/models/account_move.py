@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import json
 import logging
-
+import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import format_date
@@ -32,6 +32,46 @@ class AccountMove(models.Model):
         compute="_compute_is_debit_journal",
         store=True
     )
+
+    entry_in_period = fields.Boolean(
+        compute="_compute_entry_in_period",
+    )
+
+    @api.depends("invoice_date", "state")
+    def _compute_entry_in_period(self):
+        """Computing that allows determining whether an account move (invoice, debit/credit note or receipt) is within the current fiscal period."""
+        today = date.today()
+        taxpayer_type = self.env.company.taxpayer_type
+        period_limit = self._get_period_limit(today, taxpayer_type)
+
+        for move in self:
+            move.entry_in_period = False
+
+            if move.state == "cancel":
+                continue
+
+            if move.move_type in ("in_invoice", "in_refund", "in_receipt"):
+                move.entry_in_period = True
+                continue
+
+            if move.move_type in ("out_invoice", "out_refund"):
+                if not move.invoice_date:
+                    continue
+
+                if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
+                    if taxpayer_type == "special" and move.invoice_date.day < 15 < period_limit.day:
+                        move.entry_in_period = False
+                    else:
+                        move.entry_in_period = True
+
+    def _get_period_limit(self, today, taxpayer_type):
+        """Returns the tax period deadline according to the taxpayer type."""
+        if taxpayer_type == "special":
+            if today.day < 15:
+                return today.replace(day=15)
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        return date(today.year, today.month, last_day)
+
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
         from_pos = self.env.context.get('from_pos', False)
@@ -54,7 +94,15 @@ class AccountMove(models.Model):
             self.invoice_date = fields.Date.today()
 
     def action_post(self):
+        
         for record in self:
+            if record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+                for line in record.invoice_line_ids:
+                    if line.display_type in ("line_section", "line_note"):
+                        continue
+                    if not line.tax_ids:
+                        raise ValidationError(_("Add a tax to each product line. You cannot confirm the invoice if any product line is missing a tax."))
+
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 
@@ -177,18 +225,29 @@ class AccountMove(models.Model):
             )
 
     def _post(self, soft=True):
-        res = super()._post(soft)
+        # Filtramos para asegurarnos de que solo intentamos publicar lo que está en borrador
+        # Esto evita el error de "debe ser un borrador" en procesos automáticos
+        draft_moves = self.filtered(lambda m: m.state == 'draft')
+        
+        # Si no hay nada en borrador (porque ya se publicó en un paso previo), 
+        # devolvemos el self original para no romper el flujo.
+        if not draft_moves:
+            return self
+
+        res = super(AccountMove, draft_moves)._post(soft)
+        
         for move in res:
-            
-            if "invoice_print_type" in move.company_id._fields:
-                invoice_print_type = move.company_id.invoice_print_type
-            else:
-                invoice_print_type = None
-            
-            if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
+            # Solo aplicamos número de control a facturas de cliente/notas crédito
+            # Evitamos tocar asientos de diferencia de cambio (entry) o pagos
+            if move.is_invoice(include_receipts=True):
+                if "invoice_print_type" in move.company_id._fields:
+                    invoice_print_type = move.company_id.invoice_print_type
+                else:
+                    invoice_print_type = None
                 
-                move.correlative = move.get_sequence()
-                
+                if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
+                    move.correlative = move.get_sequence()
+                    
         return res
         
 

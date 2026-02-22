@@ -6,7 +6,11 @@
         <field name="arch" type="xml">
             <field name="invoice_has_outstanding" position="after">
                 <field name="is_contingency" invisible="1" />
+                <field name="entry_in_period" invisible="1" />
             </field>
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="attributes">
+                <attribute name="invisible">not entry_in_period and (not id or state != 'draft' or move_type == 'entry')</attribute>
+            </xpath>
             <xpath expr="//field[@name='invoice_user_id']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
@@ -165,7 +169,7 @@
         </field>
     </record>
     <record id="l10n_ve_invoice_view_invoice_tree" model="ir.ui.view">
-        <field name="name">account.move.tree.l10n.ve.invoice</field>
+        <field name="name">account.move.list.l10n.ve.invoice</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_invoice_tree" />
         <field name="arch" type="xml">
@@ -174,4 +178,20 @@
             </xpath>
         </field>
     </record>
+
+    <record id="view_invoice_line_tree_editable_tax_ids" model="ir.ui.view">
+        <field name="name">Editable Tax IDs for Group</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="attributes">
+                <attribute name="readonly">0</attribute>
+                <attribute name="groups">l10n_ve_invoice.group_edit_invoice_tax_ids</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='tax_ids']" position="before">
+                <field name="tax_ids" readonly="1" widget="many2many_tags" groups="!l10n_ve_invoice.group_edit_invoice_tax_ids"/>
+            </xpath>        
+        </field>
+    </record>
+
 </odoo>
