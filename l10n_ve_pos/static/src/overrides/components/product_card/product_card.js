@@ -1,15 +1,13 @@
 /** @odoo-module **/
 
-import { ProductCard } from "@point_of_sale/app/generic_components/product_card/product_card";
+import { ProductCard } from "@point_of_sale/app/components/product_card/product_card";
 import { patch } from "@web/core/utils/patch";
-import { usePos } from "@point_of_sale/app/store/pos_hook";
-import { useTrackedAsync } from "@point_of_sale/app/utils/hooks";
 import { useState, useEffect } from "@odoo/owl";
+import { useTrackedAsync } from "@point_of_sale/app/hooks/hooks";
 import { debounce } from "@web/core/utils/timing";
 
 patch(ProductCard.prototype, {
   setup() {
-    this.pos = this.pos || usePos();
     this.state = useState({
       available_quantity: 0,
     });

@@ -15,7 +15,6 @@ import {
 patch(PosOrder.prototype, {
   setup() {
       super.setup(...arguments);
-      this.orderlines = this.get_orderlines();
 //   this.set_to_invoice(true);
 //   if (props.json) {
 //     if (props.json.account_move === undefined) {
@@ -73,45 +72,40 @@ get_foreign_currency(){
     return this.init_conversion_rate;
   },
 
-  get_test() {
-    console.log('this.orderlines', this.orderlines);
-    return "TEST";
+  get_orderlines() {
+    if (!this.cid || !this.cid) {
+      return this.lines
+    }
+
+    if (this.cid != this.cid) {
+      return this.lines;
+    }
+
+    if (this.lines.length < 1) {
+      this.lock_toggle_receipt_invoice = false
+      return this.lines
+    }
+
+    let line = this.lines[0]
+
+    if (!line.refunded_orderline_id) {
+      return this.lines
+    }
+
+    if (this.lock_toggle_receipt_invoice) {
+      return this.lines
+    }
+
+    // this.pos.env.services.rpc({
+    //   model: 'pos.order.line',
+    //   method: 'search_read',
+    //   domain: [['id', '=', line.refunded_orderline_id]],
+    // }).then((el) => {
+    //   this.to_receipt = el[0].to_receipt
+    //   this.lock_toggle_receipt_invoice = true
+    // })
+    return this.lines;
   },
-  // get_orderlines() {
-  //   if (!this.cid || !this.pos.get_order()) {
-  //     return this.orderlines
-  //   }
-
-  //   if (this.cid != this.pos.get_order().cid) {
-  //     return this.orderlines;
-  //   }
-
-  //   if (this.orderlines.length < 1) {
-  //     this.lock_toggle_receipt_invoice = false
-  //     return this.orderlines
-  //   }
-
-  //   let line = this.orderlines[0]
-
-  //   if (!line.refunded_orderline_id) {
-  //     return this.orderlines
-  //   }
-
-  //   if (this.lock_toggle_receipt_invoice) {
-  //     return this.orderlines
-  //   }
-
-  //   this.pos.env.services.rpc({
-  //     model: 'pos.order.line',
-  //     method: 'search_read',
-  //     domain: [['id', '=', line.refunded_orderline_id]],
-  //   }).then((el) => {
-  //     this.to_receipt = el[0].to_receipt
-  //     this.lock_toggle_receipt_invoice = true
-  //   })
-
-  //   return this.orderlines;
-  // },
 
 //   reload_taxes() {
 //     this.orderlines.forEach((el) => {
@@ -185,8 +179,6 @@ get_foreign_currency(){
 //     );
 //   },
   get_foreign_total_with_tax() {
-    console.log('get_foreign_total_without_tax', this.get_foreign_total_without_tax());
-    console.log('get_foreign_total_tax', this.get_foreign_total_tax());
     return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
   },
   get_foreign_total_without_tax() {
@@ -195,7 +187,12 @@ get_foreign_currency(){
     const digits = foreign_currency ? foreign_currency.decimal_places : 2;
     return round_pr(
       lines.reduce(function (sum, orderLine) {
-        return sum + orderLine.get_foreign_price_without_tax();
+        if (typeof orderLine.get_foreign_price_without_tax === "function") {
+            return sum + orderLine.get_foreign_price_without_tax();
+        } else {
+            console.warn("get_foreign_price_without_tax is not a function on orderLine", orderLine);
+            return sum;
+        }
       }, 0),
       foreign_currency.rounding,
     );
@@ -208,12 +205,12 @@ get_foreign_currency(){
 //           sum +=
 //             orderLine.getForeignUnitDisplayPriceBeforeDiscount() *
 //             (orderLine.get_discount() / 100) *
-//             orderLine.get_quantity();
+//             orderLine.getQuantity();
 //           if (orderLine.display_discount_policy() === "without_discount") {
 //             sum +=
 //               (orderLine.get_taxed_lst_unit_foreign_price() -
 //                 orderLine.getForeignUnitDisplayPriceBeforeDiscount()) *
-//               orderLine.get_quantity();
+//               orderLine.getQuantity();
 //           }
 //         }
 //         return sum;
@@ -231,7 +228,6 @@ get_foreign_currency(){
       
       var groupTaxes = {};
       orderlines.forEach(function (line) {
-        console.log('line', line);
         var taxDetails = line.get_foreign_tax_details();
         var taxIds = Object.keys(taxDetails);
         for (var t = 0; t < taxIds.length; t++) {
@@ -255,7 +251,12 @@ get_foreign_currency(){
     } else {
       return round_pr(
         orderlines.reduce(function (sum, orderLine) {
-          return sum + orderLine.get_foreign_tax();
+          if (typeof orderLine.get_foreign_tax === "function") {
+              return sum + orderLine.get_foreign_tax();
+          } else {
+              console.warn("get_foreign_tax is not a function on orderLine", orderLine);
+              return sum;
+          }
         }, 0),
         foreign_currency.rounding,
       );
@@ -304,7 +305,7 @@ get_foreign_currency(){
 //     }
 
 //     this.orderlines.forEach((line) => {
-//       var taxes_ids = this.tax_ids || line.get_product().taxes_id;
+//       var taxes_ids = this.tax_ids || line.getProduct().taxes_id;
 //       for (var i = 0; i < taxes_ids.length; i++) {
 //         if (tax_set[taxes_ids[i]]) {
 //           total += line.get_foreign_price_with_tax();
@@ -328,7 +329,7 @@ get_foreign_currency(){
 //       let product_quantity_by_product = {};
 //       let products = [];
 //       for (let line of lines) {
-//         let prd = this.pos.db.get_product_by_id(line.get_product().id);
+//         let prd = this.pos.db.getProduct_by_id(line.getProduct().id);
 
 //         if (prd.type != "product") {
 //           continue;
