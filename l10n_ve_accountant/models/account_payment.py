@@ -37,7 +37,8 @@ class AccountPayment(models.Model):
             self.currency_id.id or self.env.ref("base.VEF").id,
             self.date or fields.Date.today(),
         )
-        return rate_values.get("foreign_rate", 0)
+        rate = rate_values.get("foreign_rate", 0)
+        return rate
 
     def default_inverse_rate(self):
         """
@@ -52,7 +53,8 @@ class AccountPayment(models.Model):
             self.currency_id.id or self.env.ref("base.VEF").id,
             self.date or fields.Date.today(),
         )
-        return rate_values.get("foreign_inverse_rate", 0)
+        rate = rate_values.get("foreign_inverse_rate", 0)
+        return rate
 
 
     foreign_rate = fields.Float(
