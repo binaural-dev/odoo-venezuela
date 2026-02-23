@@ -1,60 +1,82 @@
 /** @odoo-module **/
 
-import { AbstractAwaitablePopup } from "@point_of_sale/app/popup/abstract_awaitable_popup";
-import { _t } from '@web/core/l10n/translation';
+import { Component } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
+import { _t } from "@web/core/l10n/translation";
 
-export class FiscalMachinePopup extends AbstractAwaitablePopup {
-  static template = 'binaural_pos_mf.FiscalMachinePopup'
+export class FiscalMachinePopup extends Component {
+  static template = "binaural_pos_mf.FiscalMachinePopup";
   static defaultProps = {
-    cancelText: _t('Cancel'),
-    title: _t('Fiscal Reports'),
-  }
-  report_z() {
-    const fdm = this.env.pos.useFiscalMachine();
-    if (!fdm) return
-    this.env.services.ui.block()
-    const promise = new Promise(async (resolve, reject) => {
-      let response = await fdm.action({
-        action: 'report_z',
-        data: {},
-      })
-      if (!response["result"]) {
-        self.env.services.ui.unblock()
-        return reject({ "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
-      }
-      fdm.add_listener(data => {
-        fdm.remove_listener();
-        !!data.value.valid ? resolve(data["value"]) : reject(data["value"])
-      })
-    });
-    promise.then(async (data) => {
-      await this.rpc({
-        model: 'account.move',
-        method: 'report_z',
-        args: [[], this.env.pos.config.serial_machine, data]
-      })
-      await this.rpc({
-        model: 'pos.session',
-        method: 'set_report_z',
-        args: [this.env.pos.pos_session.id, data],
-      })
-    }).finally(() => {
-      this.env.services.ui.unblock()
-    })
-  }
-  report_x() {
-    const fdm = this.env.pos.useFiscalMachine();
-    if (!fdm) return
-    this.env.services.ui.block()
-    fdm.action({
-      action: 'report_x',
-      data: {},
-    }).catch().finally(() => {
-      this.env.services.ui.unblock()
-    })
+    cancelText: _t("Cancel"),
+    title: _t("Fiscal Reports"),
+  };
+
+  setup() {
+    this.ui = useService("ui");
+    this.orm = useService("orm");
   }
 
-  getPayload() {
-    return {}
+  async report_z() {
+    const pos = this.env.pos;
+    const fdm = pos?.useFiscalMachine?.();
+    if (!fdm) {
+      this.props.close({ confirmed: false, error: _t("No fiscal machine configured") });
+      return;
+    }
+
+    this.ui.block();
+    try {
+      const start = await fdm.action({ action: "report_z", data: {} });
+      if (!start?.result) {
+        throw new Error(_t("Cannot connect to the fiscal machine"));
+      }
+
+      const data = await new Promise((resolve, reject) => {
+        const listener = (evt) => {
+          if (evt?.request_data?.action !== "report_z") return;
+          fdm.removeListener(listener);
+          if (evt?.value?.valid) {
+            resolve(evt.value);
+          } else {
+            reject(evt?.value || { message: _t("Unknown fiscal machine error") });
+          }
+        };
+        fdm.addListener(listener);
+      });
+
+      await this.orm.call("account.move", "report_z", [[], pos.config.serial_machine, data]);
+      await this.orm.call("pos.session", "set_report_z", [pos.pos_session.id, data]);
+
+      this.props.close({ confirmed: true, payload: data });
+    } catch (e) {
+      this.props.close({
+        confirmed: false,
+        error: e?.message || e?.status || _t("Internal MF error"),
+      });
+    } finally {
+      this.ui.unblock();
+    }
+  }
+
+  async report_x() {
+    const pos = this.env.pos;
+    const fdm = pos?.useFiscalMachine?.();
+    if (!fdm) {
+      this.props.close({ confirmed: false, error: _t("No fiscal machine configured") });
+      return;
+    }
+
+    this.ui.block();
+    try {
+      await fdm.action({ action: "report_x", data: {} });
+      this.props.close({ confirmed: true });
+    } catch (e) {
+      this.props.close({
+        confirmed: false,
+        error: e?.message || e?.status || _t("Internal MF error"),
+      });
+    } finally {
+      this.ui.unblock();
+    }
   }
 }
