@@ -13,151 +13,72 @@ class AccountTax(models.Model):
 
     @api.model
     def _prepare_tax_totals(self, base_lines, currency, tax_lines=None, is_company_currency_requested=False):
-        """
-        Extensión para agregar montos en moneda extranjera al resumen de impuestos.
-        Se utiliza un contexto 'skip_foreign_taxes' para evitar bucles infinitos 
-        y proteger la integridad de los montos contables originales.
-        """
+        # 1. Ejecución Base
+        res = super()._prepare_tax_totals(base_lines, currency, tax_lines, is_company_currency_requested)
+        foreign_currency = self.env.company.currency_foreign_id
+        if not foreign_currency: return res
+
+        # Obtener Move de forma segura (Fix AttributeError)
+        move = False
+        if base_lines and base_lines[0].get('record'):
+            rec = base_lines[0]['record']
+            move = rec.move_id if hasattr(rec, 'move_id') else rec
         
-        # 1. EJECUCIÓN ORIGINAL: Mandatoria para que la CxC/CxP no se dañe
-        res = super()._prepare_tax_totals(
-            base_lines,
-            currency,
-            tax_lines,
-            is_company_currency_requested=is_company_currency_requested,
-        )
+        rate = move.foreign_inverse_rate if move and hasattr(move, 'foreign_inverse_rate') else 1.0
 
-        # Si ya estamos en el cálculo extranjero o no hay moneda configurada, retornamos
-        foreign_currency = self.env.company.currency_foreign_id or False
-        if self._context.get('skip_foreign_taxes') or not foreign_currency:
-            return res
+        def convert_to_foreign(data):
+            if isinstance(data, dict):
+                return {k: (v * rate if isinstance(v, (float, int)) and not isinstance(v, bool) and k not in ('group_key', 'tax_group_id') else convert_to_foreign(v)) for k, v in data.items()}
+            if isinstance(data, list):
+                return [convert_to_foreign(i) for i in data]
+            return data
 
-        # 2. CÁLCULO DE DESCUENTO (Moneda Base)
-        res_without_discount = res.copy()
+        def fix_formatted(data):
+            if isinstance(data, dict):
+                for k, v in data.items():
+                    if k.startswith('formatted_') and k.replace('formatted_', '') in data:
+                        data[k] = formatLang(self.env, data[k.replace('formatted_', '')], currency_obj=foreign_currency)
+                    else: fix_formatted(v)
+            elif isinstance(data, list):
+                for i in data: fix_formatted(i)
+
+        # Totales con y sin descuento
         has_discount = not currency.is_zero(sum([line.get("discount", 0.0) for line in base_lines]))
-
+        res_no_disc = res.copy()
         if has_discount:
-            # Creamos copias superficiales de los diccionarios para no mutar los originales
-            base_without_discount = [line.copy() for line in base_lines if line]
-            for base_line in base_without_discount:
-                base_line["discount"] = 0
+            b_nd = [line.copy() for line in base_lines if line]
+            for b in b_nd: b["discount"] = 0
+            res_no_disc = super()._prepare_tax_totals(b_nd, currency, tax_lines, is_company_currency_requested)
 
-            # Calculamos el subtotal sin descuento usando el contexto de salto
-            res_without_discount = super(AccountTax, self.with_context(skip_foreign_taxes=True))._prepare_tax_totals(
-                base_without_discount,
-                currency,
-                tax_lines,
-                is_company_currency_requested=is_company_currency_requested,
-            )
+        f_taxes = convert_to_foreign(res)
+        f_taxes_nd = convert_to_foreign(res_no_disc)
+        fix_formatted(f_taxes)
+        fix_formatted(f_taxes_nd)
 
-        # 3. CÁLCULO EXTRANJERO (Aislado)
-        try:
-            # Obtenemos las líneas proyectadas en moneda extranjera
-            foreign_base_lines, foreign_tax_lines = self.get_foreign_base_tax_lines(
-                base_lines, tax_lines, foreign_currency
-            )
+        res.update({
+            "groups_by_foreign_subtotal": f_taxes["groups_by_subtotal"],
+            "foreign_subtotals": f_taxes["subtotals"],
+            "foreign_amount_untaxed": f_taxes["amount_untaxed"],
+            "foreign_amount_total": f_taxes["amount_total"],
+            "foreign_formatted_amount_untaxed": f_taxes["formatted_amount_untaxed"],
+            "foreign_formatted_amount_total": f_taxes["formatted_amount_total"],
+            "foreign_subtotal": f_taxes_nd["amount_untaxed"],
+            "foreign_formatted_subtotal": formatLang(self.env, f_taxes_nd["amount_untaxed"], currency_obj=foreign_currency),
+            "discount_amount": res["amount_untaxed"] - res_no_disc["amount_untaxed"],
+            "foreign_discount_amount": f_taxes["amount_untaxed"] - f_taxes_nd["amount_untaxed"],
+        })
+        res["formatted_discount_amount"] = formatLang(self.env, res["discount_amount"], currency_obj=currency)
+        res["foreign_formatted_discount_amount"] = formatLang(self.env, res["foreign_discount_amount"], currency_obj=foreign_currency)
 
-            # Ejecutamos el motor de impuestos para la moneda extranjera
-            foreign_taxes = super(AccountTax, self.with_context(skip_foreign_taxes=True))._prepare_tax_totals(
-                foreign_base_lines,
-                foreign_currency,
-                foreign_tax_lines,
-                is_company_currency_requested=is_company_currency_requested,
-            )
-
-            # Cálculo de descuento extranjero
-            foreign_taxes_without_discount = foreign_taxes.copy()
-            if has_discount:
-                foreign_without_discount = [line.copy() for line in foreign_base_lines if line]
-                for f_line in foreign_without_discount:
-                    f_line["discount"] = 0
-
-                foreign_taxes_without_discount = super(AccountTax, self.with_context(skip_foreign_taxes=True))._prepare_tax_totals(
-                    foreign_without_discount,
-                    foreign_currency,
-                    foreign_tax_lines,
-                    is_company_currency_requested=is_company_currency_requested,
-                )
-
-            # 4. INYECCIÓN DE DATOS EN EL RESULTADO (Solo visual)
-            res.update({
-                "groups_by_foreign_subtotal": foreign_taxes.get("groups_by_subtotal"),
-                "foreign_subtotals": foreign_taxes.get("subtotals"),
-                "foreign_amount_untaxed": foreign_taxes.get("amount_untaxed"),
-                "foreign_amount_total": foreign_taxes.get("amount_total"),
-                "foreign_formatted_amount_untaxed": foreign_taxes.get("formatted_amount_untaxed"),
-                "foreign_formatted_amount_total": foreign_taxes.get("formatted_amount_total"),
-                "show_discount": self.env.company.show_discount_on_moves,
-                "subtotal": res_without_discount.get("amount_untaxed"),
-                "formatted_subtotal": formatLang(self.env, res_without_discount.get("amount_untaxed"), currency_obj=currency),
-                "foreign_subtotal": foreign_taxes_without_discount.get("amount_untaxed"),
-                "foreign_formatted_subtotal": formatLang(self.env, foreign_taxes_without_discount.get("amount_untaxed"), currency_obj=foreign_currency),
-            })
-
-            # Montos de descuento
-            res["discount_amount"] = res["amount_untaxed"] - res_without_discount["amount_untaxed"]
-            res["formatted_discount_amount"] = formatLang(self.env, res["discount_amount"], currency_obj=currency)
-            
-            res["foreign_discount_amount"] = foreign_taxes["amount_untaxed"] - foreign_taxes_without_discount["amount_untaxed"]
-            res["foreign_formatted_discount_amount"] = formatLang(self.env, res["foreign_discount_amount"], currency_obj=foreign_currency)
-
-            foreign_total_amount_paid = 0.0
-            foreign_total_residual=0.0
-            foreign_formatted_total_residual = 0.0
-            # 5. PAGOS Y RESIDUALES EXTRANJEROS
-            move = self._get_move_from_base_lines(base_lines)
-            if move:
-                amounts = self._get_total_paid_foreign(move, foreign_currency)
-                foreign_total_amount_paid = float_round(sum(amounts), precision_digits=foreign_currency.decimal_places)
-                
-                f_total = res.get('foreign_amount_total', 0.0)
-                foreign_total_residual = float_round(f_total - res["foreign_total_amount_paid"], precision_digits=foreign_currency.decimal_places)
-                
-                res_val = max(0, res["foreign_total_residual"]) # Evita negativos por redondeo
-                foreign_formatted_total_residual = formatLang(self.env, res_val, currency_obj=foreign_currency)
-            res["foreign_total_residual"] = foreign_total_amount_paid
-            res["foreign_total_amount_paid"] = foreign_total_residual
-            res["foreign_formatted_total_residual"] = foreign_formatted_total_residual
-        except Exception as e:
-            _logger.error("Error en _prepare_tax_totals foreign: %s", str(e))
-
+        # Residuales
+        # Se asume que _get_total_paid_foreign existe en account.move
+        paid = move._get_total_paid_foreign(foreign_currency) if move and hasattr(move, '_get_total_paid_foreign') else []
+        res["foreign_total_amount_paid"] = sum(paid)
+        res["foreign_total_residual"] = res["foreign_amount_total"] - res["foreign_total_amount_paid"]
+        res["foreign_formatted_total_residual"] = formatLang(self.env, max(0, res["foreign_total_residual"]), currency_obj=foreign_currency)
+        
         return res
     
-    def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
-        """
-        Crea copias de base_lines para simular el cálculo en moneda extranjera 
-        sin afectar los registros originales.
-        """
-        foreign_base_lines = []
-        for line in base_lines:
-            new_line = line.copy()
-            record = line.get('record')
-            
-            # Verificamos si el registro tiene el precio extranjero definido
-            if record and hasattr(record, 'foreign_price'):
-                new_line["price_unit"] = record.foreign_price
-                new_line["price_subtotal"] = record.foreign_subtotal
-                new_line["currency"] = currency
-            else:
-                # Si no tiene campos extranjeros (ej. en Sale Order), usamos los base
-                new_line["price_unit"] = line.get("price_unit", 0.0)
-                new_line["price_subtotal"] = line.get("price_subtotal", 0.0)
-                new_line["currency"] = currency # Forzamos la moneda para el cálculo visual
-            
-            foreign_base_lines.append(new_line)
-
-        # Clonamos líneas de impuestos
-        foreign_tax_lines = [t.copy() for t in (tax_lines or [])]
-        for t_line in foreign_tax_lines:
-            t_line["currency"] = currency
-
-        return foreign_base_lines, foreign_tax_lines
-    
-    def _get_move_from_base_lines(self, base_lines):
-        for l in (base_lines or []):
-            r = l.get("record")
-            if not r:
-                continue
 
     def compute_all(self, price_unit, currency=None, quantity=1.0, product=None, partner=None, is_refund=False, handle_price_include=True, include_caba_tags=False, fixed_multiplicator=1):
         """Compute all information required to apply taxes (in self + their children in case of a tax group).
