@@ -186,6 +186,7 @@ class AccountMoveInh(models.Model):
                         "name": f"[{line.product_id.default_code}] {self._normalize_product_name(line.product_id.name)}"
                         if line.product_id
                         else self._normalize_product_name(line.name),
+                        "discount": line.discount,
                     }
                 )
 
