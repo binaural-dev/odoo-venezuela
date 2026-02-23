@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { contextualUtilsService } from "@point_of_sale/app/utils/contextual_utils_service";
+import { contextualUtilsService } from "@point_of_sale/app/services/contextual_utils_service";
 import { formatMonetary } from "@web/views/fields/formatters";
 import { patch } from "@web/core/utils/patch";
 

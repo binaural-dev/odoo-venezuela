@@ -13,5 +13,4 @@ class PosOrderLine(models.Model):
     def _load_pos_data_fields(self, config_id):
         res = super()._load_pos_data_fields(config_id)
         res += ['foreign_price', 'foreign_subtotal', 'foreign_total']
-        _logger.warning("_load_pos_data_fields res: %s", res)
         return res
