@@ -23,7 +23,7 @@ class ValidateQtyProducts(http.Controller):
                 if (
                     product_id.is_storable
                     and product_id.type == "consu"
-                    and product_id.qty_available < qty[product_qty_position]
+                    and product_id.qty < qty[product_qty_position]
                 ):
                     data.update(
                         {

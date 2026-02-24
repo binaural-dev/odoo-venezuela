@@ -1,5 +1,7 @@
+import { patch } from "@web/core/utils/patch";
+import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
 
-patch(Orderline.prototype, {
+patch(Orderline, {
   //DEPRECATED
   // init_from_JSON(json) {
   //   super.init_from_JSON(...arguments);
@@ -76,13 +78,13 @@ patch(Orderline.prototype, {
     );
   },
 
-  
+
 
   get_all_prices(qty = this.getQuantity()) {
     return super.get_all_prices(qty);
   },
 
-  
+
 
   get_foreign_price_without_tax() {
     return this.get_all_foreign_prices().priceWithoutTax;
