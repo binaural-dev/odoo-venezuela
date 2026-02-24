@@ -171,14 +171,7 @@ class AccountMoveRetention(models.Model):
             )
         )
         decimal_places = self.currency_id.decimal_places
-        _logger.info("=================")
-        _logger.info("=================")
-        _logger.info("=================")
-        _logger.info("decimal_places")
-        _logger.info(decimal_places)
-        _logger.info("=================")
-        _logger.info("=================")
-        _logger.info("=================")
+        
         invoice_base = self.tax_totals.get("amount_untaxed", 0.0)
         if float_compare(sum_invoice_amount, invoice_base, precision_digits=decimal_places) == 1:
             raise UserError(
@@ -204,14 +197,7 @@ class AccountMoveRetention(models.Model):
             move = line.move_id
             invoice_base = move.tax_totals.get("amount_untaxed", 0.0)
             decimal_places = self.currency_id.decimal_places
-            _logger.info("=================")
-            _logger.info("=================")
-            _logger.info("=================")
-            _logger.info("decimal_places")
-            _logger.info(decimal_places)
-            _logger.info("=================")
-            _logger.info("=================")
-            _logger.info("=================")
+            
             if float_compare(line.invoice_amount, invoice_base, precision_digits=decimal_places) == 1:
                 raise UserError(
                     _(
