@@ -1697,4 +1697,5 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if no_deductible_fields:
             purchase_groups.append({'header': 'IMPUESTOS NO DEDUCIBLES', 'fields': no_deductible_fields})
 
+        return purchase_groups
         
