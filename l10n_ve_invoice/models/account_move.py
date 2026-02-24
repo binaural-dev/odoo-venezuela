@@ -39,7 +39,7 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
-    @api.depends("invoice_date", "entry_in_period", "state")
+    @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
         today = date.today()
@@ -51,6 +51,7 @@ class AccountMove(models.Model):
 
             if move.state == "cancel":
                 continue
+
 
             if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
                 if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
