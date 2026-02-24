@@ -170,8 +170,17 @@ class AccountMoveRetention(models.Model):
                 "invoice_amount"
             )
         )
+        decimal_places = self.currency_id.decimal_places
+        _logger.info("=================")
+        _logger.info("=================")
+        _logger.info("=================")
+        _logger.info("decimal_places")
+        _logger.info(decimal_places)
+        _logger.info("=================")
+        _logger.info("=================")
+        _logger.info("=================")
         invoice_base = self.tax_totals.get("amount_untaxed", 0.0)
-        if float_compare(sum_invoice_amount, invoice_base, precision_digits=2) == 1:
+        if float_compare(sum_invoice_amount, invoice_base, precision_digits=decimal_places) == 1:
             raise UserError(
                 _(
                     "The amount of the retention is greater than the total amount of the invoice %s."
@@ -194,7 +203,16 @@ class AccountMoveRetention(models.Model):
         for line in islr_retention_lines:
             move = line.move_id
             invoice_base = move.tax_totals.get("amount_untaxed", 0.0)
-            if float_compare(line.invoice_amount, invoice_base, precision_digits=2) == 1:
+            decimal_places = self.currency_id.decimal_places
+            _logger.info("=================")
+            _logger.info("=================")
+            _logger.info("=================")
+            _logger.info("decimal_places")
+            _logger.info(decimal_places)
+            _logger.info("=================")
+            _logger.info("=================")
+            _logger.info("=================")
+            if float_compare(line.invoice_amount, invoice_base, precision_digits=decimal_places) == 1:
                 raise UserError(
                     _(
                         "The taxable base of one of the withholding lines is greater than the taxable base of the invoice"
