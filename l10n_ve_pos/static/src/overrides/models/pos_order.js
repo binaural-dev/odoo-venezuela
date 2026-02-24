@@ -27,11 +27,9 @@ patch(PosOrder.prototype, {
     //     this.to_receipt = always_invoice;
     //   }
   },
-
   get_foreign_currency() {
     return this.config.foreign_currency_id;
   },
-
   get_display_rate() {
     return this.env.pos.config.foreign_rate;
   },
@@ -46,14 +44,12 @@ patch(PosOrder.prototype, {
   //   assert_editable() {},
 
   get init_conversion_rate() {
-    const currencyName = this.currency?.name;
-    if (["VEF", "VES", "VED"].includes(currencyName)) {
-      return this.config.foreign_rate;
-    }
-    if (currencyName === "USD") {
+    if (this.currency.name == "VEF") {
       return this.config.foreign_inverse_rate;
     }
-    return this.config.foreign_rate || 1.0;
+    if (this.currency.name == "USD") {
+      return this.config.foreign_rate;
+    }
   },
 
 
@@ -63,11 +59,11 @@ patch(PosOrder.prototype, {
   //     return res;
   //   },
   get_conversion_rate() {
-    const orderlines = this.get_orderlines() || [];
-    if (orderlines.length != 0 && orderlines[0].currency_rate_display) {
+    const orderlines = this.currentOrder?.get_orderlines() || [];
+    if (orderlines.length != 0) {
       return orderlines[0].currency_rate_display();
     }
-    return this.init_conversion_rate;
+    return this.init_conversion_rate || this.config.foreign_rate || 1.0;
   },
 
   get_orderlines() {

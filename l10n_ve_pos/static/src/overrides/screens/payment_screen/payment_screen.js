@@ -113,7 +113,7 @@ patch(PaymentScreen.prototype, {
       }
 
     })
-    await this.dialog.add(
+    await this.popup.add(
       SelectionPopup,
       {
         title: _t("Payments"),
