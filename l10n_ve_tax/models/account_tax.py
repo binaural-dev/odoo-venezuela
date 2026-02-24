@@ -12,12 +12,13 @@ class AccountTax(models.Model):
     _inherit = "account.tax"
 
     @api.model
-    def _prepare_tax_totals(self, base_lines, currency, tax_lines=None):
+    def _prepare_tax_totals(
+        self, base_lines, currency, tax_lines=None, is_company_currency_requested=False
+    ):
         """
         This function adds the alternate currency tax amounts to tax_totals.
         In it, the parent function is executed 2 times, once for the original
         currency and once for the alternate currency.
-
         The data that is brought is not recalculated, that is, it comes from the lines of the entry
         ------
         Parameters: (Parameters inherited)
@@ -46,7 +47,12 @@ class AccountTax(models.Model):
             raise ValidationError(_("No foreign currency configured in the company"))
 
         # Base Currency
-        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
+        res = super()._prepare_tax_totals(
+            base_lines,
+            currency,
+            tax_lines,
+            is_company_currency_requested=is_company_currency_requested,
+        )
         res_without_discount = res.copy()
         has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
 
@@ -56,7 +62,10 @@ class AccountTax(models.Model):
                 base_line["discount"] = 0
 
             res_without_discount = super()._prepare_tax_totals(
-                base_without_discount, currency, tax_lines
+                base_without_discount,
+                currency,
+                tax_lines,
+                is_company_currency_requested=is_company_currency_requested,
             )
 
         foreign_base_lines, foreign_tax_lines = self.get_foreign_base_tax_lines(
@@ -65,7 +74,10 @@ class AccountTax(models.Model):
 
         # Foreign Currency
         foreign_taxes = super()._prepare_tax_totals(
-            foreign_base_lines, foreign_currency, foreign_tax_lines
+            foreign_base_lines,
+            foreign_currency,
+            foreign_tax_lines,
+            is_company_currency_requested=is_company_currency_requested,
         )
 
         foreign_taxes_without_discount = foreign_taxes.copy()
@@ -75,7 +87,10 @@ class AccountTax(models.Model):
                 foreign_base_line["discount"] = 0
 
             foreign_taxes_without_discount = super()._prepare_tax_totals(
-                foreign_without_discount, foreign_currency, foreign_tax_lines
+                foreign_without_discount,
+                foreign_currency,
+                foreign_tax_lines,
+                is_company_currency_requested=is_company_currency_requested,
             )
 
         res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]
@@ -105,7 +120,61 @@ class AccountTax(models.Model):
         res["foreign_formatted_discount_amount"] = formatLang(
             self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
         )
+
+        move = self._get_move_from_base_lines(base_lines)
+
+        amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
+
+
+        res["foreign_total_amount_paid"] = sum(amounts)
+           
+
+        foreign_amount_total = res.get('foreign_amount_total', 0.0)
+
+        res["foreign_total_residual"] = foreign_amount_total - res["foreign_total_amount_paid"]
+
+        formatted_result = 0 if float_compare(res['foreign_total_residual'], 0, precision_digits=foreign_currency.decimal_places) < 0 else res['foreign_total_residual']
+        res["foreign_formatted_total_residual"] = formatLang(
+            self.env,
+            formatted_result,
+            currency_obj=foreign_currency
+        )            
+
         return res
+
+    def _get_move_from_base_lines(self, base_lines):
+        for l in (base_lines or []):
+            r = l.get("record")
+            if not r:
+                continue
+
+            if getattr(r, "_name", None) == "account.move":
+                return r
+
+            if "move_id" in getattr(r, "_fields", {}):
+                if r.move_id:
+                    return r.move_id
+        return None
+
+    def _get_total_paid_foreign(self, move, foreign_currency):
+        if not move or not move.invoice_payments_widget:
+            return []
+
+        amounts = []
+        # Odoo almacena esto como dict o como string JSON dependiendo de la versión/estado
+        widget_data = move.invoice_payments_widget
+        content = widget_data.get('content') or []
+
+        for payment in content:
+            # Extraemos directamente el valor que vemos en tu imagen
+            # Usamos .get() por seguridad si el campo no existe en algún pago
+            f_amount = payment.get('foreign_amount', 0.0)
+
+            # Opcional: Validar que el pago sea de la moneda que buscas
+            # En tu imagen sale 'foreign_id': 2
+            amounts.append(f_amount)
+
+        return amounts
 
     def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
         foreign_base_lines = [line.copy() for line in base_lines if line]
@@ -159,7 +228,6 @@ class AccountTax(models.Model):
                 )
 
         return foreign_base_lines, foreign_tax_lines
-    
 
     def compute_all(self, price_unit, currency=None, quantity=1.0, product=None, partner=None, is_refund=False, handle_price_include=True, include_caba_tags=False, fixed_multiplicator=1):
         """Compute all information required to apply taxes (in self + their children in case of a tax group).
