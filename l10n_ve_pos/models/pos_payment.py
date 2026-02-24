@@ -11,7 +11,7 @@ class PosPayment(models.Model):
 
     foreign_rate = fields.Float(
         help="The rate that is gonna be always shown to the user.",
-        default=0.0,
+        # default=0.0,
         readonly=False,
     )
     foreign_amount = fields.Float(readonly=True, digits=(16, 2))

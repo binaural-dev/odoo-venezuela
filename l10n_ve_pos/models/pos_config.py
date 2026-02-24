@@ -26,7 +26,7 @@ class PosConfig(models.Model):
         readonly=False,
     )
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty")
-    sell_kit_from_another_store = fields.Boolean(default=False)
+    sell_kit_from_another_store = fields.Boolean()
     pos_show_just_products_with_available_qty = fields.Boolean(
         related="company_id.pos_show_just_products_with_available_qty"
     )
@@ -35,7 +35,7 @@ class PosConfig(models.Model):
     activate_barcode_strict_mode = fields.Boolean(
         help="Activate product entry with barcode in strict mode"
     )
-    validate_phone_in_pos = fields.Boolean(default=False)
+    validate_phone_in_pos = fields.Boolean()
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):
