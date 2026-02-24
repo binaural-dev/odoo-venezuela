@@ -5,6 +5,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 from datetime import date, datetime, timedelta
+import calendar
 
 _logger = logging.getLogger(__name__)
 
@@ -401,13 +402,12 @@ class StockPicking(models.Model):
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
         invoice_line_list = []
-        for move_id in self.move_ids_without_package:
+        for move_id in self.move_ids:
             price_unit = move_id.product_id.list_price
             tax_ids = [(6, 0, [self.company_id.account_sale_tax_id.id])]
             if move_id.sale_line_id:
                 price_unit = move_id.sale_line_id.price_unit
-                tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
-
+                tax_ids = [(6, 0, move_id.sale_line_id.tax_ids.ids)]
             vals = (
                 0,
                 0,
@@ -1121,13 +1121,13 @@ class StockPicking(models.Model):
                 result = hoy.replace(day=15)
             else:
                 # Si es 15 o después: último día del mes
-                result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-                result = result - timedelta(days=1)
+                last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+                result = date(hoy.year, hoy.month, last_day)
 
         elif taxpayer_type in ("ordinary", "formal"):
             # Siempre último día del mes para estos tipos
-            result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-            result = result - timedelta(days=1)
+            last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+            result = date(hoy.year, hoy.month, last_day)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     def get_foreign_currency_is_vef(self):

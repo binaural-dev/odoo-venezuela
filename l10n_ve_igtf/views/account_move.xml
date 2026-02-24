@@ -1,0 +1,19 @@
+<odoo>
+    <record id="view_form_move_inherited_binaural_advance_payment" model="ir.ui.view">
+        <field name="name">account.move.binaural.advance.payment</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form" />
+        <field name="arch" type="xml">
+            <field name='invoice_outstanding_credits_debits_widget' position="after">
+                <field name="invoice_outstanding_credits_debits_widget_advance_payment"
+                    class="oe_invoice_outstanding_credits_debits" colspan="2" nolabel="1"
+                    widget="payment" />
+            </field>
+            <xpath expr="//div[@class='d-flex'][2]" position="after">
+                <field name="is_advance_move" invisible="1" />
+                <field name="is_advance_move" readonly="1" invisible="not is_advance_move" />
+                <field name="origin_payment_advanced_payment_id" readonly="1" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

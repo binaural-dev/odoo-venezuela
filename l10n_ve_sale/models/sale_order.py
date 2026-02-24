@@ -188,7 +188,7 @@ class SaleOrder(models.Model):
                 if foreign_price_order_line:
                     foreign_price_order_line[0].set("string", _("Price") + " " + foreign_currency_name)
                 foreign_subtotal_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_subtotal']")
-                if foreign_subtotal_order_line: 
+                if foreign_subtotal_order_line:
                     foreign_subtotal_order_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:

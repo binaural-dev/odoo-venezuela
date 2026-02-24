@@ -1,25 +1,18 @@
-/** @odoo-module */
 
-import { Orderline } from "@point_of_sale/app/store/models";
-import { patch } from "@web/core/utils/patch";
-import {
-  formatFloat,
-  roundDecimals as round_di,
-  roundPrecision as round_pr,
-  floatIsZero,
-} from "@web/core/utils/numbers";
-
-// New orders are now associated with the current table, if any.
 patch(Orderline.prototype, {
-  init_from_JSON(json) {
-    super.init_from_JSON(...arguments);
-    this.tax_ids =
-      json.tax_ids && json.tax_ids.length !== 0
-        ? json.tax_ids[0][2]
-        : undefined;
-    this.foreign_price = json.foreign_price || 0;
-    this.foreign_currency_rate = json.foreign_currency_rate || false;
-    this.foreign_currency_rate_display = false;
+  //DEPRECATED
+  // init_from_JSON(json) {
+  //   super.init_from_JSON(...arguments);
+  //   this.tax_ids =
+  //     json.tax_ids && json.tax_ids.length !== 0
+  //       ? json.tax_ids[0][2]
+  //       : undefined;
+  //   this.foreign_price = json.foreign_price || 0;
+  //   this.foreign_currency_rate = json.foreign_currency_rate || false;
+  //   this.foreign_currency_rate_display = false;
+  // },
+  setup() {
+    super.setup();
   },
   get_rate() {
     if (this.order._isRefundOrder() && this.get_refund_orderline()) {
@@ -45,14 +38,14 @@ patch(Orderline.prototype, {
     }
     return false;
   },
-  export_as_JSON() {
-    let res = super.export_as_JSON(...arguments);
-    res["foreign_currency_rate"] = this.get_rate();
-    res["foreign_price"] = this.get_foreign_unit_price();
-    res["foreign_price_subtotal"] = this.get_foreign_price_without_tax();
-    res["foreign_price_subtotal_incl"] = this.get_foreign_price_with_tax();
-    return res;
-  },
+  // export_as_JSON() {
+  //   let res = super.export_as_JSON(...arguments);
+  //   res["foreign_currency_rate"] = this.get_rate();
+  //   res["foreign_price"] = this.get_foreign_unit_price();
+  //   res["foreign_price_subtotal"] = this.get_foreign_price_without_tax();
+  //   res["foreign_price_subtotal_incl"] = this.get_foreign_price_with_tax();
+  //   return res;
+  // },
   set_unit_price(price) {
     this.order.assert_editable();
     var parsed_price = !isNaN(price)
@@ -83,61 +76,13 @@ patch(Orderline.prototype, {
     );
   },
 
-  get_foreign_unit_price() {
-    var digits = this.pos.dp["Foreign Product Price"];
-    // round and truncate to mimic _symbol_set behavior
-    return parseFloat(
-      round_di(this.foreign_price || 0, digits).toFixed(digits),
-    );
-  },
+  
 
-  get_all_prices(qty = this.get_quantity()) {
+  get_all_prices(qty = this.getQuantity()) {
     return super.get_all_prices(qty);
   },
 
-  get_all_foreign_prices(qty = this.get_quantity()) {
-    var price_unit =
-      this.get_foreign_unit_price() * (1.0 - this.get_discount() / 100.0);
-    var taxtotal = 0;
-
-    var product = this.get_product();
-    var taxes_ids = this.tax_ids || product.taxes_id;
-    taxes_ids = taxes_ids.filter((t) => t in this.pos.taxes_by_id);
-    var taxdetail = {};
-    var product_taxes = this.pos.get_taxes_after_fp(
-      taxes_ids,
-      this.order.fiscal_position,
-    );
-
-    var all_taxes = this.compute_all(
-      product_taxes,
-      price_unit,
-      qty,
-      this.pos.foreign_currency.rounding,
-    );
-    var all_taxes_before_discount = this.compute_all(
-      product_taxes,
-      this.get_foreign_unit_price(),
-      qty,
-      this.pos.foreign_currency.rounding,
-    );
-    all_taxes.taxes.forEach(function(tax) {
-      taxtotal += tax.amount;
-      taxdetail[tax.id] = {
-        amount: tax.amount,
-        base: tax.base,
-      };
-    });
-
-    return {
-      priceWithTax: all_taxes.total_included,
-      priceWithoutTax: all_taxes.total_excluded,
-      priceWithTaxBeforeDiscount: all_taxes_before_discount.total_included,
-      priceWithoutTaxBeforeDiscount: all_taxes_before_discount.total_excluded,
-      tax: taxtotal,
-      taxDetails: taxdetail,
-    };
-  },
+  
 
   get_foreign_price_without_tax() {
     return this.get_all_foreign_prices().priceWithoutTax;
@@ -167,10 +112,6 @@ patch(Orderline.prototype, {
     }
   },
 
-  get_foreign_tax_details() {
-    return this.get_all_foreign_prices().taxDetails;
-  },
-
   get_foreign_total_taxes_included_in_price() {
     const productTaxes = this._getProductTaxesAfterFiscalPosition();
     const taxDetails = this.get_foreign_tax_details();
@@ -197,7 +138,7 @@ patch(Orderline.prototype, {
 
   get_taxed_lst_unit_foreign_price() {
     const lstPrice = this.compute_fixed_price(this.get_lst_foreign_price());
-    const product = this.get_product();
+    const product = this.getProduct();
     const taxesIds = product.taxes_id;
     const productTaxes = this.pos.get_taxes_after_fp(
       taxesIds,

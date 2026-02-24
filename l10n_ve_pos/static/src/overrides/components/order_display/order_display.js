@@ -1,11 +1,11 @@
-/** @odoo-module */
+/** @odoo-module **/
 
-import { OrderWidget } from "@point_of_sale/app/generic_components/order_widget/order_widget";
+import { OrderDisplay } from "@point_of_sale/app/components/order_display/order_display";
 import { patch } from "@web/core/utils/patch";
 
-patch(OrderWidget, {
+patch(OrderDisplay, {
   props: {
-    ...OrderWidget.props,
+    ...OrderDisplay.props,
     conversion_rate: { optional: true },
     foreign_total: { type: String, optional: true },
     foreign_tax: { type: String, optional: true },
