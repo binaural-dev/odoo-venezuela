@@ -301,6 +301,21 @@
                     </td>
                 </tr>
                 <t t-foreach="tax_groups" t-as="group">
+                    <tr style="line-height:1.2px;">
+                        <td>
+                            <span t-if="group.get('tax_amount_currency', 0.0) != 0.0" t-out="'Total G ' + group.get('group_name', '')"/>
+                            <span t-if="group.get('tax_amount_currency', 0.0) == 0.0" t-out="'IVA 0%'"/>
+                            <span t-else="">Exento</span>
+                        </td>
+                        <td class="text-end o_price_total">
+                            <span class="text-nowrap"
+                                t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0"
+                                t-out="base_vef and group.get('formatted_base_amount_currency_ves', group.get('formatted_base_amount_currency_ves', 0.0)) or group.get('formatted_base_amount_currency_ves', group.get('formatted_base_amount_currency_ves', 0.0))"/>
+                            <span 
+                            t-else="" 
+                            t-out="'0 ' + 'Bs.F'"></span>
+                        </td>
+                    </tr>
                     
                     <tr t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0" style="line-height:1.2;">
                         <td>
@@ -380,7 +395,21 @@
                     </td>
                 </tr>
                 <t t-foreach="tax_groups" t-as="group">
-                    
+                    <tr style="line-height:1.2px;">
+                        <td>
+                            <span t-if="group.get('tax_amount_currency', 0.0) != 0.0" t-out="'Total G ' + group.get('group_name', '')"/>
+                            <span t-if="group.get('tax_amount_currency', 0.0) == 0.0" t-out="'IVA 0%'"/>
+                            <span t-else="">Exento</span>
+                        </td>
+                        <td class="text-end o_price_total">
+                            <span class="text-nowrap"
+                                t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0"
+                                t-out="base_vef and group.get('formatted_base_amount_currency', group.get('formatted_base_amount_currency', 0.0)) or group.get('formatted_base_amount_currency', group.get('formatted_base_amount_currency', 0.0))"/>
+                            <span 
+                            t-else="" 
+                            t-out="'0 ' + (o.currency_id.symbol or '')"></span>
+                        </td>
+                    </tr>
 
                     <tr t-if="group.get('tax_amount', 0.0) != 0.0 or group.get('tax_amount_currency', 0.0) != 0.0 or group.get('tax_amount_foreign_currency', 0.0) != 0.0" style="line-height:1.2;">
                         <td>

@@ -97,9 +97,51 @@ class AccountMoveLine(models.Model):
         help="When setted, this field will be used to fill the foreign credit field",
     )
 
-    config_deductible_tax = fields.Boolean(related='company_id.config_deductible_tax')
+    config_deductible_tax = fields.Boolean(related="company_id.config_deductible_tax")
 
     not_deductible_tax = fields.Boolean(default=False)
+
+    @api.onchange("amount_currency", "currency_id")
+    def _inverse_amount_currency(self):
+        for line in self:
+            if (
+                line.currency_id == line.company_id.currency_id
+                and line.balance != line.amount_currency
+            ):
+                line.balance = line.amount_currency
+            elif (
+                line.currency_id != line.company_id.currency_id
+                and not line.move_id.is_invoice(True)
+                and not self.env.is_protected(self._fields["balance"], line)
+            ):
+                rate = (
+                    line.foreign_inverse_rate
+                    if line.currency_id
+                    in (
+                        self.env.ref("base.VEF"),
+                        self.env.ref("base.USD"),
+                        self.env.ref("base.EUR"),
+                    )
+                    else line.currency_rate
+                )
+                line.balance = line.company_id.currency_id.round(
+                    line.amount_currency / rate
+                )
+            elif (
+                line.currency_id != line.company_id.currency_id
+                and not line.move_id.is_invoice(True)
+                and line.move_id.origin_payment_id
+            ):
+                if (
+                    line.move_id.origin_payment_id.foreign_inverse_rate != 0
+                    and line.amount_currency != 0
+                ):
+                    line.balance = line.company_id.currency_id.round(
+                        line.amount_currency
+                        / line.move_id.origin_payment_id.foreign_inverse_rate
+                    )
+                else:
+                    raise UserError(_("The rate should be greater than zero"))
 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
@@ -296,7 +338,9 @@ class AccountMoveLine(models.Model):
         res = super()._compute_amount_currency()
         for line in self:
             if line.amount_currency is False:
-                line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
+                line.amount_currency = line.currency_id.round(
+                    line.balance * line.currency_rate
+                )
             if line.currency_id == line.company_id.currency_id:
                 line.amount_currency = line.balance
         return res

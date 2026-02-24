@@ -128,23 +128,72 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
-        self.invoice_date = fields.Date.today()
+        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
+
+    def default_rate(self):
+        """
+        This method is used to get the rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            fields.Date.today(),
+        )
+        return rate_values.get("foreign_rate", 0)
+
+    def default_rate(self):
+        """
+        This method is used to get the rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            fields.Date.today(),
+        )
+        return rate_values.get("foreign_rate", 0)
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
+        default=default_rate,
         store=True,
         tracking=True,
     )
+    
+
+
+    def default_inverse_rate(self):
+        """
+        This method is used to get the inverse rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The inverse rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            fields.Date.today(),
+        )
+        return rate_values.get("foreign_inverse_rate", 0)
+    
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
+        default=default_inverse_rate,
         store=True,
         index=True,
     )
+
 
     move_currency_to_company_currency_rate = fields.Float(
         string="Move Currency to Company Currency Rate",
@@ -334,6 +383,7 @@ class AccountMove(models.Model):
             )
             foreign_currency_symbol = foreign_currency_record.symbol or ""
             foreign_currency_name = foreign_currency_record.name or ""
+            company_currency_symbol = self.env.company.currency_id.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
@@ -359,6 +409,8 @@ class AccountMove(models.Model):
                 doc = etree.XML(res["arch"])
                 foreign_total_billed_column = doc.xpath("//list/field[@name='foreign_total_billed']")
                 foreign_untaxed_total_column = doc.xpath("//list/field[@name='foreign_untaxed_total']")
+                amount_total_signed_column = doc.xpath("//list/field[@name='amount_total_signed']")
+                amount_untaxed_signed_column = doc.xpath("//list/field[@name='amount_untaxed_signed']")
                 if foreign_total_billed_column:
                     foreign_total_billed_column[0].set(
                         "string", _("Total") + " " + foreign_currency_name
@@ -367,6 +419,15 @@ class AccountMove(models.Model):
                     foreign_untaxed_total_column[0].set(
                         "string", _("Untaxed Total") + " " + foreign_currency_name
                     )
+                if amount_total_signed_column:
+                    amount_total_signed_column[0].set(
+                        "string", _("Total") + " " + company_currency_symbol
+                    )
+                if amount_untaxed_signed_column:
+                    amount_untaxed_signed_column[0].set(
+                        "string", _("Untaxed Total") + " " + company_currency_symbol
+                    )
+                
                 res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
@@ -396,6 +457,7 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
+
         return moves
 
     def write(self, vals):
@@ -425,6 +487,7 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
+
         return res
 
     @api.constrains("invoice_line_ids")
@@ -791,7 +854,6 @@ class AccountMove(models.Model):
         elif self.foreign_inverse_rate == 0:
             raise ValidationError(_("The rate entered cannot be zero."))
 
-
     def _get_payments(self, line_ids):
         self.ensure_one()
 
@@ -951,6 +1013,7 @@ class AccountMove(models.Model):
             if (
                 invoice.company_id.account_use_credit_limit
                 and invoice.partner_id.use_partner_credit_limit
+                and invoice.move_type in ("out_invoice")
             ):
                 total_pay = invoice.partner_id.credit + invoice.amount_residual
                 if total_pay > invoice.partner_id.credit_limit:
