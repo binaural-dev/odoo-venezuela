@@ -1010,6 +1010,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             reduced_aliquot = False
             extend_aliquot = False
 
+            zero_aliquiot_international = False
+
             if self.report == "sale":
                 if move.journal_id.is_sale_international:
                     zero_aliquiot_international = self.company_id.zero_aliquot_sale_international.tax_group_id.id
