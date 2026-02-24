@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251118\n"
+"Project-Id-Version: Odoo Server 19.0+e-20251202\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-09 01:56+0000\n"
 "PO-Revision-Date: 2025-12-09 01:56+0000\n"
@@ -1033,17 +1033,6 @@ msgid "Purchase Tax Rates"
 msgstr "Tasas de Impuestos de Compras"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
-msgid "RIF"
-msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
-msgid "RIF/CI/PAS."
-msgstr "CI/RIF"
-
-#. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
 msgid ""
 "Rate that will be used as factor to multiply of the foreign currency for the"
@@ -1220,6 +1209,13 @@ msgid "Tax"
 msgstr "Impuesto"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
+msgid "Tax ID"
+msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
+
+#. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_tax_unit
 #: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_accountant_tax_unit
 msgid "Tax Unit"
@@ -1293,7 +1289,8 @@ msgid ""
 "The conversion rate between the move currency and the company currency at "
 "the move date."
 msgstr ""
-"La tasa de conversión entre la moneda del asiento y la moneda de la compañía en la fecha del asiento."
+"La tasa de conversión entre la moneda del asiento y la moneda de la compañía"
+" en la fecha del asiento."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1469,9 +1466,21 @@ msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid "You cannot set a currency other than 'VEF' as the system base currency."
+msgstr "No puedes colocar una moneda distinta a 'VEF' como la base del sistema."
+
+#. module: l10n_ve_accountant
+#. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_journal.py:0
 msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "You must set the invoice date before adding products."
+msgstr "Debes establecer la fecha de la factura antes de agregar productos."
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
