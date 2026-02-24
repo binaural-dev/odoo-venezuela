@@ -1,6 +1,9 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+import logging
+
+_logger = logging.getLogger(__name__)
 # Integra 16 tiene varios campos con readonly=True, revisar para migrar
 
 
@@ -15,13 +18,11 @@ class PosConfig(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for moves.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
         readonly=False,
     )
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
         readonly=False,
     )
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty")
@@ -46,6 +47,7 @@ class PosConfig(models.Model):
             rate_values = rate.compute_rate(
                 config.foreign_currency_id.id, fields.Date.today()
             )
+            _logger.warning("rate_values %s", rate_values)
             config.update(rate_values)
 
     def _action_to_open_ui(self):

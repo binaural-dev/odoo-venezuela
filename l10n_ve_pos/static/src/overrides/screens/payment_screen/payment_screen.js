@@ -1,24 +1,25 @@
 /** @odoo-module */
-
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { useService } from "@web/core/utils/hooks";
-import { SelectionPopup } from "@point_of_sale/app/utils/input_popups/selection_popup";
+import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
 import { useEnv } from "@odoo/owl";
 
 // New orders are now associated with the current table, if any.
 patch(PaymentScreen.prototype, {
 
-  setup(){
+  setup() {
     super.setup(...arguments)
     this.utils = useEnv().utils,
-     this.dialog = useService("dialog");
+      this.dialog = useService("dialog");
   },
+
   shouldDownloadInvoice() {
     return false;
   },
+
   updateSelectedPaymentline(amount = false) {
     if (this.paymentLines.every((line) => line.paid)) {
       this.currentOrder.add_paymentline(this.payment_methods_from_config[0]);
@@ -112,7 +113,7 @@ patch(PaymentScreen.prototype, {
       }
 
     })
-    await this.popup.add(
+    await this.dialog.add(
       SelectionPopup,
       {
         title: _t("Payments"),
