@@ -139,74 +139,71 @@ class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
     #Se dejan este test comentado debido a que el super de _get_purchase_book_field_groups 
     # aun no se encuentra en el ambiente donde se subiran a priori estas pruebas unitarias
 
-    # def test_get_purchase_book_field_groups_igtf_visibility(self):
-    #     """Validate IGTF field group behavior based on company flags."""
+    def test_get_purchase_book_field_groups_igtf_visibility(self):
+        """Validate IGTF field group behavior based on company flags."""
 
-    #     company = self.env.company
+        company = self.env.company
 
-    #     self.test01_payment_from_invoice_with_igtf_journal()
+        self.test01_payment_from_invoice_with_igtf_journal()
 
-    #     # Helper para crear wizard
-    #     def _get_groups():
-    #         with Form(self.env['wizard.accounting.reports']) as wiz_form:
-    #             wiz_form.report = 'purchase'
-    #             wiz_form.date_from = fields.Date.today()
-    #             wiz_form.date_to = fields.Date.today()
-    #             wizard = wiz_form.save()
-    #         return wizard._get_purchase_book_field_groups()
+        # Helper para crear wizard
+        def _get_groups():
+            with Form(self.env['wizard.accounting.reports']) as wiz_form:
+                wiz_form.report = 'purchase'
+                wiz_form.date_from = fields.Date.today()
+                wiz_form.date_to = fields.Date.today()
+                wizard = wiz_form.save()
+            return wizard._get_purchase_book_field_groups()
 
-    #     # ---------------------------
-    #     # 🟢 Caso 1: mostrar ambos
-    #     # ---------------------------
-    #     # company.not_show_bi_igtf_purchase_order = False
-    #     company.not_show_igtf_purchase_order = False
+        # ---------------------------
+        # 🟢 Caso 1: mostrar ambos
+        # ---------------------------
+        # company.not_show_bi_igtf_purchase_order = False
+        company.not_show_igtf_purchase_order = False
 
-    #     groups = _get_groups()
-    #     igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
+        groups = _get_groups()
+        igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
 
-    #     self.assertIsNotNone(igtf_group, "Debe existir grupo IGTF")
-    #     field_names = [f["field"] for f in igtf_group["fields"]]
-    #     # self.assertIn("bi_igtf", field_names)
-    #     self.assertIn("igtf", field_names)
+        self.assertIsNotNone(igtf_group, "Debe existir grupo IGTF")
+        field_names = [f["field"] for f in igtf_group["fields"]]
+        # self.assertIn("bi_igtf", field_names)
+        self.assertIn("igtf", field_names)
 
-    #     # ---------------------------
-    #     # 🟡 Caso 2: ocultar BI IGTF
-    #     # ---------------------------
-    #     # company.not_show_bi_igtf_purchase_order = True
-    #     company.not_show_igtf_purchase_order = False
+        # ---------------------------
+        # 🟡 Caso 2: ocultar BI IGTF
+        # ---------------------------
+        # company.not_show_bi_igtf_purchase_order = True
+        company.not_show_igtf_purchase_order = False
 
-    #     groups = _get_groups()
-    #     igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
+        groups = _get_groups()
+        igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
 
-    #     self.assertIsNotNone(igtf_group)
-    #     field_names = [f["field"] for f in igtf_group["fields"]]
-    #     # self.assertNotIn("bi_igtf", field_names)
-    #     self.assertIn("igtf", field_names)
+        self.assertIsNotNone(igtf_group)
+        field_names = [f["field"] for f in igtf_group["fields"]]
+        # self.assertNotIn("bi_igtf", field_names)
+        self.assertIn("igtf", field_names)
 
-    #     # ---------------------------
-    #     # 🟠 Caso 3: ocultar IGTF monto
-    #     # ---------------------------
-    #     # company.not_show_bi_igtf_purchase_order = False
-    #     company.not_show_igtf_purchase_order = True
+        # ---------------------------
+        # 🟠 Caso 3: ocultar IGTF monto
+        # ---------------------------
+        # company.not_show_bi_igtf_purchase_order = False
+        company.not_show_igtf_purchase_order = True
 
-    #     groups = _get_groups()
-    #     igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
+        groups = _get_groups()
+        igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
 
-    #     self.assertIsNotNone(igtf_group)
-    #     field_names = [f["field"] for f in igtf_group["fields"]]
-    #     # self.assertIn("bi_igtf", field_names)
-    #     self.assertNotIn("igtf", field_names)
+        self.assertIsNone(igtf_group)
 
-    #     # ---------------------------
-    #     # 🔴 Caso 4: ocultar ambos
-    #     # ---------------------------
-    #     # company.not_show_bi_igtf_purchase_order = True
-    #     company.not_show_igtf_purchase_order = True
+        # ---------------------------
+        # 🔴 Caso 4: ocultar ambos
+        # ---------------------------
+        # company.not_show_bi_igtf_purchase_order = True
+        company.not_show_igtf_purchase_order = True
 
-    #     groups = _get_groups()
-    #     igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
+        groups = _get_groups()
+        igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
 
-    #     self.assertIsNone(igtf_group, "No debe existir grupo IGTF si ambos están ocultos")
+        self.assertIsNone(igtf_group, "No debe existir grupo IGTF si ambos están ocultos")
 
 
     def test_reversal_purchase_book_line_fields_with_igtf(self):
