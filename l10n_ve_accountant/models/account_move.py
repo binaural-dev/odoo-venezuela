@@ -130,21 +130,55 @@ class AccountMove(models.Model):
     def _onchange_move_type(self):
         self.invoice_date = fields.Date.today()
 
+    def default_rate(self):
+        """
+        This method is used to get the rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            fields.Date.today(),
+        )
+        return rate_values.get("foreign_rate", 0)
+
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
+        default=default_rate,
         store=True,
         tracking=True,
     )
+    
+
+
+    def default_inverse_rate(self):
+        """
+        This method is used to get the inverse rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The inverse rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.currency_id.id or self.env.ref("base.VEF").id,
+            fields.Date.today(),
+        )
+        return rate_values.get("foreign_inverse_rate", 0)
+    
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
+        default=default_inverse_rate,
         store=True,
         index=True,
     )
+
 
     move_currency_to_company_currency_rate = fields.Float(
         string="Move Currency to Company Currency Rate",
@@ -790,7 +824,6 @@ class AccountMove(models.Model):
             raise ValidationError(_("The rate entered cannot be negative."))
         elif self.foreign_inverse_rate == 0:
             raise ValidationError(_("The rate entered cannot be zero."))
-
 
     def _get_payments(self, line_ids):
         self.ensure_one()

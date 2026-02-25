@@ -1,4 +1,3 @@
-
 from odoo import api, fields, models, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError, ValidationError
@@ -101,70 +100,6 @@ class AccountMoveLine(models.Model):
     config_deductible_tax = fields.Boolean(related='company_id.config_deductible_tax')
 
     not_deductible_tax = fields.Boolean(default=False)
-
-    # override
-    @api.depends("product_id", "product_uom_id", "move_id.currency_id")
-    def _compute_price_unit(self):
-        for line in self:
-            if (
-                not line.product_id
-                or line.display_type in ("line_section", "line_subsection", "line_note")
-                or line.is_imported
-            ):
-                continue
-            if line.move_id.is_sale_document(include_receipts=True):
-                document_type = "sale"
-            elif line.move_id.is_purchase_document(include_receipts=True):
-                document_type = "purchase"
-            else:
-                document_type = "other"
-            line.price_unit = line.product_id._get_tax_included_unit_price(
-                line.move_id.company_id,
-                line.move_id.currency_id,
-                line.move_id.date,
-                document_type,
-                fiscal_position=line.move_id.fiscal_position_id,
-                product_uom=line.product_uom_id,
-                product_price_unit=line.price_unit,
-            )
-
-    @api.onchange("amount_currency", "currency_id")
-    def _inverse_amount_currency(self):
-        for line in self:
-            if (
-                line.currency_id == line.company_id.currency_id
-                and line.balance != line.amount_currency
-            ):
-                line.balance = line.amount_currency
-            elif (
-                line.currency_id != line.company_id.currency_id
-                and not line.move_id.is_invoice(True)
-                and not self.env.is_protected(self._fields["balance"], line)
-            ):
-                rate = (
-                    line.foreign_inverse_rate
-                    if line.currency_id
-                    in (self.env.ref("base.VEF"), self.env.ref("base.USD"), self.env.ref("base.EUR"))
-                    else line.currency_rate
-                )
-                line.balance = line.company_id.currency_id.round(
-                    line.amount_currency / rate
-                )
-            elif (
-                line.currency_id != line.company_id.currency_id
-                and not line.move_id.is_invoice(True)
-                and line.move_id.origin_payment_id
-            ):
-                if (
-                    line.move_id.origin_payment_id.foreign_inverse_rate != 0
-                    and line.amount_currency != 0
-                ):
-                    line.balance = line.company_id.currency_id.round(
-                        line.amount_currency
-                        / line.move_id.origin_payment_id.foreign_inverse_rate
-                    )
-                else:
-                    raise UserError(_("The rate should be greater than zero"))
 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
