@@ -320,13 +320,15 @@ class AccountMoveLine(models.Model):
                 line.foreign_credit = abs(amount) if amount > 0 else 0.0
                 continue
 
-        # Guarantee that foreign_balance is always exactly foreign_debit - foreign_credit.
-        # This prevents stale values caused by the circular dependency between
-        # _compute_foreign_debit_credit (which depends on foreign_balance) and
-        # _compute_foreign_balance (which depends on foreign_debit/credit).
+        # Guarantee foreign_balance == foreign_debit - foreign_credit.
+        # We write directly into the ORM cache (env.cache.set) instead of assigning
+        # `line.foreign_balance = ...`, because foreign_balance has store=True + inverse,
+        # so a normal assignment triggers records.write() → _check_balanced → "asiento no balanceado".
+        # Writing to the cache directly keeps the value fresh without any write chain.
+        fb_field = self._fields['foreign_balance']
         for line in self:
             if not line.not_foreign_recalculate:
-                line.foreign_balance = line.foreign_debit - line.foreign_credit
+                self.env.cache.set(line, fb_field, line.foreign_debit - line.foreign_credit)
 
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):

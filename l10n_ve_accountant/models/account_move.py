@@ -1040,8 +1040,6 @@ class AccountMove(models.Model):
         res = super()._compute_needed_terms()
 
         for invoice in self:
-            if not isinstance(invoice.needed_terms, dict):
-                invoice.needed_terms = {}
             is_draft = invoice.id != invoice._origin.id
             sign = 1 if invoice.is_inbound(include_receipts=True) else -1
             if invoice.is_invoice(True) and invoice.invoice_line_ids:
@@ -1084,26 +1082,33 @@ class AccountMove(models.Model):
                     )
 
                     for term in invoice_payment_terms["line_ids"]:
-                        if not isinstance(invoice.needed_terms, dict):
-                            invoice.needed_terms = {}
-                        for key in list(invoice.needed_terms.keys()):
+                        # Capture the reference once — if False/None, skip safely.
+                        # We mutate the dict in-place (no write-back) to avoid
+                        # triggering ORM writes that unbalance the journal entry.
+                        nt = invoice.needed_terms
+                        if not isinstance(nt, dict):
+                            continue
+                        for key in list(nt.keys()):
                             if key["date_maturity"] == fields.Date.to_date(
                                 term.get("date")
                             ):
-                                invoice.needed_terms[key] = {
-                                    **invoice.needed_terms[key],
+                                nt[key] = {
+                                    **nt[key],
                                     "foreign_balance": term["company_amount"],
                                 }
                 else:
-                    if not isinstance(invoice.needed_terms, dict):
-                        invoice.needed_terms = {}
-                    for key in list(invoice.needed_terms.keys()):
-                        invoice.needed_terms[key] = {
-                            **invoice.needed_terms[key],
-                            "foreign_balance": sign * sum(
-                                line.foreign_price_total
-                                for line in invoice.invoice_line_ids
-                            ),
+                    # Capture the reference once — mutate in-place, no write-back.
+                    nt = invoice.needed_terms
+                    if not isinstance(nt, dict):
+                        continue
+                    foreign_total = sign * sum(
+                        line.foreign_price_total
+                        for line in invoice.invoice_line_ids
+                    )
+                    for key in list(nt.keys()):
+                        nt[key] = {
+                            **nt[key],
+                            "foreign_balance": foreign_total,
                         }
         return res
 
