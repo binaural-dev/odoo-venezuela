@@ -312,12 +312,13 @@ class AccountMoveLine(models.Model):
                 line.foreign_credit = abs(amount) if amount > 0 else 0.0
                 continue
 
-            # line.foreign_debit = (
-            #     abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-            # )
-            # line.foreign_credit = (
-            #     abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-            # )
+        # Guarantee that foreign_balance is always exactly foreign_debit - foreign_credit.
+        # This prevents stale values caused by the circular dependency between
+        # _compute_foreign_debit_credit (which depends on foreign_balance) and
+        # _compute_foreign_balance (which depends on foreign_debit/credit).
+        for line in self:
+            if not line.not_foreign_recalculate:
+                line.foreign_balance = line.foreign_debit - line.foreign_credit
 
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):

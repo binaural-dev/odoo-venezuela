@@ -1058,11 +1058,15 @@ class AccountMove(models.Model):
                         untaxed_amount = untaxed_amount_currency
                         tax_amount = tax_amount_currency
                     else:
-                        tax_amount = (
-                            invoice.foreign_total_billed
-                            - invoice.foreign_taxable_income
-                        ) * sign
-                        untaxed_amount = (invoice.foreign_taxable_income) * sign
+                        tax_amount_currency = 0.0
+                        untaxed_amount_currency = 0.0
+                        for line in invoice.invoice_line_ids:
+                            untaxed_amount_currency += line.foreign_subtotal
+                            tax_amount_currency += (
+                                line.foreign_price_total - line.foreign_subtotal
+                            )
+                        untaxed_amount = untaxed_amount_currency
+                        tax_amount = tax_amount_currency
 
                     invoice_payment_terms = (
                         invoice.invoice_payment_term_id._compute_terms(
@@ -1096,7 +1100,10 @@ class AccountMove(models.Model):
                     for key in list(invoice.needed_terms.keys()):
                         invoice.needed_terms[key] = {
                             **invoice.needed_terms[key],
-                            "foreign_balance": sign * invoice.foreign_total_billed,
+                            "foreign_balance": sign * sum(
+                                line.foreign_price_total
+                                for line in invoice.invoice_line_ids
+                            ),
                         }
         return res
 
