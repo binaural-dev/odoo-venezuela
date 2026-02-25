@@ -162,6 +162,8 @@ class AccountMoveLine(models.Model):
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
         "foreign_inverse_rate",
+        "move_id.line_ids.foreign_debit",
+        "move_id.line_ids.foreign_credit",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
@@ -169,6 +171,56 @@ class AccountMoveLine(models.Model):
                 continue
 
             if line.display_type in ("payment_term", "tax"):
+                if line.display_type == "payment_term" and line.move_id.is_invoice(include_receipts=True):
+                    # 1 Case: Payment Term Invoice
+                    # Non-payment-term lines (product, tax): their foreign values are
+                    # already correctly computed by _sync_tax_lines and _compute_foreign_subtotal.
+                    other_lines = line.move_id.line_ids.filtered(
+                        lambda l: l.display_type not in ("payment_term", "line_section", "line_note")
+                    )
+                    payment_term_lines = line.move_id.line_ids.filtered(
+                        lambda l: l.display_type == "payment_term"
+                    ).sorted("id")
+
+                    is_credit_side = line.credit > 0
+
+                    # Total foreign amount = sum of all non-payment-term lines (one side only)
+                    if is_credit_side:
+                        foreign_total = sum(other_lines.mapped("foreign_debit"))
+                    else:
+                        foreign_total = sum(other_lines.mapped("foreign_credit"))
+
+                    if len(payment_term_lines) == 1:
+                        # Single installment: exact complement ensures perfect balance
+                        my_foreign = foreign_total
+                    else:
+                        # Multi-installment: distribute proportional to each term's company
+                        # currency balance. Last term gets the residual to ensure exact balancing.
+                        total_balance_company = sum(abs(l.balance) for l in payment_term_lines)
+                        foreign_currency = line.move_id.company_id.foreign_currency_id
+
+                        if line == payment_term_lines[-1]:
+                            # Last term: residual = total - sum of all other rounded amounts
+                            other_pt = payment_term_lines[:-1]
+                            assigned = sum(
+                                foreign_currency.round(abs(l.balance) / total_balance_company * foreign_total)
+                                if total_balance_company else 0.0
+                                for l in other_pt
+                            )
+                            my_foreign = foreign_total - assigned
+                        else:
+                            ratio = abs(line.balance) / total_balance_company if total_balance_company else 0.0
+                            my_foreign = foreign_currency.round(ratio * foreign_total)
+
+                    if is_credit_side:
+                        line.foreign_credit = my_foreign
+                        line.foreign_debit = 0.0
+                    else:
+                        line.foreign_debit = my_foreign
+                        line.foreign_credit = 0.0
+                    continue
+
+                # Tax lines: read from foreign_balance set by _sync_tax_lines
                 line.foreign_debit = (
                     abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
                 )
@@ -176,8 +228,6 @@ class AccountMoveLine(models.Model):
                     abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
                 )
                 continue
-                # 1 Case: Payment Term
-                # In this case, we don't want to calculate the foreign debit and credit
 
             if line.display_type in ("line_section", "line_note"):
                 line.foreign_debit = line.foreign_credit = 0.0
