@@ -40,6 +40,11 @@
                     invisible="move_type not in ('out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt')"
                     readonly="state == 'draft'" />
             </xpath>
+        
+            <xpath expr="//field[@name='invoice_date']" position="attributes">
+                <attribute name="required">move_type in ('out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt')</attribute>
+            </xpath>
+            
             <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
                 <field name="invoice_origin" string="Nro de Pedido" />
                 <field name="invoice_user_id" />
@@ -157,7 +162,7 @@
         <field name="view_id" ref="account.view_in_invoice_tree" />
         <field name="search_view_id" ref="account.view_account_invoice_filter" />
         <field name="domain">[('move_type', '=', 'in_refund')]</field>
-        <field name="context">{'default_move_type': 'in_refund', 'default_filter_partner': 'supplier', 'default_invoice_date': context_today(), 'create':0}</field>
+        <field name="context">{'default_move_type': 'in_refund', 'default_filter_partner': 'supplier', 'default_invoice_date': context_today()}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a vendor credit note
