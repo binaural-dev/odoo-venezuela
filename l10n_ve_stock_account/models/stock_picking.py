@@ -1272,6 +1272,7 @@ class StockPicking(models.Model):
                     ("state_guide_dispatch", "=", "to_invoice"),
                     ("sale_id.document", "!=", "invoice"),
                     ("company_id", "in", company_ids),
+                    ('is_return', '=', False),
                 ]
             )
         )
