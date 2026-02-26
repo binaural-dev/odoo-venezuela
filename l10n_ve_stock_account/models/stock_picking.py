@@ -265,6 +265,7 @@ class StockPicking(models.Model):
                         {
                             "move_type": "out_invoice",
                             "invoice_origin": origin_name,
+                            "invoice_date": date.today(),
                             "invoice_user_id": current_user,
                             "narration": picking_id.name,
                             "partner_id": picking_id.partner_id.id,
