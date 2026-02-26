@@ -1753,3 +1753,10 @@ msgstr "Total BS"
 #: model:ir.model.fields,field_description:account.field_account_move__amount_untaxed_signed
 msgid "Untaxed Amount Signed"
 msgstr "Total sin impuestos BS"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "All payment methods must have an assigned account."
+msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
+

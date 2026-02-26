@@ -93,6 +93,15 @@ class StockPicking(models.Model):
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
+    def get_customer_journal(self):
+        journal = customer_journal_id = self.env.company.customer_journal_id or False
+        return journal
+
+    def get_vendor_journal(self):
+        journal = vendor_journal_id = self.env.company.vendor_journal_id or False
+        return journal
+
+
     def action_open_invoice_wizard(self):
         return {
             "name": _("Generate Invoice For Multiple Picking"),
@@ -159,7 +168,7 @@ class StockPicking(models.Model):
             if len(pricelists) > 1:
                 raise UserError(_("You can only create a combined invoice for pickings with the same pricelist."))
 
-            customer_journal_id = self.env.company.customer_journal_id or False
+            customer_journal_id = pickings.get_customer_journal()
             if not customer_journal_id:
                 raise UserError(_("Please configure the journal from settings"))
             lines = self._get_multiple_invoice_lines_for_invoice(pickings, from_picking_line=True)
@@ -193,7 +202,7 @@ class StockPicking(models.Model):
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
-                customer_journal_id = self.env.company.customer_journal_id or False
+                customer_journal_id = picking_id.get_customer_journal()
                 if not customer_journal_id:
                     raise UserError(_("Please configure the journal from settings"))
 
@@ -216,7 +225,7 @@ class StockPicking(models.Model):
                 }
                 if picking_id.sale_id and picking_id.pricelist_id:
                     invoice_vals["pricelist_id"] = picking_id.pricelist_id.id
-                invoice = self.env["account.move"].create(invoice_vals)
+                invoice = self.env["account.move"].create(invoice_vals) ##PROBLEMA ACAAA
             picking_id.write({"state_guide_dispatch": "invoiced"})
             picking_id._update_order_sale_invoiced()
         return invoice
@@ -228,7 +237,7 @@ class StockPicking(models.Model):
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "incoming":
-                vendor_journal_id = self.env.company.vendor_journal_id
+                vendor_journal_id = picking_id.get_vendor_journal()
                 if not vendor_journal_id:
                     raise UserError(
                         _("Please configure the journal from the settings.")
@@ -286,7 +295,7 @@ class StockPicking(models.Model):
         for picking_id in self:
             current_user = picking_id.env.uid
             if picking_id.picking_type_id.code == "incoming":
-                customer_journal_id = self.env.company.customer_journal_id
+                customer_journal_id = picking_id.get_customer_journal()
                 if not customer_journal_id:
                     raise UserError(_("Please configure the journal from settings"))
                 invoice_line_list = []
@@ -338,7 +347,7 @@ class StockPicking(models.Model):
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
-                vendor_journal_id = self.env.company.vendor_journal_id
+                vendor_journal_id = picking_id.get_vendor_journal()
                 if not vendor_journal_id:
                     raise UserError(
                         _("Please configure the journal from the settings.")
@@ -573,7 +582,7 @@ class StockPicking(models.Model):
 
                     partner_id = self.partner_id
                     invoice_line_list = []
-                    customer_journal_id = self.env.company.customer_journal_id
+                    customer_journal_id = self.get_customer_journal()
                     if not customer_journal_id:
                         raise UserError(_("Please configure the journal from settings"))
                     for picking_id in self:
@@ -625,7 +634,7 @@ class StockPicking(models.Model):
                 if all(first == partner[0] for first in partner):
                     partner_id = self.partner_id
                     bill_line_list = []
-                    vendor_journal_id = self.env.company.vendor_journal_id
+                    vendor_journal_id = self.get_vendor_journal()
                     if not vendor_journal_id:
                         raise UserError(
                             _("Please configure the journal from " "the settings.")
@@ -1150,7 +1159,7 @@ class StockPicking(models.Model):
         and the operational_code is internal
         '''
         for picking in self:
-            if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
+            if picking.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
                 picking.state_guide_dispatch = 'emited'
         return super(StockPicking, self).button_validate()
     
@@ -1169,10 +1178,11 @@ class StockPicking(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        if self.partner_required:
-            if any(k in vals for k in [
-                'location_dest_id', 'transfer_reason_id',
-                'is_consignment', 'is_dispatch_guide', 'partner_required']):
-                self._assign_partner_from_location()
+        for picking in self:
+            if picking.partner_required:
+                if any(k in vals for k in [
+                    'location_dest_id', 'transfer_reason_id',
+                    'is_consignment', 'is_dispatch_guide', 'partner_required']):
+                    picking._assign_partner_from_location()
         return res
             
