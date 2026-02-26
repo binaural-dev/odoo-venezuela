@@ -28,6 +28,7 @@ class AccountMoveLine(models.Model):
     foreign_price = fields.Monetary(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
+        currency_field="foreign_currency_id",
         store=True,
         readonly=False,
     )
