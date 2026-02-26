@@ -672,3 +672,9 @@ class AccountRetentionLine(models.Model):
                 )
             )
             return invoice_paid_amount_not_related_with_retentions
+
+    def _get_code_of_retention(self):
+        for record in self:
+            return record.payment_concept_id.line_payment_concept_ids.filtered(
+                lambda l: l.type_person_id == record.retention_id.partner_id.type_person_id
+            ).code if record.payment_concept_id else ""

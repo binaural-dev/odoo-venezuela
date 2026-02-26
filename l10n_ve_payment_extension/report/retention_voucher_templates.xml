@@ -428,15 +428,21 @@
                     </div>
                 <br />
                 <div class="col-12 row justify-content-end" style="margin-top:8px">
-                    <div class="col-6">
+                    <div class="col-4">
                         <span>Nro Comprobante:</span>
                         <div>
                             <span t-esc="retention.number"></span>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <span>Fecha:</span>
                         <span t-esc="retention.date" t-options='{"widget": "date"}'/>
+                    </div>
+                    <div class="col-4">
+                        <span>Periodo Fiscal:</span>
+                        <div>
+                            <span t-esc="retention.date.strftime('%m/%Y')"/>
+                        </div>
                     </div>
                 </div>
 
@@ -566,6 +572,7 @@
                 <th class="ret-left">Nro de Control</th>
                 <th class="ret-left">Fecha</th>
                 <th class="ret-left">Concepto</th>
+                <th class="ret-left">Código de Retención</th>
                 <th class="ret-num">Total Factura</th>
                 <th class="ret-num">Base de Retención</th>
                 <th class="ret-num">Tarifa Ret</th>
@@ -573,9 +580,9 @@
                 <th class="ret-num">Imp Retenido</th>
                 </tr>
 
-                <!-- separador header|body (SVG en fila colspan=10) -->
+                <!-- separador header|body (SVG en fila colspan=11) -->
                 <tr role="separator">
-                    <td class="sep-cell" colspan="10" style="padding:0">
+                    <td class="sep-cell" colspan="11" style="padding:0">
                         <svg width="100%" height="2" viewBox="0 0 1000 2" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="display:block">
                         <rect x="0" y="0" width="1000" height="1" fill="#000"/>
                         </svg>
@@ -609,6 +616,9 @@
 
                         <!-- Concepto -->
                         <td class="ret-left"><span t-esc="line.payment_concept_id.name or '--'"/></td>
+
+                        <!-- Código de Retención -->
+                        <td class="ret-left"><span t-esc="line._get_code_of_retention() or '--'"/></td>
 
                         <!-- Total Factura -->
                         <td class="ret-num">
@@ -666,9 +676,9 @@
                     </tr>
                 </t>
 
-                <!-- separador body|footer (SVG en fila colspan=10) -->
+                <!-- separador body|footer (SVG en fila colspan=11) -->
                 <tr role="separator">
-                    <td class="sep-cell" colspan="10" style="padding:0">
+                    <td class="sep-cell" colspan="11" style="padding:0">
                         <svg width="100%" height="2" viewBox="0 0 1000 2" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="display:block">
                             <rect x="0" y="0" width="1000" height="1" fill="#000"/>
                         </svg>
@@ -678,7 +688,7 @@
 
             <tfoot>
                 <tr>
-                    <td colspan="9"></td>
+                    <td colspan="10"></td>
                     <td class="ret-num no-wrap">
                         <span t-esc="islr_total" t-options='{"widget":"float","precision":get_digits}'/>
                     </td>
