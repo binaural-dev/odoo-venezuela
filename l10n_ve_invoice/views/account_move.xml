@@ -38,6 +38,7 @@
             <xpath expr="//div[@class='d-flex'][1]" position="after">
                 <field name="is_purchase_international" invisible="1"/>
                 <field name="declaration_unique_of_customs" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
+                <field name="import_file_number_purchase_international" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_reception_date"
