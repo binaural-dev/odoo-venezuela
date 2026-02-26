@@ -1,4 +1,4 @@
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo import api, models, _, fields
 import logging
 
@@ -34,6 +34,16 @@ class AccountJournal(models.Model):
                     raise ValidationError(
                         _("An International Purchase Journal is already enabled. Only one is allowed.")
                     )
+    @api.constrains('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
+    def _check_payment_method_line_accounts(self):
+        for journal in self.filtered(lambda x: x.type == 'bank'):
+            for line in journal.inbound_payment_method_line_ids:
+                if not line.payment_account_id:
+                    raise ValidationError(_("All payment methods must have an assigned account."))
+            for line in journal.outbound_payment_method_line_ids:
+                if not line.payment_account_id:
+                    raise ValidationError(_("All payment methods must have an assigned account."))
+
 
 
     def write(self, vals):
