@@ -161,6 +161,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "tax_base_extend_aliquot_international": taxes.get("tax_base_extend_aliquot_international", 0) * multiplier,
                 "declaration_unique_of_customs": move.declaration_unique_of_customs or "-",
                 "amount_import_international": taxes.get("amount_import_international", 0),
+                "import_file_number_purchase_international": move.import_file_number_purchase_international or "--",
             }
         )
 
@@ -1677,6 +1678,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 {"name": "Número de Declaración Única de Aduana", "field": "declaration_unique_of_customs"}
             )
             international_fields.insert(1,
+                {"name": "Número de expediente de Importación", "field": "import_file_number_purchase_international"}
+            )
+            international_fields.insert(2,
                 {"name": "Valor total de las importaciones definitivas", "field": "amount_import_international", "format": "number"}
             )
             purchase_groups.append({'header': 'COMPRAS INTERNACIONALES', 'fields': international_fields})
