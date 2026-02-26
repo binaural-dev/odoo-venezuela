@@ -14,6 +14,8 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
+    declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
+    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
 
     invoice_date = fields.Date(
         string="Invoice Date",
@@ -115,6 +117,14 @@ class AccountMove(models.Model):
             if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
         return super().action_post()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        for move in moves:
+            if move.is_purchase_international and move.declaration_unique_of_customs and not move.correlative:
+                move.correlative = move.declaration_unique_of_customs
+        return moves
 
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
@@ -318,3 +328,14 @@ class AccountMove(models.Model):
         for picking in self:
             action = picking.env.ref('account_debit_note.action_view_account_move_debit').read()[0]
         return action
+
+    def write(self, vals):
+        res = super().write(vals)
+        for move in self:
+            if move.is_purchase_international and move.declaration_unique_of_customs:
+                if move.correlative != move.declaration_unique_of_customs:
+                    move.correlative = move.declaration_unique_of_customs
+            elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
+                move.correlative = False
+                move.declaration_unique_of_customs = False
+        return res
