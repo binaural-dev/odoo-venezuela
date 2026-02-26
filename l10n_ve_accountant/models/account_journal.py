@@ -1,5 +1,5 @@
-from odoo.exceptions import UserError
-from odoo import api, models, _
+from odoo.exceptions import UserError, ValidationError
+from odoo import api, models, _, fields
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -17,6 +17,18 @@ class AccountJournal(models.Model):
             self._validate_support_user_group(vals)
 
         return super().create(vals_list)
+
+    @api.constrains('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
+    def _check_payment_method_line_accounts(self):
+        for journal in self.filtered(lambda x: x.type == 'bank'):
+            for line in journal.inbound_payment_method_line_ids:
+                if not line.payment_account_id:
+                    raise ValidationError(_("All payment methods must have an assigned account."))
+            for line in journal.outbound_payment_method_line_ids:
+                if not line.payment_account_id:
+                    raise ValidationError(_("All payment methods must have an assigned account."))
+
+
 
     def write(self, vals):
         for record in self:
