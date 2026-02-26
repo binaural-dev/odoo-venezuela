@@ -151,7 +151,6 @@ class AccountMove(models.Model):
                             move.currency_id,
                             move.company_id,
                             line.date,
-                            round=False
                         )
 
                     if move.currency_id.is_zero(amount):
@@ -238,7 +237,6 @@ class AccountMove(models.Model):
                             move.currency_id,
                             move.company_id,
                             line.date,
-                             round=False
                         )
 
                     if move.currency_id.is_zero(amount):
@@ -254,7 +252,6 @@ class AccountMove(models.Model):
                                 move.currency_id,
                                 move.company_id,
                                 line.date,
-                                round=False
                             )
                         ),
                         "id": line.id,
