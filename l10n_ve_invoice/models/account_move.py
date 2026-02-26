@@ -45,6 +45,8 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
+    import_file_number_purchase_international = fields.Char(string="Import File Number Purchase International")
+
     @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether an account move (invoice, debit/credit note or receipt) is within the current fiscal period."""
