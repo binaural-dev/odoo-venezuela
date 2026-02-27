@@ -73,7 +73,13 @@ class AccountRetention(models.Model):
         document_type = self.env.context.get('document_type')
         self.query_numbering()
         document_number = self.get_last_document_number(document_type)
-        document_number = document_number + 1
+        
+        document_number_str = str(document_number)
+        if len(document_number_str) > 6:
+            document_number = int(document_number_str[6:]) + 1
+        else:
+            document_number = int(document_number_str) + 1
+
         current_number = int(self.number[6:])
         validation_sequence = self.env.context.get('account_retention_alert', False)
 
@@ -91,7 +97,7 @@ class AccountRetention(models.Model):
             }
         }
 
-        document_number = str(document_number)
+        document_number = str(self.number)
 
         self.generate_document_data(document_number, document_type, validation_sequence)
     
@@ -259,7 +265,7 @@ class AccountRetention(models.Model):
                 retention_data["totalRetenido"] = str(round(abs(record.total_retention_amount), 2))
                 retention_data["totalIVA"] = str(round(abs(record.total_iva_amount), 2))
             else:
-                retention_data["TotalISRL"] = str(round(abs(record.total_iva_amount), 2))
+                retention_data["TotalISRL"] = total_retention
 
             return retention_data    
 
@@ -274,12 +280,15 @@ class AccountRetention(models.Model):
         for record in self:
             for line in record.retention_line_ids:
                 tipo_documento = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
-                document_number_ret = str(line.move_id.sequence_number)
+                serie = line.move_id.name
+                document_series_ret = ''.join([c for c in serie if c.isalpha()])
+                document_number_ret = str(''.join([c for c in serie if c.isdigit()]))
 
                 retention_data = {
                     "numeroLinea": str(counter), 
-                    "fechaDocumento": line.date_accounting.strftime("%d/%m/%Y"), 
+                    "fechaDocumento": line.move_id.invoice_date.strftime("%d/%m/%Y"), 
                     "tipoDocumento": tipo_documento,
+                    "serieDocumento": document_series_ret,
                     "numeroDocumento": document_number_ret,
                     "numeroControl": line.move_id.correlative,
                     "montoTotal": str(round(line.invoice_total, 2)),  

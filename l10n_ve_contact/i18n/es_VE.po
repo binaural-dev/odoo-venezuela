@@ -268,3 +268,12 @@ msgstr "Condiciones de pago del proveedor"
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__zip
 msgid "Zip"
 msgstr "C.P."
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid ""
+"You cannot modify the name of a contact with associated transactions."
+msgstr ""
+"No puedes modificar el nombre de un contacto con transacciones asociadas."

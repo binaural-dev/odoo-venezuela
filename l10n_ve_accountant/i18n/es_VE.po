@@ -1039,8 +1039,8 @@ msgstr "La tasa del pago"
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move_line.py:0
 #, python-format
-msgid "The rate should be greater than zero"
-msgstr "La tasa debe ser superior a cero."
+msgid "The rate of foreingn currency should be greater than zero"
+msgstr "La tasa de la moneda externa debe ser superior a cero."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1271,3 +1271,50 @@ msgstr "Notas de Crédito"
 #: model:ir.ui.menu,name:account.menu_action_account_payments_receivable
 msgid "Collections"
 msgstr "Cobranzas"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "You must first select a currency"
+msgstr "Primero debe seleccionar una moneda."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "There is not a foreign currency defined"
+msgstr "No hay una moneda alterna definida."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Account:</b> %s"
+msgstr "<b>Cuenta:</b> %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Foreign Credit Amount:</b> from %s to %s"
+msgstr "<b>Monto credito alterno:</b> de %s a %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Foreign Debit Amount:</b> from %s to %s"
+msgstr "<b>Monto debito alterno:</b> de %s a %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>The accounting line has been updated:</b>"
+msgstr "<b>La linea contable ha sido actualizada:</b>"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_amount_residual
+msgid "Foreign Amount Residual"
+msgstr "Cantidad por pagar"

@@ -34,18 +34,18 @@ patch(Order.prototype, {
     }
     return res;
   },
-  assert_editable() {},
+  assert_editable() { },
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
     if (this.pos.currency.name == "VEF") {
-      return this.pos.config.foreign_inverse_rate;
+      return round_di(this.pos.config.foreign_inverse_rate, this.pos.currency.decimal_places);
     }
     if (this.pos.currency.name == "USD") {
-      return this.pos.config.foreign_rate;
+      return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
     }
   },
   get_display_rate() {
-    return this.pos.config.foreign_rate;
+    return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
   },
 
   add_orderline(line) {
@@ -123,6 +123,7 @@ patch(Order.prototype, {
     let json = super.export_as_JSON();
     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
     json["foreign_currency_rate"] = this.get_conversion_rate();
+    json["foreign_inverse_rate"] = this.init_conversion_rate;
     json["to_receipt"] = this.is_to_receipt();
     return json;
   },
@@ -167,7 +168,7 @@ patch(Order.prototype, {
   /* ---- Payment Status --- */
   get_foreign_subtotal() {
     return round_pr(
-      this.orderlines.reduce(function (sum, orderLine) {
+      this.orderlines.reduce(function(sum, orderLine) {
         return sum + orderLine.get_display_foreign_price();
       }, 0),
       this.pos.foreign_currency.rounding,
@@ -178,10 +179,10 @@ patch(Order.prototype, {
   },
   get_foreign_total_without_tax() {
     return round_pr(
-      this.orderlines.reduce(function (sum, orderLine) {
+      this.orderlines.reduce(function(sum, orderLine) {
         return sum + orderLine.get_foreign_price_without_tax();
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.foreign_currency.rounding
     );
   },
   get_foreign_total_discount() {
@@ -212,7 +213,7 @@ patch(Order.prototype, {
       // 2. Round that result
       // 3. Sum all those rounded amounts
       var groupTaxes = {};
-      this.orderlines.forEach(function (line) {
+      this.orderlines.forEach(function(line) {
         var taxDetails = line.get_foreign_tax_details();
         var taxIds = Object.keys(taxDetails);
         for (var t = 0; t < taxIds.length; t++) {
@@ -233,7 +234,7 @@ patch(Order.prototype, {
       return sum;
     } else {
       return round_pr(
-        this.orderlines.reduce(function (sum, orderLine) {
+        this.orderlines.reduce(function(sum, orderLine) {
           return sum + orderLine.get_foreign_tax();
         }, 0),
         this.pos.foreign_currency.rounding,
@@ -244,7 +245,7 @@ patch(Order.prototype, {
     var details = {};
     var fulldetails = [];
 
-    this.orderlines.forEach(function (line) {
+    this.orderlines.forEach(function(line) {
       var ldetails = line.get_foreign_tax_details();
       for (var id in ldetails) {
         if (Object.hasOwnProperty.call(ldetails, id)) {
@@ -306,11 +307,16 @@ patch(Order.prototype, {
     if (this.pos.config.amount_to_zero) {
       let product_quantity_by_product = {};
       let products = [];
+      let allow_sales_on_order = false
       for (let line of lines) {
         let prd = this.pos.db.get_product_by_id(line.get_product().id);
 
         if (prd.type != "product") {
           continue;
+        }
+
+        if (this.pos.config.allow_sales_on_order && prd.pos_sale_on_order) {
+          allow_sales_on_order = true
         }
 
         if (product_quantity_by_product[prd.id] == undefined) {
@@ -324,6 +330,10 @@ patch(Order.prototype, {
         ) {
           products.push(prd.display_name);
         }
+      }
+
+      if (allow_sales_on_order) {
+        return await super.pay(...arguments)
       }
 
       if (products.length > 0)
@@ -418,13 +428,13 @@ patch(Order.prototype, {
 
   get_foreign_total_paid() {
     return round_pr(
-      this.paymentlines.reduce(function (sum, paymentLine) {
+      this.paymentlines.reduce(function(sum, paymentLine) {
         if (paymentLine.is_done()) {
           sum += paymentLine.get_foreign_amount();
         }
         return sum;
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.dp["Foreign Product Price"],
     );
   },
   get_foreign_change(paymentline) {
@@ -443,7 +453,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
+    return round_pr(Math.max(0, change), this.pos.dp["Foreign Product Price"]);
   },
   get_foreign_due(paymentline) {
     if (!paymentline) {
@@ -462,7 +472,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_pr(due, this.pos.foreign_currency.rounding);
+    return round_pr(due, this.pos.dp["Foreign Product Price"]);
   },
 
   get_qty_products() {
