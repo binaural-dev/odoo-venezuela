@@ -385,11 +385,15 @@ class AccountMove(models.Model):
                 line_2 = 'debit'
 
         def _to_vef(amount):
+   
+            if payment.currency_id == self.company_id.currency_id and self.currency_id !=  self.company_id.currency_id:
+                return self.currency_id._convert(
+                    amount, self.company_currency_id, self.company_id, self.invoice_date or fields.Date.today(),round=False
+                )
 
             return payment.currency_id._convert(
                 amount, self.company_currency_id, self.company_id, self.invoice_date or fields.Date.today()
             )
-            return amount
         
 
   
