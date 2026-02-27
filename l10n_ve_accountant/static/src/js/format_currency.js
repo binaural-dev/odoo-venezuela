@@ -4,7 +4,8 @@ import { MonetaryField } from "@web/views/fields/monetary/monetary_field";
 import { monetaryField } from "@web/views/fields/monetary/monetary_field";
 import { patch } from "@web/core/utils/patch";
 import { formatMonetary } from "@web/views/fields/formatters";
-import { session } from "@web/session";
+import { onWillStart } from "@odoo/owl";
+import { getCurrency } from "@web/core/currency";
 
 // 1. Aseguramos que el componente acepte la prop 'precision'
 patch(MonetaryField, {
@@ -19,38 +20,69 @@ patch(MonetaryField.prototype, {
      * Parcheamos el getter de dígitos, que es lo que formatMonetary
      * y el hook de input usan internamente.
      */
+    setup() {
+        super.setup();
+        // Creamos un estado para guardar los dígitos encontrados
+        this.customDigits = null;
+
+        onWillStart(async () => {
+            if (this.props.precision) {
+                // Buscamos directamente en el modelo decimal.precision
+                const dp = await this.env.services.orm.searchRead(
+                    "decimal.precision",
+                    [["name", "=", this.props.precision]],
+                    ["digits"]
+                );
+                
+                if (dp.length > 0) {
+                    this.customDigits = [16, dp[0].digits];
+                }
+            }
+        });
+    },
+    
     get currencyDigits() {
         if (this.props.precision) {
-            const dp = session.decimal_precision;
-            if (dp && dp[this.props.precision] !== undefined) {
-                return [16, dp[this.props.precision]];
+            
+            if (this.customDigits) {
+                return this.customDigits;
+            }
+            // Si no, fallback al original
+            try {
+                return super.currencyDigits;
+            } catch (e) {
+                return this.currency ? this.currency.digits : [16, 2];
             }
         }
-        // Si no hay prop precision, usamos la lógica original (super)
-        return super.currencyDigits;
+        if (this.props.useFieldDigits) {
+            return this.props.record.fields[this.props.name].digits;
+        }
+        if (!this.currency) {
+            return null;
+        }
+        return getCurrency(this.currencyId).digits;
     },
 
     get formattedValue() {
         if (this.props.inputType === "number" && this.value) {
             return this.value;
         }
-
-        // Ahora simplemente llamamos a this.currencyDigits, que ya está parcheado
+        let digitos = this.currencyDigits
         return formatMonetary(this.value, {
-            digits: this.currencyDigits,
+            digits: digitos,
             currencyId: this.currencyId,
             noSymbol: !this.props.readonly || this.props.hideSymbol,
         });
     }
 });
-
-// 2. Extraer la prop desde el registro del campo (Field Registry)
 const originalExtractProps = monetaryField.extractProps;
 monetaryField.extractProps = (fieldInfo) => {
     const props = originalExtractProps(fieldInfo);
-    // IMPORTANTE: Capturar la opción desde el XML
+    
+    
     if (fieldInfo.options && fieldInfo.options.precision) {
         props.precision = fieldInfo.options.precision;
+        
     }
     return props;
 };
