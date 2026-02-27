@@ -187,6 +187,7 @@ class AccountMove(models.Model):
             move.invoice_has_outstanding = True
 
     #Pagos no CONCILIADOS
+    @api.depends('move_type', 'line_ids.amount_residual')
     def _compute_payments_widget_to_reconcile_info(self):
         super()._compute_payments_widget_to_reconcile_info()
 
@@ -753,7 +754,6 @@ class AccountMove(models.Model):
 
     
         try:
-            #raise UserError('pasa por aca')
             payment_move.button_draft()
             
         except Exception:
@@ -781,18 +781,38 @@ class AccountMove(models.Model):
                     
                     current_debit = line.debit
                     current_credit = line.credit
+                    current_balance = line.balance
+                    current_f_balance = line.foreign_balance
+                    current_amount_currency = line.amount_currency
+                    current_f_debit = line.foreign_debit
+                    current_f_credit = line.foreign_credit
                     
                     if igtf_line_balance > 0: # IGTF DÉBIT
                         new_debit = current_debit + igtf_line_balance
                         new_credit = 0.0
+                        new_balance = current_balance + igtf_line.balance
+                        new_f_balance = current_f_balance + igtf_line.foreign_balance
+                        new_amount_currency = current_amount_currency + igtf_line.amount_currency
+                        new_f_debit = current_f_debit + igtf_line.foreign_debit
+                        new_f_credit = current_f_credit + igtf_line.foreign_credit
                       
                     else: # IGTF CRÉDIT
                         new_credit = current_credit + abs(igtf_line_balance)
                         new_debit = 0.0
+                        new_balance = current_balance + igtf_line.balance
+                        new_f_balance = current_f_balance + igtf_line.foreign_balance
+                        new_amount_currency = current_amount_currency + igtf_line.amount_currency
+                        new_f_debit = current_f_debit + igtf_line.foreign_debit
+                        new_f_credit = current_f_credit + igtf_line.foreign_credit
                       
                     line_vals = {
                         'debit': new_debit,
                         'credit': new_credit,
+                        'balance': new_balance,
+                        'amount_currency': new_amount_currency,
+                        'foreign_balance':new_f_balance,
+                        'foreign_debit':new_f_debit,
+                        'foreign_credit':new_f_credit,
                         'account_id': self.env.company.advance_customer_account_id.id if current_credit > 0 else self.env.company.advance_supplier_account_id.id,
                         'name': line.name,
                     }
@@ -824,7 +844,7 @@ class AccountMove(models.Model):
         except Exception:
             return False
             
-        return True 
+        return True
     
 
     def button_draft(self):

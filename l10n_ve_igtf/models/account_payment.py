@@ -54,7 +54,7 @@ class AccountPaymentAndIgtf(models.Model):
                 if rec.destination_account_id.id not in [customer_account, supplier_account]:
                     raise UserError(
                         _(
-                            "The selected journal is configured for IGTF and fiscal, so the destination account must be either the advance customer account or the advance supplier account."
+                            "The selected journal is configured for IGTF, so the destination account must be either the advance customer account or the advance supplier account."
                         ))
 
     @api.depends(
