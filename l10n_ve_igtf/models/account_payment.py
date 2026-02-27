@@ -151,7 +151,7 @@ class AccountPaymentAndIgtf(models.Model):
         due_currency_id = invoice.currency_id
         due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,fields.Date.today())
 
-        payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,fields.Date.today())
+        payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,fields.Date.today(), currency)
         principal_debt = due_amount
 
         principal_amount = min(payment_amount, principal_debt)
@@ -190,24 +190,35 @@ class AccountPaymentAndIgtf(models.Model):
         else:
             return igtf
     
-    def convert_to_company_currency(self, from_currency,amount,date =False):
+    def convert_to_company_currency(self, from_currency,amount,date =False,invoice_currency= False):
         """
         Convierte un monto desde una moneda específica a la moneda base de la compañía.
         """
         self.ensure_one()
         company_currency = self.company_id.currency_id
         
-        if from_currency == company_currency:
+        if from_currency == company_currency and invoice_currency == company_currency:
             return amount
-
-        converted_amount = from_currency._convert(
-            amount, 
-            company_currency, 
-            self.company_id, 
-            date or fields.Date.today(), round=False
-        )
         
-        return converted_amount
+        elif from_currency == company_currency and invoice_currency != company_currency:
+            converted_amount = invoice_currency._convert(
+                amount, 
+                company_currency, 
+                self.company_id, 
+                date or fields.Date.today(), round=False
+            )
+            return converted_amount
+        
+        else:
+
+            converted_amount = from_currency._convert(
+                amount, 
+                company_currency, 
+                self.company_id, 
+                date or fields.Date.today(), round=False
+            )
+            
+            return converted_amount
     
     def convert_to_external_currency(self, from_currency,amount,date =False):
      
