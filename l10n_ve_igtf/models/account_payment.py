@@ -149,7 +149,7 @@ class AccountPaymentAndIgtf(models.Model):
         precision = currency.rounding
         
         due_currency_id = invoice.currency_id
-        due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,fields.Date.today())
+        due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,fields.Date.today(), currency)
 
         payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,fields.Date.today(), currency)
         principal_debt = due_amount
