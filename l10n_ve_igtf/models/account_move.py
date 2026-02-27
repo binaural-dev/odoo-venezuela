@@ -49,6 +49,18 @@ class AccountMove(models.Model):
     def _compute_tax_totals(self):
         return super()._compute_tax_totals()
 
+    @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
+    def _compute_invoice_has_outstanding(self):
+        #override
+        # Primero ejecutamos la lógica original de Odoo
+        super()._compute_invoice_has_outstanding()
+        
+        for move in self:
+            # Si el super ya lo puso en True, lo dejamos en True.
+            # Si está en False, revisamos nuestro nuevo campo.
+            if not move.invoice_has_outstanding:
+                move.invoice_has_outstanding = bool(move.invoice_outstanding_credits_debits_widget_advance_payment)
+
 
     #PAGOS y anticipos CONCILIADOS EN FACTURA
     @api.depends('move_type', 'line_ids.amount_residual')
@@ -185,7 +197,6 @@ class AccountMove(models.Model):
                 continue
 
             move.invoice_outstanding_credits_debits_widget_advance_payment = payments_widget_vals
-            move.invoice_has_outstanding = True
 
     #Pagos no CONCILIADOS
     @api.depends('move_type', 'line_ids.amount_residual')
@@ -268,7 +279,6 @@ class AccountMove(models.Model):
                 continue
 
             move.invoice_outstanding_credits_debits_widget = payments_widget_vals
-            move.invoice_has_outstanding = True
     
     def _create_advance_payment_move(self, amount_residual, lines):
         self.ensure_one()
