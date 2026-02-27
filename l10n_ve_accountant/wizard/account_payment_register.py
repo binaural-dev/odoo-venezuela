@@ -90,8 +90,12 @@ class AccountPaymentRegister(models.TransientModel):
         Rate = self.env["res.currency.rate"]
         for payment in self:
             if payment.currency_id:
+                currency_id = payment.currency_id.id
+                if currency_id == payment.company_id.currency_id.id:
+                    currency_id = payment.company_id.foreign_currency_id.id
+                
                 rate_values = Rate.compute_rate(
-                    payment.currency_id.id, payment.payment_date
+                    currency_id, payment.payment_date
                 )
                 payment.foreign_rate_display = rate_values.get("foreign_rate", 0.0)
             else:
