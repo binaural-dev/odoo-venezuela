@@ -15,17 +15,17 @@ import {
 patch(PosOrder.prototype, {
   setup() {
     super.setup(...arguments);
-    //   this.set_to_invoice(true);
-    //   if (props.json) {
-    //     if (props.json.account_move === undefined) {
-    //       this.set_to_invoice(true);
-    //       this.lock_toggle_receipt_invoice = false;
-    //     }
-    //     this.reload_taxes();
-    //   } else {
-    //     let always_invoice = !this.pos.config.always_invoice;
-    //     this.to_receipt = always_invoice;
+    // this.set_to_invoice(true);
+    // if (this.json) {
+    //   if (this.json.account_move === undefined) {
+    //     // this.set_to_invoice(true);
+    //     this.lock_toggle_receipt_invoice = false;
     //   }
+    //   this.reload_taxes();
+    // } else {
+    //   let always_invoice = !this.pos.config.always_invoice;
+    //   this.to_receipt = always_invoice;
+    // }
   },
   get_foreign_currency() {
     return this.config.foreign_currency_id;
@@ -34,14 +34,15 @@ patch(PosOrder.prototype, {
     return this.env.pos.config.foreign_rate;
   },
 
-  //   _isValidEmptyOrder() {
-  //     let res = super._isValidEmptyOrder(...arguments);
-  //     if (this.get_change() != 0) {
-  //       return false;
-  //     }
-  //     return res;
-  //   },
-  //   assert_editable() {},
+  _isValidEmptyOrder() {
+    let res = super._isValidEmptyOrder(...arguments);
+    // if (this.get_change() != 0) {
+    //   return false;
+    // }
+    return res;
+  },
+
+  assert_editable() { },
 
   get init_conversion_rate() {
     if (this.currency.name == "VEF") {
@@ -53,11 +54,12 @@ patch(PosOrder.prototype, {
   },
 
 
-  //   add_orderline(line) {
-  //     let res = super.add_orderline(...arguments);
-  //     this.reload_taxes();
-  //     return res;
-  //   },
+  add_orderline(line) {
+    let res = super.add_orderline(...arguments);
+    this.reload_taxes();
+    return res;
+  },
+
   get_conversion_rate() {
     const orderlines = this.currentOrder?.get_orderlines() || [];
     if (orderlines.length != 0) {
@@ -90,61 +92,64 @@ patch(PosOrder.prototype, {
       return this.lines
     }
 
-    // this.pos.env.services.rpc({
-    //   model: 'pos.order.line',
-    //   method: 'search_read',
-    //   domain: [['id', '=', line.refunded_orderline_id]],
-    // }).then((el) => {
-    //   this.to_receipt = el[0].to_receipt
-    //   this.lock_toggle_receipt_invoice = true
-    // })
+    this.pos.env.services.rpc({
+      model: 'pos.order.line',
+      method: 'search_read',
+      domain: [['id', '=', line.refunded_orderline_id]],
+    }).then((el) => {
+      this.to_receipt = el[0].to_receipt
+      this.lock_toggle_receipt_invoice = true
+    })
     return this.lines;
   },
 
-  //   reload_taxes() {
-  //     this.orderlines.forEach((el) => {
-  //       el.product.taxes_id = el.product.originalTaxes;
-  //       el.tax_ids = el.product.taxes_id;
-  //     });
-  //   },
-  //   toggle_receipt_invoice(to_receipt) {
-  //     if (this.getHasRefundLines()) {
-  //       return;
-  //     }
-  //     if (this.lock_toggle_receipt_invoice) {
-  //       return;
-  //     }
-  //     this.assert_editable();
-  //     this.to_receipt = to_receipt;
-  //     this.reload_taxes();
-  //   },
-  //   export_as_JSON() {
-  //     let json = super.export_as_JSON();
-  //     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
-  //     json["foreign_currency_rate"] = this.get_conversion_rate();
-  //     json["to_receipt"] = this.is_to_receipt();
-  //     return json;
-  //   },
-  //   is_to_receipt() {
-  //     return this.to_receipt;
-  //   },
-  //   export_for_printing() {
-  //     let res = super.export_for_printing(...arguments);
-  //     let new_res = {
-  //       ...res,
-  //       foreign_amount_total: this.get_foreign_total_with_tax(),
-  //       foreign_total_without_tax: this.get_foreign_total_without_tax(),
-  //       foreign_amount_tax: this.get_foreign_total_tax(),
-  //       foreign_total_paid: this.get_foreign_total_paid(),
-  //     };
-  //     return new_res;
-  //   },
-  //   set_orderline_options(orderline, options) {
-  //     super.set_orderline_options(...arguments);
-  //     if (options.foreign_price !== undefined) {
-  //       orderline.set_foreign_unit_price(options.foreign_price);
-  //     }
-  //   },
+  reload_taxes() {
+    this.orderlines.forEach((el) => {
+      el.product.taxes_id = el.product.originalTaxes;
+      el.tax_ids = el.product.taxes_id;
+    });
+  },
+
+  toggle_receipt_invoice(to_receipt) {
+    if (this.getHasRefundLines()) {
+      return;
+    }
+    if (this.lock_toggle_receipt_invoice) {
+      return;
+    }
+    this.assert_editable();
+    this.to_receipt = to_receipt;
+    // this.reload_taxes();
+  },
+  export_as_JSON() {
+    let json = super.export_as_JSON();
+    json["foreign_amount_total"] = this.get_foreign_total_with_tax();
+    json["foreign_currency_rate"] = this.get_conversion_rate();
+    json["to_receipt"] = this.is_to_receipt();
+    return json;
+  },
+
+  is_to_receipt() {
+    return this.to_receipt;
+  },
+
+  export_for_printing() {
+    let res = super.export_for_printing(...arguments);
+    let new_res = {
+      ...res,
+      foreign_amount_total: this.get_foreign_total_with_tax(),
+      foreign_total_without_tax: this.get_foreign_total_without_tax(),
+      foreign_amount_tax: this.get_foreign_total_tax(),
+      foreign_total_paid: this.get_foreign_total_paid(),
+    };
+    return new_res;
+  },
+  set_orderline_options(orderline, options) {
+    super.set_orderline_options(...arguments);
+    if (options.foreign_price !== undefined) {
+      orderline.set_foreign_unit_price(options.foreign_price);
+    }
+  },
 
   //   calculate_foreign_base_amount(tax_ids_array, lines) {
   //     // Consider price_include taxes use case

@@ -20,59 +20,34 @@ patch(PaymentScreen.prototype, {
     return false;
   },
 
-  updateSelectedPaymentline(amount = false) {
-    if (this.paymentLines.every((line) => line.paid)) {
-      this.currentOrder.add_paymentline(this.payment_methods_from_config[0]);
-    }
-    if (!this.selectedPaymentLine) {
-      return;
-    } // do nothing if no selected payment line
-
-    // >>  BINAURAL
-    if (!this.selectedPaymentLine.payment_method.is_foreign_currency) {
-      return super.updateSelectedPaymentline(amount);
-    }
-
-    if (amount === false) {
-      if (this.numberBuffer.get() === null) {
-        amount = null;
-      } else if (this.numberBuffer.get() === "") {
-        amount = 0;
-      } else {
-        amount = this.numberBuffer.getFloat();
-      }
-    }
-
-    // disable changing amount on paymentlines with running or done payments on a payment terminal
-    const payment_terminal = this.selectedPaymentLine.payment_method.payment_terminal;
-    const hasCashPaymentMethod = this.payment_methods_from_config.some(
-      (method) => method.type === "cash"
-    );
-    if (
-      !hasCashPaymentMethod &&
-      amount > this.currentOrder.get_due() + this.selectedPaymentLine.amount
-    ) {
-      this.selectedPaymentLine.set_amount(0);
-      this.numberBuffer.set(this.currentOrder.get_due().toString());
-      amount = this.currentOrder.get_due();
-      this.showMaxValueError();
-    }
-    if (
-      payment_terminal &&
-      !["pending", "retry"].includes(this.selectedPaymentLine.get_payment_status())
-    ) {
-      return;
-    }
-    if (amount === null) {
-      this.deletePaymentLine(this.selectedPaymentLine.cid);
+  add_paymentline(payment_method) {
+    let is_change = false;
+    let is_return = this.get_total_without_igtf() < 0;
+    if (!is_return) {
+      is_change = this.get_due() < 0;
     } else {
-      if (this.selectedPaymentLine.payment_method.is_foreign_currency) {
-        this.selectedPaymentLine.set_foreign_amount(amount);
-      } else {
-        this.selectedPaymentLine.set_amount(amount);
-      }
+      is_change = this.get_due() > 0;
     }
+
+    if (
+      !payment_method.apply_igtf ||
+      this.get_due() <= this.get_igtf_amount() ||
+      is_change
+    ) {
+      let res = super.add_paymentline(...arguments);
+      this.update_igtf();
+      return res;
+    }
+    let res_igtf = this.add_paymentline_without_igtf(...arguments);
+    this.update_igtf();
+    return res_igtf;
   },
+
+  updateSelectedPaymentline(amount = false) {
+    return super.updateSelectedPaymentline(amount);
+
+  },
+
   toggleIsToInvoice() {
     this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
   },
