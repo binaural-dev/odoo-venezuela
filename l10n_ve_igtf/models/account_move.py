@@ -331,16 +331,7 @@ class AccountMove(models.Model):
             fields.Date.today(),
             round = False
         )
-        
-        if payment.currency_id.id != self.company_id.currency_id.id:
-                advance_amount = self.currency_id._convert(
-            advance_amount, 
-            payment.currency_id, 
-            self.company_id, 
-            payment.date
-        )
 
-        
         if is_igtf_journal:
             igtf_amount = abs(payment.calculate_igtf_for_payment(self, advance_amount, payment.currency_id))
            
