@@ -99,6 +99,7 @@ class AccountMove(models.Model):
     #PAGOS NO CONCILIADOS DE ANTICIPO
     def _compute_payments_widget_to_reconcile_info_advance_payment(self):
         for move in self:
+            
             move.invoice_outstanding_credits_debits_widget_advance_payment = False
 
             if move.state != 'posted' \
@@ -193,8 +194,6 @@ class AccountMove(models.Model):
 
         for move in self:
             move.invoice_outstanding_credits_debits_widget  = False
-            move.invoice_has_outstanding = False
-
 
             if move.state != 'posted' \
                     or move.payment_state not in ('not_paid', 'partial') \
