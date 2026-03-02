@@ -3,7 +3,8 @@
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
-import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { useService } from "@web/core/utils/hooks";
 import { SelectionPopup } from "@point_of_sale/app/utils/input_popups/selection_popup";
 import { useEnv } from "@odoo/owl";
 
@@ -12,7 +13,8 @@ patch(PaymentScreen.prototype, {
 
   setup(){
     super.setup(...arguments)
-    this.utils = useEnv().utils
+    this.utils = useEnv().utils,
+     this.dialog = useService("dialog");
   },
   shouldDownloadInvoice() {
     return false;
@@ -81,7 +83,7 @@ patch(PaymentScreen.prototype, {
 
     let amounts = this.currentOrder.get_paymentlines().map((el) => el.amount)
     if (!amounts.every((el) => el != 0 && this.currentOrder.get_total_with_tax() !== 0)) {
-      this.popup.add(ErrorPopup, {
+      this.dialog.add(AlertDialog, {
         title: _t('Empty Paymentline'),
         body: _t(
           "You can't validate with empty payment lines"),
