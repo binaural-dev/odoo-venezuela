@@ -21,6 +21,7 @@ class StockPicking(models.Model):
         copy=False,
     )
     operation_code = fields.Selection(related="picking_type_id.code")
+
     is_return = fields.Boolean()
 
     guide_number = fields.Char(
@@ -99,6 +100,40 @@ class StockPicking(models.Model):
 
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
+
+    type_of_return = fields.Selection(
+        [
+            ("total", "Total"),
+            ("partial", "Partial"),
+            ("n/a", "N/A"),
+        ],
+        string="Type of Return",
+        default="n/a",
+        compute="_compute_type_of_return",
+        store=True,
+    )
+
+    @api.depends(
+        "move_ids_without_package",
+        "move_ids_without_package.qty_return",
+        "move_ids_without_package.quantity",
+    )
+    def _compute_type_of_return(self):
+        for picking in self:
+            if (
+                not picking.move_ids_without_package
+                or not any(
+                    l.returned_move_ids for l in picking.move_ids_without_package
+                )
+                or all(l.qty_return == 0 for l in picking.move_ids_without_package)
+            ):
+                picking.type_of_return = "n/a"
+            elif all(
+                l.qty_return == l.quantity for l in picking.move_ids_without_package
+            ):
+                picking.type_of_return = "total"
+            else:
+                picking.type_of_return = "partial"
 
     @api.depends("transfer_reason_id")
     def _compute_reasons_optional_guide(self):
@@ -541,11 +576,6 @@ class StockPicking(models.Model):
         res = super()._action_done()
         self._set_guide_number()
         # TODO Add picking type logic either here or in the set_guide_number method
-        return res
-
-    def get_foreign_currency_is_vef(self):
-
-        res = self.company_id.currency_foreign_id == self.env.ref("base.VEF")
         return res
 
     # === METHODS ===#
@@ -1198,46 +1228,50 @@ class StockPicking(models.Model):
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
-    def alert_views(self, id_company):
+    def alert_views(self,company_ids_str):
 
         company_ids = [
-            int(cid) for cid in str(id_company).split(",") if cid.strip().isdigit()
+            int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
         ]
+        domain = self._get_domain_for_return_picking()
+        domain.append(("company_id", "in", company_ids))
 
         pickings_combined = (
             self.env["stock.picking"]
             .sudo()
-            .search(
-                [
-                    ("state", "=", "done"),
-                    ("type_delivery_step", "!=", "int"),
-                    ("transfer_reason_id.code", "!=", "self_consumption"),
-                    ("state_guide_dispatch", "=", "to_invoice"),
-                    ("sale_id.document", "!=", "invoice"),
-                    ("company_id", "in", company_ids),
-                ]
-            )
+            .search(domain)
         )
 
-        hoy = date.today()
+        today = date.today()
         taxpayer_type = self.env.company.taxpayer_type
-        result = hoy  # Valor por defecto
+        result = today  # Valor por defecto
 
         if taxpayer_type == "special":
-            if hoy.day < 15:
+            if today.day < 15:
                 # Si es antes del 15: mostrar día 15
-                result = hoy.replace(day=15)
+                result = today.replace(day=15)
             else:
                 # Si es 15 o después: último día del mes
-                last_day = calendar.monthrange(hoy.year, hoy.month)[1]
-                result = date(hoy.year, hoy.month, last_day)
+                last_day = calendar.monthrange(today.year, today.month)[1]
+                result = date(today.year, today.month, last_day)
 
         elif taxpayer_type in ("ordinary", "formal"):
             # Siempre último día del mes para estos tipos
-            last_day = calendar.monthrange(hoy.year, hoy.month)[1]
-            result = date(hoy.year, hoy.month, last_day)
+            last_day = calendar.monthrange(today.year, today.month)[1]
+            result = date(today.year, today.month, last_day)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
+
+    def _get_domain_for_return_picking(self):
+        return [
+            ("state", "=", "done"),
+            ("type_delivery_step", "!=", "int"),
+            ("transfer_reason_id.code", "!=", "self_consumption"),
+            ("state_guide_dispatch", "=", "to_invoice"),
+            ("sale_id.document", "!=", "invoice"),
+            ("is_return", "=", False),
+            ("type_of_return", "!=", "total"),
+        ]
 
     def get_foreign_currency_is_vef(self):
         return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
