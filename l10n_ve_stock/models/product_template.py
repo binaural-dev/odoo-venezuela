@@ -9,6 +9,14 @@ _logger = logging.getLogger(__name__)
 class ProductTemplate(models.Model):
     _inherit = "product.template"
 
+    taxes_id = fields.Many2many(
+        tracking=True
+    )
+
+    supplier_taxes_id = fields.Many2many(
+        tracking=True
+    )
+
     quantity = fields.Float(
         compute="_compute_available_quantity",
         help="The Availability of the product to sell.",

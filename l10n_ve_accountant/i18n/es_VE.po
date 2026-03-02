@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250311\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250522\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-11 18:40+0000\n"
-"PO-Revision-Date: 2025-04-11 18:40+0000\n"
+"POT-Creation-Date: 2026-01-28 03:36+0000\n"
+"PO-Revision-Date: 2026-01-28 03:36+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -180,7 +180,7 @@ msgstr "B.I./Descuento"
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_account_bank_statement_line
 msgid "Bank Statement Line"
-msgstr "Línea de estado de cuenta bancario"
+msgstr "Línea de un estado de cuenta bancario"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__base_currency_is_vef
@@ -276,7 +276,7 @@ msgstr "Creado en"
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_res_currency
 msgid "Currency"
-msgstr "Moneda"
+msgstr "Divisa"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_payment_search_inherit_l10n_ve_accountant
@@ -302,6 +302,7 @@ msgstr "Fecha de Fin"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Date of issue:"
 msgstr "Fecha de emisión:"
+
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__name
@@ -382,6 +383,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_amount
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__foreign_amount
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_line_form_l10n_ve_invoice
 msgid "Foreign Amount"
 msgstr "Importe Alterno"
@@ -416,6 +418,8 @@ msgstr "Ajuste de crédito alterno"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__credit_foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__debit_foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_currency_id
 msgid "Foreign Currency"
@@ -620,6 +624,8 @@ msgstr "Facturas Detalladas"
 msgid "Invoices Statistics"
 msgstr "Estadísticas de facturas"
 
+
+
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_reset_to_draft_for_price_change
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_reset_to_draft_for_price_change
@@ -723,6 +729,7 @@ msgstr ""
 msgid "Not Foreign Recalculate"
 msgstr "No es extranjero Recalcular"
 
+
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Nº Documento"
@@ -799,7 +806,7 @@ msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
 msgid "RIF/CI/PAS."
-msgstr "NIF"
+msgstr "CI/RIF"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
@@ -1039,8 +1046,8 @@ msgstr "La tasa del pago"
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move_line.py:0
 #, python-format
-msgid "The rate should be greater than zero"
-msgstr "La tasa debe ser superior a cero."
+msgid "The rate of foreingn currency should be greater than zero"
+msgstr "La tasa de la moneda externa debe ser superior a cero."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1271,3 +1278,50 @@ msgstr "Notas de Crédito"
 #: model:ir.ui.menu,name:account.menu_action_account_payments_receivable
 msgid "Collections"
 msgstr "Cobranzas"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "You must first select a currency"
+msgstr "Primero debe seleccionar una moneda."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "There is not a foreign currency defined"
+msgstr "No hay una moneda alterna definida."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Account:</b> %s"
+msgstr "<b>Cuenta:</b> %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Foreign Credit Amount:</b> from %s to %s"
+msgstr "<b>Monto credito alterno:</b> de %s a %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>Foreign Debit Amount:</b> from %s to %s"
+msgstr "<b>Monto debito alterno:</b> de %s a %s"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "<b>The accounting line has been updated:</b>"
+msgstr "<b>La linea contable ha sido actualizada:</b>"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_amount_residual
+msgid "Foreign Amount Residual"
+msgstr "Cantidad por pagar"

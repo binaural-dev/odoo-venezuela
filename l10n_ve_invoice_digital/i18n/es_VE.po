@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250409\n"
+"Project-Id-Version: Odoo Server 17.0+e-20250821\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-23 12:23+0000\n"
-"PO-Revision-Date: 2025-06-23 12:23+0000\n"
+"POT-Creation-Date: 2025-08-28 15:55+0000\n"
+"PO-Revision-Date: 2025-08-28 15:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -36,6 +36,16 @@ msgstr "Error de autenticación: %(message)s"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.account_retention_alert_wizard
 msgid "Cancel"
 msgstr "Cancelar"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__code
+msgid "Code"
+msgstr "Código"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_currency__code_tfhka
+msgid "Code TFHKA"
+msgstr "Código TFHKA"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_company
@@ -67,18 +77,35 @@ msgstr "Número de control"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__create_uid
 msgid "Created by"
 msgstr "Creado por"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__create_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__create_date
 msgid "Created on"
 msgstr "Creado el"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__description
+msgid "Description"
+msgstr "Descripción"
 
 #. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Digital invoice (TFHKA)"
 msgstr "Factura digital (TFHKA)"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__digitalization_with_payment_tfhka
+msgid "Digital invoicing with payment registration"
+msgstr "Facturación digital con registro de pagos"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__digitalization_with_payment_tfhka
+msgid "Digitalization With Payment Tfhka"
+msgstr "Digitalización con Pago Tfhka"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__is_digitalized
@@ -95,6 +122,7 @@ msgstr "Digitalizado"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__display_name
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__display_name
 msgid "Display Name"
 msgstr "Nombre para mostrar"
 
@@ -176,6 +204,16 @@ msgstr "Error procesando la respuesta de la API de TFHKA."
 
 #. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Credit Note"
+msgstr "Generar Nota de Crédito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Generate Digital Debit Note"
+msgstr "Generar Nota de Débito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
 msgid "Generate Digital Invoice"
 msgstr "Generar Factura Digital"
 
@@ -209,6 +247,7 @@ msgstr "Error HTTP %(status_code)s: %(text)s"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__id
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__id
 msgid "ID"
 msgstr ""
 
@@ -223,17 +262,24 @@ msgid "Invoice Digital Tfhka"
 msgstr "Factura Digital Tfhka"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_account_journal
+msgid "Journal"
+msgstr "Diario"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__write_uid
 msgid "Last Updated by"
 msgstr "Última actualización por"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__write_date
 msgid "Last Updated on"
 msgstr "Última actualización el"
 
@@ -264,6 +310,11 @@ msgid "Password Tfhka"
 msgstr "Contraseña Tfhka"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_journal__payment_method_code
+msgid "Payment Method Code"
+msgstr "Código de forma de pago"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_account_retention
 msgid "Retention"
 msgstr "Retención"
@@ -291,6 +342,20 @@ msgid "Show Digital Invoice"
 msgstr "Mostrar Factura Digital"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_credit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__show_digital_credit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_credit_note
+msgid "Show Digital Note Credit"
+msgstr "Mostrar Nota de Crédito Digital"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_debit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__show_digital_debit_note
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__show_digital_debit_note
+msgid "Show Digital Note Debit"
+msgstr "Mostrar Nota de Débito Digital"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__show_digital_retention_islr
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__show_digital_retention_iva
 msgid "Show Digital Retention"
@@ -302,6 +367,11 @@ msgstr "Mostrar Retención Digital"
 #, python-format
 msgid "TFHKA API response does not contain 'token'."
 msgstr "La respuesta de la API de TFHKA no contiene 'token'."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_payment_method_tfhka
+msgid "TFHKA payment methods"
+msgstr "Formas de pago de TFHKA"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -356,6 +426,20 @@ msgstr "La URL no está configurada en los ajustes de la empresa."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
+#: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#, python-format
+msgid "The credit note %s has not been digitized"
+msgstr "La Nota de Crédito %s no ha sido digitalizada"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#, python-format
+msgid "The debit note %s has not been digitized"
+msgstr "La Nota de Débito %s no ha sido digitalizada"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
 #: code:addons/l10n_ve_invoice_digital/models/stock_picking.py:0
 #, python-format
@@ -395,10 +479,27 @@ msgstr ""
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
+#: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#, python-format
+msgid "The invoice %s has not been digitized"
+msgstr "La factura %s no ha sido digitalizada"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid "The invoice date is not defined."
 msgstr "La fecha de factura no está definida."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"The maximum number of payment methods is 5. Please check your payment "
+"methods."
+msgstr ""
+"El número máximo de métodos de pago es 5. Por favor revise sus métodos de pago."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -412,10 +513,17 @@ msgstr ""
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
-#: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#: code:addons/l10n_ve_invoice_digital/models/payment_method_tfhka.py:0
 #, python-format
-msgid "The invoice %s has not been digitized"
-msgstr "La factura %s no ha sido digitalizada"
+msgid "The payment method code already exists"
+msgstr "El código de la forma de pago ya existe"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid "The payment method code is not configured in the journal."
+msgstr "El código de la forma de pago no está configurado en el diario."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -425,6 +533,16 @@ msgid "The selected series is not configured"
 msgstr "La serie seleccionada no está configurada"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_journal__payment_method_code
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_payment_method_tfhka__code
+msgid ""
+"This code identifies the payment method. It is used to digitize and link the"
+" corresponding payment method."
+msgstr ""
+"Este código identifica la forma de pago. Se utiliza para digitalizar y "
+"vincular la forma de pago correspondiente."
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
@@ -432,6 +550,11 @@ msgstr "La serie seleccionada no está configurada"
 #, python-format
 msgid "The selected subsidiary does not contain a reference"
 msgstr "La sucursal seleccionada no contiene referencia"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_currency__code_tfhka
+msgid "This is the currency code that is sent when scanning a document."
+msgstr "Este es el código de moneda que se envía al digitalizar un documento."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__token_auth_tfhka

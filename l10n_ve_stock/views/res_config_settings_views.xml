@@ -54,6 +54,51 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_not_allow_negative_inventory_adjustments">
+                        <div class="o_setting_left_pane">
+                            <field name="not_allow_negative_inventory_adjustments"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="not_allow_negative_inventory_adjustments"/>
+                            <div class="text-muted">
+                                <strong>When marked:</strong> Negative inventory adjustments (from both the product and inventory/operations views) will not be allowed.<br/>
+                                <strong>When unchecked:</strong> Negative inventory adjustments will be allowed (both from the product view and from inventory/operations).
+                            </div>
+                        </div>
+                    </div>
+                     	<div class="col-12 col-lg-6 o_setting_box">
+						<div class="o_setting_left_pane">
+							<field name="allow_scrap_more_than_available"/>
+						</div>
+						<div class="o_setting_right_pane">
+							<label for="allow_scrap_more_than_available"/>
+							<div class="text-muted"> Allow to scrap more than available quantity in stock. </div>
+						</div>
+					</div> 
+
+                   <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                            <field name="not_allow_scrap_more_than_what_was_manufactured" />
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="not_allow_scrap_more_than_what_was_manufactured"/>
+                            <div class="text-muted">
+                                <strong>When marked:</strong> No more than what is manufactured in an order may be scrapped.<br/>
+                                <strong>When unchecked:</strong> More than what is manufactured in an order may be scrapped.
+                            </div>
+						</div>
+					</div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+						<div class="o_setting_left_pane">
+							<field name="not_allow_negative_stock_movement"/>
+						</div>
+						<div class="o_setting_right_pane">
+							<label for="not_allow_negative_stock_movement"/>
+							<div class="text-muted">
+								<span>Do not allow negative stock in internal movements</span>
+							</div>
+						</div>
+					</div>
                     <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_settings_stock_use_free_qty_odoo">
                         <div class="o_setting_left_pane">
                             <field name="use_free_qty_odoo" />
@@ -67,6 +112,20 @@
                             </div>
                         </div>
                     </div>
+                    <block title="Dispatch Guide" name="l10n_ve_stock_block_guidance">
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_stock_block_limit_product_qty_out">
+                            <div class="o_setting_left_pane">
+                                <field name="limit_product_qty_out" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="limit_product_qty_out" />
+                                <div class="text-muted">
+                                Maximum quantity of products to be sold per stock picking.
+                                </div>
+                            </div>
+                        </div>
+                    </block>
                 </block>
             </xpath>
         </field>

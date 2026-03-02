@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <tree string="Picking list" multi_edit="1" sample="1" create="0">
                 <header>
-                    <button name="create_invoice_lots" type="object" string="Create Invoice by Lots"/>
+                    <button name="action_open_invoice_wizard" type="object" string="Create Invoice by Lots"/>
                 </header>
                 <field name="name" decoration-bf="1"/>
                 <field name="guide_number" string="Guide Number"/>
@@ -25,7 +25,8 @@
                     name="state_guide_dispatch" 
                     string="State Guide Dispatch" widget="badge" 
                     decoration-muted="state_guide_dispatch == 'to_invoice'"
-                    decoration-success="state_guide_dispatch == 'invoiced'"
+                    decoration-success="state_guide_dispatch in ['invoiced', 'emited']"
+                    
                 />
                 <field 
                     name="invoice_state"
@@ -35,6 +36,7 @@
                     decoration-danger="invoice_state == 'cancel'"
                     optional="hide"
                  />
+                 <field name="invoice_ids" widget="many2many_tags" optional="hide"/>
                 <button 
                     name="create_invoice" 
                     class="btn btn-link text-info" 
@@ -96,18 +98,6 @@
         />
         <field name="context">{'search_default_state_guide_dispatch_to_invoice': 1}</field>
         <field name="search_view_id" ref="stock_picking_guide_dispatch_view_search"/>
-        <field name="domain">[
-            '&amp;',
-            '&amp;',
-            '&amp;',
-                ('state', '=', 'done'),
-                ('type_delivery_step', 'in', ['out', 'int']),
-                ('transfer_reason_id.code', '!=', 'self_consumption'),
-                ('sale_id.document', '!=', 'invoice'),
-            '|',
-                ('type_delivery_step', '=', 'out'),
-            '&amp;',
-                ('type_delivery_step', '=', 'int'),
-                ('is_dispatch_guide', '=', True)]</field>
+        <field name="domain">[('match_guide_dispatch_domain','=',True)]</field>
     </record>
 </odoo>

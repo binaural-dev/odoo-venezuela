@@ -32,3 +32,26 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.validate_without_product_quantity", readonly=False
     )
 
+    limit_product_qty_out = fields.Integer(string="Limit stock picking product lines", related='company_id.limit_product_qty_out', readonly=False)
+
+    not_allow_negative_inventory_adjustments = fields.Boolean(
+        "Not Allow Negative Inventory Adjustments",
+        related="company_id.not_allow_negative_inventory_adjustments",
+        readonly=False,
+    )
+
+    allow_scrap_more_than_available = fields.Boolean(related='company_id.allow_scrap_more_than_available', readonly=False)
+
+    not_allow_scrap_more_than_what_was_manufactured = fields.Boolean(
+        "Not Allow Scrap More Than What Was Manufactured",
+        related="company_id.not_allow_scrap_more_than_what_was_manufactured",
+        readonly=False
+    )
+
+    not_allow_negative_stock_movement = fields.Boolean(
+        string="Prevent internal movement with negative stock",
+        related="company_id.not_allow_negative_stock_movement",
+        readonly=False
+    )
+
+    
