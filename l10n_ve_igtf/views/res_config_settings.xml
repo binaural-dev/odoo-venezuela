@@ -30,10 +30,12 @@
             </xpath>
             <xpath expr="//block[@name='l10n_ve_tax_block_igtf']//div[@id='l10n_ve_tax_div_config_igtf_unique_tax']" position="after">
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_igtf_percentage">
-                    <div class="o_setting_left_pane"/>
+                    <div class="o_setting_left_pane">
+                        <field name="igtf_percentage" />
+                    </div>
                     <div class="o_setting_right_pane">
                         <label for="igtf_percentage" class="col-6"/>
-                        <field name="igtf_percentage" />
+                        
                     </div>
                 </div>
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_igtf_div_customer_account_igtf_id">
