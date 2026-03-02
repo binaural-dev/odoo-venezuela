@@ -143,6 +143,54 @@ class StockPicking(models.Model):
                 picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
             else:
                 picking.picking_type_domain = native_domain
+    type_of_return = fields.Selection(
+        [
+            ("total", "Total"),
+            ("partial", "Partial"),
+            ("n/a", "N/A"),
+        ],
+        string="Type of Return",
+        default="n/a",
+        compute="_compute_type_of_return",
+        store=True,
+    )
+
+    @api.depends(
+        "move_ids_without_package",
+        "move_ids_without_package.qty_return",
+        "move_ids_without_package.quantity",
+    )
+    def _compute_type_of_return(self):
+        for picking in self:
+            if (
+                not picking.move_ids_without_package
+                or not any(
+                    l.returned_move_ids for l in picking.move_ids_without_package
+                )
+                or all(l.qty_return == 0 for l in picking.move_ids_without_package)
+            ):
+                picking.type_of_return = "n/a"
+            elif all(
+                l.qty_return == l.quantity for l in picking.move_ids_without_package
+            ):
+                picking.type_of_return = "total"
+            else:
+                picking.type_of_return = "partial"
+
+    @api.depends("transfer_reason_id")
+    def _compute_reasons_optional_guide(self):
+        consignment_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
+            raise_if_not_found=False,
+        ).id
+        for rec in self:
+            rec.reasons_optional_guide_dispatch = (
+                True
+                if consignment_reason == rec.transfer_reason_id.id
+                and rec.optional_internal_movement_guidance
+                and rec.operation_code in ["internal"]
+                else False
+            )
 
     def get_customer_journal(self):
         journal = customer_journal_id = self.env.company.customer_journal_id or False
@@ -1264,14 +1312,19 @@ class StockPicking(models.Model):
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
-    def alert_views(self, company_ids_str):
+    def alert_views(self,company_ids_str):
+
         company_ids = [
             int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
         ]
         domain = self._get_domain_for_return_picking()
         domain.append(("company_id", "in", company_ids))
 
-        pickings_combined = self.env["stock.picking"].sudo().search_count(domain)
+        pickings_combined = (
+            self.env["stock.picking"]
+            .sudo()
+            .search(domain)
+        )
 
         today = date.today()
         taxpayer_type = self.env.company.taxpayer_type
