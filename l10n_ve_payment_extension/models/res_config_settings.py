@@ -29,3 +29,12 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.condition_withholding_id', readonly=False
     )
     code_visible=fields.Boolean(related='company_id.code_visible',readonly=False)
+    
+    hide_patent_columns_extra = fields.Boolean(
+        related='company_id.hide_patent_columns_extra',
+        readonly=False
+    )
+
+    hide_issue_date_of_municipal_withholding_receipt = fields.Boolean('Hide issue date of municipal withholding receipt',
+        related='company_id.hide_issue_date_of_municipal_withholding_receipt', 
+        readonly=False)

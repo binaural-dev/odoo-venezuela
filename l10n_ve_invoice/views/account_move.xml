@@ -6,7 +6,11 @@
         <field name="arch" type="xml">
             <field name="invoice_has_outstanding" position="after">
                 <field name="is_contingency" invisible="1" />
+                <field name="entry_in_period" invisible="1" />
             </field>
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="attributes">
+                <attribute name="invisible">not entry_in_period and (not id or state != 'draft' or move_type == 'entry')</attribute>
+            </xpath>
             <xpath expr="//field[@name='invoice_user_id']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
@@ -24,11 +28,16 @@
                 <label for="correlative"
                     style="font-weight: bold;"
                     invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund')" />
-
-                <field name="correlative"
+                <field name="is_purchase_international" invisible="1"/>
+                 <field name="correlative"
                     invisible="move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']"
-                    readonly="(move_type in ['out_invoice', 'out_refund'] and not is_contingency) or state == 'posted'"
-                    required="move_type in ['in_invoice', 'in_refund']" />
+                    readonly="(move_type in ['out_invoice', 'out_refund'] and not is_contingency) or state == 'posted' or is_purchase_international"
+                    required="move_type in ['in_invoice', 'in_refund'] and not is_purchase_international"
+                    force_save="1"/>
+            </xpath>
+            <xpath expr="//div[@class='d-flex'][1]" position="after">
+                <field name="is_purchase_international" invisible="1"/>
+                <field name="declaration_unique_of_customs" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_reception_date"
@@ -57,6 +66,13 @@
                     type="object" class="o_btn_validate"
                     invisible="is_debit_journal"
                 />
+            </xpath>
+
+             <xpath expr="//header" position="after">
+                <field name="display_date_warning" invisible="1"/>
+                <div class="alert alert-warning mb-0" role="alert" invisible="not display_date_warning">
+                    Note: the invoice date is prior to the current date.
+                </div>
             </xpath>
 
             <button name="button_draft" position="attributes">
@@ -167,4 +183,32 @@
             </xpath>
         </field>
     </record>
+
+    <record id="view_account_move_filter_l10n_ve_invoice" model="ir.ui.view">
+        <field name="name">view.account.move.filter.l10n.ve.invoice</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <search>
+                <field name="declaration_unique_of_customs" string="Number of Declaration Unique of Customs"/>
+                <filter name="declaration_unique_of_customs" string="Number of Declaration Unique of Customs" domain="[('declaration_unique_of_customs', '!=' , False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_invoice_line_tree_editable_tax_ids" model="ir.ui.view">
+        <field name="name">Editable Tax IDs for Group</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="attributes">
+                <attribute name="readonly">0</attribute>
+                <attribute name="groups">l10n_ve_invoice.group_edit_invoice_tax_ids</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']/tree//field[@name='tax_ids']" position="before">
+                <field name="tax_ids" readonly="1" widget="many2many_tags" groups="!l10n_ve_invoice.group_edit_invoice_tax_ids"/>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>

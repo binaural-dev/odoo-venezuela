@@ -1,0 +1,24 @@
+<odoo>
+    <data>
+        <record id="purchase_order_form_inherit_discount" model="ir.ui.view">
+            <field name="name">purchase.order.form.inherit.discount</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook//page[@name='products']//field[@name='order_line']//tree//field[@name='discount']"
+                       position="attributes">
+                    <attribute name="optional">show</attribute>
+                </xpath>
+                <xpath expr="//notebook//page[@name='products']//field[@name='order_line']" position="after">
+                    <div class="float-end mb-2" name="po_button_below_order_lines">
+                        <button string="Discount"
+                            name="action_open_discount_wizard"
+                            type="object"
+                            class="btn btn-secondary"
+                            invisible="state in ['purchase','done','cancel']"/>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
