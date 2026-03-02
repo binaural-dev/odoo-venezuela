@@ -394,24 +394,26 @@ class AccountMove(models.Model):
         
 
   
-        vef_line1 = payment.currency_id.round(_to_vef(amount_line1))
-        vef_line2 = payment.currency_id.round(_to_vef(amount_line2))
+        vef_line1 = _to_vef(amount_line1)
+        vef_line2 = _to_vef(amount_line2)
         
         # El IGTF en VEF absorbe cualquier residuo de redondeo para que la suma sea 0.0
-        vef_igtf = abs(vef_line1) - abs(vef_line2)
+        vef_igtf = vef_line1 - vef_line2
         
         # El amount_currency del IGTF es la diferencia de los montos en divisa
-        amount_currency_igtf = amount_line1 - amount_line2
+        amount_currency_igtf = abs(amount_line1) - abs(amount_line2)
 
         if is_customer:
             amount_line2 = -amount_line2 if line_2 == 'credit' else amount_line2
             amount_line1 = amount_line1 
             amount_currency_igtf = -amount_currency_igtf if igtf_line == 'credit' else amount_currency_igtf
         else:
+            
             amount_line2 = amount_line2 if line_2 == 'debit' else -amount_line2
             amount_line1 = -amount_line1
             amount_currency_igtf = -amount_currency_igtf if igtf_line == 'credit' else amount_currency_igtf
-            
+        
+
         # --- Configuración de Cuentas ---
         if is_customer:
             name_rp, name_adv = "CUENTA POR COBRAR CLIENTE", "ANTICIPO/CLIENTE"
@@ -426,12 +428,11 @@ class AccountMove(models.Model):
             "partner_id": self.partner_id.id,
             "payment_id_advance": payment.id,
             "reconciled": False,
+            "date": payment.date,
         }
 
         # --- Construcción de las Líneas ---
         line_vals = []
-
-        
 
         # 1. Línea CxC / CxP
         line_vals.append(Command.create({
@@ -450,7 +451,7 @@ class AccountMove(models.Model):
             "amount_currency": amount_line1,
             "currency_id": payment.currency_id.id,
             "debit": vef_line1 if is_customer else 0.0,
-            "credit": -vef_line1 if not is_customer else 0.0,
+            "credit": vef_line1 if not is_customer else 0.0,
             **common_vals
         }))
 
@@ -468,10 +469,9 @@ class AccountMove(models.Model):
         # --- Creación del Asiento ---
         advance_journal = self.env.company.advance_payment_igtf_journal_id
         
-        #raise UserError(format(line_vals))
         return self.env["account.move"].create({
             "journal_id": advance_journal.id,
-            "date": fields.Date.today(),
+            "date": payment.date,
             "partner_id": self.partner_id.id,
             "ref": "CRUCE DE ANTICIPO (IGTF)",
             "line_ids": line_vals,
@@ -517,9 +517,6 @@ class AccountMove(models.Model):
 
         advance_lines_to_reconcile = original_advance_lines + cross_advance_lines
 
-        for line in advance_lines_to_reconcile:
-            if not line.date_maturity:
-                line.date_maturity = line.date
                 
         advance_lines_to_reconcile.reconcile()
 
@@ -536,9 +533,6 @@ class AccountMove(models.Model):
 
         rp_lines_to_reconcile = cross_rp_lines + invoice_rp_lines
 
-        for line in rp_lines_to_reconcile:
-            if not line.date_maturity:
-                line.date_maturity = line.date
 
         rp_lines_to_reconcile.reconcile()
 
@@ -548,7 +542,7 @@ class AccountMove(models.Model):
        
 
         self.ensure_one()
-        
+
         outstanding_line = self.env["account.move.line"].browse(line_id)
         payment_move = outstanding_line.move_id
         
@@ -884,3 +878,5 @@ class AccountMove(models.Model):
         self.sending_data = False
 
         self._detach_attachments()
+
+      
