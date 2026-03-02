@@ -283,7 +283,6 @@ class AccountPaymentAndIgtf(models.Model):
                 igtf_vef = company_currency.round(igtf_vef)
 
                 # 2. Si es pago exacto en VEF, forzamos que el balance cuadre restando (Banco - Factura)
-                # Esto evita que 62640,66 se convierta en 62640,65
                 if company_currency.id == self.env.ref("base.VEF").id:
                     # Obtenemos los valores que Odoo ya calculó para las primeras líneas
                     # Si hiciste pop(), asegúrate de obtener los valores de amount_currency convertidos
@@ -326,7 +325,6 @@ class AccountPaymentAndIgtf(models.Model):
                 igtf_vef = company_currency.round(igtf_vef)
 
                 # 2. Si es pago exacto en VEF, forzamos que el balance cuadre restando (Banco - Factura)
-                # Esto evita que 62640,66 se convierta en 62640,65
                 if company_currency.id == self.env.ref("base.VEF").id:
                     # Obtenemos los valores que Odoo ya calculó para las primeras líneas
                     # Si hiciste pop(), asegúrate de obtener los valores de amount_currency convertidos
