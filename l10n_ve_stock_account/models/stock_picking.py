@@ -151,6 +151,54 @@ class StockPicking(models.Model):
         journal = vendor_journal_id = self.env.company.vendor_journal_id or False
         return journal
 
+    type_of_return = fields.Selection(
+        [
+            ("total", "Total"),
+            ("partial", "Partial"),
+            ("n/a", "N/A"),
+        ],
+        string="Type of Return",
+        default="n/a",
+        compute="_compute_type_of_return",
+        store=True,
+    )
+
+    @api.depends(
+        "move_ids_without_package",
+        "move_ids_without_package.qty_return",
+        "move_ids_without_package.quantity",
+    )
+    def _compute_type_of_return(self):
+        for picking in self:
+            if (
+                not picking.move_ids_without_package
+                or not any(
+                    l.returned_move_ids for l in picking.move_ids_without_package
+                )
+                or all(l.qty_return == 0 for l in picking.move_ids_without_package)
+            ):
+                picking.type_of_return = "n/a"
+            elif all(
+                l.qty_return == l.quantity for l in picking.move_ids_without_package
+            ):
+                picking.type_of_return = "total"
+            else:
+                picking.type_of_return = "partial"
+
+    @api.depends("transfer_reason_id")
+    def _compute_reasons_optional_guide(self):
+        consignment_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
+            raise_if_not_found=False,
+        ).id
+        for rec in self:
+            rec.reasons_optional_guide_dispatch = (
+                True
+                if consignment_reason == rec.transfer_reason_id.id
+                and rec.optional_internal_movement_guidance
+                and rec.operation_code in ["internal"]
+                else False
+            )
 
     def action_open_invoice_wizard(self):
         return {
