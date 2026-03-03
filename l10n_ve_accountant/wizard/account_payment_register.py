@@ -90,8 +90,12 @@ class AccountPaymentRegister(models.TransientModel):
         Rate = self.env["res.currency.rate"]
         for payment in self:
             if payment.currency_id:
+                currency_id = payment.currency_id.id
+                if currency_id == payment.company_id.currency_id.id:
+                    currency_id = payment.company_id.foreign_currency_id.id
+                
                 rate_values = Rate.compute_rate(
-                    payment.currency_id.id, payment.payment_date
+                    currency_id, payment.payment_date
                 )
                 payment.foreign_rate_display = rate_values.get("foreign_rate", 0.0)
             else:
@@ -170,21 +174,7 @@ class AccountPaymentRegister(models.TransientModel):
         )
         return payment_vals
 
-    @api.depends("can_edit_wizard", "amount", "foreign_inverse_rate")
-    def _compute_payment_difference(self):
-        for wizard in self:
-            if wizard.can_edit_wizard:
-                batch_results = wizard.batches
-                total_amount_residual_in_wizard_currency = (
-                    wizard._get_total_amounts_to_pay(
-                        batch_results
-                    )
-                )
-                wizard.payment_difference = (
-                    total_amount_residual_in_wizard_currency.get('full_amount', 0.0) - wizard.amount
-                )
-            else:
-                wizard.payment_difference = 0.0
+    
 
     def _get_total_amounts_to_pay(self, batch_results):
         """
