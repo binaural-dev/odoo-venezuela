@@ -1,6 +1,6 @@
-from odoo.tools.float_utils import float_round
+from odoo.tools.float_utils import float_round, float_compare
 from odoo import api, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from odoo.tools.misc import formatLang
 
 import logging
@@ -121,7 +121,66 @@ class AccountTax(models.Model):
         res["foreign_formatted_discount_amount"] = formatLang(
             self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
         )
+        
+        move = self._get_move_from_base_lines(base_lines)
+
+        amounts = self._get_total_paid_foreign(move, foreign_currency) if move else []
+
+       
+        res["foreign_total_amount_paid"] = float_round(
+            sum(amounts),
+            precision_digits=foreign_currency.decimal_places
+        )
+
+        foreign_amount_total = res.get('foreign_amount_total', 0.0)
+
+        res["foreign_total_residual"] = float_round(
+            foreign_amount_total - res["foreign_total_amount_paid"],
+            precision_digits=foreign_currency.decimal_places
+        )
+
+        formatted_result = 0 if float_compare(res['foreign_total_residual'], 0, precision_digits=foreign_currency.decimal_places) < 0 else res['foreign_total_residual']
+        res["foreign_formatted_total_residual"] = formatLang(
+            self.env,
+            formatted_result,
+            currency_obj=foreign_currency
+        )            
+        
         return res
+    
+    def _get_move_from_base_lines(self, base_lines):
+        for l in (base_lines or []):
+            r = l.get("record")
+            if not r:
+                continue
+
+            if getattr(r, "_name", None) == "account.move":
+                return r
+
+            if "move_id" in getattr(r, "_fields", {}):
+                if r.move_id:
+                    return r.move_id
+        return None
+    
+    def _get_total_paid_foreign(self, move, foreign_currency):
+        if not move or not move.invoice_payments_widget:
+            return []
+    
+        amounts = []
+        # Odoo almacena esto como dict o como string JSON dependiendo de la versión/estado
+        widget_data = move.invoice_payments_widget
+        content = widget_data.get('content') or []
+        
+        for payment in content:
+            # Extraemos directamente el valor que vemos en tu imagen
+            # Usamos .get() por seguridad si el campo no existe en algún pago
+            f_amount = payment.get('foreign_amount', 0.0)
+            
+            # Opcional: Validar que el pago sea de la moneda que buscas
+            # En tu imagen sale 'foreign_id': 2
+            amounts.append(f_amount)
+                
+        return amounts
 
     def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
         foreign_base_lines = [line.copy() for line in base_lines if line]

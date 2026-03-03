@@ -2,12 +2,21 @@ import logging
 import re
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from collections import defaultdict
 
 _logger = logging.getLogger(__name__)
 
 
 class ProductTemplate(models.Model):
     _inherit = "product.template"
+
+    taxes_id = fields.Many2many(
+        tracking=True
+    )
+
+    supplier_taxes_id = fields.Many2many(
+        tracking=True
+    )
 
     quantity = fields.Float(
         compute="_compute_available_quantity",
@@ -59,8 +68,11 @@ class ProductTemplate(models.Model):
     @api.constrains("taxes_id")
     def _check_taxes_id(self):
         for product in self:
-            if len(product.taxes_id) != 1 and self.env.company.unique_tax:
-                raise ValidationError(_("This product must have only one tax."))
+            taxes_by_company = defaultdict(int)
+            for tax in product.taxes_id.sudo():
+                taxes_by_company[tax.company_id] += 1
+                if taxes_by_company[tax.company_id] > 1:
+                    raise ValidationError(_("This product must have only one tax."))                
 
     @api.depends("list_price")
     def _compute_prices_with_tax(self):

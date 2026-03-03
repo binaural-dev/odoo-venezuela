@@ -14,14 +14,12 @@ class PosConfig(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for moves.",
         compute="_compute_rate",
-        digits=(16, 15),
-        default=0.0,
         readonly=False,
+        digits=(16, 15),
     )
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
         readonly=False,
     )
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty")
@@ -31,6 +29,9 @@ class PosConfig(models.Model):
     )
     pos_search_cne = fields.Boolean(related="company_id.pos_search_cne")
     amount_to_zero = fields.Boolean("Amount to zero")
+    allow_sales_on_order = fields.Boolean(
+        "Allow sales on order",
+    )
     activate_barcode_strict_mode = fields.Boolean(
         help="Activate product entry with barcode in strict mode"
     )

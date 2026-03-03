@@ -29,6 +29,7 @@
                 <field name="vat"
                     invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')" />
             </xpath>
+
             <xpath expr="//notebook" position="inside">
                 <page string="Foreign currency" name="foreign_currency">
                     <group>
@@ -42,7 +43,7 @@
                         <t groups="base.group_no_one">
                             <field name="foreign_inverse_rate" invisible="1" />
                         </t>
-                        <field name="foreign_rate" readonly="move_type not in ['in_invoice']" />
+                        <field name="foreign_rate" readonly="move_type not in ['in_invoice']" force_save="1"  options="{'precision': 'Tasa'}"/>
                     </group>
                     <group colspan="4">
                         <group class="oe_subtotal_footer oe_right"
@@ -64,22 +65,23 @@
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" readonly="move_type != 'in_invoice'" />
+                <field name="foreign_price" readonly="move_type != 'in_invoice'" force_save="1" options="{'precision': 'Foreign Product Price'}"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']"
                 position="after">
-                <field name="foreign_currency_id" column_invisible="True" />
-                <field name="foreign_subtotal"
+                <field name="foreign_currency_id" column_invisible="True" force_save="1"/>
+                <field name="foreign_subtotal" force_save="1" options="{'precision': 'Foreign Product Price'}"
                 />
-                <field name="foreign_price_total"
-                    column_invisible="parent.tax_calculation_rounding_method == 'round_globally'" />
-                <field name="foreign_rate" optional="hide" />
+                <field name="foreign_price_total"  force_save="1"
+                    column_invisible="parent.tax_calculation_rounding_method == 'round_globally'" options="{'precision': 'Foreign Product Price'}"/>
+                <field name="foreign_rate" optional="hide" force_save="1"/>
                 <field
                     name="foreign_inverse_rate"
                     groups="base.group_no_one"
                     string="Foreign inverse rate"
                     optional="hide"
                     readonly="1"
+                    force_save="1"
                 />
             </xpath>
             <xpath expr="//notebook/page/field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="attributes">
@@ -93,22 +95,25 @@
                     optional="show"
                     sum="Total Foreign Debit"
                     readonly="1"
+                    force_save="1"
                 />
                 <field
                     name="foreign_credit"
                     optional="show"
                     sum="Total Foreign Credit"
                     readonly="1"
+                    force_save="1"
                 />
-                <field name="foreign_debit_adjustment" optional="hide" />
-                <field name="foreign_credit_adjustment" optional="hide" />
-                <field name="foreign_balance" optional="hide" groups="base.group_no_one" />
-                <field name="foreign_rate" optional="hide" groups="base.group_no_one" />
+                <field name="foreign_debit_adjustment" optional="hide" force_save="1"/>
+                <field name="foreign_credit_adjustment" optional="hide" force_save="1"/>
+                <field name="foreign_balance" optional="hide" groups="base.group_no_one" force_save="1"/>
+                <field name="foreign_rate" optional="hide" groups="base.group_no_one" force_save="1"/>
                 <field
                     name="foreign_inverse_rate"
                     groups="base.group_no_one"
                     optional="hide"
                     readonly="1"
+                    force_save="1"
                 />
             </xpath>
             <field name="payment_reference" position="after">
@@ -144,4 +149,5 @@
             </xpath>
         </field>
     </record>
+
 </odoo>
