@@ -402,11 +402,11 @@ class AccountMove(models.Model):
         
 
   
-        vef_line1 = _to_vef(amount_line1)
-        vef_line2 = _to_vef(amount_line2)
-        
+        vef_line1 = payment.currency_id.round(_to_vef(amount_line1))
+        vef_line2 = payment.currency_id.round(_to_vef(amount_line2))
+
         # El IGTF en VEF absorbe cualquier residuo de redondeo para que la suma sea 0.0
-        vef_igtf = vef_line1 - vef_line2
+        vef_igtf = abs(vef_line1) - abs(vef_line2)
         
         # El amount_currency del IGTF es la diferencia de los montos en divisa
         amount_currency_igtf = abs(amount_line1) - abs(amount_line2)
@@ -436,7 +436,6 @@ class AccountMove(models.Model):
             "partner_id": self.partner_id.id,
             "payment_id_advance": payment.id,
             "reconciled": False,
-            "date": payment.date,
         }
 
         # --- Construcción de las Líneas ---
@@ -479,7 +478,7 @@ class AccountMove(models.Model):
         
         return self.env["account.move"].create({
             "journal_id": advance_journal.id,
-            "date": payment.date,
+            "date": fields.Date.today(),
             "partner_id": self.partner_id.id,
             "ref": "CRUCE DE ANTICIPO (IGTF)",
             "line_ids": line_vals,
@@ -525,6 +524,9 @@ class AccountMove(models.Model):
 
         advance_lines_to_reconcile = original_advance_lines + cross_advance_lines
 
+        for line in advance_lines_to_reconcile:
+            if not line.date_maturity:
+                line.date_maturity = line.date
                 
         advance_lines_to_reconcile.reconcile()
 
@@ -541,7 +543,10 @@ class AccountMove(models.Model):
 
         rp_lines_to_reconcile = cross_rp_lines + invoice_rp_lines
 
-
+        for line in rp_lines_to_reconcile:
+            if not line.date_maturity:
+                line.date_maturity = line.date
+                
         rp_lines_to_reconcile.reconcile()
 
         return True
