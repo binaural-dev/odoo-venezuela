@@ -1,4 +1,5 @@
 from odoo.exceptions import UserError
+from odoo.exceptions import UserError
 from odoo import api, fields, models, _
 import logging
 _logger = logging.getLogger(__name__)
@@ -173,21 +174,7 @@ class AccountPaymentRegister(models.TransientModel):
         )
         return payment_vals
 
-    @api.depends("can_edit_wizard", "amount", "foreign_inverse_rate")
-    def _compute_payment_difference(self):
-        for wizard in self:
-            if wizard.can_edit_wizard:
-                batch_results = wizard.batches
-                total_amount_residual_in_wizard_currency = (
-                    wizard._get_total_amounts_to_pay(
-                        batch_results
-                    )
-                )
-                wizard.payment_difference = (
-                    total_amount_residual_in_wizard_currency.get('full_amount', 0.0) - wizard.amount
-                )
-            else:
-                wizard.payment_difference = 0.0
+    
 
     def _get_total_amounts_to_pay(self, batch_results):
         """
