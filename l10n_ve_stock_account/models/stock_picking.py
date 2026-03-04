@@ -986,12 +986,16 @@ class StockPicking(models.Model):
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
                 continue
+
             elif picking.document == "dispatch_guide":
                 picking.is_dispatch_guide = True
                 continue
-            elif picking.transfer_reason_id and (
-                picking.transfer_reason_id.id == consignment_reason.id
-                or picking.transfer_reason_id.id == other_causes_reason.id
+            elif picking.operation_code == "outgoing":
+                picking.is_dispatch_guide = True
+                continue
+            elif (
+                picking.transfer_reason_id
+                and picking.transfer_reason_id.id == consignment_reason.id or picking.transfer_reason_id.id == other_causes_reason.id
             ):
                 picking.is_dispatch_guide = True
 
@@ -1124,6 +1128,7 @@ class StockPicking(models.Model):
 
                 if record.transfer_reason_id.code == "other_causes":
                     record.show_other_causes_transfer_reason = True
+                    record.is_dispatch_guide = True
                 if record.transfer_reason_id.code == "self_consumption":
                     record.is_dispatch_guide = False
 
@@ -1215,6 +1220,7 @@ class StockPicking(models.Model):
                     ("state_guide_dispatch", "=", "to_invoice"),
                     ("sale_id.document", "!=", "invoice"),
                     ("company_id", "in", company_ids),
+                    ("is_return", "=", False),
                 ]
             )
         )
