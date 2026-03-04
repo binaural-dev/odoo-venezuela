@@ -54,7 +54,7 @@ msgstr "Edición de precios en pedidos y facturas de venta"
 #. module: l10n_ve_price_list
 #: model:res.groups,name:l10n_ve_price_list.group_pricelist_change_permission_purchase
 msgid "Pricelist Change Permission purchase"
-msgstr "Edicion de precios en cotizaciones"
+msgstr "Edición de precios en cotizaciones"
 
 #. module: l10n_ve_price_list
 #: model:res.groups,name:l10n_ve_price_list.group_pricelist_see_permission
