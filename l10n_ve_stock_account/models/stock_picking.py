@@ -822,9 +822,20 @@ class StockPicking(models.Model):
             cond_step = picking.type_delivery_step == "out" or (
                 picking.type_delivery_step == "int" and picking.is_dispatch_guide
             )
+            cond_return = picking.is_return == False
+
+            cond_type_of_return = picking.type_of_return != "total"
 
             picking.match_guide_dispatch_domain = all(
-                [cond_state, cond_type, cond_reason, cond_doc, cond_step]
+                [
+                    cond_state,
+                    cond_type,
+                    cond_reason,
+                    cond_doc,
+                    cond_step,
+                    cond_return,
+                    cond_type_of_return,
+                ]
             )
 
     @api.depends("picking_type_id", "partner_id", "sale_id")
@@ -906,7 +917,9 @@ class StockPicking(models.Model):
 
                 if record.operation_code == "outgoing":
                     record.show_create_invoice = (
-                        not record.is_return and record.sale_id.document != "invoice"
+                        not record.is_return
+                        and record.sale_id.document != "invoice"
+                        and record.type_of_return != "total"
                     )
                     record.show_create_customer_credit = record.is_return
 
@@ -1234,7 +1247,7 @@ class StockPicking(models.Model):
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
-    def alert_views(self,company_ids_str):
+    def alert_views(self, company_ids_str):
 
         company_ids = [
             int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
@@ -1242,11 +1255,7 @@ class StockPicking(models.Model):
         domain = self._get_domain_for_return_picking()
         domain.append(("company_id", "in", company_ids))
 
-        pickings_combined = (
-            self.env["stock.picking"]
-            .sudo()
-            .search(domain)
-        )
+        pickings_combined = self.env["stock.picking"].sudo().search(domain)
 
         today = date.today()
         taxpayer_type = self.env.company.taxpayer_type
