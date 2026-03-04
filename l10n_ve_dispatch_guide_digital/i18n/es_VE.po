@@ -1,0 +1,156 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_dispatch_guide_digital
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20250821\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-12 20:04+0000\n"
+"PO-Revision-Date: 2025-09-12 20:04+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "Configuration error: The authentication token is empty."
+msgstr "Error de configuración: el token de autenticación está vacío."
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__control_number_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_stock_form_inherit
+msgid "Control Number"
+msgstr "Número de control"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__is_digitalized
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_stock_form_inherit
+msgid "Digitized"
+msgstr "Digitalizado"
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "Document successfully digitized on %(date)s"
+msgstr "Documento digitalizado exitosamente el %(date)s"
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "Endpoint '%(endpoint_key)s' is not defined."
+msgstr "El punto final '%(endpoint_key)s' no está definido."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "Error 401: Invalid or expired token."
+msgstr "Error 401: Token no válido o caducado."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "Error al conectarse a la API: %(error)s"
+msgstr "Error connecting to the API: %(error)s"
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid ""
+"Error in the API response: %(message)s \n"
+"%(validation)s"
+msgstr ""
+"Error en la respuesta de la API: %(message)s \n"
+"%(validation)s"
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "HTTP error %(status_code)s: %(text)s"
+msgstr "Error HTTP %(status_code)s: %(text)s"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__show_digital_dispatch_guide
+msgid "Show Digital Dispatch Guide"
+msgstr "Mostrar guía de despacho digital"
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The 'Country' field of the Customer cannot be empty for digitalization."
+msgstr ""
+"El campo ‘País’ del Cliente no puede estar vacío para la digitalización."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "The 'Email' field of the Customer cannot be empty for digitalization."
+msgstr "El campo ‘Email’ del Cliente no puede estar vacío para la digitalización."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "The 'Mobile' field of the Customer cannot be empty for digitalization."
+msgstr "El campo ‘Móvil’ del Cliente no puede estar vacío para la digitalización."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "The 'NIF' field of the Customer cannot be empty for digitalization."
+msgstr "El campo ‘NIF’ del Cliente no puede estar vacío para la digitalización."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "The URL is not configured in the company settings."
+msgstr "La URL no está configurada en la configuración de la empresa."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "The document has already been digitalized."
+msgstr "El documento ya ha sido digitalizado."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The document sequence in Odoo (%s) does not match the sequence in The "
+"Factory (%s).Please check your numbering settings."
+msgstr ""
+"La secuencia de documentos en Odoo (%s) no coincide con la secuencia en The "
+"Factory (%s). Por favor, revise la configuración de numeración."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid "The numbering range is exhausted. Please contact the administrator."
+msgstr "El rango de numeración está agotado. Por favor, contacte al administrador."
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model,name:l10n_ve_dispatch_guide_digital.model_stock_picking
+msgid "Transfer"
+msgstr "Transferir "
