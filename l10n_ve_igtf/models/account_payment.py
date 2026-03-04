@@ -131,7 +131,11 @@ class AccountPaymentAndIgtf(models.Model):
                 payment.is_igtf_on_foreign_exchange = True
                    
     def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
-       
+        """Prepare default move line values for a payment.
+
+        Override: IGTF lines are NOT generated if the reconciled invoice's
+        journal has is_purchase_international = True.
+        """
         for rec in self:
             vals = super(AccountPaymentAndIgtf, self)._prepare_move_line_default_vals(
                 write_off_line_vals,
@@ -139,7 +143,14 @@ class AccountPaymentAndIgtf(models.Model):
             )
             if rec.payment_from_wizard:
                 if rec.igtf_percentage and rec.igtf_amount:
-                    rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
+                    # Check if any of the related invoices belongs to an
+                    # international purchase journal — in that case, skip IGTF.
+                    move_ids = rec.get_moves()
+                    is_international = any(
+                        m.journal_id.is_purchase_international for m in move_ids
+                    )
+                    if not is_international:
+                        rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
 
             return vals
 

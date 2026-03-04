@@ -309,7 +309,17 @@ class AccountMove(models.Model):
         
       
         igtf_amount = 0.0
-        is_igtf_journal = payment.journal_id.is_igtf if self.partner_id._check_igtf_apply_improved(self.move_type) else False
+        # Exception: if the invoice's own journal is flagged as international
+        # purchase, IGTF must NOT be applied even when the payment journal has
+        # is_igtf = True.
+        is_igtf_journal = (
+            payment.journal_id.is_igtf
+            if (
+                self.partner_id._check_igtf_apply_improved(self.move_type)
+                and not self.journal_id.is_purchase_international
+            )
+            else False
+        )
         base_amount_applied = 0.0
 
         base_amount_residual = self.amount_residual 
