@@ -37,11 +37,42 @@ class SaleOrder(models.Model):
         readonly=False,
     )
 
+
+    def default_rate(self):
+        """
+        This method is used to get the rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
+            self.date_order or fields.Date.today(),
+        )
+        return rate_values.get("foreign_rate", 0)
+
+    def default_inverse_rate(self):
+        """
+        This method is used to get the inverse rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The inverse rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
+            self.date_order or fields.Date.today(),
+        )
+        return rate_values.get("foreign_inverse_rate", 0)
+
     foreign_rate = fields.Float(
         help="The rate that is gonna be always shown to the user.",
         compute="_compute_rate",
+        default=default_rate,
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
         tracking=True,
@@ -50,7 +81,7 @@ class SaleOrder(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
+        default=default_inverse_rate,
         store=True,
         readonly=False,
     )
@@ -178,17 +209,24 @@ class SaleOrder(models.Model):
 
         if foreign_currency_id:
             foreign_currency_symbol = foreign_currency_id.symbol
+            foreign_currency_name = foreign_currency_id.name
             if view_type == "form":
                 view_id = self.env.ref(
                     "l10n_ve_sale.view_sale_order_form_l10n_ve_sales"
                 ).id
                 doc = etree.XML(res["arch"])
+                foreign_price_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_price']")
+                if foreign_price_order_line:
+                    foreign_price_order_line[0].set("string", _("Price") + " " + foreign_currency_name)
+                foreign_subtotal_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_subtotal']")
+                if foreign_subtotal_order_line:
+                    foreign_subtotal_order_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:
                     page[0].set(
                         "string", _("Foreign Currency ") + foreign_currency_symbol
                     )
-                    res["arch"] = etree.tostring(doc, encoding="unicode")
+                res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
     @api.depends(
