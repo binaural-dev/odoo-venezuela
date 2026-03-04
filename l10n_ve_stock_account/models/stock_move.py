@@ -6,7 +6,7 @@ _logger = logging.getLogger(__name__)
 class StockMove(models.Model):
     _inherit = "stock.move"
 
-    def _get_line_values(self, use_foreign_currency=False):
+    def _get_line_values(self):
         """
         Calculate and return all relevant values for a stock move line, including:
         - Quantity
@@ -26,15 +26,20 @@ class StockMove(models.Model):
         """
         self.ensure_one()
 
-        price_unit = (
-            (
-                self.sale_line_id.foreign_price
-                if use_foreign_currency
-                else self.sale_line_id.price_unit
-            )
-            if self.sale_line_id
-            else 0.0
-        )
+        if not self.sale_line_id:
+            return {
+                "quantity": self.quantity or 0.0,
+                "discount_percentage": 0.0,
+                "discount_amount": 0.0,
+                "tax_percentage": 0.0,
+                "tax_amount": 0.0,
+                "subtotal": 0.0,
+                "subtotal_after_discount": 0.0,
+                "price_unit": 0.0,
+                "total_with_tax": 0.0,
+            }
+
+        price_unit = self.price_unit_ves_for_dispatch_guide()
 
         quantity = self.quantity or 0.0
         discount = self.sale_line_id.discount or 0.0
@@ -59,6 +64,43 @@ class StockMove(models.Model):
             "tax_amount": tax_amount,
             "subtotal": subtotal,
             "subtotal_after_discount": subtotal_after_discount,
-            # "": total,
+            "price_unit": price_unit,
             "total_with_tax": total_with_tax,
         }
+
+
+    def price_unit_ves_for_dispatch_guide(self):
+        """
+        Convert the unit price of the sale order line to VES (Venezuelan Bolívar) for use in the dispatch guide format.
+
+        This method ensures that the unit price is always expressed in the company's currency (VES),
+        regardless of the original currency of the sale order line. The conversion date depends on the
+        'indexed_dispatch_guide' flag:
+        - If enabled, the conversion uses the picking's done date.
+        - If disabled, the conversion uses the sale order's order date.
+
+        Returns:
+            float: The unit price converted to VES for the dispatch guide.
+        """
+        self.ensure_one()
+        if not self.sale_line_id:
+            return 0.0
+
+        currency = self.sale_line_id.currency_id or self.sale_line_id.order_id.currency_id
+       
+        if currency == self.env.company.currency_id:
+            return self.sale_line_id.price_unit
+
+        if self.company_id.indexed_dispatch_guide or self.env.company.indexed_dispatch_guide:
+            date = self.picking_id.date_done
+        else:
+            date = self.sale_line_id.order_id.date_order
+        
+        ves_price_unit = currency._convert(
+            self.sale_line_id.price_unit,
+            self.env.company.currency_id,
+            self.env.company,
+            date,
+        )
+    
+        return ves_price_unit
