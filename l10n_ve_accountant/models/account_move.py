@@ -17,6 +17,7 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _inherit = "account.move"
+    invoice_date_display = fields.Date(string="Invoice Date")
 
     _sql_constraints = [
         (

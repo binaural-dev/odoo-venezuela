@@ -8,6 +8,10 @@ _logger = logging.getLogger(__name__)
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
+    destination_account_id = fields.Many2one(
+        "account.account",
+        domain="[('account_type', 'in', ('asset_receivable', 'liability_payable', 'asset_current', 'liability_current'))]",
+    )
     def default_alternate_currency(self):
         """
         This method is used to get the foreign currency of the company and set it as the default
