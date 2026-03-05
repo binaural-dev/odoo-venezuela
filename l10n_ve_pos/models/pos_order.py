@@ -12,6 +12,7 @@ class PosOrder(models.Model):
     foreign_amount_total = fields.Float(string="Foreign Total", readonly=True, required=True)
     foreign_currency_rate = fields.Float(readonly=True, required=False)
     
+    #TODO: esto no da probleas al procesar ordenes, porque al parecer no encuentra ordenes
     # def _process_order(self, order, draft, existing_order):
     #     res = super()._process_order(self ,order, draft, existing_order)
     #     order = self.browse(res)
@@ -47,15 +48,11 @@ class PosOrder(models.Model):
         res = super()._export_for_ui(order)
         res["foreign_currency_rate"] = order.foreign_currency_rate
         return res 
-
-    def get_payments_order_refund(self):
-        return self.payment_ids.read()
-
-    @api.model
-    def _get_invoice_lines_values(self, line_values, pos_order_line):
-        res = super()._get_invoice_lines_values(line_values, pos_order_line)
-        res["foreign_price"] = pos_order_line.foreign_price
-        return res
+    # @api.model
+    # def _get_invoice_lines_values(line_values, pos_order_line):
+    #     res = super()._get_invoice_lines_values(line_values, pos_order_line)
+    #     res["foreign_price"] = pos_order_line.foreign_price
+    #     return res
 
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"

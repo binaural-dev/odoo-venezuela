@@ -13,6 +13,12 @@ class ResCompany(models.Model):
     
     @api.model
     def _load_pos_data_fields(self, config_id):
+        """
+        Extend the list of fields to be loaded for the res.company model in the Point of Sale.
+        This method ensures that additional fields required for the Venezuelan localization,
+        such as taxpayer type and foreign currency, are included in the data sent to the POS frontend.
+        """
+        
         res = super()._load_pos_data_fields(config_id)
         res +=['taxpayer_type','foreign_currency_id']  
         return res

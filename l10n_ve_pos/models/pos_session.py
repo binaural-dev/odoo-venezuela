@@ -75,7 +75,7 @@ class PosSession(models.Model):
                 ],
             }
         }
-
+    #TODO fue comentado por Omar, por lo tanto necesito aclaratoria o analisis de AI
     # def _get_pos_ui_product_product(self, params):
     #     self = self.with_context(**params["context"])
     #     products = []
@@ -362,7 +362,7 @@ class PosSession(models.Model):
     #             "company_id": self.company_id.id,
     #         }
     #     )
-    #     return move
+    #     return move #TODO esta funcion no hace nada, esta definida y no me explico como es que no 
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
@@ -381,6 +381,7 @@ class PosSession(models.Model):
             for line in order.lines:
                 line.price_subtotal = self._apply_rounding(line.price_subtotal)
                 # line.price_total = self._apply_rounding(line.price_total)
+                #?  ESTO ES NECESARIO?
             # _logger.info(f"AYUDA {order.state}")
             # # Verificamos si es un reembolso
             # states = ['invoiced','in_refund']
