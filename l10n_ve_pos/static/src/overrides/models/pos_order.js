@@ -34,14 +34,6 @@ patch(PosOrder.prototype, {
     return this.env.pos.config.foreign_rate;
   },
 
-  _isValidEmptyOrder() {
-    let res = super._isValidEmptyOrder(...arguments);
-    // if (this.get_change() != 0) {
-    //   return false;
-    // }
-    return res;
-  },
-
   assert_editable() { },
 
   get init_conversion_rate() {
@@ -177,25 +169,25 @@ patch(PosOrder.prototype, {
   //       this.pos.foreign_currency.rounding,
   //     );
   //   },
-  get_foreign_total_with_tax() {
-    return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
-  },
-  get_foreign_total_without_tax() {
-    const lines = this.get_orderlines();
-    const foreign_currency = this.get_foreign_currency();
-    const digits = foreign_currency ? foreign_currency.decimal_places : 2;
-    return round_pr(
-      lines.reduce(function (sum, orderLine) {
-        if (typeof orderLine.get_foreign_price_without_tax === "function") {
-          return sum + orderLine.get_foreign_price_without_tax();
-        } else {
-          console.warn("get_foreign_price_without_tax is not a function on orderLine", orderLine);
-          return sum;
-        }
-      }, 0),
-      foreign_currency.rounding,
-    );
-  },
+  // get_foreign_total_with_tax() {
+  //   return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
+  // },
+  // get_foreign_total_without_tax() {
+  //   const lines = this.get_orderlines();
+  //   const foreign_currency = this.get_foreign_currency();
+  //   const digits = foreign_currency ? foreign_currency.decimal_places : 2;
+  //   return round_pr(
+  //     lines.reduce(function (sum, orderLine) {
+  //       if (typeof orderLine.get_foreign_price_without_tax === "function") {
+  //         return sum + orderLine.get_foreign_price_without_tax();
+  //       } else {
+  //         console.warn("get_foreign_price_without_tax is not a function on orderLine", orderLine);
+  //         return sum;
+  //       }
+  //     }, 0),
+  //     foreign_currency.rounding,
+  //   );
+  // },
   //   get_foreign_total_discount() {
   //     const ignored_product_ids = this._get_ignored_product_ids_total_discount();
   //     return round_pr(

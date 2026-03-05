@@ -56,4 +56,5 @@ patch(ProductCard, {
   get stockStatus() {
     return this.fetchStock?.status || "idle";
   },
+
 });

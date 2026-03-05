@@ -1,7 +1,7 @@
 import { patch } from "@web/core/utils/patch";
 import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
 
-patch(Orderline, {
+patch(Orderline.prototype, {
   //DEPRECATED
   // init_from_JSON(json) {
   //   super.init_from_JSON(...arguments);

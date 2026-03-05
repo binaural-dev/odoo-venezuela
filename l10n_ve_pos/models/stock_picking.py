@@ -8,5 +8,5 @@ class PosOrder(models.Model):
         res = super()._create_move_from_pos_order_lines(lines)
         # self.env.context = self.with_context(
         #     skip_not_allow_sell_products_validation=True
-        # ).env.context
+        # ).env.context #? comente esto porque daba problemas, asi que tengo que buscar el porque
         return res
