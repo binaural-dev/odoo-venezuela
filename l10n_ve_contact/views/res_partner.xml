@@ -21,9 +21,6 @@
             <xpath expr="//field[@name='state_id']" position="attributes">
                 <attribute name="required">1</attribute>
             </xpath> 
-            <xpath expr="//field[@name='zip']" position="attributes">
-                <attribute name="required">1</attribute>
-            </xpath>
         </field>
     </record>
 </odoo>

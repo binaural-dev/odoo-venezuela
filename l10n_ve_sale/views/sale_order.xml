@@ -44,7 +44,7 @@
             </xpath>
 
             <xpath expr="//notebook" position="inside">
-                <page string="Foreign currency" name="foreign_currency">
+                <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_sale.group_foreign_currency_view_sales">
                     <group>
                         <field name="foreign_currency_id" invisible="1" />
                         <field
@@ -122,13 +122,6 @@
                 <field name="payment_term_id" options="{'no_open':True,'no_create': True}"
                     groups="!l10n_ve_sale.payment_terms_sale_order_group" />
             </field>
-
-            <xpath expr="//notebook/page[1]//list/field[@name='price_unit']" position="replace">
-                <field name="price_unit" readonly="1"
-                    groups="l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
-                <field name="price_unit"
-                    groups="!l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
-            </xpath>
 
         </field>
     </record>

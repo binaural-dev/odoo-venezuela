@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250522\n"
+"Project-Id-Version: Odoo Server 19.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-25 18:47+0000\n"
-"PO-Revision-Date: 2025-07-25 18:47+0000\n"
+"POT-Creation-Date: 2025-12-19 13:57+0000\n"
+"PO-Revision-Date: 2025-12-19 13:57+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -239,7 +239,7 @@ msgstr "Verifique el asiento %s no tiene una fecha de factura"
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__company_id
@@ -249,7 +249,7 @@ msgstr "Compañía"
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
@@ -259,7 +259,6 @@ msgstr "Configuración de Facturación: General"
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
-#, python-format
 msgid ""
 "Contingency journal's invoices should always have a correlative if series "
 "invoicing is not enabled"
@@ -270,7 +269,6 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__correlative
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__correlative
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__correlative
 #: model:ir.ui.menu,name:l10n_ve_invoice.control_number_menu
 msgid "Control Number"
 msgstr "Número de Control"
@@ -303,7 +301,6 @@ msgstr "Notas de Débito"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__display_date_warning
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__display_date_warning
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__display_date_warning
 msgid "Display Date Warning"
 msgstr "Advertencia de fecha en factura"
 
@@ -336,8 +333,8 @@ msgstr "Fecha de Primer Pago"
 
 #. module: l10n_ve_invoice
 #: model:ir.actions.report,name:l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice
-msgid "Free Form"
-msgstr "Forma Libre"
+msgid "Free Form Binaural"
+msgstr "Forma Libre (Binaural)"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.wizard_binaural_facturacion_reportes_view
@@ -351,6 +348,11 @@ msgid "Group Sales Invoicing Series"
 msgstr "Grupo para series de ventas"
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_debit_note__id
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_journal__id
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__id
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__id
 msgid "ID"
 msgstr ""
@@ -358,7 +360,6 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__invoice_reception_date
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__invoice_reception_date
-#: model:ir.model.fields,help:l10n_ve_invoice.field_account_payment__invoice_reception_date
 msgid "Indicates when the invoice was received by the client/company"
 msgstr "Indica cuando una factura fue recibida por el cliente o la compañía"
 
@@ -368,10 +369,15 @@ msgid "Invoice Configuration"
 msgstr "Configuración de Facturación"
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
+msgid "Invoice Date"
+msgstr "Fecha de factura"
+
+#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__is_contingency
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_journal__is_contingency
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_contingency
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__is_contingency
 msgid "Is Contingency"
 msgstr "Es Contingencia"
 
@@ -383,17 +389,8 @@ msgstr "Débito"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__is_debit_journal
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_debit_journal
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__is_debit_journal
 msgid "Is Debit Journal"
 msgstr "Es un diario de débito"
-
-#. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__invoice_date
-msgid "Invoice/Bill Date"
-msgstr "Fecha de factura"
-
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
@@ -422,7 +419,6 @@ msgstr "Asiento contable"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__last_payment_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__last_payment_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__last_payment_date
 msgid "Last Payment Date"
 msgstr "Fecha del último pago"
 
@@ -464,7 +460,6 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__next_installment_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__next_installment_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__next_installment_date
 msgid "Next Installment Date"
 msgstr "Fecha del próximo plazo"
 
@@ -487,7 +482,6 @@ msgstr "Libro de Compras"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_reception_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_reception_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__invoice_reception_date
 msgid "Reception Date"
 msgstr "Fecha de Recepción"
 
@@ -512,7 +506,6 @@ msgstr "Libro de Ventas"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__correlative
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__correlative
-#: model:ir.model.fields,help:l10n_ve_invoice.field_account_payment__correlative
 msgid "Sequence control number"
 msgstr "Secuencia para el número de control"
 
@@ -562,7 +555,6 @@ msgstr "Mostrar total en USD en forma libre"
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
-#, python-format
 msgid ""
 "The correlative must be unique per journal when using a contingency journal"
 msgstr ""
@@ -572,7 +564,6 @@ msgstr ""
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
-#, python-format
 msgid "The sale's series sequence must be in the selected journal."
 msgstr ""
 "La secuencia de series de ventas debe estar seleccionada en el diario."
@@ -595,7 +586,6 @@ msgstr ""
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
-#, python-format
 msgid "You can not add more than %s products to the invoice."
 msgstr "No puede agregar más de %s productos a la factura."
 
@@ -633,3 +623,25 @@ msgstr "Notas de Débito"
 #, python-format
 msgid "An invoice cannot have a line with a price of zero"
 msgstr "Una factura no puede tener una linea con precio en cero"
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
+#, python-format
+msgid "There are no moves to show"
+msgstr "No se encontraron registros para mostrar"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__declaration_unique_of_customs
+msgid "Declaration unique of customs"
+msgstr "Declaración Única de Aduana"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_purchase_international
+msgid "Is International Purchase"
+msgstr "Es Compra Internacional"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_filter_l10n_ve_invoice
+msgid "Number of Declaration Unique of Customs"
+msgstr "Declaración Única de Aduana"

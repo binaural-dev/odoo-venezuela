@@ -10,15 +10,60 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
+            <xpath expr="//div[@name='currency_div']" position="replace">
+                <div name="currency_div"
+                    groups="base.group_multi_currency"
+                    class="w-100"
+                    invisible="move_type == 'entry'">
+                    <div class="d-flex gap-1">
+                        <field name="currency_id"
+                               readonly="state != 'draft'"
+                               class="oe_inline"
+                               options="{'no_create': True}"
+                               context="{'search_default_active': 1, 'search_default_inactive': 1}"/>
+                    </div>
+                    <div name="currency_conversion_div"
+                        class="d-flex gap-1 text-muted"
+                        invisible="currency_id == company_currency_id">
+                        <span>1</span>
+                        <field name="currency_id" readonly="True" options="{'no_open': True}"
+                            class="w-auto" />
+                        <span>=</span>
+                        <field name="move_currency_to_company_currency_rate" digits="[12,6]"
+                            readonly="True" />
+                        <field name="company_currency_id" readonly="True"
+                            options="{'no_open': True}" class="w-auto" />
+                    </div>
+                    <div name="currency_conversion_div_foreign"
+                        class="d-flex gap-1 text-muted"
+                        invisible="currency_id != company_currency_id">
+                        <span>1</span>
+                        <field name="foreign_currency_id" readonly="True"
+                            options="{'no_open': True}" class="w-auto" />
+                        <span>=</span>
+                        <field name="move_currency_to_company_currency_rate" digits="[12,6]"
+                            readonly="True" />
+                        <field name="company_currency_id" readonly="True"
+                            options="{'no_open': True}" class="w-auto" />
+                    </div>
+                </div>
+            </xpath>
+            <xpath expr="//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='account_id']" position="attributes">
+                <attribute name='optional'>Hide</attribute>
+            </xpath>
+            <xpath expr="//span[@class='o_form_label'][1]/field[1]" position="attributes">
+                <attribute name='invisible'>True</attribute>
+            </xpath>
             <xpath expr="//header/button[@name='button_cancel']" position="after">
                 <button name="action_update_account_id" string="Update account lines" type="object"
                     groups="base.group_no_one" />
             </xpath>
-            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="before">
-                <field name="config_deductible_tax" column_invisible="True"/>
-                <field name="move_type" column_invisible="True"/>
-                <field name="not_deductible_tax" optional="hide" 
-                invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax"/>
+            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']"
+                position="before">
+                <field name="config_deductible_tax" column_invisible="True" />
+                <field name="move_type" column_invisible="True" />
+                <field name="not_deductible_tax" optional="hide"
+                    invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax" />
             </xpath>
             <xpath expr="//button[@name='action_reverse']" position="attributes">
                 <attribute name="string">Add Credit Note</attribute>
@@ -35,8 +80,9 @@
                 <field name="vat"
                     invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')" />
             </xpath>
+
             <xpath expr="//notebook" position="inside">
-                <page string="Foreign currency" name="foreign_currency">
+                <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_accountant.group_foreign_currency_view_accountant">
                     <group>
                         <field name="foreign_currency_id" invisible='1' />
                         <field name="manually_set_rate" invisible="1" />
@@ -58,24 +104,33 @@
                                 nolabel="1"
                                 colspan="2"
                                 readonly="state != 'draft' or (move_type not in ('in_invoice', 'in_refund') and not quick_edit_mode)" />
-                            <field name="invoice_payments_widget" colspan="2" nolabel="1"
-                                widget="payment" />
-                            <field name="invoice_outstanding_credits_debits_widget"
-                                class="oe_invoice_outstanding_credits_debits"
-                                colspan="2" nolabel="1" widget="payment"
-                                invisible="state != 'posted'" />
                         </group>
                     </group>
                 </page>
             </xpath>
+            <!-- ONLY VES SQUARE -->
+            <xpath expr="//page[@name='invoice_tab']"
+                position="inside">
+                <group colspan="2" class="oe_subtotal_footer oe_right">
+                    <group class="oe_subtotal_footer oe_right"
+                        invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt') or payment_state == 'invoicing_legacy'">
+                        <field name="tax_totals"
+                            widget="account-tax-ves-totals-field"
+                            nolabel="1"
+                            readonly="state != 'draft' or (move_type not in ('in_invoice', 'in_refund') and not quick_edit_mode)" />
+                    </group>
+                </group>
+            </xpath>
+
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" readonly="move_type != 'in_invoice'" />
+                <field name="foreign_price" readonly="move_type != 'in_invoice'" optional="hide"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_subtotal']"
                 position="after">
+
                 <field name="foreign_currency_id" column_invisible="True" />
-                <field name="foreign_subtotal"
+                <field name="foreign_subtotal" optional='hide'
                 />
                 <field name="foreign_price_total"
                     column_invisible="parent.tax_calculation_rounding_method == 'round_globally'" />
@@ -88,12 +143,14 @@
                     readonly="1"
                 />
             </xpath>
+
             <xpath
                 expr="//notebook/page/field[@name='invoice_line_ids']/list/field[@name='tax_ids']"
                 position="attributes">
                 <attribute name="readonly">1</attribute>
             </xpath>
-            <xpath expr="//page/field[@name='journal_line_ids']/list/field[@name='balance']"
+
+            <xpath expr="//field[@name='balance']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" />
                 <field
@@ -140,6 +197,20 @@
                     options="{'currency_field': 'foreign_currency_id'}"
                     decoration-bf="1"
                     optional="hide" />
+            </xpath>
+        </field>
+    </record>
+    <record id="l10n_ve_accountant_view_invoice_tree_inherit" model="ir.ui.view">
+        <field name="name">account.move.list.inherit.l10n_ve_accountant</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='amount_total_in_currency_signed']" position="before">
+                <field name="foreign_currency_id" column_invisible="True"/>
+                <field name="amount_total_signed" optional="hide"/>
+                <field name="amount_untaxed_signed" optional="hide"/>
+                <field name="foreign_total_billed" widget="monetary" optional="hide"/>
+                <field name="foreign_untaxed_total" widget="monetary" optional="hide"/>
             </xpath>
         </field>
     </record>
