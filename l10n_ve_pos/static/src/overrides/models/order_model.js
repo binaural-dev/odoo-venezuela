@@ -38,14 +38,14 @@ patch(Order.prototype, {
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
     if (this.pos.currency.name == "VEF") {
-      return this.pos.config.foreign_inverse_rate;
+      return round_di(this.pos.config.foreign_inverse_rate, this.pos.currency.decimal_places);
     }
     if (this.pos.currency.name == "USD") {
-      return this.pos.config.foreign_rate;
+      return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
     }
   },
   get_display_rate() {
-    return this.pos.config.foreign_rate;
+    return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
   },
 
   add_orderline(line) {
@@ -213,7 +213,7 @@ patch(Order.prototype, {
       // 2. Round that result
       // 3. Sum all those rounded amounts
       var groupTaxes = {};
-      this.orderlines.forEach(function (line) {
+      this.orderlines.forEach(function(line) {
         var taxDetails = line.get_foreign_tax_details();
         var taxIds = Object.keys(taxDetails);
         for (var t = 0; t < taxIds.length; t++) {
@@ -245,7 +245,7 @@ patch(Order.prototype, {
     var details = {};
     var fulldetails = [];
 
-    this.orderlines.forEach(function (line) {
+    this.orderlines.forEach(function(line) {
       var ldetails = line.get_foreign_tax_details();
       for (var id in ldetails) {
         if (Object.hasOwnProperty.call(ldetails, id)) {
