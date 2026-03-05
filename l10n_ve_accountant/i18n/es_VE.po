@@ -1637,12 +1637,6 @@ msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
 
 #. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
-msgid "You must set the invoice date before adding products."
-msgstr "Debes establecer la fecha de la factura antes de agregar productos."
-
-#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "____________________________________________"
 msgstr ""
@@ -1779,3 +1773,10 @@ msgstr "Fecha de tasa"
 msgid "All payment methods must have an assigned account."
 msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
 
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_bill_filter
+#: model_terms:ir.ui.view,arch_db:account.view_invoice_tree
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_payment_tree
+msgid "Bill Date"
+msgstr "Fecha de tasa"
