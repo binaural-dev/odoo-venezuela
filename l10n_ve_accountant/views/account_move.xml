@@ -10,6 +10,9 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
+            <xpath expr="//field[@name='invoice_date']" position="after">
+                <field name="invoice_date_display" readonly="state != 'draft'" invisible="move_type == 'entry'" required="move_type in ('in_invoice', 'out_invoice', 'in_refund', 'out_refund')"/>
+            </xpath>
             <xpath expr="//div[@name='currency_div']" position="replace">
                 <div name="currency_div"
                     groups="base.group_multi_currency"
