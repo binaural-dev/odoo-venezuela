@@ -39,7 +39,7 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
-    @api.depends("invoice_date", "entry_in_period", "state")
+    @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
         today = date.today()
@@ -51,6 +51,7 @@ class AccountMove(models.Model):
 
             if move.state == "cancel":
                 continue
+
 
             if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
                 if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
@@ -88,10 +89,10 @@ class AccountMove(models.Model):
 
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
-            """ if invoices and record.move_type in ["out_invoice","out_refund"]:
+            if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
             if record.invoice_date and record.date and record.date < record.invoice_date:
-                raise ValidationError(_("The accounting date cannot be earlier than the invoice date.")) """
+                raise UserError(_("The accounting date cannot be earlier than the invoice date."))
         return super().action_post()
 
     @api.model_create_multi
