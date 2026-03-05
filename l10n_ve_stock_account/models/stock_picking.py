@@ -211,6 +211,10 @@ class StockPicking(models.Model):
     # === MAIN FUNCTIONS ===#
 
     def create_multi_invoice(self, pickings):
+        lines = self._get_multiple_invoice_lines_for_invoice(
+            pickings, from_picking_line=True
+        )
+        current_user = self.env.uid
 
         if self.picking_type_id.code == "outgoing":
             pricelists = pickings.mapped('pricelist_id')
@@ -686,7 +690,7 @@ class StockPicking(models.Model):
                     vendor_journal_id = self.get_vendor_journal()
                     if not vendor_journal_id:
                         raise UserError(
-                            _("Please configure the journal from " "the settings.")
+                            _("Please configure the journal from the settings.")
                         )
                     for picking_id in self:
                         for move_id in picking_id.move_ids:
@@ -755,6 +759,7 @@ class StockPicking(models.Model):
         "transfer_reason_id.code",
         "sale_id.document",
         "is_dispatch_guide",
+        "type_of_return",
     )
     def _compute_match_guide_dispatch_domain(self):
         for picking in self:
@@ -945,8 +950,11 @@ class StockPicking(models.Model):
         )
         
         for picking in self:
-
-            picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
+            picking.is_dispatch_guide = (
+                False
+                if picking.is_dispatch_guide is None
+                else picking.is_dispatch_guide
+            )
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
                 continue
@@ -1027,7 +1035,6 @@ class StockPicking(models.Model):
                 
             # Internal
             elif picking.operation_code == "internal":
-
                 consignment_reason = reasons.get("consignment")
                 transfer_between_warehouses_reason = reasons.get(
                     "transfer_between_warehouses"
@@ -1082,8 +1089,11 @@ class StockPicking(models.Model):
             record.show_other_causes_transfer_reason = False
 
             if record.transfer_reason_id:
-
-                record.is_dispatch_guide = False if record.is_dispatch_guide is None else record.is_dispatch_guide
+                record.is_dispatch_guide = (
+                    False
+                    if record.is_dispatch_guide is None
+                    else record.is_dispatch_guide
+                )
 
                 if record.transfer_reason_id.code == "other_causes":
                     record.show_other_causes_transfer_reason = True
@@ -1124,7 +1134,6 @@ class StockPicking(models.Model):
         if config_type == "last_day":
             return today == last_day
         else:
-
             while last_day.weekday() >= 5:
                 last_day -= timedelta(days=1)
             return today == last_day
@@ -1162,7 +1171,6 @@ class StockPicking(models.Model):
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
     def alert_views(self, company_ids_str):
-
         company_ids = [
             int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
         ]
