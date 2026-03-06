@@ -12,6 +12,7 @@
                     <field name="foreign_currency_id" options="{'no_create': True, 'no_open': True}" required="1" />
                     <field name="foreign_rate" />
                 </div>
+                <field name="foreign_rate_display" invisible="currency_id == company_currency_id"/>
                 <field name="foreign_inverse_rate" invisible="1"/>
                 <label for="foreign_inverse_rate" invisible="base_currency_is_vef == True"/>
                 <div name="foreign_currency_div" class="o_row">
