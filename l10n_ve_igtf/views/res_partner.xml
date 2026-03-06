@@ -1,0 +1,19 @@
+    
+<odoo>
+
+    <record id="view_partner_property_form_inherit_l10n_ve_accountant" model="ir.ui.view">
+        <field name="name">res.partner.view.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="account.view_partner_property_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_account_payable_id']" position="after">
+               <field name="default_advance_customer_account_id" />
+               <field name="default_advance_supplier_account_id" />
+            </xpath>
+        </field>
+    </record>
+    
+
+</odoo>
+    
+    

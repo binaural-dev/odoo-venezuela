@@ -1,5 +1,5 @@
 from odoo import api, models, fields, _, Command
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_is_zero , float_compare
 from odoo.tools import SQL
 
@@ -44,45 +44,48 @@ class AccountPaymentAndIgtf(models.Model):
     )
 
     payment_from_wizard = fields.Boolean()
+
+    destination_account_id_domain = fields.Char(
+        compute="_compute_destination_account_id_domain"
+    )
                 
-    @api.onchange('journal_id','destination_account_id')
+    @api.onchange('journal_id','is_advance_payment')
     def _onchange_journal_id(self):
        for rec in self:
-            customer_account = rec.company_id.advance_customer_account_id.id
-            supplier_account = rec.company_id.advance_supplier_account_id.id
-            if rec.journal_id and rec.journal_id.is_igtf:
-                if rec.destination_account_id.id not in [customer_account, supplier_account]:
+            if rec.partner_id and rec.journal_id and rec.destination_account_id:
+               
+                if rec.journal_id and rec.journal_id.is_igtf and rec.is_advance_payment:
+                    if rec.destination_account_id and not rec.destination_account_id.is_advance_account:
+                        raise UserError(
+                            _(
+                                "The selected journal is configured for IGTF, so the destination account must be is_advance_account"
+                            )) 
+                if rec.journal_id and rec.journal_id.is_igtf and not rec.is_advance_payment:
                     raise UserError(
-                        _(
-                            "The selected journal is configured for IGTF, so the destination account must be either the advance customer account or the advance supplier account."
-                        ))
+                            _(
+                                "The selected journal is configured for IGTF, must be is_advance_payment"
+                            )) 
+
 
     @api.depends(
-        "journal_id", "partner_id", "partner_type",  "is_advance_payment"
+        "partner_id", "partner_type",  "is_advance_payment"
     )
     def _compute_destination_account_id(self):
 
         for payment in self:
+            if payment.partner_id:
+                customer_account = payment.partner_id.default_advance_customer_account_id.id
+                supplier_account = payment.partner_id.default_advance_supplier_account_id.id
 
-            customer_account = payment.company_id.advance_customer_account_id.id
-            supplier_account = payment.company_id.advance_supplier_account_id.id
-
-            if not customer_account or not supplier_account:
-                raise UserError(
-                    _(
-                        "You must configure the advance customer account and the advance supplier account in the company settings"
-                    )
-                )
-
-            if payment.is_advance_payment:
-                if payment.partner_type == "customer":
-                    payment.destination_account_id = customer_account
-                    return
-                elif payment.partner_type == "supplier":
-                    payment.destination_account_id = supplier_account
-                    return
-            
-            return super(AccountPaymentAndIgtf, self)._compute_destination_account_id()
+                if payment.is_advance_payment:
+                    if payment.partner_type == "customer" and customer_account:
+                        payment.destination_account_id = customer_account 
+                        return
+                    elif payment.partner_type == "supplier" and supplier_account:
+                        payment.destination_account_id = supplier_account
+                        return
+                
+                return super(AccountPaymentAndIgtf, self)._compute_destination_account_id()
 
     def _seek_for_lines(self):
         """Helper used to dispatch the journal items between:
@@ -115,8 +118,6 @@ class AccountPaymentAndIgtf(models.Model):
                 writeoff_lines += line
 
         return liquidity_lines, counterpart_lines, writeoff_lines
-
-   
 
     @api.depends("partner_id")
     def _compute_igtf_percentage(self):
@@ -253,7 +254,6 @@ class AccountPaymentAndIgtf(models.Model):
             else self.env.company.supplier_account_igtf_id.id
         )
         if self.env.context.get("from_pos", False):
-        #if self._context.get("from_pos", False):
             return
 
         for payment in self:
@@ -449,14 +449,6 @@ class AccountPaymentAndIgtf(models.Model):
 
                 rec._create_outbound_move_line_igtf_vals(vals)
 
-    @api.depends('journal_id')
-    def _compute_is_igtf_journal(self):
-        for record in self:
-            if record.journal_id.currency_id and record.journal_id.currency_id == self.env.ref("base.USD"):
-                record.is_igtf_on_foreign_exchange = True
-            else:
-                record.is_igtf_on_foreign_exchange = False
-
     def action_cancel(self):
         for record in self:
             if record.advanced_move_ids:
@@ -614,3 +606,70 @@ class AccountPaymentAndIgtf(models.Model):
                 pay.reconciled_invoices_type = 'credit_note'
             else:
                 pay.reconciled_invoices_type = 'invoice'
+
+    @api.depends('is_advance_payment')
+    def _compute_destination_account_id_domain(self):
+        for rec in self:
+            domain = False # Base domain
+            
+            if rec.is_advance_payment:
+                # Si es un PROVEEDOR (supplier) -> Activo Corriente + Is Advance
+                if rec.partner_type == 'supplier':
+                    domain = [
+                        ('account_type', '=', 'asset_current'),
+                        ('is_advance_account', '=', True)
+                    ]
+                # Si es un CLIENTE (customer) -> Pasivo Corriente + Is Advance
+                else:
+                    domain = [
+                        ('account_type', '=', 'liability_current'),
+                        ('is_advance_account', '=', True)
+                    ]
+            else:
+                # Caso contrario: Dominio estándar que pediste
+                domain = [
+                    ('account_type', 'in', ('asset_receivable', 'liability_payable')),
+                    ('is_advance_account', '=', False) # Asumo que aquí no quieres ver las de anticipo
+                ]
+            
+            rec.destination_account_id_domain = str(domain)
+
+    
+    @api.constrains('is_advance_payment', 'destination_account_id', 'partner_type')
+    def _check_advance_payment_account(self):
+        for rec in self:
+            # Si no hay cuenta seleccionada, no validamos (el 'required' de Odoo se encarga)
+
+            if self.env.context.get('install_mode') or self.env.context.get('skip_check'):
+                return
+    
+            if not rec.destination_account_id:
+                continue
+
+            acc = rec.destination_account_id
+
+            if rec.is_advance_payment:
+                # Caso ANTICIPO
+                if rec.partner_type == 'supplier':
+                    if acc.account_type != 'asset_current' or not acc.is_advance_account:
+                        raise ValidationError(_(
+                            "For vendor advances, the account must be 'Current Assets' and flagged as an 'Advance Account'."
+                        ))
+                elif rec.partner_type == 'customer':
+                    if acc.account_type != 'liability_current' or not acc.is_advance_account:
+                        raise ValidationError(_(
+                            "For customer advances, the account must be 'Current Liabilities' and flagged as an 'Advance Account'."
+                        ))
+            else:
+                # Caso PAGO ESTÁNDAR (No es anticipo)
+                # Validamos que NO usen una cuenta de anticipos por error
+                if acc.is_advance_account:
+                    raise ValidationError(_(
+                        "You cannot use an 'Advance Account' for a standard payment. Please uncheck 'Is Advance Payment' or change the account."
+                    ))
+                
+                # Validación de tipo estándar de Odoo por seguridad
+                if acc.account_type not in ('asset_receivable', 'liability_payable'):
+                    raise ValidationError(_(
+                        "Standard payments must use 'Receivable' or 'Payable' account types."
+                    ))
