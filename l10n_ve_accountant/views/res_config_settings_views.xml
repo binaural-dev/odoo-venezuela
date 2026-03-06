@@ -108,6 +108,82 @@
                             </div>
                         </div>
                     </block>
+
+                    <block title="Configuration Taxes: Purchase Tax International Rates" name="l10n_ve_tax_block_tax_rates_purchase_international">
+                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_purchase_international">
+                            <div class="o_setting_right_pane">
+                                <div class="content-group">
+                                    <div class="row">
+                                        <label for="exent_aliquot_purchase_international" class="col-lg-6 o_light_label"/>   
+                                        <field name="exent_aliquot_purchase_international"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <label for="general_aliquot_purchase_international" class="col-lg-6 o_light_label"/>
+                                    <field name="general_aliquot_purchase_international"/>
+                                </div>
+                                <div class="row">
+                                    <label for="reduced_aliquot_purchase_international" class="col-lg-6 o_light_label"/>
+                                    <field name="reduced_aliquot_purchase_international"/>
+                                </div>
+                                <div class="row">
+                                    <label for="extend_aliquot_purchase_international" class="col-lg-6 o_light_label"/>
+                                    <field name="extend_aliquot_purchase_international"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_general_aliquot_purchase_international" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_general_aliquot_purchase_international" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_reduced_aliquot_purchase_international" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_reduced_aliquot_purchase_international" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_extend_aliquot_purchase_international" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_extend_aliquot_purchase_international" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_total_purchases_with_international_iva" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_total_purchases_with_international_iva" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_exempt_total_purchases" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_exempt_total_purchases" />
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_total_purchases_international" />
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_total_purchases_international" />
+                                </div>
+                            </div>
+                        </div>
+                    </block>
                 </xpath>
             </field>
         </record>
