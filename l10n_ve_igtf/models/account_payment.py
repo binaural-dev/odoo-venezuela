@@ -286,8 +286,6 @@ class AccountPaymentAndIgtf(models.Model):
                     if not vals_igtf:
                         payment._prepare_outbound_move_line_igtf_vals(vals,write_off_line_vals)
 
-   
-    
     def _create_inbound_move_line_igtf_vals(self, vals):
         """
         Appends the IGTF (Financial Transaction Tax) move line values to the 
@@ -340,6 +338,8 @@ class AccountPaymentAndIgtf(models.Model):
                     "credit": credit,
                     "balance": -credit,
                 })
+
+        _logger.info(format(vals))
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
