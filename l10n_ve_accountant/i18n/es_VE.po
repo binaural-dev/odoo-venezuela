@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251118\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-17 00:39+0000\n"
-"PO-Revision-Date: 2026-01-17 00:39+0000\n"
+"POT-Creation-Date: 2026-02-03 20:48+0000\n"
+"PO-Revision-Date: 2026-02-03 20:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -155,6 +155,14 @@ msgid "Amount in Currency"
 msgstr "Importe en moneda"
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid ""
+"An International Purchase Journal is already enabled. Only one is allowed."
+msgstr ""
+"Ya se ha habilitado un Diario de Compras Internacional. Solo se permite uno."
+
+#. module: l10n_ve_accountant
 #: model:ir.actions.report,name:l10n_ve_accountant.action_account_report
 msgid "Asiento Contable"
 msgstr ""
@@ -270,6 +278,11 @@ msgstr "Configuraciones Impuestos:"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Configuration Taxes: Non-Deductible"
 msgstr "Configuración Impuestos: No Deducibles"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
+msgid "Configuration Taxes: Purchase Tax International Rates"
+msgstr "Configuración Impuestos: Tasas de Compras Internacionales"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
@@ -394,6 +407,7 @@ msgstr "Descuento"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_journal__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__display_name
@@ -464,6 +478,12 @@ msgid "Exent Aliquot Purchase"
 msgstr "Exento Compras"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__exent_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__exent_aliquot_purchase_international
+msgid "Exent Aliquot Purchase International"
+msgstr "Alícuota exenta compras internacionales"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__exent_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__exent_aliquot_sale
 msgid "Exent Aliquot Sale"
@@ -474,6 +494,12 @@ msgstr "Exento ventas"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__extend_aliquot_purchase
 msgid "Extend Aliquot Purchase"
 msgstr "Alícuota extendida compras"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__extend_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__extend_aliquot_purchase_international
+msgid "Extend Aliquot Purchase International"
+msgstr "Alícuota extendida compras internacionales"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__extend_aliquot_sale
@@ -702,6 +728,12 @@ msgid "General Aliquot Purchase"
 msgstr "Alícuota general compras"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__general_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__general_aliquot_purchase_international
+msgid "General Aliquot Purchase International"
+msgstr "Alícuota general compras internacionales"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__general_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__general_aliquot_sale
 msgid "General Aliquot Sale"
@@ -731,6 +763,7 @@ msgstr "Ocultar alícuota reducida"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_journal__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__id
@@ -772,6 +805,11 @@ msgid "Instant payment"
 msgstr "Contado"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_journal__is_purchase_international
+msgid "International purchase"
+msgstr "Compra internacional"
+
+#. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 msgid "Invoices"
@@ -799,6 +837,7 @@ msgid "Is Reset To Draft For Price Change"
 msgstr ""
 
 #. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_journal
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__journal_id
 msgid "Journal"
 msgstr "Diario"
@@ -931,10 +970,22 @@ msgid "Not Foreign Recalculate"
 msgstr "No es extranjero Recalcular"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_exempt_total_purchases
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_exempt_total_purchases
+msgid "Not Show Exempt Total Purchases"
+msgstr "No mostrar total compras exento"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_extend_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_extend_aliquot_purchase
 msgid "Not Show Extend Aliquot Purchase"
 msgstr "No mostrar alícuota extendida (Compras)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_extend_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_extend_aliquot_purchase_international
+msgid "Not Show Extend Aliquot Purchase International"
+msgstr "No mostrar alícuota extendida compras internacionales"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_extend_aliquot_sale
@@ -943,16 +994,41 @@ msgid "Not Show Extend Aliquot Sale"
 msgstr "No mostrar alícuota extendida (Ventas)"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_general_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_general_aliquot_purchase_international
+msgid "Not Show General Aliquot Purchase International"
+msgstr "No mostrar alícuota general compras internacionales"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_reduced_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_reduced_aliquot_purchase
 msgid "Not Show Reduced Aliquot Purchase"
 msgstr "No mostrar alícuota reducida (Compras)"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_reduced_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_reduced_aliquot_purchase_international
+msgid "Not Show Reduced Aliquot Purchase International"
+msgstr "No mostrar alícuota reducida compras internacionales"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_reduced_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_reduced_aliquot_sale
 msgid "Not Show Reduced Aliquot Sale"
 msgstr "No mostrar alícuota reducida (Ventas)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_total_purchases_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_total_purchases_international
+msgid "Not Show Total Purchases International"
+msgstr "No mostrar total compras internacionales"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__not_show_total_purchases_with_international_iva
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_total_purchases_with_international_iva
+msgid "Not Show Total Purchases With International Iva"
+msgstr "No mostrar total compras con IVA internacional"
+
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
@@ -1058,17 +1134,6 @@ msgid "Purchase Tax Rates"
 msgstr "Tasas de Impuestos de Compras"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
-msgid "RIF"
-msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
-msgid "RIF/CI/PAS."
-msgstr "CI/RIF"
-
-#. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
 msgid ""
 "Rate that will be used as factor to multiply of the foreign currency for the"
@@ -1106,6 +1171,12 @@ msgstr "Alícuota Reducida"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__reduced_aliquot_purchase
 msgid "Reduced Aliquot Purchase"
 msgstr "Alícuota reducida compras"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__reduced_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__reduced_aliquot_purchase_international
+msgid "Reduced Aliquot Purchase International"
+msgstr "Alícuota reducida compras internacionales"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__reduced_aliquot_sale
@@ -1250,6 +1321,13 @@ msgid "Tax"
 msgstr "Impuesto"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
+msgid "Tax ID"
+msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
+
+#. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_tax_unit
 #: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_accountant_tax_unit
 msgid "Tax Unit"
@@ -1323,7 +1401,8 @@ msgid ""
 "The conversion rate between the move currency and the company currency at "
 "the move date."
 msgstr ""
-"La tasa de conversión entre la moneda del asiento y la moneda de la compañía en la fecha del asiento."
+"La tasa de conversión entre la moneda del asiento y la moneda de la compañía"
+" en la fecha del asiento."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1388,10 +1467,10 @@ msgid ""
 "the payment. NOTE: This field is not the same as the foreign_inverse_rate "
 "field."
 msgstr ""
-"Este campo se muestra cuando el pago es diferente de la moneda de la compañía "
-"y de la moneda alterna de la compañía. Muestra la tasa inversa de la moneda "
-"del pago. NOTA: Este campo no es el mismo que el campo foreign_inverse_rate. Y no se usa para ningún cálculo."
-
+"Este campo se muestra cuando el pago es diferente de la moneda de la "
+"compañía y de la moneda alterna de la compañía. Muestra la tasa inversa de "
+"la moneda del pago. NOTA: Este campo no es el mismo que el campo "
+"foreign_inverse_rate. Y no se usa para ningún cálculo."
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__other_rate
@@ -1400,9 +1479,10 @@ msgid ""
 "and the company foreign currency. Show the rate of the currency of the "
 "payment. NOTE: This field is not the same as the foreign_rate field."
 msgstr ""
-"Este campo se muestra cuando el pago es diferente de la moneda de la compañía "
-"y de la moneda alterna de la compañía. Muestra la tasa de la moneda del "
-"pago. NOTA: Este campo no es el mismo que el campo foreign_rate. Y no se usa para ningún cálculo."
+"Este campo se muestra cuando el pago es diferente de la moneda de la "
+"compañía y de la moneda alterna de la compañía. Muestra la tasa de la moneda"
+" del pago. NOTA: Este campo no es el mismo que el campo foreign_rate. Y no "
+"se usa para ningún cálculo."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1524,9 +1604,21 @@ msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid "You cannot set a currency other than 'VEF' as the system base currency."
+msgstr "No puedes colocar una moneda distinta a 'VEF' como la base del sistema."
+
+#. module: l10n_ve_accountant
+#. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_journal.py:0
 msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "You must set the invoice date before adding products."
+msgstr "Debes establecer la fecha de la factura antes de agregar productos."
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
