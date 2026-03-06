@@ -243,49 +243,30 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
         igtf_top =  invoice.igtf_top_aply
 
-        
         alter_bi_igtf = invoice.alter_bi_igtf
 
         igtf= igtf_unrounded
 
         invoice_residual = due_amount
-
+        
+        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
+            
+            return 0.0
+        
         residual_igtf = igtf_top - alter_bi_igtf
 
-        residual_igtf = currency._convert(
-            residual_igtf, 
-            self.company_id.currency_id, 
-            self.company_id, 
-            self.payment_date,
-            round= False
-        )
-        
-        """ _logger.info('IGTF')
-        _logger.info(due_amount)
-        _logger.info(payment_amount)
-        _logger.info(principal_amount)
-        _logger.info(igtf_unrounded)
-        _logger.info(igtf_top)
-        _logger.info(alter_bi_igtf) """
-        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
-            _logger.info('aqui')
-            return 0.0
-
         if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
-            _logger.info('alla')
             return 0.0
         
-        if igtf > residual_igtf and not float_is_zero(residual_igtf, precision_rounding=precision):
+        if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
             
             igtf = residual_igtf
 
         if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
-            _logger.info('ulala')
-            _logger.info(igtf_top)
             return 0.0 
                 
         if not base:
-            return self.convert_to_external_currency(payment_currency, igtf, self.payment_date)
+            return self.convert_to_external_currency(payment_currency, igtf, fields.Date.today())
         else:
             return igtf
     
@@ -564,9 +545,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             account.move: Move object
         """
         advance_account_id = (
-            self.env.company.advance_customer_account_id.id
+            payment.partner_id.default_advance_customer_account_id.id
             if payment.partner_type == "customer"
-            else self.env.company.advance_supplier_account_id.id
+            else payment.partner_id.default_advance_supplier_account_id.id
         )
 
         partner_account_id = (
@@ -626,10 +607,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             move (account.move): Move object
         """
         asset_receivable_lines = move.line_ids.filtered(
-            lambda x: x.account_id.account_type == "asset_receivable" and not x.reconciled
+            lambda x: x.account_id.account_type == "asset_receivable" and not x.reconciled and x.account_id.is_advance_account == True 
         )
         payment_line = payment.move_id.line_ids.filtered(
-            lambda x: x.account_id.account_type == "asset_receivable" and not x.reconciled
+            lambda x: x.account_id.account_type == "asset_receivable" and not x.reconciled and x.account_id.is_advance_account == True 
         )
         if asset_receivable_lines and payment_line:
             payment_line_to_reconcile = self.env["account.move.line"].browse([payment_line.id])
@@ -646,10 +627,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             move (account.move): Move object
         """
         liability_payable_lines = move.line_ids.filtered(
-            lambda x: x.account_id.account_type == "liability_payable" and not x.reconciled
+            lambda x: x.account_id.account_type == "liability_payable" and not x.reconciled and x.account_id.is_advance_account == True 
         )
         payment_line = payment.move_id.line_ids.filtered(
-            lambda x: x.account_id.account_type == "liability_payable" and not x.reconciled
+            lambda x: x.account_id.account_type == "liability_payable" and not x.reconciled and x.account_id.is_advance_account == True 
         )
         if liability_payable_lines and payment_line:
             payment_line_to_reconcile = self.env["account.move.line"].browse([payment_line.id])
