@@ -335,11 +335,11 @@ class AccountRetentionLine(models.Model):
             if not record.retention_id or record.retention_id.type == "in_invoice":
                 # We don't want this fields to be computed when the retention is
                 # created from a customer invoice since they are filled by the user.
-                record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
-                record.foreign_invoice_amount = record.move_id.tax_totals["foreign_amount_untaxed"]
+                record.invoice_amount = record.move_id.tax_totals["base_amount"]
+                record.foreign_invoice_amount = record.move_id.tax_totals["base_amount_foreign_currency"]
 
-            record.invoice_total = record.move_id.tax_totals["amount_total"]
-            record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
+            record.invoice_total = record.move_id.tax_totals["total_amount"]
+            record.foreign_invoice_total = record.move_id.tax_totals["total_amount_foreign_currency"]
             record.foreign_currency_rate = record.move_id.foreign_rate
 
             record.aliquot = record.economic_activity_id.aliquot
