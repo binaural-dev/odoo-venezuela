@@ -430,6 +430,7 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
+
         return moves
 
     def write(self, vals):
@@ -459,6 +460,7 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
+
         return res
 
     @api.constrains("invoice_line_ids")
