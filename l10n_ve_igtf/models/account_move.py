@@ -630,8 +630,8 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self:
-            if abs(rec.amount_total_signed) > 0 or rec.payment_state in ['paid','in_payment']: 
-                rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
+            if abs(rec.amount_total) > 0 or rec.payment_state in ['paid','in_payment']: 
+                rec.igtf_top_aply = abs(rec.amount_total) * (self.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
                 account = [rec.company_id.customer_account_igtf_id.id,rec.company_id.supplier_account_igtf_id.id ]
@@ -674,8 +674,8 @@ class AccountMove(models.Model):
                         
                         partial = self.env['account.partial.reconcile'].search([
                             '|',
-                            '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', pago_line.id),
-                            '&', ('debit_move_id', '=', pago_line.id), ('credit_move_id', '=', factura_line.id)
+                            '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', pago_line.ids),
+                            '&', ('debit_move_id', '=', pago_line.ids), ('credit_move_id', '=', factura_line.id)
                         ], limit=1)
 
                         if partial:
@@ -684,7 +684,7 @@ class AccountMove(models.Model):
                         
                         if igtf_line:
                         
-                            igtf_amount = abs(igtf_line[0].balance)
+                            igtf_amount = abs(igtf_line[0].amount_currency)
                             
                             bank_amount = partial_amount
 
