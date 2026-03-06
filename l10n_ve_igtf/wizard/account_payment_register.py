@@ -264,30 +264,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         residual_igtf = igtf_top - alter_bi_igtf
 
-        residual_igtf = currency._convert(
-            residual_igtf, 
-            self.company_id.currency_id, 
-            self.company_id, 
-            self.payment_date,
-            round= False
-        )
-        
-        """ _logger.info('IGTF')
-        _logger.info(due_amount)
-        _logger.info(payment_amount)
-        _logger.info(principal_amount)
-        _logger.info(igtf_unrounded)
-        _logger.info(igtf_top)
-        _logger.info(alter_bi_igtf) """
-        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
-            _logger.info('aqui')
-            return 0.0
-
         if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
-            _logger.info('alla')
             return 0.0
         
-        if igtf > residual_igtf and not float_is_zero(residual_igtf, precision_rounding=precision):
+        if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
             
             igtf = residual_igtf
 
@@ -295,7 +275,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             return 0.0 
                 
         if not base:
-            return self.convert_to_external_currency(payment_currency, igtf, self.payment_date)
+            return self.convert_to_external_currency(payment_currency, igtf, fields.Date.today())
         else:
             return igtf
     
