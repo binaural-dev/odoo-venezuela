@@ -4,6 +4,22 @@ from odoo import fields, models, _ , api
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
+    default_advance_customer_account_id= fields.Many2one(
+        "account.account", 
+        domain=[("account_type", "=", "liability_current"), ("is_advance_account", "=", True)], 
+        copy=False, 
+        required=True,
+        default=lambda self: self.env.company.advance_customer_account_id,
+    )
+
+    default_advance_supplier_account_id= fields.Many2one(
+        "account.account", 
+        domain=[("account_type", "=", "asset_current"),("is_advance_account", "=", True)], 
+        copy=False, 
+        required=True, 
+        default=lambda self: self.env.company.advance_supplier_account_id,
+    )
+
     def _check_igtf_apply_improved(self, invoice_type):
         for rec in self:
             company = self.company_id or self.env.company
