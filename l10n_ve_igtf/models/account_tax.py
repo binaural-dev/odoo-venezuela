@@ -86,7 +86,8 @@ class AccountTax(models.Model):
             invoice.bi_igtf, 
             invoice.currency_id,
             invoice.company_id, 
-            invoice.invoice_date
+            invoice.invoice_date,
+            round = False
             )
 
         igtf_base_amount = base_igtf 

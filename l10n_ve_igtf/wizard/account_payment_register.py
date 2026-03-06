@@ -221,6 +221,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment.igtf_to_show = 0.0
                 payment.igtf_amount = 0.0
 
+            _logger.info('IGTF MOSTRAR')
+            _logger.info(payment.igtf_amount)
             payment.last_computed_amount = payment.amount
 
     def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, base = False):
@@ -248,23 +250,38 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
         invoice_residual = due_amount
 
-        
-        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
-            
-            return 0.0
-        
-
         residual_igtf = igtf_top - alter_bi_igtf
 
+        residual_igtf = currency._convert(
+            residual_igtf, 
+            self.company_id.currency_id, 
+            self.company_id, 
+            self.payment_date,
+            round= False
+        )
+        
+        """ _logger.info('IGTF')
+        _logger.info(due_amount)
+        _logger.info(payment_amount)
+        _logger.info(principal_amount)
+        _logger.info(igtf_unrounded)
+        _logger.info(igtf_top)
+        _logger.info(alter_bi_igtf) """
+        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
+            _logger.info('aqui')
+            return 0.0
+
         if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
+            _logger.info('alla')
             return 0.0
         
-        if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
+        if igtf > residual_igtf and not float_is_zero(residual_igtf, precision_rounding=precision):
             
             igtf = residual_igtf
 
         if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
-            
+            _logger.info('ulala')
+            _logger.info(igtf_top)
             return 0.0 
                 
         if not base:
