@@ -488,9 +488,9 @@ class AccountMove(models.Model):
 
 
         if self.move_type in ["out_invoice", "in_refund"]:
-            advance_account_id = payment_move.origin_payment_id.destination_account_id 
+            advance_account_id = payment_move.origin_payment_id.destination_account_id.id
         elif self.move_type in ["in_invoice", "out_refund"]:
-            advance_account_id = payment_move.origin_payment_id.destination_account_id 
+            advance_account_id = payment_move.origin_payment_id.destination_account_id.id
         else:
             return False 
 
