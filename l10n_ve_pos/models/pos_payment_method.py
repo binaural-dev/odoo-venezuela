@@ -11,3 +11,9 @@ class PosPaymentMethod(models.Model):
     cross_journal = fields.Many2one("account.journal", domain=[("type", "in", ("bank", "cash"))])
 
     apply_one_cross_move = fields.Boolean(default=False)
+    
+    @api.model
+    def _load_pos_data_fields(self, config_id):
+        res = super()._load_pos_data_fields(config_id)
+        res += ['is_foreign_currency', 'cross_account_journal', 'cross_journal', 'apply_one_cross_move']
+        return res
