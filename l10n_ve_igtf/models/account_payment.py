@@ -252,8 +252,8 @@ class AccountPaymentAndIgtf(models.Model):
             if self.partner_type == "customer"
             else self.env.company.supplier_account_igtf_id.id
         )
-
-        if self._context.get("from_pos", False):
+        if self.env.context.get("from_pos", False):
+        #if self._context.get("from_pos", False):
             return
 
         for payment in self:
@@ -270,8 +270,6 @@ class AccountPaymentAndIgtf(models.Model):
                     if not vals_igtf:
                         payment._prepare_outbound_move_line_igtf_vals(vals,write_off_line_vals)
 
-   
-    
     def _create_inbound_move_line_igtf_vals(self, vals):
         for rec in self:
             currency = rec.currency_id
@@ -294,14 +292,14 @@ class AccountPaymentAndIgtf(models.Model):
                 igtf_vef = company_currency.round(igtf_vef)
 
                 # 2. Si es pago exacto en VEF, forzamos que el balance cuadre restando (Banco - Factura)
-                if company_currency.id == self.env.ref("base.VEF").id:
+                if currency.id == self.env.ref("base.VEF").id:
                     # Obtenemos los valores que Odoo ya calculó para las primeras líneas
                     # Si hiciste pop(), asegúrate de obtener los valores de amount_currency convertidos
                     total_banco_vef = currency._convert(vals[0]['amount_currency'], company_currency, self.env.company, rec.date)
                     total_factura_vef = currency._convert(abs(vals[1]['amount_currency']), company_currency, self.env.company, rec.date)
                     
                     # El IGTF es la diferencia real
-                    igtf_vef = company_currency.round(total_banco_vef) - company_currency.round(total_factura_vef)
+                    igtf_vef = company_currency.round(total_banco_vef  - total_factura_vef)
 
                 vals.append({
                     "name": "IGTF",
@@ -312,6 +310,8 @@ class AccountPaymentAndIgtf(models.Model):
                     "account_id": account_id,
                     "partner_id": rec.partner_id.id,
                 })
+
+        _logger.info(format(vals))
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
