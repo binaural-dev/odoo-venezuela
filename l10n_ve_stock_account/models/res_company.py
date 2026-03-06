@@ -33,3 +33,9 @@ class ResCompany(models.Model):
     )
 
     invoice_cron_time = fields.Float(required=True, default=18.0)
+
+    indexed_dispatch_guide = fields.Boolean(
+        string="Indexed Dispatch Guide",
+        default=False,
+        help="If enabled, dispatch guide amounts will use the date of the stock picking for currency conversion.",
+    )
