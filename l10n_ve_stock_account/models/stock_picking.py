@@ -115,22 +115,22 @@ class StockPicking(models.Model):
     )
 
     @api.depends(
-        "move_ids_without_package",
-        "move_ids_without_package.qty_return",
-        "move_ids_without_package.quantity",
+        "move_ids",
+        "move_ids.qty_return",
+        "move_ids.quantity",
     )
     def _compute_type_of_return(self):
         for picking in self:
             if (
-                not picking.move_ids_without_package
+                not picking.move_ids
                 or not any(
-                    l.returned_move_ids for l in picking.move_ids_without_package
+                    l.returned_move_ids for l in picking.move_ids
                 )
-                or all(l.qty_return == 0 for l in picking.move_ids_without_package)
+                or all(l.qty_return == 0 for l in picking.move_ids)
             ):
                 picking.type_of_return = "n/a"
             elif all(
-                l.qty_return == l.quantity for l in picking.move_ids_without_package
+                l.qty_return == l.quantity for l in picking.move_ids
             ):
                 picking.type_of_return = "total"
             else:
