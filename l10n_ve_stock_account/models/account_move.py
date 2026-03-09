@@ -17,6 +17,8 @@ class AccountMove(models.Model):
     # 0: not printed yet, 1: first print (original), 2 or more: copies
     free_form_copy_number = fields.Integer(default=0, copy=False)
 
+    is_donation = fields.Boolean(string="Is Donation", tracking=True)
+
     def print_invoice_free_form(self):
 
         report = self.env.ref(
@@ -32,3 +34,18 @@ class AccountMove(models.Model):
         for record in self:
             list_guide_number = [picking.guide_number for picking in record.picking_ids]
             record.guide_number = "/".join(list_guide_number)
+
+    def action_post(self):
+        res = super().action_post()
+        if self.is_donation and self.move_type == "out_invoice":
+            #FIXME:Buscar hacer esto de otra manera,se esta forzando un _post para este caso
+            self._post(soft=True)
+            wizard = self.env["account.move.reversal"].with_context(
+                active_ids=self.ids,
+                active_model="account.move"
+            ).create({"date": fields.Date.today(), "journal_id": self.journal_id.id})
+            wizard.reverse_moves()
+            credit_note = wizard.new_move_ids
+            credit_note.action_post()
+            return res
+        return res

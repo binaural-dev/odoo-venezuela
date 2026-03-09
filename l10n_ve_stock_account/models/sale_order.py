@@ -30,6 +30,11 @@ class SaleOrder(models.Model):
         help="Indicates if this sale order is a consignation sale.",
     )
 
+    @api.onchange("is_donation")
+    def _onchange_is_donation(self):
+        if self.is_donation:
+            self.partner_id = self.company_id.partner_id
+
     ### COMPUTES ###
     @api.depends("warehouse_id", "document")
     def _compute_is_consignation(self):
@@ -51,10 +56,18 @@ class SaleOrder(models.Model):
     @api.onchange("partner_id")
     def _onchange_partner_id(self):
         """Update the document field when the partner is changed."""
+        company_id = self.env.company or self.company_id
         if self.partner_id:
             self.document = self.partner_id.default_document
         else:
             self.document = "invoice"
+        if self.is_donation:
+            if self.partner_id != company_id.partner_id:
+                raise ValidationError(
+                    _(
+                        "The Contact/Customer cannot be changed when it is a donation."
+                    )
+                )
 
     @api.onchange("is_consignation")
     def _onchange_is_consignation(self):

@@ -80,8 +80,33 @@ class StockPicking(models.Model):
         compute="_compute_allowed_reason_ids",
     )
 
-    is_donation = fields.Boolean(related="sale_id.is_donation")
+    
+    is_donation = fields.Boolean(
+        string="Is Donation",
+        compute="_compute_is_donation",
+        store=True,
+        readonly=False,
+        tracking=True
+    )
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
+    @api.depends("transfer_reason_id", "sale_id.is_donation")
+    def _compute_is_donation(self):
+        for picking in self:
+            self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+            picking.is_donation = bool(
+                (picking.sale_id and picking.sale_id.is_donation) or
+                (picking.transfer_reason_id and self_consumption_reason and picking.transfer_reason_id == self_consumption_reason)
+            )
+
+    see_donation_field = fields.Boolean(string="See Donation Field", compute="_compute_see_donation_field")
+    
+    @api.depends("transfer_reason_id")
+    def _compute_see_donation_field(self):
+        donation_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_donation", raise_if_not_found=False)
+        self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        target_reasons = donation_reason | self_consumption_reason
+        for picking in self:
+            picking.see_donation_field = picking.transfer_reason_id in target_reasons
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
@@ -275,6 +300,7 @@ class StockPicking(models.Model):
                         "invoice_line_ids": invoice_line_list,
                         "transfer_ids": self,
                         "from_picking": True,
+                        "is_donation":picking_id.is_donation,
                 }
                 if picking_id.sale_id and picking_id.pricelist_id:
                     invoice_vals["pricelist_id"] = picking_id.pricelist_id.id
@@ -550,6 +576,10 @@ class StockPicking(models.Model):
 
     def print_dispatch_guide(self):
         return self.env.ref("l10n_ve_stock_account.action_dispatch_guide").read()[0]
+
+    def print_donation_certificate(self):
+        self.ensure_one()
+        return self.env.ref("l10n_ve_stock_account.action_donation_certificate").report_action(self)
 
     def _validate_one_invoice_posted(self):
         for picking in self:
@@ -840,10 +870,13 @@ class StockPicking(models.Model):
     )
     def _compute_button_visibility(self):
         for record in self:
+            _logger.warning("compute visibility")
             is_invoice_empty = record.invoice_count == 0
             is_done = record.state == "done"
             is_to_invoice = record.state_guide_dispatch == "to_invoice"
-
+            _logger.warning("is_invoice_empty %s", is_invoice_empty)
+            _logger.warning("is_done %s", is_done)
+            _logger.warning("is_to_invoice %s", is_to_invoice)
             record.show_create_invoice = False
             record.show_create_bill = False
             record.show_create_customer_credit = False
@@ -851,6 +884,7 @@ class StockPicking(models.Model):
             record.show_create_invoice_internal = False
 
             if is_invoice_empty and is_done and is_to_invoice:
+                _logger.warning("first if")
                 if record.operation_code == "incoming":
                     record.show_create_bill = not record.is_return
                     record.show_create_vendor_credit = record.is_return
@@ -1002,11 +1036,12 @@ class StockPicking(models.Model):
                 donation_reason = reasons.get("donation")
                 sale_reason = reasons.get("sale")
                 export_reason = reasons.get("export")
+                self_consumption_reason = reasons.get("self_consumption")
 
                 # Donations
-                if picking.is_donation and donation_reason:
-                    allowed_reason_ids.append(donation_reason.id)
-                    picking.transfer_reason_id = donation_reason.id
+                if picking.is_donation:
+                    allowed_reason_ids.append(self_consumption_reason.id)
+                    picking.transfer_reason_id = self_consumption_reason.id
 
                 # Without Donations
                 else:
