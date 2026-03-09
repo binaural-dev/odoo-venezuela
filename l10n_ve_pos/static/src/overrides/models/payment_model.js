@@ -34,7 +34,7 @@ patch(Payment.prototype, {
 		let res = super.set_amount(...arguments);
 		if (!only) {
 			if (is_due) {
-				this.set_foreign_amount(this.order.get_foreign_total_with_tax() + this.order.get_foreign_rounding_applied(), true);
+				this.set_foreign_amount(this.order.get_foreign_due() + this.order.get_foreign_rounding_applied(), true);
 				return res;
 			}
 			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
