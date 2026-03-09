@@ -28,7 +28,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         move_model = self.env["account.move"]
         domain = self._get_domain()
-        moves = move_model.search(domain, order="invoice_date asc")
+        moves = move_model.search(domain, order="invoice_date_display asc")
         return moves
     
     def _get_sale_book_field_groups(self):
@@ -187,7 +187,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                                         if range_last != 0
                                         else move.mf_invoice_number
                                     ),
-                                    "date": move.invoice_date,
+                                    "date": move.invoice_date_display,
                                     "mf_reportz": move.mf_reportz,
                                     "mf_serial": move.mf_serial,
                                 }
@@ -206,8 +206,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         if (
                             (
                                 (
-                                    self._format_date(move.invoice_date)
-                                    != self._format_date(next_move.invoice_date)
+                                    self._format_date(move.invoice_date_display)
+                                    != self._format_date(next_move.invoice_date_display)
                                 )
                                 or next_move.partner_id.prefix_vat == "J"
                                 or next_move.partner_id.taxpayer_type != "ordinary"
@@ -219,7 +219,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                                 "move_type": move.move_type,
                                 "range_start": range_start,
                                 "range_end": move.mf_invoice_number,
-                                "date": move.invoice_date,
+                                "date": move.invoice_date_display,
                                 "mf_reportz": move.mf_reportz,
                                 "mf_serial": move.mf_serial,
                             }

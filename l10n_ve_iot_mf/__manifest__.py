@@ -8,7 +8,7 @@
     """,
     "license": "LGPL-3",
     "category": "Accounting",
-    "version": "1.0",
+    "version": "1.1",
     "author": "binaural-dev",
     "website": "https://binauraldev.com",
     "depends": [
