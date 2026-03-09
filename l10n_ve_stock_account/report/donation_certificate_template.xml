@@ -43,8 +43,10 @@
                                         <br/><br/>
                                         <strong>
                                             <t t-set="items_list" t-value="[]"/>
-                                            <t t-foreach="o.move_ids" t-as="line">
-                                                <t t-set="items_list" t-value="items_list + [str(line.quantity) + ' ' + (line.product_uom.name or '') + ' de ' + (line.product_id.name or '')]"/>
+                                            <t t-foreach="o.line_ids" t-as="line">
+                                                <t t-if="line.name">
+                                                    <t t-set="items_list" t-value="items_list + [str(line.name)]"/>
+                                                </t>
                                             </t>
                                             <span t-out="', '.join(items_list)"/>
                                         </strong>,
@@ -58,7 +60,7 @@
                                         aceptamos para nuestra representada la donación de los bienes antes descritos, en los términos expuestos.
                                     </p>
                                     
-                                    <t t-set="doc_date" t-value="o.date_done if o.date_done else datetime.datetime.now()"/>
+                                    <t t-set="doc_date" t-value="o.invoice_date if o.invoice_date else (o.date if o.date else datetime.datetime.now())"/>
                                     <t t-set="meses" t-value="['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']"/>
                                     
                                     <p style="text-align: justify; line-height: 2; font-size: 14px; margin-top: 20px;">

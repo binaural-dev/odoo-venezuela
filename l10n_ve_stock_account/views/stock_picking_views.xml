@@ -42,12 +42,7 @@
                     type="object" class="o_btn_validate"
                     invisible="not dispatch_guide_controls"
                     data-hotkey="m"/>
-                <button
-                    name="print_donation_certificate"
-                    string="Generar Certificado de Donación"
-                    type="object"
-                    class="btn-primary"
-                    invisible="not is_donation or state != 'done'"/>
+
             </xpath>
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="is_consignment" invisible="1" />

@@ -138,3 +138,8 @@ class SaleOrder(models.Model):
                             )
                             % line.product_id.name
                         )
+
+    def _prepare_invoice(self):
+        invoice_vals = super()._prepare_invoice()
+        invoice_vals["is_donation"] = self.is_donation
+        return invoice_vals
