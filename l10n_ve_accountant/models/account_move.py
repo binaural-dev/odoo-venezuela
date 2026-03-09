@@ -206,8 +206,8 @@ class AccountMove(models.Model):
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
         for move in self:
-            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
-            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
+            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
+            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
             move.foreign_balance = move.foreign_currency_id.round((move.foreign_debit - move.foreign_credit))
 
     def _get_journal_income_account(self, journal):
