@@ -266,6 +266,7 @@ class TestAccountant(TransactionCase):
                 "move_type": "out_invoice",
                 "partner_id": self.partner.id,
                 "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
                 "journal_id": journal.id,
                 "invoice_line_ids": [
                     (
@@ -501,6 +502,7 @@ class TestAccountant(TransactionCase):
         invoice_form.foreign_currency_id = self.currency_vef
         invoice_form.partner_id = self.partner_a
         invoice_form.invoice_date = self.date
+        invoice_form.invoice_date_display = self.date
         invoice_form.foreign_rate = 1.23
 
         self.assertEqual(
@@ -522,6 +524,7 @@ class TestAccountant(TransactionCase):
         invoice_form.foreign_currency_id = self.currency_vef
         invoice_form.partner_id = self.partner_a
         invoice_form.invoice_date = self.date
+        invoice_form.invoice_date_display = self.date
         self.assertNotEqual(
             invoice_form.foreign_rate,
             1.23,

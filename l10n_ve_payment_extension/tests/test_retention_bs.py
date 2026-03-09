@@ -136,6 +136,7 @@ class TestAccountRetentionSequence(TransactionCase):
                 "partner_id": self.partner_a.id,
                 "journal_id": self.journal.id,
                 "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
                 "invoice_line_ids": [
                     (
                         0,
