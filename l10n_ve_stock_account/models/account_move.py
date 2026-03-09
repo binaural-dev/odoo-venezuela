@@ -37,9 +37,10 @@ class AccountMove(models.Model):
 
     def action_post(self):
         res = super().action_post()
-        if self.is_donation and self.move_type == "out_invoice":
-            #FIXME:Buscar hacer esto de otra manera,se esta forzando un _post para este caso
-            self._post(soft=True)
+        donation_moves = self.filtered(lambda m: m.is_donation and m.move_type == "out_invoice")
+        for move in donation_moves:
+            # ! FIXME: Buscar la manera de no ejecutar _post acá
+            move._post(soft=True)
             wizard = self.env["account.move.reversal"].with_context(
                 active_ids=self.ids,
                 active_model="account.move"
