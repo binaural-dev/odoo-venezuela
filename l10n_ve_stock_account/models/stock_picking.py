@@ -80,8 +80,26 @@ class StockPicking(models.Model):
         compute="_compute_allowed_reason_ids",
     )
 
-    is_donation = fields.Boolean(related="sale_id.is_donation")
+    is_donation = fields.Boolean(string="Is Donation",readonly=False,tracking=True)
+
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
+
+
+    @api.onchange("transfer_reason_id")
+    def _onchange_is_donation(self):
+        donation_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_donation", raise_if_not_found=False)
+        for picking in self:
+            picking.is_donation = picking.transfer_reason_id == donation_reason or picking.transfer_reason_id
+    
+    see_donation_field = fields.Boolean(string="See Donation Field", compute="_compute_see_donation_field")
+    
+    @api.depends("transfer_reason_id")
+    def _compute_see_donation_field(self):
+        donation_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_donation", raise_if_not_found=False)
+        self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        target_reasons = donation_reason | self_consumption_reason
+        for picking in self:
+            picking.see_donation_field = picking.transfer_reason_id in target_reasons
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
@@ -325,6 +343,7 @@ class StockPicking(models.Model):
                         "invoice_line_ids": invoice_line_list,
                         "transfer_ids": self,
                         "from_picking": True,
+                        "is_donation":picking_id.is_donation,
                 }
                 if picking_id.sale_id and picking_id.pricelist_id:
                     invoice_vals["pricelist_id"] = picking_id.pricelist_id.id
