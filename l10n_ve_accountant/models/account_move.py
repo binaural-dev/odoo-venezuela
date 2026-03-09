@@ -17,7 +17,18 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _inherit = "account.move"
-    invoice_date_display = fields.Date(string="Invoice Date")
+    
+    invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.today)
+
+    @api.depends('invoice_date_display')
+    def _compute_date(self):
+        super()._compute_date()
+
+    def _get_accounting_date_source(self):
+        self.ensure_one()
+        if self.is_purchase_document(include_receipts=True):
+            return self.invoice_date_display or self.date
+        return super()._get_accounting_date_source()
 
     _sql_constraints = [
         (
