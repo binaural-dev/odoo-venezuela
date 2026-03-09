@@ -106,19 +106,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         
         multiplier = -1 if move.move_type == "in_refund" else 1
 
-        # if move.journal_id.is_purchase_international :
-        #     tax_keys_to_check = [
-            
-        #         "amount_reduced_aliquot_international", "amount_general_aliquot_international", "amount_extend_aliquot_international",
-        #         "tax_base_reduced_aliquot_international", "tax_base_general_aliquot_international", "tax_base_extend_aliquot_international",
-        #         "international_tax_base_exempt_aliquot", "international_amount_taxed"
-        #     ]
-
-        #     total_tax_value = sum(taxes.get(key, 0) for key in tax_keys_to_check)
-        #     if total_tax_value == 0:
-        #         return None
-    
-
         fields_purchase_book_line = {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
