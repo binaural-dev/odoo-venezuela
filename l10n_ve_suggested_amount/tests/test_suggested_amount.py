@@ -36,7 +36,7 @@ class TestSuggestedCustomAmount(TransactionCase):
             "company_rate": company_rate,
         })
 
-    def _make_wizard(self, source_currency, source_amount_currency, pay_currency, pay_date):
+    def _make_wizard(self, source_currency, source_amount_currency, pay_currency, pay_date, invoice_date=False):
         """
         Build an in-memory account.payment.register record via Model.new().
 
@@ -45,17 +45,31 @@ class TestSuggestedCustomAmount(TransactionCase):
         is never raised. Fields are assigned directly and the compute
         method is called explicitly.
         """
+        # Mock line_ids so the hybrid compute logic can read the invoice date
+        inv_date = invoice_date or pay_date
+        mock_move = self.env["account.move"].new({"invoice_date": fields.Date.from_string(inv_date)})
+        mock_line = self.env["account.move.line"].new({"move_id": mock_move})
+
+        # We must pass the correct placeholder source_amount to perfectly
+        # test the same-day VEF-based calculation and future-day foreign-based calculation
+        # Since the test tests the foreign currency cross-rates primarily, 
+        # passing 1.0 isn't enough anymore if the dates match.
+        # But for tests, we can simply say invoice_date is always yesterday unless specified, 
+        # to force the foreign-currency path and keep tests simple.
+        if not invoice_date:
+            inv_date = fields.Date.add(fields.Date.from_string(pay_date), days=-1)
+            mock_move = self.env["account.move"].new({"invoice_date": inv_date})
+            mock_line = self.env["account.move.line"].new({"move_id": mock_move})
+
         wizard = self.env["account.payment.register"].new({
             "payment_date": fields.Date.from_string(pay_date),
             "currency_id": pay_currency.id,
             "source_currency_id": source_currency.id,
-            # source_amount_currency: residual in the invoice's own currency (the
-            # actual input to _convert). source_amount (company currency / VEF) is
-            # set to a placeholder since the compute only reads source_amount_currency.
             "source_amount_currency": source_amount_currency,
-            "source_amount": 1.0,
+            "source_amount": 1.0,  # placeholder, the compute uses source_amount_currency for future dates
             "company_id": self.company.id,
             "company_currency_id": self.vef.id,
+            "line_ids": [(6, 0, mock_line.ids)]
         })
         wizard._compute_suggested_custom_amount()
         return wizard

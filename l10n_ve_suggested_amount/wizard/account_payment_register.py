@@ -10,6 +10,7 @@ class AccountPaymentRegister(models.TransientModel):
         compute="_compute_suggested_custom_amount",
         readonly=True,
         store=False,
+        help="Suggested amount used when paying invoices involving three distinct currencies. Calculates the equivalent payment amount by converting the open balance from the invoice's original currency, through the company's base currency, to the selected payment currency on the chosen payment date.",
     )
 
     @api.depends(
@@ -20,6 +21,7 @@ class AccountPaymentRegister(models.TransientModel):
         "source_amount",
         "source_amount_currency",
         "payment_date",
+        "line_ids",
     )
     def _compute_suggested_custom_amount(self):
         """
@@ -28,8 +30,12 @@ class AccountPaymentRegister(models.TransientModel):
         2. The journal/payment currency (currency_id) differs from the company base currency.
         3. Both currencies are different from each other.
 
-        When all three conditions hold, convert source_amount from source_currency_id
-        to currency_id using exchange rates effective on payment_date.
+        If the payment date is the same as the invoice date, it calculates the amount
+        based on the company currency residual (source_amount) to perfectly match 
+        native Odoo rounding.
+        If the payment date is different, it calculates based on the original foreign 
+        currency residual (source_amount_currency) to accurately reflect exchange rate 
+        revaluation over time.
         Returns 0.0 otherwise.
         """
         for record in self:
@@ -47,11 +53,29 @@ class AccountPaymentRegister(models.TransientModel):
             )
 
             if three_currencies_distinct:
-                record.suggested_custom_amount = source_currency._convert(
-                    record.source_amount_currency,
-                    payment_currency,
-                    record.company_id,
-                    record.payment_date or fields.Date.today(),
-                )
+                pay_date = record.payment_date or fields.Date.today()
+                invoice_date = False
+
+                if record.line_ids:
+                    first_line = record.line_ids[0]
+                    if hasattr(first_line, 'move_id') and first_line.move_id:
+                        invoice_date = first_line.move_id.invoice_date or first_line.date
+                    else:
+                        invoice_date = getattr(first_line, 'date', False)
+
+                if invoice_date and invoice_date == pay_date:
+                    record.suggested_custom_amount = company_currency._convert(
+                        record.source_amount,
+                        payment_currency,
+                        record.company_id,
+                        pay_date,
+                    )
+                else:
+                    record.suggested_custom_amount = source_currency._convert(
+                        record.source_amount_currency,
+                        payment_currency,
+                        record.company_id,
+                        pay_date,
+                    )
             else:
                 record.suggested_custom_amount = 0.0

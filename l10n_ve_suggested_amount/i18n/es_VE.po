@@ -1,0 +1,48 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_suggested_amount
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260105\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-09 14:27+0000\n"
+"PO-Revision-Date: 2026-03-09 14:27+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_suggested_amount
+#: model:ir.model.fields,field_description:l10n_ve_suggested_amount.field_account_payment_register__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
+
+#. module: l10n_ve_suggested_amount
+#: model:ir.model.fields,field_description:l10n_ve_suggested_amount.field_account_payment_register__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_suggested_amount
+#: model:ir.model,name:l10n_ve_suggested_amount.model_account_payment_register
+msgid "Pay"
+msgstr "Pagar"
+
+#. module: l10n_ve_suggested_amount
+#: model:ir.model.fields,field_description:l10n_ve_suggested_amount.field_account_payment_register__suggested_custom_amount
+msgid "Suggested amount"
+msgstr "Monto sugerido"
+
+#. module: l10n_ve_suggested_amount
+#: model:ir.model.fields,help:l10n_ve_suggested_amount.field_account_payment_register__suggested_custom_amount
+msgid ""
+"Suggested amount used when paying invoices involving three distinct "
+"currencies. Calculates the equivalent payment amount by converting the open "
+"balance from the invoice's original currency, through the company's base "
+"currency, to the selected payment currency on the chosen payment date."
+msgstr "Monto sugerido utilizado cuando se paga facturas que involucran tres monedas "
+"Calcula el monto de pago equivalente convirtiendo el saldo abierto de la factura "
+"original, a través de la moneda base de la empresa, a la moneda de pago seleccionada "
+"en la fecha de pago seleccionada."
