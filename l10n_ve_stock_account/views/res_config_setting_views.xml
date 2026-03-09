@@ -105,6 +105,16 @@
                         <label for="hide_weight_field_dispatch_guide"/>
                         <div class="text-muted">
                             If checked, the weight field will be hidden in the dispatch guide.
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_donation_account_id">
+                    <div class="o_setting_right_pane">
+                        <label for="donation_account_id"/>
+                        <div class="text-muted">
+                            Account to be used for donation flow.
+                        </div>
+                        <div class="content-group">
+                            <div class="mt16">
+                                <field name="donation_account_id"/>
+                            </div>
                         </div>
                     </div>
                 </div>
