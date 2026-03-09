@@ -12,13 +12,19 @@
                     type="object" class="o_btn_validate"
                     invisible="(move_type not in ('out_invoice', 'out_refund')) or state != 'posted' or correlative == False"
                 />
+                <button
+                    name="print_donation_certificate"
+                    string="Generar Certificado de Donación"
+                    type="object"
+                    class="btn-primary"
+                    invisible="not is_donation or (state != 'posted' or move_type != 'entry')"/>
             </xpath>
 
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="guide_number"/>
                 <field name="free_form_copy_number" readonly="1" />
                 <field name="transfer_ids" widget="many2many_tags" invisible="1" />
-                <field name="is_donation" readonly="1"/>
+                <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'"/>
             </xpath>
 
             <!-- TODO: La línea entera debería estar bloqueada al `from_picking_line` ser True -->
