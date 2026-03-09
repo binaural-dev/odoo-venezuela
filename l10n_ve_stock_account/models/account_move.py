@@ -17,6 +17,8 @@ class AccountMove(models.Model):
     # 0: not printed yet, 1: first print (original), 2 or more: copies
     free_form_copy_number = fields.Integer(default=0, copy=False)
 
+    is_donation = fields.Boolean(string="Is Donation", tracking=True)
+
     def print_invoice_free_form(self):
 
         report = self.env.ref(
