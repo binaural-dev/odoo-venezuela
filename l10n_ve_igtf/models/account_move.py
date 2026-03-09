@@ -141,8 +141,8 @@ class AccountMove(models.Model):
                 
                 partial = self.env['account.partial.reconcile'].search([
                     '|',
-                    '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', pago_line.id),
-                    '&', ('debit_move_id', '=', pago_line.id), ('credit_move_id', '=', factura_line.id)
+                    '&', ('debit_move_id', 'in', factura_line.ids), ('credit_move_id', 'in', pago_line.ids),
+                    '&', ('debit_move_id', 'in', pago_line.ids), ('credit_move_id', 'in', factura_line.ids)
                 ], limit=1)
 
                 if partial:
