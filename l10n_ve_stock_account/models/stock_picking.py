@@ -651,9 +651,6 @@ class StockPicking(models.Model):
     def print_dispatch_guide(self):
         return self.env.ref("l10n_ve_stock_account.action_dispatch_guide").read()[0]
 
-    def print_donation_certificate(self):
-        self.ensure_one()
-        return self.env.ref("l10n_ve_stock_account.action_donation_certificate").report_action(self)
 
     def _validate_one_invoice_posted(self):
         for picking in self:

@@ -35,6 +35,10 @@ class AccountMove(models.Model):
             list_guide_number = [picking.guide_number for picking in record.picking_ids]
             record.guide_number = "/".join(list_guide_number)
 
+    def print_donation_certificate(self):
+        self.ensure_one()
+        return self.env.ref("l10n_ve_stock_account.action_donation_certificate").report_action(self)
+    
     def action_post(self):
         res = super().action_post()
         donation_moves = self.filtered(lambda m: m.is_donation and m.move_type == "out_invoice")
