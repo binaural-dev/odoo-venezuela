@@ -9,26 +9,36 @@ import {
 } from "@web/core/utils/numbers";
 
 patch(PosOrderline.prototype, {
+
   setup() {
+    this.get_all_foreign_prices()
     super.setup(...arguments);
   },
+
   get_foreign_currency() {
     return this.config.foreign_currency_id;
   },
+
+  get foreign_subtotal_display() {
+    // Llamas a tu función de cálculos complejos
+    return this.get_all_foreign_prices();
+  },
+
   get_foreign_price_without_tax() {
     if (!this.get_foreign_unit_price) {
-      console.error('get_foreign_unit_price missing on', this);
     }
     const foreign_currency = this.get_foreign_currency();
-    const digits = foreign_currency ? foreign_currency.decimal_places : 2;
+    const digits = 2;
     return round_pr(
       this.get_foreign_unit_price() * this.getQuantity(),
       digits
     );
   },
+
   get_foreign_tax_details() {
     return this.get_all_foreign_prices().taxDetails;
   },
+
   get_foreign_price_with_tax() {
     return this.get_all_foreign_prices().priceWithTax;
 
@@ -40,19 +50,31 @@ patch(PosOrderline.prototype, {
       this.foreign_currency.rounding,
     );
   },
-  // get_foreign_price_without_tax() {
-  //   return this.get_all_foreign_prices().priceWithoutTax;
-  // },
+
+
+  get_rate(currency) {
+    const inverse_rate = 1 / currency.rate;
+    return inverse_rate
+  },
 
   get_foreign_unit_price() {
-    const foreign_currency = this.get_foreign_currency();
+
+    const foreign_currency = this.get_foreign_currency()
+
     const digits = foreign_currency ? foreign_currency.decimal_places : 2;
-    // round and truncate to mimic _symbol_set behavior
+
+    const price = this.get_foreign_calculation_price(foreign_currency, this.price_unit)
+    this.foreign_price_unit = price
+
     return parseFloat(
-      round_di(this.foreign_price || 0, digits).toFixed(digits),
+      round_di(this.foreign_price_unit || 0, digits).toFixed(2),
     );
   },
 
+  /**get_all_foreign_prices
+   * This function returns the total price of the product in the foreign currency.
+   * @param {number} qty - product_qty equals actual getter of the product.
+   */
   get_all_foreign_prices(qty = this.getQuantity()) {
     const company = this.company;
     const product = this.getProduct();
@@ -106,4 +128,16 @@ patch(PosOrderline.prototype, {
       taxesData: baseLine.tax_details.taxes_data,
     };
   },
+
+  get_foreign_calculation_price(currency, price) {
+    const rate = this.get_rate(currency)
+    price = price * rate
+    return price * this.qty
+  },
+
+  get foreign_price_unit_display() {
+    this.get_all_foreign_prices();
+  },
+
+
 });

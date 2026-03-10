@@ -21,8 +21,7 @@
                 <div class="right-side" style="flex: 1; text-align: right;">
                     <!-- Custom total -->
                     <div class="total">
-                        Total:
-                        <span t-out="props.foreign_total" class="total"/>
+                        Total: <t t-out="props.foreign_total" />
                     </div>
                     <div t-if="props.tax" class="fs-6 text-muted subentry">
                         Taxes: <span t-out="props.foreign_tax" class="tax"/>

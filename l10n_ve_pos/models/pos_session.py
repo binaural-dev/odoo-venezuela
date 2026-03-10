@@ -76,49 +76,49 @@ class PosSession(models.Model):
             }
         }
     #TODO fue comentado por Omar, por lo tanto necesito aclaratoria o analisis de AI
-    # def _get_pos_ui_product_product(self, params):
-    #     self = self.with_context(**params["context"])
-    #     products = []
-    #     if not self.config_id.limited_products_loading:
-    #         products = self.env["product.product"].search_read(**params["search_params"])
-    #     else:
-    #         products = self.config_id.get_limited_products_loading(
-    #             params["search_params"]["fields"]
-    #         )
+    def _get_pos_ui_product_product(self, params):
+        self = self.with_context(**params["context"])
+        products = []
+        if not self.config_id.limited_products_loading:
+            products = self.env["product.product"].search_read(**params["search_params"])
+        else:
+            products = self.config_id.get_limited_products_loading(
+                params["search_params"]["fields"]
+            )
 
-    #     products = self._sort_available_products(products)
-    #     self._process_pos_ui_product_product(products)
-    #     return products
+        products = self._sort_available_products(products)
+        self._process_pos_ui_product_product(products)
+        return products
 
-    # def _loader_params_res_country_city(self):
-    #     return {"search_params": {"domain": [], "fields": ["name", "id"]}}
+    def _loader_params_res_country_city(self):
+        return {"search_params": {"domain": [], "fields": ["name", "id"]}}
 
-    # def _get_pos_ui_res_country_city(self, params):
-    #     return self.env["res.country.city"].search_read(**params["search_params"])
+    def _get_pos_ui_res_country_city(self, params):
+        return self.env["res.country.city"].search_read(**params["search_params"])
 
-    # def _pos_ui_models_to_load(self):
-    #     result = super()._pos_ui_models_to_load()
-    #     if "res.country.city" not in result:
-    #         result.append("res.country.city")
-    #     return result
+    def _pos_ui_models_to_load(self):
+        result = super()._pos_ui_models_to_load()
+        if "res.country.city" not in result:
+            result.append("res.country.city")
+        return result
 
-    # def get_pos_ui_product_product_by_params(self, custom_search_params):
-    #     """
-    #     :param custom_search_params: a dictionary containing params of a search_read()
-    #     """
-    #     params = self._loader_params_product_product()
-    #     self = self.with_context(**params['context'])
-    #     # custom_search_params will take priority
-    #     params["search_params"] = {**params["search_params"], **custom_search_params}
-    #     products = (
-    #         self.env["product.product"]
-    #         .with_context(active_test=False)
-    #         .search_read(**params["search_params"])
-    #     )
-    #     products = self._sort_available_products(products)
-    #     if len(products) > 0:
-    #         self._process_pos_ui_product_product(products)
-    #     return products
+    def get_pos_ui_product_product_by_params(self, custom_search_params):
+        """
+        :param custom_search_params: a dictionary containing params of a search_read()
+        """
+        params = self._loader_params_product_product()
+        self = self.with_context(**params['context'])
+        # custom_search_params will take priority
+        params["search_params"] = {**params["search_params"], **custom_search_params}
+        products = (
+            self.env["product.product"]
+            .with_context(active_test=False)
+            .search_read(**params["search_params"])
+        )
+        products = self._sort_available_products(products)
+        if len(products) > 0:
+            self._process_pos_ui_product_product(products)
+        return products
 
     def _sort_available_products(self, products):
         if not self.env.company.pos_show_just_products_with_available_qty:
@@ -145,160 +145,160 @@ class PosSession(models.Model):
         is_group = self.env.user.has_group("l10_ve_pos.group_authorized_discount_pos")
         return is_group
 
-    # def _validate_cross_move(self):
-    #     """This function validate cross move, the proposal of this function is the transitory account be zero"""
-    #     for session in self:
-    #         for order_payment in session.order_ids.payment_ids:
-    #             _logger.info(f"Cross Journal: {order_payment.payment_method_id.apply_one_cross_move}")
-    #             if not order_payment.payment_method_id.apply_one_cross_move:
-    #                 _logger.info("The payment method does not apply one cross move")
-    #                 _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_account_journal}")
-    #                 _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_journal}")
-    #                 if (
-    #                     order_payment.payment_method_id.cross_account_journal
-    #                     and order_payment.payment_method_id.cross_journal
-    #                 ):
+    def _validate_cross_move(self):
+        """This function validate cross move, the proposal of this function is the transitory account be zero"""
+        for session in self:
+            for order_payment in session.order_ids.payment_ids:
+                _logger.info(f"Cross Journal: {order_payment.payment_method_id.apply_one_cross_move}")
+                if not order_payment.payment_method_id.apply_one_cross_move:
+                    _logger.info("The payment method does not apply one cross move")
+                    _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_account_journal}")
+                    _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_journal}")
+                    if (
+                        order_payment.payment_method_id.cross_account_journal
+                        and order_payment.payment_method_id.cross_journal
+                    ):
                         
-    #                     if order_payment.amount < 0:
-    #                         line_vals = session._line_vals_move_cross_outgoing(order_payment)
-    #                     else:
-    #                         line_vals = session._line_vals_move_cross_incoming(order_payment)
+                        if order_payment.amount < 0:
+                            line_vals = session._line_vals_move_cross_outgoing(order_payment)
+                        else:
+                            line_vals = session._line_vals_move_cross_incoming(order_payment)
 
-    #                     session._create_cross_move(order_payment, line_vals)
+                        session._create_cross_move(order_payment, line_vals)
 
-    # def _line_vals_move_cross_incoming(self, payment):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is incoming.
+    def _line_vals_move_cross_incoming(self, payment):
+        """
+        This method creates the move_lines for the move_cross when the payment is incoming.
 
-    #     Args:
-    #         payment (account.payment): payment generate from PoS
+        Args:
+            payment (account.payment): payment generate from PoS
 
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
-    #     for account in payment.payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
+        Returns:
+            account.move.line: move line to move cross
+        """
+        credit_account = 0
+        debit_account = 0
+        move_lines = []
+        for account in payment.payment_method_id:
+            debit_account = account.outstanding_account_id.id
 
-    #     for account_method in payment.payment_method_id.cross_journal:
-    #         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
+        for account_method in payment.payment_method_id.cross_journal:
+            credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
+            currency = (
+                account_method.currency_id.id
+                if account_method.currency_id
+                else self.env.company.currency_id.id
+            )
 
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": payment.foreign_amount
-    #                         if currency == 3
-    #                         else payment.amount,
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": payment.amount,
-    #                         "foreign_debit": payment.foreign_amount,
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": -payment.foreign_amount
-    #                         if self.env.company.currency_id.id == 3
-    #                         else -payment.amount,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": payment.amount,
-    #                         "foreign_credit": payment.foreign_amount,
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
+            move_lines.extend(
+                [
+                    Command.create(
+                        {
+                            "name": _("PoS Payment Method Adjustment"),
+                            "account_id": credit_account,
+                            "partner_id": payment.partner_id.id,
+                            "amount_currency": payment.foreign_amount
+                            if currency == 3
+                            else payment.amount,
+                            "credit": 0.0,
+                            "foreign_credit": 0.0,
+                            "debit": payment.amount,
+                            "foreign_debit": payment.foreign_amount,
+                            "not_foreign_recalculate": True,
+                            "foreign_rate": payment.foreign_rate,
+                            "currency_id": account_method.currency_id.id
+                            if account_method.currency_id
+                            else self.env.company.currency_id.id,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": _("PoS Payment Method Adjustment"),
+                            "account_id": debit_account,
+                            "partner_id": payment.partner_id.id,
+                            "amount_currency": -payment.foreign_amount
+                            if self.env.company.currency_id.id == 3
+                            else -payment.amount,
+                            "debit": 0.0,
+                            "foreign_debit": 0.0,
+                            "credit": payment.amount,
+                            "foreign_credit": payment.foreign_amount,
+                            "not_foreign_recalculate": True,
+                            "foreign_rate": payment.foreign_rate,
+                            "currency_id": self.env.company.currency_id.id,
+                        }
+                    ),
+                ]
+            )
 
-    #         return move_lines
+            return move_lines
 
-    # def _line_vals_move_cross_outgoing(self, payment):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is outgoing (is change).
+    def _line_vals_move_cross_outgoing(self, payment):
+        """
+        This method creates the move_lines for the move_cross when the payment is outgoing (is change).
 
-    #     Args:
-    #         payment (pos.payment): payment generate from PoS
+        Args:
+            payment (pos.payment): payment generate from PoS
 
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
+        Returns:
+            account.move.line: move line to move cross
+        """
+        credit_account = 0
+        debit_account = 0
+        move_lines = []
 
-    #     for account in payment.payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
+        for account in payment.payment_method_id:
+            debit_account = account.outstanding_account_id.id
 
-    #     for account_method in payment.payment_method_id.cross_journal:
-    #         credit_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": abs(payment.foreign_amount)
-    #                         if self.env.company.currency_id.id == 3
-    #                         else abs(payment.amount),
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": abs(payment.amount),
-    #                         "foreign_debit": abs(payment.foreign_amount),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": payment.foreign_amount
-    #                         if currency == 3
-    #                         else payment.amount,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": abs(payment.amount),
-    #                         "foreign_credit": abs(payment.foreign_amount),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
+        for account_method in payment.payment_method_id.cross_journal:
+            credit_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
+            currency = (
+                account_method.currency_id.id
+                if account_method.currency_id
+                else self.env.company.currency_id.id
+            )
+            move_lines.extend(
+                [
+                    Command.create(
+                        {
+                            "name": _("PoS Payment Method Adjustment"),
+                            "account_id": debit_account,
+                            "partner_id": payment.partner_id.id,
+                            "amount_currency": abs(payment.foreign_amount)
+                            if self.env.company.currency_id.id == 3
+                            else abs(payment.amount),
+                            "credit": 0.0,
+                            "foreign_credit": 0.0,
+                            "debit": abs(payment.amount),
+                            "foreign_debit": abs(payment.foreign_amount),
+                            "not_foreign_recalculate": True,
+                            "foreign_rate": payment.foreign_rate,
+                            "currency_id": self.env.company.currency_id.id,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": _("PoS Payment Method Adjustment"),
+                            "account_id": credit_account,
+                            "partner_id": payment.partner_id.id,
+                            "amount_currency": payment.foreign_amount
+                            if currency == 3
+                            else payment.amount,
+                            "debit": 0.0,
+                            "foreign_debit": 0.0,
+                            "credit": abs(payment.amount),
+                            "foreign_credit": abs(payment.foreign_amount),
+                            "not_foreign_recalculate": True,
+                            "foreign_rate": payment.foreign_rate,
+                            "currency_id": account_method.currency_id.id
+                            if account_method.currency_id
+                            else self.env.company.currency_id.id,
+                        }
+                    ),
+                ]
+            )
 
-    #         return move_lines
+            return move_lines
 
     def _get_pos_ui_product_category(self, params):
         categories = self.env['product.category'].search_read(**params['search_params'])
@@ -342,27 +342,27 @@ class PosSession(models.Model):
         """
          This method create the move for the transitory account sets zero.
 
-    #     Args:
-    #         payment (pos.payment): payment from PoS
-    #         line_vals (account.move.line): move line to move cross
+        Args:
+            payment (pos.payment): payment from PoS
+            line_vals (account.move.line): move line to move cross
 
-    #     Returns:
-    #         account.move: Pos payment method adjustment move.
-    #     """
+        Returns:
+            account.move: Pos payment method adjustment move.
+        """
 
-    #     move = self.env["account.move"].create(
-    #         {
-    #             "name": _("PoS Payment Method Adjustment"),
-    #             "date": payment.create_date,
-    #             "journal_id": payment.payment_method_id.cross_account_journal.id,
-    #             "state": "draft",
-    #             "line_ids": line_vals,
-    #             "foreign_currency_id": payment.foreign_currency_id.id,
-    #             "foreign_rate": payment.foreign_rate,
-    #             "company_id": self.company_id.id,
-    #         }
-    #     )
-    #     return move #TODO esta funcion no hace nada, esta definida y no me explico como es que no 
+        move = self.env["account.move"].create(
+            {
+                "name": _("PoS Payment Method Adjustment"),
+                "date": payment.create_date,
+                "journal_id": payment.payment_method_id.cross_account_journal.id,
+                "state": "draft",
+                "line_ids": line_vals,
+                "foreign_currency_id": payment.foreign_currency_id.id,
+                "foreign_rate": payment.foreign_rate,
+                "company_id": self.company_id.id,
+            }
+        )
+        return move #TODO esta funcion no hace nada, esta definida y no me explico como es que no 
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
@@ -467,85 +467,85 @@ class PosSession(models.Model):
         #     self._create_cross_move_payment(res)
         return res
 
-    # def _create_cross_move_payment(self, move):
-    #     move = self.env["account.move"].create(
-    #         {
-    #             "name": _("PoS Payment Method Adjustment"),
-    #             "date": move.move_id.create_date,
-    #             "journal_id": move.move_id.payment_id.pos_payment_method_id.cross_account_journal.id,
-    #             "state": "draft",
-    #             "line_ids": self._line_vals_move_cross_payment_incoming(move),
-    #             "foreign_currency_id": move.move_id.foreign_currency_id.id,
-    #             "foreign_rate": move.move_id.foreign_rate,
-    #             "company_id": self.company_id.id,
-    #         }
-    #     )
-    #     return move
+    def _create_cross_move_payment(self, move):
+        move = self.env["account.move"].create(
+            {
+                "name": _("PoS Payment Method Adjustment"),
+                "date": move.move_id.create_date,
+                "journal_id": move.move_id.payment_id.pos_payment_method_id.cross_account_journal.id,
+                "state": "draft",
+                "line_ids": self._line_vals_move_cross_payment_incoming(move),
+                "foreign_currency_id": move.move_id.foreign_currency_id.id,
+                "foreign_rate": move.move_id.foreign_rate,
+                "company_id": self.company_id.id,
+            }
+        )
+        return move
 
-    # def _line_vals_move_cross_payment_incoming(self, move):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is incoming.
+    def _line_vals_move_cross_payment_incoming(self, move):
+        """
+        This method creates the move_lines for the move_cross when the payment is incoming.
 
-    #     Args:
-    #         payment (account.payment): payment generate from PoS
+        Args:
+            payment (account.payment): payment generate from PoS
 
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
-    #     for account in move.move_id.payment_id.pos_payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
+        Returns:
+            account.move.line: move line to move cross
+        """
+        credit_account = 0
+        debit_account = 0
+        move_lines = []
+        for account in move.move_id.payment_id.pos_payment_method_id:
+            debit_account = account.outstanding_account_id.id
 
-    #     for account_method in move.move_id.payment_id.pos_payment_method_id.cross_journal:
-    #         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
+        for account_method in move.move_id.payment_id.pos_payment_method_id.cross_journal:
+            credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
+            currency = (
+                account_method.currency_id.id
+                if account_method.currency_id
+                else self.env.company.currency_id.id
+            )
 
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "amount_currency": abs(move.foreign_credit)
-    #                         if currency == 3
-    #                         else abs(move.credit),
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": abs(move.credit),
-    #                         "foreign_debit": abs(move.foreign_credit),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "amount_currency": -move.foreign_credit
-    #                         if self.env.company.currency_id.id == 3
-    #                         else -move.credit,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": abs(move.credit),
-    #                         "foreign_credit": abs(move.foreign_credit),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
+            move_lines.extend(
+                [
+                    Command.create(
+                        {
+                            "name": _("PoS Payment Method Adjustment"),
+                            "account_id": credit_account,
+                            "amount_currency": abs(move.foreign_credit)
+                            if currency == 3
+                            else abs(move.credit),
+                            "credit": 0.0,
+                            "foreign_credit": 0.0,
+                            "debit": abs(move.credit),
+                            "foreign_debit": abs(move.foreign_credit),
+                            "not_foreign_recalculate": True,
+                            "foreign_rate": move.move_id.payment_id.foreign_rate,
+                            "currency_id": account_method.currency_id.id
+                            if account_method.currency_id
+                            else self.env.company.currency_id.id,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": _("PoS Payment Method Adjustment"),
+                            "account_id": debit_account,
+                            "amount_currency": -move.foreign_credit
+                            if self.env.company.currency_id.id == 3
+                            else -move.credit,
+                            "debit": 0.0,
+                            "foreign_debit": 0.0,
+                            "credit": abs(move.credit),
+                            "foreign_credit": abs(move.foreign_credit),
+                            "not_foreign_recalculate": True,
+                            "foreign_rate": move.move_id.payment_id.foreign_rate,
+                            "currency_id": self.env.company.currency_id.id,
+                        }
+                    ),
+                ]
+            )
 
-    #         return move_lines
+            return move_lines
 
     def _create_account_move(
         self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None

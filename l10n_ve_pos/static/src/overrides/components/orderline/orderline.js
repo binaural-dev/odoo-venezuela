@@ -1,5 +1,6 @@
 import { patch } from "@web/core/utils/patch";
 import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
+import { onWillUpdateProps, onWillStart, onMounted } from "@odoo/owl";
 
 patch(Orderline.prototype, {
   //DEPRECATED
@@ -15,7 +16,12 @@ patch(Orderline.prototype, {
   // },
   setup() {
     super.setup();
+    onWillUpdateProps((nextProps) => {
+      nextProps.line.foreign_price_unit_display
+    });
   },
+
+
   get_rate() {
     if (this.order._isRefundOrder() && this.get_refund_orderline()) {
       return this.get_refund_orderline().orderline.foreign_currency_rate;
@@ -40,15 +46,7 @@ patch(Orderline.prototype, {
     }
     return false;
   },
-  // export_as_JSON() {
-  //   let res = super.export_as_JSON(...arguments);
-  //   res["foreign_currency_rate"] = this.get_rate();
-  //   res["foreign_price"] = this.get_foreign_unit_price();
-  //   res["foreign_price_subtotal"] = this.get_foreign_price_without_tax();
-  //   res["foreign_price_subtotal_incl"] = this.get_foreign_price_with_tax();
-  //   return res;
-  // },
-  set_unit_price(price) {
+  set set_unit_price(price) {
     this.order.assert_editable();
     var parsed_price = !isNaN(price)
       ? price
@@ -78,13 +76,9 @@ patch(Orderline.prototype, {
     );
   },
 
-
-
   get_all_prices(qty = this.getQuantity()) {
     return super.get_all_prices(qty);
   },
-
-
 
   get_foreign_price_without_tax() {
     return this.get_all_foreign_prices().priceWithoutTax;
@@ -171,22 +165,6 @@ patch(Orderline.prototype, {
     return "(G)";
   },
 
-  getDisplayData() {
-    let res = super.getDisplayData(...arguments);
-    res["foreignUnitPrice"] = this.env.utils.formatForeignCurrency(
-      this.get_unit_display_foreign_price(),
-    );
-    res["foreignPrice"] =
-      this.get_discount_str() === "100"
-        ? "free"
-        : this.env.utils.formatForeignCurrency(
-          this.get_display_foreign_price(),
-        );
-    res["aliquot_type"] = this.get_aliquot_type();
-    res["foreign_currency_rate"] = this.get_rate();
-    res["foreign_currency_rate_display"] = this.env.utils.formatForeignCurrency(
-      this.currency_rate_display(),
-    );
-    return res;
-  },
+
+
 });

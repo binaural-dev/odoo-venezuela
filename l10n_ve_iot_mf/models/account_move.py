@@ -32,7 +32,7 @@ class AccountMoveInh(models.Model):
         string="Fiscal machine serial", default=False, copy=False, tracking=True
     )
     mf_invoice_number = fields.Char(
-        string="Sequence number", default=False, copy=False, tracking=True
+        string="Sequence number", copy=False, tracking=True
     )
     mf_reportz = fields.Char(string="Report number Z", default=False, copy=False, tracking=True)
     
