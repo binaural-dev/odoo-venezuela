@@ -162,16 +162,6 @@ class AccountTax(models.Model):
             value=res.get('total_amount', 0.0),
             currency_obj=ves_currency
         )
-
-        # Extrae solo el monto numérico de 'formatted_total_amount_currency_ves' (sin símbolo)
-        formatted_total_ves = res.get("formatted_total_amount_currency_ves", "")
-        # Quita cualquier carácter que no sea número, punto o coma
-        try:
-            only_amount_ves = "".join(re.findall(r"[\d.,]+", formatted_total_ves))
-            only_amount_ves = only_amount_ves.rstrip('.').replace(',', '')
-            res["ves_amount_total"] = float(only_amount_ves)
-        except ValueError:
-            res["ves_amount_total"] = 0.0
     
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
