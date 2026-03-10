@@ -148,7 +148,6 @@ class AccountTax(models.Model):
             currency_obj=ves_currency
         )
     
-    
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
             env=self.env,
