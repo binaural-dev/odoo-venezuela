@@ -186,6 +186,92 @@ class AccountMove(models.Model):
 
             move.invoice_outstanding_credits_debits_widget_advance_payment = payments_widget_vals
             move.invoice_has_outstanding = True
+
+    #Pagos no CONCILIADOS
+    def _compute_payments_widget_to_reconcile_info(self):
+        super()._compute_payments_widget_to_reconcile_info()
+
+        for move in self:
+            move.invoice_outstanding_credits_debits_widget  = False
+            move.invoice_has_outstanding = False
+
+
+            if move.state != 'posted' \
+                    or move.payment_state not in ('not_paid', 'partial') \
+                    or not move.is_invoice(include_receipts=True):
+                continue
+            
+            pay_term_lines = move.line_ids\
+                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable'))
+            
+            if move.move_type in ("out_invoice", "in_refund"):
+                advance_account = self.env.company.advance_customer_account_id
+            else:
+                advance_account = self.env.company.advance_supplier_account_id
+
+            domain = [
+                ('account_id', 'in', pay_term_lines.account_id.ids),
+                ('parent_state', '=', 'posted'),
+                ('partner_id', '=', move.commercial_partner_id.id),
+                ('reconciled', '=', False),
+                '|', ('amount_residual', '!=', 0.0), ('amount_residual_currency', '!=', 0.0),
+            ]
+            
+            payments_widget_vals = {'outstanding': True, 'content': [], 'move_id': move.id}
+
+            if move.is_inbound():
+                domain.append(('balance', '<', 0.0))
+                payments_widget_vals['title'] = _('Outstanding credits')
+            else:
+                domain.append(('balance', '>', 0.0))
+                payments_widget_vals['title'] = _('Outstanding debits')
+
+            for line in self.env['account.move.line'].search(domain):
+                has_advance_line = advance_account in line.move_id.line_ids.account_id
+                
+                if not has_advance_line:
+                    if line.currency_id == move.currency_id:
+                        amount = abs(line.amount_residual_currency)
+                    else:
+                        amount = line.company_currency_id._convert(
+                            abs(line.amount_residual),
+                            move.currency_id,
+                            move.company_id,
+                            line.date,
+                             round=False
+                        )
+
+                    if move.currency_id.is_zero(amount):
+                        continue
+
+                    payments_widget_vals['content'].append({
+                        "journal_name": line.ref or line.move_id.name,
+                        "amount": (
+                            abs(line.amount_residual_currency)
+                            if line.currency_id == move.currency_id
+                            else move.company_currency_id._convert(
+                                abs(line.amount_residual),
+                                move.currency_id,
+                                move.company_id,
+                                line.date,
+                                round=False
+                            )
+                        ),
+                        "id": line.id,
+                        "move_id": line.move_id.id,
+                        "payment_id": line.payment_id.id,
+                        "position": move.currency_id.position,
+                        "digits": [69, move.currency_id.decimal_places],
+                        "payment_date": fields.Date.to_string(line.date),
+                        "currency_id": move.currency_id.id,
+                      
+                    })
+
+            if not payments_widget_vals["content"]:
+                continue
+
+            move.invoice_outstanding_credits_debits_widget = payments_widget_vals
+            move.invoice_has_outstanding = True
     
     def _create_advance_payment_move(self, amount_residual, lines):
         self.ensure_one()

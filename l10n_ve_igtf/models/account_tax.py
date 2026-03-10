@@ -129,12 +129,12 @@ class AccountTax(models.Model):
         )
         
 
-        res["amount_total_igtf"] = res["total_amount_currency"] + igtf_amount
+        res["amount_total_igtf"] = res["base_amount_currency"] + igtf_amount
         
         res["formatted_amount_total_igtf"] = formatLang(
             self.env, res["amount_total_igtf"], currency_obj=currency
         )
-        res["foreign_amount_total_igtf"] = res["total_amount_currency"] + foreign_igtf_amount
+        res["foreign_amount_total_igtf"] = res["base_amount_currency"] + foreign_igtf_amount
         
         res["formatted_foreign_amount_total_igtf"] = formatLang(
             self.env, res["foreign_amount_total_igtf"], currency_obj=foreign_currency
