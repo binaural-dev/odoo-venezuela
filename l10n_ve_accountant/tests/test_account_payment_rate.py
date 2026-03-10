@@ -101,6 +101,7 @@ class TestAccountPaymentRate(TransactionCase):
             "partner_id": self.partner.id,
             "currency_id": self.currency_eur.id,
             "invoice_date": self.today,
+            "invoice_date_display": self.today,
             "date": self.today,
             "invoice_line_ids": [(0, 0, {
                 "product_id": self.product.id,

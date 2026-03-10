@@ -66,7 +66,7 @@
                                     <br/>
                                     <span><strong>Nro de control:</strong><t t-out="o.reversed_entry_id.correlative"/></span>
                                     <br/>
-                                    <span><strong>Fecha de la factura:</strong><t t-if="o.reversed_entry_id.invoice_date" t-out="o.reversed_entry_id.invoice_date.strftime('%d/%m/%Y')"/></span>
+                                    <span><strong>Fecha de la factura:</strong><t t-if="o.reversed_entry_id.invoice_date_display" t-out="o.reversed_entry_id.invoice_date_display.strftime('%d/%m/%Y')"/></span>
                                     <br/>
                                     <span>
                                         <strong>Total facturado:</strong>
@@ -92,7 +92,7 @@
                                     <br/>
                                     <span>
                                         <strong>Fecha de la factura:</strong>
-                                        <t t-out="o.debit_origin_id.invoice_date"/>
+                                        <t t-out="o.debit_origin_id.invoice_date_display"/>
                                     </span>
                                     <br/>
                                     <span>
@@ -110,7 +110,7 @@
                                 </t>
                                 <strong>Pedido: </strong><t t-out="o.invoice_origin or 'N/A'"/>
                                 <br/>
-                                <strong>Fecha de emisión:</strong> <t t-if="o.invoice_date" t-out="o.invoice_date.strftime('%d/%m/%Y')"/>
+                                <strong>Fecha de emisión:</strong> <t t-if="o.invoice_date_display" t-out="o.invoice_date_display.strftime('%d/%m/%Y')"/>
                             </div>
                         </div>
 

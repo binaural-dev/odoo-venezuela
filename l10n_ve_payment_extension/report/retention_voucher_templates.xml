@@ -188,7 +188,7 @@
                     <tr>
                         <!-- 1 Fecha Factura -->
                         <td class="ret-left">
-                            <t t-if="line.move_id.invoice_date"><span t-esc="line.move_id.invoice_date.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
+                            <t t-if="line.move_id.invoice_date_display"><span t-esc="line.move_id.invoice_date_display.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- 2 Número de Factura -->
@@ -604,7 +604,7 @@
 
                         <!-- Fecha -->
                         <td class="ret-left">
-                            <t t-if="line.move_id.invoice_date"><span t-esc="line.move_id.invoice_date.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
+                            <t t-if="line.move_id.invoice_date_display"><span t-esc="line.move_id.invoice_date_display.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- Concepto -->
