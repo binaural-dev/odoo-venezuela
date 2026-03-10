@@ -343,8 +343,8 @@ class AccountRetentionLine(models.Model):
                                     break
 
                         if selected_rate:
-                            record.invoice_total = record.move_id.tax_totals["total_amount"]
-                            record.foreign_invoice_total = record.move_id.tax_totals["total_amount_foreign_currency"]
+                            record.invoice_total = record.move_id.tax_totals.get("total_amount", 0.0)
+                            record.foreign_invoice_total = record.move_id.tax_totals.get("total_amount_foreign_currency", 0.0)
                             record.related_pay_from = line.pay_from
                             record.related_percentage_tax_base = line.percentage_tax_base
                             record.related_percentage_fees = selected_rate.percentage  
