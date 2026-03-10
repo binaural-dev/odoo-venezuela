@@ -56,6 +56,7 @@ export class IoTFiscalMachineComponent extends Component {
       "generate_report_x": _t("Generate Report X"),
       "get_serial_machine": _t("Get Serial Machine"),
       "status_error": _t("Get Status / Error"),
+      "test_s5": _t("Test S5"),
       "programacion": _t("Programming"),
       "status_1": _t("Get Status 1"),
       "reprint_document": _t("Reprint Document"),
@@ -109,7 +110,28 @@ export class IoTFiscalMachineComponent extends Component {
       onIoTError(message, this.notification);
     }
   }
-
+  async test_s5() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+    try {
+      this.notification.add("Comunicando con la impresora, por favor espere...", {
+        type: 'warning'
+      });
+      console.log("pruebas")
+      const deviceResponse = await this.device_response("test_s5",true);
+      console.log("deviceResponse")
+      if (!deviceResponse) {
+        console.log("Error desconocido",deviceResponse)
+        throw new Error(deviceResponse || "Error desconocido");
+      }
+    } catch (error) {
+      console.log("Error", error);
+      const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
+      onIoTError(message, this.notification);
+    } 
+  }
   async payment_method() {
     if (!this.device) {
       this.showFailedConnection()
