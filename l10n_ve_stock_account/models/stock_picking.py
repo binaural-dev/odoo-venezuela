@@ -863,7 +863,7 @@ class StockPicking(models.Model):
                 picking.location_dest_id = location_dest_id
 
     @api.depends(
-        "invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return", "sale_id.document" 
+       "type_of_return","invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return", "sale_id.document" 
     )
     def _compute_button_visibility(self):
         for record in self:
@@ -892,6 +892,7 @@ class StockPicking(models.Model):
                         and record.sale_id.document != "invoice"
                         and record.type_of_return != "total"
                     )
+
                     record.show_create_customer_credit = record.is_return
 
                 if record.operation_code == "internal" and record.is_consignment:
@@ -1209,7 +1210,7 @@ class StockPicking(models.Model):
         domain = self._get_domain_for_return_picking()
         domain.append(("company_id", "in", company_ids))
 
-        pickings_combined = self.env["stock.picking"].sudo().search(domain)
+        pickings_combined = self.env["stock.picking"].sudo().search_count(domain)
 
         today = date.today()
         taxpayer_type = self.env.company.taxpayer_type
@@ -1229,7 +1230,7 @@ class StockPicking(models.Model):
             last_day = calendar.monthrange(today.year, today.month)[1]
             result = date(today.year, today.month, last_day)
 
-        return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
+        return f"Tienes {pickings_combined} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
 
     def _get_domain_for_return_picking(self):
         return [
