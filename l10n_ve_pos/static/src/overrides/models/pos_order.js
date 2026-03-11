@@ -15,6 +15,7 @@ import {
 // New orders are now associated with the current table, if any.
 patch(PosOrder.prototype, {
   setup() {
+    this.get_foreign_total_tax()
     super.setup(...arguments);
     // this.foreign_total_with_tax = this.get_foreign_total_with_tax();
   },
@@ -164,7 +165,7 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_total_with_tax() {
-    return (this.get_foreign_total_without_tax() || 0 + this.get_foreign_total_tax() || 0);
+    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax() || 0);
   },
 
   get foreign_total_with_tax() {
@@ -177,9 +178,8 @@ patch(PosOrder.prototype, {
 
     const total = lines.reduce((acumulador, line) => {
       const precio = line.foreign_price_unit || 0;
-      return acumulador + precio;
+      return acumulador + (precio * line.getQuantity());
     }, 0);
-    console.log("total es", total)
     // 3. Validación de moneda para evitar error al redondear
     const rounding = foreign_currency ? foreign_currency.rounding : 0.01;
     return round_pr(total, rounding);
@@ -212,30 +212,47 @@ patch(PosOrder.prototype, {
     const orderlines = this.get_orderlines();
     const foreignCurrency = this.get_foreign_currency();
     const rounding = foreignCurrency?.rounding || 0.01;
+    let totalTax = 0;
 
     if (this.company.tax_calculation_rounding_method === "round_globally") {
+
       const groupTaxes = orderlines.reduce((acc, line) => {
+
         const taxDetails = line.get_foreign_tax_details?.() || {};
         for (const [taxId, detail] of Object.entries(taxDetails)) {
-          acc[taxId] = (acc[taxId] || 0) + (detail.amount || 0);
+          acc[taxId] = (detail.amount || 0);
         }
         return acc;
       }, {});
 
-      return Object.values(groupTaxes).reduce(
+      totalTax = Object.values(groupTaxes).reduce(
         (sum, amount) => sum + round_pr(amount, rounding),
         0
       );
+    } else {
+      totalTax = orderlines.reduce((sum, line) => {
+        const lineTax = line.get_all_foreign_prices ? line.get_all_foreign_prices().tax : (line.get_foreign_tax?.() || line.get_foreign_total_tax?.() || 0);
+        return sum + lineTax;
+      }, 0);
     }
+    return round_pr(totalTax, rounding);
+  },
+
+
+
+  get_foreign_total_tax_per_line() {
+    const orderlines = this.get_orderlines();
+    const foreignCurrency = this.get_foreign_currency();
+    const rounding = foreignCurrency?.rounding || 0.01;
 
     const totalTax = orderlines.reduce((sum, line) => {
-      // Priorizamos get_all_foreign_prices().tax que es el cálculo más completo en Odoo 19
-      const lineTax = line.get_all_foreign_prices ? line.get_all_foreign_prices().tax : (line.get_foreign_tax?.() || line.get_foreign_total_tax?.() || 0);
-      return sum + lineTax;
+      const tax_amounts = line.get_all_foreign_prices ? line.get_all_foreign_prices() : { tax: 0 };
+      return sum + (tax_amounts.tax || 0);
     }, 0);
 
     return round_pr(totalTax, rounding);
   },
+
 
   get_foreign_tax_details() {
     var details = {};
@@ -473,10 +490,6 @@ patch(PosOrder.prototype, {
     }
     return qty;
   },
-
-  get foreign_total() {
-    return this.get_foreign_total_with_tax().toFixed(2)
-  }
 
 
 });

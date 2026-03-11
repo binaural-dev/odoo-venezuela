@@ -149,7 +149,6 @@ class PosSession(models.Model):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
         for session in self:
             for order_payment in session.order_ids.payment_ids:
-                _logger.info(f"Cross Journal: {order_payment.payment_method_id.apply_one_cross_move}")
                 if not order_payment.payment_method_id.apply_one_cross_move:
                     _logger.info("The payment method does not apply one cross move")
                     _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_account_journal}")
@@ -445,7 +444,7 @@ class PosSession(models.Model):
         res = super(PosSession, self.with_context(from_pos=True))._create_split_account_payment(
             payment, amounts
         )
-        account_payment = res.move_id.payment_id
+        account_payment = res
 
         account_payment.write(
             {

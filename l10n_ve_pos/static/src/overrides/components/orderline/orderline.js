@@ -3,24 +3,13 @@ import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
 import { onWillUpdateProps, onWillStart, onMounted } from "@odoo/owl";
 
 patch(Orderline.prototype, {
-  //DEPRECATED
-  // init_from_JSON(json) {
-  //   super.init_from_JSON(...arguments);
-  //   this.tax_ids =
-  //     json.tax_ids && json.tax_ids.length !== 0
-  //       ? json.tax_ids[0][2]
-  //       : undefined;
-  //   this.foreign_price = json.foreign_price || 0;
-  //   this.foreign_currency_rate = json.foreign_currency_rate || false;
-  //   this.foreign_currency_rate_display = false;
-  // },
   setup() {
     super.setup();
     onWillUpdateProps((nextProps) => {
+      // this.get_foreign_tax()
       nextProps.line.foreign_price_unit_display
     });
   },
-
 
   get_rate() {
     if (this.order._isRefundOrder() && this.get_refund_orderline()) {
@@ -90,6 +79,7 @@ patch(Orderline.prototype, {
     return this.get_all_foreign_prices().priceWithTaxBeforeDiscount;
   },
   get_foreign_tax() {
+    console.log("TAXES")
     return this.get_all_foreign_prices().tax;
   },
 

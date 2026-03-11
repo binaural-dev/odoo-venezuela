@@ -4,7 +4,8 @@
     <xpath expr="//OrderDisplay" position="attributes">
       <attribute name="conversion_rate">currentOrder.get_conversion_rate()</attribute>
       <attribute name="quantity_products">currentOrder.get_qty_products()</attribute>
-      <attribute name="foreign_total">pos.format_foreign_currency(currentOrder.get_foreign_total_with_tax())</attribute>
+      <attribute name="foreign_total_with_taxes">env.utils.formatForeignCurrency(currentOrder.get_foreign_total_with_tax())</attribute>
+      <attribute name="foreign_tax_total">env.utils.formatForeignCurrency(currentOrder.get_foreign_total_tax_per_line())</attribute>
       <!-- <attribute name="foreign_tax">!env.utils.floatIsZero(currentOrder.get_foreign_total_tax()) and pos.format_foreign_currency(currentOrder.get_foreign_total_tax()) or ''</attribute> -->
     </xpath>
   </t>
