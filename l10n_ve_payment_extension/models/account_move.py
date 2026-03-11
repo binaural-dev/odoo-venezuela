@@ -58,6 +58,22 @@ class AccountMoveRetention(models.Model):
         default=False,
     )
 
+    is_third_party_retention = fields.Boolean(
+        string="Third Party Billing",
+        default=False,
+        help="Enable to create retentions on behalf of a third-party provider.",
+    )
+
+    third_party_iva_retention_count = fields.Integer(
+        string="Third Party IVA Retentions",
+        compute="_compute_third_party_retention_counts",
+    )
+
+    third_party_islr_retention_count = fields.Integer(
+        string="Third Party ISLR Retentions",
+        compute="_compute_third_party_retention_counts",
+    )
+
     not_edit_municipal_retention_lines = fields.Boolean(
         string="Edit Municipal Retention Lines?",
         compute="_compute_state_retentions_lines",
@@ -66,6 +82,81 @@ class AccountMoveRetention(models.Model):
     not_edit_islr_retention_lines = fields.Boolean(
         string="Edit ISLR Retention Lines?", compute="_compute_state_retentions_lines"
     )
+
+    def _compute_third_party_retention_counts(self):
+        Retention = self.env["account.retention"]
+        for record in self:
+            if record.id and record.is_third_party_retention:
+                record.third_party_iva_retention_count = Retention.search_count([
+                    ("retention_line_ids.move_id", "=", record.id),
+                    ("type_retention", "=", "iva"),
+                ])
+                record.third_party_islr_retention_count = Retention.search_count([
+                    ("retention_line_ids.move_id", "=", record.id),
+                    ("type_retention", "=", "islr"),
+                ])
+            else:
+                record.third_party_iva_retention_count = 0
+                record.third_party_islr_retention_count = 0
+
+    def action_view_third_party_iva_retentions(self):
+        self.ensure_one()
+        retentions = self.env["account.retention"].search([
+            ("retention_line_ids.move_id", "=", self.id),
+            ("type_retention", "=", "iva"),
+        ])
+        iva_form = self.env.ref(
+            "l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension"
+        )
+        iva_list = self.env.ref(
+            "l10n_ve_payment_extension.view_retention_iva_list_l10n_ve_payment_extension"
+        )
+        action = {
+            "name": _("Third Party IVA Retentions"),
+            "type": "ir.actions.act_window",
+            "res_model": "account.retention",
+            "views": [(iva_list.id, "list"), (iva_form.id, "form")],
+            "context": {
+                "default_type": "in_invoice",
+                "default_type_retention": "iva",
+                "default_available_invoice_ids": [Command.set([self.id])],
+                "default_retention_line_ids": [Command.create({"move_id": self.id})],
+                "default_is_third_party_retention": True,
+            },
+        }
+        if len(retentions) == 0:
+            action["views"] = [(iva_form.id, "form")]
+        else:
+            action["domain"] = [("id", "in", retentions.ids)]
+        return action
+
+    def action_view_third_party_islr_retentions(self):
+        self.ensure_one()
+        retentions = self.env["account.retention"].search([
+            ("retention_line_ids.move_id", "=", self.id),
+            ("type_retention", "=", "islr"),
+        ])
+        islr_form = self.env.ref(
+            "l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension"
+        )
+        action = {
+            "name": _("Third Party ISLR Retentions"),
+            "type": "ir.actions.act_window",
+            "res_model": "account.retention",
+            "views": [(False, "list"), (islr_form.id, "form")],
+            "context": {
+                "default_type": "in_invoice",
+                "default_type_retention": "islr",
+                "default_available_invoice_ids": [Command.set([self.id])],
+                "default_retention_line_ids": [Command.create({"move_id": self.id})],
+                "default_is_third_party_retention": True,
+            },
+        }
+        if len(retentions) == 0:
+            action["views"] = [(islr_form.id, "form")]
+        else:
+            action["domain"] = [("id", "in", retentions.ids)]
+        return action
 
     @api.depends(
         "retention_islr_line_ids.state",
