@@ -505,6 +505,7 @@ class PosSession(models.Model):
         return res
 
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
+        # Se sobreescribe esta funcion para poder reasignar la cuenta de destino del account_payment, ya que odoo base la sobreescribe luego de crearla
         outstanding_account = payment_method.outstanding_account_id or self.company_id.account_journal_payment_debit_account_id
         destination_account = self._get_receivable_account(payment_method)
 
