@@ -29,6 +29,12 @@
                 <attribute name="required">partner_required or is_dispatch_guide</attribute> 
                 <attribute name="readonly">order_is_consignment or partner_required</attribute>
             </xpath>
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="before">
+                <field name="is_return" invisible="1"/>
+            </xpath>
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="attributes">
+                <attribute name="invisible">state != 'done' or is_return</attribute>
+            </xpath>
             <xpath expr="//form//header" position="inside">
                 <field name="dispatch_guide_controls" invisible="1" />
                 <button 
@@ -76,12 +82,12 @@
                     name="guide_number"
                     readonly="1"
                     invisible="not dispatch_guide_controls"/>
+                <field name="type_of_return" />
             </xpath>
             <xpath expr="//field[@name='picking_type_id']" position="after">
                 <field name="operation_code" invisible="1"/>
                 <field name="is_return" invisible="1"/>
                 <field name="show_create_invoice" invisible="1"/>
-                <field name="show_create_bill" invisible="1"/>
                 <field name="show_create_customer_credit" invisible="1"/>
                 <field name="show_create_vendor_credit" invisible="1"/>
                 <field name="show_create_invoice_internal" invisible="1"/>
@@ -99,11 +105,6 @@
                     string="Create Invoice" type="object"
                     groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
-                <button 
-                    name="create_bill" class="oe_highlight"
-                    string="Create Bill" type="object"
-                    groups="l10n_ve_stock_account.group_stock_account"
-                    invisible="not show_create_bill"/>
                 <button 
                     name="create_customer_credit" class="oe_highlight"
                     string="Create Credit Note" type="object"
