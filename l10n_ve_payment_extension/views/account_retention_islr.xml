@@ -32,6 +32,7 @@
                             <field name="code_visible" invisible="1" />
                             <field name="type" force_save="1" select="2" />
                             <field name="type_retention" force_save="1" select="2" invisible="1" />
+                            <field name="is_third_party_retention" readonly="1" invisible="type != 'in_invoice'"/>
                             <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
                                 select="1"
                                 invisible="not type"
