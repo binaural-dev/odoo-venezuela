@@ -1190,7 +1190,13 @@ class StockPicking(models.Model):
             last_day = calendar.monthrange(today.year, today.month)[1]
             result = date(today.year, today.month, last_day)
 
-        return f"Tienes {pickings_combined} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
+        return _  (
+            "You have %(pickings_combined)s unbilled dispatch guides as of %(date)s. "
+            "If billed in the next period, the Seniat will be Notified."
+        ) % {
+            "pickings_combined": pickings_combined,
+            "date": result.strftime("%d-%m-%Y"),
+        }
 
     def _get_domain_for_return_picking(self):
         return [

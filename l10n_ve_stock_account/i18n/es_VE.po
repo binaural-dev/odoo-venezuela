@@ -1221,3 +1221,10 @@ msgstr ""
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid "transfer_ids"
 msgstr ""
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+msgid "You have %(pickings_combined)s unbilled dispatch guides as of %(date)s. If billed in the next period, the Seniat will be Notified."
+msgstr "Tienes %(pickings_combined)s guías de despacho sin facturar al %(date)s. De facturarse en el siguiente periodo el Seniat será Notificado."
+
