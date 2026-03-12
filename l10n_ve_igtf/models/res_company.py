@@ -24,14 +24,14 @@ class ResCompany(models.Model):
     advance_customer_account_id = fields.Many2one(
         "account.account",
         string="Advance Customer Account",
-        domain = [ ('account_type', '=', 'liability_current'),("is_advance_account", "=", True)],
+        domain = [ ('account_type', '=', 'liability_current'),("is_advance_account", "=", True),('reconcile','=',True)],
         help="Account used for advance payments from customers",copy=False
     )
 
     advance_supplier_account_id = fields.Many2one(
         "account.account",
         string="Advance Supplier Account",
-        domain = [('account_type', '=', 'asset_current'),("is_advance_account", "=", True)],
+        domain = [('account_type', '=', 'asset_current'),("is_advance_account", "=", True),('reconcile','=',True)],
         help="Account used for advance payments to suppliers",copy=False
     )
 
@@ -42,9 +42,9 @@ class ResCompany(models.Model):
             if self.env.context.get('install_mode') or self.env.context.get('skip_check'):
                 return
             if rec.advance_customer_account_id and not rec.advance_customer_account_id.is_advance_account:
-                raise UserError(_("The account for Advance Customer Account must be type liability_current and is_advance_account"))
+                raise UserError(_("The account for Advance Customer Account must be type liability_current, is_advance_account and reconciliable"))
             
             if rec.advance_supplier_account_id and not rec.advance_supplier_account_id.is_advance_account:
-                 raise UserError(_("The account for Advance Supplier Account must be type asset_current and is_advance_account"))
+                raise UserError(_("The account for Advance Supplier Account must be type asset_current, is_advance_account and reconciliable"))
 
     
