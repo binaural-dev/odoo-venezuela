@@ -112,14 +112,14 @@ class AccountMove(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         store=True,
-       
+        digits="Tasa",
         tracking=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        
+        digits=(16, 15),
         store=True,
         index=True,
         readonly=False,
@@ -206,8 +206,8 @@ class AccountMove(models.Model):
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
         for move in self:
-            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
-            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
+            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
+            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
             move.foreign_balance = move.foreign_currency_id.round((move.foreign_debit - move.foreign_credit))
 
     def _get_journal_income_account(self, journal):
