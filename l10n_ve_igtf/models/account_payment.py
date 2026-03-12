@@ -311,7 +311,7 @@ class AccountPaymentAndIgtf(models.Model):
                 igtf_amount_currency = igtf_amount_curr
                 
                 final_igtf_balance = float(float_repr(current_net_balance, precision_digits=currency.decimal_places))
-                credit = final_igtf_balance 
+                credit = abs(final_igtf_balance) 
                 vals.append({
                     "name": "IGTF",
                     "currency_id": currency.id,
@@ -319,8 +319,8 @@ class AccountPaymentAndIgtf(models.Model):
                     "account_id": igtf_account,
                     "partner_id": rec.partner_id.id,
                     "credit": credit,
+                    "balance": -credit,
                 })
-                
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
@@ -377,10 +377,10 @@ class AccountPaymentAndIgtf(models.Model):
                     current_net_balance += line_balance
 
                
-                igtf_amount_currency = igtf_amount_curr
+                igtf_amount_currency = abs(igtf_amount_curr)
                 
                 final_igtf_balance = float(float_repr(current_net_balance, precision_digits=currency.decimal_places))
-                credit = final_igtf_balance 
+                credit = abs(final_igtf_balance) 
                 vals.append({
                     "name": "IGTF",
                     "currency_id": currency.id,
@@ -388,8 +388,8 @@ class AccountPaymentAndIgtf(models.Model):
                     "account_id": igtf_account,
                     "partner_id": rec.partner_id.id,
                     "credit": credit,
+                    "balance": credit,
                 })
-                
         return vals
     
     def get_moves(self):
@@ -442,8 +442,8 @@ class AccountPaymentAndIgtf(models.Model):
                 credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
                 credit_line = credit_line_unrounded
                
-
-                credit_amount = (lines[1]["credit"])
+                
+                credit_amount = abs(lines[1]["balance"])
 
                 igtf_converted =  currency._convert(
                     rec.igtf_amount, 
@@ -464,7 +464,7 @@ class AccountPaymentAndIgtf(models.Model):
 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
-                         vals[1].update({"amount_currency": credit_line, "credit": amount})
+                         vals[1].update({"amount_currency": credit_line, "balance": -amount})
                 
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] + rec.igtf_amount
@@ -476,6 +476,8 @@ class AccountPaymentAndIgtf(models.Model):
                     )
                     
                     vals[2].update({"amount_currency": actual_value, "balance": balance})
+
+                 
                 rec._create_inbound_move_line_igtf_vals(vals)
                 
     def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
@@ -501,7 +503,7 @@ class AccountPaymentAndIgtf(models.Model):
 
         for rec in self:
             lines = [line for line in vals]
-            if rec.payment_type == "inbound":
+            if rec.payment_type == "outbound":
 
                 currency = rec.currency_id 
                 precision = currency.rounding
@@ -510,7 +512,7 @@ class AccountPaymentAndIgtf(models.Model):
                 debit_line = debit_line_unrounded
                
 
-                debit_amount = (lines[1]["debit"])
+                debit_amount = (lines[1]["balance"])
 
                 igtf_converted =  currency._convert(
                     rec.igtf_amount, 
@@ -531,7 +533,7 @@ class AccountPaymentAndIgtf(models.Model):
 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
-                         vals[1].update({"amount_currency": debit_line, "debit": amount})
+                         vals[1].update({"amount_currency": debit_line, "balance": amount})
                 
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] - rec.igtf_amount
@@ -543,7 +545,8 @@ class AccountPaymentAndIgtf(models.Model):
                     )
                     
                     vals[2].update({"amount_currency": actual_value, "balance": balance})
-                rec._create_inbound_move_line_igtf_vals(vals)
+
+                rec._create_outbound_move_line_igtf_vals(vals)
 
     def action_cancel(self):
         for record in self:
