@@ -42,6 +42,7 @@
                     type="object" class="o_btn_validate"
                     invisible="not dispatch_guide_controls"
                     data-hotkey="m"/>
+                <button name="print_donation_certificate" string="Print Donation Certificate" type="object" class="oe_highlight" invisible="not is_donation or state != 'done'"/>
 
             </xpath>
             <xpath expr="//field[@name='origin']" position="after">
@@ -76,7 +77,7 @@
                 <field 
                     name="guide_number"
                     readonly="1"
-                    invisible="not dispatch_guide_controls"/>
+                    invisible="not dispatch_guide_controls and is_donation"/>
 		<field name="type_of_return"/>
                 <field name="is_return" readonly="1"/>
             </xpath>
