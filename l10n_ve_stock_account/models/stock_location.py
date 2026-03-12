@@ -17,6 +17,7 @@ class StockLocation(models.Model):
 
     is_consignation_warehouse = fields.Boolean(
         string="Consignation Warehouse",
+        compute="_compute_is_consignation_warehouse",
     )
 
     @api.constrains("usage", "location_id", "partner_id")
@@ -32,6 +33,14 @@ class StockLocation(models.Model):
                     raise ValidationError(
                         _("A consignation warehouse must have an assigned customer.")
                     )
+
+    @api.depends("location_id")
+    def _compute_is_consignation_warehouse(self):
+        for record in self:
+            warehouse = record.get_warehouse()
+            record.is_consignation_warehouse = bool(
+                warehouse and warehouse.is_consignation_warehouse
+            )
 
     def get_warehouse(self):
         if not self.id:
