@@ -174,7 +174,7 @@
                         <tbody>
                             <t t-foreach="o.move_ids" t-as="line">
                                 <t t-set="line_values"
-                                    t-value="line._get_line_values(use_foreign_currency=o.get_foreign_currency_is_vef())" />
+                                    t-value="line._get_line_values()" />
 
                                 <tr>
                                     <!-- code -->
@@ -202,14 +202,7 @@
                                     </td>
                                     <!-- price -->
                                     <td class="text-center" t-if="o.operation_code != 'internal'">
-                                        <t t-if="o.get_foreign_currency_is_vef()">
-                                            <t t-out="line.sale_line_id.foreign_price or 0"
-                                                t-options='{"widget": "float", "precision": o.get_digits()}' />
-                                        </t>
-                                        <t t-else="">
-                                            <t t-out="line.sale_line_id.price_unit or 0"
-                                                t-options='{"widget": "float", "precision": o.get_digits()}' />
-                                        </t>
+                                        <t t-out="line_values['price_unit']"/>
                                     </td>
                                     <!-- discount percentage -->
                                     <td class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">

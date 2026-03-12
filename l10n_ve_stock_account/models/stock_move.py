@@ -8,7 +8,7 @@ _logger = logging.getLogger(__name__)
 class StockMove(models.Model):
     _inherit = "stock.move"
 
-    def _get_line_values(self, use_foreign_currency=False):
+    def _get_line_values(self):
         """
         Calculate and return all relevant values for a stock move line, including:
         - Quantity
@@ -28,15 +28,20 @@ class StockMove(models.Model):
         """
         self.ensure_one()
 
-        price_unit = (
-            (
-                self.sale_line_id.foreign_price
-                if use_foreign_currency
-                else self.sale_line_id.price_unit
-            )
-            if self.sale_line_id
-            else 0.0
-        )
+        if not self.sale_line_id:
+            return {
+                "quantity": self.quantity or 0.0,
+                "discount_percentage": 0.0,
+                "discount_amount": 0.0,
+                "tax_percentage": 0.0,
+                "tax_amount": 0.0,
+                "subtotal": 0.0,
+                "subtotal_after_discount": 0.0,
+                "price_unit": 0.0,
+                "total_with_tax": 0.0,
+            }
+
+        price_unit = self.price_unit_ves_for_dispatch_guide()
 
         quantity = self.quantity or 0.0
         discount = self.sale_line_id.discount or 0.0
@@ -94,7 +99,7 @@ class StockMove(models.Model):
         )
 
         if currency == self.env.company.currency_id:
-            return self.sale_line_id.price_unit
+            return self.sale_line_id.price_uni
 
         if (
             self.company_id.indexed_dispatch_guide
