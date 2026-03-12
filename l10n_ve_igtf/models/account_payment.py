@@ -726,7 +726,7 @@ class AccountPaymentAndIgtf(models.Model):
         """
         for rec in self:
             domain = False 
-            company_domain = [('company_id', '=', rec.company_id.id), ('reconcile', '=', True)]
+            company_domain = [('company_ids', 'in', [rec.company_id.id]), ('reconcile', '=', True)]
             if rec.is_advance_payment:
                 if rec.partner_type == 'supplier':
                    domain = company_domain + [
