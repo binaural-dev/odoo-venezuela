@@ -410,6 +410,42 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
             return resume_lines
 
+        if tax_type == "reduced_aliquot_international":
+            resume_lines.append(
+                sum(
+                    [
+                        self._determinate_amount_taxeds(move)["tax_base_reduced_aliquot_international"]
+                        for move in moves
+                    ]
+                )
+            )
+            resume_lines.append(
+                sum(
+                    [
+                        self._determinate_amount_taxeds(move)["amount_reduced_aliquot_international"]
+                        for move in moves
+                    ]
+                )
+            )
+            resume_lines.append(
+                sum(
+                    [
+                        self._determinate_amount_taxeds(note)["tax_base_reduced_aliquot_international"] * -1
+                        for note in credit_notes
+                    ]
+                )
+            )
+            resume_lines.append(
+                sum(
+                    [
+                        self._determinate_amount_taxeds(note)["amount_reduced_aliquot_international"] * -1
+                        for note in credit_notes
+                    ]
+                )
+            )
+
+            return resume_lines
+
         if tax_type == "extend_aliquot_international":
             resume_lines.append(
                 sum(
@@ -815,6 +851,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "name": "Compras Internas no Gravadas",
                 "format": "number",
                 "values": self._determinate_resume_books(moves, "exempt_aliquot"),
+            },
+            {
+                "name": "Importaciones Gravadas por Alícuota Reducida",
+                "format": "number",
+                "values": self._determinate_resume_books(moves, "reduced_aliquot_international"),
             },
             {
                 "name": "Importaciones Gravadas por Alícuota General",
