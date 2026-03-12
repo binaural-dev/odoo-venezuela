@@ -70,7 +70,7 @@ class IGTFTestCommon(TransactionCase):
         )
         
         # 2. Funciones Auxiliares (get_or_create_account)
-        def get_or_create_account(code, ttype, name, recon=False):
+        def get_or_create_account(code, ttype, name, recon=False, is_advance_account=False):
             """Busca o crea una cuenta y asegura las propiedades requeridas. (Lógica corregida)"""
             
             account_record = self.Account.search(
@@ -82,6 +82,7 @@ class IGTFTestCommon(TransactionCase):
                 "code": code,
                 "account_type": ttype,
                 "reconcile": recon,
+                "is_advance_account":is_advance_account
             }
 
             if not account_record:
@@ -94,24 +95,25 @@ class IGTFTestCommon(TransactionCase):
         self.get_or_create_account = get_or_create_account 
 
         self.acc_receivable = self.get_or_create_account(
-            "1101", "asset_receivable", "Cuentas por Cobrar (Clientes)", recon=True
+            "1101", "asset_receivable", "Cuentas por Cobrar (Clientes)", recon=True,
         )
         self.acc_payable = self.get_or_create_account( 
-            "2101", "liability_payable", "Cuentas por Pagar (Proveedores)", recon=True
+            "2101", "liability_payable", "Cuentas por Pagar (Proveedores)", recon=True,
         )
         self.acc_income = self.get_or_create_account("4001", "income", "Ingresos")
         
-        self.acc_igtf_cli = self.get_or_create_account("236IGTF", "expense", "IGTF Clientes")
+        self.acc_igtf_cli = self.get_or_create_account("236IGTF", "liability_current", "IGTF Clientes")
+        self.acc_igtf_prov = self.get_or_create_account("523IGTF", "expense", "IGTF Proveedores (Gasto)")
         
         self.account_bank_vef = self.get_or_create_account("1001", "asset_cash", "Cuenta de Banco VEF") 
         self.account_bank_usd = self.get_or_create_account("1002", "asset_cash", "Cuenta de Banco USd")
         self.account_bank_eur = self.get_or_create_account("1003", "asset_cash", "Cuenta de Banco EUR")
 
         self.advance_cust_acc = self.get_or_create_account(
-            "21600", "liability_current", "Anticipo Clientes", recon=True
+            "21600", "liability_current", "Anticipo Clientes", recon=True, is_advance_account=True
         )
         self.advance_supp_acc = self.get_or_create_account(
-            "13600", "asset_current", "Anticipo Proveedores", recon=True
+            "13600", "asset_current", "Anticipo Proveedores", recon=True, is_advance_account = True
         )
 
         
@@ -222,7 +224,7 @@ class IGTFTestCommon(TransactionCase):
                 "company_id": self.company.id,
                 "currency_id": self.currency_vef.id,
                 "is_igtf": False, 
-                "default_account_id": self.account_bank_usd.id,
+                "default_account_id": self.account_bank_vef.id,
                 "inbound_payment_method_line_ids": [(6, 0, self.pm_line_in_vef.ids)],
                 "outbound_payment_method_line_ids": [(6, 0, self.pm_line_out_vef.ids)],
             }
@@ -251,8 +253,14 @@ class IGTFTestCommon(TransactionCase):
         
 
         self.partner = self.env["res.partner"].create(
-            {"name": "Cliente IGTF", "vat": "J123","property_account_receivable_id": self.acc_receivable.id,
-                "property_account_payable_id": self.acc_payable.id, "taxpayer_type":"formal"}
+            {"name": "Cliente IGTF", 
+            "vat": "J123",
+            "property_account_receivable_id": self.acc_receivable.id,
+            "property_account_payable_id": self.acc_payable.id, 
+            "taxpayer_type":"formal",
+            "default_advance_customer_account_id":self.advance_cust_acc.id,
+            "default_advance_supplier_account_id":self.advance_supp_acc.id
+            }
         )
         self.tax_group = self.env['account.tax.group'].create({
             'name': 'IVA',
