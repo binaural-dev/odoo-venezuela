@@ -896,7 +896,7 @@ class AccountRetention(models.Model):
                     "is_retention": True,
                     "foreign_rate": line.move_id.foreign_rate,
                     "foreign_inverse_rate": line.move_id.foreign_inverse_rate,
-                    "retention_line_ids": line,
+                    "retention_line_ids": [Command.link(line.id)],
                     "currency_id": self.env.user.company_id.currency_id.id,
                 }
             )

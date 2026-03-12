@@ -12,7 +12,7 @@ class AccountRetentionLine(models.Model):
     check_company = True
 
     name = fields.Char(
-        string="Description", required=True, compute="_compute_name", store=True, readonly=False
+        string="Description", compute="_compute_name", store=True, readonly=False
     )
     company_id = fields.Many2one(
         "res.company",
