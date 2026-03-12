@@ -25,8 +25,7 @@ class SaleOrder(models.Model):
 
     is_consignation = fields.Boolean(
         string="Is Consignation",
-        compute="_compute_is_consignation",
-        store=True,
+        default=False,
         help="Indicates if this sale order is a consignation sale.",
     )
 
@@ -34,16 +33,6 @@ class SaleOrder(models.Model):
     def _onchange_is_donation(self):
         if self.is_donation:
             self.partner_id = self.company_id.partner_id
-
-    ### COMPUTES ###
-    @api.depends("warehouse_id", "document")
-    def _compute_is_consignation(self):
-        for order in self:
-            order.is_consignation = (
-                order.warehouse_id and order.warehouse_id.is_consignation_warehouse
-            )
-            if order.warehouse_id and order.warehouse_id.is_consignation_warehouse:
-                order.document = "invoice"
 
     ### DEFAULTS ###
     @api.model
@@ -143,3 +132,4 @@ class SaleOrder(models.Model):
         invoice_vals = super()._prepare_invoice()
         invoice_vals["is_donation"] = self.is_donation
         return invoice_vals
+
