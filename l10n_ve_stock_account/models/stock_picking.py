@@ -1322,6 +1322,9 @@ class StockPicking(models.Model):
             ("is_return", "=", False),
             ("type_of_return", "!=", "total"),
         ]
+    def print_donation_certificate(self):
+        self.ensure_one()
+        return self.env.ref("l10n_ve_stock_account.action_donation_certificate_stock_picking").report_action(self)
 
     def get_foreign_currency_is_vef(self):
         return self.env.company.foreign_currency_id == self.env.ref("base.VEF")
