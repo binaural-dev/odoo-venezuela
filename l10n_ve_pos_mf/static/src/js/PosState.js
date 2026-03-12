@@ -2,10 +2,11 @@
 
 import { PosStore } from "@point_of_sale/app/store/pos_store";
 import { patch } from "@web/core/utils/patch";
-import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
+
 
 patch(TicketScreen, {
   components: {
@@ -15,6 +16,12 @@ patch(TicketScreen, {
 });
 
 patch(PosStore.prototype, {
+  setup(...args) {
+    super.setup(...args);               // ← reenvía los args, evita el undefined
+    this.dialog = this.env.services.dialog; // ← no uses useService aquí
+  },
+
+
   open_cashbox() {
     if (this.useFiscalMachine() && this.config.has_cashbox) {
       const fdm = this.useFiscalMachine();
@@ -245,16 +252,16 @@ patch(PosStore.prototype, {
     
     } catch (err) {
 
-      if (!err.valid) { 
-        this.env.services.popup.add(ErrorPopup, {
-          title: _t("MF error"),
-          body: _t(err.message ? err.message : "Internal MF error"),
+      if (!err.valid) {
+        this.dialog.add(AlertDialog, {
+        title: _t("MF error"),
+        body: _t(err.message ? err.message : "Internal MF error"),
         });
-        
+
         return err
       
       } else {
-        this.env.services.popup.add(ErrorPopup, {
+        this.dialog.add(AlertDialog, {
           title: _t("MF error"),
           body: _t(err.status ? err.status : "Internal MF error"),
         });
