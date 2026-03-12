@@ -32,10 +32,10 @@ class AccountMove(models.Model):
         string="Is Advance Move?",
         store=True,
     )
+
     igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
     alter_bi_igtf = fields.Float('IGTF Apply',copy=False)
 
-    #Anticipoos
     invoice_outstanding_credits_debits_widget_advance_payment = fields.Binary(
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
@@ -291,9 +291,6 @@ class AccountMove(models.Model):
         
       
         igtf_amount = 0.0
-        # Exception: if the invoice's own journal is flagged as international
-        # purchase, IGTF must NOT be applied even when the payment journal has
-        # is_igtf = True.
         is_igtf_journal = (
             payment.journal_id.is_igtf
             if (
@@ -384,15 +381,14 @@ class AccountMove(models.Model):
                 amount, self.company_currency_id, self.company_id, fields.Date.today(),round=False
             )
         
-
-  
         vef_line1 = payment.currency_id.round(_to_vef(amount_line1))
         vef_line2 = payment.currency_id.round(_to_vef(amount_line2))
 
-        # El IGTF en VEF absorbe cualquier residuo de redondeo para que la suma sea 0.0
+        if abs(vef_line1) > self.amount_residual_signed:
+            vef_line2 = self.amount_residual_signed
+
         vef_igtf = abs(vef_line1) - abs(vef_line2)
         
-        # El amount_currency del IGTF es la diferencia de los montos en divisa
         amount_currency_igtf = abs(amount_line1) - abs(amount_line2)
 
         if is_customer:
@@ -407,13 +403,28 @@ class AccountMove(models.Model):
         
 
         # --- Configuración de Cuentas ---
+        advance_line = lines.filtered_domain([
+            '|',
+                '&', ('account_id.account_type', '=', 'liability_current'), ('account_id.is_advance_account', '=', True),
+                '&', ('account_id.account_type', '=', 'asset_current'), ('account_id.is_advance_account', '=', True),
+            ('account_id.reconcile', '=', True)
+        ])
+        
+        advance_line = advance_line.account_id[:1]
+
+        if not advance_line:
+            if is_customer: # O usa tu lógica de partner_type
+                advance_line = self.partner_id.default_advance_customer_account_id
+            else:
+                advance_line = self.partner_id.default_advance_supplier_account_id
+        
         if is_customer:
             name_rp, name_adv = "CUENTA POR COBRAR CLIENTE", "ANTICIPO/CLIENTE"
-            account_adv = payment.destination_account_id.id
+            account_adv = advance_line.id
             igtf_account = self.env.company.customer_account_igtf_id.id
         else:
             name_rp, name_adv = "CUENTA POR PAGAR PROVEEDOR", "ANTICIPO/PROVEEDOR"
-            account_adv = payment.destination_account_id.id
+            account_adv = advance_line.id
             igtf_account = self.env.company.supplier_account_igtf_id.id
 
         common_vals = {
@@ -485,6 +496,14 @@ class AccountMove(models.Model):
         :rtype: bool
         """
         self.ensure_one()
+        is_customer = False
+
+        if self.move_type in ["out_invoice", "in_refund"]:
+            is_customer = True
+        elif self.move_type in ["in_invoice", "out_refund"]:
+            is_customer = False
+        else:
+            return False 
 
         company = self.company_id
         self = self.with_company(company)
@@ -492,18 +511,28 @@ class AccountMove(models.Model):
         cross_move.action_post()
 
 
-        if self.move_type in ["out_invoice", "in_refund"]:
-            advance_account_id = payment_move.origin_payment_id.destination_account_id.id
-        elif self.move_type in ["in_invoice", "out_refund"]:
-            advance_account_id = payment_move.origin_payment_id.destination_account_id.id
-        else:
-            return False 
+        advance_line = payment_move.line_ids.filtered_domain([
+            '|',
+                '&', ('account_id.account_type', '=', 'liability_current'), ('account_id.is_advance_account', '=', True),
+                '&', ('account_id.account_type', '=', 'asset_current'), ('account_id.is_advance_account', '=', True),
+            ('account_id.reconcile', '=', True)
+        ])
+
+        advance_line = advance_line.account_id[:1]
+
+        if not advance_line:
+            
+            if is_customer: # usa tu lógica de partner_type
+                advance_line = self.partner_id.default_advance_customer_account_id
+            else:
+                advance_line = self.partner_id.default_advance_supplier_account_id
+                
 
         original_advance_lines = payment_move.line_ids.filtered(
-            lambda l: l.account_id.id == advance_account_id
+            lambda l: l.account_id.id == advance_line.id
         )
         cross_advance_lines = cross_move.line_ids.filtered(
-            lambda l: l.account_id.id == advance_account_id
+            lambda l: l.account_id.id == advance_line.id
         )
 
         advance_lines_to_reconcile = original_advance_lines + cross_advance_lines

@@ -1,7 +1,6 @@
 from odoo import api, models, fields, _, Command
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_is_zero , float_compare
-from odoo.tools import SQL
+from odoo.tools import float_is_zero , float_compare, float_repr, SQL
 
 import logging
 
@@ -48,6 +47,8 @@ class AccountPaymentAndIgtf(models.Model):
     destination_account_id_domain = fields.Char(
         compute="_compute_destination_account_id_domain"
     )
+
+    invoices_origin_ids = fields.Many2many('account.move', string='Invoices Origin')
                 
     @api.onchange('journal_id','is_advance_payment')
     def _onchange_journal_id(self):
@@ -154,7 +155,7 @@ class AccountPaymentAndIgtf(models.Model):
                         rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
 
             return vals
-
+    
     def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, base = False):
         
         currency = invoice.currency_id
@@ -249,19 +250,17 @@ class AccountPaymentAndIgtf(models.Model):
     def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
         
         igtf_account = (
-            self.env.company.customer_account_igtf_id.id
+            self.partner_id.default_advance_customer_account_id.id
             if self.partner_type == "customer"
-            else self.env.company.supplier_account_igtf_id.id
+            else  self.partner_id.default_advance_supplier_account_id.id
         )
         if self.env.context.get("from_pos", False):
             return
 
         for payment in self:
-            
             if payment.igtf_amount:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
-
                     if not vals_igtf:
                         payment._prepare_inbound_move_line_igtf_vals(vals, write_off_line_vals)
 
@@ -271,90 +270,126 @@ class AccountPaymentAndIgtf(models.Model):
                         payment._prepare_outbound_move_line_igtf_vals(vals,write_off_line_vals)
 
     def _create_inbound_move_line_igtf_vals(self, vals):
+        """
+        Appends the IGTF (Financial Transaction Tax) move line values to the 
+        existing list of line values for inbound payments.
+
+        This method identifies the appropriate IGTF account from the partner's 
+        configuration, calculates the tax amount in both transaction and 
+        company currency, and appends a new dictionary to 'vals'.
+
+        :param vals: List of dictionaries representing the move lines to be created.
+        
+        :raises UserError: If the IGTF account is not configured on the Partner's 
+                        advance account fields.
+
+        :return: The updated 'vals' list including the new IGTF line dictionary.
+        """
         for rec in self:
             currency = rec.currency_id
-            company_currency = self.env.company.currency_id
-            igtf_account = (
-                self.env.company.customer_account_igtf_id.id
-                if rec.partner_type == "customer"
-                else self.env.company.supplier_account_igtf_id.id
-            )
-            igtf_amount = currency.round(rec.igtf_amount)
-            account_id = igtf_account if rec.igtf_percentage else None
             
-            if float_compare(igtf_amount, 0.0, precision_rounding=currency.rounding) > 0.0:
-                # --- LÓGICA PARA EVITAR EL DESBALANCE DE 0.01 ---
-                # En lugar de convertir el IGTF solo, calculamos cuánto falta para cuadrar el asiento en VEF
-                # vals[0] es el Banco (Debito), vals[1] es la Factura (Credito)
+            igtf_account = (
+                rec.company_id.customer_account_igtf_id.id
+                if rec.partner_type == "customer"
+                else rec.company_id.supplier_account_igtf_id.id
+            )
+
+            if not igtf_account:
+                raise UserError(_('Igtf Account in must be assigned in companies settings'))
+            
+            igtf_amount_curr = rec.igtf_amount
+            
+            if float_compare(igtf_amount_curr, 0.0, precision_rounding=currency.rounding) > 0.0:
                 
-                # 1. Calculamos el IGTF en VEF basado en la tasa del pago
-                igtf_vef = currency._convert(igtf_amount, company_currency, self.env.company, rec.date)
-                igtf_vef = company_currency.round(igtf_vef)
+               
+                current_net_balance = 0.0
+                for line in vals:
+                    line_balance = line.get('balance') or (line.get('debit', 0.0) - line.get('credit', 0.0))
+                    current_net_balance += line_balance
 
-                # 2. Si es pago exacto en VEF, forzamos que el balance cuadre restando (Banco - Factura)
-                if currency.id == self.env.ref("base.VEF").id:
-                    # Obtenemos los valores que Odoo ya calculó para las primeras líneas
-                    # Si hiciste pop(), asegúrate de obtener los valores de amount_currency convertidos
-                    total_banco_vef = currency._convert(vals[0]['amount_currency'], company_currency, self.env.company, rec.date)
-                    total_factura_vef = currency._convert(abs(vals[1]['amount_currency']), company_currency, self.env.company, rec.date)
-                    
-                    # El IGTF es la diferencia real
-                    igtf_vef = company_currency.round(total_banco_vef  - total_factura_vef)
-
+               
+                igtf_amount_currency = igtf_amount_curr
+                
+                final_igtf_balance = float(float_repr(current_net_balance, precision_digits=currency.decimal_places))
+                credit = final_igtf_balance 
                 vals.append({
                     "name": "IGTF",
-                    "currency_id": rec.currency_id.id,
-                    "amount_currency": -igtf_amount,
-                    "debit": 0.0,
-                    "credit": abs(igtf_vef), # Forzamos el valor exacto (los 62640,66)
-                    "account_id": account_id,
+                    "currency_id": currency.id,
+                    "amount_currency": -igtf_amount_currency,
+                    "account_id": igtf_account,
                     "partner_id": rec.partner_id.id,
+                    "credit": credit,
                 })
-
-        _logger.info(format(vals))
+                
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
+        """
+        Appends the IGTF (Financial Transaction Tax) move line values to the 
+        existing list of line values for inbound payments.
+
+        This method identifies the appropriate IGTF account from the partner's 
+        configuration, calculates the tax amount in both transaction and 
+        company currency, and appends a new dictionary to 'vals'.
+
+        :param vals: List of dictionaries representing the move lines to be created.
+        
+        :raises UserError: If the IGTF account is not configured on the Partner's 
+                        advance account fields.
+
+        :return: The updated 'vals' list including the new IGTF line dictionary.
+        """
+        """
+        Appends the IGTF (Financial Transaction Tax) move line values to the 
+        existing list of line values for inbound payments.
+
+        This method identifies the appropriate IGTF account from the partner's 
+        configuration, calculates the tax amount in both transaction and 
+        company currency, and appends a new dictionary to 'vals'.
+
+        :param vals: List of dictionaries representing the move lines to be created.
+        
+        :raises UserError: If the IGTF account is not configured on the Partner's 
+                        advance account fields.
+
+        :return: The updated 'vals' list including the new IGTF line dictionary.
+        """
         for rec in self:
             currency = rec.currency_id
-            company_currency = self.env.company.currency_id
-            igtf_account = (
-                self.env.company.customer_account_igtf_id.id
-                if rec.partner_type == "customer"
-                else self.env.company.supplier_account_igtf_id.id
-            )
-            igtf_amount = currency.round(abs(rec.igtf_amount))
-            account_id = igtf_account if rec.igtf_percentage else None
             
-            if float_compare(igtf_amount, 0.0, precision_rounding=currency.rounding) > 0.0:
-                # --- LÓGICA PARA EVITAR EL DESBALANCE DE 0.01 ---
-                # En lugar de convertir el IGTF solo, calculamos cuánto falta para cuadrar el asiento en VEF
-                # vals[0] es el Banco (Debito), vals[1] es la Factura (Credito)
+            igtf_account = (
+                rec.company_id.customer_account_igtf_id.id
+                if rec.partner_type == "customer"
+                else rec.company_id.supplier_account_igtf_id.id
+            )
+
+            if not igtf_account:
+                raise UserError(_('Igtf Account in must be assigned in companies settings'))
+            
+            igtf_amount_curr = rec.igtf_amount
+            
+            if float_compare(igtf_amount_curr, 0.0, precision_rounding=currency.rounding) > 0.0:
                 
-                # 1. Calculamos el IGTF en VEF basado en la tasa del pago
-                igtf_vef = currency._convert(igtf_amount, company_currency, self.env.company, rec.date)
-                igtf_vef = company_currency.round(igtf_vef)
+               
+                current_net_balance = 0.0
+                for line in vals:
+                    line_balance = line.get('balance') or (line.get('debit', 0.0) - line.get('credit', 0.0))
+                    current_net_balance += line_balance
 
-                # 2. Si es pago exacto en VEF, forzamos que el balance cuadre restando (Banco - Factura)
-                if company_currency.id == self.env.ref("base.VEF").id:
-                    # Obtenemos los valores que Odoo ya calculó para las primeras líneas
-                    # Si hiciste pop(), asegúrate de obtener los valores de amount_currency convertidos
-                    total_banco_vef = currency._convert(abs(vals[0]['amount_currency']), company_currency, self.env.company, rec.date)
-                    total_factura_vef = currency._convert(abs(vals[1]['amount_currency']), company_currency, self.env.company, rec.date)
-                    
-                    # El IGTF es la diferencia real
-                    igtf_vef = company_currency.round(total_banco_vef) - company_currency.round(total_factura_vef)
-
+               
+                igtf_amount_currency = igtf_amount_curr
+                
+                final_igtf_balance = float(float_repr(current_net_balance, precision_digits=currency.decimal_places))
+                credit = final_igtf_balance 
                 vals.append({
                     "name": "IGTF",
-                    "currency_id": rec.currency_id.id,
-                    "amount_currency": igtf_amount,
-                    "debit": abs(igtf_vef),
-                    "credit": 0.0, # Forzamos el valor exacto 
-                    "account_id": account_id,
+                    "currency_id": currency.id,
+                    "amount_currency": igtf_amount_currency,
+                    "account_id": igtf_account,
                     "partner_id": rec.partner_id.id,
+                    "credit": credit,
                 })
-        
+                
         return vals
     
     def get_moves(self):
@@ -379,7 +414,24 @@ class AccountPaymentAndIgtf(models.Model):
             return set(move_lines.mapped("move_id"))
 
     def _prepare_inbound_move_line_igtf_vals(self, vals, write_off_line_vals = False):
-    
+        """
+        Adjusts the dictionary of values for move lines in outbound payments to 
+        account for the IGTF (Financial Transaction Tax) amount.
+
+        This method modifies the 'amount_currency' of existing lines (either the 
+        counterpart line or the write-off line) by subtracting the IGTF amount, 
+        ensuring the total balance remains consistent before the dedicated 
+        IGTF line is created.
+
+        :param vals: List of dictionaries containing the values for the move lines 
+                    to be created (usually: [liquidity_line, counterpart_line]).
+        :param write_off_line_vals: Boolean flag. If True, the tax is subtracted 
+                                    from the write-off line (vals[2]) instead 
+                                    of the main counterpart line (vals[1]).
+
+        :return: None. The 'vals' list is modified in-place and then passed to 
+                _create_outbound_move_line_igtf_vals to append the tax line.
+        """
         for rec in self:
             lines = [line for line in vals]
             if rec.payment_type == "inbound":
@@ -387,67 +439,111 @@ class AccountPaymentAndIgtf(models.Model):
                 currency = rec.currency_id 
                 precision = currency.rounding
 
-                credit_line_unrounded = currency.round(lines[1]["amount_currency"]) + currency.round(rec.igtf_amount)
+                credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
                 credit_line = credit_line_unrounded
-                credit_amount = -credit_line
-                amount = 0.0
-                vals[1].pop("debit", None)
-                vals[1].pop("credit", None)
-                vals[1].pop("balance", None)
+               
 
-                vals[0].pop("debit", None)
-                vals[0].pop("credit", None)
-                vals[0].pop("balance", None)
+                credit_amount = (lines[1]["credit"])
+
+                igtf_converted =  currency._convert(
+                    rec.igtf_amount, 
+                    rec.company_id.currency_id, 
+                    rec.company_id, 
+                    rec.date,
+                )
+                amount = credit_amount - igtf_converted
+                if rec.invoices_origin_ids != False: 
+                    
+                    total_base_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
+                    diferencia = abs(total_base_residual) - abs(amount)
+                    
+                    if abs(diferencia) != 0:
+                        if abs(credit_amount) > abs(total_base_residual):
+
+                            amount  = abs(total_base_residual)
 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
-                         vals[1].update({"amount_currency": credit_line})
+                         vals[1].update({"amount_currency": credit_line, "credit": amount})
                 
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] + rec.igtf_amount
-                    balance = actual_value
-                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    balance =  currency._convert(
+                        rec.actual_value, 
+                        rec.company_id.currency_id, 
+                        rec.company_id, 
+                        rec.date,
+                    )
                     
-                        balance = actual_value / rec.foreign_inverse_rate
                     vals[2].update({"amount_currency": actual_value, "balance": balance})
-
                 rec._create_inbound_move_line_igtf_vals(vals)
                 
     def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
-        
+        """
+        Adjusts the dictionary of values for move lines in outbound payments to 
+        account for the IGTF (Financial Transaction Tax) amount.
+
+        This method modifies the 'amount_currency' of existing lines (either the 
+        counterpart line or the write-off line) by subtracting the IGTF amount, 
+        ensuring the total balance remains consistent before the dedicated 
+        IGTF line is created.
+
+        :param vals: List of dictionaries containing the values for the move lines 
+                    to be created (usually: [liquidity_line, counterpart_line]).
+        :param write_off_line_vals: Boolean flag. If True, the tax is subtracted 
+                                    from the write-off line (vals[2]) instead 
+                                    of the main counterpart line (vals[1]).
+
+        :return: None. The 'vals' list is modified in-place and then passed to 
+                _create_outbound_move_line_igtf_vals to append the tax line.
+
+        """
+
         for rec in self:
             lines = [line for line in vals]
-            if rec.payment_type == "outbound":
-                
-                currency = rec.currency_id
+            if rec.payment_type == "inbound":
+
+                currency = rec.currency_id 
                 precision = currency.rounding
 
-                debit_line_unrounded = currency.round(lines[1]["amount_currency"]) - currency.round(rec.igtf_amount)
+                debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
                 debit_line = debit_line_unrounded
-                debit_amount = debit_line
-                amount = 0.0
-                
-                vals[1].pop("debit", None)
-                vals[1].pop("credit", None)
-                vals[1].pop("balance", None)
+               
 
-                vals[0].pop("debit", None)
-                vals[0].pop("credit", None)
-                vals[0].pop("balance", None)
+                debit_amount = (lines[1]["debit"])
+
+                igtf_converted =  currency._convert(
+                    rec.igtf_amount, 
+                    rec.company_id.currency_id, 
+                    rec.company_id, 
+                    rec.date,
+                )
+                amount = debit_amount - igtf_converted
+                if len(rec.invoices_origin_ids) == 1: 
+                    
+                    total_base_residual = sum(rec.invoices_origin_ids[:1].mapped('amount_residual_signed'))
+                    diferencia = abs(total_base_residual) - abs(amount)
+                    
+                    if abs(diferencia) != 0:
+                        if abs(debit_amount) > abs(total_base_residual):
+
+                            amount  = abs(total_base_residual)
 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
-                        vals[1].update({"amount_currency": debit_line})
+                         vals[1].update({"amount_currency": debit_line, "debit": amount})
                 
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] - rec.igtf_amount
-                    balance = actual_value
-                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    balance =  currency._convert(
+                        rec.actual_value, 
+                        rec.company_id.currency_id, 
+                        rec.company_id, 
+                        rec.date,
+                    )
                     
-                        balance = actual_value / rec.foreign_inverse_rate
                     vals[2].update({"amount_currency": actual_value, "balance": balance})
-
-                rec._create_outbound_move_line_igtf_vals(vals)
+                rec._create_inbound_move_line_igtf_vals(vals)
 
     def action_cancel(self):
         for record in self:
@@ -497,7 +593,7 @@ class AccountPaymentAndIgtf(models.Model):
                 record.move_id.line_ids.remove_move_reconcile()
             return super(AccountPaymentAndIgtf, self).action_draft()
     
-    #Overrida
+    #Override
     @api.depends('move_id.line_ids.matched_debit_ids', 'move_id.line_ids.matched_credit_ids')
     def _compute_stat_buttons_from_reconciliation(self):
         ''' Retrieve the invoices reconciled to the payments through the reconciliation (account.partial.reconcile). '''
@@ -609,37 +705,70 @@ class AccountPaymentAndIgtf(models.Model):
 
     @api.depends('is_advance_payment')
     def _compute_destination_account_id_domain(self):
+        """
+        Computes a dynamic domain for the destination_account_id field based on 
+        whether the payment is marked as an advance.
+
+        Logic:
+        - If is_advance_payment is True:
+            * For Suppliers: Filters for 'Current Asset' accounts marked as advance 
+            accounts (Prepayments to vendors).
+            * For Customers: Filters for 'Current Liability' accounts marked as advance 
+            accounts (Payments received in advance).
+        - If is_advance_payment is False:
+            * Standard behavior: Filters for 'Receivable' and 'Payable' accounts, 
+            excluding those specifically flagged for advances.
+
+        :return: Sets the string representation of the domain in destination_account_id_domain.
+        """
         for rec in self:
-            domain = False # Base domain
-            
+            domain = False 
+            company_domain = [('company_id', '=', rec.company_id.id), ('reconcile', '=', True)]
             if rec.is_advance_payment:
-                # Si es un PROVEEDOR (supplier) -> Activo Corriente + Is Advance
                 if rec.partner_type == 'supplier':
-                    domain = [
+                   domain = company_domain + [
                         ('account_type', '=', 'asset_current'),
                         ('is_advance_account', '=', True)
                     ]
-                # Si es un CLIENTE (customer) -> Pasivo Corriente + Is Advance
                 else:
-                    domain = [
+                    domain = company_domain + [
                         ('account_type', '=', 'liability_current'),
                         ('is_advance_account', '=', True)
                     ]
             else:
-                # Caso contrario: Dominio estándar que pediste
-                domain = [
-                    ('account_type', 'in', ('asset_receivable', 'liability_payable')),
-                    ('is_advance_account', '=', False) # Asumo que aquí no quieres ver las de anticipo
-                ]
+                if rec.partner_type == 'supplier':
+                    domain = company_domain + [
+                        ('account_type', '=', 'asset_receivable'),
+                        ('is_advance_account', '=', False)
+                    ]
+                else:
+                    domain = company_domain + [
+                        ('account_type', '=', 'liability_payable'),
+                        ('is_advance_account', '=', False)
+                    ]
             
             rec.destination_account_id_domain = str(domain)
 
     
     @api.constrains('is_advance_payment', 'destination_account_id', 'partner_type')
     def _check_advance_payment_account(self):
-        for rec in self:
-            # Si no hay cuenta seleccionada, no validamos (el 'required' de Odoo se encarga)
+        """
+        Validates the destination account based on the payment type (Standard vs. Advance).
 
+        Constraints:
+        - Bypasses validation during module installation/update or if 'skip_check' is in context.
+        - If 'is_advance_payment' is True:
+            * Suppliers: Account must be 'Current Asset' and flagged as 'is_advance_account'.
+            * Customers: Account must be 'Current Liability' and flagged as 'is_advance_account'.
+        - If 'is_advance_payment' is False:
+            * Prevents the use of accounts flagged as 'is_advance_account'.
+            * Ensures standard payments use only 'Receivable' or 'Payable' account types.
+
+        :raises ValidationError: If the selected account does not match the required 
+                                type or advance flag for the current partner type.
+        """
+        
+        for rec in self:
             if self.env.context.get('install_mode') or self.env.context.get('skip_check'):
                 return
     
@@ -649,27 +778,23 @@ class AccountPaymentAndIgtf(models.Model):
             acc = rec.destination_account_id
 
             if rec.is_advance_payment:
-                # Caso ANTICIPO
                 if rec.partner_type == 'supplier':
                     if acc.account_type != 'asset_current' or not acc.is_advance_account:
-                        raise ValidationError(_(
+                        raise UserError(_(
                             "For vendor advances, the account must be 'Current Assets' and flagged as an 'Advance Account'."
                         ))
                 elif rec.partner_type == 'customer':
                     if acc.account_type != 'liability_current' or not acc.is_advance_account:
-                        raise ValidationError(_(
+                        raise UserError(_(
                             "For customer advances, the account must be 'Current Liabilities' and flagged as an 'Advance Account'."
                         ))
             else:
-                # Caso PAGO ESTÁNDAR (No es anticipo)
-                # Validamos que NO usen una cuenta de anticipos por error
                 if acc.is_advance_account:
-                    raise ValidationError(_(
+                    raise UserError(_(
                         "You cannot use an 'Advance Account' for a standard payment. Please uncheck 'Is Advance Payment' or change the account."
                     ))
                 
-                # Validación de tipo estándar de Odoo por seguridad
                 if acc.account_type not in ('asset_receivable', 'liability_payable'):
-                    raise ValidationError(_(
+                    raise UserError(_(
                         "Standard payments must use 'Receivable' or 'Payable' account types."
                     ))
