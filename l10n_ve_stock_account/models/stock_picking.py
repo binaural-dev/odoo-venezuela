@@ -1128,7 +1128,6 @@ class StockPicking(models.Model):
             except Exception as e:
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
-
     def alert_views(self, id_company):
      
         company_ids = [int(cid) for cid in str(id_company).split(',') if cid.strip().isdigit()]
@@ -1147,6 +1146,11 @@ class StockPicking(models.Model):
                 ]
             )
         )
+    
+    def print_donation_certificate(self):
+        self.ensure_one()
+        return self.env.ref("l10n_ve_stock_account.action_donation_certificate_stock_picking").report_action(self)
+    
 
         hoy = date.today()
         taxpayer_type = self.env.company.taxpayer_type

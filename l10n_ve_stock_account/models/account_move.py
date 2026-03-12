@@ -35,6 +35,10 @@ class AccountMove(models.Model):
             list_guide_number = [picking.guide_number for picking in record.picking_ids]
             record.guide_number = "/".join(list_guide_number)
 
+    def print_donation_certificate(self):
+        self.ensure_one()
+        return self.env.ref("l10n_ve_stock_account.action_donation_certificate_account_move").report_action(self)
+
     def action_post(self):
         res = super().action_post()
         donation_moves = self.filtered(lambda m: m.is_donation and m.move_type == "out_invoice")
@@ -51,3 +55,26 @@ class AccountMove(models.Model):
             wizard.reverse_moves()
             wizard.new_move_ids.action_post()
         return res
+
+    def write(self, vals):
+        
+        for record in self:
+            is_donation = vals.get('is_donation', record.is_donation)
+            move_type = vals.get('move_type', record.move_type)
+            ref = vals.get('ref', record.ref)
+
+            if is_donation and move_type == "entry":
+                if 'is_donation' in vals or 'ref' in vals or 'line_ids' in vals:
+                    if not ref:
+                        raise UserError(_("The reference is required for a donation"))
+                
+                if "line_ids" in vals:
+                    for command in vals["line_ids"]:
+                        is_valid_command = isinstance(command, (list, tuple)) and len(command) == 3 and isinstance(command[2], dict)
+                        if not is_valid_command:
+                            continue
+
+                        line_vals = command[2]
+                        line_vals['name'] = ref
+
+        return super().write(vals)
