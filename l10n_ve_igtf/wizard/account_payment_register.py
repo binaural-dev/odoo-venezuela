@@ -275,7 +275,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             return 0.0 
                 
         if not base:
-            return self.convert_to_external_currency(payment_currency, igtf, fields.Date.today())
+            return self.convert_to_external_currency(payment_currency, igtf, self.payment_date)
         else:
             return igtf
     

@@ -32,6 +32,7 @@ class AccountMove(models.Model):
         string="Is Advance Move?",
         store=True,
     )
+
     igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
     alter_bi_igtf = fields.Float('IGTF Apply',copy=False)
 
