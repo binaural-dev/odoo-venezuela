@@ -6,7 +6,7 @@
             <field name="type">list</field>
             <field name="arch" type="xml">
                 <list string="Retention Lines">
-                    <field name="name"/>
+                    <field name="name" required="1"/>
                     <field name="payment_id" />
                 </list>
             </field>
@@ -18,7 +18,7 @@
             <field name="arch" type="xml">
                 <form string="Retention Lines">
                     <group>
-                        <field name="name"/>
+                        <field name="name" required="1"/>
                         <field name="base_ret"/>
                         <field name="imp_ret"/>
                         <field name="amount_tax_ret"/>
