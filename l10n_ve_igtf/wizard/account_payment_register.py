@@ -515,10 +515,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         is_provider =  self.partner_type == 'supplier'
 
-        source_amount = self.source_amount
         due_currency_id = self.source_currency_id
         
-        due_amount = self.company_id.currency_id._convert( source_amount,self.currency_id,company=self.company_id,date=self.payment_date)
+        due_amount = due_currency_id._convert(self.source_amount_currency,self.currency_id,company=self.company_id,date=self.payment_date)
        
         for payment in payments:
             

@@ -452,12 +452,15 @@ class AccountPaymentAndIgtf(models.Model):
                     rec.date,
                 )
                 amount = credit_amount - igtf_converted
-                if rec.invoices_origin_ids != False: 
-                    
+                
+                if rec.invoices_origin_ids != False : 
+                    fechas = set(rec.invoices_origin_ids.mapped('invoice_date'))
+                    fecha_unica = list(fechas)[0] if len(fechas) == 1 else False
+                
                     total_base_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
                     diferencia = abs(total_base_residual) - abs(amount)
                     
-                    if abs(diferencia) != 0:
+                    if abs(diferencia) != 0 and fecha_unica == rec.date:
                         if abs(credit_amount) > abs(total_base_residual):
 
                             amount  = abs(total_base_residual)
@@ -521,12 +524,14 @@ class AccountPaymentAndIgtf(models.Model):
                     rec.date,
                 )
                 amount = debit_amount - igtf_converted
-                if len(rec.invoices_origin_ids) == 1: 
-                    
-                    total_base_residual = sum(rec.invoices_origin_ids[:1].mapped('amount_residual_signed'))
+                if rec.invoices_origin_ids != False : 
+                    fechas = set(rec.invoices_origin_ids.mapped('invoice_date'))
+                    fecha_unica = list(fechas)[0] if len(fechas) == 1 else False
+                
+                    total_base_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
                     diferencia = abs(total_base_residual) - abs(amount)
                     
-                    if abs(diferencia) != 0:
+                    if abs(diferencia) != 0 and fecha_unica == rec.date:
                         if abs(debit_amount) > abs(total_base_residual):
 
                             amount  = abs(total_base_residual)
