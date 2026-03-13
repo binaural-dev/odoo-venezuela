@@ -1,7 +1,9 @@
 from odoo.tests.common import TransactionCase
+from odoo.tests import tagged
 from odoo.exceptions import UserError
 from odoo import fields
 
+@tagged('post_install', '-at_install')
 class TestRetentionISLRTarifa2(TransactionCase):
 
     @classmethod
