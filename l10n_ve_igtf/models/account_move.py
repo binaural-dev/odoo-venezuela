@@ -789,7 +789,6 @@ class AccountMove(models.Model):
 
     
         try:
-            #raise UserError('pasa por aca')
             payment_move.button_draft()
             
         except Exception:
