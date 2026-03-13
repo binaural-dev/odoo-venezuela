@@ -4,16 +4,21 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251121\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-21 14:11+0000\n"
-"PO-Revision-Date: 2025-11-21 14:11+0000\n"
+"POT-Creation-Date: 2026-02-09 16:27+0000\n"
+"PO-Revision-Date: 2026-02-09 16:27+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.actions.report,print_report_name:l10n_ve_payment_extension.retention_voucher_action
+msgid "\"%s\" % (object.number)"
+msgstr "\"%s\" % (object.number)"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
@@ -56,11 +61,6 @@ msgstr "% Base Imponible"
 #: model:ir.actions.report,print_report_name:l10n_ve_payment_extension.action_report_arcv
 msgid "'Comprobante_ARCV'"
 msgstr "'Comprobante ARCV'"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.actions.report,print_report_name:l10n_ve_payment_extension.retention_voucher_action
-msgid "(object.number)"
-msgstr "(número del objeto)"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
@@ -316,11 +316,6 @@ msgid "Action Needed"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_needaction
-msgid "Action Needed"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__state
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__active
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__economic_branch__status__active
@@ -361,26 +356,6 @@ msgstr "Ícono del tipo de actividad"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__actual_invoice_ids
 msgid "Actual Invoices"
 msgstr "Facturas actuales"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_ids
-msgid "Activities"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_exception_decoration
-msgid "Activity Exception Decoration"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_state
-msgid "Activity State"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_type_icon
-msgid "Activity Type Icon"
-msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
@@ -459,11 +434,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_attachment_count
 msgid "Attachment Count"
 msgstr "Cantidad de adjuntos"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_attachment_count
-msgid "Attachment Count"
-msgstr ""
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -618,7 +588,7 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_partner
@@ -1044,21 +1014,6 @@ msgid "Font awesome icon e.g. fa-tasks"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_follower_ids
-msgid "Followers"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_partner_ids
-msgid "Followers (Partners)"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_type_icon
-msgid "Font awesome icon e.g. fa-tasks"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_currency_id
@@ -1240,13 +1195,6 @@ msgstr "Retención de ISLR para Proveedor"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
 msgid "ISLR Retentions"
 msgstr "Retenciones de ISLR"
-
-#. module: l10n_ve_payment_extension
-#. odoo-python
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-#, python-format
-msgid "ISLR retention: Number must be exactly 11 numeric digits."
-msgstr "Retención ISLR: El número debe tener exactamente 11 dígitos numéricos."
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__iva_amount
@@ -1447,11 +1395,6 @@ msgid "Is Follower"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_is_follower
-msgid "Is Follower"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__is_out_invoice
 msgid "Is Out Invoice"
 msgstr "Es Factura de Cliente"
@@ -1630,16 +1573,6 @@ msgstr "Maestros"
 #: code:addons/l10n_ve_payment_extension/utils/utils_retention.py:0
 msgid "May"
 msgstr "Mayo"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_has_error
-msgid "Message Delivery error"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_ids
-msgid "Messages"
-msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_has_error
@@ -2120,11 +2053,6 @@ msgid "Responsible User"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__activity_user_id
-msgid "Responsible User"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__foreign_total_retention_amount
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__total_retention_amount
 msgid "Retained Amount Total"
@@ -2253,11 +2181,6 @@ msgid "SMS Delivery error"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__message_has_sms_error
-msgid "SMS Delivery error"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__code_visible
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__code_visible
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__code_visible
@@ -2363,15 +2286,6 @@ msgstr "Estado"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__status
 msgid "Status"
 msgstr "Estado"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_state
-msgid ""
-"Status based on activities\n"
-"Overdue: Due date is already passed\n"
-"Today: Activity date is today\n"
-"Planned: Future activities."
-msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_state
@@ -2549,6 +2463,7 @@ msgstr ""
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid "The company must have a journal for ISLR supplier retention."
 msgstr ""
@@ -2778,11 +2693,6 @@ msgid "Type of the exception activity on record."
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__activity_exception_decoration
-msgid "Type of the exception activity on record."
-msgstr ""
-
-#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__type_person_id
 msgid "Type person"
 msgstr "Tipo de Persona"
@@ -2824,16 +2734,6 @@ msgstr "Nro de Comprobante"
 #: code:addons/l10n_ve_payment_extension/models/account_withholding_type.py:0
 msgid "Warning"
 msgstr "Advertencia"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__website_message_ids
-msgid "Website Messages"
-msgstr ""
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__website_message_ids
-msgid "Website communication history"
-msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__website_message_ids
