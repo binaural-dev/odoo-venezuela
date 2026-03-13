@@ -74,18 +74,21 @@ class SaleOrderLine(models.Model):
             )
             line.invoiced = invoiced
 
-    @api.depends("price_unit", "foreign_inverse_rate")
+    @api.depends("price_unit", "order_id.date_order", "currency_id")
     def _compute_foreign_price(self):
         for line in self:
 
-            invoice_date = (
-                line.invoice_lines and line.invoice_lines.move_ids.date
-            ) or fields.Date.today()
+            order_date = line.order_id.date_order or fields.Date.today()
 
             company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
             if line.currency_id.id == company_currency.id:
-                line.foreign_price = line.price_unit * line.foreign_inverse_rate
+                line.foreign_price = line.currency_id._convert(
+                    line.price_unit,
+                    foreign_currency,
+                    line.company_id,
+                    order_date,
+                )
             elif line.currency_id.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
             else:
@@ -93,9 +96,14 @@ class SaleOrderLine(models.Model):
                     line.price_unit,
                     company_currency,
                     line.company_id,
-                    invoice_date,
+                    order_date,
                 )
-                line.foreign_price = price_in_company * line.foreign_inverse_rate 
+                line.foreign_price = company_currency._convert(
+                    price_in_company,
+                    foreign_currency,
+                    line.company_id,
+                    order_date,
+                )
 
     @api.depends("product_uom_qty", "foreign_price", "discount")
     def _compute_foreign_subtotal(self):
