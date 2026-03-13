@@ -368,6 +368,7 @@ class AccountMove(models.Model):
             )
             foreign_currency_symbol = foreign_currency_record.symbol or ""
             foreign_currency_name = foreign_currency_record.name or ""
+            company_currency_symbol = self.env.company.currency_id.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
@@ -393,6 +394,8 @@ class AccountMove(models.Model):
                 doc = etree.XML(res["arch"])
                 foreign_total_billed_column = doc.xpath("//list/field[@name='foreign_total_billed']")
                 foreign_untaxed_total_column = doc.xpath("//list/field[@name='foreign_untaxed_total']")
+                amount_total_signed_column = doc.xpath("//list/field[@name='amount_total_signed']")
+                amount_untaxed_signed_column = doc.xpath("//list/field[@name='amount_untaxed_signed']")
                 if foreign_total_billed_column:
                     foreign_total_billed_column[0].set(
                         "string", _("Total") + " " + foreign_currency_name
@@ -401,6 +404,15 @@ class AccountMove(models.Model):
                     foreign_untaxed_total_column[0].set(
                         "string", _("Untaxed Total") + " " + foreign_currency_name
                     )
+                if amount_total_signed_column:
+                    amount_total_signed_column[0].set(
+                        "string", _("Total") + " " + company_currency_symbol
+                    )
+                if amount_untaxed_signed_column:
+                    amount_untaxed_signed_column[0].set(
+                        "string", _("Untaxed Total") + " " + company_currency_symbol
+                    )
+                
                 res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
