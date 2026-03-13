@@ -274,7 +274,7 @@ class AccountRetentionLine(models.Model):
                                 record.invoice_amount = record.invoice_amount or 0
                                 record.foreign_invoice_amount = record.foreign_invoice_amount or 0
                     else:
-                        invoice_date = record.move_id.invoice_date_display or fields.Date.today()
+                        invoice_date = record.move_id.invoice_date or fields.Date.today()
 
                         fiscalyear_last_day = int(record.company_id.fiscalyear_last_day)
                         fiscalyear_last_month = int(record.company_id.fiscalyear_last_month)
@@ -297,8 +297,8 @@ class AccountRetentionLine(models.Model):
                             ('partner_id', '=', calc_partner.id),
                             ('move_type', '=', 'in_invoice'),
                             ('state', '=', 'posted'),
-                            ('invoice_date_display', '>=', fiscalyear_start),
-                            ('invoice_date_display', '<', invoice_date),
+                            ('invoice_date', '>=', fiscalyear_start),
+                            ('invoice_date', '<', invoice_date),
                             ('company_id', '=', record.company_id.id),
                         ])
                         previous_invoices = previous_invoices.filtered(
