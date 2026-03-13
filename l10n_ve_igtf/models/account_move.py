@@ -379,7 +379,7 @@ class AccountMove(models.Model):
         vef_line1 = payment.currency_id.round(_to_vef(amount_line1))
         vef_line2 = payment.currency_id.round(_to_vef(amount_line2))
 
-        if abs(vef_line1) > abs(self.amount_residual_signed) and self.invoice_date.id == payment.date.id:
+        if abs(vef_line1) > abs(self.amount_residual_signed) and self.invoice_date == payment.date:
             vef_line2 = abs(self.amount_residual_signed)
 
         vef_igtf = abs(vef_line1) - abs(vef_line2)
