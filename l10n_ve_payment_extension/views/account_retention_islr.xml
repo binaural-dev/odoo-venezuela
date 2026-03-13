@@ -6,6 +6,7 @@
         <record id="view_retention_islr_form_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">Retention ISLR client form</field>
             <field name="model">account.retention</field>
+            <field name="priority">20</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Retention" duplicate="false">
@@ -102,6 +103,17 @@
                                             widget="monetary"
                                             options="{'currency_field': 'foreign_currency_id'}"
                                             column_invisible="parent.base_currency_is_vef"/>
+
+                                        <field
+                                            name="iva_amount"
+                                            widget="monetary"
+                                            options="{'currency_field': 'company_currency_id'}"
+                                            column_invisible="not parent.base_currency_is_vef or parent.type_retention != 'iva'"/>
+                                        <field
+                                            name="foreign_iva_amount"
+                                            widget="monetary"
+                                            options="{'currency_field': 'foreign_currency_id'}"
+                                            column_invisible="parent.base_currency_is_vef or parent.type_retention != 'iva'"/>
 
                                         <field
                                             name="related_pay_from"
