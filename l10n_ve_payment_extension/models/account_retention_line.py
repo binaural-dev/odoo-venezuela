@@ -249,6 +249,8 @@ class AccountRetentionLine(models.Model):
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:
                 if calc_partner.type_person_id.id == line.type_person_id.id:
+                    move = record.move_id._origin or record.move_id
+                    islr_retention_lines = len(move.retention_islr_line_ids)
                     if not line.tariff_id.accumulated_rate:
                         # compare the type_person_id of the partner with the type_person_id of the
                         # payment concept and set the related fields.
@@ -266,7 +268,7 @@ class AccountRetentionLine(models.Model):
                         if not record.retention_id or record.retention_id.type == "in_invoice":
                             # We don't want this fields to be computed when the retention is
                             # created from a customer invoice since they are filled by the user.
-                            if (islr_retention_lines <= 1) and (municipal_retention_lines <= 1):
+                            if islr_retention_lines <= 1:
                                 record.invoice_amount = move.tax_totals["base_amount"]
                                 record.foreign_invoice_amount = move.tax_totals[
                                 "base_amount_foreign_currency"
@@ -280,10 +282,14 @@ class AccountRetentionLine(models.Model):
                         fiscalyear_last_day = int(record.company_id.fiscalyear_last_day)
                         fiscalyear_last_month = int(record.company_id.fiscalyear_last_month)
 
-                        if invoice_date.month > fiscalyear_last_month or (invoice_date.month == fiscalyear_last_month and invoice_date.day > fiscalyear_last_day):
-                            fiscalyear_start = fields.Date.from_string('%s-%02d-%02d' % (invoice_date.year, fiscalyear_last_month + 1 if fiscalyear_last_month < 12 else 1, 1))
+                        # Fiscal year start calculation (handles 12/31 fiscal close correctly)
+                        if fiscalyear_last_month == 12 and fiscalyear_last_day == 31:
+                            fiscalyear_start = fields.Date.from_string('%s-01-01' % invoice_date.year)
                         else:
-                            fiscalyear_start = fields.Date.from_string('%s-%02d-%02d' % (invoice_date.year - 1, fiscalyear_last_month + 1 if fiscalyear_last_month < 12 else 1, 1))
+                            if invoice_date.month > fiscalyear_last_month or (invoice_date.month == fiscalyear_last_month and invoice_date.day > fiscalyear_last_day):
+                                fiscalyear_start = fields.Date.from_string('%s-%02d-%02d' % (invoice_date.year, fiscalyear_last_month + 1 if fiscalyear_last_month < 12 else 1, 1))
+                            else:
+                                fiscalyear_start = fields.Date.from_string('%s-%02d-%02d' % (invoice_date.year - 1, fiscalyear_last_month + 1 if fiscalyear_last_month < 12 else 1, 1))
                         
                         current_ut = line.tariff_id.tax_unit_ids
 
@@ -347,14 +353,22 @@ class AccountRetentionLine(models.Model):
                             record.related_percentage_fees = selected_rate.percentage  
                             record.related_amount_subtract_fees = selected_rate.subtract_ut * current_ut.value
                             record.foreign_currency_rate = record.move_id.foreign_rate
+                        else:
+                            record.related_pay_from = 0.0
+                            record.related_percentage_tax_base = 0.0
+                            record.related_percentage_fees = 0.0
+                            record.related_amount_subtract_fees = 0.0
+                            record.foreign_currency_rate = 0.0
 
                         if not record.retention_id or record.retention_id.type == "in_invoice":
                             # We don't want this fields to be computed when the retention is
                             # created from a customer invoice since they are filled by the user.
-                            record.invoice_amount = record.move_id.tax_totals["base_amount"]
-                            record.foreign_invoice_amount = record.move_id.tax_totals[
-                                "base_amount_foreign_currency"
-                            ]
+                            if islr_retention_lines <= 1:
+                                record.invoice_amount = record.move_id.tax_totals["base_amount"]
+                                record.foreign_invoice_amount = record.move_id.tax_totals["base_amount_foreign_currency"]
+                            else:
+                                record.invoice_amount = record.invoice_amount or 0
+                                record.foreign_invoice_amount = record.foreign_invoice_amount or 0
 
     @api.depends("invoice_amount", "foreign_invoice_amount")
     def _compute_amounts(self):
