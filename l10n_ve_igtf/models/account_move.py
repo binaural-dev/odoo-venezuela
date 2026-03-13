@@ -1,6 +1,6 @@
 from odoo import api, fields, models,  Command, _
 from odoo.tools.sql import column_exists, create_column
-from odoo.tools import  float_compare, formatLang
+from odoo.tools import  float_compare, formatLang ,float_repr
 from odoo.exceptions import UserError
 
 import logging
@@ -387,11 +387,10 @@ class AccountMove(models.Model):
         vef_line2 = payment.currency_id.round(_to_vef(amount_line2))
 
         if abs(vef_line1) > self.amount_residual_signed:
-            vef_line2 = self.amount_residual_signed
+            vef_line2 = abs(self.amount_residual_signed)
 
         vef_igtf = abs(vef_line1) - abs(vef_line2)
-        
-        amount_currency_igtf = abs(amount_line1) - abs(amount_line2)
+        vef_igtf = float(float_repr(vef_igtf, precision_digits= payment.currency_id.decimal_places))
 
         if is_customer:
             amount_line2 = -amount_line2 if line_2 == 'credit' else amount_line2
