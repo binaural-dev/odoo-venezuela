@@ -390,6 +390,7 @@ class AccountMove(models.Model):
         vef_igtf = abs(vef_line1) - abs(vef_line2)
         vef_igtf = float(float_repr(vef_igtf, precision_digits= payment.currency_id.decimal_places))
 
+         amount_currency_igtf = abs(amount_line1) - abs(amount_line2)
         if is_customer:
             amount_line2 = -amount_line2 if line_2 == 'credit' else amount_line2
             amount_line1 = amount_line1 
