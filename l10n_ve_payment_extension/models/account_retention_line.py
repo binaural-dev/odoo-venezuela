@@ -573,6 +573,9 @@ class AccountRetentionLine(models.Model):
     )
     def _constraint_amounts_in_zero(self):
         for record in self:
+            # Solo validamos si la línea está vinculada a una retención real
+            if not record.retention_id:
+                continue
             if any(
                 (
                     record.retention_amount == 0,
