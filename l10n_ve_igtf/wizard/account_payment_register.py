@@ -170,13 +170,23 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                              
     @api.onchange("journal_id","currency_id")
     def _compute_check_igtf(self):
-        """ Check if the company is a ordinary contributor"""
+        """ Check if the company is a ordinary contributor.
+
+        Exception: if the invoice's journal has is_purchase_international=True,
+        IGTF is not applicable regardless of the payment journal's is_igtf flag.
+        """
         for payment in self:
             payment.is_igtf = False
             if payment.journal_id.is_igtf and payment.partner_id:
-                move_ids=self.get_moves()
+                move_ids = self.get_moves()
                 for move_id in move_ids:
-                    if payment.partner_id._check_igtf_apply_improved(move_id.move_type) and payment.currency_id != self.env.ref("base.VEF"):
+                    # Skip IGTF for invoices belonging to international purchase journals
+                    if move_id.journal_id.is_purchase_international:
+                        continue
+                    if (
+                        payment.partner_id._check_igtf_apply_improved(move_id.move_type)
+                        and payment.currency_id != self.env.ref("base.VEF")
+                    ):
                         payment.is_igtf = True
       
     @api.onchange("is_igtf", "igtf_to_show")
