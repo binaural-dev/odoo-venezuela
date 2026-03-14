@@ -777,8 +777,8 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:res.groups,name:l10n_ve_stock_account.group_not_dispatch_guide
-msgid "No ver guías de despacho"
-msgstr ""
+msgid "Do not view dispatch guides"
+msgstr "No ver guías de despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__unique

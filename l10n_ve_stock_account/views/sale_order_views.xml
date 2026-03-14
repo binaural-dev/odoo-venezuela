@@ -12,7 +12,7 @@
                     readonly="state in ['sale', 'done', 'cancel'] or is_consignation" />
                 <field name="compute_document"
                     invisible="not show_document"
-                    readonly="state in ['sale', 'done', 'cancel'] or is_consignation" />
+                    readonly="1" />
             </field>
             <field name="manually_set_rate" position="after">
                 <field name="is_donation" readonly="state in ['sale', 'done', 'cancel']" />
