@@ -16,27 +16,26 @@ class TestRetentionISLRTarifa2(TransactionCase):
         # Activar el uso de retenciones de ISLR
         cls.env['ir.config_parameter'].sudo().set_param('l10n_ve_payment_extension.use_islr_retention', True)
 
+        def find_or_create_account(name, code, account_type, reconcile=False):
+            account = cls.env['account.account'].search([
+                ('code', '=', code),
+                ('company_ids', 'in', cls.company.id)
+            ], limit=1)
+            if not account:
+                account = cls.env['account.account'].create({
+                    'name': name,
+                    'code': code,
+                    'account_type': account_type,
+                    'reconcile': reconcile,
+                })
+            return account
+
         # Crear cuenta de gastos
-        cls.expense_account = cls.env['account.account'].create({
-            'name': 'Gastos Test',
-            'code': '600000',
-            'account_type': 'expense',
-            'reconcile': False,
-        })
+        cls.expense_account = find_or_create_account('Gastos Test', '600000', 'expense')
         
         # Crear cuentas por pagar y cobrar
-        cls.payable_account = cls.env['account.account'].create({
-            'name': 'Payable Account',
-            'code': '2010101',
-            'account_type': 'liability_payable',
-            'reconcile': True,
-        })
-        cls.receivable_account = cls.env['account.account'].create({
-            'name': 'Receivable Account',
-            'code': '1010101',
-            'account_type': 'asset_receivable',
-            'reconcile': True,
-        })
+        cls.payable_account = find_or_create_account('Payable Account', '2010101', 'liability_payable', True)
+        cls.receivable_account = find_or_create_account('Receivable Account', '1010101', 'asset_receivable', True)
 
         # Crear diario de compras
         cls.purchase_journal = cls.env['account.journal'].create({
