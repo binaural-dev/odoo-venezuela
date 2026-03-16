@@ -13,4 +13,6 @@ from . import (
     stock_warehouse,
     stock_location,
     stock_return_picking,
+    product_template,
+    stock_picking_type,
 )
