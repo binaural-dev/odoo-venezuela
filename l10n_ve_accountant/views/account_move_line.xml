@@ -6,14 +6,14 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook/page/group/group[1]" position="after">
                 <group string="Foreign Amount">
-                    <field name="foreign_rate" readonly="1" force_save="1"/>
+                    <field name="foreign_rate" readonly="1" force_save="1" options="{'precision': 'Tasa'}"/>
                     <field name="foreign_inverse_rate" invisible="1"/>
                     <field name="foreign_inverse_rate" readonly="1" force_save="1" groups="base.group_no_one"/>
-                    <field name="foreign_debit" readonly="1" force_save="1"/>
-                    <field name="foreign_debit_adjustment" force_save="1"/>
-                    <field name="foreign_credit_adjustment" force_save="1"/>
-                    <field name="foreign_credit" readonly="1" force_save="1"/>
-                    <field name="foreign_balance" readonly="1" force_save="1"/>
+                    <field name="foreign_debit" readonly="1" force_save="1" options="{'precision': 'Foreign Product Price'}"/>
+                    <field name="foreign_debit_adjustment" force_save="1" options="{'precision': 'Foreign Product Price'}"/>
+                    <field name="foreign_credit_adjustment" force_save="1" options="{'precision': 'Foreign Product Price'}"/>
+                    <field name="foreign_credit" readonly="1" force_save="1" options="{'precision': 'Foreign Product Price'}"/>
+                    <field name="foreign_balance" readonly="1" force_save="1" options="{'precision': 'Foreign Product Price'}"/>
                 </group>
 	    </xpath>
 	</field>
@@ -25,11 +25,11 @@
 	<field name="inherit_id" ref="account.view_move_line_tree"/>
 	<field name="arch" type="xml">
 	    <xpath expr="//field[@name='balance']" position="after">
-		<field name="foreign_debit" readonly="1" optional="show" sum="Total Foreign Debit"/>
-		<field name="foreign_debit_adjustment" optional="hide"/>
-		<field name="foreign_credit" readonly="1" optional="show" sum="Total Foreign Credit"/>
-		<field name="foreign_credit_adjustment" optional="hide" />
-		<field name="foreign_balance" readonly="1" optional="hide"/>
+		<field name="foreign_debit" readonly="1" optional="show" sum="Total Foreign Debit" options="{'precision': 'Foreign Product Price'}"/>
+		<field name="foreign_debit_adjustment" optional="hide" options="{'precision': 'Foreign Product Price'}"/>
+		<field name="foreign_credit" readonly="1" optional="show" sum="Total Foreign Credit" options="{'precision': 'Foreign Product Price'}"/>
+		<field name="foreign_credit_adjustment" optional="hide" options="{'precision': 'Foreign Product Price'}"/>
+		<field name="foreign_balance" readonly="1" optional="hide" options="{'precision': 'Foreign Product Price'}"/>
                     
 
 	    </xpath>

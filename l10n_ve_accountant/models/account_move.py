@@ -119,7 +119,6 @@ class AccountMove(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
         store=True,
         index=True,
         readonly=False,
@@ -383,12 +382,7 @@ class AccountMove(models.Model):
 
         return moves
 
-    @api.onchange("partner_id")
-    def onchange_date(self):
-        for rec in self:
-            if rec.partner_id:
-                rec.invoice_date = fields.Date.today()
-                rec.foreign_currency_id = rec.default_alternate_currency()
+  
 
     def write(self, vals):
         """
@@ -771,7 +765,6 @@ class AccountMove(models.Model):
         "invoice_line_ids.price_total",
         "invoice_line_ids.price_subtotal",
         "invoice_payment_term_id",
-        "partner_id",
         "currency_id",
         "foreign_rate",
     )
