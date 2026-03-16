@@ -1021,17 +1021,11 @@ class StockPicking(models.Model):
 
         for picking in self:
 
-            if self.env.user.has_group("l10n_ve_stock_account.group_not_dispatch_guide"):
-                picking.is_dispatch_guide = False
-                continue
-
             picking.is_dispatch_guide = (
                 False
                 if picking.is_dispatch_guide is None
                 else picking.is_dispatch_guide
             )
-
-            picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
 
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
