@@ -48,7 +48,7 @@ class AccountMoveLine(models.Model):
                 is_receivable_type = account_type == 'asset_receivable'
                 if line.move_id.is_donation:
                     donation_account = line.company_id.donation_account_id or self.env.company.donation_account_id
-                    if donation_account and line.account_id == donation_account:
+                    if donation_account and line.account_id == donation_account and line.display_type == 'payment_term':
                         is_receivable_type = True
 
                 if (line.display_type == 'payment_term') ^ is_receivable_type:
