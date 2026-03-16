@@ -18,7 +18,7 @@
 						</div>
 						<div class="o_row">
 							<field name="state_id" placeholder="Estado"/>
-							<field name="city_id" placeholder="Ciudad" required='1'/>	
+							<field name="city_id" placeholder="Ciudad" domain="[('state_id', '=', state_id)]" required='1'/>	
 						</div>
 						<field name="city" invisible='1'/>
 						<div class="o_row">
@@ -40,7 +40,7 @@
 				</xpath>
 
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city']" position="replace">
-					<field name="city_id" placeholder="Ciudad" />
+					<field name="city_id" placeholder="Ciudad" domain="[('state_id', '=', state_id)]" />
 					<field name="city" invisible="1" />
 				</xpath>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street2']" position="after">
