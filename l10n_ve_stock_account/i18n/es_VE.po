@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251118\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-06 15:48+0000\n"
-"PO-Revision-Date: 2026-01-06 15:48+0000\n"
+"POT-Creation-Date: 2026-02-14 00:43+0000\n"
+"PO-Revision-Date: 2026-02-14 00:43+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -505,9 +505,11 @@ msgid "From Picking"
 msgstr "Desde el Picking"
 
 #. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
 msgid "Generate Invoice For Multiple Picking"
-msgstr "Generar factura para múltiples guias de despacho"
+msgstr "Generar facturas para múltiples guías de despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.actions.server,name:l10n_ve_stock_account.ir_cron_auto_invoice_stock_ir_actions_server
@@ -625,6 +627,47 @@ msgstr "Si está habilitado, el campo de descuento se ocultará en la guía de d
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
 msgid "If enabled, the weight field will be hidden in the dispatch guide."
 msgstr "Si está habilitado, el campo de peso se ocultará en la guía de despacho."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "If checked, the discount field will be hidden in the dispatch guide."
+msgstr ""
+"Si está marcado, el campo de descuento se ocultará en la guía de despacho."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "If checked, the weight field will be hidden in the dispatch guide."
+msgstr "Si está marcado, el campo de peso se ocultará en la guía de despacho."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__indexed_dispatch_guide
+msgid ""
+"If enabled, dispatch guide amounts will use the date of the stock picking "
+"for currency conversion."
+msgstr ""
+"Si está habilitado, los montos de la guía de despacho utilizarán la fecha "
+"efectiva del picking de stock para la conversión de moneda."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_disc_field_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_disc_field_dispatch_guide
+msgid "If enabled, the discount field will be hidden in the dispatch guide."
+msgstr ""
+"Si está habilitado, el campo de descuento se ocultará en la guía de "
+"despacho."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_weight_field_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
+msgid "If enabled, the weight field will be hidden in the dispatch guide."
+msgstr ""
+"Si está habilitado, el campo de peso se ocultará en la guía de despacho."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__pricelist_id
+msgid "If you change the pricelist, only newly added lines will be affected."
+msgstr "Si cambia la lista de precios, solo las líneas recién agregadas se verán afectadas."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
@@ -912,6 +955,12 @@ msgstr "Confirmada"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Precio"
 msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__pricelist_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
+msgid "Pricelist"
+msgstr "Tarifa"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
@@ -1229,6 +1278,15 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_warehouse
 msgid "Warehouse"
 msgstr "Almacén"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+msgid ""
+"You can only create a combined invoice for pickings with the same pricelist."
+msgstr ""
+"Solo puedes crear una factura combinada para guías de despacho con la misma "
+"tarifa."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
