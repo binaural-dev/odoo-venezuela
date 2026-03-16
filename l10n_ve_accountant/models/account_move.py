@@ -25,10 +25,13 @@ class AccountMove(models.Model):
         super()._compute_date()
 
     def _get_accounting_date_source(self):
+        """
+        Overrides the base method to substitute invoice_date with invoice_date_display
+        as the primary source for determining the accounting date (date).
+        This allows invoice_date to be used exclusively for exchange rate calculations.
+        """
         self.ensure_one()
-        if self.is_purchase_document(include_receipts=True):
-            return self.invoice_date_display or self.date
-        return super()._get_accounting_date_source()
+        return self.invoice_date_display or self.date
 
     _sql_constraints = [
         (
@@ -1079,7 +1082,7 @@ class AccountMove(models.Model):
 
                     invoice_payment_terms = (
                         invoice.invoice_payment_term_id._compute_terms(
-                            date_ref=invoice.invoice_date
+                            date_ref=invoice.invoice_date_display
                             or invoice.date
                             or fields.Date.context_today(invoice),
                             currency=invoice.foreign_currency_id,
