@@ -2,12 +2,6 @@
 
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
-import {
-    formatFloat,
-    roundDecimals as round_di,
-    roundPrecision as round_pr,
-    floatIsZero,
-} from "@web/core/utils/numbers";
 
 patch(PosPayment.prototype, {
     setup(_defaultObj, options) {

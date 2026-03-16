@@ -368,7 +368,6 @@ class PosSession(models.Model):
         When the session is closed, the cross move is created, and the rounding issue is corrected.
         """
         res = super().action_pos_session_close(balancing_account, amount_to_balance, bank_payment_method_diffs)
-
         # Obtener todas las órdenes de esta sesión de POS
         orders = self.env['pos.order'].search([('session_id', '=', self.id)])
 
@@ -397,6 +396,8 @@ class PosSession(models.Model):
         return round(amount, 2)
 
     def _adjust_accounting_entries(self, order):
+        # return super()._adjust_accounting_entries(order)
+
         """ Ajusta o crea los apuntes contables asociados a la orden """
         # Aquí puedes añadir la lógica de ajustes contables si es necesario
         pass
@@ -413,21 +414,23 @@ class PosSession(models.Model):
     #                     # Asegúrate de que el impuesto no se aplique nuevamente en el reembolso
     #                     line.price_subtotal = self._apply_rounding(line.price_subtotal / (1 + (tax.amount / 100)))
     #                     line.price_total = self._apply_rounding(line.price_total / (1 + (tax.amount / 100)))
-    #                     break
-
-
+    
     # def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
     #     res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
     #         payment_method, amounts, diff_amount
     #     )
-    #     account_payment = res.move_id.payment_id
+    #     _logger.warning("CONFIG  RATE INVERSE %s", self.config_id.foreign_rate)
+    #     _logger.warning("CONFIG  RATE %s", self.config_id.foreign_inverse_rate)
+    #     #raise ValidationError("AAAA VALIDATION")
+    #     # res ya es el objeto account.payment en esta versión
+    #     account_payment = res
     #     account_payment.write(
     #         {
     #             "foreign_rate": self.config_id.foreign_rate,
     #             "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
     #         }
     #     )
-
+    #     # raise ValidationError("AAAA VALIDATION")    
     #     for line in account_payment.move_id.line_ids:
     #         if line.credit > 0 and amounts.get("foreign_amount", False):
     #             line.not_foreign_recalculate = True
@@ -436,8 +439,8 @@ class PosSession(models.Model):
     #         if line.debit > 0 and amounts.get("foreign_amount", False):
     #             line.not_foreign_recalculate = True
     #             line.foreign_debit = abs(amounts["foreign_amount"])
-    #     if account_payment.pos_payment_method_id.apply_one_cross_move:
-    #         self._create_cross_move_payment(res)
+    #     # if account_payment.pos_payment_method_id.apply_one_cross_move:
+    #     #     self._create_cross_move_payment(res)
     #     return res
 
     def _create_split_account_payment(self, payment, amounts):
@@ -450,6 +453,7 @@ class PosSession(models.Model):
             {
                 "foreign_rate": self.config_id.foreign_rate,
                 "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                "manually_set_rate": True,
             }
         )
 
@@ -519,7 +523,7 @@ class PosSession(models.Model):
                             "debit": abs(move.credit),
                             "foreign_debit": abs(move.foreign_credit),
                             "not_foreign_recalculate": True,
-                            "foreign_rate": move.move_id.payment_id.foreign_rate,
+                            "foreign_rate": move.move_id.payment_id.foreign_inverse_rate,
                             "currency_id": account_method.currency_id.id
                             if account_method.currency_id
                             else self.env.company.currency_id.id,
@@ -542,6 +546,7 @@ class PosSession(models.Model):
                         }
                     ),
                 ]
+                
             )
 
             return move_lines
@@ -556,16 +561,19 @@ class PosSession(models.Model):
         Additionally, the execution of the function: "compute_line_ids_foreign_debit_and_credit"
         is added so that it can calculate it
         """
+
         res = super()._create_account_move(
             balancing_account, amount_to_balance, bank_payment_method_diffs
         )
-        account_move = self.move_id
-        account_move.write(
+        #todo Mejorar esto, recordar que antes la base del pOS era base dolares, ahora es base bolivares
+        self.move_id.write(
             {
                 "foreign_rate": self.config_id.foreign_rate,
                 "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                "manually_set_rate": True,
             }
         )
+
         return res
 
     def _accumulate_amounts(self, data):
@@ -594,25 +602,25 @@ class PosSession(models.Model):
                     if is_split_payment and payment_type == "cash":
                         split_receivables_cash[payment] = self._update_amounts(
                             split_receivables_cash[payment],
-                            {"amount": 0, "foreign_amount": foreign_amount},
+                            {"amount": amount, "foreign_amount": foreign_amount},
                             date,
                         )
                     elif not is_split_payment and payment_type == "cash":
                         combine_receivables_cash[payment_method] = self._update_amounts(
                             combine_receivables_cash[payment_method],
-                            {"amount": 0, "foreign_amount": foreign_amount},
+                            {"amount": amount, "foreign_amount": foreign_amount},
                             date,
                         )
                     elif is_split_payment and payment_type == "bank":
                         split_receivables_bank[payment] = self._update_amounts(
                             split_receivables_bank[payment],
-                            {"amount": 0, "foreign_amount": foreign_amount},
+                            {"amount": amount, "foreign_amount": foreign_amount},
                             date,
                         )
                     elif not is_split_payment and payment_type == "bank":
                         combine_receivables_bank[payment_method] = self._update_amounts(
                             combine_receivables_bank[payment_method],
-                            {"amount": 0, "foreign_amount": foreign_amount},
+                            {"amount": amount, "foreign_amount": foreign_amount},
                             date,
                         )
 
@@ -740,6 +748,14 @@ class PosSession(models.Model):
         )
         if other_lines:
             other_line = other_lines[0]
+            
+            # Aseguramos que el asiento tenga las tasas correctas para evitar inflado de montos
+            line.move_id.write({
+                "foreign_rate": self.config_id.foreign_rate,
+                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                "manually_set_rate": True,
+            })
+
             if (
                 abs(line.credit) > 0
                 and float_compare(

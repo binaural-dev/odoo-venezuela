@@ -1,0 +1,10 @@
+<templates id="template" xml:space="preserve">
+    <!--  pago principal, que se debe hacer -->
+    <t t-name="l10n_ve_pos.PaymentScreenDue" t-inherit="point_of_sale.PaymentScreenDue" t-inherit-mode="extension">
+        <xpath expr="//div[@class='total text-center text-dark'][1]" position="inside">
+            <span class="foreign-amount fs-4 opacity-75">
+              / 0  <t t-out="foreignTotalDueText" />
+            </span>
+        </xpath>
+    </t>
+</templates>

@@ -48,11 +48,15 @@ class PosPayment(models.Model):
             payment_move.write(
                 {
                     "foreign_rate": payment.foreign_rate,
-                    "foreign_inverse_rate": payment.foreign_rate,
+                    "foreign_inverse_rate": payment.foreign_inverse_rate,
                     "manually_set_rate": True,
                 }
             )
             for line in payment_move.line_ids:
+                
+                _logger.warning("CREDITO FORANEO %s", abs(payment.foreign_amount) if line.credit > 0 else 0)
+                _logger.warning("DEBITO FORANEO %s", abs(payment.foreign_amount) if line.debit > 0 else 0)
+
                 line.write(
                     {
                         "not_foreign_recalculate": True,

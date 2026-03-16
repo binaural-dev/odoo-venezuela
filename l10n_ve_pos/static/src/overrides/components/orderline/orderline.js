@@ -6,7 +6,6 @@ patch(Orderline.prototype, {
   setup() {
     super.setup();
     onWillUpdateProps((nextProps) => {
-      // this.get_foreign_tax()
       nextProps.line.foreign_price_unit_display
     });
   },
@@ -79,7 +78,6 @@ patch(Orderline.prototype, {
     return this.get_all_foreign_prices().priceWithTaxBeforeDiscount;
   },
   get_foreign_tax() {
-    console.log("TAXES")
     return this.get_all_foreign_prices().tax;
   },
 

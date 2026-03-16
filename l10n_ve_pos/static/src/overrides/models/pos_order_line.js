@@ -20,14 +20,13 @@ patch(PosOrderline.prototype, {
   },
 
   get foreign_subtotal_display() {
-    // Llamas a tu función de cálculos complejos
     return this.get_all_foreign_prices();
   },
 
   get_foreign_price_without_tax() {
     if (!this.get_foreign_unit_price) {
     }
-    const foreign_currency = this.get_foreign_currency();
+
     const digits = 2;
     return round_pr(
       this.get_foreign_unit_price() * this.getQuantity(),
@@ -52,20 +51,18 @@ patch(PosOrderline.prototype, {
 
 
   get_rate(currency) {
-    const inverse_rate = 1 / currency.rate;
+    const inverse_rate = currency.rate;
     return inverse_rate
   },
 
   get_foreign_unit_price() {
 
     const foreign_currency = this.get_foreign_currency()
-
-    const digits = foreign_currency ? foreign_currency.decimal_places : 2;
-
     const price = this.get_foreign_calculation_price(foreign_currency, this.price_unit)
     this.foreign_price_unit = price
 
     return this.foreign_price_unit;
+
   },
 
   /**get_all_foreign_prices
@@ -76,7 +73,6 @@ patch(PosOrderline.prototype, {
     const company = this.company;
     const product = this.getProduct();
     const taxes = this.tax_ids || product.taxes_id;
-
     // Usar el precio unitario foráneo y la moneda foránea
     const baseLine = accountTaxHelpers.prepare_base_line_for_taxes_computation(
       this,
@@ -132,7 +128,7 @@ patch(PosOrderline.prototype, {
   },
 
   get foreign_price_unit_display() {
-    this.get_all_foreign_prices();
+    return this.get_all_foreign_prices().priceWithTax;
   },
 
 

@@ -6,6 +6,7 @@ import { patch } from "@web/core/utils/patch";
 patch(OrderReceipt, {
   props: {
     ...OrderReceipt.props,
-    // formatForeignCurrency: Function, //TODO esto no funciona y es responsable de los montos foraneos
+    //formatForeignCurrency: Function, //TODO esto no funciona y es responsable de los montos foraneos
+
   },
 });

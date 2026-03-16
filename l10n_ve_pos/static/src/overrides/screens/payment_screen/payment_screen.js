@@ -7,13 +7,25 @@ import { useService } from "@web/core/utils/hooks";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
 import { useEnv } from "@odoo/owl";
 
-// New orders are now associated with the current table, if any.
+
 patch(PaymentScreen.prototype, {
 
   setup() {
+
     super.setup(...arguments)
     this.utils = useEnv().utils,
       this.dialog = useService("dialog");
+  },
+
+
+  get foreignTotalDueText() {
+    return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_tax())
+  },
+
+  get foreignRemainingText() {
+    return this.utils.formatForeignCurrency(
+      this.currentOrder.get_foreign_due() > 0 ? this.currentOrder.get_foreign_due() : 0
+    );
   },
 
   shouldDownloadInvoice() {

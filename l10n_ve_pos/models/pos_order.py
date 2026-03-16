@@ -18,31 +18,30 @@ class PosOrder(models.Model):
     #     order = self.browse(res)
     #     return res
 
-    # @api.model
-    # def _order_fields(self, ui_order):
-    #     res = super()._order_fields(ui_order)
-    #     _logger.info("UI ORDER: %s", ui_order)
-    #     res["foreign_amount_total"] = ui_order["foreign_amount_total"]
-    #     # res["foreign_currency_rate"] = ui_order["foreign_currency_rate"]
-    #     return res
+    @api.model
+    def _order_fields(self, ui_order):
+        res = super()._order_fields(ui_order)
+        res["foreign_amount_total"] = ui_order.get("foreign_amount_total", 0.0)
+        res["foreign_currency_rate"] = ui_order.get("foreign_currency_rate", 0.0)
+        return res
 
-    # def _payment_fields(self, order, ui_paymentline):
-    #     res = super()._payment_fields(order,ui_paymentline)
-    #     res["foreign_amount"] = ui_paymentline["foreign_amount"]
-    #     res["foreign_rate"] = ui_paymentline["foreign_rate"]
-    #     return res
+    def _payment_fields(self, order, ui_paymentline):
+        res = super()._payment_fields(order, ui_paymentline)
+        res["foreign_amount"] = ui_paymentline.get("foreign_amount", 0.0)
+        res["foreign_rate"] = ui_paymentline.get("foreign_rate", 0.0)
+        return res
 
-    # def _prepare_invoice_vals(self):
-    #     self.ensure_one()
-    #     res = super()._prepare_invoice_vals()
-    #     res.update(
-    #         {
-    #             "foreign_rate": self.foreign_currency_rate,
-    #             "foreign_inverse_rate": self.foreign_currency_rate,
-    #             "manually_set_rate": True,
-    #         }
-    #     )
-    #     return res
+    def _prepare_invoice_vals(self):
+        self.ensure_one()
+        res = super()._prepare_invoice_vals()
+        res.update(
+            {
+                "foreign_rate": self.config_id.foreign_rate,
+                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                "manually_set_rate": True,
+            }
+        )
+        return res
 
     # def _export_for_ui(self, order):
     #     res = super()._export_for_ui(order)

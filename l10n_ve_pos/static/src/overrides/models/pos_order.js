@@ -28,13 +28,14 @@ patch(PosOrder.prototype, {
     return this.env.pos.config.foreign_rate;
   },
 
+  get_foreign_inverse_rate() {
+    return this.env.pos.config.foreign_inverse_rate;
+  },
+
   assert_editable() { },
 
   get init_conversion_rate() {
     if (this.currency.name == "VEF") {
-      return this.config.foreign_inverse_rate;
-    }
-    if (this.currency.name == "USD") {
       return this.config.foreign_rate;
     }
   },
@@ -355,8 +356,8 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_rounding_applied() {
-    if (this.pos.config.cash_rounding) {
-      const only_cash = this.pos.config.only_round_cash_method;
+    if (this.config.cash_rounding) {
+      const only_cash = this.config.only_round_cash_method;
       const paymentlines = this.get_paymentlines();
       const last_line = paymentlines
         ? paymentlines[paymentlines.length - 1]
@@ -462,25 +463,26 @@ patch(PosOrder.prototype, {
     }
     return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
   },
-  //   get_foreign_due(paymentline) {
-  //     if (!paymentline) {
-  //       var due =
-  //         this.get_foreign_total_with_tax() -
-  //         this.get_foreign_total_paid() +
-  //         this.get_rounding_applied();
-  //     } else {
-  //       due = this.get_foreign_total_with_tax();
-  //       var lines = this.paymentlines;
-  //       for (var i = 0; i < lines.length; i++) {
-  //         if (lines[i] === paymentline) {
-  //           break;
-  //         } else {
-  //           due -= lines[i].get_foreign_amount();
-  //         }
-  //       }
-  //     }
-  //     return round_pr(due, this.pos.foreign_currency.rounding);
-  //   },
+
+  get_foreign_due(paymentline) {
+    if (!paymentline) {
+      var due =
+        this.get_foreign_total_with_tax() -
+        this.get_foreign_total_paid() +
+        this.get_rounding_applied();
+    } else {
+      due = this.get_foreign_total_with_tax();
+      var lines = this.paymentlines;
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i] === paymentline) {
+          break;
+        } else {
+          due -= lines[i].get_foreign_amount();
+        }
+      }
+    }
+    return round_pr(due, this.pos.foreign_currency.rounding);
+  },
 
   get_qty_products() {
     let qty = 0;
