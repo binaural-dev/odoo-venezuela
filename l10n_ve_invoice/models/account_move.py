@@ -14,6 +14,8 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
+    declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
+    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
@@ -37,7 +39,7 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
-    @api.depends("invoice_date", "entry_in_period", "state")
+    @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
         today = date.today()
@@ -49,6 +51,7 @@ class AccountMove(models.Model):
 
             if move.state == "cancel":
                 continue
+
 
             if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
                 if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
@@ -86,11 +89,19 @@ class AccountMove(models.Model):
 
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
-            """ if invoices and record.move_type in ["out_invoice","out_refund"]:
+            if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
             if record.invoice_date and record.date and record.date < record.invoice_date:
-                raise ValidationError(_("The accounting date cannot be earlier than the invoice date.")) """
+                raise UserError(_("The accounting date cannot be earlier than the invoice date."))
         return super().action_post()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        for move in moves:
+            if move.is_purchase_international and move.declaration_unique_of_customs and not move.correlative:
+                move.correlative = move.declaration_unique_of_customs
+        return moves
 
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
@@ -294,6 +305,12 @@ class AccountMove(models.Model):
         res = super().write(vals)
 
         for move in self:
+            if move.is_purchase_international and move.declaration_unique_of_customs:
+                if move.correlative != move.declaration_unique_of_customs:
+                    move.correlative = move.declaration_unique_of_customs
+            elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
+                move.correlative = False
+                move.declaration_unique_of_customs = False
             if not move.is_invoice(include_receipts=True):
                 continue
 
@@ -310,7 +327,7 @@ class AccountMove(models.Model):
                         f"""
                             <li>
                                 <b>{product}</b><br/>
-                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes_display} ⟶</i></span>
+                                <span style="opacity:0.7;margin-left:20px;"><i>{old_taxes_display} \u27F6</i></span>
                                 <span style="color:#007BFF;"><i>{new_taxes.display_name}</i></span>
                             </li>
                         """

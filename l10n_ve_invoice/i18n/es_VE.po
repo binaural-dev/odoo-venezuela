@@ -706,5 +706,31 @@ msgid "Credit Notes"
 msgstr "Notas de Crédito"
 
 
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#, python-format
+msgid "An invoice cannot have a line with a price of zero"
+msgstr "Una factura no puede tener una linea con precio en cero"
 
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
+#, python-format
+msgid "There are no moves to show"
+msgstr "No se encontraron registros para mostrar"
 
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__declaration_unique_of_customs
+msgid "Declaration unique of customs"
+msgstr "Declaración Única de Aduana"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_purchase_international
+msgid "Is International Purchase"
+msgstr "Es Compra Internacional"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_filter_l10n_ve_invoice
+msgid "Number of Declaration Unique of Customs"
+msgstr "Declaración Única de Aduana"
