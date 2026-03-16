@@ -20,6 +20,6 @@ def migrate(cr, version):
         'level': 'info',
         'path': '',
         'func': 'migrate',
-        'line': '',
+        'line': '17',
         'message': 'Renamed currency_foreign_id to foreign_currency_id in res_company and related tables, preserving data.',
     })
