@@ -307,7 +307,7 @@ class AccountRetentionLine(models.Model):
 
                         sum_total_taxable_foreign = 0.0
                         total_taxable_base = 0.0
-                        if self.env.company.currency_id == self.env.ref("base.USD"):
+                        if self.record.company_id.currency_id == self.env.ref("base.USD"):
                             for invoice in previous_invoices:
                                 tax_totals = invoice.tax_totals
                                 groups_by_subtotal = tax_totals.get("groups_by_foreign_subtotal", {})
