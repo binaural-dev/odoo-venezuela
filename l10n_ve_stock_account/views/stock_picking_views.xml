@@ -93,7 +93,7 @@
                     string="Create Invoice" type="object"
                     groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
-                <button 
+                <!-- <button 
                     name="create_bill" class="oe_highlight"
                     string="Create Bill" type="object"
                     groups="l10n_ve_stock_account.group_stock_account"
@@ -105,7 +105,7 @@
                 <button 
                     name="create_vendor_credit" class="oe_highlight"
                     string="Create Vendor Credit" type="object"
-                    invisible="not show_create_vendor_credit"/>
+                    invisible="not show_create_vendor_credit"/> -->
             </xpath>
         </field>
     </record>
