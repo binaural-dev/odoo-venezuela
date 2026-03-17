@@ -114,6 +114,22 @@ class StockPicking(models.Model):
         compute="_compute_picking_type_domain",
     ) 
 
+    @api.onchange("is_donation")
+    def _onchange_is_donation(self):
+        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        if self.is_donation:
+            contact_id = self.env.company.partner_id
+            self.partner_id = contact_id
+            self.is_dispatch_guide = False
+            self.transfer_reason_id = self_consumption
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        if self.is_donation:
+            if self.partner_id != self.env.company.partner_id:
+                raise UserError(_("The partner must be the company itself for a donation"))
+        
+
     @api.depends("is_donation")
     def _compute_picking_type_domain(self):
         native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
@@ -799,13 +815,9 @@ class StockPicking(models.Model):
     )
     def _compute_button_visibility(self):
         for record in self:
-            _logger.warning("compute visibility")
             is_invoice_empty = record.invoice_count == 0
             is_done = record.state == "done"
             is_to_invoice = record.state_guide_dispatch == "to_invoice"
-            _logger.warning("is_invoice_empty %s", is_invoice_empty)
-            _logger.warning("is_done %s", is_done)
-            _logger.warning("is_to_invoice %s", is_to_invoice)
             record.show_create_invoice = False
             record.show_create_bill = False
             record.show_create_customer_credit = False
@@ -813,7 +825,6 @@ class StockPicking(models.Model):
             record.show_create_invoice_internal = False
 
             if is_invoice_empty and is_done and is_to_invoice:
-                _logger.warning("first if")
                 if record.operation_code == "incoming":
                     record.show_create_bill = not record.is_return
                     record.show_create_vendor_credit = record.is_return
