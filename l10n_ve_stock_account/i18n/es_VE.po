@@ -1328,3 +1328,39 @@ msgstr ""
 msgid "You have %(pickings_combined)s unbilled dispatch guides as of %(date)s. If billed in the next period, the Seniat will be Notified."
 msgstr "Tienes %(pickings_combined)s guías de despacho sin facturar al %(date)s. De facturarse en el siguiente periodo el Seniat será Notificado."
 
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_type__is_donation_picking_type
+msgid "Donation Picking Type"
+msgstr "Tipo de Operación de Donación"
+
+#. module: l10n_ve_stock_account
+#: code:addons/l10n_ve_stock_account/models/stock_picking_type.py:0
+msgid "Donation picking type must be outgoing"
+msgstr "El tipo de operación de donación debe ser de salida"
+
+
+#. module: l10n_ve_stock_account
+#: code:addons/l10n_ve_stock_account/models/account_move.py:0
+msgid "The reference is required for a donation"
+msgstr "La referencia es requerida para una donación"
+
+#. module: l10n_ve_stock_account
+#: code:addons/l10n_ve_stock_account/models/account_move.py:0
+msgid "Please configure a donation product in the company settings."
+msgstr "Por favor, configure un producto de donación en la configuración de la compañía."
+
+#. module: l10n_ve_stock_account
+#: code:addons/l10n_ve_stock_account/models/account_move.py:0
+msgid "Please configure a donation account in the company settings."
+msgstr "Por favor, configure una cuenta de donación en la configuración de la compañía."
+
+#. module: l10n_ve_stock_account
+#: code:addons/l10n_ve_stock_account/models/account_move.py:0
+msgid "Donation"
+msgstr "Donación"
+
+
+#. module: l10n_ve_stock_account
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+msgid "The partner must be the company itself for a donation"
+msgstr "El contacto debe ser la propia compañía para una donación"
