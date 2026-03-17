@@ -83,30 +83,13 @@ class StockPicking(models.Model):
     
     is_donation = fields.Boolean(
         string="Is Donation",
-        compute="_compute_is_donation",
-        store=True,
-        readonly=False,
+        # compute="_compute_is_donation",
+        # readonly=False,
         tracking=True
     )
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
-    @api.depends("transfer_reason_id", "sale_id.is_donation")
-    def _compute_is_donation(self):
-        for picking in self:
-            self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
-            picking.is_donation = bool(
-                (picking.sale_id and picking.sale_id.is_donation) or
-                (picking.transfer_reason_id and self_consumption_reason and picking.transfer_reason_id == self_consumption_reason)
-            )
 
-    see_donation_field = fields.Boolean(string="See Donation Field", compute="_compute_see_donation_field")
-    
-    @api.depends("transfer_reason_id")
-    def _compute_see_donation_field(self):
-        donation_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_donation", raise_if_not_found=False)
-        self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
-        target_reasons = donation_reason | self_consumption_reason
-        for picking in self:
-            picking.see_donation_field = picking.transfer_reason_id in target_reasons
+
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
@@ -127,54 +110,19 @@ class StockPicking(models.Model):
         journal = vendor_journal_id = self.env.company.vendor_journal_id or False
         return journal
 
-    type_of_return = fields.Selection(
-        [
-            ("total", "Total"),
-            ("partial", "Partial"),
-            ("n/a", "N/A"),
-        ],
-        string="Type of Return",
-        default="n/a",
-        compute="_compute_type_of_return",
-        store=True,
-    )
+    picking_type_domain = fields.Char(
+        string="Picking Type Domain",
+        compute="_compute_picking_type_domain",
+    ) 
 
-    @api.depends(
-        "move_ids",
-        "move_ids.qty_return",
-        "move_ids.quantity",
-    )
-    def _compute_type_of_return(self):
+    @api.depends("is_donation")
+    def _compute_picking_type_domain(self):
+        native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
         for picking in self:
-            if (
-                not picking.move_ids
-                or not any(
-                    l.returned_move_ids for l in picking.move_ids
-                )
-                or all(l.qty_return == 0 for l in picking.move_ids)
-            ):
-                picking.type_of_return = "n/a"
-            elif all(
-                l.qty_return == l.quantity for l in picking.move_ids
-            ):
-                picking.type_of_return = "total"
+            if picking.is_donation:
+                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
             else:
-                picking.type_of_return = "partial"
-
-    @api.depends("transfer_reason_id")
-    def _compute_reasons_optional_guide(self):
-        consignment_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
-            raise_if_not_found=False,
-        ).id
-        for rec in self:
-            rec.reasons_optional_guide_dispatch = (
-                True
-                if consignment_reason == rec.transfer_reason_id.id
-                and rec.optional_internal_movement_guidance
-                and rec.operation_code in ["internal"]
-                else False
-            )
+                picking.picking_type_domain = native_domain
 
     def action_open_invoice_wizard(self):
         return {

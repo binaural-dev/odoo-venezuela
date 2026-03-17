@@ -117,6 +117,12 @@
                     string="Create Vendor Credit" type="object"
                     invisible="not show_create_vendor_credit"/> -->
             </xpath>
+            <xpath expr="//sheet[1]/group[1]/group[1]/field[@name='picking_type_id']" position="attributes">
+                <attribute name="domain">picking_type_domain</attribute>
+            </xpath>
+            <xpath expr="//sheet[1]/group[1]/group[1]/field[@name='picking_type_id']" position="attributes">
+                <attribute name="domain">picking_type_domain</attribute>
+            </xpath>
         </field>
     </record>
     <!-- ### ACTIONS SERVERS ### -->
