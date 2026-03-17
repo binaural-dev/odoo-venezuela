@@ -46,7 +46,7 @@ patch(Payment.prototype, {
 		if (!only) {
 			if (this.pos.currency.name == "VEF") {
 				if (this.payment_method.is_foreign_currency) {
-					this.amount = this.foreign_amount * 1 / this.pos.foreign_currency.rate
+					this.amount = round_pr(this.foreign_amount * 1 / this.pos.foreign_currency.rate, this.pos.currency.rounding)
 					return;
 				}
 				this.amount = amount / this.order.get_conversion_rate();
