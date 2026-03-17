@@ -228,7 +228,23 @@ class StockPicking(models.Model):
                 invoice = self.env["account.move"].create(invoice_vals) ##PROBLEMA ACAAA
             picking_id.write({"state_guide_dispatch": "invoiced"})
             picking_id._update_order_sale_invoiced()
-        return invoice
+        return self.action_view_invoice(invoices=invoice)
+
+    @api.readonly
+    def action_view_invoice(self, invoices=False):
+        action = self.env['ir.actions.actions']._for_xml_id('account.action_move_out_invoice_type')
+        form_view = [(self.env.ref('account.view_move_form').id, 'form')]
+        if 'views' in action:
+            action['views'] = form_view + [(view_id,     view_type) for view_id, view_type in action['views'] if view_type != 'form']
+        
+        if invoices:
+            action['res_id'] = invoices.id
+            
+        action['context'] = {
+            'default_move_type': 'out_invoice',
+            'default_partner_id': self.partner_id.id,
+        }
+        return action
 
     def create_bill(self):
         """This is the function for creating vendor bill
