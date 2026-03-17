@@ -104,6 +104,12 @@
                     groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
             </xpath>
+            <xpath expr="//sheet[1]/group[1]/group[1]/field[@name='picking_type_id']" position="attributes">
+                <attribute name="domain">picking_type_domain</attribute>
+            </xpath>
+            <xpath expr="//sheet[1]/group[1]/group[1]/field[@name='picking_type_id']" position="attributes">
+                <attribute name="domain">picking_type_domain</attribute>
+            </xpath>
         </field>
     </record>
     <!-- ### ACTIONS SERVERS ### -->
