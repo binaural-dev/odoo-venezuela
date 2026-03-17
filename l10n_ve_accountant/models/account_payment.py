@@ -34,7 +34,7 @@ class AccountPayment(models.Model):
             The rate of the payment
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.ref("base.VEF").id,
+            self.foreign_currency_id.id or self.company_id.currency_id,
             self.date or fields.Date.today(),
         )
         rate = rate_values.get("foreign_rate", 0)
@@ -50,7 +50,7 @@ class AccountPayment(models.Model):
             The inverse rate of the payment
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.ref("base.VEF").id,
+            self.foreign_currency_id.id or self.company_id.currency_id,
             self.date or fields.Date.today(),
         )
         rate = rate_values.get("foreign_inverse_rate", 0)
@@ -157,7 +157,7 @@ class AccountPayment(models.Model):
         Rate = self.env["res.currency.rate"]
         for payment in self:
             rate_values = Rate.compute_rate(
-                payment.currency_id.id, payment.date or fields.Date.today()
+                payment.foreign_currency_id.id, payment.date or fields.Date.today()
             )
             payment.update(rate_values)
 

@@ -48,4 +48,15 @@ class ResCompany(models.Model):
         domain=[
             ("account_type", "=", "expense"),
         ],
+
+    hide_disc_field_dispatch_guide = fields.Boolean(
+        string="Hide discount field in dispatch guide",
+        default=False,
+        help="If enabled, the discount field will be hidden in the dispatch guide.",
+    )
+
+    hide_weight_field_dispatch_guide = fields.Boolean(
+        string="Hide weight field in dispatch guide",
+        default=False,
+        help="If enabled, the weight field will be hidden in the dispatch guide.",
     )

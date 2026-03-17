@@ -167,3 +167,73 @@ class TestSaleOrderRate(TransactionCase):
         _logger.info(f"[TEST] expected_usd: {expected_usd}")
         self.assertAlmostEqual(line.foreign_price, expected_usd, delta=0.1)
 
+    def test_amount_signed(self):
+        """ Test that amount_untaxed_total_signed and amount_total_signed are computed correctly """
+        
+        # Create USD Pricelist
+        pricelist_usd = self.env['product.pricelist'].create({
+            'name': 'USD Pricelist',
+            'currency_id': self.usd.id,
+        })
+
+        # Create Sale Order in USD (Foreign Currency) using the pricelist
+        so = self.env['sale.order'].create({
+            'partner_id': self.partner.id,
+            'date_order': self.today,
+            'pricelist_id': pricelist_usd.id,
+        })
+        
+        # Add Order Line
+        # Price Unit = 100 USD
+        line = self.env['sale.order.line'].create({
+            'order_id': so.id,
+            'product_id': self.product.id,
+            'product_uom_qty': 1,
+            'price_unit': 100.0,
+        })
+        
+        # Trigger computations
+        # The fields are computed, so we might need to flush or trigger recompute if not automatic
+        # accessing them should trigger compute
+        
+        _logger.info("Testing Amount Signed Computation...")
+        _logger.info("SO Currency: %s", so.currency_id.name)
+        _logger.info("Company Currency: %s", so.company_id.currency_id.name)
+        _logger.info("Amount Untaxed: %s", so.amount_untaxed)
+        _logger.info("Amount Total: %s", so.amount_total)
+        
+        # Conversion Rate USD -> VES is 380 (1/380 inverse)
+        # 100 USD * 380 = 38000 VES
+        
+        expected_amount_signed = 100.0 * 380.0
+        
+        _logger.info("Amount Untaxed Signed: %s", so.amount_untaxed_total_signed)
+        _logger.info("Amount Total Signed: %s", so.amount_total_signed)
+        _logger.info("Expected Amount Signed: %s", expected_amount_signed)
+        
+        self.assertAlmostEqual(so.amount_untaxed_total_signed, expected_amount_signed, delta=1.0, 
+                               msg="Amount Untaxed Signed should be Amount Untaxed converted to Company Currency")
+        self.assertAlmostEqual(so.amount_total_signed, expected_amount_signed, delta=1.0,
+                               msg="Amount Total Signed should be Amount Total converted to Company Currency")
+                               
+        # Case 2: SO in Company Currency (VES)
+        so_ves = self.env['sale.order'].create({
+            'partner_id': self.partner.id,
+            'date_order': self.today,
+            'currency_id': self.ves.id,
+        })
+        
+        line_ves = self.env['sale.order.line'].create({
+            'order_id': so_ves.id,
+            'product_id': self.product.id,
+            'product_uom_qty': 1,
+            'price_unit': 40000.0, # 40000 VES
+        })
+        
+        _logger.info("Testing Amount Signed Computation (VES Context)...")
+        _logger.info("Amount Untaxed Signed (VES): %s", so_ves.amount_untaxed_total_signed)
+        
+        self.assertEqual(so_ves.amount_untaxed_total_signed, 40000.0, 
+                         msg="Amount Untaxed Signed should be equal to Amount Untaxed when Currency is Company Currency")
+
+
