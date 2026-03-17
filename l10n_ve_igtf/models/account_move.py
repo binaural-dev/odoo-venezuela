@@ -51,6 +51,7 @@ class AccountMove(models.Model):
         copy=False,
     )
     igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
+    alter_igtf_top_aply = fields.Float('Max Igtf amount to be apply alter', copy=False)
     alter_bi_igtf = fields.Float('Alter BI IGTF',copy=False)
 
     foreign_alter_bi_igtf = fields.Float('Foreign Alter BI IGTF',copy=False)
@@ -100,6 +101,11 @@ class AccountMove(models.Model):
                 amount = rec.foreign_total_billed
             rec.igtf_top_aply = amount * (self.company_id.igtf_percentage / 100)
 
+            if rec.company_currency_id == self.env.ref("base.VEF"):
+                rec.alter_igtf_top_aply = rec.igtf_top_aply / rec.foreign_inverse_rate
+            else:
+                rec.alter_igtf_top_aply = rec.igtf_top_aply * rec.foreign_inverse_rate
+
             receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
             account = [self.company_id.customer_account_igtf_id.id,self.company_id.supplier_account_igtf_id.id ]
@@ -141,8 +147,8 @@ class AccountMove(models.Model):
                 
                 partial = self.env['account.partial.reconcile'].search([
                     '|',
-                    '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', pago_line.id),
-                    '&', ('debit_move_id', '=', pago_line.id), ('credit_move_id', '=', factura_line.id)
+                    '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', 'in', pago_line.ids),
+                    '&', ('debit_move_id', 'in', pago_line.ids), ('credit_move_id', '=', factura_line.id)
                 ], limit=1)
 
                 if partial:
@@ -214,16 +220,24 @@ class AccountMove(models.Model):
                     foreign_alter_bi_igtf += foreign_igtf_amount
 
                 total_bi_igtf += amount_base_payment
-                total_foreign_bi_igtf = foreign_amount_base_payment
+                total_foreign_bi_igtf += foreign_amount_base_payment
+            
             
             apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
+            alter_apply = 0.0
+            if rec.company_currency_id == self.env.ref("base.VEF"):
+                alter_apply = apply / rec.foreign_inverse_rate
+            else:
+                alter_apply = apply * rec.foreign_inverse_rate
+
+            
             rec.write({
                 'igtf_top_aply': apply,
+                'alter_igtf_top_aply': alter_apply,
                 'alter_bi_igtf': alter_bi_igtf,
                 'foreign_alter_bi_igtf': foreign_alter_bi_igtf,
                 'foreign_bi_igtf': total_foreign_bi_igtf
             })
             rec.bi_igtf = total_bi_igtf
                     
-
 

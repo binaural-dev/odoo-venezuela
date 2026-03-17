@@ -154,7 +154,7 @@ class TestAccountant(TransactionCase):
 
         # (Opcional) Si tu módulo de anticipos exige cuentas específicas:
         # Cuentas de anticipo en la compañía (tipos modernos v16/v17: account_type)
-        if not getattr(self.company, 'advance_customer_account_id', False) or not getattr(self.company, 'advance_supplier_account_id', False):
+        if getattr(self.company, 'advance_customer_account_id', False) or getattr(self.company, 'advance_supplier_account_id', False):
             adv_cust = self.env['account.account'].search([('code', '=', '900000'), ('company_id', '=', self.company.id)], limit=1) or \
                 self.env['account.account'].create({
                     'name': 'Advance Customers',
