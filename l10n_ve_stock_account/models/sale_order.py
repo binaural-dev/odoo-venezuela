@@ -45,6 +45,17 @@ class SaleOrder(models.Model):
         help="Indicates if this sale order is a consignation sale.",
     )
 
+    show_is_subcontracting = fields.Boolean(
+        readonly=False,
+        compute="_compute_show_is_subcontracting",
+        store=True,
+    )
+
+    is_subcontracting = fields.Boolean(
+        string="Is Subcontracting",
+        force_save="1",
+    )
+
     ### COMPUTES ###
     @api.depends("warehouse_id", "document")
     def _compute_is_consignation(self):
@@ -54,6 +65,16 @@ class SaleOrder(models.Model):
             )
             if order.warehouse_id and order.warehouse_id.is_consignation_warehouse:
                 order.document = "invoice"
+
+    @api.depends("document", "show_is_subcontracting")
+    def _compute_show_is_subcontracting(self):
+        for order in self:
+            order.show_is_subcontracting = False
+            if not order.company_id.is_subcontracting:
+                order.show_is_subcontracting = True
+                continue
+            if order.document != "dispatch_guide" or order.is_consignation:
+                order.show_is_subcontracting = True
 
     @api.depends("document")
     def _compute_document(self):
@@ -115,6 +136,11 @@ class SaleOrder(models.Model):
                 )
 
             self.warehouse_id = warehouse_id
+
+    @api.onchange("document")
+    def _onchange_document_subcontracting(self):
+        if self.document == "invoice":
+            self.is_subcontracting = False
 
     ### CONSTRAINTS ###
     @api.constrains("is_donation", "state")
