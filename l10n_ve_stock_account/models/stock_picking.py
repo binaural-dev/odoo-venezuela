@@ -139,54 +139,35 @@ class StockPicking(models.Model):
             else:
                 picking.picking_type_domain = native_domain
 
-    type_of_return = fields.Selection(
-        [
-            ("total", "Total"),
-            ("partial", "Partial"),
-            ("n/a", "N/A"),
-        ],
-        string="Type of Return",
-        default="n/a",
-        compute="_compute_type_of_return",
-        store=True,
-    )
+    picking_type_domain = fields.Char(
+        string="Picking Type Domain",
+        compute="_compute_picking_type_domain",
+    ) 
 
-    @api.depends(
-        "move_ids",
-        "move_ids.qty_return",
-        "move_ids.quantity",
-    )
-    def _compute_type_of_return(self):
+    @api.onchange("is_donation")
+    def _onchange_is_donation(self):
+        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        if self.is_donation:
+            contact_id = self.env.company.partner_id
+            self.partner_id = contact_id
+            self.is_dispatch_guide = False
+            self.transfer_reason_id = self_consumption
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        if self.is_donation:
+            if self.partner_id != self.env.company.partner_id:
+                raise UserError(_("The partner must be the company itself for a donation"))
+        
+
+    @api.depends("is_donation")
+    def _compute_picking_type_domain(self):
+        native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
         for picking in self:
-            if (
-                not picking.move_ids
-                or not any(
-                    l.returned_move_ids for l in picking.move_ids
-                )
-                or all(l.qty_return == 0 for l in picking.move_ids)
-            ):
-                picking.type_of_return = "n/a"
-            elif all(
-                l.qty_return == l.quantity for l in picking.move_ids
-            ):
-                picking.type_of_return = "total"
+            if picking.is_donation:
+                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
             else:
-                picking.type_of_return = "partial"
-
-    @api.depends("transfer_reason_id")
-    def _compute_reasons_optional_guide(self):
-        consignment_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
-            raise_if_not_found=False,
-        ).id
-        for rec in self:
-            rec.reasons_optional_guide_dispatch = (
-                True
-                if consignment_reason == rec.transfer_reason_id.id
-                and rec.optional_internal_movement_guidance
-                and rec.operation_code in ["internal"]
-                else False
-            )
+                picking.picking_type_domain = native_domain
 
     def action_open_invoice_wizard(self):
         return {

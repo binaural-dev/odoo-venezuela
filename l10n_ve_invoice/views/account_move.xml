@@ -8,6 +8,10 @@
                 <field name="is_contingency" invisible="1" />
                 <field name="entry_in_period" invisible="1" />
             </field>
+            <xpath expr="//field[@name='ref']" position="after">
+                <field name="tax_base_for_international_purchase" invisible="not is_purchase_international" required="is_purchase_international" readonly="state == 'posted'"/>
+                <field name="tax_amount_for_international_purchase" invisible="not is_purchase_international" required="is_purchase_international" readonly="state == 'posted'"/>
+            </xpath>
             <xpath expr="//header/button[@name='button_cancel'][2]" position="attributes">
                 <attribute name="invisible">not entry_in_period and (not id or state != 'draft' or move_type == 'entry')</attribute>
             </xpath>
