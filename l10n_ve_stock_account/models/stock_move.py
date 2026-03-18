@@ -99,7 +99,7 @@ class StockMove(models.Model):
         )
 
         if currency == self.env.company.currency_id:
-            return self.sale_line_id.price_uni
+            return self.sale_line_id.price_unit
 
         if (
             self.company_id.indexed_dispatch_guide

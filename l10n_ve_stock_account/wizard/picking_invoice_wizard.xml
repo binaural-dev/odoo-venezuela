@@ -17,6 +17,7 @@
                                 <field name='partner_id'/>
                                 <field name='state_guide_dispatch'/>
                                 <field name='transfer_reason_id'/>
+                                <field name='pricelist_id'/>
                             </list>
                         </field>
                     </group>
