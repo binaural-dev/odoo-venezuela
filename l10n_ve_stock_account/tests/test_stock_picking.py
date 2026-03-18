@@ -116,9 +116,32 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-    def create_sale_order(self):
+        # Referencia al grupo de seguridad
+        self.group_not_dispatch = self.env.ref('l10n_ve_stock_account.group_not_dispatch_guide')
+        
+        # Grupo de Ventas: Mostrar todos los documentos (para evitar AccessError de Record Rules)
+        group_sales_all = self.env.ref('sales_team.group_sale_salesman_all_leads')
+        group_internal_user = self.env.ref('base.group_user')
+
+        # Crear usuarios con permisos suficientes para ver SOs de otros
+        self.user_standard = self.env['res.users'].create({
+            'name': 'Usuario Estándar',
+            'login': 'user_std',
+            'email': 'std@test.com',
+            'groups_id': [(6, 0, [group_internal_user.id, group_sales_all.id])]
+        })
+
+        self.user_restricted = self.env['res.users'].create({
+            'name': 'Usuario Restringido',
+            'login': 'user_res',
+            'email': 'res@test.com',
+            'groups_id': [(6, 0, [group_internal_user.id, group_sales_all.id, self.group_not_dispatch.id])]
+        })
+
+    def create_sale_order(self, user=None):
+        env = self.env if user is None else self.env(user=user)
         rate = 5.0
-        order = self.env["sale.order"].create(
+        order = env["sale.order"].create(
             {
                 "partner_id": self.partner.id,
                 "manually_set_rate": True,
@@ -128,7 +151,7 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-        order_line_01 = self.env["sale.order.line"].create(
+        order_line_01 = env["sale.order.line"].create(
             {
                 "product_id": self.product.id,
                 "product_uom_qty": 2,
@@ -143,7 +166,7 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-        order_line_02 = self.env["sale.order.line"].create(
+        order_line_02 = env["sale.order.line"].create(
             {
                 "product_id": False,
                 "product_uom_qty": 0,
@@ -158,7 +181,7 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-        order_line_03 = self.env["sale.order.line"].create(
+        order_line_03 = env["sale.order.line"].create(
             {
                 "product_id": False,
                 "product_uom_qty": 0,
@@ -201,3 +224,41 @@ class TestStockPickingInvoice(TransactionCase):
             "The invoice must be linked to the dispatch guide from which it was created.",
         )
         _logger.info("test_01_generate_invoice_from_dispatch_guide --- successfully.")
+
+    def test_02_compute_document_logic(self):
+        """Verificar que el documento se fuerce a 'invoice' si el usuario tiene el grupo restringido."""
+        order_1 = self.create_sale_order(self.user_standard)
+
+        order_1.write({
+            'document': 'dispatch_guide',
+        })
+
+        order_1.with_user(self.user_standard).action_confirm()
+        order_1.with_user(self.user_standard)._compute_document()
+
+        self.assertEqual(order_1.compute_document, 'invoice')
+        self.assertEqual(order_1.document, 'dispatch_guide', "Un usuario normal debería poder elegir Guía de Despacho")
+
+        order_2 = self.create_sale_order(self.user_restricted)
+
+        order_2.with_user(self.user_restricted).write({
+            'document': 'dispatch_guide',
+        })
+        order_2.with_user(self.user_restricted).action_confirm()
+        order_2.with_user(self.user_restricted)._compute_document()
+
+        self.assertEqual(order_2.document, 'invoice', "El usuario con el grupo especial debe ser forzado a tener 'invoice'")
+
+    def test_03_compute_show_document_visibility(self):
+        """Probar la visibilidad del campo según el estado de la orden y el grupo del usuario."""
+        
+        order_std = self.create_sale_order().with_user(self.user_standard)
+        order_std.write({'state': 'draft'})
+        self.assertFalse(order_std.show_document, "Usuario estándar no debería ver el documento")
+
+        order_res = self.create_sale_order().with_user(self.user_restricted)
+        order_res.write({'state': 'draft'})
+        self.assertTrue(order_res.show_document, "Usuario restringido debería ver el documento en borrador")
+
+        order_res.action_confirm()
+        self.assertFalse(order_res.show_document, "No se debe mostrar el documento si la orden no está en borrador")

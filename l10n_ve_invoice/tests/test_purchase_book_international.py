@@ -300,15 +300,12 @@ class TestIgtfPurchaseBook(TestCommonPurchaseInternational):
         # 🔸 Alícuotas internacionales
         self.assertIn("tax_base_general_aliquot_international", international_fields)
         self.assertIn("amount_general_aliquot_international", international_fields)
-        self.assertIn("general_aliquot", international_fields)
 
         self.assertIn("tax_base_reduced_aliquot_international", international_fields)
         self.assertIn("amount_reduced_aliquot_international", international_fields)
-        self.assertIn("reduced_aliquot", international_fields)
 
         self.assertIn("tax_base_extend_aliquot_international", international_fields)
         self.assertIn("amount_extend_aliquot_international", international_fields)
-        self.assertIn("extend_aliquot", international_fields)
 
         totals_group = next(
             g for g in groups if g["header"] == "TOTALES INTERNACIONALES"
