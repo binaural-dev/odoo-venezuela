@@ -16,3 +16,7 @@ class ResCompany(models.Model):
     show_igtf_suggested_account_move = fields.Boolean(default=False)
     show_igtf_suggested_sale_order = fields.Boolean(default=False)
 
+    not_show_bi_igtf_sale_order = fields.Boolean(default=False)
+    not_show_bi_igtf_purchase_order = fields.Boolean(default=False)
+    not_show_igtf_sale_order = fields.Boolean(default=False)
+    not_show_igtf_purchase_order = fields.Boolean(default=False)
