@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-16 23:47+0000\n"
-"PO-Revision-Date: 2026-03-16 23:47+0000\n"
+"POT-Creation-Date: 2026-03-18 14:27+0000\n"
+"PO-Revision-Date: 2026-03-18 14:27+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -584,7 +584,31 @@ msgstr "Mostrar total en USD en forma libre"
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.tax_groups_totals_ve
 msgid "Subtotal"
-msgstr ""
+msgstr "Subtotal"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__tax_amount_for_international_purchase
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__tax_amount_for_international_purchase
+msgid "Tax Amount for International Purchase"
+msgstr "IVA 16%"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__tax_base_for_international_purchase
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__tax_base_for_international_purchase
+msgid "Tax Base for International Purchase"
+msgstr "Base imponible IVA"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__tax_amount_for_international_purchase
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__tax_amount_for_international_purchase
+msgid "Tax amount for international purchase to show in purchase book"
+msgstr "Monto del IVA para compras internacionales a mostrar en el libro de compras"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__tax_base_for_international_purchase
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__tax_base_for_international_purchase
+msgid "Tax base for international purchase to show in purchase book"
+msgstr "Base imponible para compras internacionales a mostrar en el libro de compras"
 
 #. module: l10n_ve_invoice
 #. odoo-python
