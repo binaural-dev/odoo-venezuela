@@ -1020,11 +1020,13 @@ class StockPicking(models.Model):
         )
 
         for picking in self:
+
             picking.is_dispatch_guide = (
                 False
                 if picking.is_dispatch_guide is None
                 else picking.is_dispatch_guide
             )
+
             if picking.document == "invoice":
                 picking.is_dispatch_guide = False
                 continue
@@ -1269,6 +1271,9 @@ class StockPicking(models.Model):
             # Siempre último día del mes para estos tipos
             last_day = calendar.monthrange(today.year, today.month)[1]
             result = date(today.year, today.month, last_day)
+
+        if self.env.user.has_group("l10n_ve_stock_account.group_not_dispatch_guide"):
+            return
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
 
