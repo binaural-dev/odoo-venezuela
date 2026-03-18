@@ -239,4 +239,3 @@ class AccountMove(models.Model):
             rec.bi_igtf = total_bi_igtf
                     
 
-

@@ -175,4 +175,3 @@ class AccountTax(models.Model):
         total_amount_to_igtf = sum(amount_to_igtf)  
 
         return total_amount_to_igtf
-
