@@ -203,6 +203,37 @@ class TestStockPickingInvoice(TransactionCase):
         )
         return order
 
+    def create_picking(self, trasfer_reason_code='external_storage'):
+        reason_sale = self.env['transfer.reason'].search([('code', '=', trasfer_reason_code)], limit=1)
+
+        warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'outgoing'), 
+            ('warehouse_id', '=', warehouse.id)
+        ], limit=1)
+
+        picking = self.env['stock.picking'].create({
+            'partner_id': self.partner.id,
+            'picking_type_id': picking_type.id,
+            'location_id': picking_type.default_location_src_id.id,
+            'location_dest_id': self.env.ref('stock.stock_location_customers').id,
+            'origin': 'Manual Test Picking',
+            'transfer_reason_id': reason_sale.id if reason_sale else False,
+            'is_dispatch_guide': True,
+        })
+
+        self.env['stock.move'].create({
+            'name': self.product.name,
+            'product_id': self.product.id,
+            'product_uom_qty': 10.0,
+            'product_uom': self.product.uom_id.id,
+            'picking_id': picking.id,
+            'location_id': picking.location_id.id,
+            'location_dest_id': picking.location_dest_id.id,
+        })
+        
+        return picking
+
     def test_01_generate_invoice_from_dispatch_guide(self):
         order = self.create_sale_order()
         order.action_confirm()
@@ -225,7 +256,72 @@ class TestStockPickingInvoice(TransactionCase):
         )
         _logger.info("test_01_generate_invoice_from_dispatch_guide --- successfully.")
 
-    def test_02_compute_document_logic(self):
+    def test_02_generate_invoice_from_picking(self):
+        picking = self.create_picking()
+        
+        for move in picking.move_ids_without_package:
+            move.quantity = move.product_uom_qty
+        picking.button_validate()
+
+        self.assertTrue(picking.guide_number, "Debería tener un número de guía generado.")
+
+        invoice = picking.create_invoice()
+
+        self.assertEqual(invoice.move_type, 'out_invoice')
+        self.assertEqual(len(invoice.invoice_line_ids), 1)
+        
+        line = invoice.invoice_line_ids[0]
+        self.assertEqual(line.price_unit, self.product.list_price)
+        
+        self.assertEqual(picking.state_guide_dispatch, 'invoiced')
+        _logger.info("test_02_generate_invoice_from_manual_picking --- successfully.")
+
+    def test_03_generate_invoice_from_picking_maquila(self):
+        """Verificar que al generar una factura desde un picking de maquila, no se creen líneas de factura y el estado del picking se actualice a 'invoiced'."""
+        picking = self.create_picking("subcontracting")
+        
+        for move in picking.move_ids_without_package:
+            move.quantity = move.product_uom_qty
+        picking.button_validate()
+
+        self.assertTrue(picking.guide_number, "Debería tener un número de guía generado.")
+
+        invoice = picking.create_invoice()
+
+        self.assertEqual(invoice.move_type, 'out_invoice')
+        self.assertEqual(len(invoice.invoice_line_ids), 0, "No debería crear líneas de factura para movimientos de maquila.")
+
+        self.assertEqual(picking.state_guide_dispatch, 'invoiced')
+        _logger.info("test_03_generate_invoice_from_picking_maquila --- successfully.")
+
+    def test_04_transfer_reason_subcontracting_config(self):
+        """Verificar que la razón de Maquila se habilite/deshabilite según la compañía"""
+        subcontracting_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_subcontracting")
+        
+        # 2. Crear un picking interno (donde se aplica esta lógica)
+        picking = self.create_picking()
+
+        self.company.is_subcontracting = False
+        picking._compute_allowed_reason_ids()
+        
+        self.assertNotIn(
+            subcontracting_reason.id, 
+            picking.allowed_reason_ids.ids,
+            "La razón de Maquila NO debería estar en las permitidas si la configuración está apagada."
+        )
+
+        self.company.is_subcontracting = True
+        picking._compute_allowed_reason_ids()
+        
+        self.assertIn(
+            subcontracting_reason.id, 
+            picking.allowed_reason_ids.ids,
+            "La razón de Maquila DEBERÍA estar permitida cuando se activa en la compañía."
+        )
+        
+        _logger.info("test_04_transfer_reason_subcontracting_config --- successfully.")
+
+    def test_05_compute_document_logic(self):
         """Verificar que el documento se fuerce a 'invoice' si el usuario tiene el grupo restringido."""
         order_1 = self.create_sale_order(self.user_standard)
 
@@ -249,7 +345,7 @@ class TestStockPickingInvoice(TransactionCase):
 
         self.assertEqual(order_2.document, 'invoice', "El usuario con el grupo especial debe ser forzado a tener 'invoice'")
 
-    def test_03_compute_show_document_visibility(self):
+    def test_06_compute_show_document_visibility(self):
         """Probar la visibilidad del campo según el estado de la orden y el grupo del usuario."""
         
         order_std = self.create_sale_order().with_user(self.user_standard)

@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <field name="payment_term_id" position="after">
                 <field name="is_consignation" invisible="1"/>
+                <field name="show_is_subcontracting" invisible="1"/>
                 <field name="show_document" invisible="1"/>
                 <field name="document"
                     invisible="show_document"
@@ -17,6 +18,7 @@
             <field name="manually_set_rate" position="after">
                 <field name="is_donation" readonly="state in ['sale', 'done', 'cancel']" />
                 <field name="is_consignation" readonly="state in ['sale', 'done', 'cancel']" />
+                <field name="is_subcontracting" readonly="state in ['sale', 'done', 'cancel']" invisible="show_is_subcontracting"/>
             </field>
 
             <xpath expr="//button[@id='create_invoice']" position="attributes">
