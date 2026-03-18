@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250128\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251016\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-28 20:08+0000\n"
-"PO-Revision-Date: 2025-07-28 20:08+0000\n"
+"POT-Creation-Date: 2026-02-24 19:25+0000\n"
+"PO-Revision-Date: 2026-02-24 19:25+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -442,12 +442,14 @@ msgid "Display Name"
 msgstr "Nombre para mostrar"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__compute_document
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__document
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__document
 msgid "Document"
 msgstr "Documento"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_sale_order__compute_document
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_sale_order__document
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__document
 msgid "Document type for the sale order."
@@ -588,6 +590,7 @@ msgstr "Ubicaciones de inventario"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_partner__default_document__invoice
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__sale_order__compute_document__invoice
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__sale_order__document__invoice
 msgid "Invoice"
 msgstr "Factura"
@@ -762,9 +765,9 @@ msgstr ""
 "y seleccione un almacén como 'Almacén Predeterminado'."
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_invoice_tree
-msgid "Guide Number"
-msgstr "Número de Guía"
+#: model:res.groups,name:l10n_ve_stock_account.group_not_dispatch_guide
+msgid "Do not view dispatch guides"
+msgstr "No ver guías de despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__unique
@@ -1008,6 +1011,11 @@ msgstr "Mostrar creación de factura interna"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_vendor_credit
 msgid "Show Create Vendor Credit"
 msgstr "Show Crear crédito de proveedor"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__show_document
+msgid "Show Document"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__location_id
