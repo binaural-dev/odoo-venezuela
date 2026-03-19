@@ -90,10 +90,12 @@ class AccountMoveRetention(models.Model):
                 record.third_party_iva_retention_count = Retention.search_count([
                     ("retention_line_ids.move_id", "=", record.id),
                     ("type_retention", "=", "iva"),
+                    ("is_third_party_retention", "=", True),
                 ])
                 record.third_party_islr_retention_count = Retention.search_count([
                     ("retention_line_ids.move_id", "=", record.id),
                     ("type_retention", "=", "islr"),
+                    ("is_third_party_retention", "=", True),
                 ])
             else:
                 record.third_party_iva_retention_count = 0
@@ -127,7 +129,7 @@ class AccountMoveRetention(models.Model):
         if len(retentions) == 0:
             action["views"] = [(iva_form.id, "form")]
         else:
-            action["domain"] = [("id", "in", retentions.ids)]
+            action["domain"] = [("id", "in", retentions.ids), ("is_third_party_retention", "=", True)]
         return action
 
     def action_view_third_party_islr_retentions(self):
@@ -155,7 +157,7 @@ class AccountMoveRetention(models.Model):
         if len(retentions) == 0:
             action["views"] = [(islr_form.id, "form")]
         else:
-            action["domain"] = [("id", "in", retentions.ids)]
+            action["domain"] = [("id", "in", retentions.ids), ("is_third_party_retention", "=", True)]
         return action
 
     @api.depends(
