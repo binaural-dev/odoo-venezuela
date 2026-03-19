@@ -66,7 +66,7 @@
                                         <br/><br/>
                                         <strong>
                                             <span t-out="o.ref"/>
-                                        </strong>,
+                                        </strong>
                                         <br/><br/>
                                         todos estos bienes se encuentran valorados en la cantidad de ___________________________________, 
                                         y los mismos serán destinados a lograr los objetivos de dicha organización. Con el otorgamiento de este documento, mi representada transfiere a 
