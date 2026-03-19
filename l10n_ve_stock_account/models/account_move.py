@@ -65,29 +65,6 @@ class AccountMove(models.Model):
             wizard.new_move_ids.action_post()
         return res
 
-    def write(self, vals):
-
-        for record in self:
-            is_donation = vals.get('is_donation', record.is_donation)
-            move_type = vals.get('move_type', record.move_type)
-            ref = vals.get('ref', record.ref)
-
-            if is_donation and move_type == "entry":
-                if 'is_donation' in vals or 'ref' in vals or 'line_ids' in vals:
-                    if not ref:
-                        raise UserError(_("The reference is required for a donation"))
-
-                if "line_ids" in vals:
-                    for command in vals["line_ids"]:
-                        is_valid_command = isinstance(command, (list, tuple)) and len(command) == 3 and isinstance(command[2], dict)
-                        if not is_valid_command:
-                            continue
-
-                        line_vals = command[2]
-                        line_vals['name'] = ref
-
-        return super().write(vals)
-
     def _reverse_moves(self, default_values_list=None, cancel=False):
         """Reverse a recordset of account.move.
         If cancel parameter is true, the reconcilable or liquidity lines
@@ -118,7 +95,6 @@ class AccountMove(models.Model):
                         if is_tax and line.tax_line_id:
                             lv['tax_line_id'] = line.tax_line_id.id
                         line_vals_list.append((0, 0, lv))
-                        _logger.warning("line_vals_list: %s", line_vals_list)
                         move_vals = {
                             "move_type": "out_refund",
                             "journal_id": move.journal_id.id,
@@ -134,23 +110,20 @@ class AccountMove(models.Model):
                             skip_invoice_sync=True,
                         ).create(move_vals)
                         reverse_moves += reverse_move
-                _logger.warning("reverse_moves line_ids: %s", reverse_moves.line_ids)
                 for rm in reverse_moves:
                     rm.product_line_donation()
-                    rm.update({'invoice_line_ids': line_vals_list})
-                    #rm.create_account_move_line_donation()
-                _logger.warning("reverse_moves.line_ids: %s", reverse_moves.line_ids)
+                    # rm.update({'invoice_line_ids': line_vals_list})
                 return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
     def product_line_donation(self):
-        """Agrega la línea del producto de donación en invoice_line_ids usando
-        skip_invoice_sync=True para evitar que Odoo ejecute _synchronize_business_models
-        y sobrescriba las líneas de cobrable/impuestos construidas manualmente.
+        """Adds the donation product line to invoice_line_ids using
+        skip_invoice_sync=True to prevent Odoo from executing _synchronize_business_models
+        and overwriting manually constructed receivable/tax lines.
 
-        Se fija explícitamente account_id=donation_account_id para que el apunte
-        contable use la cuenta de donación configurada en lugar de la cuenta por
-        defecto del producto (cuenta de ingresos).
+        Explicitly sets account_id=donation_account_id so the journal entry
+        uses the configured donation account instead of the product's default
+        income account.
         """
         product = self.env["product.template"].search(
             [("is_donation_product", "=", True)], limit=1
@@ -165,9 +138,6 @@ class AccountMove(models.Model):
 
         price_unit = abs(self.reversed_entry_id.amount_total_in_currency_signed) if self.reversed_entry_id else 0.0
 
-        # Usamos invoice_line_ids con skip_invoice_sync=True para que la línea
-        # aparezca en la pestaña de líneas de factura sin disparar la sincronización
-        # que destruiría los apuntes de cobrable e impuestos.
         self.with_context(
             check_move_validity=False,
             skip_invoice_sync=True,
@@ -182,38 +152,3 @@ class AccountMove(models.Model):
                 })
             ]
         })
-
-    # def create_account_move_line_donation(self):
-    #     """Agrega el apunte contable de la cuenta de donación en line_ids.
-
-    #     El balance se calcula como la inversa de la suma de las líneas de cobrable
-    #     e impuestos, de modo que el asiento quede cuadrado.
-    #     """
-    #     self = self.with_context(check_move_validity=False)
-
-    #     valid_lines = self.line_ids.filtered(
-    #         lambda l: l.account_id.account_type == 'asset_receivable'
-    #         or l.tax_line_id
-    #         or l.display_type == 'tax'
-    #     )
-
-    #     amount_currency = -sum(valid_lines.mapped('amount_currency'))
-    #     balance = -sum(valid_lines.mapped('balance'))
-
-    #     company = self.company_id or self.env.company
-    #     donation_account_id = company.donation_account_id.id if company else False
-
-    #     if not donation_account_id:
-    #         raise UserError(_("Please configure a donation account in the company settings."))
-
-    #     line = self.env['account.move.line'].with_context(check_move_validity=False).create({
-    #         'move_id': self.id,
-    #         'account_id': donation_account_id,
-    #         'name': self.ref or _('Donation'),
-    #         'amount_currency': amount_currency,
-    #         'balance': balance,
-    #         'display_type': 'payment_term',
-    #     })
-    #     return line
-
-
