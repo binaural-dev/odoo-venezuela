@@ -53,6 +53,8 @@
                                     invisible="not partner_id"
                                     readonly="state in ['emitted', 'cancel']">
                                     <tree editable="bottom">
+                                        <field name="company_currency_id" column_invisible="True" />
+                                        <field name="foreign_currency_id" column_invisible="True" />
                                         <field name="name" readonly="1" force_save="1" />
                                         <field
                                             name="move_id"
