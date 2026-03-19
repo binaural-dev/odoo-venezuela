@@ -215,6 +215,8 @@ msgid ""
 "All selected pickings must have the same invoice type to create a single "
 "invoice."
 msgstr ""
+"Todas las guías de despacho seleccionadas deben tener el mismo tipo de "
+"factura para crear una sola factura."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__allowed_reason_ids
@@ -1396,3 +1398,32 @@ msgstr "Almacén de Donación (Solo Lectura)"
 #. module: l10n_ve_stock_account
 msgid "There can only be one donation warehouse."
 msgstr "Solo puede haber un almacén de donación."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/sale_order.py:0
+msgid "The Contact/Customer cannot be changed when it is a donation."
+msgstr "El Contacto/Cliente no puede ser cambiado cuando es una donación."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__donation_account_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__donation_account_id
+msgid "Donation Account"
+msgstr "Cuenta de Donación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__donation_account_id
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__donation_account_id
+msgid "Account to be used for donation flow."
+msgstr "Cuenta a utilizar para el flujo de donación."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_account_move_form_view
+msgid "Generar Certificado de Donación"
+msgstr "Generar Certificado de Donación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.actions.act_window,name:l10n_ve_stock_account.view_stock_scrap_action_donation
+#: model:ir.ui.menu,name:l10n_ve_stock_account.menu_stock_scrap_donation
+msgid "Donation"
+msgstr "Donación"
