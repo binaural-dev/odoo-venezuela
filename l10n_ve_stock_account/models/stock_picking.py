@@ -83,13 +83,16 @@ class StockPicking(models.Model):
     
     is_donation = fields.Boolean(
         string="Is Donation",
-        # compute="_compute_is_donation",
-        # readonly=False,
+        compute="_compute_is_donation",
+        readonly=False,
         tracking=True
     )
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
 
-
+    @api.depends("sale_id.is_donation")
+    def _compute_is_donation(self):
+        for picking in self:
+            picking.is_donation = picking.sale_id.is_donation if picking.sale_id else False
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
@@ -633,7 +636,6 @@ class StockPicking(models.Model):
 
     def print_dispatch_guide(self):
         return self.env.ref("l10n_ve_stock_account.action_dispatch_guide").read()[0]
-
 
     def _validate_one_invoice_posted(self):
         for picking in self:

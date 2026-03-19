@@ -1364,3 +1364,35 @@ msgstr "Donación"
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid "The partner must be the company itself for a donation"
 msgstr "El contacto debe ser la propia compañía para una donación"
+
+#. module: l10n_ve_stock_account
+msgid "Picking Type Domain"
+msgstr "Dominio del Tipo de Operación"
+
+#. module: l10n_ve_stock_account
+msgid "Scrap Location"
+msgstr "Ubicación de Desecho"
+
+#. module: l10n_ve_stock_account
+msgid "Destination Location"
+msgstr "Ubicación de Destino"
+
+#. module: l10n_ve_stock_account
+msgid "Is Donation Product"
+msgstr "Es Producto de Donación"
+
+#. module: l10n_ve_stock_account
+msgid "Donation Warehouse"
+msgstr "Almacén de Donación"
+
+#. module: l10n_ve_stock_account
+msgid "Indicates if this warehouse is used for donation purposes."
+msgstr "Indica si este almacén se utiliza para fines de donación."
+
+#. module: l10n_ve_stock_account
+msgid "Readonly Donation Warehouse"
+msgstr "Almacén de Donación (Solo Lectura)"
+
+#. module: l10n_ve_stock_account
+msgid "There can only be one donation warehouse."
+msgstr "Solo puede haber un almacén de donación."
