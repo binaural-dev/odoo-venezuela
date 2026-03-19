@@ -139,6 +139,35 @@ class StockPicking(models.Model):
             else:
                 picking.picking_type_domain = native_domain
 
+    picking_type_domain = fields.Char(
+        string="Picking Type Domain",
+        compute="_compute_picking_type_domain",
+    ) 
+
+    @api.onchange("is_donation")
+    def _onchange_is_donation(self):
+        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        if self.is_donation:
+            contact_id = self.env.company.partner_id
+            self.partner_id = contact_id
+            self.is_dispatch_guide = False
+            self.transfer_reason_id = self_consumption
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        if self.is_donation:
+            if self.partner_id != self.env.company.partner_id:
+                raise UserError(_("The partner must be the company itself for a donation"))
+        
+
+    @api.depends("is_donation")
+    def _compute_picking_type_domain(self):
+        native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
+        for picking in self:
+            if picking.is_donation:
+                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
+            else:
+                picking.picking_type_domain = native_domain
     type_of_return = fields.Selection(
         [
             ("total", "Total"),
@@ -1226,14 +1255,19 @@ class StockPicking(models.Model):
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
-    def alert_views(self, company_ids_str):
+    def alert_views(self,company_ids_str):
+
         company_ids = [
             int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
         ]
         domain = self._get_domain_for_return_picking()
         domain.append(("company_id", "in", company_ids))
 
-        pickings_combined = self.env["stock.picking"].sudo().search_count(domain)
+        pickings_combined = (
+            self.env["stock.picking"]
+            .sudo()
+            .search(domain)
+        )
 
         today = date.today()
         taxpayer_type = self.env.company.taxpayer_type

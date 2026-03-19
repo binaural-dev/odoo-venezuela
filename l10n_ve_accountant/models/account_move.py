@@ -1106,6 +1106,28 @@ class AccountMove(models.Model):
                                     **invoice.needed_terms[key],
                                     "foreign_balance": term["company_amount"],
                                 }
+
+                    # Fallback: if no term matched any needed_terms key (e.g. date_maturity
+                    # mismatch due to immediate-payment terms with date_maturity=False),
+                    # distribute foreign_balance across all keys proportionally.
+                    if not isinstance(invoice.needed_terms, dict):
+                        invoice.needed_terms = {}
+                    unmatched_keys = [
+                        key for key in invoice.needed_terms.keys()
+                        if "foreign_balance" not in invoice.needed_terms[key]
+                    ]
+                    if unmatched_keys:
+                        total_balance = sum(
+                            abs(invoice.needed_terms[k].get("balance", 0))
+                            for k in invoice.needed_terms.keys()
+                        ) or 1
+                        for key in unmatched_keys:
+                            key_balance = abs(invoice.needed_terms[key].get("balance", 0))
+                            proportion = key_balance / total_balance
+                            invoice.needed_terms[key] = {
+                                **invoice.needed_terms[key],
+                                "foreign_balance": sign * invoice.foreign_total_billed * proportion,
+                            }
                 else:
                     if not isinstance(invoice.needed_terms, dict):
                         invoice.needed_terms = {}
@@ -1384,7 +1406,7 @@ class AccountMove(models.Model):
                 continue
 
             base_lines_values, tax_lines_values = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_from_tax_lines)
-            foreign_lines_values, foreign_tax_lines_values = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=round_from_tax_lines)
+            foreign_lines_values, foreign_tax_lines_values = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=False)
             AccountTax._add_accounting_data_in_base_lines_tax_details(base_lines_values, move.company_id, include_caba_tags=move.always_tax_exigible)
             AccountTax._add_accounting_data_in_base_lines_tax_details(foreign_lines_values, move.company_id, include_caba_tags=move.always_tax_exigible)
             tax_results = AccountTax._prepare_tax_lines(base_lines_values, move.company_id, tax_lines=tax_lines_values)
@@ -1399,7 +1421,15 @@ class AccountMove(models.Model):
                 if foreign_base_update:
                     to_update['foreign_balance'] = foreign_base_update.get('amount_currency', 0)
                 else:
-                    to_update['foreign_balance'] = to_update['amount_currency']
+                    # Fallback: convert company currency balance to foreign currency.
+                    # Use invoice_date for invoices, date for journal entries.
+                    rate_date = move.invoice_date if move.is_invoice(include_receipts=True) else move.date
+                    to_update['foreign_balance'] = move.company_id.currency_id._convert(
+                        to_update.get('balance', 0),
+                        move.foreign_currency_id,
+                        move.company_id,
+                        rate_date or fields.Date.context_today(move),
+                    )
                 if is_write_needed(line, to_update):
                     line.write(to_update)
                 else:
@@ -1410,7 +1440,15 @@ class AccountMove(models.Model):
                 to_delete.append(tax_line_vals['record'].id)
 
             for tax_line_vals in tax_results['tax_lines_to_add']:
-                foreign_balance = tax_line_vals['amount_currency']
+                # Default: convert company currency balance to foreign currency via _convert.
+                # Use invoice_date for invoices, date for journal entries.
+                rate_date = move.invoice_date if move.is_invoice(include_receipts=True) else move.date
+                foreign_balance = move.company_id.currency_id._convert(
+                    tax_line_vals.get('balance', 0),
+                    move.foreign_currency_id,
+                    move.company_id,
+                    rate_date or fields.Date.context_today(move),
+                )
                 for f_tax_line_vals in foreign_tax_results.get('tax_lines_to_add', []):
                     if (
                         f_tax_line_vals.get('tax_repartition_line_id') == tax_line_vals.get('tax_repartition_line_id') and
@@ -1445,7 +1483,17 @@ class AccountMove(models.Model):
                 if foreign_tax_update:
                     to_update['foreign_balance'] = foreign_tax_update.get('amount_currency', 0)
                 else:
-                    to_update['foreign_balance'] = to_update['amount_currency']
+                    # Fallback: convert company currency balance to foreign currency via _convert.
+                    # Using amount_currency is wrong for company-currency invoices because
+                    # amount_currency is in VEF, not in the foreign currency (USD).
+                    # Use invoice_date for invoices, date for journal entries.
+                    rate_date = move.invoice_date if move.is_invoice(include_receipts=True) else move.date
+                    to_update['foreign_balance'] = move.company_id.currency_id._convert(
+                        to_update.get('balance', 0),
+                        move.foreign_currency_id,
+                        move.company_id,
+                        rate_date or fields.Date.context_today(move),
+                    )
                 if is_write_needed(line, to_update):
                     line.write(to_update)
                 else:
