@@ -14,4 +14,5 @@ from . import (
     stock_location,
     product_template,
     stock_picking_type,
+    stock_scrap,
 )

@@ -21,7 +21,8 @@ class StockLocation(models.Model):
     ) 
     is_donation_warehouse = fields.Boolean(
         string="Donation Warehouse",
-        compute="_compute_is_donation_warehouse"
+        compute="_compute_is_donation_warehouse",
+        store=True,
     )
 
     @api.constrains("usage", "location_id", "partner_id")
