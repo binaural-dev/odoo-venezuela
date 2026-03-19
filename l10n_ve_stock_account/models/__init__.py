@@ -15,4 +15,5 @@ from . import (
     stock_return_picking,
     product_template,
     stock_picking_type,
+    stock_scrap,
 )
