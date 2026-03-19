@@ -36,6 +36,7 @@
         "views/stock_location_views.xml",
         "views/product_template_views.xml",
         "views/stock_picking_type.xml",
+        "views/stock_scrap_views.xml",
         "views/menuitem_views.xml",
         "views/alert_views.xml",
         "report/dispatch_guide.xml",
