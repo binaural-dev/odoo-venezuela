@@ -111,7 +111,7 @@ class AccountMove(models.Model):
                         reverse_moves += reverse_move
                 for rm in reverse_moves:
                     rm.product_line_donation()
-                    # rm.update({'invoice_line_ids': line_vals_list})
+                    rm.update({'invoice_line_ids': line_vals_list})
                 return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
