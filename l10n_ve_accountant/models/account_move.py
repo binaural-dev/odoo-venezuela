@@ -1093,6 +1093,28 @@ class AccountMove(models.Model):
                                     **invoice.needed_terms[key],
                                     "foreign_balance": term["company_amount"],
                                 }
+
+                    # Fallback: if no term matched any needed_terms key (e.g. date_maturity
+                    # mismatch due to immediate-payment terms with date_maturity=False),
+                    # distribute foreign_balance across all keys proportionally.
+                    if not isinstance(invoice.needed_terms, dict):
+                        invoice.needed_terms = {}
+                    unmatched_keys = [
+                        key for key in invoice.needed_terms.keys()
+                        if "foreign_balance" not in invoice.needed_terms[key]
+                    ]
+                    if unmatched_keys:
+                        total_balance = sum(
+                            abs(invoice.needed_terms[k].get("balance", 0))
+                            for k in invoice.needed_terms.keys()
+                        ) or 1
+                        for key in unmatched_keys:
+                            key_balance = abs(invoice.needed_terms[key].get("balance", 0))
+                            proportion = key_balance / total_balance
+                            invoice.needed_terms[key] = {
+                                **invoice.needed_terms[key],
+                                "foreign_balance": sign * invoice.foreign_total_billed * proportion,
+                            }
                 else:
                     if not isinstance(invoice.needed_terms, dict):
                         invoice.needed_terms = {}
