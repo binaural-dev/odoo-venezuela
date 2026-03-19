@@ -34,6 +34,7 @@ class SaleOrder(models.Model):
     def _onchange_is_donation(self):
         if self.is_donation:
             self.partner_id = self.company_id.partner_id
+            self.document = "invoice"
 
     ### COMPUTES ###
     @api.depends("warehouse_id", "document")

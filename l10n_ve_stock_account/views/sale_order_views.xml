@@ -7,10 +7,10 @@
             <field name="payment_term_id" position="after">
                 <field name="is_consignation" invisible="1"/>
                 <field name="document"
-                    readonly="state in ['sale', 'done', 'cancel'] or is_consignation" />
+                    readonly="state in ['sale', 'done', 'cancel'] or is_consignation or is_donation" />
             </field>
             <field name="manually_set_rate" position="after">
-                <field name="is_donation" readonly="state in ['sale', 'done', 'cancel']" />
+                <field name="is_donation" readonly="state in ['sale', 'done', 'cancel']" force_save="1"/>
                 <field name="is_consignation" readonly="state in ['sale', 'done', 'cancel']" />
             </field>
 
