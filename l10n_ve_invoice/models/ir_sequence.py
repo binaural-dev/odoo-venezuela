@@ -6,12 +6,16 @@ from odoo.exceptions import ValidationError
 class IrSequence(models.Model):
     _inherit = "ir.sequence"
 
+    code = fields.Char(copy=False)
+
     def create(self, vals):
-        self.check_sequence_exists(vals)
+        for record in self:
+            record.check_sequence_exists(vals)
         return super().create(vals)
     
     def write(self, vals):
-        self.check_sequence_exists(vals)
+        for record in self:
+            record.check_sequence_exists(vals)
         return super().write(vals)
     
     def check_sequence_exists(self, vals):
@@ -23,7 +27,7 @@ class IrSequence(models.Model):
             sequence = self.sudo().search([
                 ("code", "=", seq_code), 
                 ("company_id", "=", company_id),
-                ("id", "!=", self.id)
+                ("active", "=", True),
             ])
-            if sequence:
+            if sequence and len(sequence) > 1:
                 raise ValidationError(_("The sequence code '%s' already exists for this company. Please check your sequences.") % seq_code)
