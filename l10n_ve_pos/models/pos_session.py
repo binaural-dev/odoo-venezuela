@@ -508,6 +508,7 @@ class PosSession(models.Model):
         # Se sobreescribe esta funcion para poder reasignar la cuenta de destino del account_payment, ya que odoo base la sobreescribe luego de crearla
         outstanding_account = payment_method.outstanding_account_id or self.company_id.account_journal_payment_debit_account_id
         destination_account = self._get_receivable_account(payment_method)
+        pos_receivable_account = destination_account
 
         if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
             # revert the accounts because account.payment doesn't accept negative amount.
@@ -538,6 +539,11 @@ class PosSession(models.Model):
         )
 
         res = account_payment.move_id.line_ids.filtered(lambda line: line.account_id == account_payment.destination_account_id)
+
+        if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
+            res = account_payment.move_id.line_ids.filtered(
+                lambda line: line.account_id == pos_receivable_account
+            )
 
         for line in account_payment.move_id.line_ids:
             if line.credit > 0 and amounts.get("foreign_amount", False):
@@ -571,6 +577,13 @@ class PosSession(models.Model):
             if line.debit > 0:
                 line.not_foreign_recalculate = True
                 line.foreign_debit = abs(payment.foreign_amount)
+
+        if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
+            accounting_partner = self.env["res.partner"]._find_accounting_partner(payment.partner_id)
+            partner_receivable = accounting_partner.property_account_receivable_id
+            res = account_payment.move_id.line_ids.filtered(
+                lambda line: line.account_id == partner_receivable
+            )
 
         if account_payment.pos_payment_method_id.split_transactions:
             self._create_cross_move_payment(res)
