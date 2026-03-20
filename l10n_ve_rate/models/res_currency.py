@@ -21,8 +21,6 @@ class ResCurrency(models.Model):
         self, to_currency = self or to_currency, to_currency or self
         assert self, "convert amount from unknown currency"
         assert to_currency, "convert amount to unknown currency"
-        assert company, "convert amount from unknown company"
-        assert date, "convert amount from unknown date"
         # apply conversion rate
         if self == to_currency:
             to_amount = from_amount
