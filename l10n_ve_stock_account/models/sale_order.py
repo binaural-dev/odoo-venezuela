@@ -21,6 +21,21 @@ class SaleOrder(models.Model):
         help="Document type for the sale order.",
     )
 
+    compute_document = fields.Selection(
+        [
+            ("invoice", "Invoice"),
+        ],
+        compute="_compute_document",
+        string="Document",
+        help="Document type for the sale order.",
+    )
+
+    show_document = fields.Boolean(
+        compute="_compute_show_document",
+        string="Show Document",
+        store=False,
+    )
+
     is_donation = fields.Boolean(string="Is Donation", default=False, tracking=True)
 
     is_consignation = fields.Boolean(
@@ -28,6 +43,17 @@ class SaleOrder(models.Model):
         compute="_compute_is_consignation",
         store=True,
         help="Indicates if this sale order is a consignation sale.",
+    )
+
+    show_is_subcontracting = fields.Boolean(
+        readonly=False,
+        compute="_compute_show_is_subcontracting",
+        store=True,
+    )
+
+    is_subcontracting = fields.Boolean(
+        string="Is Subcontracting",
+        force_save="1",
     )
 
     ### COMPUTES ###
@@ -39,6 +65,31 @@ class SaleOrder(models.Model):
             )
             if order.warehouse_id and order.warehouse_id.is_consignation_warehouse:
                 order.document = "invoice"
+
+    @api.depends("document", "show_is_subcontracting")
+    def _compute_show_is_subcontracting(self):
+        for order in self:
+            order.show_is_subcontracting = False
+            if not order.company_id.is_subcontracting:
+                order.show_is_subcontracting = True
+                continue
+            if order.document != "dispatch_guide" or order.is_consignation:
+                order.show_is_subcontracting = True
+
+    @api.depends("document")
+    def _compute_document(self):
+        for order in self:
+            order.compute_document = "invoice"
+            if order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide'):
+                order.document = "invoice"
+
+
+    @api.depends("show_document", "state")
+    def _compute_show_document(self):
+        for order in self:
+            order.show_document = False
+            if order.state == "draft":
+                order.show_document = order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide')
 
     ### DEFAULTS ###
     @api.model
@@ -85,6 +136,11 @@ class SaleOrder(models.Model):
                 )
 
             self.warehouse_id = warehouse_id
+
+    @api.onchange("document")
+    def _onchange_document_subcontracting(self):
+        if self.document == "invoice":
+            self.is_subcontracting = False
 
     ### CONSTRAINTS ###
     @api.constrains("is_donation", "state")

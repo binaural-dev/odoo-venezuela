@@ -650,7 +650,10 @@ class AccountRetention(models.Model):
             payment.compute_retention_amount_from_retention_lines()
 
     def action_draft(self):
-        self.ensure_one()
+        for retention in self:
+            if retention.state == 'cancel' and retention.payment_ids:
+                retention.payment_ids.action_draft()
+
         self.write({"state": "draft"})
         if self.payment_ids:
             self.payment_ids.action_draft()

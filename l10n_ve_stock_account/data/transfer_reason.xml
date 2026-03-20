@@ -67,5 +67,12 @@
             <field name="code">other_causes</field>
             <field name="active">True</field>
         </record>
+
+        <!-- Subcontracting -->
+        <record id="transfer_reason_subcontracting" model="transfer.reason">
+            <field name="name">Maquila</field>
+            <field name="code">subcontracting</field>
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>
