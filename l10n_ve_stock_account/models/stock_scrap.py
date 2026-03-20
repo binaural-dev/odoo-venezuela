@@ -20,7 +20,7 @@ class StockScrap(models.Model):
     
     @api.depends("is_donation")
     def _compute_scrap_location_domain(self):
-        native_domain = "[('usage', '=', 'internal')]"
+        native_domain = "[('usage', '=', 'inventory')]"
         for picking in self:
             if picking.is_donation:
                 picking.scrap_location_domain = "[('is_donation_warehouse', '=', True)]"
