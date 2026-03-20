@@ -2,15 +2,16 @@ import inspect
 from odoo import api, fields, models, Command, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import frozendict, formatLang, format_date, float_compare, Query
+from odoo.tools import frozendict, formatLang, format_date, float_compare, Query, float_round
+
 from datetime import date, timedelta
 import traceback
 from markupsafe import Markup
+from odoo.tools import float_is_zero
 
 import logging
 
 _logger = logging.getLogger(__name__)
-
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
@@ -24,10 +25,10 @@ class AccountMoveLine(models.Model):
         related="move_id.foreign_inverse_rate", store=True, index=True
     )
 
-    foreign_price = fields.Float(
+    foreign_price = fields.Monetary(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
-        digits="Foreign Product Price",
+        currency_field="foreign_currency_id",
         store=True,
         readonly=False,
     )
@@ -51,6 +52,7 @@ class AccountMoveLine(models.Model):
         compute="_compute_foreign_debit_credit",
         store=True,
         readonly=False
+        
     )
     foreign_credit = fields.Monetary(
         currency_field="foreign_currency_id",
@@ -78,49 +80,19 @@ class AccountMoveLine(models.Model):
         help="When setted, this field will be used to fill the foreign credit field",
     )
 
-    @api.onchange("amount_currency", "currency_id")
-    def _inverse_amount_currency(self):
-        for line in self:
+    foreign_amount_residual = fields.Monetary(
+        currency_field="foreign_currency_id",
+        compute="_compute_foreign_amount_residuals",
+        store=True,
+        readonly=True,
+    )
+    foreign_amount_residual_currency = fields.Monetary(
+        currency_field="foreign_currency_id",
+        compute="_compute_foreign_amount_residuals",
+        store=True,
+        readonly=True,
+    )
 
-            if not line.currency_id:
-                raise UserError(_("You must first select a currency"))
-            
-            if not line.foreign_currency_id:
-                raise UserError(_("There is not a foreign currency defined"))
-            
-            if (
-                line.currency_id == line.company_id.currency_id
-                and line.balance != line.amount_currency
-            ):
-                line.balance = line.amount_currency
-            elif (
-                line.currency_id != line.company_id.currency_id
-                and not line.move_id.is_invoice(True)
-                and not self.env.is_protected(self._fields["balance"], line)
-            ):
-                rate = (
-                    line.foreign_inverse_rate
-                    if line.currency_id
-                    in (self.env.ref("base.VEF"), self.env.ref("base.USD"))
-                    else line.currency_rate
-                )
-                line.balance = line.company_id.currency_id.round(
-                    line.amount_currency / rate
-                )
-            elif (
-                line.currency_id != line.company_id.currency_id
-                and not line.move_id.is_invoice(True)
-                and line.move_id.payment_id
-            ):
-                if line.amount_currency == 0:
-                    return
-
-                if line.move_id.payment_id.foreign_inverse_rate <= 0:
-                    raise UserError(_("The rate should be greater than zero"))
-
-                line.balance = line.company_id.currency_id.round(
-                    line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
-                )
 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
@@ -138,9 +110,6 @@ class AccountMoveLine(models.Model):
         for line in self:
            
             if line.price_unit and line.foreign_inverse_rate:
-                if line._origin.foreign_inverse_rate:
-                    if line._origin.foreign_inverse_rate == line.foreign_inverse_rate:
-                        continue
                 line.foreign_price = line.price_unit * line.foreign_inverse_rate
             else:
                 line.foreign_price = 0.0
@@ -154,7 +123,7 @@ class AccountMoveLine(models.Model):
             foreign_subtotal = line_discount_price_unit * line.quantity
 
             if line.tax_ids:
-                taxes_res = line.tax_ids.compute_all(
+                taxes_res = line.tax_ids.with_context(round_base=False).compute_all(
                     line_discount_price_unit,
                     quantity=line.quantity,
                     currency=line.foreign_currency_id,
@@ -179,38 +148,30 @@ class AccountMoveLine(models.Model):
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
-            _logger.info("Computing foreign debit and credit for line %s", line.id)
             if line.not_foreign_recalculate:
-                _logger.info("Skipping recalculation for line %s", line.id)
                 if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                     self._calculate_from_adjustment(line)
                 continue
 
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
-                _logger.info("Calculating from foreign_debit_adjustment or foreign_credit_adjustment")
                 self._calculate_from_adjustment(line)
 
              
             elif line.display_type in ("line_section", "line_note"):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
-                _logger.info("Calculating from payment_term or tax")
-                self._calculate_from_balance(line)
+                self._calculate_for_non_invoice(line)
             elif line.currency_id == line.company_id.currency_foreign_id and line.amount_currency:
-                _logger.info("Calculating from amount_currency")
                 self._calculate_from_amount_currency(line)
 
             elif line.move_id.payment_id and "retention_foreign_amount" in self.env["account.payment"]._fields and line.move_id.payment_id.is_retention:
                 self._calculate_from_retention(line)
             elif not line.move_id.is_invoice(include_receipts=True):
-                _logger.info("Calculating for non-invoice")
                 self._calculate_for_non_invoice(line)
             elif line.display_type == "product":
-                _logger.info("Calculating from product")
                 self._calculate_from_product(line)
             else:
-                _logger.info("Calculating from balance")
-                self._calculate_from_balance(line)
+                self._calculate_for_non_invoice(line)
 
     def _calculate_from_adjustment(self, line):
         new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
@@ -230,15 +191,6 @@ class AccountMoveLine(models.Model):
             line.foreign_debit = 0.0
         if line.foreign_credit != 0.0:
             line.foreign_credit = 0.0
-
-    def _calculate_from_balance(self, line):
-        new_foreign_debit = abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-        if line.foreign_debit != new_foreign_debit:
-            line.foreign_debit = new_foreign_debit
-
-        new_foreign_credit = abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-        if line.foreign_credit != new_foreign_credit:
-            line.foreign_credit = new_foreign_credit
 
     def _calculate_from_amount_currency(self, line):
         new_foreign_debit = abs(line.amount_currency) if line.amount_currency > 0 else 0.0
@@ -282,16 +234,15 @@ class AccountMoveLine(models.Model):
         if is_base_currency and rate_is_zero:
             foreign_currency = line.company_id.currency_foreign_id
             
-           
             if foreign_currency:
                 rate = foreign_currency._get_conversion_rate(
                     line.company_id.currency_id, 
                     foreign_currency,          
                     line.company_id,           
-                    line.date                  
+                    line.date           
                 )
-                
-                inverse_rate_to_use = rate 
+
+                inverse_rate_to_use = rate if inverse_rate_to_use == 0.0 else rate
      
         balance = sum(foreign_lines.mapped("amount_currency"))
         if balance and len(currency_lines) == 1:
@@ -306,9 +257,9 @@ class AccountMoveLine(models.Model):
         line.foreign_debit_no_format = line.debit * inverse_rate_to_use
         line.foreign_credit_no_format = line.credit * inverse_rate_to_use
         
-        if line.foreign_debit != new_foreign_debit:
+        if new_foreign_debit:
             line.foreign_debit = new_foreign_debit
-        if line.foreign_credit != new_foreign_credit:
+        if new_foreign_credit:
             line.foreign_credit = new_foreign_credit
 
     def _calculate_from_product(self, line):
@@ -328,8 +279,6 @@ class AccountMoveLine(models.Model):
         for line in self:
         
             line.foreign_balance = line.foreign_debit - line.foreign_credit
-            
-               
 
     def _inverse_foreign_balance(self):
         for line in self:
@@ -340,18 +289,6 @@ class AccountMoveLine(models.Model):
                 abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
             )
 
-    # @api.depends("foreign_rate", "balance")
-    # def _compute_amount_currency(self):
-    #     _logger.warning(
-    #         "Source code: %s", inspect.getsource(super()_compute_amount_currency)
-    #     )
-    #     res = super()._compute_amount_currency()
-    #     # for line in self:
-    #     #     if line.amount_currency is False:
-    #     #         line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
-    #     #     if line.currency_id == line.company_id.currency_id:
-    #     #         line.amount_currency = line.balance
-    #     return res
 
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
@@ -613,3 +550,215 @@ class AccountMoveLine(models.Model):
                         })
 
         return res
+
+    def _get_manual_foreign_amount_residual(
+        self,
+        currency=None,
+        foreign_debit=None,
+        foreign_credit=None,
+        partials=None,
+    ):
+        """
+        Calculates the manual residual amount in foreign currency for the move line.
+        Considers matched partials and computes the remaining amount after reconciliation.
+        Returns a tuple: (rounded residual, manual_available).
+        """
+        self.ensure_one()
+
+        currency = currency or self.foreign_currency_id
+        if not currency:
+            return 0.0, False
+
+        if self.foreign_currency_id and currency != self.foreign_currency_id:
+            return 0.0, False
+
+        foreign_debit = foreign_debit if foreign_debit is not None else self.foreign_debit
+        foreign_credit = (
+            foreign_credit if foreign_credit is not None else self.foreign_credit
+        )
+
+        manual_total = (foreign_debit or 0.0) - (foreign_credit or 0.0)
+
+        partials = partials or (self.matched_debit_ids | self.matched_credit_ids)
+        manual_partial_total = 0.0
+        for partial in partials:
+            amount = 0.0
+            partial_currency = False
+            if partial.debit_move_id == self:
+                amount = partial.debit_amount_currency or 0.0
+                partial_currency = partial.debit_currency_id
+            elif partial.credit_move_id == self:
+                amount = partial.credit_amount_currency or 0.0
+                partial_currency = partial.credit_currency_id
+
+            if partial_currency == currency and amount:
+                manual_partial_total += amount
+
+        if currency.is_zero(manual_total) and currency.is_zero(manual_partial_total):
+            return 0.0, False
+
+        if currency.is_zero(manual_total):
+            balance_sign = 1 if self.balance >= 0 else -1
+        else:
+            balance_sign = 1 if manual_total >= 0 else -1
+
+        residual = manual_total - balance_sign * manual_partial_total
+        if balance_sign > 0:
+            residual = max(residual, 0.0)
+        else:
+            residual = min(residual, 0.0)
+
+        return residual, True
+
+    @api.depends(
+        "foreign_currency_id",
+        "foreign_debit",
+        "foreign_credit",
+        "matched_debit_ids.debit_amount_currency",
+        "matched_debit_ids.debit_currency_id",
+        "matched_credit_ids.credit_amount_currency",
+        "matched_credit_ids.credit_currency_id",
+    )
+    def _compute_foreign_amount_residuals(self):
+        """
+        Computes and stores the foreign currency residuals for each move line.
+        Uses _get_manual_foreign_amount_residual for calculation.
+        """
+        for line in self:
+            residual, manual_available = line._get_manual_foreign_amount_residual()
+            line.foreign_amount_residual = residual if manual_available else 0.0
+            line.foreign_amount_residual_currency = residual if manual_available else 0.0
+
+    @api.model
+    def _prepare_reconciliation_single_partial(self, debit_values, credit_values, shadowed_aml_values=None):
+        # 1. Llamada al método original
+        res = super()._prepare_reconciliation_single_partial(
+            debit_values, credit_values, shadowed_aml_values=shadowed_aml_values
+        )
+
+        if not res.get('partial_values'):
+            return res
+
+        debit_aml = debit_values['aml']
+        credit_aml = credit_values['aml']
+        partial_vals = res['partial_values']
+        
+        amount_company = partial_vals['amount']
+
+
+        def get_foreign_partial_amount(aml):
+            f_currency = aml.foreign_currency_id
+            if not f_currency:
+                return 0.0
+           
+            total_foreign = abs(aml.foreign_balance) 
+
+            
+            return total_foreign
+
+   
+        foreign_debit_amount = get_foreign_partial_amount(debit_aml)
+        foreign_credit_amount = get_foreign_partial_amount(credit_aml)
+
+
+        res['partial_values'].update({
+            'foreign_amount': min(foreign_debit_amount, foreign_credit_amount),
+            'debit_foreign_amount_currency': foreign_debit_amount,
+            'credit_foreign_amount_currency': foreign_credit_amount,
+        })
+
+        return res
+    
+
+    @api.depends('debit', 'credit', 'amount_currency', 'account_id', 'currency_id', 'company_id',
+                 'matched_debit_ids', 'matched_credit_ids')
+    def _compute_amount_residual(self):
+        """ Computes the residual amount of a move line from a reconcilable account in the company currency and the line's currency.
+            This amount will be 0 for fully reconciled lines or lines from a non-reconcilable account, the original line amount
+            for unreconciled lines, and something in-between for partially reconciled lines.
+        """
+        need_residual_lines = self.filtered(lambda x: x.account_id.reconcile or x.account_id.account_type in ('asset_cash', 'liability_credit_card'))
+        # Run the residual amount computation on all lines stored in the db. By
+        # using _origin, new records (with a NewId) are excluded and the
+        # computation works automagically for virtual onchange records as well.
+        stored_lines = need_residual_lines._origin
+
+        if stored_lines:
+            self.env['account.partial.reconcile'].flush_model()
+            self.env['res.currency'].flush_model(['decimal_places'])
+
+            aml_ids = tuple(stored_lines.ids)
+            self._cr.execute('''
+                SELECT
+                    part.debit_move_id AS line_id,
+                    'debit' AS flag,
+                    COALESCE(SUM(part.amount), 0.0) AS amount,
+                    SUM(part.debit_amount_currency) AS amount_currency
+                FROM account_partial_reconcile part
+                JOIN res_currency curr ON curr.id = part.debit_currency_id
+                WHERE part.debit_move_id IN %s
+                GROUP BY part.debit_move_id, curr.decimal_places
+                UNION ALL
+                SELECT
+                    part.credit_move_id AS line_id,
+                    'credit' AS flag,
+                    COALESCE(SUM(part.amount), 0.0) AS amount,
+                    SUM(part.credit_amount_currency) AS amount_currency
+                FROM account_partial_reconcile part
+                JOIN res_currency curr ON curr.id = part.credit_currency_id
+                WHERE part.credit_move_id IN %s
+                GROUP BY part.credit_move_id, curr.decimal_places
+            ''', [aml_ids, aml_ids])
+            amounts_map = {
+                (line_id, flag): (amount, amount_currency)
+                for line_id, flag, amount, amount_currency in self.env.cr.fetchall()
+            }
+        else:
+            amounts_map = {}
+
+        # Lines that can't be reconciled with anything since the account doesn't allow that.
+        for line in self - need_residual_lines:
+            line.amount_residual = 0.0
+            line.amount_residual_currency = 0.0
+            line.reconciled = False
+
+        for line in need_residual_lines:
+            # Since this part could be call on 'new' records, 'company_currency_id'/'currency_id' could be not set.
+            comp_curr = line.company_currency_id or self.env.company.currency_id
+            foreign_curr = line.currency_id or comp_curr
+
+            # Retrieve the amounts in both foreign/company currencies. If the record is 'new', the amounts_map is empty.
+            debit_amount, debit_amount_currency = amounts_map.get((line._origin.id, 'debit'), (0.0, 0.0))
+            credit_amount, credit_amount_currency = amounts_map.get((line._origin.id, 'credit'), (0.0, 0.0))
+
+            # Subtract the values from the account.partial.reconcile to compute the residual amounts.
+            residual = line.balance - debit_amount + credit_amount
+            residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
+            
+            line.amount_residual = residual
+            line.amount_residual_currency = residual_currency
+            # Para determinar si está conciliado, usamos una tolerancia mínima 
+            # en lugar de un cero absoluto, o comparamos directamente.
+            line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
+
+
+    @api.onchange('amount_currency', 'currency_id','foreign_inverse_rate')
+    def _inverse_amount_currency(self):
+        for line in self:
+            if line.currency_id == line.company_id.currency_id and line.balance != line.amount_currency:
+                line.balance = line.amount_currency
+            elif (
+                line.currency_id != line.company_id.currency_id
+                and not line.move_id.is_invoice(True)
+                and not self.env.is_protected(self._fields['balance'], line)
+            ):
+                line.balance = line.amount_currency / line.currency_rate
+
+
+    @api.depends('currency_rate', 'balance')
+    def _compute_amount_currency(self):
+        for line in self:
+            if line.amount_currency is False:
+                line.amount_currency = line.balance * line.currency_rate
+            if line.currency_id == line.company_id.currency_id:
+                line.amount_currency = line.balance
