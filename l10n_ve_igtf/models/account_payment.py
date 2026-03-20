@@ -63,27 +63,27 @@ class AccountPaymentIgtf(models.Model):
         
         currency = invoice.currency_id
         precision = currency.rounding
-        
-        principal_debt = invoice.amount_residual if invoice.company_currency_id != self.env.ref("base.VEF") else invoice.foreign_amount_residual
+
+        due_amount = invoice.amount_residual
+
+        due_currency_id = invoice.currency_id
+
+        principal_debt = due_amount
 
         principal_amount = min(payment_amount, principal_debt)
         
 
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
 
-        igtf_top = invoice.igtf_top_aply
+        igtf_top = due_currency_id._convert( invoice.alter_igtf_top_aply,invoice.currency_id,company=self.company_id,date=fields.Date.today()) if invoice.company_currency_id == self.env.ref("base.VEF") else invoice.igtf_top_aply
 
         alter_bi_igtf = invoice.alter_bi_igtf
 
         igtf= igtf_unrounded
 
-        invoice_residual = invoice.amount_residual if self.company_currency_id != self.env.ref("base.VEF") else invoice.foreign_amount_residual
+        invoice_residual = due_amount
     
         if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
-            
-            return 0.0
-        
-        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
             
             return 0.0
         
@@ -94,7 +94,12 @@ class AccountPaymentIgtf(models.Model):
             return 0.0
         
         if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
+            
             igtf = residual_igtf
+
+        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
+            
+            return 0.0
         
         return igtf
     
