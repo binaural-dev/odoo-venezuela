@@ -152,14 +152,12 @@ class AccountMove(models.Model):
                 ], limit=1)
 
                 if partial:
-                    if bank_line and bank_line[0].company_currency_id == self.env.ref("base.VEF") :
-                        partial_amount = abs(partial.foreign_amount) 
-                        partial_foreign_amount = abs(partial.amount) 
+                    if bank_line and bank_line[0].company_currency_id == self.env.ref("base.VEF"):
+                        partial_amount = abs(partial.foreign_amount)
+                        partial_foreign_amount = abs(partial.amount)
                     else:
-                        partial_amount =  abs(partial.amount) 
-                        partial_foreign_amount = abs(partial.foreign_amount) 
-
-                    
+                        partial_amount = abs(partial.amount)
+                        partial_foreign_amount = abs(partial.foreign_amount)
 
                 if bank_line:
                    
