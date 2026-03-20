@@ -5,6 +5,7 @@ import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import format_date
+from odoo.tools import format_date, float_is_zero, float_compare
 
 _logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
-    @api.depends("invoice_date", "entry_in_period", "state")
+    @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
         today = date.today()
@@ -51,6 +52,7 @@ class AccountMove(models.Model):
 
             if move.state == "cancel":
                 continue
+
 
             if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
                 if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
@@ -71,15 +73,27 @@ class AccountMove(models.Model):
     def _check_price_in_zero(self):
         from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
-            if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
+            if line.display_type in ("line_section", "line_note"):
+                continue
+
+            precision = line.currency_id.decimal_places
+            if float_is_zero(line.price_unit, precision_digits=precision):
                 from_loyalty = self.env.context.get('from_loyalty', False)
-                if (
-                    self.env.company.sale_discount_product_id
-                    and line.product_id == self.env.company.sale_discount_product_id
-                ):
-                    continue
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
+
+            if float_compare(line.price_unit, 0, precision_digits=precision) == -1:
+                from_loyalty = self.env.context.get('from_loyalty', False)
+                
+                is_official_discount = (
+                    self.env.company.sale_discount_product_id
+                    and line.product_id == self.env.company.sale_discount_product_id
+                )
+                
+                is_reward = any(l.reward_id or l.coupon_id for l in line.sale_line_ids)
+                
+                if not from_pos and not from_loyalty and not is_official_discount and not is_reward:
+                    raise ValidationError(_("An invoice cannot have a line with a negative price unless it is a registered discount or reward"))
 
     def action_post(self):
         for record in self:
@@ -88,10 +102,10 @@ class AccountMove(models.Model):
 
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
-            """ if invoices and record.move_type in ["out_invoice","out_refund"]:
+            if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
             if record.invoice_date and record.date and record.date < record.invoice_date:
-                raise ValidationError(_("The accounting date cannot be earlier than the invoice date.")) """
+                raise UserError(_("The accounting date cannot be earlier than the invoice date."))
         return super().action_post()
 
     @api.model_create_multi
