@@ -203,7 +203,7 @@ class AccountMove(models.Model):
             affected_invoice_number = ""
             affected_invoice_date = ""
             affected_invoice_amount = ""
-            affected_invoice_comment = ""
+            affected_invoice_comment = record.ref if record.debit_origin_id or record.reversed_entry_id else ""
             affected_invoice_series = ""
 
             if record.debit_origin_id:
@@ -220,8 +220,8 @@ class AccountMove(models.Model):
                     tax_totals = record.debit_origin_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
-                part = record.ref.split(',')
-                affected_invoice_comment = part[1].strip()
+                if record.ref and ',' in record.ref:
+                    affected_invoice_comment = record.ref.split(',', 1)[1].strip()
 
             if record.reversed_entry_id:
                 affected_invoice_number = str(record.reversed_entry_id.sequence_number)
@@ -237,11 +237,16 @@ class AccountMove(models.Model):
                     tax_totals = record.reversed_entry_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
-                part = record.ref.split(',')
-                affected_invoice_comment = part[1].strip()
+                if record.ref and ',' in record.ref:
+                    affected_invoice_comment = record.ref.split(',', 1)[1].strip()
 
             if not record.invoice_date:
                 raise UserError(_("The invoice date is not defined."))
+
+            currency_tfhka = record.company_id.currency_foreign_id.code_tfhka
+
+            if record.company_id.currency_id.name == 'VEF' or record.company_id.currency_id.name == 'VES':
+                currency_tfhka = record.company_id.currency_id.code_tfhka
 
             return {
                 "tipoDocumento": document_type,
@@ -261,7 +266,7 @@ class AccountMove(models.Model):
                 "serie": series,
                 "sucursal": "",
                 "tipoDeVenta": "Interna",
-                "moneda": "VEF",
+                "moneda": currency_tfhka,
                 "transaccionId": "",
                 "urlPdf": ""
             }
@@ -278,7 +283,7 @@ class AccountMove(models.Model):
             amounts = {}
             amounts_foreign = {}
 
-            if currency == "VEF":
+            if currency == "VEF" or currency == "VES":
                 amounts["montoGravadoTotal"] = str(
                     round(
                         tax_totals.get('subtotal', 0) - 
@@ -304,6 +309,7 @@ class AccountMove(models.Model):
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
                 
                 taxes_subtotal = self.get_tax_subtotals(currency)
+                currency = record.company_id.currency_id.code_tfhka
 
             else:
                 amounts_foreign["montoGravadoTotal"] = str(
@@ -355,6 +361,7 @@ class AccountMove(models.Model):
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("foreign_discount_amount", 0), 2)))
                 
                 taxes_subtotal, taxes_subtotal_foreign = self.get_tax_subtotals(currency)
+                currency = record.company_id.currency_foreign_id.code_tfhka
 
             totals = {
                 "nroItems": str(len(record.invoice_line_ids)),
@@ -381,7 +388,7 @@ class AccountMove(models.Model):
 
             if amounts_foreign:
                 foreign_totals = {
-                    "moneda": record.company_id.currency_foreign_id.name,
+                    "moneda": currency,
                     "tipoCambio": str(round(record.foreign_rate, 2)),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
@@ -604,6 +611,10 @@ class AccountMove(models.Model):
         payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
         currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
         payment_method = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else False
+        if currency == "VEF" or currency == "VES":
+            currency = self.company_id.currency_foreign_id.code_tfhka
+            if self.company_id.currency_id.name == 'VEF' or self.company_id.currency_id.name == 'VES':
+                currency = self.company_id.currency_id.code_tfhka
         payment_info = {
             "descripcion": payment_method.description if payment_method else "",
             "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
