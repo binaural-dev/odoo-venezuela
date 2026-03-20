@@ -15,7 +15,7 @@
   <record id="l10n_ve_auditlog_action" model="ir.actions.act_window">
     <field name="name">Audit logs</field>
     <field name="res_model">mail.message</field>
-    <field name="view_mode">tree,form</field>
+    <field name="view_mode">list,form</field>
     <field name="domain">[('model', 'in', ('account.move','account.payment','account.retention'))]</field>
   </record>
   <record id="l10n_ve_auditlog_search" model="ir.ui.view">
