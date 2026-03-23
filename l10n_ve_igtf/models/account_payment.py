@@ -49,6 +49,14 @@ class AccountPaymentAndIgtf(models.Model):
     )
 
     invoices_origin_ids = fields.Many2many('account.move', string='Invoices Origin')
+
+    keep_alter_value_vef = fields.Boolean('Keep Amount in alter value')
+
+    @api.onchange('currency_id','date')
+    def _onchange_keep_alter_value_vef(self):
+        for rec in self:
+            if rec.currency_id != rec.company_id.currency_id:
+                rec.keep_alter_value_vef = False
                 
     @api.onchange('journal_id','is_advance_payment')
     def _onchange_journal_id(self):
@@ -144,7 +152,7 @@ class AccountPaymentAndIgtf(models.Model):
                 force_balance
             )
             if rec.payment_from_wizard:
-                if rec.igtf_percentage and rec.igtf_amount:
+                if rec.igtf_percentage and rec.igtf_amount > 0.0:
                     # Check if any of the related invoices belongs to an
                     # international purchase journal — in that case, skip IGTF.
                     move_ids = rec.get_moves()
@@ -156,15 +164,20 @@ class AccountPaymentAndIgtf(models.Model):
 
             return vals
     
-    def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, base = False):
+    def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, payment_date, base = False):
         
         currency = invoice.currency_id
         precision = currency.rounding
-        
-        due_currency_id = invoice.currency_id
-        due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,fields.Date.today(), currency)
+        date_conver = False
+        if payment_date <= invoice.invoice_date:
+            date_conver = invoice.invoice_date
+        else:
+            date_conver = payment_date
 
-        payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,fields.Date.today(), currency)
+        due_currency_id = invoice.currency_id
+        due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,date_conver, currency)
+
+        payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,date_conver, currency)
         principal_debt = due_amount
 
         principal_amount = min(payment_amount, principal_debt)
@@ -199,7 +212,7 @@ class AccountPaymentAndIgtf(models.Model):
             return 0.0 
                 
         if not base:
-            return self.convert_to_external_currency(payment_currency, igtf, fields.Date.today())
+            return self.convert_to_external_currency(payment_currency, igtf, date_conver)
         else:
             return igtf
     
@@ -258,7 +271,7 @@ class AccountPaymentAndIgtf(models.Model):
             return
 
         for payment in self:
-            if payment.igtf_amount:
+            if payment.igtf_amount > 0.0:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
