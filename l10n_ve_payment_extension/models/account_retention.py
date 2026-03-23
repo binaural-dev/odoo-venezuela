@@ -279,6 +279,7 @@ class AccountRetention(models.Model):
         Load retention lines from invoices with taxes when the partner changes for IVA retentions
         that are not posted.
         """
+        self._validate_retention_journals()
         if any(retention.is_third_party_retention for retention in self):
             # For third-party billing, just re-compute existing line amounts
             # using the new partner's withholding, without replacing lines
@@ -287,7 +288,6 @@ class AccountRetention(models.Model):
             ):
                 retention.retention_line_ids._onchange_move_id()
             return
-        self._validate_retention_journals()
         for retention in self.filtered(
             lambda r: (r.state, r.type_retention) == ("draft", "iva") and r.partner_id
         ):
