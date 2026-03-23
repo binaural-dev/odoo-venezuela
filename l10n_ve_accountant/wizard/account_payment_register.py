@@ -28,17 +28,65 @@ class AccountPaymentRegister(models.TransientModel):
     foreign_rate = fields.Float(
         help="The rate of the payment",
         digits="Tasa",
+        compute="_compute_rates",
+        store=True, 
     )
+    
+    foreign_rate_display = fields.Float(
+        help="The rate of the payment",
+        digits="Tasa",
+        compute="_compute_foreign_rate_display",
+        string=_("Foreign Rate Display"),
+        store=False,
+    )
+    @api.depends('currency_id', 'payment_date')
+    def _compute_foreign_rate_display(self):
+        """
+        Muestra solo el valor numérico de la tasa de la moneda seleccionada en el campo Importe.
+        """
+        Rate = self.env["res.currency.rate"]
+        for payment in self:
+            if payment.currency_id:
+                currency_id = payment.currency_id.id
+                if currency_id == payment.company_id.currency_id.id:
+                    currency_id = payment.company_id.foreign_currency_id.id
+                
+                rate_values = Rate.compute_rate(
+                    currency_id, payment.payment_date
+                )
+                payment.foreign_rate_display = rate_values.get("foreign_rate", 0.0)
+            else:
+                payment.foreign_rate_display = 0.0
+
     foreign_inverse_rate = fields.Float(
         help=(
             "Rate that will be used as factor to multiply of the foreign currency for the payment "
             "and the moves created by the wizard."
         ),
         digits=(16, 15),
+        compute="_compute_rates",
+        store=True,
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
     )
+    
+    @api.depends("currency_id")
+    def _compute_rates(self):
+        """
+        Compute the currency and compute the foreign rate
+        """
+        Rate = self.env["res.currency.rate"]
+        for payment in self:
+            if not bool(payment.currency_id):
+                return
+            currency_to_use = payment.currency_id.id if payment.currency_id != payment.company_id.currency_id else payment.company_id.foreign_currency_id.id
+            rate_values = Rate.compute_rate(
+                currency_to_use, payment.payment_date
+            )
+            payment.foreign_rate = rate_values.get("foreign_rate", 0.0)
+            payment.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0.0)
+            
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -54,8 +102,6 @@ class AccountPaymentRegister(models.TransientModel):
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(
                 payment.foreign_rate
             )
-            total_amount_residual_in_wizard_currency = 0
-            payment.amount = total_amount_residual_in_wizard_currency
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):
@@ -85,21 +131,7 @@ class AccountPaymentRegister(models.TransientModel):
         )
         return payment_vals
 
-    @api.depends("can_edit_wizard", "amount", "foreign_inverse_rate")
-    def _compute_payment_difference(self):
-        for wizard in self:
-            if wizard.can_edit_wizard:
-                batch_results = wizard.batches
-                total_amount_residual_in_wizard_currency = (
-                    wizard._get_total_amounts_to_pay(
-                        batch_results
-                    )
-                )
-                wizard.payment_difference = (
-                    total_amount_residual_in_wizard_currency.get('full_amount', 0.0) - wizard.amount
-                )
-            else:
-                wizard.payment_difference = 0.0
+    
 
     def _get_total_amounts_to_pay(self, batch_results):
         """

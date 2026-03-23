@@ -7,17 +7,19 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "1.0",
+    "version": "1.34",
     "depends": [
         "base",
         "web",
         "account",
         "account_reports",
-        "purchase", 
-        "sale", 
-        "l10n_ve_base", 
+        "purchase",
+        "sale",
+        "l10n_ve_base",
         "l10n_ve_rate",
         "l10n_ve_contact",
+        "account_invoice_pricelist",
+        "account_invoice_pricelist_sale"
     ],
     "data": [
         "security/res_groups.xml",
@@ -27,6 +29,7 @@
         "data/ir_actions_server.xml",
         "data/paperformats.xml",
         "data/tax_unit_data.xml",
+        "data/res_company_data.xml",
         "views/account_invoice_report.xml",
         "views/account_move.xml",
         "views/account_move_line.xml",
@@ -37,6 +40,7 @@
         "views/res_company_views.xml",
         "views/tax_unit.xml",
         "views/res_config_settings_views.xml",
+        "views/account_journal_views.xml",
         "views/menuitem_views.xml",
         "report/account_invoice_details.xml",
         "report/all_payment_report.xml",
@@ -54,5 +58,6 @@
         "web.assets_backend": ["l10n_ve_accountant/static/src/components/**/*"],
     },
     "application": True,
-    "pre_init_hook": "pre_init_hook"
+    "pre_init_hook": "pre_init_hook",
+    "post_init_hook": "set_main_company_currency_to_vef",
 }

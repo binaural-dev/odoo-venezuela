@@ -2,7 +2,7 @@
 <odoo>
     <data>
         <template id="report_saledetails" inherit_id="point_of_sale.report_saledetails">
-            <xpath expr="//div[@class='page']" position="replace">
+            <xpath expr="//t[@t-call='point_of_sale.pos_session_sales_details']" position="replace">
                 <div class="page">
                     <div class="text-center">
                         <h2>Sales Details</h2>
@@ -88,12 +88,12 @@
                     </table>
                 </div>
             </xpath>
-            <xpath expr="//div[@t-if='opening_note or closing_note']" position="replace">
+            <!-- <xpath expr="//div[@t-if='opening_note or closing_note']" position="replace">
             </xpath>
             <xpath expr="//t[@id='closing_session']" position="replace">
             </xpath>
             <xpath expr="//t[@id='invoices']" position='replace'>
-            </xpath>
+            </xpath> -->
         </template>
     </data>
 </odoo>

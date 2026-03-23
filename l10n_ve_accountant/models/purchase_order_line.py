@@ -17,7 +17,7 @@ class PurchaseOrderLine(models.Model):
         return self.env['account.tax']._prepare_foreign_base_line_for_taxes_computation(
             self,
             price_unit=self.foreign_price,
-            tax_ids=self.taxes_id,
+            tax_ids=self.tax_ids,
             quantity=self.product_qty,
             partner_id=self.order_id.partner_id,
             currency_id=self.order_id.foreign_currency_id,

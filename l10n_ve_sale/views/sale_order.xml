@@ -44,7 +44,7 @@
             </xpath>
 
             <xpath expr="//notebook" position="inside">
-                <page string="Foreign currency" name="foreign_currency">
+                <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_sale.group_foreign_currency_view_sales">
                     <group>
                         <field name="foreign_currency_id" invisible="1" />
                         <field
@@ -123,13 +123,6 @@
                     groups="!l10n_ve_sale.payment_terms_sale_order_group" />
             </field>
 
-            <xpath expr="//notebook/page[1]//list/field[@name='price_unit']" position="replace">
-                <field name="price_unit" readonly="1"
-                    groups="l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
-                <field name="price_unit"
-                    groups="!l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
-            </xpath>
-
         </field>
     </record>
 
@@ -139,13 +132,21 @@
         <field name="inherit_id" ref="sale.view_quotation_tree" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="foreign_rate" optional="hide" />
                 <field name="foreign_currency_id" column_invisible="True" />
+                <field name="foreign_untaxed_total" optional="hide" 
+                    options="{'currency_field': 'foreign_currency_id'}" />
                 <field
                     name="foreign_total_billed"
                     sum="Foreign Amount total"
                     widget="monetary"
                     options="{'currency_field': 'foreign_currency_id'}"
                     decoration-bf="1" />
+                <field name="company_currency_id" column_invisible="True"/>
+                <field name="amount_untaxed_total_signed" optional="hide" 
+                    options="{'currency_field': 'company_currency_id'}"/>
+                <field name="amount_total_signed" optional="hide" 
+                    options="{'currency_field': 'company_currency_id'}"/>
             </xpath>
         </field>
     </record>
@@ -163,9 +164,35 @@
             <xpath expr="//field[@name='activity_ids']" position="after">
                 <field name="foreign_rate" optional="hide" />
                 <field name="foreign_currency_id" column_invisible="True" />
+                <field name="foreign_untaxed_total" optional="hide" 
+                    options="{'currency_field': 'foreign_currency_id'}" />
                 <field name="foreign_total_billed" optional="hide"
                     options="{'currency_field': 'foreign_currency_id'}" />
+                <field name="company_currency_id" column_invisible="True"/>
+                <field name="amount_untaxed_total_signed" optional="hide" 
+                    options="{'currency_field': 'company_currency_id'}"/>
+                <field name="amount_total_signed" optional="hide" 
+                    options="{'currency_field': 'company_currency_id'}"/>
             </xpath>
+            
+        </field>
+    </record>
+
+    <record id="view_sale_order_pivot_l10n_ve_sale" model="ir.ui.view">
+        <field name="name">sale.order.pivot.l10n.ve.sale</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sale_order_pivot"/>
+        <field name="arch" type="xml">
+            <field name="amount_total" position="after">
+                <field name="foreign_total_billed" type="measure"/>
+                <field name="foreign_untaxed_total" type="measure"/>
+                <field name="amount_total_signed" type="measure"/>
+                <field name="amount_untaxed_total_signed" type="measure"/>
+                <field name="amount_untaxed" type="measure" invisible="1"/>
+            </field>
+            <field name="amount_total" position="attributes">
+                 <attribute name="invisible">1</attribute>
+            </field>
         </field>
     </record>
 

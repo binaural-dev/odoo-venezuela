@@ -5,9 +5,9 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 from datetime import date, datetime, timedelta
+import calendar
 
 _logger = logging.getLogger(__name__)
-
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
@@ -80,10 +80,10 @@ class StockPicking(models.Model):
     )
 
     is_donation = fields.Boolean(related="sale_id.is_donation")
+    pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
-        default=True,
         tracking=True,
         store=True,
         compute="_compute_is_dispatch_guide",
@@ -93,9 +93,18 @@ class StockPicking(models.Model):
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
+    def get_customer_journal(self):
+        journal = customer_journal_id = self.env.company.customer_journal_id or False
+        return journal
+
+    def get_vendor_journal(self):
+        journal = vendor_journal_id = self.env.company.vendor_journal_id or False
+        return journal
+
+
     def action_open_invoice_wizard(self):
         return {
-            "name": "Generate Invoice For Multiple Picking",
+            "name": _("Generate Invoice For Multiple Picking"),
             "view_type": "form",
             "view_mode": "form",
             "res_model": "picking.invoice.wizard",  
@@ -154,33 +163,32 @@ class StockPicking(models.Model):
 
     def create_multi_invoice(self, pickings):
 
-        
-        lines = self._get_multiple_invoice_lines_for_invoice(pickings, from_picking_line=True)
-        current_user = self.env.uid
-
         if self.picking_type_id.code == "outgoing":
-            customer_journal_id = self.env.company.customer_journal_id or False
+            pricelists = pickings.mapped('pricelist_id')
+            if len(pricelists) > 1:
+                raise UserError(_("You can only create a combined invoice for pickings with the same pricelist."))
+
+            customer_journal_id = pickings.get_customer_journal()
             if not customer_journal_id:
                 raise UserError(_("Please configure the journal from settings"))
             lines = self._get_multiple_invoice_lines_for_invoice(pickings, from_picking_line=True)
             origin_name = '/'.join(pickings.mapped('name'))
-            
             origins_invoice = '/'.join([self._get_origin_name(picking) for picking in pickings])
-            invoice = self.env["account.move"].create(
-                {
+            invoice_vals = {
                     "move_type": "out_invoice",
                     "invoice_origin": origins_invoice, 
-                    "invoice_user_id": current_user,
+                    "invoice_user_id": self.env.uid,
                     "narration": origin_name,
                     "partner_id": self.partner_id.id,
-                    "currency_id": self.env.user.company_id.currency_id.id,
                     "journal_id": int(customer_journal_id),
                     "picking_ids": pickings,
                     "invoice_line_ids": lines,
                     "transfer_ids": [(6, 0, pickings.ids)],
                     "from_picking": True,
-                }
-            )
+            }
+            if pricelists:
+                invoice_vals["pricelist_id"] = pricelists[0].id
+            invoice = self.env["account.move"].create(invoice_vals)
             for picking_id in pickings:
                 picking_id.write({"state_guide_dispatch": "invoiced"})
                 picking_id._update_order_sale_invoiced()
@@ -194,7 +202,7 @@ class StockPicking(models.Model):
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
-                customer_journal_id = self.env.company.customer_journal_id or False
+                customer_journal_id = picking_id.get_customer_journal()
                 if not customer_journal_id:
                     raise UserError(_("Please configure the journal from settings"))
 
@@ -202,22 +210,22 @@ class StockPicking(models.Model):
                     from_picking_line=True
                 )
                 origin_name = self._get_origin_name(picking_id)
-                invoice = self.env["account.move"].create(
-                    {
+                invoice_vals = {
                         "move_type": "out_invoice",
                         "invoice_origin": origin_name, 
                         "invoice_user_id": current_user,
                         "narration": picking_id.name,
                         "partner_id": picking_id.partner_id.id,
-                        "currency_id": picking_id.env.user.company_id.currency_id.id,
                         "journal_id": int(customer_journal_id),
                         "payment_reference": picking_id.name,
                         "picking_ids": picking_id,
                         "invoice_line_ids": invoice_line_list,
                         "transfer_ids": self,
                         "from_picking": True,
-                    }
-                )
+                }
+                if picking_id.sale_id and picking_id.pricelist_id:
+                    invoice_vals["pricelist_id"] = picking_id.pricelist_id.id
+                invoice = self.env["account.move"].create(invoice_vals) ##PROBLEMA ACAAA
             picking_id.write({"state_guide_dispatch": "invoiced"})
             picking_id._update_order_sale_invoiced()
         return invoice
@@ -229,24 +237,24 @@ class StockPicking(models.Model):
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "incoming":
-                vendor_journal_id = self.env.company.vendor_journal_id
+                vendor_journal_id = picking_id.get_vendor_journal()
                 if not vendor_journal_id:
                     raise UserError(
                         _("Please configure the journal from the settings.")
                     )
                 invoice_line_list = []
-                for move_ids_without_package in picking_id.move_ids_without_package:
+                for move_id in picking_id.move_ids:
                     vals = (
                         0,
                         0,
                         {
-                            "name": move_ids_without_package.description_picking,
-                            "product_id": move_ids_without_package.product_id.id,
-                            "price_unit": move_ids_without_package.product_id.lst_price,
+                            "name": move_id.description_picking,
+                            "product_id": move_id.product_id.id,
+                            "price_unit": move_id.product_id.lst_price,
                             "account_id": (
-                                move_ids_without_package.product_id.property_account_income_id.id
-                                if move_ids_without_package.product_id.property_account_income_id
-                                else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
+                                move_id.product_id.property_account_income_id.id
+                                if move_id.product_id.property_account_income_id
+                                else move_id.product_id.categ_id.property_account_income_categ_id.id
                             ),
                             "tax_ids": [
                                 (
@@ -255,7 +263,7 @@ class StockPicking(models.Model):
                                     [picking_id.company_id.account_purchase_tax_id.id],
                                 )
                             ],
-                            "quantity": move_ids_without_package.quantity,
+                            "quantity": move_id.quantity,
                             "from_picking_line": True,
                         },
                     )
@@ -267,7 +275,6 @@ class StockPicking(models.Model):
                             "invoice_user_id": current_user,
                             "narration": picking_id.name,
                             "partner_id": picking_id.partner_id.id,
-                            "currency_id": picking_id.env.user.company_id.currency_id.id,
                             "journal_id": int(vendor_journal_id),
                             "payment_reference": picking_id.name,
                             "picking_id": picking_id.id,
@@ -288,27 +295,27 @@ class StockPicking(models.Model):
         for picking_id in self:
             current_user = picking_id.env.uid
             if picking_id.picking_type_id.code == "incoming":
-                customer_journal_id = self.env.company.customer_journal_id
+                customer_journal_id = picking_id.get_customer_journal()
                 if not customer_journal_id:
                     raise UserError(_("Please configure the journal from settings"))
                 invoice_line_list = []
-                for move_ids_without_package in picking_id.move_ids_without_package:
+                for move_id in picking_id.move_ids:
                     vals = (
                         0,
                         0,
                         {
-                            "name": move_ids_without_package.description_picking,
-                            "product_id": move_ids_without_package.product_id.id,
-                            "price_unit": move_ids_without_package.product_id.lst_price,
+                            "name": move_id.description_picking,
+                            "product_id": move_id.product_id.id,
+                            "price_unit": move_id.product_id.lst_price,
                             "account_id": (
-                                move_ids_without_package.product_id.property_account_income_id.id
-                                if move_ids_without_package.product_id.property_account_income_id
-                                else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
+                                move_id.product_id.property_account_income_id.id
+                                if move_id.product_id.property_account_income_id
+                                else move_id.product_id.categ_id.property_account_income_categ_id.id
                             ),
                             "tax_ids": [
                                 (6, 0, [picking_id.company_id.account_sale_tax_id.id])
                             ],
-                            "quantity": move_ids_without_package.quantity,
+                            "quantity": move_id.quantity,
                             "from_picking_line": True,
                         },
                     )
@@ -320,7 +327,6 @@ class StockPicking(models.Model):
                             "invoice_user_id": current_user,
                             "narration": picking_id.name,
                             "partner_id": picking_id.partner_id.id,
-                            "currency_id": picking_id.env.user.company_id.currency_id.id,
                             "journal_id": customer_journal_id,
                             "payment_reference": picking_id.name,
                             "picking_id": picking_id.id,
@@ -341,24 +347,24 @@ class StockPicking(models.Model):
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
-                vendor_journal_id = self.env.company.vendor_journal_id
+                vendor_journal_id = picking_id.get_vendor_journal()
                 if not vendor_journal_id:
                     raise UserError(
                         _("Please configure the journal from the settings.")
                     )
                 invoice_line_list = []
-                for move_ids_without_package in picking_id.move_ids_without_package:
+                for move_id in picking_id.move_ids:
                     vals = (
                         0,
                         0,
                         {
-                            "name": move_ids_without_package.description_picking,
-                            "product_id": move_ids_without_package.product_id.id,
-                            "price_unit": move_ids_without_package.product_id.lst_price,
+                            "name": move_id.description_picking,
+                            "product_id": move_id.product_id.id,
+                            "price_unit": move_id.product_id.lst_price,
                             "account_id": (
-                                move_ids_without_package.product_id.property_account_income_id.id
-                                if move_ids_without_package.product_id.property_account_income_id
-                                else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
+                                move_id.product_id.property_account_income_id.id
+                                if move_id.product_id.property_account_income_id
+                                else move_id.product_id.categ_id.property_account_income_categ_id.id
                             ),
                             "tax_ids": [
                                 (
@@ -367,7 +373,7 @@ class StockPicking(models.Model):
                                     [picking_id.company_id.account_purchase_tax_id.id],
                                 )
                             ],
-                            "quantity": move_ids_without_package.quantity,
+                            "quantity": move_id.quantity,
                             "from_picking_line": True,
                         },
                     )
@@ -379,7 +385,6 @@ class StockPicking(models.Model):
                             "invoice_user_id": current_user,
                             "narration": picking_id.name,
                             "partner_id": picking_id.partner_id.id,
-                            "currency_id": picking_id.env.user.company_id.currency_id.id,
                             "journal_id": int(vendor_journal_id),
                             "payment_reference": picking_id.name,
                             "picking_id": picking_id.id,
@@ -403,13 +408,12 @@ class StockPicking(models.Model):
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
         invoice_line_list = []
-        for move_id in self.move_ids_without_package:
+        for move_id in self.move_ids:
             price_unit = move_id.product_id.list_price
             tax_ids = [(6, 0, [self.company_id.account_sale_tax_id.id])]
             if move_id.sale_line_id:
                 price_unit = move_id.sale_line_id.price_unit
-                tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
-
+                tax_ids = [(6, 0, move_id.sale_line_id.tax_ids.ids)]
             vals = (
                 0,
                 0,
@@ -435,12 +439,12 @@ class StockPicking(models.Model):
         invoice_line_list = []
 
         for picking in pickings:
-            for move_id in picking.move_ids_without_package:
+            for move_id in picking.move_ids:
                 price_unit = move_id.product_id.list_price
                 tax_ids = [(6, 0, [self.company_id.account_sale_tax_id.id])]
                 if move_id.sale_line_id:
                     price_unit = move_id.sale_line_id.price_unit
-                    tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
+                    tax_ids = [(6, 0, move_id.sale_line_id.tax_ids.ids)]
 
                 vals = (
                     0,
@@ -557,7 +561,7 @@ class StockPicking(models.Model):
         return {
             "name": _("Invoices"),
             "type": "ir.actions.act_window",
-            "view_mode": "tree,form",
+            "view_mode": "list,form",
             "res_model": "account.move",
             "domain": [("transfer_ids", "in", self.id)],
             "context": {"create": False},
@@ -572,26 +576,28 @@ class StockPicking(models.Model):
             if self.picking_type_id.code == "outgoing":
                 partner = list(self.partner_id)
                 if all(first == partner[0] for first in partner):
+                    pricelists = self.mapped('sale_id.pricelist_id')
+                    if len(pricelists) > 1:
+                        raise UserError(_("You can only create a combined invoice for pickings with the same pricelist."))
+
                     partner_id = self.partner_id
                     invoice_line_list = []
-                    customer_journal_id = self.env.company.customer_journal_id
+                    customer_journal_id = self.get_customer_journal()
                     if not customer_journal_id:
                         raise UserError(_("Please configure the journal from settings"))
                     for picking_id in self:
-                        for (
-                            move_ids_without_package
-                        ) in picking_id.move_ids_without_package:
+                        for move_id in picking_id.move_ids:
                             vals = (
                                 0,
                                 0,
                                 {
-                                    "name": move_ids_without_package.description_picking,
-                                    "product_id": move_ids_without_package.product_id.id,
-                                    "price_unit": move_ids_without_package.product_id.lst_price,
+                                    "name": move_id.description_picking,
+                                    "product_id": move_id.product_id.id,
+                                    "price_unit": move_id.product_id.lst_price,
                                     "account_id": (
-                                        move_ids_without_package.product_id.property_account_income_id.id
-                                        if move_ids_without_package.product_id.property_account_income_id
-                                        else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
+                                        move_id.product_id.property_account_income_id.id
+                                        if move_id.product_id.property_account_income_id
+                                        else move_id.product_id.categ_id.property_account_income_categ_id.id
                                     ),
                                     "tax_ids": [
                                         (
@@ -602,24 +608,24 @@ class StockPicking(models.Model):
                                             ],
                                         )
                                     ],
-                                    "quantity": move_ids_without_package.quantity,
+                                    "quantity": move_id.quantity,
                                 },
                             )
                             invoice_line_list.append(vals)
-                    invoice = self.env["account.move"].create(
-                        {
+                    invoice_vals = {
                             "move_type": "out_invoice",
                             "invoice_origin": picking_id.name,
                             "invoice_user_id": self.env.uid,
                             "narration": picking_id.name,
                             "partner_id": partner_id.id,
-                            "currency_id": picking_id.env.user.company_id.currency_id.id,
                             "journal_id": int(customer_journal_id),
                             "payment_reference": picking_id.name,
                             "invoice_line_ids": invoice_line_list,
                             "transfer_ids": self,
-                        }
-                    )
+                    }
+                    if pricelists:
+                        invoice_vals["pricelist_id"] = pricelists[0].id
+                    invoice = self.env["account.move"].create(invoice_vals)
                 else:
                     for picking_id in self:
                         picking_id.create_invoice()
@@ -628,26 +634,24 @@ class StockPicking(models.Model):
                 if all(first == partner[0] for first in partner):
                     partner_id = self.partner_id
                     bill_line_list = []
-                    vendor_journal_id = self.env.company.vendor_journal_id
+                    vendor_journal_id = self.get_vendor_journal()
                     if not vendor_journal_id:
                         raise UserError(
                             _("Please configure the journal from " "the settings.")
                         )
                     for picking_id in self:
-                        for (
-                            move_ids_without_package
-                        ) in picking_id.move_ids_without_package:
+                        for move_id in picking_id.move_ids:
                             vals = (
                                 0,
                                 0,
                                 {
-                                    "name": move_ids_without_package.description_picking,
-                                    "product_id": move_ids_without_package.product_id.id,
-                                    "price_unit": move_ids_without_package.product_id.lst_price,
+                                    "name": move_id.description_picking,
+                                    "product_id": move_id.product_id.id,
+                                    "price_unit": move_id.product_id.lst_price,
                                     "account_id": (
-                                        move_ids_without_package.product_id.property_account_income_id.id
-                                        if move_ids_without_package.product_id.property_account_income_id
-                                        else move_ids_without_package.product_id.categ_id.property_account_income_categ_id.id
+                                        move_id.product_id.property_account_income_id.id
+                                        if move_id.product_id.property_account_income_id
+                                        else move_id.product_id.categ_id.property_account_income_categ_id.id
                                     ),
                                     "tax_ids": [
                                         (
@@ -658,7 +662,7 @@ class StockPicking(models.Model):
                                             ],
                                         )
                                     ],
-                                    "quantity": move_ids_without_package.quantity,
+                                    "quantity": move_id.quantity,
                                 },
                             )
                             bill_line_list.append(vals)
@@ -669,7 +673,6 @@ class StockPicking(models.Model):
                             "invoice_user_id": self.env.uid,
                             "narration": picking_id.name,
                             "partner_id": partner_id.id,
-                            "currency_id": picking_id.env.user.company_id.currency_id.id,
                             "journal_id": int(vendor_journal_id),
                             "payment_reference": picking_id.name,
                             "picking_id": picking_id.id,
@@ -872,15 +875,28 @@ class StockPicking(models.Model):
             raise_if_not_found=False,
         )
 
+        other_causes_reason =  self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_other_causes",
+            raise_if_not_found=False,
+        )
+        
         for picking in self:
-            if (
+
+            picking.is_dispatch_guide = False if picking.is_dispatch_guide is None else picking.is_dispatch_guide
+            if picking.document == "invoice":
+                picking.is_dispatch_guide = False
+                continue
+            elif picking.document == "dispatch_guide":
+                picking.is_dispatch_guide = True
+                continue
+            elif (
                 picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id
+                and (
+                    picking.transfer_reason_id.id == consignment_reason.id
+                    or picking.transfer_reason_id.id == other_causes_reason.id
+                )
             ):
                 picking.is_dispatch_guide = True
-            else:
-                # This is necessary always should be return a value
-                picking.is_dispatch_guide = picking.is_dispatch_guide
 
     @api.depends(
         "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
@@ -1002,12 +1018,13 @@ class StockPicking(models.Model):
             record.show_other_causes_transfer_reason = False
 
             if record.transfer_reason_id:
+
+                record.is_dispatch_guide = False if record.is_dispatch_guide is None else record.is_dispatch_guide
+
                 if record.transfer_reason_id.code == "other_causes":
                     record.show_other_causes_transfer_reason = True
                 if record.transfer_reason_id.code == "self_consumption":
                     record.is_dispatch_guide = False
-                else:
-                    record.is_dispatch_guide = True
 
     # === CONSTRAINT METHODS ===#
 
@@ -1109,13 +1126,13 @@ class StockPicking(models.Model):
                 result = hoy.replace(day=15)
             else:
                 # Si es 15 o después: último día del mes
-                result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-                result = result - timedelta(days=1)
+                last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+                result = date(hoy.year, hoy.month, last_day)
 
         elif taxpayer_type in ("ordinary", "formal"):
             # Siempre último día del mes para estos tipos
-            result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
-            result = result - timedelta(days=1)
+            last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+            result = date(hoy.year, hoy.month, last_day)
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     def get_foreign_currency_is_vef(self):
@@ -1123,8 +1140,8 @@ class StockPicking(models.Model):
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):
-        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
-        for picking in self:
+        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment', raise_if_not_found=False)
+        for picking in self.filtered(lambda p: p.transfer_reason_id):
             picking.partner_required = (
                 picking.transfer_reason_id.id == consignment_reason.id
                 and picking.is_dispatch_guide
@@ -1142,7 +1159,7 @@ class StockPicking(models.Model):
         and the operational_code is internal
         '''
         for picking in self:
-            if self.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
+            if picking.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
                 picking.state_guide_dispatch = 'emited'
         return super(StockPicking, self).button_validate()
     
@@ -1161,10 +1178,11 @@ class StockPicking(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        if self.partner_required:
-            if any(k in vals for k in [
-                'location_dest_id', 'transfer_reason_id',
-                'is_consignment', 'is_dispatch_guide', 'partner_required']):
-                self._assign_partner_from_location()
+        for picking in self:
+            if picking.partner_required:
+                if any(k in vals for k in [
+                    'location_dest_id', 'transfer_reason_id',
+                    'is_consignment', 'is_dispatch_guide', 'partner_required']):
+                    picking._assign_partner_from_location()
         return res
             

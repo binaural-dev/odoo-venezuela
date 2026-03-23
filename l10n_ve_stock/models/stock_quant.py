@@ -1,8 +1,10 @@
+import traceback
+import logging
 from odoo import _, api, fields, models
 from odoo.tools.float_utils import float_compare, float_is_zero
-import traceback
+from odoo.exceptions import ValidationError
 
-import logging
+
 
 _logger = logging.getLogger(__name__)
 
@@ -134,3 +136,21 @@ class StockQuan(models.Model):
             ):
                 break
         return reserved_quants
+    
+    def _apply_inventory(self, date=None):
+        """Base Odoo function that is inherited only to add a return of the stock_moves resulting from the inventory adjustment to another
+        function.
+        :return: The stock moves resulting from the inventory adjustment
+        """
+        _logger.warning("Entering _apply_inventory method.")
+        if self.env.company.not_allow_negative_inventory_adjustments:
+            for line in self:
+                new_qty = line.inventory_quantity
+                
+                if new_qty < 0:
+                    raise ValidationError(
+                        _("You cannot set the physical quantity of '%s' to a negative value.") % line.product_id.display_name
+                    )
+        moves = super()._apply_inventory(date=date)
+
+        return moves
