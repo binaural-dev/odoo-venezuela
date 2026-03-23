@@ -69,9 +69,10 @@
                                         <!-- Amounts -->
                                         <field
                                             name="invoice_total"
+                                            column_invisible="not parent.base_currency_is_vef"
                                             widget="monetary"
                                             options="{'currency_field': 'company_currency_id'}"
-                                            column_invisible="not parent.base_currency_is_vef"/>
+                                            />
                                         <field
                                             name="invoice_amount"
                                             widget="monetary"

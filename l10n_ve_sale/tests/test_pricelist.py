@@ -39,8 +39,10 @@ class TestSaleOrderForeignPricelist(TransactionCase):
             'company_id': company.id,
         }])
         
-        company.currency_id = usd.id
-        company.foreign_currency_id = eur.id
+        company.write({
+            'currency_id': usd.id,
+            'foreign_currency_id': eur.id,
+        })
 
         pricelist_usd = self.env['product.pricelist'].create({
             'name': 'USD Pricelist',
