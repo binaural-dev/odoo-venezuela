@@ -3,7 +3,6 @@
         <record id="view_retention_iva_form_l10n_ve_payment_extension" model="ir.ui.view">
             <field name="name">Retention IVA client form</field>
             <field name="model">account.retention</field>
-            <field name="priority">10</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="Retention" duplicate="false">
