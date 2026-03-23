@@ -246,14 +246,13 @@ class AccountRetentionLine(models.Model):
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:
                 if calc_partner.type_person_id.id == line.type_person_id.id:
+                    move = record.move_id._origin or record.move_id
+                    islr_retention_lines = len(move.retention_islr_line_ids)
                     if not line.tariff_id.accumulated_rate:
                         # compare the type_person_id of the partner with the type_person_id of the
                         # payment concept and set the related fields.
-                        move = record.move_id._origin or record.move_id
-                        municipal_retention_lines = self.env['account.retention.line'].search_count([('id','in',move.retention_municipal_line_ids.ids)])
-                        islr_retention_lines = self.env['account.retention.line'].search_count([('id','in',move.retention_islr_line_ids.ids)])
-                        record.invoice_total = move.tax_totals.get("total_amount", 0.0)
-                        record.foreign_invoice_total = move.tax_totals.get("total_amount_foreign_currency", 0.0)
+                        record.invoice_total = move.tax_totals["total_amount"]
+                        record.foreign_invoice_total = move.tax_totals["total_amount_foreign_currency"]
                         record.related_pay_from = line.pay_from
                         record.related_percentage_tax_base = line.percentage_tax_base
                         record.related_percentage_fees = line.tariff_id.percentage
