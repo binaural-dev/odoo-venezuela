@@ -451,7 +451,7 @@ class AccountRetention(models.Model):
                 "retention_line_ids": (
                     Command.clear()
                     if any(
-                        isinstance(id, models.NewId)
+                        isinstance(id, api.NewId)
                         for id in self.retention_line_ids.ids
                     )
                     else False
@@ -1084,7 +1084,7 @@ class AccountRetention(models.Model):
                 "payment_id": payment.id if payment else None,
                 "aliquot": tax.amount,
                 "iva_amount": tax_group["tax_amount"],
-                "invoice_total": invoice_id.tax_totals["total_amount_currency"],
+                "invoice_total": invoice_id.tax_totals["total_amount"],
                 "related_percentage_tax_base": withholding_amount,
                 "invoice_amount": tax_group["base_amount"],
                 "foreign_currency_rate": invoice_id.foreign_rate,
