@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    is_pos_cross_move = fields.Boolean(copy=False, readonly=True)
     def button_draft(self):
         """
         Validate if the journal entry is linked to a POS session that is still opened
