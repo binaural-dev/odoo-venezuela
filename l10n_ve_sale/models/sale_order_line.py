@@ -74,7 +74,12 @@ class SaleOrderLine(models.Model):
             )
             line.invoiced = invoiced
 
-    @api.depends("price_unit", "order_id.date_order", "currency_id")
+    @api.depends(
+        "price_unit",
+        "order_id.date_order",
+        "currency_id",
+        "company_id",
+    )
     def _compute_foreign_price(self):
         for line in self:
 
