@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "1.25",
+    "version": "1.35",
     "depends": [
         "base",
         "web",
@@ -18,6 +18,8 @@
         "l10n_ve_base",
         "l10n_ve_rate",
         "l10n_ve_contact",
+        "account_invoice_pricelist",
+        "account_invoice_pricelist_sale"
     ],
     "data": [
         "security/res_groups.xml",
