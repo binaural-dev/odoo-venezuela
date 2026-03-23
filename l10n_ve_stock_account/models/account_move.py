@@ -79,22 +79,7 @@ class AccountMove(models.Model):
                 for move, default_values in zip(self, default_values_list):
                     line_vals_list = []
                     for line in move.line_ids:
-                        is_tax = bool(line.tax_line_id or line.display_type == 'tax')
-                        is_receivable = line.account_id.account_type == 'asset_receivable'
-                        if not (is_receivable or is_tax):
-                            continue
-                        lv = {
-                            "account_id": line.account_id.id,
-                            "name": line.name,
-                            "balance": -line.balance,
-                            "amount_currency": -line.amount_currency,
-                            "currency_id": line.currency_id.id,
-                            "partner_id": line.partner_id.id,
-                            "display_type": line.display_type,
-                        }
-                        if is_tax and line.tax_line_id:
-                            lv['tax_line_id'] = line.tax_line_id.id
-                        line_vals_list.append((0, 0, lv))
+                        invoice_line_vals = move.product_line_donation()
                         move_vals = {
                             "move_type": "out_refund",
                             "journal_id": move.journal_id.id,
@@ -103,27 +88,39 @@ class AccountMove(models.Model):
                             "reversed_entry_id": move.id,
                             "partner_id": move.partner_id.id,
                             "is_donation": True,
-                            "line_ids": line_vals_list,
+                            "invoice_line_ids": invoice_line_vals,
                         }
                         reverse_move = self.env['account.move'].with_context(
                             check_move_validity=False,
                             skip_invoice_sync=True,
                         ).create(move_vals)
                         reverse_moves += reverse_move
-                for rm in reverse_moves:
-                    rm.product_line_donation()
-                    rm.update({'invoice_line_ids': line_vals_list})
                 return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
-    def product_line_donation(self):
-        """Adds the donation product line to invoice_line_ids using
-        skip_invoice_sync=True to prevent Odoo from executing _synchronize_business_models
-        and overwriting manually constructed receivable/tax lines.
+    def _get_tax_grouped_lines(self):
+        """
+        Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
+        Retorna un diccionario: { tuple(ids_impuestos): {'base': suma_base, 'taxes': recordset_impuestos} }
+        """
+        self.ensure_one()
+        tax_groups = {}
+        for line in self.invoice_line_ids:
+            tax_ids = line.tax_ids.ids
+            tax_key = tuple(sorted(tax_ids))
 
-        Explicitly sets account_id=donation_account_id so the journal entry
-        uses the configured donation account instead of the product's default
-        income account.
+            if tax_key not in tax_groups:
+                tax_groups[tax_key] = {
+                    'base_amount': 0.0,
+                    'taxes': line.tax_ids,
+                }
+            tax_groups[tax_key]['base_amount'] += line.price_subtotal
+        return tax_groups
+
+    def product_line_donation(self):
+        """Adds the donation product lines to invoice_line_ids grouped by tax.
+        Uses skip_invoice_sync=True to maintain consistency with manually 
+        constructed tax lines in _reverse_moves.
         """
         product = self.env["product.template"].search(
             [("is_donation_product", "=", True)], limit=1
@@ -136,19 +133,21 @@ class AccountMove(models.Model):
         if not donation_account_id:
             raise UserError(_("Please configure a donation account in the company settings."))
 
-        price_unit = abs(self.reversed_entry_id.amount_total_in_currency_signed) if self.reversed_entry_id else 0.0
+        tax_data = self._get_tax_grouped_lines()
 
-        self.with_context(
-            check_move_validity=False,
-            skip_invoice_sync=True,
-        ).write({
-            'invoice_line_ids': [
-                Command.create({
-                    'product_id': product.product_variant_ids[:1].id,
-                    'account_id': donation_account_id,
-                    'name': self.ref or product.name,
-                    'quantity': 1,
-                    'price_unit': price_unit,
-                })
-            ]
-        })
+        invoice_line_vals = []
+        for tax_key, data in tax_data.items():
+            invoice_line_vals.append(
+                Command.create(
+                        {
+                            "product_id": product.product_variant_ids[:1].id,
+                            "account_id": donation_account_id,
+                            "name": self.ref or product.name,
+                            "quantity": 1,
+                            "price_unit": data["base_amount"],
+                            "tax_ids": [Command.set(data["taxes"].ids)],
+                        }
+                    )
+                )
+        if invoice_line_vals:
+            return invoice_line_vals

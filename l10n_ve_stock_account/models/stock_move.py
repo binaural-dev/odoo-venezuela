@@ -119,7 +119,9 @@ class StockMove(models.Model):
         return ves_price_unit
     
     def _create_account_move(self):
-        """ Create account move for specific location or analytic."""
+        """ Create account move for specific location or analytic.
+            This function is a override of the original function to add the donation logic.
+        """
         aml_vals_list = []
         move_to_link = set()
         company_partner = self.env.company.partner_id
