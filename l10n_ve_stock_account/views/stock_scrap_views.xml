@@ -15,8 +15,17 @@
             <div class="o_td_label">
                 <label for="scrap_location_id" string="Scrap Location" style="font-weight:bold;"
                     invisible="is_donation"/>
-                <label for="scrap_location_id" string="Destination Location" style="font-weight:bold;"
+                <label for="scrap_location_id" string="Donation Location" style="font-weight:bold;"
                     invisible="not is_donation"/>
+            </div>
+        </xpath>
+        <xpath expr="//group[1]/field[@name='scrap_reason_tag_ids']" position="attributes">
+            <attribute name="nolabel">1</attribute>
+        </xpath>
+        <xpath expr="//group[1]/field[@name='scrap_reason_tag_ids']" position="before">
+            <div class="o_td_label">
+                <label for="scrap_reason_tag_ids" invisible="is_donation" string="Scrap Reason" style="font-weight:bold;"/>
+                <label for="scrap_reason_tag_ids" invisible="not is_donation" string="Donation Reason" style="font-weight:bold;"/>
             </div>
         </xpath>
     </field>

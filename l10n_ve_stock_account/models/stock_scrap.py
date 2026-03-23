@@ -17,7 +17,7 @@ class StockScrap(models.Model):
         "stock.location",
         domain=[],
     )
-    
+
     @api.depends("is_donation")
     def _compute_scrap_location_domain(self):
         native_domain = "[('usage', '=', 'inventory')]"
@@ -26,6 +26,20 @@ class StockScrap(models.Model):
                 picking.scrap_location_domain = "[('is_donation_warehouse', '=', True)]"
             else:
                 picking.scrap_location_domain = native_domain
+
+    @api.depends("company_id")
+    def _compute_scrap_location_id(self):
+        super()._compute_scrap_location_id()
+        for scrap in self:
+            if scrap.is_donation:
+                scrap_location = self.env["stock.location"].search(
+                    [
+                        ("is_donation_warehouse", "=", True),
+                        ("company_id", "=", scrap.company_id.id),
+                    ],
+                    limit=1,
+                )
+                scrap.scrap_location_id = scrap_location
 
     def do_scrap(self):
         self._check_company()
@@ -41,5 +55,3 @@ class StockScrap(models.Model):
                 return True
             else:
                 return super().do_scrap()
-        
-        
