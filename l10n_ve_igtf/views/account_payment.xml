@@ -10,8 +10,9 @@
                 <field name="destination_account_id_domain" invisible="1"/>
 
                 <field name="destination_account_id" domain = "destination_account_id_domain" invisible="not partner_id"/>
-                <field name="is_advance_payment" string="Is advance payment" readonly="state == 'posted'"/>
+                <field name="is_advance_payment" string="Is advance payment" readonly="state in ['posted','in_process']" force_save="1"/>
                 <field name="advanced_move_ids" readonly="1" widget="many2many_tags" />
+                <field name="keep_alter_value_vef" invisible="currency_id != company_currency_id" readonly="state in ['posted','in_process']"  force_save="1"/>
             </xpath>
         </field>
     </record>
