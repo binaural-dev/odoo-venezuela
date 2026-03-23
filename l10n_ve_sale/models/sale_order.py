@@ -37,11 +37,42 @@ class SaleOrder(models.Model):
         readonly=False,
     )
 
+
+    def default_rate(self):
+        """
+        This method is used to get the rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
+            self.date_order or fields.Date.today(),
+        )
+        return rate_values.get("foreign_rate", 0)
+
+    def default_inverse_rate(self):
+        """
+        This method is used to get the inverse rate of the payment.
+
+        Returns
+        -------
+        type = float
+            The inverse rate of the payment
+        """
+        rate_values = self.env["res.currency.rate"].compute_rate(
+            self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
+            self.date_order or fields.Date.today(),
+        )
+        return rate_values.get("foreign_inverse_rate", 0)
+
     foreign_rate = fields.Float(
         help="The rate that is gonna be always shown to the user.",
         compute="_compute_rate",
+        default=default_rate,
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
         tracking=True,
@@ -50,7 +81,7 @@ class SaleOrder(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
+        default=default_inverse_rate,
         store=True,
         readonly=False,
     )
@@ -75,6 +106,8 @@ class SaleOrder(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
+    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
+                                            compute='_compute_foreign_untaxed_total' )
 
     pricelist_id = fields.Many2one(
         domain=lambda self: (
@@ -86,6 +119,25 @@ class SaleOrder(models.Model):
 
     mobile = fields.Char(related="partner_id.mobile")
 
+    amount_untaxed_total_signed = fields.Monetary(
+        string="Total Untaxed Signed",
+        compute="_compute_amount_signed",
+        currency_field="company_currency_id",
+        store=True,
+    )
+
+    amount_total_signed = fields.Monetary(
+        string="Total Signed",
+        compute="_compute_amount_signed",
+        currency_field="company_currency_id",
+        store=True,
+    )
+    
+    company_currency_id = fields.Many2one(
+        related="company_id.currency_id",
+        string="Company Currency",
+        readonly=True,
+    )
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None, **kwargs):
         if 'load' in kwargs:
@@ -150,6 +202,16 @@ class SaleOrder(models.Model):
             if move.order_line:
                 move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
 
+    @api.depends("tax_totals")
+    def _compute_foreign_untaxed_total(self):
+        """
+        Compute the foreign untaxed total of the order
+        """
+        for move in self:
+            move.foreign_untaxed_total = False
+            if move.order_line:
+                move.foreign_untaxed_total = move.tax_totals.get("base_amount_foreign_currency",0)
+
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
         """
@@ -178,17 +240,66 @@ class SaleOrder(models.Model):
 
         if foreign_currency_id:
             foreign_currency_symbol = foreign_currency_id.symbol
+            foreign_currency_name = foreign_currency_id.name
+            company_currency_id = self.env.company.currency_id
+            company_currency_symbol = company_currency_id.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "l10n_ve_sale.view_sale_order_form_l10n_ve_sales"
                 ).id
                 doc = etree.XML(res["arch"])
+                foreign_price_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_price']")
+                if foreign_price_order_line:
+                    foreign_price_order_line[0].set("string", _("Price") + " " + foreign_currency_name)
+                foreign_subtotal_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_subtotal']")
+                if foreign_subtotal_order_line:
+                    foreign_subtotal_order_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:
                     page[0].set(
                         "string", _("Foreign Currency ") + foreign_currency_symbol
                     )
-                    res["arch"] = etree.tostring(doc, encoding="unicode")
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+            elif view_type == "list":
+                doc = etree.XML(res["arch"])
+                foreign_total_billed = doc.xpath("//field[@name='foreign_total_billed']")
+                if foreign_total_billed:
+                    foreign_total_billed[0].set("string", _("Total") + " " + foreign_currency_name)
+                
+                foreign_untaxed_total = doc.xpath("//field[@name='foreign_untaxed_total']")
+                if foreign_untaxed_total:
+                    foreign_untaxed_total[0].set("string", _("Untaxed Total") + " " + foreign_currency_name)
+
+                total_signed = doc.xpath("//field[@name='amount_total_signed']")
+                if total_signed:
+                    total_signed[0].set("string", _("Total") + " " + company_currency_symbol)
+                
+                untaxed_total_signed = doc.xpath("//field[@name='amount_untaxed_total_signed']")
+                if untaxed_total_signed:
+                    untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + company_currency_symbol)
+                
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+            elif view_type == "pivot":
+                _logger.warning("Pivot view")
+                doc = etree.XML(res["arch"])
+                foreign_total_billed = doc.xpath("//field[@name='foreign_total_billed']")
+                if foreign_total_billed:
+                    foreign_total_billed[0].set("string", _("Total") + " " + foreign_currency_name)
+                
+                foreign_untaxed_total = doc.xpath("//field[@name='foreign_untaxed_total']")
+                if foreign_untaxed_total:
+                    foreign_untaxed_total[0].set("string", _("Untaxed Total") + " " + foreign_currency_name)
+
+                total_signed = doc.xpath("//field[@name='amount_total_signed']")
+                if total_signed:
+                    total_signed[0].set("string", _("Total") + " " + company_currency_symbol)
+                
+                untaxed_total_signed = doc.xpath("//field[@name='amount_untaxed_total_signed']")
+                if untaxed_total_signed:
+                    untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + company_currency_symbol)
+                
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+                
         return res
 
     @api.depends(
@@ -539,3 +650,25 @@ class SaleOrder(models.Model):
             order.amount_untaxed = order.tax_totals['base_amount_currency']
             order.amount_tax = order.tax_totals['tax_amount_currency']
             order.amount_total = order.tax_totals['total_amount_currency']
+
+   
+
+    @api.depends("amount_untaxed", "amount_total", "currency_id", "date_order", "company_id")
+    def _compute_amount_signed(self):
+        for order in self:
+            if order.currency_id and order.company_id and order.currency_id != order.company_id.currency_id:
+                order.amount_untaxed_total_signed = order.currency_id._convert(
+                    order.amount_untaxed,
+                    order.company_id.currency_id,
+                    order.company_id,
+                    order.date_order or fields.Date.today(),
+                )
+                order.amount_total_signed = order.currency_id._convert(
+                    order.amount_total,
+                    order.company_id.currency_id,
+                    order.company_id,
+                    order.date_order or fields.Date.today(),
+                )
+            else:
+                order.amount_untaxed_total_signed = order.amount_untaxed
+                order.amount_total_signed = order.amount_total

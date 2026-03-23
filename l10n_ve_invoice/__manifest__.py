@@ -3,7 +3,7 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
-    "version": "1.7",
+    "version": "1.17",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
@@ -17,6 +17,7 @@
         "account_debit_note",
     ],
     "data": [
+        "security/l10n_ve_invoice_groups.xml",
         "security/ir.model.access.csv",
         "security/ir_rule.xml",
         "data/account_data.xml",
@@ -32,5 +33,5 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "pre_init_hook": "pre_init_hook"
+    "pre_init_hook": "pre_init_hook",
 }
