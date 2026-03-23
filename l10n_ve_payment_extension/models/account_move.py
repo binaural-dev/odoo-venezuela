@@ -138,6 +138,7 @@ class AccountMoveRetention(models.Model):
         retentions = self.env["account.retention"].search([
             ("retention_line_ids.move_id", "=", self.id),
             ("type_retention", "=", "islr"),
+            ("is_third_party_retention", "=", True),
         ])
         islr_form = self.env.ref(
             "l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension"
