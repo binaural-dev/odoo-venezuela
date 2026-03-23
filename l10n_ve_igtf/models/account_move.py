@@ -743,6 +743,7 @@ class AccountMove(models.Model):
                 target_account = False
 
                 partial_amount = 0.0
+
                 partner_context = rec.partner_id.with_company(rec.company_id)
                 for payment_move in final_payment_moves:
                     igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
