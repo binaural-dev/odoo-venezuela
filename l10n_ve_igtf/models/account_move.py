@@ -179,7 +179,7 @@ class AccountMove(models.Model):
 
                         else:
                             amount = move.company_currency_id._convert(
-                                abs(line.amount_residual_currency),
+                                abs(line.amount_residual),
                                 move.currency_id,
                                 move.company_id,
                                 line.date,
@@ -279,7 +279,7 @@ class AccountMove(models.Model):
 
                         else:
                             amount = move.company_currency_id._convert(
-                                abs(line.amount_residual_currency),
+                                abs(line.amount_residual),
                                 move.currency_id,
                                 move.company_id,
                                 line.date,
@@ -374,6 +374,8 @@ class AccountMove(models.Model):
 
         if payment.currency_id != self.currency_id :
             if payment.currency_id == self.company_id.currency_id and payment.keep_alter_value_vef:
+
+                date_conver = payment.date
                 advance_amount = self.currency_id._convert(
                     advance_amount, 
                     payment.currency_id, 
@@ -387,7 +389,7 @@ class AccountMove(models.Model):
                 advance_amount = amount_residual_currency
 
         if is_igtf_journal:
-            igtf_amount = abs(payment.calculate_igtf_for_payment(self, advance_amount,  payment.currency_id ,payment.date))
+            igtf_amount = abs(payment.calculate_igtf_for_payment(self, advance_amount,  payment.currency_id ,date_conver))
            
             
         base_amount_applied = min(amount_residual, advance_amount)
@@ -496,7 +498,7 @@ class AccountMove(models.Model):
             "partner_id": self.partner_id.id,
             "payment_id_advance": payment.id,
             "reconciled": False,
-            "date": date_conver,
+            "date": date_conver if not payment.keep_alter_value_vef else payment.date,
         }
 
         # --- Construcción de las Líneas ---
@@ -508,7 +510,7 @@ class AccountMove(models.Model):
             "account_id": account_rp,
             "amount_currency": amount_line2,
             "currency_id": payment.currency_id.id,
-            line_2:vef_line2,
+            #line_2:vef_line2,
             **common_vals
         }))
 
@@ -518,8 +520,8 @@ class AccountMove(models.Model):
             "account_id": account_adv,
             "amount_currency": amount_line1,
             "currency_id": payment.currency_id.id,
-            "debit": vef_line1 if is_customer else 0.0,
-            "credit": vef_line1 if not is_customer else 0.0,
+            #"debit": vef_line1 if is_customer else 0.0,
+            #"credit": vef_line1 if not is_customer else 0.0,
             **common_vals
         }))
 
@@ -530,7 +532,7 @@ class AccountMove(models.Model):
                 "account_id": igtf_account,
                 "amount_currency": amount_currency_igtf,
                 "currency_id": payment.currency_id.id,
-                igtf_line:vef_igtf,
+                #igtf_line:vef_igtf,
                 **common_vals
             }))
 
@@ -539,7 +541,7 @@ class AccountMove(models.Model):
         
         return self.env["account.move"].create({
             "journal_id": advance_journal.id,
-            "date": date_conver,
+            "date": date_conver if not payment.keep_alter_value_vef else payment.date,
             "partner_id": self.partner_id.id,
             "ref": "CRUCE DE ANTICIPO (IGTF)",
             "line_ids": line_vals,
