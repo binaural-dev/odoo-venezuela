@@ -83,7 +83,7 @@ class AccountPayment(models.Model):
         store=True,
     )
 
-    block_change_partner_after_post = fields.Boolean(default=False)
+    block_change_partner_after_post = fields.Boolean(default=False, copy=False)
 
     other_rate = fields.Float(
         compute="_compute_other_rate",
