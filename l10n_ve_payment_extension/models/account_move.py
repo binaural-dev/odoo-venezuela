@@ -106,7 +106,11 @@ class AccountMoveRetention(models.Model):
         retentions = self.env["account.retention"].search([
             ("retention_line_ids.move_id", "=", self.id),
             ("type_retention", "=", "iva"),
+            ("is_third_party_retention", "=", True),
         ])
+        if len(retentions) == 0 and self.state != "posted":
+            raise UserError(_("You cannot create retentions for a draft or cancelled invoice."))
+
         iva_form = self.env.ref(
             "l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension"
         )
@@ -130,6 +134,9 @@ class AccountMoveRetention(models.Model):
             action["views"] = [(iva_form.id, "form")]
         else:
             action["domain"] = [("id", "in", retentions.ids), ("is_third_party_retention", "=", True)]
+            
+        if self.state != "posted":
+            action["context"].update({"create": False, "edit": False})
         return action
 
     def action_view_third_party_islr_retentions(self):
@@ -137,7 +144,11 @@ class AccountMoveRetention(models.Model):
         retentions = self.env["account.retention"].search([
             ("retention_line_ids.move_id", "=", self.id),
             ("type_retention", "=", "islr"),
+            ("is_third_party_retention", "=", True),
         ])
+        if len(retentions) == 0 and self.state != "posted":
+            raise UserError(_("You cannot create retentions for a draft or cancelled invoice."))
+
         islr_form = self.env.ref(
             "l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension"
         )
@@ -158,6 +169,9 @@ class AccountMoveRetention(models.Model):
             action["views"] = [(islr_form.id, "form")]
         else:
             action["domain"] = [("id", "in", retentions.ids), ("is_third_party_retention", "=", True)]
+            
+        if self.state != "posted":
+            action["context"].update({"create": False, "edit": False})
         return action
 
     @api.depends(
