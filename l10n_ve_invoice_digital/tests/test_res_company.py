@@ -6,7 +6,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-@tagged('l10n_ve_invoice_digital', 'invoice digital') 
+@tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "res_company_digital") 
 class TestAccountMoveApiCalls(TransactionCase):
 
     def setUp(self):
@@ -29,6 +29,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "sequence_validation_tfhka": True,
                 "currency_id": self.currency_usd.id,
                 "currency_foreign_id": self.currency_vef.id,
+                "country_id": self.env.ref('base.ve').id,
             }
         )
         
