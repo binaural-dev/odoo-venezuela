@@ -79,6 +79,8 @@ class AccountPayment(models.Model):
         store=True,
     )
 
+    block_change_partner_after_post = fields.Boolean(default=False, copy=False)
+
     other_rate = fields.Float(
         compute="_compute_other_rate",
         digits="Tasa",
@@ -204,6 +206,13 @@ class AccountPayment(models.Model):
             if not bool(payment.other_rate):
                 return
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
+
+    def action_post(self):
+        res = super().action_post()
+        # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
+        self.write({"block_change_partner_after_post": True})
+        return res
+            
 
     # @api.model
     # def _get_trigger_fields_to_synchronize(self):
