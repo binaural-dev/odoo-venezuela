@@ -1094,7 +1094,7 @@ msgstr "Generar TXT"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_l10n_ve_payment_extension
 msgid "Group by Business Name"
-msgstr "Business Name"
+msgstr "Razón Social"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
@@ -1106,7 +1106,7 @@ msgstr "Fecha Contable"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_l10n_ve_payment_extension
 msgid "Group by State"
-msgstr ""
+msgstr "Estado"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_search_l10n_ve_payment_extension
@@ -1116,7 +1116,7 @@ msgstr "Estado"
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
 msgid "Group by Third Party Billing"
-msgstr "Facturación a Terceros"
+msgstr "Retención de Terceros"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__has_message
@@ -2660,9 +2660,13 @@ msgstr "No hay datos que mostrar."
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__is_third_party_retention
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__is_third_party_retention
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
 msgid "Third Party Billing"
 msgstr "Facturación a Terceros"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
+msgid "Third Party Retention"
+msgstr "Retención de Terceros"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
