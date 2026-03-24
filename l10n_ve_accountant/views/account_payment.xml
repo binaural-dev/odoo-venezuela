@@ -7,6 +7,15 @@
             <!-- <xpath expr="//group[1]/field[@name='ref']" position="after">
                 <field name="concept" />
             </xpath> -->
+            <xpath expr="//field[@name='partner_id']" position="before">
+                <field name="block_change_partner_after_post" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id'][1]" position="attributes">
+                <attribute name="readonly">block_change_partner_after_post</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id'][2]" position="attributes">
+                <attribute name="readonly">block_change_partner_after_post</attribute>
+            </xpath>
             <xpath expr="//group[2]/field[@name='partner_bank_id'][3]" position="after">                
                 <label for="foreign_rate" invisible="(not is_foreign_currency and currency_id != company_currency_id) or currency_id == company_currency_id"/>
                 <div class="o_row d-flex" invisible="(not is_foreign_currency and currency_id != company_currency_id) or currency_id == company_currency_id">
