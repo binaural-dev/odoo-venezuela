@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "1.9",
+    "version": "1.15",
     "depends": [
         "base",
         "account",

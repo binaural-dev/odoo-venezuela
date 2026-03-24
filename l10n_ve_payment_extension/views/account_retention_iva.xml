@@ -185,6 +185,7 @@
                     <field name="partner_id" />
                     <field name="date" />
                     <field name="date_accounting" />
+                    <field name="is_third_party_retention" optional="show" />
                     <field name="company_id" optional="hide" groups="base.group_multi_company" />
                     <field name="state" />
                 </list>
@@ -201,10 +202,12 @@
                     <field name="partner_id" string="Business Name" filter_domain="[('partner_id','ilike',self)]" />
                     <field name="date" string="Vocher date" filter_domain="[('date','ilike',self)]" />
                     <field name="date_accounting" string="Fecha Contable" filter_domain="[('date_accounting','ilike',self)]" />
-                    <!-- <field name="retention_line" string="Factura" filter_domain="[('retention_line.invoice_id.name','ilike',self)]"/> -->
+                    <filter name="is_third_party_retention" string="Third Party Billing" domain="[('is_third_party_retention', '=', True)]" />
+                    <separator/>
                     <filter name="group_state" string="Group by State" context="{'group_by':'state'}" />
                     <filter name="group_partner" string="Group by Business Name" context="{'group_by':'partner_id'}" />
                     <filter name="group_date_accounting" string="Group by Fecha Contable" context="{'group_by':'date_accounting'}" />
+                    <filter name="group_is_third_party_retention" string="Group by Third Party Billing" context="{'group_by':'is_third_party_retention'}" />
                 </search>
             </field>
         </record>
