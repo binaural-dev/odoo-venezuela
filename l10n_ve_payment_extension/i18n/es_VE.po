@@ -1902,10 +1902,19 @@ msgstr "Tipo de Pago de Retención"
 #. module: l10n_ve_payment_extension
 #: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_payment_concept_l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_concept_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_product__payment_concept
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_template__payment_concept
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_form_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_search_l10n_ve_payment_extension
 msgid "Payment concept"
 msgstr "Concepto de Pago"
+
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_product__payment_concept
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_template__payment_concept
+msgid "Islr retention concept"
+msgstr "Concepto de Retencion de ISLR"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_form_l10n_ve_payment_extension
@@ -2971,3 +2980,19 @@ msgstr "Impuesto retenido"
 #, python-format
 msgid "the percentage may not exceed 100% on the payment concept line"
 msgstr "El porcentaje no puede exceder el 100% en la linea de pago."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_issue_date_of_municipal_withholding_receipt
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__hide_issue_date_of_municipal_withholding_receipt
+msgid "Hide issue date of municipal withholding receipt"
+msgstr "Ocultar fecha comprobante de Retencion"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Don't Show date issue in municipal withholding receip"
+msgstr "No mostrar fecha en comprobante de Retenciones Municipales"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__date_emision
+msgid "Emision Date"
+msgstr "Fecha Emision del Comprobante"

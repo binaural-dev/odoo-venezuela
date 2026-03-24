@@ -1,5 +1,7 @@
-from odoo import api, models, fields, _
+from odoo import api, models, fields, _, Command
 from odoo.exceptions import UserError
+from odoo.tools import float_is_zero , float_compare
+
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -24,13 +26,7 @@ class AccountPaymentIgtf(models.Model):
 
     igtf_amount = fields.Float(
         string="IGTF Amount",
-        compute="_compute_igtf_amount",
-        store=True,
         help="IGTF Amount",
-    )
-
-    amount_with_igtf = fields.Float(
-        string="Amount with IGTF", compute="_compute_amount_with_igtf", store=True
     )
 
     payment_from_wizard = fields.Boolean()
@@ -41,11 +37,6 @@ class AccountPaymentIgtf(models.Model):
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
 
-    @api.depends("amount","igtf_amount")
-    def _compute_amount_with_igtf(self):
-        for payment in self:
-            if not payment.amount_with_igtf:
-                payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
     @api.depends("journal_id")
     def _compute_is_igtf(self):
@@ -53,66 +44,66 @@ class AccountPaymentIgtf(models.Model):
             payment.is_igtf_on_foreign_exchange = False
             if payment.journal_id.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
-
-    @api.depends("amount")
-    def _compute_igtf_amount(self):
-        for payment in self:
-            if not payment.igtf_amount:
-                payment.igtf_amount = 0.0
-                if payment.journal_id.is_igtf:
-                    payment.igtf_amount = payment.amount * (
-                        payment.igtf_percentage / 100
-                    )
-
+                   
     def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
-        """Prepare values to create a new account.move.line for a payment.
-        this method adds the igtf in the move line values to be created depending on the payment type
+       
+        for rec in self:
+            vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(
+                write_off_line_vals,
+                force_balance
+            )
+            if rec.payment_from_wizard:
+                if rec.igtf_percentage and rec.igtf_amount:
+                    rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
 
-        Args:
-            write_off_line_vals (dict, optional): Values to create the write-off account.move.line. Defaults to None.
+            return vals
 
-        Returns:
-            dict: Values to create the account.move.line.
-        """
-
-        vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(
-            write_off_line_vals,
-            force_balance
-        )
-        if self.payment_from_wizard:
-            if self.igtf_percentage:
-                self._create_igtf_moves_in_payments(vals)
-
-        return vals
-
-    def calculate_igtf_for_payment(self, invoice, payment_amount):
-        """
-        Calcula IGTF solo sobre el monto que se aplica a la deuda principal
-        """
-        currency = self.currency_id # O la moneda de la factura, si es diferente
+    
+    def calculate_igtf_for_payment(self, invoice, payment_amount, igtf_percentage=False):
         
-        # ... (cálculo de principal_debt y principal_amount) ...
+        currency = invoice.currency_id
+        precision = currency.rounding
 
-        principal_debt = invoice.amount_total - invoice.bi_igtf
+        due_amount = invoice.amount_residual if invoice.company_currency_id != self.env.ref("base.VEF") else invoice.amount_residual / invoice.foreign_inverse_rate
+
+
+        principal_debt = due_amount
+
         principal_amount = min(payment_amount, principal_debt)
         
+
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
-        
-        # APLICAR REDONDEO ODOO AL RESULTADO FINAL DEL IGTF
-        return currency.round(igtf_unrounded)
 
-    #se comenta mientras se revisa nuevo flujo de gno considerando para adaptar a odoo venezuela tambien.
+        igtf_top = invoice.igtf_top_aply
+
+        alter_bi_igtf = invoice.alter_bi_igtf
+
+        igtf= igtf_unrounded
+
+        invoice_residual = due_amount
     
-    def _create_igtf_moves_in_payments(self, vals):
-        """Prepare values to create a new account.move.line for a payment.
-        this method adds the igtf in the move line values to be created depending on the payment type
+        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
+            
+            return 0.0
+        
 
-        Args:
-            write_off_line_vals (dict, optional): Values to create the write-off account.move.line. Defaults to None.
+        residual_igtf = igtf_top - alter_bi_igtf
 
-        Returns:
-            dict: Values to create the account.move.line.
-        """
+        if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
+            return 0.0
+        
+        if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
+            
+            igtf = residual_igtf
+
+        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
+            
+            return 0.0
+        
+        return igtf
+    
+    def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
+        
         igtf_account = (
             self.env.company.customer_account_igtf_id.id
             if self.partner_type == "customer"
@@ -123,241 +114,152 @@ class AccountPaymentIgtf(models.Model):
             return
 
         for payment in self:
-            move_id = (
-                self.env.context.get("active_id", False)
-            )
-            move = self.env["account.move"].browse(move_id)
-            if move:
-                payment.igtf_amount = payment.calculate_igtf_for_payment(move, payment.amount)
-            if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
+            
+            if payment.igtf_amount:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
 
                     if not vals_igtf:
-                        payment._prepare_inbound_move_line_igtf_vals(vals)
+                        payment._prepare_inbound_move_line_igtf_vals(vals, write_off_line_vals)
 
                 if payment.payment_type == "outbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
-                        payment._prepare_outbound_move_line_igtf_vals(vals)
+                        payment._prepare_outbound_move_line_igtf_vals(vals, write_off_line_vals)
 
     def _create_inbound_move_line_igtf_vals(self, vals):
-        """Create the igtf move line values for inbound payments
-        this method is called from the _prepare_move_line_default_vals method to add the igtf move line values to the vals list
-
-        Args:
-            vals (list): list of move line values
-
-        Returns:
-            list: list of move line values with the igtf move line values
-        """
-        igtf_account = (
-            self.env.company.customer_account_igtf_id.id
-            if self.partner_type == "customer"
-            else self.env.company.supplier_account_igtf_id.id
-        )
-        igtf_amount = self.igtf_amount
-        account_id = igtf_account if self.igtf_percentage else None
-
-        vals.append(
-            {
-                "name": "IGTF",
-                "currency_id": self.currency_id.id,
-                "amount_currency": -igtf_amount,
-                "account_id": account_id,
-                "partner_id": self.partner_id.id,
-            }
-        )
+        
+        for rec in self:
+            igtf_account = (
+                self.env.company.customer_account_igtf_id.id
+                if rec.partner_type == "customer"
+                else self.env.company.supplier_account_igtf_id.id
+            )
+            if not igtf_account and rec.igtf_percentage:
+                raise UserError(_("Please configure the IGTF accounts in the accounting settings."))
+            igtf_amount = rec.igtf_amount
+            account_id = igtf_account if rec.igtf_percentage else None
+            currency = self.currency_id 
+            precision = currency.rounding
+            if float_compare(igtf_amount, 0.0, precision_rounding=precision) > 0.0:
+                
+                vals.append(
+                    {
+                        "name": "IGTF",
+                        "currency_id": rec.currency_id.id,
+                        "amount_currency": -igtf_amount,
+                        "account_id": account_id,
+                        "partner_id": rec.partner_id.id,
+                    }
+                )
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
-        """
-        this method is called from the _prepare_move_line_default_vals method to add the igtf move line values to the vals list
-
-        Args:
-            vals (list): list of move line values
-
-        Returns:
-            list: list of move line values with the igtf move line values
-
-        """
-        igtf_account = (
-            self.env.company.customer_account_igtf_id.id
-            if self.partner_type == "customer"
-            else self.env.company.supplier_account_igtf_id.id
-        )
-        igtf_amount = self.igtf_amount
-        account_id = igtf_account if self.igtf_percentage else None
-
-        vals.append(
-            {
-                "name": "IGTF",
-                "currency_id": self.currency_id.id,
-                "amount_currency": igtf_amount,
-                "account_id": account_id,
-                "partner_id": self.partner_id.id,
-            }
-        )
+        
+        for rec in self:
+            igtf_account = (
+                self.env.company.customer_account_igtf_id.id
+                if rec.partner_type == "customer"
+                else self.env.company.supplier_account_igtf_id.id
+            )
+            if not igtf_account and rec.igtf_percentage:
+                raise UserError(_("Please configure the IGTF account in the accounting settings."))
+            igtf_amount = rec.igtf_amount
+            account_id = igtf_account if rec.igtf_percentage else None
+            currency = self.currency_id 
+            precision = currency.rounding
+            if float_compare(igtf_amount, 0.0, precision_rounding=precision) > 0.0:
+               
+                vals.append(
+                    {
+                        "name": "IGTF",
+                        "currency_id": rec.currency_id.id,
+                        "amount_currency": igtf_amount,
+                        "account_id": account_id,
+                        "partner_id": rec.partner_id.id,
+                    }
+                )
 
         return vals
-
-    def _prepare_inbound_move_line_igtf_vals(self, vals):
-        """
-        Prepare the igtf move line values for inbound payments and adjust the principal line
-        using Odoo's currency rounding to maintain balance.
-        """
-
-        lines = [line for line in vals]
-        if self.payment_type == "inbound":
-            currency = self.currency_id
-
-            # 1. Calcular el monto en moneda extranjera sin redondear
-            # CREDIT_LINE (el monto aplicado al principal) = PAGO ORIGINAL + IGTF
-            # Nota: El IGTF se suma porque el 'credit' en la cuenta por cobrar es negativo en este contexto.
-            credit_line_unrounded = lines[1]["amount_currency"] + self.igtf_amount
-            
-            # 2. REDONDEAR el monto de la línea de la deuda principal
-            credit_line = currency.round(credit_line_unrounded)
-            
-            # 3. Calcular el monto en la moneda de la compañía (Moneda Base)
-            credit_amount = -credit_line # El débito o crédito es el negativo del amount_currency
-
-            # Si la moneda de la compañía es VEF, aplicamos la tasa y redondeamos.
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                # Aplicamos la tasa de cambio y redondeamos el monto en moneda base
-                credit_amount = currency.round(-credit_line * self.foreign_rate)
-            
-            # 4. Actualizar la línea de la deuda principal (índice [1])
-            vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
-
-            # 5. Llamar al método para AGREGAR la línea de IGTF.
-            # Este método auxiliar también debe haber sido actualizado para usar el monto IGTF redondeado.
-            self._create_inbound_move_line_igtf_vals(vals)
-
-    def _prepare_outbound_move_line_igtf_vals(self, vals):
-        """
-        ...
-        """
-        lines = [line for line in vals]
-        if self.payment_type == "outbound":
-            currency = self.currency_id
-            
-            # 1. Calcular el monto en moneda extranjera que va al principal
-            # DEBIT_LINE = PAGO ORIGINAL - IGTF
-            debit_line_unrounded = lines[1]["amount_currency"] - self.igtf_amount 
-            
-            # 2. REDONDEAR EL AJUSTE DEL PRINCIPAL USANDO LA DIVISA
-            debit_line = currency.round(debit_line_unrounded)
-            
-            # 3. La línea de IGTF debe ser calculada como el diferencial real
-            # Esto corrige cualquier micro-diferencia de redondeo
-            igtf_amount_adjusted = currency.round(self.igtf_amount)
-
-            debit_amount = debit_line
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                # Opcional: Asegurar que el monto en VEF también se redondee después de la tasa
-                debit_amount = currency.round(debit_line * self.foreign_rate) 
-                
-            vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
-
-            # Llamamos a la función de creación de IGTF, usando el monto redondeado
-            # (Aunque internamente debería usar 'igtf_amount_adjusted', se usa self.igtf_amount 
-            # asumiendo que ya fue redondeado en 'calculate_igtf_for_payment').
-            self._create_outbound_move_line_igtf_vals(vals)
-
-    def action_draft(self):
-        # if payment have reconciled_invoice_ids or reconciled_bill_ids and is_igtf is True clear bi_igtf of the reconciled invoices
-        def get_payment_amount_invoice(self, invoice):
-            self.ensure_one()
-            if invoice.bi_igtf < self.amount:
-                payments = invoice.invoice_payments_widget.get("content", False)
-                for payment in payments:
-                    payment_id = payment.get("account_payment_id", False)
-                    if not payment_id:
-                        continue
-
-                    if self.id == payment_id:
-                        return abs(payment["amount"])
-            return self.amount
-
-        for payment in self:
-            if (
-                payment.reconciled_invoice_ids or payment.reconciled_bill_ids
-            ) and payment.is_igtf_on_foreign_exchange:
-                for invoice in payment.reconciled_invoice_ids:
-                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                        invoice.bi_igtf = invoice.bi_igtf - (
-                            get_payment_amount_invoice(payment, invoice)
-                            * self.foreign_rate
-                        )
-                    else:
-                        invoice.bi_igtf = invoice.bi_igtf - get_payment_amount_invoice(
-                            payment, invoice
-                        )
-
-                for bill in payment.reconciled_bill_ids:
-                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                        bill.bi_igtf = bill.bi_igtf - (
-                            get_payment_amount_invoice(payment, bill)
-                            * self.foreign_rate
-                        )
-                    else:
-                        bill.bi_igtf = bill.bi_igtf - get_payment_amount_invoice(
-                            payment, bill
-                        )
-
-                move = self.env["account.move"].search(
-                    [("payment_igtf_id", "=", payment.id)]
-                )
-                if move:
-                    move.button_draft()
-
-        return super(AccountPaymentIgtf, self).action_draft()
-
-    def get_bi_igtf(self, move_id=None):
-        for record in self:        
-            amount_without_difference = record.amount_with_igtf - record.igtf_amount
-            if record.env.company.currency_id.id == record.env.ref("base.VEF").id:
-                amount_without_difference = amount_without_difference * record.foreign_rate
-            
-            amount = self.get_amount_residual_from_payment(move_id)
-            # amount = record.amount_residual_from_payment
-
-        return amount
     
-    def get_amount_residual_from_payment(self,move_id):
-        for record in self:
-            residual_amount = 0.00
-            igtf_amount= record.igtf_amount
-            if record.reconciled_invoice_ids:
-                # payment_used_amount = record.get_used_payment_amount(payments)
-                payment_used_amount = record.get_used_payment_amount(record.reconciled_invoice_ids,move_id)
-                residual_amount = record.amount - payment_used_amount
-            else:
-                residual_amount = record.amount
+    def get_moves(self):
+        """ Return the moves to pay from the context.
+        Overridden to ensure that we always get the moves from the context,
+        even if we are in edit mode.
+        """
+        ids=self.env.context.get("active_id") or self.env.context.get("active_ids")
 
-            record.amount_residual_from_payment = residual_amount
-            return record.amount_residual_from_payment
+        if isinstance(ids, int):
+            return self.env["account.move"].browse([ids])
+        else:
+            move_lines = self.env["account.move.line"].browse(ids)
+            return set(move_lines.mapped("move_id"))
 
-    def get_used_payment_amount(self, reconciled_ids,move_id):
-        payment_data = []  # Lista de diccionarios con {id_factura, monto}
-        for invoice in reconciled_ids:
-            payments = invoice.invoice_payments_widget.get("content", False)
+    def _prepare_inbound_move_line_igtf_vals(self, vals, write_off_line_vals = False):
+    
+        for rec in self:
+            lines = [line for line in vals]
+            if rec.payment_type == "inbound":
 
-            for payment in payments:
-                payment_id = payment.get("account_payment_id", False)
-                if payment_id == self.id:
-                    payment_amount = payment.get("amount", 0.0)
-                    payment_data.append({
-                        "id": invoice.id,
-                        "amount": payment_amount
-                    })
+                currency = rec.currency_id 
+                precision = currency.rounding
+                
+                credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
+                credit_line = credit_line_unrounded
+                credit_amount = -credit_line
+                amount = 0.0
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    igtf_amount = rec.igtf_amount / rec.foreign_inverse_rate
+                    credit_amount = (lines[1]["credit"])
 
-        # Sum amounts where the id is NOT in self.reconciled_invoice_ids
-        excluded_ids = move_id
-        total = sum(item["amount"] for item in payment_data if item["id"] != excluded_ids)
+                    amount =  credit_amount -igtf_amount
 
-        return total 
+                if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
+                    if not write_off_line_vals:
+                        vals[1].update({"amount_currency": credit_line, "credit": amount})
+                
+                if write_off_line_vals:
+                    actual_value = vals[2]["amount_currency"] + rec.igtf_amount
+                    balance = actual_value
+                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    
+                        balance = actual_value / rec.foreign_inverse_rate
+                    vals[2].update({"amount_currency": actual_value, "balance": balance})
+                rec._create_inbound_move_line_igtf_vals(vals)
+
+    def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
+        
+        for rec in self:
+            lines = [line for line in vals]
+            if rec.payment_type == "outbound":
+                
+                currency = rec.currency_id
+                precision = currency.rounding
+
+                debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
+                debit_line = debit_line_unrounded
+                debit_amount = debit_line
+                amount = 0.0
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    igtf_amount = rec.igtf_amount / rec.foreign_inverse_rate
+                    debit_amount = (lines[1]["debit"])
+
+                    amount =  debit_amount - igtf_amount
+
+                if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
+                    if not write_off_line_vals:
+                        vals[1].update({"amount_currency": debit_line, "debit": amount})
+
+                if write_off_line_vals:
+                    actual_value = vals[2]["amount_currency"] - rec.igtf_amount
+                    balance = actual_value
+                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    
+                        balance = actual_value / rec.foreign_inverse_rate
+                    vals[2].update({"amount_currency": actual_value, "balance": balance})
+
+                rec._create_outbound_move_line_igtf_vals(vals)
+                
 
     @api.depends('journal_id')
     def _compute_is_igtf_journal(self):
@@ -366,3 +268,7 @@ class AccountPaymentIgtf(models.Model):
                 record.is_igtf_on_foreign_exchange = True
             else:
                 record.is_igtf_on_foreign_exchange = False
+
+
+    
+    
