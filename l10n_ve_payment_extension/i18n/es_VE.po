@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-09 16:27+0000\n"
-"PO-Revision-Date: 2026-02-09 16:27+0000\n"
+"POT-Creation-Date: 2026-03-24 14:09+0000\n"
+"PO-Revision-Date: 2026-03-24 14:09+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -591,6 +591,11 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_company_form
+msgid "Configuration"
+msgstr "Configuración"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
@@ -1102,6 +1107,16 @@ msgid "Has Message"
 msgstr "Tiene mensaje"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__text_header_1_municipal_retention
+msgid "Header 1 for voucher of municipal retention"
+msgstr "Encabezado 1 para el comprobante de retención municipal"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__text_header_2_municipal_retention
+msgid "Header 2 for voucher of municipal retention"
+msgstr "Encabezado 2 para el comprobante de retención municipal"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_patent_columns_extra
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__hide_patent_columns_extra
 msgid "Hide extra columns in Patent Municipal Report related to advances"
@@ -1558,6 +1573,11 @@ msgid "Leave blank to compare only with the value \"start\""
 msgstr "Dejar en blanco para comparar solo con el valor \"inicio\""
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_company_form
+msgid "Logo"
+msgstr "Logo"
+
+#. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/utils/utils_retention.py:0
 msgid "March"
@@ -1659,6 +1679,11 @@ msgstr "Reporte de retenciones municipales desde {date_from} hasta {date_to}"
 #: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_municipal_supplier
 msgid "Municipal Retention Suppliers"
 msgstr "Retenciones Municipales de Proveedores"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_company_form
+msgid "Municipal Retention Voucher Headers"
+msgstr "Encabezados de Comprobantes de Retención Municipal"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
