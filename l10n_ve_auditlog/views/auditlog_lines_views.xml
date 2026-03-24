@@ -39,7 +39,7 @@
   <record model="ir.actions.act_window" id="l10n_ve_mail_tracking_value_audits_action">
     <field name="name">Audit logs lines</field>
     <field name="res_model">mail.tracking.value</field>
-    <field name="view_mode">tree,form</field>
+    <field name="view_mode">list,form</field>
     <field name="domain">[('model', 'in', ('account.move','account.payment','account.retention'))]</field>
   </record>
 </odoo>

@@ -76,7 +76,7 @@ class StockPicking(models.Model):
             return self.env["stock.picking"]
         domain = [
             "&",
-            ("reference_ids", "=", self.reference_ids.id),
+            ("reference_ids", "in", self.reference_ids.ids),
             ("type_delivery_step", "=", "pick"),
             ("id", "!=", self.id),
         ]
@@ -93,7 +93,7 @@ class StockPicking(models.Model):
             return self.env["stock.picking"]
         domain = [
             "&",
-            ("reference_ids", "=", self.reference_ids.id),
+            ("reference_ids", "in", self.reference_ids.ids),
             ("type_delivery_step", "=", "pack"),
             ("id", "!=", self.id),
         ]
@@ -110,7 +110,7 @@ class StockPicking(models.Model):
             return self.env["stock.picking"]
         domain = [
             "&",
-            ("reference_ids", "=", self.reference_ids.id),
+            ("reference_ids", "in", self.reference_ids.ids),
             ("type_delivery_step", "=", "out"),
             ("id", "!=", self.id),
         ]
@@ -236,8 +236,9 @@ class StockPicking(models.Model):
                     raise UserError(_("You do not have permission to make shipment-type transfers"))
 
     def action_assign(self):
-        if self.type_delivery_step != "pick":
-            self = self.with_context(skip_physical_location=True)
+        for picking in self:
+            if picking.type_delivery_step != "pick":
+                picking = picking.with_context(skip_physical_location=True)
         return super().action_assign()
 
     def button_validate(self):

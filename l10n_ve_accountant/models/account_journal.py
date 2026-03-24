@@ -10,6 +10,8 @@ class AccountJournal(models.Model):
 
     # ESTA HERENCIA NO SE IMPORTARÁ PORQUE ESTÁ GENERANDO ERROR, AL SOLUCIONAR, VOLVER A AGREGAR EN EN IMPORT
 
+    is_purchase_international = fields.Boolean(string="International purchase",default=False)
+
     @api.model_create_multi
     def create(self, vals_list):
 
@@ -28,6 +30,21 @@ class AccountJournal(models.Model):
                 if not line.payment_account_id:
                     raise ValidationError(_("All payment methods must have an assigned account."))
 
+
+    @api.constrains('is_purchase_international')
+    def _check_single_international_purchase_journal(self):
+        
+        for record in self:
+            if record.is_purchase_international:
+                domain = [
+                    ('is_purchase_international', '=', True),
+                    ('id', '!=', record.id),
+                ]
+                
+                if self.search_count(domain) > 0:
+                    raise ValidationError(
+                        _("An International Purchase Journal is already enabled. Only one is allowed.")
+                    )
 
 
     def write(self, vals):

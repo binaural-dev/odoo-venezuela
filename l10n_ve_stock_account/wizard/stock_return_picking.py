@@ -13,10 +13,9 @@ from odoo.exceptions import UserError
 class StockReturnInvoicePicking(models.TransientModel):
     _inherit = "stock.return.picking"
 
-    def _create_returns(self):
+    def _create_return(self):
         """in this function the picking is marked as return"""
 
-        new_picking, pick_type_id = super(StockReturnInvoicePicking, self)._create_returns()
-        picking = self.env["stock.picking"].browse(new_picking)
-        picking.write({"is_return": True})
-        return new_picking, pick_type_id
+        new_picking = super(StockReturnInvoicePicking, self)._create_return()
+        new_picking.write({"is_return": True})
+        return new_picking
