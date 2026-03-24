@@ -239,11 +239,14 @@ class StockPicking(models.Model):
         
         if invoices:
             action['res_id'] = invoices.id
-            
-        action['context'] = {
+
+        ctx = dict(self.env.context)
+        ctx.update(action.get('context', {}) or {})
+        ctx.update({
             'default_move_type': 'out_invoice',
             'default_partner_id': self.partner_id.id,
-        }
+        })
+        action['context'] = ctx
         return action
 
     def create_bill(self):
