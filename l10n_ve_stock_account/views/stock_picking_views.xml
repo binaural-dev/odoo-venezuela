@@ -101,19 +101,6 @@
                     string="Create Invoice" type="object"
                     groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
-                <button 
-                    name="create_bill" class="oe_highlight"
-                    string="Create Bill" type="object"
-                    groups="l10n_ve_stock_account.group_stock_account"
-                    invisible="not show_create_bill"/>
-                <button 
-                    name="create_customer_credit" class="oe_highlight"
-                    string="Create Credit Note" type="object"
-                    invisible="not show_create_customer_credit"/>
-                <button 
-                    name="create_vendor_credit" class="oe_highlight"
-                    string="Create Vendor Credit" type="object"
-                    invisible="not show_create_vendor_credit"/>
             </xpath>
         </field>
     </record>
