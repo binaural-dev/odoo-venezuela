@@ -134,23 +134,32 @@ patch(PosStore.prototype, {
 
         let amount = vef_base ? el.price : el.get_foreign_unit_price()
 
+        let discount = el.get_discount()
+        if (discount > 0) {
+          amount = amount * (1 - discount / 100)
+        }
+
         return {
           price_unit: amount,
-          discount: el.get_discount(),
+          discount: discount,
           quantity: Math.abs(el.quantity),
           name: this.normalizeProductName(el.product.display_name),
           code: el.product.default_code,
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
       })
-      invoice['payment_lines'] = order.paymentlines.map((el) => {
-
-        let amount = vef_base ? el.amount : el.get_foreign_amount()
-        return {
-          payment_method: el.payment_method.code_fiscal_printer,
-          amount: amount,
-        }
-      })
+      invoice['payment_lines'] = order.paymentlines
+        .filter((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return amount > 0
+        })
+        .map((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return {
+            payment_method: el.payment_method.code_fiscal_printer,
+            amount: amount,
+          }
+        })
     }
     invoice["valid"] = true
     return invoice
@@ -222,7 +231,7 @@ patch(PosStore.prototype, {
   },
 
   async pushToMF(order) {
-    try {      
+    try {
       let data = await this.get_data_invoice(order)
       if (!data["valid"]) {
         throw data["message"]
@@ -266,4 +275,3 @@ patch(PosStore.prototype, {
     return await super.push_single_order.apply(this, [order, opts]);
   },
 })
-
