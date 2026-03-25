@@ -2030,7 +2030,12 @@ class SerialFiscalDriver(SerialDriver):
             
             self.tfhka.PrintXReport()
             _logger.info("Reporte X impreso correctamente.")
-            self.data["value"] = {"valid": True, "message": "Reporte X impreso correctamente."}
+            data = {
+                "_dailyClosureCounter": status["result"].DailyClosureCounter,
+                "_registeredMachineNumber": status["result"].RegisteredMachineNumber
+            }
+
+            self.data["value"] = {"valid": True, "data": data, "message": "Reporte X impreso correctamente."}
             event_manager.device_changed(self)
             return {"valid": True, "message": "Reporte X impreso correctamente."}
 
@@ -2050,7 +2055,13 @@ class SerialFiscalDriver(SerialDriver):
             
             self.tfhka.PrintZReport()
             _logger.info("Reporte Z impreso correctamente.")
-            self.data["value"] = {"valid": True, "message": "Reporte Z impreso correctamente."}
+            
+            data = {
+                "_dailyClosureCounter": status["result"].DailyClosureCounter,
+                "_registeredMachineNumber": status["result"].RegisteredMachineNumber
+            }
+
+            self.data["value"] = {"valid": True, "data": data, "message": "Reporte Z impreso correctamente."}
             event_manager.device_changed(self)
             return {"valid": True, "message": "Reporte Z impreso correctamente."}
         except Exception as e:
