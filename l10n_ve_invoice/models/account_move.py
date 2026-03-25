@@ -40,6 +40,10 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
+    tax_base_for_international_purchase = fields.Float(string='Tax Base for International Purchase', help='Tax base for international purchase to show in purchase book')
+    
+    tax_amount_for_international_purchase = fields.Float(string='Tax Amount for International Purchase', help='Tax amount for international purchase to show in purchase book')
+
     @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
