@@ -161,8 +161,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if payment.journal_id.is_igtf and payment.partner_id:
                 move_ids=self.get_moves()
                 for move_id in move_ids:
-                    if payment.partner_id._check_igtf_apply_improved(move_id.move_type):
+                    if payment.partner_id._check_igtf_apply_improved(move_id):
                         payment.is_igtf = True
+
+            if payment.journal_id.is_purchase_international:
+                payment.is_igtf = False
 
                    
                         
@@ -248,6 +251,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if record.journal_id.currency_id and record.journal_id.currency_id == self.env.ref("base.USD"):
                 record.is_igtf_on_foreign_exchange = True
             else:
+                record.is_igtf_on_foreign_exchange = False
+            
+            if record.journal_id.is_purchase_international:
                 record.is_igtf_on_foreign_exchange = False
     
     @api.depends('available_journal_ids')
