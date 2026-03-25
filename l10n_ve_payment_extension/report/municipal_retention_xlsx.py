@@ -54,7 +54,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         # --- 4. SECCIÓN AGENTE DE RETENCIÓN ---
         worksheet.write("D7", "AGENTE DE RETENCIÓN", fmt_bold)
         worksheet.merge_range("G7:H7", "COMPROBANTE", fmt_bold_border)
-        worksheet.merge_range("G8:H8", retention.name, fmt_bold_border)
+        worksheet.merge_range("G8:H8", retention.number, fmt_bold_border)
         
         worksheet.write_rich_string("A11", fmt_bold, "RAZÓN SOCIAL :", str(company.name))
         worksheet.write_rich_string("A12", fmt_bold, "NUMERO DE REGISTRO ÚNICO DE INFORMACIÓN FISCAL: ", str(company.partner_id.vat))

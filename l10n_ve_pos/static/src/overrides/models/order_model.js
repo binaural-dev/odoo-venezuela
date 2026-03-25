@@ -38,7 +38,7 @@ patch(Order.prototype, {
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
     if (this.pos.currency.name == "VEF") {
-      return round_di(this.pos.config.foreign_inverse_rate, this.pos.currency.decimal_places);
+      return this.pos.config.foreign_inverse_rate;
     }
     if (this.pos.currency.name == "USD") {
       return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);

@@ -118,9 +118,6 @@ patch(Orderline.prototype, {
         base: tax.base,
       };
     });
-    console.log("pricewithtax", all_taxes.total_included)
-    console.log("price without tax", all_taxes.total_excluded)
-    console.log("taxdetails", taxdetail)
     return {
       priceWithTax: all_taxes.total_included,
       priceWithoutTax: all_taxes.total_excluded,
