@@ -153,14 +153,13 @@ class AccountPaymentRegister(models.TransientModel):
             'source_amount': source_amount,
             'source_amount_currency': source_amount_currency,
         }
-
+    
     @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date')
     def _compute_amount(self):
         super()._compute_amount()
 
         for wizard in self:
-
-            if wizard.currency_id == wizard.company_id.currency_foreign_id:
+            if not wizard.is_igtf and wizard.currency_id == wizard.company_id.currency_foreign_id:
                 exact_rate = wizard.foreign_inverse_rate
                 if not exact_rate:
                     Rate = self.env["res.currency.rate"]
@@ -168,5 +167,22 @@ class AccountPaymentRegister(models.TransientModel):
                     exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
                 
                 if exact_rate:
-                    exact_amount = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
-                    wizard.amount = exact_amount
+                    wizard.amount = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
+
+
+    @api.depends('can_edit_wizard', 'amount', 'foreign_inverse_rate')
+    def _compute_payment_difference(self):
+        super()._compute_payment_difference()
+        
+        for wizard in self:
+            if wizard.can_edit_wizard and wizard.currency_id == wizard.company_id.currency_foreign_id:
+                exact_rate = wizard.foreign_inverse_rate
+                if not exact_rate:
+                    Rate = self.env["res.currency.rate"]
+                    rate_values = Rate.compute_rate(wizard.source_currency_id.id, wizard.payment_date)
+                    exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
+                
+                if exact_rate:
+                    deuda_exacta = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
+                    
+                    wizard.payment_difference = deuda_exacta - wizard.amount
