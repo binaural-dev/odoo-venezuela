@@ -41,17 +41,11 @@ patch(Order.prototype, {
       return this.pos.config.foreign_inverse_rate
     }
     if (this.pos.currency.name == "USD") {
-      return round_di(
-        this.pos.config.foreign_rate,
-        this.pos.foreign_currency.decimal_places,
-      );
+      return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
     }
   },
   get_display_rate() {
-    return round_di(
-      this.pos.config.foreign_rate,
-      this.pos.foreign_currency.decimal_places,
-    );
+    return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
   },
 
   add_orderline(line) {

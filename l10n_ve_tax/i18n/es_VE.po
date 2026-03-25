@@ -4,16 +4,25 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251118\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 15:38+0000\n"
-"PO-Revision-Date: 2025-03-27 15:38+0000\n"
+"POT-Creation-Date: 2026-02-26 18:38+0000\n"
+"PO-Revision-Date: 2026-02-26 18:38+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: l10n_ve_tax
+#. odoo-python
+#: code:addons/l10n_ve_tax/models/account_journal.py:0
+#, python-format
+msgid ""
+"An International Purchase Journal is already enabled. Only one is allowed."
+msgstr ""
+"Ya se ha habilitado un Diario de Compras Internacional. Solo se permite uno."
 
 #. module: l10n_ve_tax
 #: model:ir.model,name:l10n_ve_tax.model_res_company
@@ -66,6 +75,8 @@ msgstr "Deducibilidad"
 #. odoo-javascript
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #, python-format
 msgid "Discount"
 msgstr "Descuento"
@@ -97,6 +108,12 @@ msgid "Exent Aliquot Purchase"
 msgstr "Exento compras"
 
 #. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__exent_aliquot_purchase_international
+msgid "Exent Aliquot Purchase International"
+msgstr "Alícuota exenta compras internacionales"
+
+#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__exent_aliquot_sale
 msgid "Exent Aliquot Sale"
@@ -107,6 +124,12 @@ msgstr "Exento ventas"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__extend_aliquot_purchase
 msgid "Extend Aliquot Purchase"
 msgstr "Alícuota extendida compras"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__extend_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__extend_aliquot_purchase_international
+msgid "Extend Aliquot Purchase International"
+msgstr "Alícuota extendida compras internacionales"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__extend_aliquot_sale
@@ -131,20 +154,31 @@ msgid "General Aliquot Purchase"
 msgstr "Alícuota general compras"
 
 #. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_purchase_international
+msgid "General Aliquot Purchase International"
+msgstr "Alícuota general compras internacionales"
+
+#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_sale
 msgid "General Aliquot Sale"
 msgstr "Alícuota general ventas"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Hide Extended Aliquot"
-msgstr "Ocultar alícuota extendida"
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_international_purchase_in_book
+msgid "Hide international alicuotes"
+msgstr "Ocultar alícuotas internacionales"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Hide Reduced Aliquot"
-msgstr "Ocultar alícuota reducida"
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_account_journal__is_purchase_international
+msgid "International purchase"
+msgstr "Compra internacional"
+
+#. module: l10n_ve_tax
+#: model:ir.model,name:l10n_ve_tax.model_account_journal
+msgid "Journal"
+msgstr "Diario"
 
 #. module: l10n_ve_tax
 #: model:ir.model,name:l10n_ve_tax.model_account_move_line
@@ -172,6 +206,7 @@ msgstr "No Deducible Aliquota Reducida (Compra)"
 #. module: l10n_ve_tax
 #. odoo-python
 #: code:addons/l10n_ve_tax/models/account_tax.py:0
+#: code:addons/l10n_ve_tax/models/account_tax.py:0
 #, python-format
 msgid "No foreign currency configured in the company"
 msgstr "No hay moneda extranjera configurada en la empresa"
@@ -187,10 +222,22 @@ msgid "Not Deductible Tax"
 msgstr "No Deducible"
 
 #. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_exempt_total_purchases
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_exempt_total_purchases
+msgid "Not Show Exempt Total Purchases"
+msgstr "No mostrar total compras exento"
+
+#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_purchase
 msgid "Not Show Extend Aliquot Purchase"
 msgstr "No mostrar alícuota extendida (Compras Nacionales)"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_purchase_international
+msgid "Not Show Extend Aliquot Purchase International"
+msgstr "No mostrar alícuota extendida compras internacionales"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_sale
@@ -199,10 +246,28 @@ msgid "Not Show Extend Aliquot Sale"
 msgstr "No mostrar alícuota extendida (Ventas)"
 
 #. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_general_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_general_aliquot_purchase_international
+msgid "Not Show General Aliquot Purchase International"
+msgstr "No mostrar alícuota general compras internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_national_exempt_total_purchases
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_national_exempt_total_purchases
+msgid "Not Show National Exempt Total Purchases"
+msgstr "No mostrar total compras exentas (Compras Nacionales)"
+
+#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_purchase
 msgid "Not Show Reduced Aliquot Purchase"
 msgstr "No mostrar alícuota reducida (Compras Nacionales)"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_purchase_international
+msgid "Not Show Reduced Aliquot Purchase International"
+msgstr "No mostrar alícuota reducida compras internacionales"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_sale
@@ -211,13 +276,37 @@ msgid "Not Show Reduced Aliquot Sale"
 msgstr "No mostrar alícuota reducida (Ventas)"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Purchase Book"
-msgstr "Libro de Compras"
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_total_purchases_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_total_purchases_international
+msgid "Not Show Total Purchases International"
+msgstr "No mostrar total compras internacionales"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_total_purchases_national
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_total_purchases_national
+msgid "Not Show Total Purchases National"
+msgstr "No mostrar total compras (Compras Nacionales)"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_total_purchases_with_international_iva
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_total_purchases_with_international_iva
+msgid "Not Show Total Purchases With International Iva"
+msgstr "No mostrar total compras con IVA"
+
+#. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_total_purchases_with_iva
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_total_purchases_with_iva
+msgid "Not Show Total Purchases With Iva"
+msgstr "No mostrar total compras con IVA (Compras Nacionales)"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Purchase Tax Rates"
+msgid "Purchase Tax International Rates"
+msgstr "Tasas de Impuestos de Compras Internacionales"
+
+#. module: l10n_ve_tax
+#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
+msgid "Purchases Tax Rates"
 msgstr "Tasas de Impuestos de Compras"
 
 #. module: l10n_ve_tax
@@ -232,15 +321,16 @@ msgid "Reduced Aliquot Purchase"
 msgstr "Alícuota reducida compras"
 
 #. module: l10n_ve_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__reduced_aliquot_purchase_international
+msgid "Reduced Aliquot Purchase International"
+msgstr "Alícuota reducida compras internacionales"
+
+#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__reduced_aliquot_sale
 msgid "Reduced Aliquot Sale"
 msgstr "Alícuota reducida ventas"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Sales Book"
-msgstr "Libro de Ventas"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
@@ -257,6 +347,8 @@ msgstr "Mostrar descuento en facturas"
 #. odoo-javascript
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #, python-format
 msgid "Subtotal"
 msgstr ""
@@ -269,10 +361,13 @@ msgstr "Impuesto"
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
 msgid "Tax is mandatory on order and invoice lines, only one tax allowed"
-msgstr "El impuesto es obligatorio en las líneas de pedido y factura, solo se permite un impuesto"
+msgstr ""
+"El impuesto es obligatorio en las líneas de pedido y factura, solo se "
+"permite un impuesto"
 
 #. module: l10n_ve_tax
 #. odoo-javascript
+#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #, python-format
 msgid "Total"
@@ -287,78 +382,13 @@ msgstr "Impuesto único"
 #. module: l10n_ve_tax
 #. odoo-javascript
 #: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
 #, python-format
 msgid "Total to pay"
 msgstr "Total a pagar"
 
 #. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__exent_aliquot_purchase_international
-msgid "Exent Aliquot Purchase International"
-msgstr "Alícuota exenta compras internacionales"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__extend_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__extend_aliquot_purchase_international
-msgid "Extend Aliquot Purchase International"
-msgstr "Alícuota extendida compras internacionales"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_purchase_international
-msgid "General Aliquot Purchase International"
-msgstr "Alícuota general compras internacionales"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_international_purchase_in_book
-msgid "Hide international alicuotes"
-msgstr "Ocultar alícuotas internacionales"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_account_journal__is_purchase_international
-msgid "International purchase"
-msgstr "Compra internacional"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_international_purchase_in_book
-msgid "Not Show International Purchase In Book"
-msgstr "No mostrar compras internacionales en el libro"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_purchase_international
-msgid "Not Show Reduced Aliquot Purchase International"
-msgstr "No mostrar alícuota reducida compras internacionales"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Purchase Tax International Rates"
-msgstr "Tasas de Impuestos de Compras Internacionales"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__reduced_aliquot_purchase_international
-msgid "Reduced Aliquot Purchase International"
-msgstr "Alícuota reducida compras internacionales"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_general_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_general_aliquot_purchase_international
-msgid "Not Show General Aliquot Purchase International"
-msgstr "No mostrar alícuota general compras internacionales"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_purchase_international
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_purchase_international
-msgid "Not Show Extend Aliquot Purchase International"
-msgstr "No mostrar alícuota extendida compras internacionales"
-
-#. module: l10n_ve_tax
-#. odoo-python
-#: code:addons/l10n_ve_tax/models/account_journal.py:0
-#, python-format
-msgid ""
-"An International Purchase Journal is already enabled. Only one is allowed."
-msgstr ""
-"Ya se ha habilitado un Diario de Compras Internacional. Solo se permite uno."
-
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__unique_tax
+#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__unique_tax
+msgid "Unique Tax"
+msgstr "Impuesto único"

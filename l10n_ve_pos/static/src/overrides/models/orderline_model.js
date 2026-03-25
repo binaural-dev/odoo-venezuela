@@ -126,7 +126,6 @@ patch(Orderline.prototype, {
         base: tax.base,
       };
     });
-
     return {
       priceWithTax: all_taxes.total_included,
       priceWithoutTax: all_taxes.total_excluded,
