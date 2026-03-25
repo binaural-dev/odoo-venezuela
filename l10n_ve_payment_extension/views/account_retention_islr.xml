@@ -32,6 +32,7 @@
                             <field name="code_visible" invisible="1" />
                             <field name="type" force_save="1" select="2" />
                             <field name="type_retention" force_save="1" select="2" invisible="1" />
+                            <field name="is_third_party_retention" readonly="1" invisible="type != 'in_invoice'"/>
                             <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
                                 select="1"
                                 invisible="not type"
@@ -55,7 +56,7 @@
                                     <list editable="bottom">
                                         <field name="company_currency_id" column_invisible="True" />
                                         <field name="foreign_currency_id" column_invisible="True" />
-                                        <field name="name" readonly="1" force_save="1" />
+                                        <field name="name" required="1" readonly="1" force_save="1" />
                                         <field
                                             name="move_id"
                                             options="{'no_create': True}"
@@ -66,7 +67,9 @@
                                             column_invisible="not parent.code_visible" />
                                         <field name="company_id" optional="hide"
                                             groups="base.group_multi_company" />
-                                        <field name="payment_concept_id" force_save="1" />
+                                        <field name="payment_concept_id" 
+                                            column_invisible="parent.type_retention != 'islr'"
+                                            force_save="1" />
                                         <field name="is_retention_client" column_invisible="True" />
                                         <field
                                             name="invoice_total"
@@ -104,7 +107,7 @@
                                             name="related_pay_from"
                                             force_save="1"
                                             readonly="1"
-                                            column_invisible="parent.type == 'out_invoice'"/>
+                                            column_invisible="parent.type == 'out_invoice' or parent.type_retention != 'islr'"/>
                                         <field
                                             name="related_percentage_tax_base"
                                             force_save="1"
@@ -114,11 +117,13 @@
                                             name="related_percentage_fees"
                                             force_save="1"
                                             readonly="1"
+                                            column_invisible="parent.type_retention != 'islr'"
                                         />
                                         <field
                                             name="related_amount_subtract_fees"
                                             force_save="1"
                                             readonly="1"
+                                            column_invisible="parent.type_retention != 'islr'"
                                         />
                                         <field
                                             name="foreign_currency_rate"

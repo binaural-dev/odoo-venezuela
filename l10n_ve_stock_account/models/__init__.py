@@ -12,5 +12,4 @@ from . import (
     stock_move_line,
     stock_warehouse,
     stock_location,
-    stock_return_picking,
 )

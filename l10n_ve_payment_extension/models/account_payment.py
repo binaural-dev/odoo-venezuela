@@ -94,7 +94,7 @@ class AccountPayment(models.Model):
 
     def unlink(self):
         for payment in self:
-            if any(isinstance(id, models.NewId) for id in self.retention_line_ids.ids):
+            if any(isinstance(id, api.NewId) for id in self.retention_line_ids.ids):
                 payment.retention_line_ids = False
             else:
                 payment.retention_line_ids = False

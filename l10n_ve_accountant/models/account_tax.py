@@ -65,7 +65,10 @@ class AccountTax(models.Model):
                 for line in record.invoice_line_ids
             )
         else: 
-            currency_id = record.company_id.currency_id
+            if hasattr(record, 'company_id'): 
+                currency_id = record.company_id.currency_id
+            else:
+                currency_id = self.env.company.currency_id
             foreign_currency_id = self.env.company.foreign_currency_id
 
         # FIXME: Evaluar escenarios en los que hay descuentos.
@@ -165,7 +168,6 @@ class AccountTax(models.Model):
             value=res.get('total_amount', 0.0),
             currency_obj=ves_currency
         )
-    
     
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(
