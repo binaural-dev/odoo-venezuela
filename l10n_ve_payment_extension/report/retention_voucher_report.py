@@ -26,4 +26,4 @@ class PaymentExtensionRetentionIvaVoucher(models.AbstractModel):
         return decimal_places
 
     def get_foreign_currency_is_vef(self):
-        return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
+        return self.env.company.foreign_currency_id == self.env.ref("base.VEF")

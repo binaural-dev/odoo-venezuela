@@ -53,6 +53,8 @@ class AccountMove(models.Model):
             if move.is_purchase_document(include_receipts=True) and move.company_id.block_invoice_display_date_upper_than_date:
                 if move.invoice_date_display and move.date and move.invoice_date_display > move.date:
                     raise ValidationError(_("The invoice date cannot be greater than the accounting date."))
+    import_file_number_purchase_international = fields.Char(string="Import File Number Purchase International")
+
     @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether an account move (invoice, debit/credit note or receipt) is within the current fiscal period."""

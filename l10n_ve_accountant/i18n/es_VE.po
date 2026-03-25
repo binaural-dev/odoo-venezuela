@@ -336,6 +336,16 @@ msgid "Currency"
 msgstr "Moneda"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__company_currency_symbol
+msgid "Currency sign, to be used when printing amounts."
+msgstr "Signo de moneda, para ser utilizado cuando se imprimen los montos."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__custom_rate_currency_name
+msgid "Custom Rate Currency Name"
+msgstr "Nombre de la moneda personalizada"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_payment_search_inherit_l10n_ve_accountant
 msgid "Customer collections"
 msgstr "Cobranza de clientes"
@@ -1037,6 +1047,16 @@ msgid "Ordinary"
 msgstr "Ordinario"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__other_rate
+msgid "Other Rate"
+msgstr "Tasa"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__other_rate_inverse
+msgid "Other Rate Inverse"
+msgstr "Tasa inversa"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__payment_report__payment_type__outbound
 msgid "Outbound"
 msgstr "Enviado"
@@ -1270,7 +1290,7 @@ msgstr "Calle"
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/static/src/components/tax_totals/tax_totals.xml:0
 msgid "Subtotal"
-msgstr "Subtotal"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:res.groups,name:l10n_ve_accountant.group_support_user
@@ -1281,6 +1301,11 @@ msgstr "Usuario de Soporte (Diarios)"
 #: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_account_support_views
 msgid "Support views"
 msgstr "Soporte"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__company_currency_symbol
+msgid "Symbol"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__company_currency_rate
@@ -1416,6 +1441,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_rate_display
 msgid "The rate of the payment"
 msgstr "La tasa del pago"
 
@@ -1464,7 +1490,7 @@ msgstr "Estos productos debe tener un solo impuesto."
 #: code:addons/l10n_ve_accountant/static/src/components/tax_totals/tax_totals.xml:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Total"
-msgstr "Total"
+msgstr ""
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
@@ -1712,3 +1738,9 @@ msgstr "Fecha de tasa"
 #: model_terms:ir.ui.view,arch_db:account.view_move_tree
 msgid "Invoice Date"
 msgstr "Fecha de tasa"
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "All payment methods must have an assigned account."
+msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
+
