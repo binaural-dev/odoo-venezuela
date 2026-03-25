@@ -159,6 +159,6 @@ class AccountPaymentRegister(models.TransientModel):
                     exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
                 
                 if exact_rate:
-                    deuda_exacta = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
+                    exact_debt = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
                     
-                    wizard.payment_difference = deuda_exacta - wizard.amount
+                    wizard.payment_difference = exact_debt - wizard.amount
