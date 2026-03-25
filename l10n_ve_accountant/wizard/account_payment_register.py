@@ -137,12 +137,12 @@ class AccountPaymentRegister(models.TransientModel):
         for wizard in self:
 
             if not wizard.is_igtf and wizard.currency_id == wizard.company_id.currency_foreign_id:
-                tasa_exacta = wizard.foreign_inverse_rate
-                if not tasa_exacta:
+                exact_rate = wizard.foreign_inverse_rate
+                if not exact_rate:
                     Rate = self.env["res.currency.rate"]
                     rate_values = Rate.compute_rate(wizard.source_currency_id.id, wizard.payment_date)
-                    tasa_exacta = rate_values.get('foreign_inverse_rate', 0.0)
+                    exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
                 
-                if tasa_exacta:
+                if exact_rate:
                     monto_exacto = round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * round(tasa_exacta, wizard.currency_id.decimal_places)
                     wizard.amount = monto_exacto
