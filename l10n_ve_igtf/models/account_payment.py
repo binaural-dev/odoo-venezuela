@@ -50,8 +50,12 @@ class AccountPaymentAndIgtf(models.Model):
 
     invoices_origin_ids = fields.Many2many('account.move', string='Invoices Origin')
 
-    keep_alter_value_vef = fields.Boolean('Keep Amount in alter value')
+    def _get_default_keep_alter(self):
+        return self.env.company.revalorize_payments_vef
 
+    keep_alter_value_vef = fields.Boolean('Keep Amount in alter value', default=_get_default_keep_alter)
+
+    
     @api.onchange('currency_id','date')
     def _onchange_keep_alter_value_vef(self):
         for rec in self:
