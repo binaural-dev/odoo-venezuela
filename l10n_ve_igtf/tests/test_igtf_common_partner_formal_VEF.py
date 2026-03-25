@@ -101,6 +101,7 @@ class IGTFTestCommon(TransactionCase):
             "2101", "liability_payable", "Cuentas por Pagar (Proveedores)", recon=True,
         )
         self.acc_income = self.get_or_create_account("4001", "income", "Ingresos")
+        self.acc_expense = self.get_or_create_account("5001", "asset_current", "Costo de Mercancía/Gasto")
         
         self.acc_igtf_cli = self.get_or_create_account("236IGTF", "liability_current", "IGTF Clientes")
         self.acc_igtf_prov = self.get_or_create_account("523IGTF", "expense", "IGTF Proveedores (Gasto)")

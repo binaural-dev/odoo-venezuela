@@ -19,7 +19,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.0.1.7",
+    "version": "19.0.0.1.8",
 
     "depends": [
         "base",
@@ -29,7 +29,7 @@
         "l10n_ve_base",
     ],
     "data": [
-        
+        "security/res_groups.xml",
         "security/ir.model.access.csv",
         "views/account_journal.xml",
         "views/account_account.xml",

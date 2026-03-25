@@ -47,6 +47,18 @@ class AccountMove(models.Model):
     def _compute_tax_totals(self):
         return super()._compute_tax_totals()
 
+    @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
+    def _compute_invoice_has_outstanding(self):
+        #override
+        # Primero ejecutamos la lógica original de Odoo
+        super()._compute_invoice_has_outstanding()
+        
+        for move in self:
+            # Si el super ya lo puso en True, lo dejamos en True.
+            # Si está en False, revisamos nuestro nuevo campo.
+            if not move.invoice_has_outstanding:
+                move.invoice_has_outstanding = bool(move.invoice_outstanding_credits_debits_widget_advance_payment)
+
 
     #PAGOS y anticipos CONCILIADOS EN FACTURA
     @api.depends('move_type', 'line_ids.amount_residual')
@@ -97,6 +109,7 @@ class AccountMove(models.Model):
     #PAGOS NO CONCILIADOS DE ANTICIPO
     def _compute_payments_widget_to_reconcile_info_advance_payment(self):
         for move in self:
+            
             move.invoice_outstanding_credits_debits_widget_advance_payment = False
 
             if move.state != 'posted' \
@@ -107,10 +120,11 @@ class AccountMove(models.Model):
             if move.move_type in ("out_invoice", "in_refund"):
                 advance_accounts = self.env['account.account'].search([('is_advance_account', '=', True),('account_type','in',['liability_current'])])
             else:
+                
                 advance_accounts = self.env['account.account'].search([('is_advance_account', '=', True),('account_type','in',['asset_current'])])
 
             pay_term_lines = move.line_ids\
-                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable') and  line.account_id.is_advance_account)
+                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable') and  not line.account_id.is_advance_account)
             all_account_ids = (pay_term_lines.account_id | advance_accounts).ids
 
             domain = [
@@ -131,7 +145,7 @@ class AccountMove(models.Model):
                 payments_widget_vals['title'] = _('Anticipos')
 
             for line in self.env['account.move.line'].search(domain):
-                if line.account_id.is_advance_account:
+                if line.account_id.is_advance_account or line.payment_id_advance:
                     if line.currency_id == move.currency_id:
                         amount = abs(line.amount_residual_currency)
                     else:
@@ -195,16 +209,14 @@ class AccountMove(models.Model):
                 continue
 
             move.invoice_outstanding_credits_debits_widget_advance_payment = payments_widget_vals
-            move.invoice_has_outstanding = True
 
     #Pagos no CONCILIADOS
+    @api.depends('move_type', 'line_ids.amount_residual')
     def _compute_payments_widget_to_reconcile_info(self):
         super()._compute_payments_widget_to_reconcile_info()
 
         for move in self:
             move.invoice_outstanding_credits_debits_widget  = False
-            move.invoice_has_outstanding = False
-
 
             if move.state != 'posted' \
                     or move.payment_state not in ('not_paid', 'partial') \
@@ -212,7 +224,7 @@ class AccountMove(models.Model):
                 continue
             
             pay_term_lines = move.line_ids\
-                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable') and  line.account_id.is_advance_account == False)
+                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable') and  not line.account_id.is_advance_account)
 
             domain = [
                 ('account_id', 'in', pay_term_lines.account_id.ids),
@@ -233,7 +245,7 @@ class AccountMove(models.Model):
 
             for line in self.env['account.move.line'].search(domain):
                 
-                if not line.account_id.is_advance_account:
+                if not line.account_id.is_advance_account and not line.move_id.is_advance_move:
                     amount = False
                     if line.currency_id == move.currency_id:
                         amount = abs(line.amount_residual_currency)
@@ -274,7 +286,6 @@ class AccountMove(models.Model):
                                 move.currency_id,
                                 move.company_id,
                                 line.date,
-                                round=False
                             )
                             
                                                       
@@ -296,13 +307,11 @@ class AccountMove(models.Model):
                         "amount_residual_currency":abs(line.amount_residual_currency)
                     })
 
-                    #raise UserError(format(payments_widget_vals))
 
             if not payments_widget_vals["content"]:
                 continue
 
             move.invoice_outstanding_credits_debits_widget = payments_widget_vals
-            move.invoice_has_outstanding = True
     
     def _create_advance_payment_move(self, amount_residual, lines):
         self.ensure_one()
@@ -601,6 +610,7 @@ class AccountMove(models.Model):
         for line in advance_lines_to_reconcile:
             if not line.date_maturity:
                 line.date_maturity = line.date
+
                 
         advance_lines_to_reconcile.reconcile()
 
@@ -620,7 +630,8 @@ class AccountMove(models.Model):
         for line in rp_lines_to_reconcile:
             if not line.date_maturity:
                 line.date_maturity = line.date
-                
+
+
         rp_lines_to_reconcile.reconcile()
 
         return True
@@ -898,6 +909,11 @@ class AccountMove(models.Model):
                     if igtf_line_balance > 0: # IGTF DÉBIT
                         new_debit = current_debit + igtf_line_balance
                         new_credit = 0.0
+                        new_balance = current_balance + igtf_line.balance
+                        new_f_balance = current_f_balance + igtf_line.foreign_balance
+                        new_amount_currency = current_amount_currency + igtf_line.amount_currency
+                        new_f_debit = current_f_debit + igtf_line.foreign_debit
+                        new_f_credit = current_f_credit + igtf_line.foreign_credit
                       
                     else: # IGTF CRÉDIT
                         new_credit = current_credit + abs(igtf_line_balance)
@@ -951,7 +967,7 @@ class AccountMove(models.Model):
         except Exception:
             return False
             
-        return True 
+        return True
     
 
     def button_draft(self):
