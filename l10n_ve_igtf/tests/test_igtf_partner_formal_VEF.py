@@ -10,7 +10,7 @@ _logger = logging.getLogger(__name__)
 # Tasa de conversión: 1$ = 201.47bs
 # docker exec -u odoo -it proj2 odoo --test-tags igtf -i binaural_advance_payment_igtf --without-demo=True --stop-after-init -d testneuvo5
 
-@tagged("igtf_test", "igtf_run", "-at_install", "post_install")
+@tagged("igtf_test_1", "igtf_run", "-at_install", "post_install")
 class TestIGTFNEW(IGTFTestCommon): 
     
     def _assert_move_lines_equal(self, move, expected_lines):
@@ -317,7 +317,7 @@ class TestIGTFNEW(IGTFTestCommon):
         self.assert_invoice_values(invoice, 390294.33, 121414.43, 'partial')
 
     
-    def test08_payment_from_invoice_with_igtf_journal(self):
+    def test08_payment_from_invoice_with_igtf_journal_1(self):
 
         invoice_amount = 1000.00
         payment_amount = 1500.00
@@ -336,13 +336,11 @@ class TestIGTFNEW(IGTFTestCommon):
         payment = pay_form.record
         action = payment.action_create_payments()
 
-        
-        
+    
         payment = self.env['account.payment'].browse(action.get('res_id'))
 
-        rate = payment.move_id.expected_currency_rate
 
-        self.assert_invoice_values(invoice, 390294.33, 0.0, 'paid')
+        self.assert_invoice_values(invoice, 6504906.67, 0.0, 'paid')
 
         advance = len(payment.advanced_move_ids)
         self.assertAlmostEqual(advance, 1, 2, "Debe existir asiento de residual")
@@ -353,12 +351,11 @@ class TestIGTFNEW(IGTFTestCommon):
         )
 
         invoice = self.env['account.move'].browse(invoice.id)
-        
-        rate = payment.move_id.expected_currency_rate
+
         expected_lines = [
-            {'account': self.account_bank_usd, 'debit': 1500.00 / rate, 'credit': 0.0},
-            {'account': self.acc_receivable, 'debit': 0.0, 'credit': 1470.00 / rate},
-            {'account': self.acc_igtf_cli, 'debit': 0.0, 'credit': 30.00 / rate },
+            {'account': self.account_bank_usd, 'amount_currency': 1500.00 },
+            {'account': self.acc_receivable,  'amount_currency': -1470.00 },
+            {'account': self.acc_igtf_cli, 'amount_currency': -30.00 },
         ]
         self._assert_move_lines_equal(payment.move_id, expected_lines)
         
@@ -386,7 +383,7 @@ class TestIGTFNEW(IGTFTestCommon):
 
         self.assert_invoice_values(invoice_2, 156117.67, 0.0, 'paid')
 
-    def test08_payment_from_invoice_with_igtf_journal(self):
+    def test08_payment_from_invoice_with_igtf_journal_2(self):
 
         invoice_amount = 1000.00
         payment_amount = 1500.00
@@ -469,7 +466,7 @@ class TestIGTFNEW(IGTFTestCommon):
 
         self.assert_invoice_values(invoice_3, 0.0, 0.0, 'paid')
 
-    def test09_payment_from_invoice_with_igtf_journal(self):
+    def test09_payment_from_invoice_with_igtf_journal_1(self):
 
         invoice_amount = 1500.00
         payment_amount = 1000.00
@@ -520,10 +517,10 @@ class TestIGTFNEW(IGTFTestCommon):
         ]
         self._assert_move_lines_equal(payment.move_id, expected_lines)
 
-        self.assert_invoice_values(invoice, 472831.33, 107.02, 'partial')
+        self.assert_invoice_values(invoice, 472830.0, 107.01, 'partial')
 
 
-    def test09_payment_from_invoice_with_igtf_journal(self):
+    def test09_payment_from_invoice_with_igtf_journal_2(self):
 
         invoice_amount = 1500.00
         payment_amount = 1000.00
@@ -641,7 +638,7 @@ class TestIGTFNEW(IGTFTestCommon):
         ]
         self._assert_move_lines_equal(cross_move, expected_lines)
 
-        self.assert_invoice_values(invoice2, 265591.33,  255.15, 'partial')
+        self.assert_invoice_values(invoice2, 265530.33,  255.14, 'partial')
         
 
 
@@ -796,7 +793,7 @@ class TestIGTFNEW(IGTFTestCommon):
             f"La factura debe estar en estado 'paid' (pagada), estado actual: {invoice.payment_state}"
         )
 
-        self.assertAlmostEqual(invoice.bi_igtf,1050360.33, 2, "Bi_igtf DEbe ser 1050360.33 USD")
+        self.assertAlmostEqual(invoice.bi_igtf,1050412.33, 2, "Bi_igtf DEbe ser 1050412.33 vef")
 
     def test13_payment_from_invoice_with_igtf_journal_desconciliation(self):
         

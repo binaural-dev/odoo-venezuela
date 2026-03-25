@@ -120,10 +120,11 @@ class AccountMove(models.Model):
             if move.move_type in ("out_invoice", "in_refund"):
                 advance_accounts = self.env['account.account'].search([('is_advance_account', '=', True),('account_type','in',['liability_current'])])
             else:
+                
                 advance_accounts = self.env['account.account'].search([('is_advance_account', '=', True),('account_type','in',['asset_current'])])
 
             pay_term_lines = move.line_ids\
-                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable') and  line.account_id.is_advance_account)
+                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable') and  not line.account_id.is_advance_account)
             all_account_ids = (pay_term_lines.account_id | advance_accounts).ids
 
             domain = [
@@ -144,7 +145,7 @@ class AccountMove(models.Model):
                 payments_widget_vals['title'] = _('Anticipos')
 
             for line in self.env['account.move.line'].search(domain):
-                if line.account_id.is_advance_account:
+                if line.account_id.is_advance_account or line.payment_id_advance:
                     if line.currency_id == move.currency_id:
                         amount = abs(line.amount_residual_currency)
                     else:
@@ -223,7 +224,7 @@ class AccountMove(models.Model):
                 continue
             
             pay_term_lines = move.line_ids\
-                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable') and  line.account_id.is_advance_account == False)
+                .filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable') and  not line.account_id.is_advance_account)
 
             domain = [
                 ('account_id', 'in', pay_term_lines.account_id.ids),
@@ -244,7 +245,7 @@ class AccountMove(models.Model):
 
             for line in self.env['account.move.line'].search(domain):
                 
-                if not line.account_id.is_advance_account:
+                if not line.account_id.is_advance_account and not line.move_id.is_advance_move:
                     amount = False
                     if line.currency_id == move.currency_id:
                         amount = abs(line.amount_residual_currency)
@@ -306,7 +307,6 @@ class AccountMove(models.Model):
                         "amount_residual_currency":abs(line.amount_residual_currency)
                     })
 
-                    #raise UserError(format(payments_widget_vals))
 
             if not payments_widget_vals["content"]:
                 continue
