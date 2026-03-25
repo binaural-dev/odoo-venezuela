@@ -60,6 +60,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date')
     def _compute_amount(self):
         
+        super()._compute_amount()
         for wizard in self:
             
             base_amount = 0.0
@@ -74,7 +75,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             final_amount = base_amount
             total_igtf_amount = 0.0
             if wizard.is_igtf:
-
                 move_ids = wizard.get_moves()
 
                 for invoice in move_ids:
@@ -86,11 +86,18 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                     total_igtf_amount += igtf_for_invoice
                 final_amount = base_amount + total_igtf_amount
-            
+<<<<<<< HEAD
             wizard.amount = final_amount
             wizard.igtf_amount = total_igtf_amount
             wizard.igtf_to_show = total_igtf_amount
             wizard.last_computed_amount = final_amount
+=======
+            
+                wizard.amount = final_amount
+                wizard.igtf_amount = total_igtf_amount
+                wizard.igtf_to_show = total_igtf_amount
+                wizard.last_computed_amount = final_amount
+>>>>>>> 103ae5bf ([FIX] ln10_ve_accountant,ln10_ve_igtf: redondear calculo en bs)
       
            
     

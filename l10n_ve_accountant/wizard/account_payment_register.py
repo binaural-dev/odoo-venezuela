@@ -153,3 +153,20 @@ class AccountPaymentRegister(models.TransientModel):
             'source_amount': source_amount,
             'source_amount_currency': source_amount_currency,
         }
+
+    @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date')
+    def _compute_amount(self):
+        super()._compute_amount()
+
+        for wizard in self:
+
+            if not wizard.is_igtf and wizard.currency_id == wizard.company_id.currency_foreign_id:
+                tasa_exacta = wizard.foreign_inverse_rate
+                if not tasa_exacta:
+                    Rate = self.env["res.currency.rate"]
+                    rate_values = Rate.compute_rate(wizard.source_currency_id.id, wizard.payment_date)
+                    tasa_exacta = rate_values.get('foreign_inverse_rate', 0.0)
+                
+                if tasa_exacta:
+                    monto_exacto = round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * round(tasa_exacta, wizard.currency_id.decimal_places)
+                    wizard.amount = monto_exacto
