@@ -171,7 +171,8 @@ class AccountMove(models.Model):
     @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
     def _compute_foreign_amount_residual(self):
         for rec in self:
-            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+            
+            rec.foreign_amount_residual = float_round(rec.amount_residual,rec.currency_id.decimal_places) * float_round(rec.foreign_inverse_rate,rec.currency_id.decimal_places)
             
          
 
