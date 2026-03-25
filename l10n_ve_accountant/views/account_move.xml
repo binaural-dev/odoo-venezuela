@@ -10,6 +10,10 @@
                     Warning: This account move has a foreign balance of <field
                         name="foreign_balance" />. </div> -->
             </xpath>
+            <xpath expr="//field[@name='invoice_date']" position="attributes">
+                <attribute name="readonly">state != 'draft' or move_type in ('out_invoice', 'out_refund', 'out_receipt')</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_date_display" readonly="state != 'draft'" invisible="move_type == 'entry'" required="move_type in ('in_invoice', 'out_invoice', 'in_refund', 'out_refund')"/>
             </xpath>
