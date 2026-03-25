@@ -272,6 +272,14 @@ class AccountMove(models.Model):
     foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
                                             compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
+
+    @api.onchange('invoice_date_display')
+    def _onchange_invoice_date_display(self):
+        for move in self:
+            if move.invoice_date_display and move.is_sale_document(include_receipts=True):
+                move.invoice_date = move.invoice_date_display
+
+
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         context = self.with_context(active_test=False)
