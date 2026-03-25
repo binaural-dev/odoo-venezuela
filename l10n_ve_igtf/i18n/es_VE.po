@@ -695,3 +695,22 @@ msgstr "Subtotal con IGTF"
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_account__is_advance_account
 msgid "¿is advance account?"
 msgstr "¿Es cuenta de anticipo?"
+
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Revalorice all payments in Bsf"
+msgstr "" 
+"Al marcar esta opción, todos los nuevos pagos/anticipos registrados se calcularan segun su valor en divisas de forma automática." 
+" Podrá desactivarlo manualmente en cada transacción si lo desea."
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__revalorize_payments_vef
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__revalorize_payments_vef
+msgid "Revalorize Payments Vef"
+msgstr "Activar revalorización por defecto."
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__keep_alter_value_vef
+msgid "Keep Amount in alter value"
+msgstr "Activar revalorización"
