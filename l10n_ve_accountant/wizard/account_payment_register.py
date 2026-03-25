@@ -144,5 +144,5 @@ class AccountPaymentRegister(models.TransientModel):
                     exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
                 
                 if exact_rate:
-                    monto_exacto = round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * round(tasa_exacta, wizard.currency_id.decimal_places)
-                    wizard.amount = monto_exacto
+                    exact_amount = round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * round(exact_rate, wizard.currency_id.decimal_places)
+                    wizard.amount = exact_amount
