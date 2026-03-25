@@ -86,11 +86,18 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                     total_igtf_amount += igtf_for_invoice
                 final_amount = base_amount + total_igtf_amount
+<<<<<<< HEAD
+            wizard.amount = final_amount
+            wizard.igtf_amount = total_igtf_amount
+            wizard.igtf_to_show = total_igtf_amount
+            wizard.last_computed_amount = final_amount
+=======
             
                 wizard.amount = final_amount
                 wizard.igtf_amount = total_igtf_amount
                 wizard.igtf_to_show = total_igtf_amount
                 wizard.last_computed_amount = final_amount
+>>>>>>> 103ae5bf ([FIX] ln10_ve_accountant,ln10_ve_igtf: redondear calculo en bs)
       
            
     
