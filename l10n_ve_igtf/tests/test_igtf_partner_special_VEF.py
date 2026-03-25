@@ -3,7 +3,7 @@ from odoo.tests import tagged , Form
 from odoo.exceptions import UserError, ValidationError
 from odoo import Command, fields
 
-from .test_igtf_common_partner_formal_VEF import IGTFTestCommon 
+from .test_igtf_common_partner_special_VEF import IGTFTestCommon 
 
 _logger = logging.getLogger(__name__)
 
