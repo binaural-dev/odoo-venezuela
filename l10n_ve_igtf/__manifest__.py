@@ -6,8 +6,8 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.50",
-    "depends": [
+    "version": "17.0.1.0.0",
+        "depends": [
         "base",
         "l10n_ve_accountant",
         "l10n_ve_rate",
