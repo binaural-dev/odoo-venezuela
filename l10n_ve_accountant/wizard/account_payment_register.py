@@ -136,7 +136,7 @@ class AccountPaymentRegister(models.TransientModel):
 
         for wizard in self:
 
-            if not wizard.is_igtf and wizard.currency_id == wizard.company_id.currency_foreign_id:
+            if wizard.currency_id == wizard.company_id.currency_foreign_id:
                 exact_rate = wizard.foreign_inverse_rate
                 if not exact_rate:
                     Rate = self.env["res.currency.rate"]
