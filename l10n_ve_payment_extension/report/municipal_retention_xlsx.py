@@ -186,7 +186,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
             rows = OrderedDict()
             rows.update(cols)
             rows["Nº de la Op"] = index + 1
-            rows["Fecha de Factura"] = retention_line.move_id.invoice_date.strftime("%d-%m-%Y")
+            rows["Fecha de Factura"] = retention_line.move_id.invoice_date_display.strftime("%d-%m-%Y")
             rows["Nº de Factura"] = retention_line.move_id.name
             rows["Nº de Control"] = retention_line.move_id.correlative
             rows["Base Imponible"] = invoice_amount

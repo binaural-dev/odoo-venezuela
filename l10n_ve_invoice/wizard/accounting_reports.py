@@ -64,12 +64,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     currency_system = fields.Boolean(string="Report in currency system", default=_default_currency_system)
 
     def _fields_sale_book_line(self, move, taxes):
-        if not move.invoice_date:
+        if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
         values =  {
             "_id": move.id,
-            "document_date": self._format_date(move.invoice_date),
+            "document_date": self._format_date(move.invoice_date_display),
             "accounting_date": self._format_date(move.date),
             "vat": move.vat or '--',
             "partner_name": move.invoice_partner_display_name,
@@ -104,7 +104,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return values
 
     def _fields_purchase_book_line(self, move, taxes):
-        if not move.invoice_date:
+        if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
 
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
@@ -127,7 +127,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         fields_purchase_book_line = {
             "_id": move.id,
-            "document_date": self._format_date(move.invoice_date),
+            "document_date": self._format_date(move.invoice_date_display),
             "accounting_date": self._format_date(move.date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
@@ -812,7 +812,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return "03-ANU"
 
     def search_moves(self):
-        order = "invoice_date asc" if self.report == "purchase" else "correlative asc"
+        order = "invoice_date_display asc" if self.report == "purchase" else "correlative asc"
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
