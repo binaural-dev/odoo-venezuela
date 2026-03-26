@@ -63,7 +63,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     currency_system = fields.Boolean(string="Report in currency system", default=_default_currency_system)
 
     def _fields_sale_book_line(self, move, taxes):
-        if not move.invoice_date:
+        if not move.invoice_date and move.state == "posted":
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type == "out_refund" else 1
 
@@ -101,7 +101,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         }
 
     def _fields_purchase_book_line(self, move, taxes):
-        if not move.invoice_date:
+        if not move.invoice_date and move.state == "posted":
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         
         multiplier = -1 if move.move_type == "in_refund" else 1
@@ -653,11 +653,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if is_purchase and is_hidden_international:
             search_domain += [("journal_id.is_purchase_international", "=", False)]
 
+        states = ["posted"] if is_purchase else ["posted", "cancel"]
 
         search_domain += [("date", ">=", self.date_from)]
         search_domain += [("date", "<=", self.date_to)]
         search_domain += [
-            ("state", "in", ("posted", "cancel")),
+            ("state", "in", states),
             ("move_type", "in", move_type),
             ("correlative", "not in", ['/',False])
         ]
