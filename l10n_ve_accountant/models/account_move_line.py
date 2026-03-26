@@ -265,7 +265,7 @@ class AccountMoveLine(models.Model):
                     line.foreign_credit = line.credit * line.foreign_inverse_rate
                 continue
 
-            if line.display_type == "product":
+            if line.display_type in ("product", "cogs"):
                 # 7 Case: Product
                 # In this case, we need to calculate the foreign debit and credit with subtotal
                 sign = line.move_id.direction_sign * -1
