@@ -6,6 +6,7 @@ import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
+import { roundDecimals as round_di } from "@web/core/utils/numbers";
 
 patch(TicketScreen, {
   components: {
@@ -17,7 +18,7 @@ patch(TicketScreen, {
 patch(PosStore.prototype, {
   open_cashbox() {
     if (this.useFiscalMachine() && this.config.has_cashbox) {
-    const fdm = this.useFiscalMachine();
+      const fdm = this.useFiscalMachine();
       fdm.action({
         action: `logger`,
         data: "0",
@@ -108,7 +109,7 @@ patch(PosStore.prototype, {
         }
       } catch (err) {
         console.error("MF error: ", err)
-        if (!err.valid) { 
+        if (!err.valid) {
           this.env.services.popup.add(ErrorPopup, {
             title: _t("MF error"),
             body: _t(err.message ? err.message : "Internal MF error"),
@@ -133,6 +134,11 @@ patch(PosStore.prototype, {
 
 
         let amount = vef_base ? el.price : el.get_foreign_unit_price()
+
+        let discount = el.get_discount()
+        if (discount > 0) {
+          amount = round_di(amount * (1 - discount / 100), 2)
+        }
 
         return {
           price_unit: amount,
@@ -161,10 +167,10 @@ patch(PosStore.prototype, {
 
     const normalized = text.normalize("NFKD");
     const noSpecialChars = normalized
-        .replace(/[\u0300-\u036f]/g, "")  
-        .replace(/[^\w\s]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
     return noSpecialChars;
   },
@@ -179,14 +185,14 @@ patch(PosStore.prototype, {
       return deviceResponse;
 
     } catch (err) {
-        console.error("MF error: ", err)
-        if (!err.valid) { 
-          this.env.services.popup.add(ErrorPopup, {
-            title: _t("MF error"),
-            body: _t(err.message ? err.message : "Internal MF error"),
-          });
-          return { valid: false, message: "Error interno al imprimir documento"};
-        }
+      console.error("MF error: ", err)
+      if (!err.valid) {
+        this.env.services.popup.add(ErrorPopup, {
+          title: _t("MF error"),
+          body: _t(err.message ? err.message : "Internal MF error"),
+        });
+        return { valid: false, message: "Error interno al imprimir documento" };
+      }
     }
   },
 
@@ -197,13 +203,13 @@ patch(PosStore.prototype, {
       if (!fdm) {
         return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
       }
-      const listener = ({value}) => {
+      const listener = ({ value }) => {
         fdm.removeListener(listener);
         resolve(value);
       };
-  
+
       fdm.addListener(listener);
-  
+
       fdm.action({
         action: action,
         data: data,
@@ -222,7 +228,7 @@ patch(PosStore.prototype, {
   },
 
   async pushToMF(order) {
-    try {      
+    try {
       let data = await this.get_data_invoice(order)
       if (!data["valid"]) {
         throw data["message"]
@@ -235,16 +241,16 @@ patch(PosStore.prototype, {
       }
 
       this.set_data_from_fiscal_machine(order, response)
-      
-      return {  
+
+      return {
         valid: true,
         message: "",
         printer_connection: true
       }
-    
+
     } catch (err) {
       console.error("MF error: ", err)
-      if (!err.valid) { 
+      if (!err.valid) {
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
           body: _t(err.message ? err.message : "Internal MF error"),
@@ -255,12 +261,12 @@ patch(PosStore.prototype, {
   },
   async push_single_order(order, opts) {
     if (this.useFiscalMachine() && !order.mf_invoice_number) {
-      
+
       const response = await this.pushToMF(order)
 
-    if (response.printer_connection == false || !("printer_connection" in response)) {
-      return
-    }
+      if (response.printer_connection == false || !("printer_connection" in response)) {
+        return
+      }
 
     }
     return await super.push_single_order.apply(this, [order, opts]);
