@@ -92,7 +92,7 @@
                                     <br/>
                                     <span>
                                         <strong>Fecha de la factura:</strong>
-                                        <t t-out="o.debit_origin_id.invoice_date_display"/>
+                                        <t t-out="o.debit_origin_id.invoice_date_display.strftime('%d/%m/%Y')"/>
                                     </span>
                                     <br/>
                                     <span>
@@ -110,7 +110,7 @@
                                 </t>
                                 <strong>Pedido: </strong><t t-out="o.invoice_origin or 'N/A'"/>
                                 <br/>
-                                <strong>Fecha de emisión:</strong> <t t-if="o.invoice_date_display" t-out="o.invoice_date_display.strftime('%d/%m/%Y')"/>
+                                <strong>Fecha de emisión:</strong> <t t-if="o.date" t-out="o.date.strftime('%d/%m/%Y')"/>
                             </div>
                         </div>
 
