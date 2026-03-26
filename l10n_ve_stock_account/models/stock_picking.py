@@ -253,6 +253,7 @@ class StockPicking(models.Model):
         Creates customer invoice from the picking
         """
         self._validate_one_invoice_posted()
+        invoice = self.env["account.move"]
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
@@ -283,6 +284,30 @@ class StockPicking(models.Model):
             picking_id.write({"state_guide_dispatch": "invoiced"})
             picking_id._update_order_sale_invoiced()
         return invoice
+
+    def action_create_invoice(self):
+        invoice = self.create_invoice()
+        action = self.action_view_invoice(invoices=invoice)
+        return action
+
+    @api.readonly
+    def action_view_invoice(self, invoices=False):
+        action = self.env['ir.actions.actions']._for_xml_id('account.action_move_out_invoice_type')
+        form_view = [(self.env.ref('account.view_move_form').id, 'form')]
+        if 'views' in action:
+            action['views'] = form_view + [(view_id,     view_type) for view_id, view_type in action['views'] if view_type != 'form']
+        
+        if invoices:
+            action['res_id'] = invoices.id
+
+        ctx = dict(self.env.context)
+        ctx.update(action.get('context', {}) or {})
+        ctx.update({
+            'default_move_type': 'out_invoice',
+            'default_partner_id': self.partner_id.id,
+        })
+        action['context'] = ctx
+        return action
 
     def create_bill(self):
         """This is the function for creating vendor bill
