@@ -84,7 +84,8 @@ class StockPicking(models.Model):
         string="Is Donation",
         compute="_compute_is_donation",
         readonly=False,
-        tracking=True
+        tracking=True,
+        store=True,
     )
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
 
@@ -832,7 +833,6 @@ class StockPicking(models.Model):
                     record.show_create_vendor_credit = record.is_return
 
                 if record.operation_code == "outgoing":
-                    _logger.warning("show_create_invoice %s", not record.is_return and record.sale_id.document != "invoice")
                     record.show_create_invoice = not record.is_return and record.sale_id.document != "invoice"
                     record.show_create_customer_credit = record.is_return
 
@@ -1158,11 +1158,6 @@ class StockPicking(models.Model):
             )
         )
     
-    def print_donation_certificate(self):
-        self.ensure_one()
-        return self.env.ref("l10n_ve_stock_account.action_donation_certificate_stock_picking").report_action(self)
-    
-
         hoy = date.today()
         taxpayer_type = self.env.company.taxpayer_type
         result = hoy  # Valor por defecto

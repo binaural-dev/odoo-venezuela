@@ -1,4 +1,3 @@
-<?xml version='1.0' encoding='utf-8'?>
 <odoo>
     <!-- Template for account move-->
     <template id="donation_certificate_template_account_move" name="Certificado de Donación Account Move">
