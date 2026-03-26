@@ -13,6 +13,10 @@
                     <setting help="Active and reconcilable accounting account">
                         <field name="advance_supplier_account_id" />
                     </setting>
+
+                    <setting help="Revalorice all payments in Bsf">
+                        <field name="revalorize_payments_vef" />
+                    </setting>
                 </block>
 
                 <block title="Advance Payment IGTF" name="binaural_igtf_settings">
