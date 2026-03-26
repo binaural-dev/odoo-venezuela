@@ -52,6 +52,6 @@ class StockScrap(models.Model):
                 scrap.date_done = fields.Datetime.now()
                 if scrap.should_replenish:
                     scrap.do_replenish()
-                return True
-            else:
-                return super().do_scrap()
+        return True
+        # else:
+        #     return super().do_scrap()

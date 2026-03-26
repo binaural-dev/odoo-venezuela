@@ -45,71 +45,46 @@ class AccountMove(models.Model):
             # ! FIXME: Buscar la manera de no ejecutar _post acá
             move._post(soft=True)
             wizard = self.env["account.move.reversal"].with_context(
-        # Normalizar default_values_list para evitar errores al hacer zip
-        if default_values_list is None:
-            default_values_list = [{} for _ in self]
+                active_ids=self.ids,
+                active_model="account.move"
+            ).create({"date": fields.Date.today(), "journal_id": self.journal_id.id})
+            wizard.reverse_moves()
+            credit_note = wizard.new_move_ids
+            credit_note.action_post()
+            return res
+        return res
 
-        # Si no hay moves de donación, delegar completamente al super
-        if not self.filtered('is_donation'):
-            return super()._reverse_moves(default_values_list, cancel)
-
-        # Separar moves de donación y no donación junto con sus defaults
-        donation_moves_with_defaults = []
-        other_moves_with_defaults = []
-        for move, default_values in zip(self, default_values_list):
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        """Reverse a recordset of account.move.
+        If cancel parameter is true, the reconcilable or liquidity lines
+        of each original move will be reconciled with its reverse's.
+        :param default_values_list: A list of default values to consider per move.
+        ('type' & 'reversed_entry_id' are computed in the method).
+        :return: An account.move recordset, reverse of the current self.
+        """
+        for move in self:
             if move.is_donation:
-                donation_moves_with_defaults.append((move, default_values or {}))
-            else:
-                other_moves_with_defaults.append((move, default_values or {}))
+                reverse_moves = self.env['account.move']
+                for move, default_values in zip(self, default_values_list):
+                    invoice_line_vals = move.product_line_donation()
+                    move_vals = {
+                            "move_type": "out_refund",
+                            "journal_id": move.journal_id.id,
+                            "date": default_values.get("date", fields.Date.today()),
+                            "ref": default_values.get("ref", move.ref),
+                            "reversed_entry_id": move.id,
+                            "partner_id": move.partner_id.id,
+                            "is_donation": True,
+                            "invoice_line_ids": invoice_line_vals,
+                        }
+                    reverse_move = self.env['account.move'].with_context(
+                        check_move_validity=False,
+                        skip_invoice_sync=True,
+                    ).create(move_vals)
+                    reverse_moves += reverse_move
+                return reverse_moves
 
-        reverse_moves = self.env['account.move']
-
-        # Procesar moves que no son donación mediante la lógica estándar
-        if other_moves_with_defaults:
-            other_moves = self.env['account.move'].browse([m.id for m, _d in other_moves_with_defaults])
-            other_defaults = [d for _m, d in other_moves_with_defaults]
-            reverse_moves |= super(AccountMove, other_moves)._reverse_moves(other_defaults, cancel)
-
-        # Procesar moves de donación con lógica específica
-        for move, default_values in donation_moves_with_defaults:
-            line_vals_list = []
-            for line in move.line_ids:
-                is_tax = bool(line.tax_line_id or line.display_type == 'tax')
-                is_receivable = line.account_id.account_type == 'asset_receivable'
-                if not (is_receivable or is_tax):
-                    continue
-                lv = {
-                    "account_id": line.account_id.id,
-                    "name": line.name,
-                    "balance": -line.balance,
-                    "amount_currency": -line.amount_currency,
-                    "currency_id": line.currency_id.id,
-                    "partner_id": line.partner_id.id,
-                    "display_type": line.display_type,
-                }
-                if is_tax and line.tax_line_id:
-                    lv['tax_line_id'] = line.tax_line_id.id
-                line_vals_list.append((0, 0, lv))
-
-            move_vals = {
-                "move_type": "out_refund",
-                "journal_id": move.journal_id.id,
-                "date": default_values.get("date", fields.Date.today()),
-                "ref": default_values.get("ref", move.ref),
-                "reversed_entry_id": move.id,
-                "partner_id": move.partner_id.id,
-                "is_donation": True,
-                "line_ids": line_vals_list,
-            }
-            reverse_move = self.env['account.move'].with_context(
-                check_move_validity=False,
-                skip_invoice_sync=True,
-            ).create(move_vals)
-            # Añadir línea de producto de donación a invoice_line_ids
-            reverse_move.product_line_donation()
-            reverse_moves |= reverse_move
-
-        return reverse_moves
+        return super()._reverse_moves(default_values_list, cancel)
     def _get_tax_grouped_lines(self):
         """
         Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
