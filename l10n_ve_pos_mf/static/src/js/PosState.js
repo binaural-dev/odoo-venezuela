@@ -18,7 +18,7 @@ patch(TicketScreen, {
 patch(PosStore.prototype, {
   open_cashbox() {
     if (this.useFiscalMachine() && this.config.has_cashbox) {
-      const fdm = this.useFiscalMachine();
+    const fdm = this.useFiscalMachine();
       fdm.action({
         action: `logger`,
         data: "0",
@@ -109,7 +109,7 @@ patch(PosStore.prototype, {
         }
       } catch (err) {
         console.error("MF error: ", err)
-        if (!err.valid) {
+        if (!err.valid) { 
           this.env.services.popup.add(ErrorPopup, {
             title: _t("MF error"),
             body: _t(err.message ? err.message : "Internal MF error"),
@@ -135,28 +135,33 @@ patch(PosStore.prototype, {
 
         let amount = vef_base ? el.price : el.get_foreign_unit_price()
 
+
         let discount = el.get_discount()
         if (discount > 0) {
-          amount = round_di(amount * (1 - discount / 100), 2)
+          let decimals = vef_base ? this.currency.decimal_places : this.foreign_currency.decimal_places
+          amount = round_di(amount * (1 - discount / 100), decimals)
         }
-
         return {
           price_unit: amount,
-          discount: el.get_discount(),
+          discount: discount,
           quantity: Math.abs(el.quantity),
           name: this.normalizeProductName(el.product.display_name),
           code: el.product.default_code,
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
       })
-      invoice['payment_lines'] = order.paymentlines.map((el) => {
-
-        let amount = vef_base ? el.amount : el.get_foreign_amount()
-        return {
-          payment_method: el.payment_method.code_fiscal_printer,
-          amount: amount,
-        }
-      })
+      invoice['payment_lines'] = order.paymentlines
+        .filter((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return amount > 0
+        })
+        .map((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return {
+            payment_method: el.payment_method.code_fiscal_printer,
+            amount: amount,
+          }
+        })
     }
     invoice["valid"] = true
     return invoice
@@ -167,10 +172,10 @@ patch(PosStore.prototype, {
 
     const normalized = text.normalize("NFKD");
     const noSpecialChars = normalized
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\w\s]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+        .replace(/[\u0300-\u036f]/g, "")  
+        .replace(/[^\w\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
     return noSpecialChars;
   },
@@ -185,14 +190,14 @@ patch(PosStore.prototype, {
       return deviceResponse;
 
     } catch (err) {
-      console.error("MF error: ", err)
-      if (!err.valid) {
-        this.env.services.popup.add(ErrorPopup, {
-          title: _t("MF error"),
-          body: _t(err.message ? err.message : "Internal MF error"),
-        });
-        return { valid: false, message: "Error interno al imprimir documento" };
-      }
+        console.error("MF error: ", err)
+        if (!err.valid) { 
+          this.env.services.popup.add(ErrorPopup, {
+            title: _t("MF error"),
+            body: _t(err.message ? err.message : "Internal MF error"),
+          });
+          return { valid: false, message: "Error interno al imprimir documento"};
+        }
     }
   },
 
@@ -203,13 +208,13 @@ patch(PosStore.prototype, {
       if (!fdm) {
         return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
       }
-      const listener = ({ value }) => {
+      const listener = ({value}) => {
         fdm.removeListener(listener);
         resolve(value);
       };
-
+  
       fdm.addListener(listener);
-
+  
       fdm.action({
         action: action,
         data: data,
@@ -228,7 +233,7 @@ patch(PosStore.prototype, {
   },
 
   async pushToMF(order) {
-    try {
+    try {      
       let data = await this.get_data_invoice(order)
       if (!data["valid"]) {
         throw data["message"]
@@ -241,16 +246,16 @@ patch(PosStore.prototype, {
       }
 
       this.set_data_from_fiscal_machine(order, response)
-
-      return {
+      
+      return {  
         valid: true,
         message: "",
         printer_connection: true
       }
-
+    
     } catch (err) {
       console.error("MF error: ", err)
-      if (!err.valid) {
+      if (!err.valid) { 
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
           body: _t(err.message ? err.message : "Internal MF error"),
@@ -261,12 +266,12 @@ patch(PosStore.prototype, {
   },
   async push_single_order(order, opts) {
     if (this.useFiscalMachine() && !order.mf_invoice_number) {
-
+      
       const response = await this.pushToMF(order)
 
-      if (response.printer_connection == false || !("printer_connection" in response)) {
-        return
-      }
+    if (response.printer_connection == false || !("printer_connection" in response)) {
+      return
+    }
 
     }
     return await super.push_single_order.apply(this, [order, opts]);
