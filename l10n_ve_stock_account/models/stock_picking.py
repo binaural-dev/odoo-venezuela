@@ -264,6 +264,9 @@ class StockPicking(models.Model):
                         "from_picking": True,
                         "is_donation":picking_id.is_donation,
                     }
+                # Reincorporar la lista de precios cuando el picking procede de una venta
+                if picking_id.sale_id and picking_id.sale_id.pricelist_id:
+                    invoice_vals["pricelist_id"] = picking_id.sale_id.pricelist_id.id
                 invoice = self.env["account.move"].create(invoice_vals)
                 picking_id.write({"state_guide_dispatch": "invoiced"})
                 picking_id._update_order_sale_invoiced()
