@@ -20,8 +20,8 @@ class SalesBookPOS(models.TransientModel):
     def _get_domain(self):
         search_domain = [
             "&",
-            ("invoice_date", ">=", self.date_from),
-            ("invoice_date", "<=", self.date_to),
+            ("invoice_date_display", ">=", self.date_from),
+            ("invoice_date_display", "<=", self.date_to),
             ("state", "!=", "draft"),
             ("move_type", "in", ["out_invoice", "out_refund", "out_debit"]),
             "&",
@@ -104,8 +104,8 @@ class SalesBookPOS(models.TransientModel):
                     if (
                         (
                             (
-                                self._format_date(move.invoice_date)
-                                != self._format_date(next_move.invoice_date)
+                                self._format_date(move.invoice_date_display)
+                                != self._format_date(next_move.invoice_date_display)
                             )
                             or next_move.partner_id.prefix_vat == "J"
                             or next_move.partner_id.taxpayer == "special"
@@ -114,7 +114,7 @@ class SalesBookPOS(models.TransientModel):
                         or is_last_move
                     ) and move.partner_id.taxpayer == "ordinary":
                         lines_to_sales_book = {
-                            "date": self._format_date(move.invoice_date),
+                            "date": self._format_date(move.invoice_date_display),
                             "vat": "RESUMEN",
                             "partner_name": "Resumen Diario de Ventas",
                             "invoices": f"Desde {range_start} Hasta {move.mf_invoice_number}",
@@ -185,7 +185,7 @@ class SalesBookPOS(models.TransientModel):
                     iva_retention = iva_retention * -1
 
                 lines_to_sales_book = {
-                    "date": self._format_date(move.invoice_date),
+                    "date": self._format_date(move.invoice_date_display),
                     "vat": move.vat,
                     "partner_name": move.partner_id.name,
                     "invoices": move.mf_invoice_number,
@@ -250,7 +250,7 @@ class SalesBookPOS(models.TransientModel):
                 iva_retention = sum(move.retention_iva_line_ids.mapped("foreign_retention_amount"))
 
             lines_to_sales_book = {
-                "date": self._format_date(move.invoice_date),
+                "date": self._format_date(move.invoice_date_display),
                 "vat": move.vat,
                 "partner_name": move.partner_id.name,
                 "invoices": move.mf_invoice_number,

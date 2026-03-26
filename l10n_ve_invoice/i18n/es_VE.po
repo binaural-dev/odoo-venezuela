@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251118\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-19 13:57+0000\n"
-"PO-Revision-Date: 2025-12-19 13:57+0000\n"
+"POT-Creation-Date: 2026-03-16 23:47+0000\n"
+"PO-Revision-Date: 2026-03-16 23:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,28 +26,28 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
 "<br/>\n"
-"                                    <strong>Número de control:</strong>"
+"                                        <strong>Número de control:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
 "<br/>\n"
-"                            <strong>Fecha de emisión:</strong>"
+"                                <strong>Fecha de emisión:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
 "<span groups=\"account.group_show_line_subtotals_tax_excluded\">Subtotal</span>\n"
-"                                    <span groups=\"account.group_show_line_subtotals_tax_included\">Total</span>"
+"                                        <span groups=\"account.group_show_line_subtotals_tax_included\">Total</span>"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
 "<span><strong>CONTRIBUYENTE FORMAL</strong></span>\n"
-"                                <br/>"
+"                                    <br/>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -87,6 +87,19 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "<span>Precio Unit.</span>"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
+msgid ""
+"<span>Prevent purchase invoice date from being greater than the accounting "
+"date.</span>"
+msgstr ""
+"Evitar que la fecha de la factura de compra sea mayor que la fecha contable."
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "<span>Udm</span>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -150,18 +163,13 @@ msgid "<strong>Razón Social:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
-msgid "<strong>Subtotal</strong>"
-msgstr ""
-
-#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "<strong>Teléfono:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
-msgid "<strong>Total en USD</strong>"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals_ve
+msgid "<strong>Total en BS</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -171,21 +179,16 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals_ve
 msgid "<strong>Total redondeado</strong>"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
-msgid "<strong>Total</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
 "A los efectos de lo previsto en el <strong>Art. 25</strong> de la Ley de\n"
-"                        Impuesto al Valor Agregado se expresa el monto total\n"
-"                        de la factura en <strong>USD</strong> calculado a la tasa de cambio\n"
-"                        establecida por BCV de 1US$ por"
+"                            Impuesto al Valor Agregado se expresa el monto total\n"
+"                            de la factura en"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -202,14 +205,20 @@ msgstr "Asistente para agregar nota de débito"
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
-#, python-format
+msgid ""
+"Add a tax to each product line. You cannot confirm the invoice if any "
+"product line is missing a tax."
+msgstr ""
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid "An invoice already exists with the Control Number: %s"
 msgstr "Ya existe una factura con el Número de Control: %s"
 
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
-#, python-format
 msgid "An invoice cannot have a line with a price of zero"
 msgstr "Una factura no puede tener una linea con precio en cero"
 
@@ -224,6 +233,12 @@ msgid "BORRADOR"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__block_invoice_display_date_upper_than_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__block_invoice_display_date_upper_than_date
+msgid "Block Invoice Display Date Upper Than Date"
+msgstr "Evitar que la fecha de factura sea mayor a la fecha contable"
+
+#. module: l10n_ve_invoice
 #: model:ir.model.fields.selection,name:l10n_ve_invoice.selection__wizard_accounting_reports__report__purchase
 msgid "Book Purchase"
 msgstr "Libro de Compras"
@@ -231,8 +246,6 @@ msgstr "Libro de Compras"
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
-#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
-#, python-format
 msgid "Check the move %s does not have an invoice date and its id is %s"
 msgstr "Verifique el asiento %s no tiene una fecha de factura"
 
@@ -294,9 +307,10 @@ msgid "Date Start"
 msgstr "Fecha de Inicio"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
-msgid "Debit note"
-msgstr "Notas de Débito"
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__declaration_unique_of_customs
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__declaration_unique_of_customs
+msgid "Declaration unique of customs"
+msgstr "Declaración Única de Aduana"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__display_date_warning
@@ -305,9 +319,14 @@ msgid "Display Date Warning"
 msgstr "Advertencia de fecha en factura"
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_debit_note__display_name
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_journal__display_name
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__display_name
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__display_name
 msgid "Display Name"
-msgstr "Nombre"
+msgstr "Nombre en pantalla"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
@@ -327,7 +346,6 @@ msgstr "Filtrar por Diario de Débito"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__first_payment_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__first_payment_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__first_payment_date
 msgid "First Payment Date"
 msgstr "Fecha de Primer Pago"
 
@@ -391,6 +409,12 @@ msgstr "Débito"
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_debit_journal
 msgid "Is Debit Journal"
 msgstr "Es un diario de débito"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__is_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_purchase_international
+msgid "Is International Purchase"
+msgstr "Es Compra Internacional"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
@@ -474,6 +498,11 @@ msgid "Nro de Pedido"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_filter_l10n_ve_invoice
+msgid "Number of Declaration Unique of Customs"
+msgstr "Declaración Única de Aduana"
+
+#. module: l10n_ve_invoice
 #: model:ir.actions.act_window,name:l10n_ve_invoice.action_accounting_report_purchase
 #: model:ir.ui.menu,name:l10n_ve_invoice.account_report_purchase_menu
 msgid "Purchase Book"
@@ -553,6 +582,35 @@ msgid "Show Total USD on Free Form Invoice"
 msgstr "Mostrar total en USD en forma libre"
 
 #. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.tax_groups_totals_ve
+msgid "Subtotal"
+msgstr "Subtotal"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__tax_amount_for_international_purchase
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__tax_amount_for_international_purchase
+msgid "Tax Amount for International Purchase"
+msgstr "IVA 16%"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__tax_base_for_international_purchase
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__tax_base_for_international_purchase
+msgid "Tax Base for International Purchase"
+msgstr "Base imponible IVA"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__tax_amount_for_international_purchase
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__tax_amount_for_international_purchase
+msgid "Tax amount for international purchase to show in purchase book"
+msgstr "Monto del IVA para compras internacionales a mostrar en el libro de compras"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__tax_base_for_international_purchase
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__tax_base_for_international_purchase
+msgid "Tax base for international purchase to show in purchase book"
+msgstr "Base imponible para compras internacionales a mostrar en el libro de compras"
+
+#. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid ""
@@ -564,24 +622,38 @@ msgstr ""
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid "The invoice date cannot be greater than the accounting date."
+msgstr "La fecha de la factura no puede ser mayor que la fecha contable."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid "The sale's series sequence must be in the selected journal."
 msgstr ""
 "La secuencia de series de ventas debe estar seleccionada en el diario."
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
+#. odoo-python
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 msgid "Total"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
-msgid "Total en USD"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals_ve
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "Total en"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "Total en Bs.F"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_wizard_accounting_reports
 msgid "Wizard para generar reportes de libro de compra y ventas"
-msgstr ""
+msgstr "Asistente para generar reportes de libro de compra y ventas"
 
 #. module: l10n_ve_invoice
 #. odoo-python
@@ -594,23 +666,10 @@ msgstr "No puede agregar más de %s productos a la factura."
 msgid "control number"
 msgstr "Número de control"
 
-#. module: account
-#: model:ir.actions.act_window,name:account.action_move_in_refund_type
-#: model:ir.actions.act_window,name:account.action_move_out_refund_type
-#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
-#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
-#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
-msgid "Credit Notes"
-msgstr "Notas de Crédito"
-
-#. module: account
-#: model:ir.actions.act_window,name:account.action_move_in_refund_type
-#: model:ir.actions.act_window,name:account.action_move_out_refund_type
-#: model:ir.ui.menu,name:account.menu_action_move_out_refund_type
-#: model_terms:ir.ui.view,arch_db:account.account_journal_dashboard_kanban_view
-#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_report_search
-msgid "Credit Notes"
-msgstr "Notas de Crédito"
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "por"
+msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice

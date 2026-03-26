@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-03 20:48+0000\n"
-"PO-Revision-Date: 2026-02-03 20:48+0000\n"
+"POT-Creation-Date: 2026-03-19 15:16+0000\n"
+"PO-Revision-Date: 2026-03-19 15:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -810,6 +810,13 @@ msgid "International purchase"
 msgstr "Compra internacional"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
+msgid "Invoice Date"
+msgstr "Fecha de factura"
+
+#. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 msgid "Invoices"
@@ -1028,7 +1035,6 @@ msgstr "No mostrar total compras internacionales"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__not_show_total_purchases_with_international_iva
 msgid "Not Show Total Purchases With International Iva"
 msgstr "No mostrar total compras con IVA internacional"
-
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
@@ -1321,13 +1327,6 @@ msgid "Tax"
 msgstr "Impuesto"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
-msgid "Tax ID"
-msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
-
-#. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_tax_unit
 #: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_accountant_tax_unit
 msgid "Tax Unit"
@@ -1445,12 +1444,6 @@ msgstr ""
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_rate_display
 msgid "The rate of the payment"
 msgstr "La tasa del pago"
-
-#. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
-msgid "The rate should be greater than zero"
-msgstr "La tasa debe ser superior a cero."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1615,12 +1608,6 @@ msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
 
 #. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
-msgid "You must set the invoice date before adding products."
-msgstr "Debes establecer la fecha de la factura antes de agregar productos."
-
-#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "____________________________________________"
 msgstr ""
@@ -1729,3 +1716,31 @@ msgstr "Total BS"
 #: model:ir.model.fields,field_description:account.field_account_move__amount_untaxed_signed
 msgid "Untaxed Amount Signed"
 msgstr "Total sin impuestos BS"
+
+#. module: account
+#: model_terms:ir.ui.view,arch_db:account.view_account_bill_filter
+#: model_terms:ir.ui.view,arch_db:account.view_invoice_tree
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_payment_tree
+msgid "Bill Date"
+msgstr "Fecha de tasa"
+
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_invoice_report__invoice_date
+#: model_terms:ir.ui.view,arch_db:account.portal_my_invoices
+#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_filter
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_filter
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
+#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_payment_filter
+#: model_terms:ir.ui.view,arch_db:account.view_invoice_tree
+#: model_terms:ir.ui.view,arch_db:account.view_move_form
+#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
+#: model_terms:ir.ui.view,arch_db:account.view_move_tree
+msgid "Invoice Date"
+msgstr "Fecha de tasa"
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "All payment methods must have an assigned account."
+msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
+

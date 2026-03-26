@@ -567,3 +567,116 @@ class TestForeignBalance(TransactionCase):
                 )
                 self.assertAlmostEqual(line.foreign_credit, expected_foreign_credit, delta=0.5, 
                                        msg=f"Line {line.name} Foreign Credit {line.foreign_credit} does not match converted Credit {line.credit}")
+
+    def test_invoice_foreign_balance_low_amount_extreme_rate(self):
+        """
+        Reproduces the bug: invoice in VEF (company currency) for 1 VEF with 16% tax
+        and a rate of 431.01 VEF per USD (written as 431,010000000000 in Venezuelan notation).
+
+        With this rate, 1 VEF = ~0.00232 USD, so the tax (0.16 VEF) converts
+        to ~0.000371 USD which rounds to $0.00 with 2 decimal places.
+
+        Without the fix, _round_base_lines_tax_details re-uses the tax line's
+        amount_currency (in VEF = -0.16) for the foreign calculation, causing
+        foreign_balance to be set to -0.16 VEF as if it were USD.
+
+        Expected behavior after fix:
+         - sum(foreign_debit) == sum(foreign_credit)  (internally consistent)
+         - Tax line foreign_credit must NOT equal its VEF credit value (0.16)
+        """
+        # 431,010000000000 in Venezuelan notation = 431.01 VEF per USD
+        extreme_rate = 431.01
+        rate = self.env["res.currency.rate"].search([
+            ("name", "=", fields.Date.today()),
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ])
+        if rate:
+            rate.write({"inverse_company_rate": extreme_rate})
+        else:
+            self.env["res.currency.rate"].create(
+                {
+                    "name": fields.Date.today(),
+                    "currency_id": self.currency_usd.id,
+                    "inverse_company_rate": extreme_rate,
+                    "company_id": self.company.id,
+                }
+            )
+
+        purchase_journal = self.env["account.journal"].search(
+            [("type", "=", "purchase"), ("company_id", "=", self.company.id)], limit=1
+        ) or self.env["account.journal"].sudo().create(
+            {
+                "name": "Purchase Test Extreme",
+                "code": "PRTEX",
+                "type": "purchase",
+                "company_id": self.company.id,
+            }
+        )
+
+        purchase_tax = self.env["account.tax"].create({
+            "name": "IVA 16% Compras Extreme",
+            "amount": 16,
+            "amount_type": "percent",
+            "type_tax_use": "purchase",
+            "company_id": self.company.id,
+            "tax_group_id": self.test_tax_group.id,
+        })
+
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": purchase_journal.id,
+                "currency_id": self.currency_vef.id,  # Invoice in VEF (company currency)
+                "date": fields.Date.today(),
+                "invoice_date": fields.Date.today(),
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1.0,
+                            "price_unit": 1.0,  # 1 VEF — small amount that exposes the bug
+                            "account_id": self.account_income.id,
+                            "tax_ids": [(6, 0, [purchase_tax.id])],
+                        }
+                    )
+                ],
+            }
+        )
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        self.assertEqual(invoice.state, "posted", "Invoice failed to post")
+
+        for line in invoice.line_ids:
+            _logger.info(
+                f"ExtremeRateTest | {line.display_type} | "
+                f"Debit: {line.debit} | Credit: {line.credit} | "
+                f"ForeignDebit: {line.foreign_debit} | ForeignCredit: {line.foreign_credit}"
+            )
+
+        sum_foreign_debit = sum(invoice.line_ids.mapped("foreign_debit"))
+        sum_foreign_credit = sum(invoice.line_ids.mapped("foreign_credit"))
+
+        # 1. Foreign debit and credit must balance
+        self.assertAlmostEqual(
+            sum_foreign_debit,
+            sum_foreign_credit,
+            places=6,
+            msg="Foreign Debit/Credit must balance even with extreme rates",
+        )
+
+        # 2. No tax line should show its VEF credit as if it were USD.
+        #    0.16 VEF tax line must NOT have foreign_credit == 0.16 (USD).
+        for line in invoice.line_ids:
+            if line.display_type == "tax" and line.credit > 0:
+                self.assertNotAlmostEqual(
+                    line.foreign_credit,
+                    line.credit,
+                    places=2,
+                    msg=(
+                        f"Tax line foreign_credit ({line.foreign_credit}) must not equal "
+                        f"its VEF credit ({line.credit}). VEF value was used as USD (bug)."
+                    ),
+                )
+

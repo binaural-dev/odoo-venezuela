@@ -41,3 +41,7 @@ class ResConfigSettings(models.TransientModel):
     advance_supplier_account_id = fields.Many2one(
         related="company_id.advance_supplier_account_id", readonly=False, store=True
     )
+
+    revalorize_payments_vef = fields.Boolean(
+        related="company_id.revalorize_payments_vef", readonly=False, store=True
+    )

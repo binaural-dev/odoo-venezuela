@@ -8,6 +8,10 @@ _logger = logging.getLogger(__name__)
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
+    destination_account_id = fields.Many2one(
+        "account.account",
+        domain="[('account_type', 'in', ('asset_receivable', 'liability_payable', 'asset_current', 'liability_current'))]",
+    )
     def default_alternate_currency(self):
         """
         This method is used to get the foreign currency of the company and set it as the default
@@ -78,6 +82,8 @@ class AccountPayment(models.Model):
         compute="_compute_is_foreign_currency",
         store=True,
     )
+
+    block_change_partner_after_post = fields.Boolean(default=False, copy=False)
 
     other_rate = fields.Float(
         compute="_compute_other_rate",
@@ -204,6 +210,13 @@ class AccountPayment(models.Model):
             if not bool(payment.other_rate):
                 return
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
+
+    def action_post(self):
+        res = super().action_post()
+        # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
+        self.write({"block_change_partner_after_post": True})
+        return res
+            
 
     # @api.model
     # def _get_trigger_fields_to_synchronize(self):
