@@ -21,7 +21,6 @@
                         <group colspan="4" col="4">
                             <!-- Invisible fields -->
                             <field name="name" invisible="1" force_save="1" />
-
                             <field name="available_invoice_ids" invisible="1" />
                             <field name="actual_invoice_ids" invisible="1" />
                             <field name="original_lines_per_invoice_counter" invisible="1" />
@@ -29,6 +28,7 @@
                             <field name="company_currency_id" invisible="1" />
                             <field name="foreign_currency_id" invisible="1" />
                             <field name="type_retention" invisible="1" force_save="1" />
+                            <field name="is_third_party_retention" readonly="1" invisible="type != 'in_invoice'"/>
                             <field name="type" force_save="1" select="2" />
                             <field name="company_id" invisible="1"/>
                             <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
@@ -55,7 +55,7 @@
                                         <field name="invoice_type" column_invisible="True" />
                                         <field name="company_currency_id" column_invisible="True" />
                                         <field name="foreign_currency_id" column_invisible="True" />
-                                        <field name="name" />
+                                        <field name="name" required="1"/>
                                         <field name="move_id"
                                             options="{'no_create': True}"
                                             force_save="1"
@@ -155,7 +155,7 @@
                                     <list string="Payments" editable="bottom">
                                         <field name="company_id" optional="hide"/>
                                         <field name="date" />
-                                        <field name="name" />
+                                        <field name="name"/>
                                         <field name="amount" />
                                         <field name="state" />
                                         <field name="foreign_rate" optional="hide" />

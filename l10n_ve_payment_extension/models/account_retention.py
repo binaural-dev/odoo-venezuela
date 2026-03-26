@@ -35,6 +35,12 @@ class AccountRetention(models.Model):
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
     )
 
+    is_third_party_retention = fields.Boolean(
+        string="Third Party Billing",
+        default=False,
+        help="Indicates if this retention was created via the third-party billing flow.",
+    )
+
     company_id = fields.Many2one(
         "res.company",
         string="Company",
@@ -273,8 +279,19 @@ class AccountRetention(models.Model):
         Load retention lines from invoices with taxes when the partner changes for IVA retentions
         that are not posted.
         """
+        # For third-party billing, just re-compute existing line amounts
+        # using the new partner's withholding, without replacing lines
         self._validate_retention_journals()
         for retention in self.filtered(
+            lambda r: r.state == "draft" and r.partner_id and r.retention_line_ids and r.is_third_party_retention
+        ):
+            retention.retention_line_ids._onchange_move_id()
+
+        standard_retentions = self.filtered(lambda r: not r.is_third_party_retention)
+        if not standard_retentions:
+            return
+
+        for retention in standard_retentions.filtered(
             lambda r: (r.state, r.type_retention) == ("draft", "iva") and r.partner_id
         ):
             if retention.type == "in_invoice":
@@ -882,7 +899,7 @@ class AccountRetention(models.Model):
                     "is_retention": True,
                     "foreign_rate": line.move_id.foreign_rate,
                     "foreign_inverse_rate": line.move_id.foreign_inverse_rate,
-                    "retention_line_ids": line,
+                    "retention_line_ids": [Command.link(line.id)],
                     "currency_id": self.env.user.company_id.currency_id.id,
                 }
             )

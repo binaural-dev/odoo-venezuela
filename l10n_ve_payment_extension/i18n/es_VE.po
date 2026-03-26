@@ -18,7 +18,7 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model:ir.actions.report,print_report_name:l10n_ve_payment_extension.retention_voucher_action
 msgid "\"%s\" % (object.number)"
-msgstr "\"%s\" % (object.number)"
+msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
@@ -880,6 +880,12 @@ msgid "Emitted"
 msgstr "Emitido"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_bank_statement_line__is_third_party_retention
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_move__is_third_party_retention
+msgid "Enable to create retentions on behalf of a third-party provider."
+msgstr "Al estar habilitado, se podrán crear retenciones a nombre de un tercero."
+
+#. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/wizard/account_payment_register.py:0
 msgid "Error"
@@ -1361,6 +1367,12 @@ msgid "Inactive"
 msgstr "Inactivo"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__is_third_party_retention
+msgid ""
+"Indicates if this retention was created via the third-party billing flow."
+msgstr "Indica si esta retención fue creada a través del flujo de facturación a terceros."
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
 msgid "Información del impuesto retenido y enterado"
 msgstr ""
@@ -1449,6 +1461,7 @@ msgstr "IVA"
 #. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
 msgid "Iva Retention"
 msgstr "Retención de IVA"
 
@@ -2587,6 +2600,12 @@ msgstr "El porcentaje de retención no puede ser negativo."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
+msgid "The tariff does not have a valid tax unit."
+msgstr "La tarifa no tiene una unidad tributaria válida."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 msgid ""
 "The taxable base of one of the withholding lines is greater than the taxable"
@@ -2636,6 +2655,40 @@ msgstr "No hay datos que mostrar"
 #: code:addons/l10n_ve_payment_extension/controllers/municipal_report.py:0
 msgid "There is no data to show."
 msgstr "No hay datos que mostrar."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__is_third_party_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__is_third_party_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__is_third_party_retention
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Third Party Billing"
+msgstr "Facturación a Terceros"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Third Party ISLR Ret."
+msgstr "Ret. ISLR Terceros"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__third_party_islr_retention_count
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__third_party_islr_retention_count
+msgid "Third Party ISLR Retentions"
+msgstr "Retenciones de ISLR a Terceros"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Third Party IVA Ret."
+msgstr "Ret. IVA Terceros"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__third_party_iva_retention_count
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__third_party_iva_retention_count
+msgid "Third Party IVA Retentions"
+msgstr "Retenciones de IVA a Terceros"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
@@ -2796,7 +2849,7 @@ msgstr "Wizard de reportes de Retención de ISLR"
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_wizard_accounting_reports
 msgid "Wizard para generar reportes de libro de compra y ventas"
-msgstr ""
+msgstr "Asistente para generar reportes de libro de compra y ventas"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_municipal_retention_xlsx_report
