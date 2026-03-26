@@ -1118,18 +1118,22 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         })
 
         if move.journal_id.is_purchase_international:
+            # Use custom fields if available, otherwise use calculated taxes for GENERAL (16%)
+            tb_general_intl = move.tax_base_for_international_purchase or tax_base_general_aliquot
+            am_general_intl = move.tax_amount_for_international_purchase or amount_general_aliquot
+
             tax_result.update({
-                "tax_base_reduced_aliquot_international": tax_result.get("tax_base_reduced_aliquot", 0.0),
-                "amount_reduced_aliquot_international": tax_result.get("amount_reduced_aliquot", 0.0),
-                "tax_base_general_aliquot_international": tax_result.get("tax_base_general_aliquot", 0.0),
-                "amount_general_aliquot_international": tax_result.get("amount_general_aliquot", 0.0),
-                "tax_base_extend_aliquot_international": tax_result.get("tax_base_extend_aliquot", 0.0),
-                "amount_extend_aliquot_international": tax_result.get("amount_extend_aliquot", 0.0),
+                "tax_base_reduced_aliquot_international": tax_base_reduced_aliquot,
+                "amount_reduced_aliquot_international": amount_reduced_aliquot,
+                "tax_base_general_aliquot_international": tb_general_intl,
+                "amount_general_aliquot_international": am_general_intl,
+                "tax_base_extend_aliquot_international": tax_base_extend_aliquot,
+                "amount_extend_aliquot_international": amount_extend_aliquot,
                 "international_tax_base_exempt_aliquot": tax_result.get("international_tax_base_exempt_aliquot", 0.0),
                 "international_amount_taxed": (
-                    tax_result.get("tax_base_reduced_aliquot", 0.0) + tax_result.get("amount_reduced_aliquot", 0.0) +
-                    tax_result.get("tax_base_general_aliquot", 0.0) + tax_result.get("amount_general_aliquot", 0.0) +
-                    tax_result.get("tax_base_extend_aliquot", 0.0) + tax_result.get("amount_extend_aliquot", 0.0) +
+                    tax_base_reduced_aliquot + amount_reduced_aliquot +
+                    tb_general_intl + am_general_intl +
+                    tax_base_extend_aliquot + amount_extend_aliquot +
                     tax_result.get("international_tax_base_exempt_aliquot", 0.0)
                 ),
              })
