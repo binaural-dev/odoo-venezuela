@@ -49,6 +49,8 @@ class ResCompany(models.Model):
     create_retentions_of_suppliers_in_draft = fields.Boolean(
         string="Create Suppliers Retentions in Draft", default=False
     )
+
+    hide_issue_date_of_municipal_withholding_receipt = fields.Boolean('Hide issue date of municipal withholding receipt',default=False)
     
     text_header_1_municipal_retention = fields.Text(
         string="Header 1 for voucher of municipal retention", 
