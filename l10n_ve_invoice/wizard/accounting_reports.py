@@ -106,19 +106,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         
         multiplier = -1 if move.move_type == "in_refund" else 1
 
-        if move.journal_id.is_purchase_international :
-            tax_keys_to_check = [
-            
-                "amount_reduced_aliquot_international", "amount_general_aliquot_international", "amount_extend_aliquot_international",
-                "tax_base_reduced_aliquot_international", "tax_base_general_aliquot_international", "tax_base_extend_aliquot_international",
-                "international_tax_base_exempt_aliquot", "international_amount_taxed"
-            ]
-
-            total_tax_value = sum(taxes.get(key, 0) for key in tax_keys_to_check)
-            if total_tax_value == 0:
-                return None
-    
-
         fields_purchase_book_line = {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
@@ -145,7 +132,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         }
 
         fields_purchase_book_line.update(
-            {   
+            {   "total_purchases_national": taxes.get("national_amount_taxed", 0),
+                "total_purchases_iva_national": taxes.get("national_amount_taxed", 0) - (taxes.get("national_tax_base_exempt_aliquot", 0) * multiplier),
+                "total_purchases_not_iva_national": taxes.get("national_tax_base_exempt_aliquot", 0) * multiplier,
                 "total_purchases_international": taxes.get("international_amount_taxed", 0),
                 "total_purchases_iva_international": taxes.get("international_amount_taxed", 0) - (taxes.get("international_tax_base_exempt_aliquot", 0) * multiplier),
                 "total_purchases_not_iva_international": taxes.get("international_tax_base_exempt_aliquot", 0) * multiplier,
@@ -672,6 +661,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             ("move_type", "in", move_type),
             ("correlative", "not in", ['/',False])
         ]
+            
+        if hasattr(self, 'account_analytic_id') and self.account_analytic_id:
+
+            if self.account_analytic_id.name == "Main Subsidiary":
+                
+                all_subsidiaries = self.env['account.analytic.account'].search([
+                    ('is_subsidiary', '=', True),
+                    ('company_id', '=', self.company_id.id)
+                ])
+                if all_subsidiaries:
+                    search_domain += [("account_analytic_id", "in", all_subsidiaries.ids)]
+            else:
+                
+                search_domain += [("account_analytic_id", "=", self.account_analytic_id.id)]
         return search_domain
 
     def generate_report(self):
@@ -852,6 +855,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "amount_reduced_aliquot": 0.0,
                 "amount_general_aliquot": 0.0,
                 "amount_extend_aliquot": 0.0,
+                "national_amount_taxed":0.0,
+                "national_tax_base_exempt_aliquot": 0.0,
                 "international_amount_taxed":0.0,
                 "international_tax_base_exempt_aliquot": 0.0,
                 "amount_import_international": 0,
@@ -905,6 +910,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             else tax_totals.get(fields_taxed[1])
         ) if tax_totals else 0
 
+        national_amount_taxed = (
+            tax_totals.get(fields_taxed[1]) * -1
+            if is_credit_note and tax_totals.get(fields_taxed[1])
+            else tax_totals.get(fields_taxed[1])
+        ) if tax_totals and not move.journal_id.is_purchase_international else 0
+
         international_amount_taxed = (
             tax_totals.get(fields_taxed[1]) * -1
             if is_credit_note and tax_totals.get(fields_taxed[1])
@@ -923,7 +934,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "amount_general_aliquot": 0,
                 "tax_base_extend_aliquot": 0,
                 "amount_extend_aliquot": 0,
+                "national_amount_taxed":national_amount_taxed if not move.journal_id.is_purchase_international else 0,
                 "international_amount_taxed":international_amount_taxed if move.journal_id.is_purchase_international else 0,
+                "national_tax_base_exempt_aliquot": 0.0,
                 "international_tax_base_exempt_aliquot": 0.0,
                 "amount_import_international": 0,
                 "tax_base_reduced_aliquot_international": 0,
@@ -1002,6 +1015,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         {
                             "tax_base_exempt_aliquot": tax.get("tax_group_base_amount"),
                             "amount_exempt_aliquot": tax.get("tax_group_amount"),
+                            "national_tax_base_exempt_aliquot": tax.get("tax_group_base_amount") if not move.journal_id.is_purchase_international else 0,
                             "international_tax_base_exempt_aliquot": tax.get("tax_group_base_amount") if move.journal_id.is_purchase_international else 0
                         }
                     )
@@ -1232,6 +1246,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
                 )
         
+            # if field.get("field") == "bi_igtf":
+            #     worksheet.write(
+            #     total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")*3/100', cell_formats.get("number")
+            # )
+            if field.get("field") == "igtf":
+                worksheet.write(
+                total_idx, index, f'=SUM({col}8:{col}{total_idx})', cell_formats.get("number")
+            )
+        
         
         merge_format_base = workbook.add_format(
             {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray", "locked": True}
@@ -1363,6 +1386,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 col = utility.xl_col_to_name(index)
                 worksheet.write_formula(
                 total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
+            )
+                
+            # if field.get("field") == "bi_igtf":
+            #     worksheet.write(
+            #     total_idx, index, f'=SUMIFS({col}8:{col}{total_idx}, E8:E{total_idx}, "<>NC")*3/100', cell_formats.get("number")
+            # )
+            if field.get("field") == "igtf":
+                worksheet.write(
+                total_idx, index, f'=SUM({col}8:{col}{total_idx})', cell_formats.get("number")
             )
         
         self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats, last_col_index)
@@ -1547,6 +1579,27 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             {"name": "Total compras exentas", "field": "total_purchases_not_iva", "format": "number", "size": 16},
         ]
         purchase_groups.append({'header': 'TOTALES', 'fields': total_fields})
+
+        national_total_fields = [
+        ]
+
+        if not company.not_show_total_purchases_national:
+            national_total_fields.append(            
+                {"name": "Total compras", "field": "total_purchases_national", "format": "number"},
+            )
+
+        if not company.not_show_total_purchases_with_iva:
+            national_total_fields.append(            
+                {"name": "Total compras con IVA", "field": "total_purchases_iva_national", "format": "number"},
+            )
+
+        if not company.not_show_national_exempt_total_purchases:
+            national_total_fields.append(            
+                {"name": "Total compras exentas", "field": "total_purchases_not_iva_national", "format": "number"},
+            )
+
+        if national_total_fields:
+            purchase_groups.append({'header': 'TOTALES NACIONALES', 'fields': national_total_fields})
 
         national_deductible_fields = []
        
