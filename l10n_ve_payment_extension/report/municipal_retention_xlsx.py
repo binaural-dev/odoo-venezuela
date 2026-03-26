@@ -128,10 +128,12 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         worksheet2.write("I" + str(col2 + 1), total_retained, money_format)
         boldWithBorderTop = workbook.add_format({"bold": 1, "top": 1})
 
-        worksheet2.write(
-            "B" + str(col2 + 12), "\t\tFirma del Agente de Retención", boldWithBorderTop
-        )
-        worksheet2.write("C" + str(col2 + 12), "", boldWithBorderTop)
+        text1 = company.text_header_1_municipal_retention or ""
+        text2 = company.text_header_2_municipal_retention or ""
+        tax_name = (tax_auth.tax_authorities_name or "").upper()
+        worksheet.write("B2", text1, fmt_bold)
+        worksheet.write("C3", text2, fmt_bold)
+        worksheet.write("C5", f"COMPROBANTE DE RETENCION IMPUESTO ACTIVIDADES ECONOMICAS {tax_name}", fmt_bold)
 
         worksheet2.write("F" + str(col2 + 12), "Firma del Beneficiario", boldWithBorderTop)
 

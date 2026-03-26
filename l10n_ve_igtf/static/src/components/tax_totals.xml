@@ -7,7 +7,7 @@
         t-inherit-mode="extension" 
         owl="1">
         
-        <xpath expr="//TaxGroupComponent" position="after">
+        <xpath expr="//t[@t-foreach='totals.subtotals']" position="after">
             <t t-if="totals.igtf &amp;&amp; totals.igtf.apply_igtf &amp;&amp; !totals.igtf.is_igtf_suggested">
                 <tr>
                     <td class="o_td_label">
