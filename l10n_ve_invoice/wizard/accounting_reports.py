@@ -591,7 +591,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain += [("date", ">=", self.date_from)]
         search_domain += [("date", "<=", self.date_to)]
         search_domain += [
-            ("state", "=", "posted"),
+            ("state", "in", ("posted", "cancel")),
             ("move_type", "in", move_type),
             ("correlative", "not in", ['/',False])
         ]
