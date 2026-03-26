@@ -22,6 +22,11 @@ class AccountMove(models.Model):
         default=fields.Date.today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
+    
+    tax_base_for_international_purchase = fields.Float(string='Tax Base for International Purchase', help='Tax base for international purchase to show in purchase book')
+    
+    tax_amount_for_international_purchase = fields.Float(string='Tax Amount for International Purchase', help='Tax amount for international purchase to show in purchase book')
+    
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
