@@ -253,6 +253,7 @@ class StockPicking(models.Model):
         Creates customer invoice from the picking
         """
         self._validate_one_invoice_posted()
+        invoice = self.env["account.move"]
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
@@ -282,7 +283,12 @@ class StockPicking(models.Model):
                 invoice = self.env["account.move"].create(invoice_vals) ##PROBLEMA ACAAA
             picking_id.write({"state_guide_dispatch": "invoiced"})
             picking_id._update_order_sale_invoiced()
-        return self.action_view_invoice(invoices=invoice)
+        return invoice
+
+    def action_create_invoice(self):
+        invoice = self.create_invoice()
+        action = self.action_view_invoice(invoices=invoice)
+        return action
 
     @api.readonly
     def action_view_invoice(self, invoices=False):
