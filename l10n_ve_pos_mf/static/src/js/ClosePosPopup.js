@@ -23,18 +23,20 @@ patch(ClosePosPopup.prototype, {
   generate_report_z() {
     const fdm = this.pos.useFiscalMachine();
     if (!fdm) return
-    const promise = new Promise(async (resolve, reject) => {
-      fdm.addListener(data => data.status.status === "connected" ? resolve(data) : reject(data));
-      await fdm.action({
+    const promise = new Promise((resolve, reject) => {
+      const listener = ({ value }) => {
+        fdm.removeListener(listener);
+        value.valid ? resolve(value) : reject(value);
+      };
+      fdm.addListener(listener);
+      fdm.action({
         action: 'report_z',
         data: {},
-      })
-      fdm.removeListener();
+      }).catch(reject);
     });
-    promise.then(async ({ value }) => {
+    promise.then(async (value) => {
       await this.orm.call('account.move', 'report_z', [[], this.pos.config.serial_machine, value])
-      await this.orm.call('pos.session', 'set_report_z', [this.pos.pos_session.id, value],
-      )
+      await this.orm.call('pos.session', 'set_report_z', [this.pos.pos_session.id, value])
     })
   },
 })

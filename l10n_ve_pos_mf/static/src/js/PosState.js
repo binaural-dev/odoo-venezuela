@@ -6,6 +6,7 @@ import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
+import { roundDecimals as round_di } from "@web/core/utils/numbers";
 
 patch(TicketScreen, {
   components: {
@@ -136,7 +137,7 @@ patch(PosStore.prototype, {
 
         let discount = el.get_discount()
         if (discount > 0) {
-          amount = amount * (1 - discount / 100)
+          amount = round_di(amount * (1 - discount / 100), 2)
         }
 
         return {
