@@ -142,11 +142,6 @@ class StockPicking(models.Model):
             else:
                 picking.picking_type_domain = native_domain
 
-    picking_type_domain = fields.Char(
-        string="Picking Type Domain",
-        compute="_compute_picking_type_domain",
-    ) 
-
     @api.onchange("is_donation")
     def _onchange_is_donation(self):
         self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
