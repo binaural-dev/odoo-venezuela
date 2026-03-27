@@ -307,7 +307,7 @@ class AccountRetentionLine(models.Model):
 
                         sum_total_taxable_foreign = 0.0
                         total_taxable_base = 0.0
-                        if self.env.company.currency_id == self.env.ref("base.USD"):
+                        if record.company_id.currency_id == self.env.ref("base.USD"):
                             for invoice in previous_invoices:
                                 tax_totals = invoice.tax_totals
                                 groups_by_subtotal = tax_totals.get("groups_by_foreign_subtotal", {})
@@ -672,3 +672,9 @@ class AccountRetentionLine(models.Model):
                 )
             )
             return invoice_paid_amount_not_related_with_retentions
+
+    def _get_code_of_retention(self):
+        for record in self:
+            return record.payment_concept_id.line_payment_concept_ids.filtered(
+                lambda l: l.type_person_id == record.retention_id.partner_id.type_person_id
+            ).code if record.payment_concept_id else ""

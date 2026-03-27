@@ -670,3 +670,14 @@ msgstr "Número de control"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "por"
 msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
+msgid "Debit note"
+msgstr "Notas de Débito"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__import_file_number_purchase_international
+msgid "Import File Number Purchase International"
+msgstr "Número de Expediente de Importación"
+

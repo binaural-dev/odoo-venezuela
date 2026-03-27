@@ -8,14 +8,24 @@ class TestSaleOrderForeignPricelist(TransactionCase):
     def setUp(self):
         super().setUp()
         company = self.env.ref('base.main_company')
+        ves = self.env.ref('base.VES')
         usd = self.env.ref('base.USD')
         eur = self.env.ref('base.EUR')
         
-        # Clean existing rates to avoid interference
+        usd.write({'active': True})
+        eur.write({'active': True})
+
         self.env['res.currency.rate'].search([
-            ('currency_id', 'in', [usd.id, eur.id]),
-            ('company_id', '=', company.id)
+            ('currency_id', 'in', (usd.id, eur.id)),
+            ('company_id', '=', company.id),
         ]).unlink()
+
+        self.env['res.currency.rate'].create([
+            {'name': '2026-01-01', 'currency_id': usd.id, 'rate': 1.0, 'company_id': company.id},
+            {'name': '2026-01-01', 'currency_id': eur.id, 'rate': 0.9, 'company_id': company.id}
+        ])
+        company.currency_id = ves.id
+        company.foreign_currency_id = usd.id
 
         self.env['res.currency.rate'].create([{
             'name': fields.Date.today(),

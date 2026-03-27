@@ -640,7 +640,6 @@ class AccountMove(models.Model):
        
 
         self.ensure_one()
-
         outstanding_line = self.env["account.move.line"].browse(line_id)
         payment_move = outstanding_line.move_id
         
