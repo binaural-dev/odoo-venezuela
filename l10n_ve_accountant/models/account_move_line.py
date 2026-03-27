@@ -25,10 +25,10 @@ class AccountMoveLine(models.Model):
         related="move_id.foreign_inverse_rate", store=True, index=True
     )
 
-    foreign_price = fields.Float(
+    foreign_price = fields.Monetary(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
-       
+        currency_field="foreign_currency_id",
         store=True,
         readonly=False,
     )
@@ -36,14 +36,12 @@ class AccountMoveLine(models.Model):
         help="Foreign Subtotal of the line",
         compute="_compute_foreign_subtotal",
         currency_field="foreign_currency_id",
-      
         store=True,
     )
     foreign_price_total = fields.Monetary(
         help="Foreign Total of the line",
         compute="_compute_foreign_subtotal",
         currency_field="foreign_currency_id",
-        
         store=True,
     )
     amount_currency = fields.Monetary(precompute=False)
@@ -112,9 +110,7 @@ class AccountMoveLine(models.Model):
         for line in self:
            
             if line.price_unit and line.foreign_inverse_rate:
-                if line._origin.price_unit != line.price_unit or line.foreign_inverse_rate != line._origin.foreign_inverse_rate:
-                   
-                    line.foreign_price = line.price_unit * line.foreign_inverse_rate
+                line.foreign_price = line.price_unit * line.foreign_inverse_rate
             else:
                 line.foreign_price = 0.0
 
@@ -127,7 +123,7 @@ class AccountMoveLine(models.Model):
             foreign_subtotal = line_discount_price_unit * line.quantity
 
             if line.tax_ids:
-                taxes_res = line.tax_ids.compute_all(
+                taxes_res = line.tax_ids.with_context(round_base=False).compute_all(
                     line_discount_price_unit,
                     quantity=line.quantity,
                     currency=line.foreign_currency_id,
@@ -265,9 +261,9 @@ class AccountMoveLine(models.Model):
         line.foreign_debit_no_format = line.debit * inverse_rate_to_use
         line.foreign_credit_no_format = line.credit * inverse_rate_to_use
         
-        if line.foreign_debit != new_foreign_debit:
+        if new_foreign_debit:
             line.foreign_debit = new_foreign_debit
-        if line.foreign_credit != new_foreign_credit:
+        if new_foreign_credit:
             line.foreign_credit = new_foreign_credit
 
     def _calculate_from_product(self, line):
@@ -743,14 +739,14 @@ class AccountMoveLine(models.Model):
             residual = line.balance - debit_amount + credit_amount
             residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
             
-            line.amount_residual = comp_curr.round(residual)
-            line.amount_residual_currency = foreign_curr.round(residual_currency)
+            line.amount_residual = residual
+            line.amount_residual_currency = residual_currency
             # Para determinar si está conciliado, usamos una tolerancia mínima 
             # en lugar de un cero absoluto, o comparamos directamente.
             line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
 
 
-    @api.onchange('amount_currency', 'currency_id')
+    @api.onchange('amount_currency', 'currency_id','foreign_inverse_rate')
     def _inverse_amount_currency(self):
         for line in self:
             if line.currency_id == line.company_id.currency_id and line.balance != line.amount_currency:
@@ -761,3 +757,12 @@ class AccountMoveLine(models.Model):
                 and not self.env.is_protected(self._fields['balance'], line)
             ):
                 line.balance = line.amount_currency / line.currency_rate
+
+
+    @api.depends('currency_rate', 'balance')
+    def _compute_amount_currency(self):
+        for line in self:
+            if line.amount_currency is False:
+                line.amount_currency = line.balance * line.currency_rate
+            if line.currency_id == line.company_id.currency_id:
+                line.amount_currency = line.balance

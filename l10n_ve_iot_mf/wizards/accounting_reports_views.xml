@@ -7,7 +7,12 @@
             <field name="inherit_id" ref="l10n_ve_invoice.wizard_binaural_facturacion_reportes_view"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='currency_system']" position="after">
-                    <field name="with_fiscal_machine"/>
+                    <field name="with_fiscal_machine" invisible="all_documents"/>
+                </xpath>
+                <xpath expr="//sheet[1]/group[1]" position="inside">
+                <group>
+                    <field name="all_documents" invisible="with_fiscal_machine"/>
+                </group>
                 </xpath>
             </field>
         </record>
