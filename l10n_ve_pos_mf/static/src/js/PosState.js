@@ -6,7 +6,11 @@ import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
-import { roundDecimals as round_di } from "@web/core/utils/numbers";
+import {
+  roundDecimals as round_di,
+  roundPrecision as round_pr,
+  floatIsZero,
+} from "@web/core/utils/numbers";
 
 patch(TicketScreen, {
   components: {
@@ -123,6 +127,8 @@ patch(PosStore.prototype, {
 
       let vef_base = this.currency.name === "VEF"
 
+      let rounding = vef_base ? this.currency.rounding : this.foreign_currency.rounding
+
       invoice['invoice_lines'] = order.orderlines.map((el) => {
 
         if (!!el.customerNote) {
@@ -132,14 +138,11 @@ patch(PosStore.prototype, {
           }
         }
 
-
         let amount = vef_base ? el.price : el.get_foreign_unit_price()
-
 
         let discount = el.get_discount()
         if (discount > 0) {
-          let decimals = vef_base ? this.currency.decimal_places : this.foreign_currency.decimal_places
-          amount = round_di(amount * (1 - discount / 100), decimals)
+          amount = round_pr(amount * (1 - discount / 100), rounding)
         }
         return {
           price_unit: amount,
@@ -150,18 +153,66 @@ patch(PosStore.prototype, {
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
       })
+
+      let tax_rates_by_code = {};
+      order.orderlines.forEach((el) => {
+        let taxes = el.get_taxes();
+        if (taxes.length > 0) {
+          let code = taxes[0]['fiscal_code'];
+          if (!(code in tax_rates_by_code)) {
+            tax_rates_by_code[code] = taxes[0].amount / 100;
+          }
+        }
+      });
+
+      let fiscal_bases = {};
+      invoice['invoice_lines'].forEach((line) => {
+        let code = line.tax;
+        if (!fiscal_bases[code]) fiscal_bases[code] = 0;
+        fiscal_bases[code] += round_pr(line.price_unit * line.quantity, rounding);
+      });
+
+      let fiscal_total = 0;
+      for (let code in fiscal_bases) {
+        let base = round_pr(fiscal_bases[code], rounding);
+        fiscal_total += base + round_pr(base * (tax_rates_by_code[code] || 0), rounding);
+      }
+      fiscal_total = round_pr(fiscal_total, rounding);
+
       invoice['payment_lines'] = order.paymentlines
         .filter((el) => {
           let amount = vef_base ? el.amount : el.get_foreign_amount()
-          return amount > 0
+          return !floatIsZero(amount, this.currency.decimal_places) && amount > 0
         })
         .map((el) => {
           let amount = vef_base ? el.amount : el.get_foreign_amount()
           return {
             payment_method: el.payment_method.code_fiscal_printer,
-            amount: amount,
+            amount: round_pr(amount, rounding),
           }
         })
+
+      let payment_sum = invoice['payment_lines'].reduce((s, l) => s + l.amount, 0);
+      let diff = round_pr(fiscal_total - payment_sum, rounding);
+      if (!floatIsZero(diff, vef_base ? this.currency.decimal_places : this.foreign_currency.decimal_places) && invoice['payment_lines'].length > 0) {
+        let last = invoice['payment_lines'][invoice['payment_lines'].length - 1];
+        last.amount = round_pr(last.amount + diff, rounding);
+
+        order.fiscal_foreign_total = fiscal_total;
+
+        let actual_payments = order.paymentlines.filter(el => {
+          let amt = vef_base ? el.amount : el.get_foreign_amount();
+          return !floatIsZero(amt, this.currency.decimal_places) && amt > 0;
+        });
+        if (actual_payments.length > 0) {
+          let last_pay = actual_payments[actual_payments.length - 1];
+          if (vef_base) {
+            last_pay.amount = round_pr(last_pay.amount + diff, rounding);
+          } else {
+            last_pay.foreign_amount = round_pr(last_pay.get_foreign_amount() + diff, rounding);
+          }
+        }
+      }
     }
     invoice["valid"] = true
     return invoice
