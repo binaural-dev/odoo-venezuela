@@ -729,7 +729,7 @@ msgstr "Generar Certificado de Donación"
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
 msgid "Generate Invoice For Multiple Picking"
-msgstr "Generar facturas para múltiples guias de despacho"
+msgstr "Generar facturas para múltiples guías de despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.actions.server,name:l10n_ve_stock_account.ir_cron_auto_invoice_stock_ir_actions_server

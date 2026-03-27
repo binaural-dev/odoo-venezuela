@@ -83,7 +83,7 @@ class AccountPayment(models.Model):
         store=True,
     )
 
-    block_change_partner_after_post = fields.Boolean(default=False)
+    block_change_partner_after_post = fields.Boolean(default=False, copy=False)
 
     other_rate = fields.Float(
         compute="_compute_other_rate",
@@ -213,9 +213,8 @@ class AccountPayment(models.Model):
 
     def action_post(self):
         res = super().action_post()
-        for payment in self:
-            payment.block_change_partner_after_post = True
-        
+        # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
+        self.write({"block_change_partner_after_post": True})
         return res
             
 
