@@ -112,11 +112,35 @@ class StockPicking(models.Model):
     def get_vendor_journal(self):
         journal = vendor_journal_id = self.env.company.vendor_journal_id or False
         return journal
-
     picking_type_domain = fields.Char(
         string="Picking Type Domain",
         compute="_compute_picking_type_domain",
-    ) 
+    )
+
+    @api.onchange("is_donation")
+    def _onchange_is_donation(self):
+        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        if self.is_donation:
+            contact_id = self.env.company.partner_id
+            self.partner_id = contact_id
+            self.is_dispatch_guide = False
+            self.transfer_reason_id = self_consumption
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        if self.is_donation:
+            if self.partner_id != self.env.company.partner_id:
+                raise UserError(_("The partner must be the company itself for a donation"))
+        
+
+    @api.depends("is_donation")
+    def _compute_picking_type_domain(self):
+        native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
+        for picking in self:
+            if picking.is_donation:
+                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
+            else:
+                picking.picking_type_domain = native_domain
 
     @api.onchange("is_donation")
     def _onchange_is_donation(self):
