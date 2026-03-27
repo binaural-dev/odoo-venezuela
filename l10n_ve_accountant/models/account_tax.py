@@ -23,13 +23,31 @@ class AccountTax(models.Model):
         #only ves currency
         ves_currency = self.env.ref('base.VEF')
         
-        # Obtener el registro de factura desde el contexto si está disponible
         active_model = self.env.context.get('active_model')
         active_id = self.env.context.get('active_id')
-        if not active_model or not active_id:
-            return res
         
-        record = self.env[active_model].browse(active_id)
+        record = False
+        if active_model and active_id:
+            if isinstance(active_id, api.NewId):
+                active_id = active_id.origin
+            if active_id:
+                record = self.env[active_model].browse(active_id)
+
+        if not record and base_lines:
+            try:
+                first_line = base_lines[0].get('record')
+                if first_line and isinstance(first_line, models.Model):
+                    if hasattr(first_line, 'move_id'):
+                        record = first_line.move_id
+                    elif hasattr(first_line, 'order_id'):
+                        record = first_line.order_id
+                    else:
+                        record = first_line
+            except Exception as e:
+                _logger.warning("Error deduciendo el record al generar summary tax base %s", e)
+
+        if not record:
+            return res
         currency_id = self.env.company.currency_id or False
         foreign_currency_id = self.env.company.foreign_currency_id or False
         company_rate = 1.0
@@ -144,16 +162,6 @@ class AccountTax(models.Model):
             value=res.get('total_amount', 0.0),
             currency_obj=ves_currency
         )
-
-        # Extrae solo el monto numérico de 'formatted_total_amount_currency_ves' (sin símbolo)
-        formatted_total_ves = res.get("formatted_total_amount_currency_ves", "")
-        # Quita cualquier carácter que no sea número, punto o coma
-        try:
-            only_amount_ves = "".join(re.findall(r"[\d.,]+", formatted_total_ves))
-            only_amount_ves = only_amount_ves.rstrip('.').replace(',', '')
-            res["ves_amount_total"] = float(only_amount_ves)
-        except ValueError:
-            res["ves_amount_total"] = 0.0
     
         # Foraneos
         res['formatted_base_amount_foreign_currency'] = formatLang(

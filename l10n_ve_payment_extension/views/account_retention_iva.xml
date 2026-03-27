@@ -21,7 +21,6 @@
                         <group colspan="4" col="4">
                             <!-- Invisible fields -->
                             <field name="name" invisible="1" force_save="1" />
-
                             <field name="available_invoice_ids" invisible="1" />
                             <field name="actual_invoice_ids" invisible="1" />
                             <field name="original_lines_per_invoice_counter" invisible="1" />
@@ -29,6 +28,7 @@
                             <field name="company_currency_id" invisible="1" />
                             <field name="foreign_currency_id" invisible="1" />
                             <field name="type_retention" invisible="1" force_save="1" />
+                            <field name="is_third_party_retention" readonly="1" invisible="type != 'in_invoice'"/>
                             <field name="type" force_save="1" select="2" />
                             <field name="company_id" invisible="1"/>
                             <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
@@ -55,7 +55,7 @@
                                         <field name="invoice_type" column_invisible="True" />
                                         <field name="company_currency_id" column_invisible="True" />
                                         <field name="foreign_currency_id" column_invisible="True" />
-                                        <field name="name" />
+                                        <field name="name" required="1"/>
                                         <field name="move_id"
                                             options="{'no_create': True}"
                                             force_save="1"
@@ -70,6 +70,8 @@
                                         <field
                                             name="invoice_total"
                                             column_invisible="not parent.base_currency_is_vef"
+                                            widget="monetary"
+                                            options="{'currency_field': 'company_currency_id'}"
                                             />
                                         <field
                                             name="invoice_amount"
@@ -153,7 +155,7 @@
                                     <list string="Payments" editable="bottom">
                                         <field name="company_id" optional="hide"/>
                                         <field name="date" />
-                                        <field name="name" />
+                                        <field name="name"/>
                                         <field name="amount" />
                                         <field name="state" />
                                         <field name="foreign_rate" optional="hide" />
@@ -183,6 +185,7 @@
                     <field name="partner_id" />
                     <field name="date" />
                     <field name="date_accounting" />
+                    <field name="is_third_party_retention" optional="show" />
                     <field name="company_id" optional="hide" groups="base.group_multi_company" />
                     <field name="state" />
                 </list>
@@ -199,10 +202,12 @@
                     <field name="partner_id" string="Business Name" filter_domain="[('partner_id','ilike',self)]" />
                     <field name="date" string="Vocher date" filter_domain="[('date','ilike',self)]" />
                     <field name="date_accounting" string="Fecha Contable" filter_domain="[('date_accounting','ilike',self)]" />
-                    <!-- <field name="retention_line" string="Factura" filter_domain="[('retention_line.invoice_id.name','ilike',self)]"/> -->
+                    <filter name="is_third_party_retention" string="Third Party Retention" domain="[('is_third_party_retention', '=', True)]" />
+                    <separator/>
                     <filter name="group_state" string="Group by State" context="{'group_by':'state'}" />
                     <filter name="group_partner" string="Group by Business Name" context="{'group_by':'partner_id'}" />
                     <filter name="group_date_accounting" string="Group by Fecha Contable" context="{'group_by':'date_accounting'}" />
+                    <filter name="group_is_third_party_retention" string="Group by Third Party Billing" context="{'group_by':'is_third_party_retention'}" />
                 </search>
             </field>
         </record>

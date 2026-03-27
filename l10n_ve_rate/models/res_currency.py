@@ -3,6 +3,9 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_round, float_is_zero
 
 
+import logging
+
+_logger = logging.getLogger(__name__)
 class ResCurrency(models.Model):
     _inherit = "res.currency"
 

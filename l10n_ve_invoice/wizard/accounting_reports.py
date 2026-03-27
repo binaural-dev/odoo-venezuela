@@ -64,17 +64,19 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     currency_system = fields.Boolean(string="Report in currency system", default=_default_currency_system)
 
     def _fields_sale_book_line(self, move, taxes):
-        if not move.invoice_date:
+        if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
         values =  {
             "_id": move.id,
-            "document_date": self._format_date(move.invoice_date),
+            "document_date": self._format_date(move.invoice_date_display),
             "accounting_date": self._format_date(move.date),
             "vat": move.vat or '--',
             "partner_name": move.invoice_partner_display_name,
-            "document_number": move.name,
             "move_type": self._determinate_type_for_move(move),
+            "invoice_number": move.name if self._determinate_type_for_move(move) == "FAC" else "--",
+            "credit_note_number": move.name if self._determinate_type_for_move(move) == "NC" else "--",
+            "debit_note_number": move.name if self._determinate_type_for_move(move) == "ND" else "--",
             "transaction_type": self._determinate_transaction_type(move),
             "number_invoice_affected": (
                 move.debit_origin_id.name
@@ -102,7 +104,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return values
 
     def _fields_purchase_book_line(self, move, taxes):
-        if not move.invoice_date:
+        if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
 
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
@@ -125,12 +127,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         fields_purchase_book_line = {
             "_id": move.id,
-            "document_date": self._format_date(move.invoice_date),
+            "document_date": self._format_date(move.invoice_date_display),
             "accounting_date": self._format_date(move.date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
-            "document_number": move.name,
             "move_type": self._determinate_type_for_move(move),
+            "invoice_number": move.name if self._determinate_type_for_move(move) == "FAC" else "",
+            "credit_note_number": move.name if self._determinate_type_for_move(move) == "NC" else "",
+            "debit_note_number": move.name if self._determinate_type_for_move(move) == "ND" else "",
             "transaction_type": self._determinate_transaction_type(move),
             "number_invoice_affected": move.debit_origin_id.name if move.journal_id.is_debit else move.reversed_entry_id.name or "--",
             "correlative": move.correlative if not move.declaration_unique_of_customs else "-",
@@ -511,13 +515,23 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "size": 25,
             },
             {
-                "name": "Tipo",
+                "name": "Tipo de Documento",
                 "field": "move_type",
                 "size": 16,
             },
             {
-                "name": "N° de documento",
-                "field": "document_number",
+                "name": "N° de Factura",
+                "field": "invoice_number",
+                "size": 16,
+            },
+            {
+                "name": "N° Nota de Crédito",
+                "field": "credit_note_number",
+                "size": 16,
+            },
+            {
+                "name": "N° Nota de Débito",
+                "field": "debit_note_number",
                 "size": 16,
             },
             {
@@ -798,7 +812,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return "03-ANU"
 
     def search_moves(self):
-        order = "invoice_date asc" if self.report == "purchase" else "correlative asc"
+        order = "invoice_date_display asc" if self.report == "purchase" else "correlative asc"
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
@@ -1104,18 +1118,22 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         })
 
         if move.journal_id.is_purchase_international:
+            # Use custom fields if available, otherwise use calculated taxes for GENERAL (16%)
+            tb_general_intl = move.tax_base_for_international_purchase or tax_base_general_aliquot
+            am_general_intl = move.tax_amount_for_international_purchase or amount_general_aliquot
+
             tax_result.update({
-                "tax_base_reduced_aliquot_international": tax_result.get("tax_base_reduced_aliquot", 0.0),
-                "amount_reduced_aliquot_international": tax_result.get("amount_reduced_aliquot", 0.0),
-                "tax_base_general_aliquot_international": tax_result.get("tax_base_general_aliquot", 0.0),
-                "amount_general_aliquot_international": tax_result.get("amount_general_aliquot", 0.0),
-                "tax_base_extend_aliquot_international": tax_result.get("tax_base_extend_aliquot", 0.0),
-                "amount_extend_aliquot_international": tax_result.get("amount_extend_aliquot", 0.0),
+                "tax_base_reduced_aliquot_international": tax_base_reduced_aliquot,
+                "amount_reduced_aliquot_international": amount_reduced_aliquot,
+                "tax_base_general_aliquot_international": tb_general_intl,
+                "amount_general_aliquot_international": am_general_intl,
+                "tax_base_extend_aliquot_international": tax_base_extend_aliquot,
+                "amount_extend_aliquot_international": amount_extend_aliquot,
                 "international_tax_base_exempt_aliquot": tax_result.get("international_tax_base_exempt_aliquot", 0.0),
                 "international_amount_taxed": (
-                    tax_result.get("tax_base_reduced_aliquot", 0.0) + tax_result.get("amount_reduced_aliquot", 0.0) +
-                    tax_result.get("tax_base_general_aliquot", 0.0) + tax_result.get("amount_general_aliquot", 0.0) +
-                    tax_result.get("tax_base_extend_aliquot", 0.0) + tax_result.get("amount_extend_aliquot", 0.0) +
+                    tax_base_reduced_aliquot + amount_reduced_aliquot +
+                    tb_general_intl + am_general_intl +
+                    tax_base_extend_aliquot + amount_extend_aliquot +
                     tax_result.get("international_tax_base_exempt_aliquot", 0.0)
                 ),
              })
@@ -1530,8 +1548,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             {"name": "Fecha del documento", "field": "document_date", "size": 16},
             {"name": "RIF", "field": "vat", "size": 16},
             {"name": "Nombre/Razón social", "field": "partner_name", "size": None},
-            {"name": "Tipo", "field": "move_type", "size": 16},
-            {"name": "N° de documento", "field": "document_number", "size": 16},
+            {"name": "Tipo de Documento", "field": "move_type", "size": 16},
+            {"name": "N° de Factura", "field": "invoice_number", "size": 16},
+            {"name": "N° Nota de Crédito", "field": "credit_note_number", "size": 16},
+            {"name": "N° Nota de Débito", "field": "debit_note_number", "size": 16},
             {"name": "N° de control", "field": "correlative", "size": 16},
             {"name": "Tipo de transacción", "field": "transaction_type"},
             {"name": "N° Factura afectada", "field": "number_invoice_affected", "size": 16},
@@ -1586,8 +1606,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             {"name": "Fecha del documento", "field": "document_date", "size": 16},
             {"name": "RIF", "field": "vat", "size": 16},
             {"name": "Nombre/Razón social", "field": "partner_name", "size": None},
-            {"name": "Tipo", "field": "move_type", "size": 16},
-            {"name": "N° de documento", "field": "document_number", "size": 16},
+            {"name": "Tipo de Documento", "field": "move_type", "size": 16},
+            {"name": "N° de Factura", "field": "invoice_number", "size": 16},
+            {"name": "N° Nota de Crédito", "field": "credit_note_number", "size": 16},
+            {"name": "N° Nota de Débito", "field": "debit_note_number", "size": 16},
             {"name": "N° de control", "field": "correlative", "size": 16},
             {"name": "Tipo de transacción", "field": "transaction_type"},
             {"name": "N° Factura afectada", "field": "number_invoice_affected", "size": 16},
