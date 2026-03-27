@@ -263,6 +263,11 @@ _searchReservationsPartners: async function() {
         const { open, close } = await jsonrpc('/get_opening_and_closing_time');
         const minutesTotal = ((+close + 1) - open) * 60; 
         let html = '';
+        
+        const now = new Date();
+        const isToday = this.formatDate(this.currentDate) === this.formatDate(now);
+        const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
 
         zones.forEach(zone => {
             let col = `<div class="timesheet__col" data-court="${zone.id}">`;
@@ -276,6 +281,14 @@ _searchReservationsPartners: async function() {
             resForCourt.forEach(r => {
                 const offsetMin = this._getMinuteOffset(r.start, +open);
                 const durMin    = this._getDuration(r.start, r.stop);
+                
+                if (isToday) {
+                    const stopOffset = this._getMinuteOffset(r.stop, +open);
+                    const nowOffset = (currentHour - open) * 60 + currentMinutes;
+                    if (stopOffset <= nowOffset) {
+                        return;
+                    }
+                }
                 
                 const guestsJson = JSON.stringify(r.guest_details || []);
                 const canViewExtra = r.can_view_extra;
