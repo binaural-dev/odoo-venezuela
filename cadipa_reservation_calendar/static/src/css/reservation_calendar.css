@@ -117,3 +117,8 @@ background: #e6e0e0;
 .toolbar-calendar .input-group {
     flex-shrink: 0;
 }
+
+.schedule.schedule-past {
+    opacity: 0.45;
+    filter: grayscale(20%);
+}
