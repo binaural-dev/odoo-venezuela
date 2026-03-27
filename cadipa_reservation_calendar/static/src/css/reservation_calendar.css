@@ -2,7 +2,8 @@
     display: flex;
     background: #eee;
     flex-wrap: nowrap;
-    min-width: max-content
+    min-width: max-content;
+    position: relative;
 }
 
 .timesheet__col {
@@ -54,11 +55,23 @@ background: #e6e0e0;
 }
 
 .current-time-line {
-    height: 1px;
-    background: red;
-    width: calc(100% - 60px);
+    height: 1.5px;
+    background-color: rgba(255, 77, 77, 0.5);
+    width: 100%;
     position: absolute;
-    left: 60px;
+    left: 0;
+    z-index: 100;
+    pointer-events: none;
+}
+.current-time-line::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    background-color: rgba(255, 77, 77, 0.7);
+    border-radius: 50%;
 }
 
 .schedule {

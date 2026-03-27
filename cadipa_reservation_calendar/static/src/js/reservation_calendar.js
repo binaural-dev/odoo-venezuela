@@ -144,6 +144,22 @@ const websiteReservationCalendar = publicWidget.Widget.extend({
     headerTable += columnsHours[0];
     const columnsWithReservationsAndPartners = await this._BuildColumnsWithReservationZone(reservation, columnsHours[1]);
     headerTable += columnsWithReservationsAndPartners;
+    
+    const now = new Date();
+    if (this.formatDate(this.currentDate) === this.formatDate(now)) {
+        const { open, close } = await jsonrpc('/get_opening_and_closing_time');
+        const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
+
+        if (currentHour >= open && currentHour <= close) {
+            const minutesTotal = ((+close + 1) - open) * 60;
+            const nowOffset = (currentHour - open) * 60 + currentMinutes;
+            const topPct = (nowOffset / minutesTotal) * 100;
+            
+            headerTable += `<div class="current-time-line" style="top: ${topPct}%;"></div>`;
+        }
+    }
+    
     Calendar.empty();
     Calendar.append(headerTable);
   },
