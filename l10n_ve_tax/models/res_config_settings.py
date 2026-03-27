@@ -49,6 +49,12 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.not_show_extend_aliquot_purchase", readonly=False
     )
 
+    not_show_total_purchases_with_iva = fields.Boolean(related="company_id.not_show_total_purchases_with_iva", readonly=False)
+
+    not_show_national_exempt_total_purchases = fields.Boolean(related="company_id.not_show_national_exempt_total_purchases", readonly=False)
+
+    not_show_total_purchases_national = fields.Boolean(related="company_id.not_show_total_purchases_national", readonly=False)
+
     config_deductible_tax = fields.Boolean(
         related="company_id.config_deductible_tax", readonly=False
     )

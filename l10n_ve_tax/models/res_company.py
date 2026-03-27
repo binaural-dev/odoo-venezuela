@@ -30,6 +30,12 @@ class ResCompany(models.Model):
 
     not_show_extend_aliquot_purchase = fields.Boolean()
 
+    not_show_total_purchases_with_iva = fields.Boolean()
+
+    not_show_national_exempt_total_purchases = fields.Boolean()
+
+    not_show_total_purchases_national = fields.Boolean()
+
     config_deductible_tax = fields.Boolean()
 
     no_deductible_general_aliquot_purchase = fields.Many2one(
