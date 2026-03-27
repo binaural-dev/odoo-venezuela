@@ -5,7 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 class ResCurrency(models.Model):
     _inherit = "res.currency"
 
-    def _convert(self, from_amount, to_currency, company=None, date=None, round=True, custom_rate=0.0):
+    def _convert(self, from_amount, to_currency, company=None, date=None, round=False, custom_rate=0.0):
         """Returns the converted amount of ``from_amount``` from the currency
            ``self`` to the currency ``to_currency`` for the given ``date`` and
            company.
@@ -24,9 +24,7 @@ class ResCurrency(models.Model):
         assert company, "convert amount from unknown company"
         assert date, "convert amount from unknown date"
         # apply conversion rate
-        if self == to_currency:
-            to_amount = from_amount
-        elif from_amount:
+        if from_amount:
             if custom_rate > 0:
                 to_amount = from_amount * custom_rate 
             else:
@@ -34,7 +32,19 @@ class ResCurrency(models.Model):
         else:
             return 0.0
 
-        # apply rounding
-        return to_currency.round(to_amount) if round else to_amount
-    
+        return to_amount
+    #override
+    def round(self, amount):
+        """"""
+        self.ensure_one()
+        amount_float = float(amount)
 
+        try:
+            amount_float = float(amount)
+        except (ValueError, TypeError):
+            return super(ResCurrency, self).round(amount)
+
+        if abs(amount_float - round(amount_float, 6)) > 1e-9:
+            return amount_float
+
+        return super(ResCurrency, self).round(amount_float)
