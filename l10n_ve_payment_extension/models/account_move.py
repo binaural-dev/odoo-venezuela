@@ -58,6 +58,22 @@ class AccountMoveRetention(models.Model):
         default=False,
     )
 
+    is_third_party_retention = fields.Boolean(
+        string="Third Party Billing",
+        default=False,
+        help="Enable to create retentions on behalf of a third-party provider.",
+    )
+
+    third_party_iva_retention_count = fields.Integer(
+        string="Third Party IVA Retentions",
+        compute="_compute_third_party_retention_counts",
+    )
+
+    third_party_islr_retention_count = fields.Integer(
+        string="Third Party ISLR Retentions",
+        compute="_compute_third_party_retention_counts",
+    )
+
     not_edit_municipal_retention_lines = fields.Boolean(
         string="Edit Municipal Retention Lines?",
         compute="_compute_state_retentions_lines",

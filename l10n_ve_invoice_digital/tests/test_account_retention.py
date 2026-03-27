@@ -159,6 +159,7 @@ class TestAccumulatedRate(TransactionCase):
             'move_type': 'in_invoice',
             'journal_id': self.purchase_journal.id,
             'invoice_date': date.today(),
+            'invoice_date_display': date.today(),
             'currency_id': self.company.currency_id.id,
             'invoice_line_ids': [(0, 0, {
                 'name': 'Servicio Nuevo',

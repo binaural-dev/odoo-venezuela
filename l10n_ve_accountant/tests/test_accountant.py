@@ -266,6 +266,7 @@ class TestAccountant(TransactionCase):
                 "move_type": "out_invoice",
                 "partner_id": self.partner.id,
                 "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
                 "journal_id": journal.id,
                 "invoice_line_ids": [
                     (
@@ -501,6 +502,7 @@ class TestAccountant(TransactionCase):
         invoice_form.foreign_currency_id = self.currency_vef
         invoice_form.partner_id = self.partner_a
         invoice_form.invoice_date = self.date
+        invoice_form.invoice_date_display = self.date
         invoice_form.foreign_rate = 1.23
 
         self.assertEqual(
@@ -522,8 +524,65 @@ class TestAccountant(TransactionCase):
         invoice_form.foreign_currency_id = self.currency_vef
         invoice_form.partner_id = self.partner_a
         invoice_form.invoice_date = self.date
+        invoice_form.invoice_date_display = self.date
         self.assertNotEqual(
             invoice_form.foreign_rate,
             1.23,
             "Foreign rate should be set to 1.23 for in_invoice move type.",
         )
+
+    def test_payment_method_line_assigned_account_validation(self):
+        """Test that a journal cannot be created or updated if a payment method line lacks a payment_account_id."""
+        from odoo.exceptions import ValidationError
+
+        # Create a valid journal with an assigned account in the payment method line
+        valid_journal = self.env["account.journal"].create({
+            "name": "Valid Journal",
+            "type": "bank",
+            "code": "VALJ",
+            "company_id": self.company.id,
+            "inbound_payment_method_line_ids": [
+                Command.create({
+                    "payment_method_id": self.payment_method.id,
+                    "payment_account_id": self.account_product.id,
+                })
+            ]
+        })
+        self.assertTrue(valid_journal.id, "Should successfully create a journal with properly configured payment method accounts.")
+
+        # Attempt to create an invalid journal with a missing payment_account_id
+        with self.assertRaises(ValidationError) as error:
+            self.env["account.journal"].create({
+                "name": "Invalid Journal",
+                "type": "bank",
+                "code": "INVJ",
+                "company_id": self.company.id,
+                "inbound_payment_method_line_ids": [
+                    Command.create({
+                        "payment_method_id": self.payment_method.id,
+                        # Missing payment_account_id
+                    })
+                ]
+            })
+        self.assertIn("All payment methods must have an assigned account", str(error.exception))
+
+    def test_payment_method_line_assigned_account_validation_cash_journal(self):
+        """Test that a cash journal can be created even if a payment method line lacks a payment_account_id."""
+        # Due to the recent change, 'cash' journals shouldn't trigger the validation.
+        try:
+            cash_journal = self.env["account.journal"].create({
+                "name": "Invalid Cash Journal",
+                "type": "cash",
+                "code": "INVCJ",
+                "company_id": self.company.id,
+                "inbound_payment_method_line_ids": [
+                    Command.create({
+                        "payment_method_id": self.payment_method.id,
+                        # Missing payment_account_id
+                    })
+                ]
+            })
+            self.assertTrue(cash_journal.id, "Should successfully create a cash journal even without configured payment method accounts.")
+        except Exception as e:
+            self.fail(f"Creating a cash journal without payment_account_id raised an exception: {e}")
+

@@ -12,11 +12,9 @@
                     <attribute name="readonly">not edit_retention_fields</attribute>
                 </field>
                 <field name="journal_id" position="before">
-                    <field name="is_retention" invisible="not is_out_invoice"/>
+                    <field name="is_retention" invisible="not is_out_invoice or not can_edit_wizard or can_group_payments"/>
                 </field>
-                <field name="amount" position="attributes">
-                    <attribute name="readonly">is_retention == True</attribute>
-                </field>
+                
                 <field name="currency_id" position="attributes">
                     <attribute name="readonly">is_retention == True</attribute>
                 </field>
@@ -41,7 +39,7 @@
                                     <field name="company_currency_id" column_invisible="True"/>
                                     <field name="foreign_currency_id" column_invisible="True"/>
                                     <field name="foreign_currency_rate" column_invisible="True"/>
-                                    <field name="name"/>
+                                    <field name="name" required="1"/>
                                     <field name="move_id"/>
                                     <field name="aliquot"/>
                                     <field name="related_percentage_tax_base" optional="hide"/>
