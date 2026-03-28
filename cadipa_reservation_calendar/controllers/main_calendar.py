@@ -91,14 +91,21 @@ class MainCalendar(http.Controller):
                 order="appointment_type_id asc"
             )
             for res in reservations:
-                res_dict = self._info_partner_with_reservation(res)                
+                res_dict = self._info_partner_with_reservation(res)
+                if not res_dict:
+                    continue
                 guest_details = []
-                for guest in res.guest_ids:
-                    guest_details.append({
-                        'name': guest.name,
-                        'vat': guest.vat,
-                        'prefix_vat': guest.prefix_vat,
-                    })                
+                if can_view_extra:
+                    for guest in res.guest_ids:
+                        guest_details.append({
+                            'name': guest.name,
+                            'vat': guest.vat,
+                            'prefix_vat': guest.prefix_vat,
+                        })
+                else:
+                    for field in ['partner_id', 'appointment_booker_id', 'responsible', 'description', 'invoice', 'message']:
+                        res_dict.pop(field, None)
+                
                 res_dict['guest_details'] = guest_details
                 res_dict['can_view_extra'] = can_view_extra              
                 reservation_list.append(res_dict)
@@ -158,14 +165,10 @@ class MainCalendar(http.Controller):
 
         domain = [
             ("appointment_type_id.product_id", "!=", False),
+            ("appointment_type_id", "!=", False),
             ("active", "=", True),
             ("start", ">=", init_of_day_utc),
             ("stop", "<=", end_of_day_utc),
-            (
-                "categ_ids",
-                "in",
-                request.env.ref("appointment.calendar_event_type_data_online_appointment").ids,
-            ),
         ]
         return domain
         

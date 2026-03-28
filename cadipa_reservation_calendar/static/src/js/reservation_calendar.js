@@ -354,14 +354,14 @@ _searchReservationsPartners: async function() {
               const clickClass = canViewExtra ? 'js-reservation-click' : 'schedule-no-click';
               const pastClass = isPastDay ? 'schedule-past' : '';
 
-              const bookerName = r.appointment_booker_id.name;
+              const bookerName = r.appointment_booker_id ? r.appointment_booker_id.name : '';
               const displayText = canViewExtra ? bookerName : 'Reservado';
               
               col += `
                 <div class="schedule bg-primary ${clickClass} ${pastClass}"
                      style="top:${topPct}%; height:${hPct}%"
                      data-reservation-id="${r.id}"
-                     data-partner-name="${bookerName}"
+                     data-partner-name="${bookerName || 'Reservado'}"
                      data-start-time="${r.start}"
                      data-stop-time="${r.stop}"
                      data-court-name="${zone.name}"
@@ -401,13 +401,13 @@ _searchReservationsPartners: async function() {
               <div class="timesheet__block" data-court="${zone.id}" data-hour="${k}">
                 <div class="schedule bg-primary text-white mb-1 js-reservation-click"
                      data-reservation-id="${reservationForSlot.id}"
-                     data-partner-name="${reservationForSlot.partner_id.name}"
+                     data-partner-name="${reservationForSlot.partner_id ? reservationForSlot.partner_id.name : 'Reservado'}"
                      data-start-time="${reservationForSlot.start}"
                      data-stop-time="${reservationForSlot.stop}"
                      data-court-name="${zone.name}"
                      data-court-id="${zone.id}"
                      data-description="${reservationForSlot.description}"> <strong>${reservationForSlot.start} - ${reservationForSlot.stop}</strong><br>
-                  ${reservationForSlot.partner_id.name}
+                  ${reservationForSlot.partner_id ? reservationForSlot.partner_id.name : 'Reservado'}
                 </div>
               </div>`;
           } else {
