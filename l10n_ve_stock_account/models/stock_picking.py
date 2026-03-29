@@ -85,7 +85,8 @@ class StockPicking(models.Model):
         string="Is Donation",
         compute="_compute_is_donation",
         readonly=False,
-        tracking=True
+        tracking=True,
+        store=True,
     )
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
 
@@ -117,6 +118,51 @@ class StockPicking(models.Model):
         store=True,
     )
 
+    @api.depends(
+        "move_ids",
+        "move_ids.qty_return",
+        "move_ids.quantity",
+    )
+    def _compute_type_of_return(self):
+        for picking in self:
+            if (
+                not picking.move_ids
+                or not any(
+                    l.returned_move_ids for l in picking.move_ids
+                )
+                or all(l.qty_return == 0 for l in picking.move_ids)
+            ):
+                picking.type_of_return = "n/a"
+            elif all(
+                l.qty_return == l.quantity for l in picking.move_ids
+            ):
+                picking.type_of_return = "total"
+            else:
+                picking.type_of_return = "partial"
+
+    @api.depends("transfer_reason_id")
+    def _compute_reasons_optional_guide(self):
+        consignment_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
+            raise_if_not_found=False,
+        ).id
+        for rec in self:
+            rec.reasons_optional_guide_dispatch = (
+                True
+                if consignment_reason == rec.transfer_reason_id.id
+                and rec.optional_internal_movement_guidance
+                and rec.operation_code in ["internal"]
+                else False
+            )
+
+    def get_customer_journal(self):
+        journal = customer_journal_id = self.env.company.customer_journal_id or False
+        return journal
+
+    def get_vendor_journal(self):
+        journal = vendor_journal_id = self.env.company.vendor_journal_id or False
+        return journal
+
     picking_type_domain = fields.Char(
         string="Picking Type Domain",
         compute="_compute_picking_type_domain",
@@ -146,111 +192,6 @@ class StockPicking(models.Model):
                 picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
             else:
                 picking.picking_type_domain = native_domain
-    type_of_return = fields.Selection(
-        [
-            ("total", "Total"),
-            ("partial", "Partial"),
-            ("n/a", "N/A"),
-        ],
-        string="Type of Return",
-        default="n/a",
-        compute="_compute_type_of_return",
-        store=True,
-    )
-
-    @api.depends(
-        "move_ids_without_package",
-        "move_ids_without_package.qty_return",
-        "move_ids_without_package.quantity",
-    )
-    def _compute_type_of_return(self):
-        for picking in self:
-            if (
-                not picking.move_ids_without_package
-                or not any(
-                    l.returned_move_ids for l in picking.move_ids_without_package
-                )
-                or all(l.qty_return == 0 for l in picking.move_ids_without_package)
-            ):
-                picking.type_of_return = "n/a"
-            elif all(
-                l.qty_return == l.quantity for l in picking.move_ids_without_package
-            ):
-                picking.type_of_return = "total"
-            else:
-                picking.type_of_return = "partial"
-
-    @api.depends("transfer_reason_id")
-    def _compute_reasons_optional_guide(self):
-        consignment_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
-            raise_if_not_found=False,
-        ).id
-        for rec in self:
-            rec.reasons_optional_guide_dispatch = (
-                True
-                if consignment_reason == rec.transfer_reason_id.id
-                and rec.optional_internal_movement_guidance
-                and rec.operation_code in ["internal"]
-                else False
-            )
-
-    def get_customer_journal(self):
-        journal = customer_journal_id = self.env.company.customer_journal_id or False
-        return journal
-
-    def get_vendor_journal(self):
-        journal = vendor_journal_id = self.env.company.vendor_journal_id or False
-        return journal
-
-    type_of_return = fields.Selection(
-        [
-            ("total", "Total"),
-            ("partial", "Partial"),
-            ("n/a", "N/A"),
-        ],
-        string="Type of Return",
-        default="n/a",
-        compute="_compute_type_of_return",
-        store=True,
-    )
-
-    @api.depends(
-        "move_ids_without_package",
-        "move_ids_without_package.qty_return",
-        "move_ids_without_package.quantity",
-    )
-    def _compute_type_of_return(self):
-        for picking in self:
-            if (
-                not picking.move_ids_without_package
-                or not any(
-                    l.returned_move_ids for l in picking.move_ids_without_package
-                )
-                or all(l.qty_return == 0 for l in picking.move_ids_without_package)
-            ):
-                picking.type_of_return = "n/a"
-            elif all(
-                l.qty_return == l.quantity for l in picking.move_ids_without_package
-            ):
-                picking.type_of_return = "total"
-            else:
-                picking.type_of_return = "partial"
-
-    @api.depends("transfer_reason_id")
-    def _compute_reasons_optional_guide(self):
-        consignment_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
-            raise_if_not_found=False,
-        ).id
-        for rec in self:
-            rec.reasons_optional_guide_dispatch = (
-                True
-                if consignment_reason == rec.transfer_reason_id.id
-                and rec.optional_internal_movement_guidance
-                and rec.operation_code in ["internal"]
-                else False
-            )
 
     def action_open_invoice_wizard(self):
         return {
@@ -378,29 +319,14 @@ class StockPicking(models.Model):
                         "transfer_ids": self,
                         "from_picking": True,
                         "is_donation":picking_id.is_donation,
-                }
-                if picking_id.sale_id and picking_id.pricelist_id:
-                    invoice_vals["pricelist_id"] = picking_id.pricelist_id.id
-                invoice = self.env["account.move"].create(invoice_vals) ##PROBLEMA ACAAA
-            picking_id.write({"state_guide_dispatch": "invoiced"})
-            picking_id._update_order_sale_invoiced()
-        return self.action_view_invoice(invoices=invoice)
-
-    @api.readonly
-    def action_view_invoice(self, invoices=False):
-        action = self.env['ir.actions.actions']._for_xml_id('account.action_move_out_invoice_type')
-        form_view = [(self.env.ref('account.view_move_form').id, 'form')]
-        if 'views' in action:
-            action['views'] = form_view + [(view_id,     view_type) for view_id, view_type in action['views'] if view_type != 'form']
-        
-        if invoices:
-            action['res_id'] = invoices.id
-            
-        action['context'] = {
-            'default_move_type': 'out_invoice',
-            'default_partner_id': self.partner_id.id,
-        }
-        return action
+                    }
+                # Reincorporar la lista de precios cuando el picking procede de una venta
+                if picking_id.sale_id and picking_id.sale_id.pricelist_id:
+                    invoice_vals["pricelist_id"] = picking_id.sale_id.pricelist_id.id
+                invoice = self.env["account.move"].create(invoice_vals)
+                picking_id.write({"state_guide_dispatch": "invoiced"})
+                picking_id._update_order_sale_invoiced()
+            return invoice
 
     def action_create_invoice(self):
         invoice = self.create_invoice()
@@ -1314,19 +1240,14 @@ class StockPicking(models.Model):
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
-    def alert_views(self,company_ids_str):
-
+    def alert_views(self, company_ids_str):
         company_ids = [
             int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
         ]
         domain = self._get_domain_for_return_picking()
         domain.append(("company_id", "in", company_ids))
 
-        pickings_combined = (
-            self.env["stock.picking"]
-            .sudo()
-            .search(domain)
-        )
+        pickings_combined = self.env["stock.picking"].sudo().search_count(domain)
 
         today = date.today()
         taxpayer_type = self.env.company.taxpayer_type
@@ -1364,9 +1285,6 @@ class StockPicking(models.Model):
             ("is_return", "=", False),
             ("type_of_return", "!=", "total"),
         ]
-    def print_donation_certificate(self):
-        self.ensure_one()
-        return self.env.ref("l10n_ve_stock_account.action_donation_certificate_stock_picking").report_action(self)
 
     def get_foreign_currency_is_vef(self):
         return self.env.company.foreign_currency_id == self.env.ref("base.VEF")
@@ -1418,4 +1336,3 @@ class StockPicking(models.Model):
                     'is_consignment', 'is_dispatch_guide', 'partner_required']):
                     picking._assign_partner_from_location()
         return res
-            
