@@ -27,14 +27,13 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.indexed_dispatch_guide", readonly=False
     )
 
+    donation_account_id = fields.Many2one(
+        "account.account", "Donation Account", related="company_id.donation_account_id", readonly=False
+    )
     hide_disc_field_dispatch_guide = fields.Boolean(
         related="company_id.hide_disc_field_dispatch_guide", readonly=False
     )
 
     hide_weight_field_dispatch_guide = fields.Boolean(
         related="company_id.hide_weight_field_dispatch_guide", readonly=False
-    )
-    
-    donation_account_id = fields.Many2one(
-        "account.account", "Donation Account", related="company_id.donation_account_id", readonly=False
     )

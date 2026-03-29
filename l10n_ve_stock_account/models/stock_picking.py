@@ -85,7 +85,8 @@ class StockPicking(models.Model):
         string="Is Donation",
         compute="_compute_is_donation",
         readonly=False,
-        tracking=True
+        tracking=True,
+        store=True,
     )
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
 
@@ -105,67 +106,6 @@ class StockPicking(models.Model):
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
-    def get_customer_journal(self):
-        journal = customer_journal_id = self.env.company.customer_journal_id or False
-        return journal
-
-    def get_vendor_journal(self):
-        journal = vendor_journal_id = self.env.company.vendor_journal_id or False
-        return journal
-    picking_type_domain = fields.Char(
-        string="Picking Type Domain",
-        compute="_compute_picking_type_domain",
-    )
-
-    @api.onchange("is_donation")
-    def _onchange_is_donation(self):
-        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
-        if self.is_donation:
-            contact_id = self.env.company.partner_id
-            self.partner_id = contact_id
-            self.is_dispatch_guide = False
-            self.transfer_reason_id = self_consumption
-
-    @api.onchange("partner_id")
-    def _onchange_partner_id(self):
-        if self.is_donation:
-            if self.partner_id != self.env.company.partner_id:
-                raise UserError(_("The partner must be the company itself for a donation"))
-        
-
-    @api.depends("is_donation")
-    def _compute_picking_type_domain(self):
-        native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
-        for picking in self:
-            if picking.is_donation:
-                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
-            else:
-                picking.picking_type_domain = native_domain
-
-    @api.onchange("is_donation")
-    def _onchange_is_donation(self):
-        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
-        if self.is_donation:
-            contact_id = self.env.company.partner_id
-            self.partner_id = contact_id
-            self.is_dispatch_guide = False
-            self.transfer_reason_id = self_consumption
-
-    @api.onchange("partner_id")
-    def _onchange_partner_id(self):
-        if self.is_donation:
-            if self.partner_id != self.env.company.partner_id:
-                raise UserError(_("The partner must be the company itself for a donation"))
-        
-
-    @api.depends("is_donation")
-    def _compute_picking_type_domain(self):
-        native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
-        for picking in self:
-            if picking.is_donation:
-                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
-            else:
-                picking.picking_type_domain = native_domain
     type_of_return = fields.Selection(
         [
             ("total", "Total"),
@@ -214,6 +154,44 @@ class StockPicking(models.Model):
                 and rec.operation_code in ["internal"]
                 else False
             )
+
+    def get_customer_journal(self):
+        journal = customer_journal_id = self.env.company.customer_journal_id or False
+        return journal
+
+    def get_vendor_journal(self):
+        journal = vendor_journal_id = self.env.company.vendor_journal_id or False
+        return journal
+
+    picking_type_domain = fields.Char(
+        string="Picking Type Domain",
+        compute="_compute_picking_type_domain",
+    ) 
+
+    @api.onchange("is_donation")
+    def _onchange_is_donation(self):
+        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        if self.is_donation:
+            contact_id = self.env.company.partner_id
+            self.partner_id = contact_id
+            self.is_dispatch_guide = False
+            self.transfer_reason_id = self_consumption
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        if self.is_donation:
+            if self.partner_id != self.env.company.partner_id:
+                raise UserError(_("The partner must be the company itself for a donation"))
+        
+
+    @api.depends("is_donation")
+    def _compute_picking_type_domain(self):
+        native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
+        for picking in self:
+            if picking.is_donation:
+                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
+            else:
+                picking.picking_type_domain = native_domain
 
     def action_open_invoice_wizard(self):
         return {
@@ -316,6 +294,7 @@ class StockPicking(models.Model):
         Creates customer invoice from the picking
         """
         self._validate_one_invoice_posted()
+        invoice = self.env["account.move"]
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
@@ -340,13 +319,19 @@ class StockPicking(models.Model):
                         "transfer_ids": self,
                         "from_picking": True,
                         "is_donation":picking_id.is_donation,
-                }
-                if picking_id.sale_id and picking_id.pricelist_id:
-                    invoice_vals["pricelist_id"] = picking_id.pricelist_id.id
-                invoice = self.env["account.move"].create(invoice_vals) ##PROBLEMA ACAAA
-            picking_id.write({"state_guide_dispatch": "invoiced"})
-            picking_id._update_order_sale_invoiced()
-        return self.action_view_invoice(invoices=invoice)
+                    }
+                # Reincorporar la lista de precios cuando el picking procede de una venta
+                if picking_id.sale_id and picking_id.sale_id.pricelist_id:
+                    invoice_vals["pricelist_id"] = picking_id.sale_id.pricelist_id.id
+                invoice = self.env["account.move"].create(invoice_vals)
+                picking_id.write({"state_guide_dispatch": "invoiced"})
+                picking_id._update_order_sale_invoiced()
+            return invoice
+
+    def action_create_invoice(self):
+        invoice = self.create_invoice()
+        action = self.action_view_invoice(invoices=invoice)
+        return action
 
     @api.readonly
     def action_view_invoice(self, invoices=False):
@@ -357,11 +342,14 @@ class StockPicking(models.Model):
         
         if invoices:
             action['res_id'] = invoices.id
-            
-        action['context'] = {
+
+        ctx = dict(self.env.context)
+        ctx.update(action.get('context', {}) or {})
+        ctx.update({
             'default_move_type': 'out_invoice',
             'default_partner_id': self.partner_id.id,
-        }
+        })
+        action['context'] = ctx
         return action
 
     def create_bill(self):
@@ -1252,19 +1240,14 @@ class StockPicking(models.Model):
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
-    def alert_views(self,company_ids_str):
-
+    def alert_views(self, company_ids_str):
         company_ids = [
             int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
         ]
         domain = self._get_domain_for_return_picking()
         domain.append(("company_id", "in", company_ids))
 
-        pickings_combined = (
-            self.env["stock.picking"]
-            .sudo()
-            .search(domain)
-        )
+        pickings_combined = self.env["stock.picking"].sudo().search_count(domain)
 
         today = date.today()
         taxpayer_type = self.env.company.taxpayer_type
@@ -1302,9 +1285,6 @@ class StockPicking(models.Model):
             ("is_return", "=", False),
             ("type_of_return", "!=", "total"),
         ]
-    def print_donation_certificate(self):
-        self.ensure_one()
-        return self.env.ref("l10n_ve_stock_account.action_donation_certificate_stock_picking").report_action(self)
 
     def get_foreign_currency_is_vef(self):
         return self.env.company.foreign_currency_id == self.env.ref("base.VEF")

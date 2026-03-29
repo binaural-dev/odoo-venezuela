@@ -133,4 +133,3 @@ class SaleOrder(models.Model):
         invoice_vals = super()._prepare_invoice()
         invoice_vals["is_donation"] = self.is_donation
         return invoice_vals
-

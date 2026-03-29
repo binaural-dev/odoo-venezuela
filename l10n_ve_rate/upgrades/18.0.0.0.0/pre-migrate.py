@@ -18,5 +18,6 @@ def migrate(cr, version):
         'name': 'Migration',
         'type': 'server',
         'level': 'info',
+        'path': '',
         'message': 'Renamed currency_foreign_id to foreign_currency_id in res_company and related tables, preserving data.',
     })

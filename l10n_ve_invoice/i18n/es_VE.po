@@ -681,3 +681,9 @@ msgstr "Notas de Débito"
 msgid "Import File Number Purchase International"
 msgstr "Número de Expediente de Importación"
 
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
+#, python-format
+msgid "There are no moves to show"
+msgstr "No se encontraron registros para mostrar"

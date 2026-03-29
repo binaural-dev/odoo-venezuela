@@ -24,7 +24,7 @@
                 <field name="guide_number"/>
                 <field name="free_form_copy_number" readonly="1" />
                 <field name="transfer_ids" widget="many2many_tags" invisible="1" />
-                <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'"/>
+                <field name="is_donation" />
             </xpath>
 
             <!-- TODO: La línea entera debería estar bloqueada al `from_picking_line` ser True -->
