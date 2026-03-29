@@ -5,16 +5,6 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-TYPE_REVERSE_MAP = {
-    'entry': 'entry',
-    'out_invoice': 'out_refund',
-    'out_refund': 'out_invoice',
-    'in_invoice': 'in_refund',
-    'in_refund': 'in_invoice',
-    'out_receipt': 'out_refund',
-    'in_receipt': 'in_refund',
-}
-
 class AccountMove(models.Model):
     _inherit = "account.move"
 
@@ -76,10 +66,8 @@ class AccountMove(models.Model):
             if move.is_donation:
                 reverse_moves = self.env['account.move']
                 for move, default_values in zip(self, default_values_list):
-                    line_vals_list = []
-                    for line in move.line_ids:
-                        invoice_line_vals = move.product_line_donation()
-                        move_vals = {
+                    invoice_line_vals = move.product_line_donation()
+                    move_vals = {
                             "move_type": "out_refund",
                             "journal_id": move.journal_id.id,
                             "date": default_values.get("date", fields.Date.today()),
@@ -89,11 +77,11 @@ class AccountMove(models.Model):
                             "is_donation": True,
                             "invoice_line_ids": invoice_line_vals,
                         }
-                        reverse_move = self.env['account.move'].with_context(
-                            check_move_validity=False,
-                            skip_invoice_sync=True,
-                        ).create(move_vals)
-                        reverse_moves += reverse_move
+                    reverse_move = self.env['account.move'].with_context(
+                        check_move_validity=False,
+                        skip_invoice_sync=True,
+                    ).create(move_vals)
+                    reverse_moves += reverse_move
                 return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
@@ -148,5 +136,4 @@ class AccountMove(models.Model):
                         }
                     )
                 )
-        if invoice_line_vals:
-            return invoice_line_vals
+        return invoice_line_vals

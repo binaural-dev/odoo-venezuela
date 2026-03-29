@@ -14,14 +14,14 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
+    declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
+    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
 
     invoice_date = fields.Date(
         string="Invoice Date",
         default=fields.Date.today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
-    declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
-    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
     
     tax_base_for_international_purchase = fields.Float(string='Tax Base for International Purchase', help='Tax base for international purchase to show in purchase book')
     

@@ -10,6 +10,8 @@ class AccountJournal(models.Model):
 
     # ESTA HERENCIA NO SE IMPORTARÁ PORQUE ESTÁ GENERANDO ERROR, AL SOLUCIONAR, VOLVER A AGREGAR EN EN IMPORT
 
+    is_purchase_international = fields.Boolean(string="International purchase",default=False)
+
     @api.model_create_multi
     def create(self, vals_list):
 
@@ -18,7 +20,22 @@ class AccountJournal(models.Model):
 
         return super().create(vals_list)
 
-    is_purchase_international = fields.Boolean(string="International purchase",default=False)
+    @api.onchange('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
+    def _check_payment_method_line_accounts(self):
+
+        
+        for journal in self:
+            if journal.type and journal.type == 'bank':
+                if journal.inbound_payment_method_line_ids:
+                    for line in journal.inbound_payment_method_line_ids:
+                        if not line.payment_account_id:
+                            raise ValidationError(_("All payment methods must have an assigned account."))
+                        
+                if journal.outbound_payment_method_line_ids:
+                    for line in journal.outbound_payment_method_line_ids:
+                        if not line.payment_account_id:
+                            raise ValidationError(_("All payment methods must have an assigned account.")) 
+
 
     @api.constrains('is_purchase_international')
     def _check_single_international_purchase_journal(self):
@@ -34,17 +51,6 @@ class AccountJournal(models.Model):
                     raise ValidationError(
                         _("An International Purchase Journal is already enabled. Only one is allowed.")
                     )
-    @api.constrains('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
-    def _check_payment_method_line_accounts(self):
-        for journal in self.filtered(lambda x: x.type == 'bank'):
-            for line in journal.inbound_payment_method_line_ids:
-                if not line.payment_account_id:
-                    raise ValidationError(_("All payment methods must have an assigned account."))
-            for line in journal.outbound_payment_method_line_ids:
-                if not line.payment_account_id:
-                    raise ValidationError(_("All payment methods must have an assigned account."))
-
-
 
     def write(self, vals):
         for record in self:
