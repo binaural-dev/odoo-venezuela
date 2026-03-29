@@ -1160,13 +1160,13 @@ msgstr "Tasas de Impuestos de Compras"
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
 msgid "RIF"
-msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
+msgstr "RIF"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
 msgid "RIF/CI/PAS."
-msgstr "NIT, CUIT, RIF, RUT, RNC, TIN, RUC, RFC, RTN"
+msgstr "CI/RIF"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
