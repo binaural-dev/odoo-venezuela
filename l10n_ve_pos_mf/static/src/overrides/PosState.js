@@ -153,13 +153,13 @@ patch(PosStore.prototype, {
       invoice['payment_lines'] = order.paymentlines
         .filter((el) => {
           let amount = vef_base ? el.amount : el.get_foreign_amount()
-          return amount > 0
+          return Math.abs(amount) > 0
         })
         .map((el) => {
           let amount = vef_base ? el.amount : el.get_foreign_amount()
           return {
             payment_method: el.payment_method.code_fiscal_printer,
-            amount: amount,
+            amount: Math.abs(amount),
           }
         })
     }
