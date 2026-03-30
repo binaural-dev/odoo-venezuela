@@ -113,8 +113,12 @@ class AccountTax(models.Model):
         if record._name == 'account.move':
             foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
         elif record._name in ('sale.order','purchase.order'):
-            company_id = (self.company_id or self.env.company)
-            foreign_lines = [line._prepare_foreign_base_line_for_taxes_computation() for line in record.order_line]
+            company_id = (record.company_id or self.env.company)
+            foreign_lines = [
+                line._prepare_foreign_base_line_for_taxes_computation()
+                for line in record.order_line
+                if hasattr(line, '_prepare_foreign_base_line_for_taxes_computation')
+            ]
             
             self._add_tax_details_in_base_lines(foreign_lines, company_id)
             self._round_base_lines_tax_details(foreign_lines, company_id)
