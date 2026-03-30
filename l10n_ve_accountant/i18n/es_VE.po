@@ -1744,3 +1744,7 @@ msgstr "Fecha de tasa"
 msgid "All payment methods must have an assigned account."
 msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
 
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_amount
+msgid "foreign_amount"
+msgstr "Importe alterno"
