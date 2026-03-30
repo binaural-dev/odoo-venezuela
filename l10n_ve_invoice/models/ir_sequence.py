@@ -8,10 +8,11 @@ class IrSequence(models.Model):
 
     code = fields.Char(copy=False)
 
-    def create(self, vals):
-        for record in self:
-            record.check_sequence_exists(vals)
-        return super().create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self.check_sequence_exists(vals)
+        return super().create(vals_list)
     
     def write(self, vals):
         for record in self:
@@ -24,10 +25,13 @@ class IrSequence(models.Model):
         company_id = vals.get("company_id", self.company_id.id)
         # Realiza la validacion solo si se proporciona un company_id y un seq_code
         if company_id and seq_code:
-            sequence = self.sudo().search([
+            domain = [
                 ("code", "=", seq_code), 
                 ("company_id", "=", company_id),
                 ("active", "=", True),
-            ])
-            if sequence and len(sequence) > 1:
+            ]
+            if self.ids:
+                domain.append(("id", "not in", self.ids))
+            sequence = self.sudo().search(domain, limit=1)
+            if sequence:
                 raise ValidationError(_("The sequence code '%s' already exists for this company. Please check your sequences.") % seq_code)
