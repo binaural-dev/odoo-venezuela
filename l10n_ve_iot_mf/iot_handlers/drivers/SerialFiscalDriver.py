@@ -570,7 +570,8 @@ class SerialFiscalDriver(SerialDriver):
 
         grouped_payments = defaultdict(float)
         for payment in payment_lines:
-            grouped_payments[payment["payment_method"]] += payment["amount"]
+            if payment["amount"] > 0:
+                grouped_payments[payment["payment_method"]] += payment["amount"]
         return [{"payment_method": method, "amount": abs(amount)} for method, amount in grouped_payments.items()]
 
     def prepare_invoice_data(self, invoice):
@@ -631,7 +632,7 @@ class SerialFiscalDriver(SerialDriver):
             payment_lines = self.group_payments(invoice_data["payment_lines"])
  
             for item in payment_lines:
-                if item["amount"] > 0 and item["payment_method"] != "01":
+                if item["amount"] > 0:
                     
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
@@ -1083,7 +1084,7 @@ class SerialFiscalDriver(SerialDriver):
             payment_commands = []
             for item in payment_lines:
                 _logger.info("ITEM : %s", item)
-                if item["amount"] > 0 and item["payment_method"] != "01":
+                if item["amount"] > 0:
                     amount_i, amount_d = self.split_amount(item["amount"], dec=2)  
                     amount_i_filled = amount_i.zfill(10)  
                     payment_command = f"2{item['payment_method']}{amount_i_filled}{amount_d}"

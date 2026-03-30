@@ -150,9 +150,10 @@ patch(PosStore.prototype, {
         })
         .map((el) => {
           let amount = vef_base ? el.amount : el.get_foreign_amount()
+          let decimals = vef_base ? this.currency.decimal_places : this.foreign_currency.decimal_places
           return {
             payment_method: el.payment_method.code_fiscal_printer,
-            amount: Math.abs(amount),
+            amount: Math.abs(round_di(amount, decimals)),
           }
         })
     }
