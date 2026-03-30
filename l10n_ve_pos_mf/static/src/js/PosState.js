@@ -143,14 +143,18 @@ patch(PosStore.prototype, {
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
       })
-      invoice['payment_lines'] = order.paymentlines.map((el) => {
-
-        let amount = vef_base ? el.amount : el.get_foreign_amount()
-        return {
-          payment_method: el.payment_method.code_fiscal_printer,
-          amount: amount,
-        }
-      })
+      invoice['payment_lines'] = order.paymentlines
+        .filter((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return Math.abs(amount) > 0
+        })
+        .map((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return {
+            payment_method: el.payment_method.code_fiscal_printer,
+            amount: Math.abs(amount),
+          }
+        })
     }
     invoice["valid"] = true
     return invoice
