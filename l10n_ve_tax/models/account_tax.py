@@ -2,6 +2,7 @@ from odoo.tools.float_utils import float_round, float_compare
 from odoo import api, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.misc import formatLang
+from odoo.tools.float_utils import float_is_zero
 
 import logging
 
@@ -131,9 +132,15 @@ class AccountTax(models.Model):
 
         foreign_amount_total = res.get('foreign_amount_total', 0.0)
 
-        res["foreign_total_residual"] = foreign_amount_total - res["foreign_total_amount_paid"]
-
-        formatted_result = 0 if float_compare(res['foreign_total_residual'], 0, precision_digits=foreign_currency.decimal_places) < 0 else res['foreign_total_residual']
+        raw_residual = foreign_amount_total - res.get("foreign_total_amount_paid", 0.0)
+        
+        if float_is_zero(raw_residual, precision_digits=foreign_currency.decimal_places):
+            res["foreign_total_residual"] = 0.0
+            formatted_result = 0.0
+        else:
+            res["foreign_total_residual"] = raw_residual
+            formatted_result = 0.0 if raw_residual < 0 else raw_residual
+            
         res["foreign_formatted_total_residual"] = formatLang(
             self.env,
             formatted_result,

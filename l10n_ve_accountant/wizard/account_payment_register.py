@@ -135,16 +135,23 @@ class AccountPaymentRegister(models.TransientModel):
         super()._compute_amount()
 
         for wizard in self:
-            if not wizard.is_igtf and wizard.currency_id == wizard.company_id.currency_foreign_id:
+            if wizard.currency_id == wizard.company_id.currency_foreign_id:
+                
                 exact_rate = wizard.foreign_inverse_rate
                 if not exact_rate:
                     Rate = self.env["res.currency.rate"]
                     rate_values = Rate.compute_rate(wizard.source_currency_id.id, wizard.payment_date)
                     exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
                 
-                if exact_rate:
-                    wizard.amount = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
-
+                if exact_rate and wizard.company_id.currency_foreign_id == wizard.currency_id:
+                    
+                    moves = wizard.line_ids.mapped('move_id')
+                    total_foreign_debt = sum(moves.mapped('foreign_amount_residual')) if moves else 0.0
+                    
+                    if total_foreign_debt:
+                        wizard.amount = total_foreign_debt
+                    else:
+                        wizard.amount = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
 
     @api.depends('can_edit_wizard', 'amount', 'foreign_inverse_rate')
     def _compute_payment_difference(self):
@@ -152,13 +159,18 @@ class AccountPaymentRegister(models.TransientModel):
         
         for wizard in self:
             if wizard.can_edit_wizard and wizard.currency_id == wizard.company_id.currency_foreign_id:
-                exact_rate = wizard.foreign_inverse_rate
-                if not exact_rate:
-                    Rate = self.env["res.currency.rate"]
-                    rate_values = Rate.compute_rate(wizard.source_currency_id.id, wizard.payment_date)
-                    exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
+                moves = wizard.line_ids.mapped('move_id')
+                total_foreign_debt = sum(moves.mapped('foreign_amount_residual')) if moves else 0.0
                 
-                if exact_rate:
-                    exact_debt = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
+                if total_foreign_debt:
+                    wizard.payment_difference = total_foreign_debt - wizard.amount
+                else:
+                    exact_rate = wizard.foreign_inverse_rate
+                    if not exact_rate:
+                        Rate = self.env["res.currency.rate"]
+                        rate_values = Rate.compute_rate(wizard.source_currency_id.id, wizard.payment_date)
+                        exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
                     
-                    wizard.payment_difference = exact_debt - wizard.amount
+                    if exact_rate:
+                        exact_debt = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
+                        wizard.payment_difference = exact_debt - wizard.amount
