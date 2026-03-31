@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20260105\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260313\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-14 00:43+0000\n"
-"PO-Revision-Date: 2026-02-14 00:43+0000\n"
+"POT-Creation-Date: 2026-03-31 10:11+0000\n"
+"PO-Revision-Date: 2026-03-31 10:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -269,7 +269,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Cod."
-msgstr ""
+msgstr "Cód."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__code
@@ -284,7 +284,7 @@ msgstr "Empresas"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "Company Logo"
-msgstr ""
+msgstr "Logo de la Compañía"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_res_config_settings
@@ -315,13 +315,11 @@ msgid "Contact"
 msgstr "Contacto"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_form_view_inherited
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Create Bill"
 msgstr "Crear factura"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_form_view_inherited
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Create Credit Note"
 msgstr "Crear nota de crédito"
@@ -344,15 +342,9 @@ msgid "Create Invoice/Bill"
 msgstr "Crear Factura/Recibo"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_form_view_inherited
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Create Vendor Credit"
 msgstr "Crear crédito de proveedor"
-
-#. module: l10n_ve_stock_account
-#: model:ir.model,website_form_label:l10n_ve_stock_account.model_res_partner
-msgid "Create a Customer"
-msgstr "Crear un cliente"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__create_uid
@@ -452,7 +444,7 @@ msgstr "Guías de Despacho"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__display_name
 msgid "Display Name"
-msgstr "Nombre en pantalla"
+msgstr "Nombre para mostrar"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__document
@@ -582,51 +574,9 @@ msgid "ID"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__indexed_dispatch_guide
-msgid ""
-"If enabled, dispatch guide amounts will use the date of the stock picking "
-"for currency conversion."
-msgstr ""
-"Si está habilitado, los montos de la guía de despacho utilizarán la fecha "
-"efectiva del picking de stock para la conversión de moneda."
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "IVA"
 msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
-msgid "If checked, the discount field will be hidden in the dispatch guide."
-msgstr "Si está marcado, el campo de descuento se ocultará en la guía de despacho."
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
-msgid "If checked, the weight field will be hidden in the dispatch guide."
-msgstr "Si está marcado, el campo de peso se ocultará en la guía de despacho."
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__indexed_dispatch_guide
-msgid ""
-"If enabled, dispatch guide amounts will use the date of the stock picking "
-"for currency conversion."
-msgstr ""
-"Si está habilitado, los montos de la guía de despacho utilizarán la fecha "
-"efectiva del picking de stock para la conversión de moneda."
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_disc_field_dispatch_guide
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_disc_field_dispatch_guide
-msgid "If enabled, the discount field will be hidden in the dispatch guide."
-msgstr "Si está habilitado, el campo de descuento se ocultará en la guía de despacho."
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_weight_field_dispatch_guide
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
-msgid "If enabled, the weight field will be hidden in the dispatch guide."
-msgstr "Si está habilitado, el campo de peso se ocultará en la guía de despacho."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
@@ -667,7 +617,9 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__pricelist_id
 msgid "If you change the pricelist, only newly added lines will be affected."
-msgstr "Si cambia la lista de precios, solo las líneas recién agregadas se verán afectadas."
+msgstr ""
+"Si cambia la lista de precios, solo las líneas recién agregadas se verán "
+"afectadas."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
@@ -840,6 +792,11 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__match_guide_dispatch_domain
 msgid "Match Guide Dispatch Domain"
+msgstr "Dominio de Coincidencia de Guía de Despacho"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__n/a
+msgid "N/A"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -886,6 +843,11 @@ msgid "Order Is Consignment"
 msgstr "Pedido es Consignación"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__partial
+msgid "Partial"
+msgstr "Parcial"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced_partial
 msgid "Partially Invoiced"
 msgstr "Parcialmente Facturada"
@@ -927,6 +889,14 @@ msgstr "Lista de traslados"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__pickings_ids
 msgid "Pickings"
 msgstr "Guías de Despacho"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+msgid ""
+"Please configure the income account for the product '%s' or its category."
+msgstr ""
+"Por favor configure la cuenta de ingresos para el producto '%s' o su categoría."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -991,6 +961,11 @@ msgstr "Cantidad despachada"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__qty_invoiced
 msgid "Quantity Invoiced"
 msgstr "Cantidad Facturada"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move__qty_return
+msgid "Quantity Return"
+msgstr "Cantidad Devuelta"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__readonly_is_consignation_warehouse
@@ -1212,6 +1187,7 @@ msgid "To add vendor journal"
 msgstr "Para agregar diario de proveedores"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__total
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Total"
 msgstr ""
@@ -1220,7 +1196,7 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_picking
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__picking_id
 msgid "Transfer"
-msgstr "Trasladar"
+msgstr "Transferir"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__transfer_ids
@@ -1237,6 +1213,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__operation_code
 msgid "Type of Operation"
 msgstr "Tipo de operación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__type_of_return
+msgid "Type of Return"
+msgstr "Tipo de Devolución"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -1312,6 +1293,16 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+msgid ""
+"You have %(pickings_combined)s unbilled dispatch guides as of %(date)s. If "
+"billed in the next period, the Seniat will be Notified."
+msgstr ""
+"Tienes %(pickings_combined)s guías de despacho sin facturar al %(date)s. De "
+"facturarse en el siguiente periodo el Seniat será Notificado."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
 #: code:addons/l10n_ve_stock_account/models/res_company.py:0
 msgid "last_day"
 msgstr ""
@@ -1321,10 +1312,3 @@ msgstr ""
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid "transfer_ids"
 msgstr ""
-
-#. module: l10n_ve_stock_account
-#. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-msgid "You have %(pickings_combined)s unbilled dispatch guides as of %(date)s. If billed in the next period, the Seniat will be Notified."
-msgstr "Tienes %(pickings_combined)s guías de despacho sin facturar al %(date)s. De facturarse en el siguiente periodo el Seniat será Notificado."
-
