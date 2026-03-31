@@ -993,33 +993,49 @@ class SerialFiscalDriver(SerialDriver):
             _logger.warning(response)
 
         return response
-    
-    def formatear_monto(self, monto):
-        parte_entera, parte_decimal = f"{monto:.2f}".split('.')
-        monto_sin_punto = parte_entera + parte_decimal
-        monto_formateado = monto_sin_punto.zfill(10)
-        
-        return monto_formateado
-    
-    def formatear_quantity(self, quantity):
-        if '.' in str(quantity):
-            parte_entera, parte_decimal = f"{quantity}".split('.')
-            quantity_formateado = parte_entera.zfill(5)
-            quantity_formateado_2 = parte_decimal.zfill(3)
-        else:
-            quantity_formateado = str(quantity).zfill(5)
-            quantity_formateado_2 = '000'
 
-        return quantity_formateado + quantity_formateado_2
-    
-    
+    def format_refund_line(self, item, max_amount_int, max_amount_decimal, max_qty_int, max_qty_decimal):
+        """
+        Formatea una línea de nota de crédito (refund) para impresión fiscal.
+        """
+        TAX = {}
+
+        price_unit = item.get("price_unit", 0)
+        if price_unit < 0:
+            return None, abs(price_unit)
+
+        code = f'|{item["default_code"]}|' if item.get("default_code") else ""
+
+        tax_code = str(item.get("tax", ""))
+        tax_value = TAX.get(tax_code, tax_code)
+
+        amount_i, amount_d = self.split_amount(round(price_unit, max_amount_decimal), max_amount_decimal)
+        qty_i, qty_d = self.split_amount(item.get("quantity", 0), max_qty_decimal)
+
+        formatted_line = (
+            f"d{tax_value}"
+            f"{amount_i.rjust(max_amount_int, '0')}{amount_d.rjust(max_amount_decimal, '0')}"
+            f"{qty_i.rjust(max_qty_int, '0')}{qty_d.rjust(max_qty_decimal, '0')}"
+            f"{code}"
+            f"{item.get('name', '')[:127].strip().replace('Ñ', 'N').replace('ñ', 'n')}"
+        )
+        return formatted_line, None
+
     def _print_out_refund(self, invoice):
         """
         Prints a credit note using the provided data.
         :param invoice: Dictionary containing the credit note data.
         """
         try:
-            
+            max_amount_int = FLAG_21[invoice["flag_21"]]["max_amount_int"]
+            max_amount_decimal = FLAG_21[invoice["flag_21"]]["max_amount_decimal"]
+            max_payment_amount_int = FLAG_21[invoice["flag_21"]]["max_payment_amount_int"]
+            max_payment_amount_decimal = FLAG_21[invoice["flag_21"]]["max_payment_amount_decimal"]
+            max_qty_int = FLAG_21[invoice["flag_21"]]["max_qty_int"]
+            max_qty_decimal = FLAG_21[invoice["flag_21"]]["max_qty_decimal"]
+            disc_int = FLAG_21[invoice["flag_21"]]["disc_int"]
+            disc_decimal = FLAG_21[invoice["flag_21"]]["disc_decimal"]
+
             number_invoice_affected = invoice.get('invoice_affected', {}).get('number', '')
             
             if number_invoice_affected:
@@ -1075,13 +1091,17 @@ class SerialFiscalDriver(SerialDriver):
 
             invoice_lines = invoice.get('invoice_lines', [])
             product_lines = []
-            
             for line in invoice_lines:
-                formated_amount = self.formatear_monto(line['price_unit'])
-                formated_quantity = self.formatear_quantity(line['quantity'])
-                command = f"d{str(line['tax'])}{formated_amount}{formated_quantity}{line['name']}"
-                product_lines.append(command)          
-            
+                formatted_line, discount = self.format_refund_line(
+                    line,
+                    max_amount_int,
+                    max_amount_decimal,
+                    max_qty_int,
+                    max_qty_decimal
+                )
+                if formatted_line:
+                    product_lines.append(formatted_line)          
+
             payment_lines = self.group_payments(invoice.get("payment_lines", []))
             payment_commands = []
             for item in payment_lines:
@@ -1113,18 +1133,18 @@ class SerialFiscalDriver(SerialDriver):
                 
                 if not result:
                     _logger.error("Fallo al enviar comando: %s", command)
-                    
-            msg = "Nota de crédito impresa correctamente"
-            
+
             estado_s1 = self.get_s1_printer_data()
             
             if estado_s1:
                 number = estado_s1.LastCreditNoteNumber
                 machine_number = estado_s1.RegisteredMachineNumber
                 number_z = estado_s1.DailyClosureCounter + 1
-                
-                return {"valid": True, "data": {"sequence": number, "serial_machine": machine_number, "mf_reportz":number_z}, "message": msg}
-            
+                return {
+                    "valid": True,
+                    "data": {"sequence": number, "serial_machine": machine_number, "mf_reportz": number_z},
+                    "message": "Nota de crédito impresa correctamente"
+                }
             else:
                 return {"valid": False, "message": "No se pudo obtener el número de la última nota de crédito."}
 
