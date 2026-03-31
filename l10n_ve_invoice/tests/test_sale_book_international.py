@@ -80,6 +80,95 @@ class TestSaleBook(TestCommonSaleInternational):
             line_fields["amount_general_aliquot"], 0
         )
 
+    def test_sale_book_line_fields_international_zero_none(self):
+
+        self.company.zero_aliquot_sale_international = False
+
+        invoice_amount = float(2681.20)
+        invoice = self._create_invoice_usd(invoice_amount,self.product_zero_aliquot_sale_international)
+
+        invoice.with_context(move_action_post_alert=True).action_post()
+        invoice = self.env['account.move'].search([('move_type','=','out_invoice')], order="id desc", limit=1)
+
+        wizard = self.get_sales_book_wizard()
+
+        taxes = wizard._determinate_amount_taxeds(invoice)
+
+        line_fields = wizard._fields_sale_book_line(invoice, taxes)
+
+        self.assertIsNone(
+            line_fields,
+            "Para ventas internacionales sin el impuesto cero configurado, debe devolver None"
+        )
+
+    def test_parse_sale_book_data_international(self):
+
+        invoice_amount = float(2681.20)
+        invoice = self._create_invoice_usd(invoice_amount,self.product_zero_aliquot_sale_international)
+
+        invoice.with_context(move_action_post_alert=True).action_post()
+        invoice = self.env['account.move'].search([('move_type','=','out_invoice')], order="id desc", limit=1)
+
+        wizard = self.get_sales_book_wizard()
+
+        data = wizard.parse_sale_book_data()
+
+        self.assertTrue(data, "No se generaron líneas válidas")
+
+        line = data[0]
+
+        # ✅ 3. Validar estructura completa (campos clave reales)
+        expected_keys = [
+            "_id",
+            "document_date",
+            "accounting_date",
+            "vat",
+            "partner_name",
+            "document_number",
+            "move_type",
+            "transaction_type",
+            "correlative",
+            "total_sales",
+            "total_sales_iva",
+            "total_sales_not_iva",
+            "amount_zero_aliquot_international",
+            "tax_base_zero_aliquot_international",
+        ]
+
+        for key in expected_keys:
+            self.assertIn(key, line, f"Falta el campo {key}")
+
+        _logger.info(f'AMOUNT ZERO ALIQUOT INTERNATIONAL:{line["amount_zero_aliquot_international"]}')
+
+        self.assertEqual(
+            line["amount_zero_aliquot_international"],
+            0,
+            "Debe haber monto en alícuota 0 internacional"
+        )
+
+        _logger.info(f'BASE ZERO ALIQUOT INTERNATIONAL:{line["tax_base_zero_aliquot_international"]}')
+
+        self.assertEqual(
+            line["tax_base_zero_aliquot_international"],
+            540181.36,
+            "Debe haber base imponible internacional"
+        )
+
+        # ✅ 7. No debería haber otros impuestos
+        self.assertEqual(line["amount_general_aliquot"], 0)
+        self.assertEqual(line["amount_reduced_aliquot"], 0)
+        self.assertEqual(line["amount_extend_aliquot"], 0)
+
+        # ✅ 8. Validar totales coherentes
+        self.assertGreaterEqual(line["total_sales"], 0)
+
+        self.assertAlmostEqual(
+            line["total_sales"],
+            line["total_sales_iva"] + line["total_sales_not_iva"],
+            places=2,
+            msg="Los totales no cuadran"
+        )
+
     def test_sale_book_line_fields_international_zero(self):
         self.test01_payment_from_invoice(self.product_zero_aliquot_sale_international,True)
         invoice = self.env['account.move'].search([('move_type','=','out_refund')], order="id desc", limit=1)
