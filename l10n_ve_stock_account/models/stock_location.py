@@ -19,11 +19,7 @@ class StockLocation(models.Model):
         string="Consignation Warehouse",
         compute="_compute_is_consignation_warehouse",
     ) 
-    is_donation_warehouse = fields.Boolean(
-        string="Donation Warehouse",
-        compute="_compute_is_donation_warehouse",
-        store=True,
-    )
+
 
     @api.constrains("usage", "location_id", "partner_id")
     def _check_internal_location_only(self):
@@ -46,13 +42,7 @@ class StockLocation(models.Model):
             record.is_consignation_warehouse = bool(
                 warehouse and warehouse.is_consignation_warehouse
             )
-    @api.depends("location_id")
-    def _compute_is_donation_warehouse(self):
-        for record in self:
-            warehouse = record.get_warehouse()
-            record.is_donation_warehouse = bool(
-                warehouse and warehouse.is_donation_warehouse
-            )
+
 
     def get_warehouse(self):
         if not self.id:
