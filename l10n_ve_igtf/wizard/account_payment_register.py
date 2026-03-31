@@ -83,10 +83,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         base_amount, 
                         wizard.igtf_percentage
                     )
-
-                    total_igtf_amount += igtf_for_invoice
+                total_igtf_amount += float_round(igtf_for_invoice,wizard.currency_id.decimal_places)
                 final_amount = base_amount + total_igtf_amount
-            
                 wizard.amount = final_amount
                 wizard.igtf_amount = total_igtf_amount
                 wizard.igtf_to_show = total_igtf_amount
@@ -216,7 +214,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
 
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
-
+      
         igtf_top = invoice.igtf_top_aply
 
         alter_bi_igtf = invoice.alter_bi_igtf

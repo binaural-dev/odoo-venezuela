@@ -168,11 +168,13 @@ class AccountMove(models.Model):
 
     foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_foreign_amount_residual", currency_field="foreign_currency_id",readonly=False)
 
-    @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
+    @api.depends('tax_totals')
     def _compute_foreign_amount_residual(self):
         for rec in self:
-            
-            rec.foreign_amount_residual = float_round(rec.amount_residual,rec.currency_id.decimal_places) * float_round(rec.foreign_inverse_rate,rec.currency_id.decimal_places)
+            if rec.tax_totals and "foreign_total_residual" in rec.tax_totals:
+                rec.foreign_amount_residual = rec.tax_totals.get("foreign_total_residual", 0.0)
+            else:
+                rec.foreign_amount_residual = float_round(rec.amount_residual,rec.currency_id.decimal_places) * float_round(rec.foreign_inverse_rate,rec.currency_id.decimal_places)
             
          
 
