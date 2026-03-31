@@ -184,23 +184,42 @@ class TestCommonSaleInternational(TransactionCase):
             'tax_group_id': self.tax_group_zero.id,
         })
 
+        self.company.general_aliquot_sale = self.env['account.tax'].create({
+            'name': 'IVA 16%', 'amount': 16, 'amount_type': 'percent', 
+            'type_tax_use': 'sale',
+            'company_id': self.company.id,
+            'tax_group_id': self.tax_group_general.id,
+        })
+
         self.product_zero_aliquot_sale_international = self.env["product.product"].create(
             {
                 "name": "Servicio",
                 "list_price": 100,
                 "sale_ok": True,
                 "property_account_expense_id": self.acc_expense.id,
-                "taxes_id": [(6, 0, [self.company.zero_aliquot_sale_international.id])],
+                "taxes_id": [(6, 0, [self.company.general_aliquot_sale.id])],
             }
         )
 
    
     def _create_invoice_usd(self, amount,product_id, date=None): 
+
+        sequence = self.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
+        sequence.unlink()
         sale_journal = self.Journal.create({
             'name': 'Diario Venta', 'type': 'sale', 'code': 'SAIN',
+            'is_debit':True,
             'company_id': self.company.id, 'currency_id': self.currency_usd.id,
+            'sequence_number_next':1,
+            'refund_sequence_number_next':2,
+            'refund_sequence':True,
             'is_sale_international':True,
         })
+
+        sale_journal.sequence_id.use_date_range = False 
+        sale_journal.refund_sequence_id.use_date_range = False
+
+        sale_journal.sequence_id.code = "invoice.correlative" 
 
         with Form(self.env["account.move"].with_context(default_move_type='out_invoice')) as inv_form:
             # inv_form.correlative = "12345698741256"
