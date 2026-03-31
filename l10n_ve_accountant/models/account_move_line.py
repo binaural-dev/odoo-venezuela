@@ -235,11 +235,15 @@ class AccountMoveLine(models.Model):
             foreign_currency = line.company_id.currency_foreign_id
             
             if foreign_currency:
+                if hasattr(line.move_id, 'origin_payment_advanced_payment_id') and line.move_id.origin_payment_advanced_payment_id:
+                    rate_date = line.move_id.origin_payment_advanced_payment_id.date
+                else:
+                    rate_date = line.date
                 rate = foreign_currency._get_conversion_rate(
-                    line.company_id.currency_id, 
-                    foreign_currency,          
-                    line.company_id,           
-                    line.date           
+                    line.company_id.currency_id,
+                    foreign_currency,
+                    line.company_id,
+                    rate_date
                 )
 
                 inverse_rate_to_use = rate if inverse_rate_to_use == 0.0 else rate
