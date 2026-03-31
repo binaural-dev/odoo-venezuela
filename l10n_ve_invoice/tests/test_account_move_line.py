@@ -26,4 +26,5 @@ class TestsAccountMoveLine(TestCommonSaleInternational):
                 tax_zero = line._get_computed_taxes()
 
                 self.assertEqual(tax_zero,self.company.zero_aliquot_sale_international)
+                
                 self.assertEqual(line.tax_ids,self.company.zero_aliquot_sale_international)
