@@ -1054,6 +1054,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         {
                             "tax_base_zero_aliquot_international": tax.get("tax_group_base_amount"),
                             "amount_zero_aliquot_international": tax.get("tax_group_amount"),
+                            "tax_base_exempt_aliquot": tax.get("tax_group_base_amount"),
                         }
                     )
 
