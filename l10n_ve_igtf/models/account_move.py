@@ -72,7 +72,8 @@ class AccountMove(models.Model):
 
                 else:
                     move.amount_to_pay_igtf = move.tax_totals["igtf"]["foreign_igtf_amount"] - move.amount_paid
-                    
+            if move.journal_id.is_purchase_international:
+                move.amount_to_pay_igtf = 0.0
 
     @api.depends(
         "amount_total", "amount_residual", "amount_residual_igtf", "amount_to_pay_igtf", "bi_igtf"
@@ -95,6 +96,16 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self:
+            if rec.journal_id.is_purchase_international:
+                rec.write({
+                    'igtf_top_aply': 0.0,
+                    'alter_igtf_top_aply': 0.0,
+                    'alter_bi_igtf': 0.0,
+                    'foreign_alter_bi_igtf': 0.0,
+                    'foreign_bi_igtf': 0.0,
+                    'bi_igtf': 0.0
+                })
+                continue
             
             amount = rec.amount_total
             if rec.company_currency_id == self.env.ref("base.VEF"):
@@ -152,14 +163,12 @@ class AccountMove(models.Model):
                 ], limit=1)
 
                 if partial:
-                    if bank_line[0].company_currency_id == self.env.ref("base.VEF") :
-                        partial_amount = abs(partial.foreign_amount) 
-                        partial_foreign_amount = abs(partial.amount) 
+                    if bank_line and bank_line[0].company_currency_id == self.env.ref("base.VEF"):
+                        partial_amount = abs(partial.foreign_amount)
+                        partial_foreign_amount = abs(partial.amount)
                     else:
-                        partial_amount =  abs(partial.amount) 
-                        partial_foreign_amount = abs(partial.foreign_amount) 
-
-                    
+                        partial_amount = abs(partial.amount)
+                        partial_foreign_amount = abs(partial.foreign_amount)
 
                 if bank_line:
                    
@@ -239,6 +248,3 @@ class AccountMove(models.Model):
                 'foreign_bi_igtf': total_foreign_bi_igtf
             })
             rec.bi_igtf = total_bi_igtf
-                    
-
-

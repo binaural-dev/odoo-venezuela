@@ -37,7 +37,6 @@ class AccountPaymentRegister(models.TransientModel):
             "Rate that will be used as factor to multiply of the foreign currency for the payment "
             "and the moves created by the wizard."
         ),
-        digits=(16, 15),
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
@@ -113,7 +112,7 @@ class AccountPaymentRegister(models.TransientModel):
         '''
         payment_values = batch_result['payment_values']
         lines = batch_result['lines']
-        company = min(lines.company_id, key=lambda c: len(c.sudo().parent_ids)) if not self._from_sibling_companies(lines) else lines.company_id.root_id
+        company = min(lines.company_id, key=lambda c: len(c.sudo().parent_ids))
 
         source_amount = abs(sum(lines.mapped('amount_residual')))
         if payment_values['currency_id'] == company.currency_id.id:
