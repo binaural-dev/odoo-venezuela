@@ -59,7 +59,7 @@ class AccountMoveLine(models.Model):
                     line.balance = rounded_balance
 
 
-    def action_register_payment(self, ctx=None):
+    def action_register_payment(self):
         """ 
         # 1. Validate Unique Partner
         # 2. Validate Unique Currency
@@ -83,4 +83,4 @@ class AccountMoveLine(models.Model):
             raise UserError(_("You cannot register payments for different companies at the same time."))
 
         
-        return super(AccountMoveLine, self).action_register_payment(ctx=ctx)
+        return super(AccountMoveLine, self).action_register_payment()
