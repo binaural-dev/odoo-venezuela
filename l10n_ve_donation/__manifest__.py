@@ -5,7 +5,7 @@
     "summary": "Venezuela - Donaciones",
     "author": "",
     "website": "",
-    "depends": ["l10n_ve_accountant", "l10n_ve_stock_account"],
+    "depends": ["l10n_ve_accountant"],
     "data": [
         "data/donation_certificate_paperformat.xml",
         "report/donation_certificate_report.xml",
@@ -15,11 +15,10 @@
         "views/res_config_setting_views.xml",
         "views/sale_order_views.xml",
         "views/stock_picking_type_views.xml",
-        "views/stock_picking_views.xml",
         "views/stock_scrap_views.xml",
         "views/stock_warehouse_views.xml",
     ],
     "installable": True,
     "application": True,
-    "auto_install": False,
+    "auto_install": True,
 }
