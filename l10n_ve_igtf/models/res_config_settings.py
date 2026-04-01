@@ -45,3 +45,10 @@ class ResConfigSettings(models.TransientModel):
     revalorize_payments_vef = fields.Boolean(
         related="company_id.revalorize_payments_vef", readonly=False, store=True
     )
+
+    not_show_igtf_sale_order = fields.Boolean(
+        related="company_id.not_show_igtf_sale_order", readonly=False
+    )
+    not_show_igtf_purchase_order = fields.Boolean(
+        related="company_id.not_show_igtf_purchase_order", readonly=False
+    )
