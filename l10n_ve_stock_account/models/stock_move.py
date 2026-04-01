@@ -1,4 +1,4 @@
-from odoo import models, api, fields
+from odoo import models, api, fields,Command
 from odoo.tools.misc import formatLang
 import logging
 
@@ -125,3 +125,4 @@ class StockMove(models.Model):
         )
 
         return ves_price_unit
+    
