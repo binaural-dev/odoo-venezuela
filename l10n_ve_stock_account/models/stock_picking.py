@@ -4,6 +4,7 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
+from odoo.tools.safe_eval import safe_eval
 from datetime import date, datetime, timedelta
 import calendar
 
@@ -301,7 +302,11 @@ class StockPicking(models.Model):
             action['res_id'] = invoices.id
 
         ctx = dict(self.env.context)
-        ctx.update(action.get('context', {}) or {})
+        action_ctx = action.get('context') or {}
+        if isinstance(action_ctx, str):
+            action_ctx = safe_eval(action_ctx, {'uid': self.env.uid})
+        ctx.update(action_ctx if isinstance(action_ctx, dict) else {})
+
         ctx.update({
             'default_move_type': 'out_invoice',
             'default_partner_id': self.partner_id.id,
@@ -493,6 +498,18 @@ class StockPicking(models.Model):
             if move_id.sale_line_id:
                 price_unit = move_id.sale_line_id.price_unit
                 tax_ids = [(6, 0, move_id.sale_line_id.tax_ids.ids)]
+            account = (
+                move_id.product_id.property_account_income_id.id
+                if move_id.product_id.property_account_income_id
+                else move_id.product_id.categ_id.property_account_income_categ_id.id
+            )
+            if not account:
+                raise UserError(
+                    _(
+                        "Please configure the income account for the product '%s' or its category."
+                    )
+                    % move_id.product_id.name
+                )
             vals = (
                 0,
                 0,
@@ -500,11 +517,7 @@ class StockPicking(models.Model):
                     "name": move_id.description_picking,
                     "product_id": move_id.product_id.id,
                     "price_unit": price_unit,
-                    "account_id": (
-                        move_id.product_id.property_account_income_id.id
-                        if move_id.product_id.property_account_income_id
-                        else move_id.product_id.categ_id.property_account_income_categ_id.id
-                    ),
+                    "account_id": account,
                     "tax_ids": tax_ids,
                     "quantity": move_id.sale_line_id.qty_delivered if move_id.sale_line_id else move_id.quantity,
                     "from_picking_line": from_picking_line,
