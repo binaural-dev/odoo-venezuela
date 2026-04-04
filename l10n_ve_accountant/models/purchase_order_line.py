@@ -1,11 +1,12 @@
-from odoo import models
+from odoo import models, fields
 import logging
 
 _logger = logging.getLogger(__name__)
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
-
+foreign_price = fields.Float(string='Precio Alterno', digits='Product Price')
+foreign_inverse_rate = fields.Float(string='Tasa Alterna', digits='Account', default=1.0)
     def _prepare_foreign_base_line_for_taxes_computation(self):
         """
         Convert the current record to a dictionary in order to use the generic taxes computation method
