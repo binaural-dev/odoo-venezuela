@@ -1,5 +1,5 @@
 from odoo import _, fields, models, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -26,3 +26,4 @@ class AccountMoveLine(models.Model):
     #         if product and product.type != 'service':
     #             raise ValidationError(_("You can only add service products to an invoice created from a picking."))
     #     return super(AccountMoveLine, self).create(vals)
+

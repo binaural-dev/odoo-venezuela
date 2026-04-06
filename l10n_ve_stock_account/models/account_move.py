@@ -1,10 +1,9 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError, ValidationError
 
 import logging
 
 _logger = logging.getLogger(__name__)
-
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -16,6 +15,7 @@ class AccountMove(models.Model):
 
     # 0: not printed yet, 1: first print (original), 2 or more: copies
     free_form_copy_number = fields.Integer(default=0, copy=False)
+
 
     def print_invoice_free_form(self):
 
@@ -30,5 +30,6 @@ class AccountMove(models.Model):
     @api.depends("picking_ids")
     def _compute_guide_number(self):
         for record in self:
-            guides = {p.guide_number for p in record.picking_ids if p.guide_number}
-            record.guide_number = ", ".join(guides) if guides else ""
+            list_guide_number = [picking.guide_number for picking in record.picking_ids]
+            record.guide_number = "/".join(list_guide_number)
+
