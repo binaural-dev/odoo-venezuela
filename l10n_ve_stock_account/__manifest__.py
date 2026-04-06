@@ -13,7 +13,7 @@
         "l10n_ve_invoice",
         "l10n_ve_accountant",
         "l10n_ve_sale",
-        "l10n_ve_donation",
+        # "l10n_ve_donation",
         "sale_stock",
         "web",
     ],
@@ -23,8 +23,7 @@
         "data/dispatch_guide_paperformat.xml",
         "data/ir_cron.xml",
         "data/ir_sequence.xml",
-        "data/transfer_reason.xml",
-
+        "data/transfer_reason.xml", 
         "views/account_move_views.xml",
         "wizard/picking_invoice_wizard.xml",
         "views/stock_picking_guide_dispatch_views.xml",
@@ -35,14 +34,11 @@
         "views/res_config_setting_views.xml",
         "views/stock_warehouse_views.xml",
         "views/stock_location_views.xml",
-
-
         "views/menuitem_views.xml",
         "views/alert_views.xml",
         "report/dispatch_guide.xml",
         "report/dispatch_guide_template.xml",
         "report/report_invoice_free_form.xml",
-
         "wizard/stock_picking_self_consumption_alert_views.xml",
     ],
     "application": True,
