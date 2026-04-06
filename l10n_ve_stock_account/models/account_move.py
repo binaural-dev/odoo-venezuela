@@ -30,5 +30,5 @@ class AccountMove(models.Model):
     @api.depends("picking_ids")
     def _compute_guide_number(self):
         for record in self:
-            list_guide_number = [picking.guide_number for picking in record.picking_ids]
-            record.guide_number = "/".join(list_guide_number)
+            guides = {p.guide_number for p in record.picking_ids if p.guide_number}
+            record.guide_number = ", ".join(guides) if guides else ""
