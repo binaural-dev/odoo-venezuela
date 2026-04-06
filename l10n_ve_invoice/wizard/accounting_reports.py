@@ -67,16 +67,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type == "out_refund" else 1
 
-        if move.journal_id.is_sale_international :
-            tax_keys_to_check = [
-                "amount_zero_aliquot_international",
-                "tax_base_zero_aliquot_international",
-            ]
-
-            total_tax_value = sum(taxes.get(key, 0) for key in tax_keys_to_check)
-            if total_tax_value == 0:
-                return None
-
         return {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),

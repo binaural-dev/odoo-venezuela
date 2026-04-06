@@ -36,6 +36,7 @@ class AccountJournal(models.Model):
         for record in self:
             if record.is_sale_international:
                 domain = [
+                    ('company_id','=',self.env.company.id),
                     ('is_sale_international', '=', True),
                     ('id', '!=', record.id),
                 ]
