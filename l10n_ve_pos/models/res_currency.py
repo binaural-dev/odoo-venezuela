@@ -8,6 +8,11 @@ class ResCurrency(models.Model):
 
     @api.model
     def _load_pos_data_domain(self, data, config):
+        """
+        Extend the domain for the search_read of res.currency
+        This method ensures that additional fields required for the Venezuelan localization,
+        such as foreign currency, are included in the data sent to the POS frontend.
+        """
         domain = super()._load_pos_data_domain(data,config)
         company = self.env['res.company'].browse(int(config['company_id']))
         currency_ids = [company.currency_id.id, int(config['currency_id'])]

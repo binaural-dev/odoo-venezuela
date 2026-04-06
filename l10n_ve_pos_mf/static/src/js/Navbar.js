@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Navbar } from "@point_of_sale/app/navbar/navbar";
+import { Navbar } from "@point_of_sale/app/components/navbar/navbar";
 import { patch } from "@web/core/utils/patch";
 import { FiscalMachinePopup } from "./FiscalMachinePopup";
 
@@ -29,7 +29,7 @@ patch(Navbar.prototype, {
     return this.pos.config.access_button_mf
   },
   async showFiscalMachinePopup() {
-     await this.env.services.popup.add(FiscalMachinePopup, {
+    await this.env.services.popup.add(FiscalMachinePopup, {
       title: "Fiscal Reports",
     });
   }

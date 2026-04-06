@@ -1,8 +1,7 @@
 /** @odoo-module **/
 
-import { DebugWidget } from "@point_of_sale/app/debug/debug_widget";
+import { DebugWidget } from "@point_of_sale/app/utils/debug/debug_widget";
 import { patch } from "@web/core/utils/patch";
-
 patch(DebugWidget.prototype, {
   programacion() {
     const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
@@ -18,6 +17,7 @@ patch(DebugWidget.prototype, {
       })
     });
   },
+
   report_x() {
     const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
     return new Promise(async (resolve, reject) => {
