@@ -23,7 +23,7 @@
 
             <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" force_save="1" readonly="1"/>
+                <field name="foreign_price" force_save="1" readonly="1" widget="monetary" options="{'precision': 'Foreign Product Price'}"/>
             </xpath>
 
             <xpath

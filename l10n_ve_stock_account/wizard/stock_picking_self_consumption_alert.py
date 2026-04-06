@@ -12,4 +12,3 @@ class StockPickingSelfConsumptionWizard(models.TransientModel):
 
     def action_cancel(self):
         return {'type': 'ir.actions.act_window_close'}
-

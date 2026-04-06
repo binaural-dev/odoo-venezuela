@@ -3,10 +3,10 @@
     <xpath expr="//body" position="inside">
 
       <t t-set="result" t-value="request.httprequest.cookies"/>
-      <t t-set="company_id_str" t-value="result.get('cids', '')"/>           
+      <t t-set="company_ids_str" t-value="result.get('cids', '')"/>           
       
       <t t-set="env" t-value="request.env(context=ctx)" />
-      <t t-set="result" t-value="env['stock.picking'].sudo().alert_views(company_id_str)"/>
+      <t t-set="result" t-value="env['stock.picking'].sudo().alert_views(company_ids_str)"/>
 
       <div>
         <span id="oe_neutralize_banner"
