@@ -71,7 +71,7 @@
                                 <span>
                                     <strong>Total facturado:</strong>
                                         <t 
-                                            t-out="o.reversed_entry_id.amount_total if currency_base else o.reversed_entry_id.foregn_total_billed" 
+                                            t-out="o.reversed_entry_id.amount_total if currency_base else o.reversed_entry_id.foreign_total_billed" 
                                             t-options='{"widget": "monetary", "display_currency": o.currency_id if currency_base else o.foreign_currency_id}'
                                         />
                                 </span>

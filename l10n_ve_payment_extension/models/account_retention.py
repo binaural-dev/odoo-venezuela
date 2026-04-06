@@ -655,7 +655,6 @@ class AccountRetention(models.Model):
 
     def action_post(self):
         today = datetime.now()
-
         self._create_payments_from_retention_lines()
         for retention in self:
 
@@ -915,7 +914,7 @@ class AccountRetention(models.Model):
             )
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -931,7 +930,7 @@ class AccountRetention(models.Model):
             )
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -950,7 +949,7 @@ class AccountRetention(models.Model):
 
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -966,7 +965,7 @@ class AccountRetention(models.Model):
 
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 

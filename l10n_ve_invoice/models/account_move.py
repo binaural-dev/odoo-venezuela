@@ -5,6 +5,7 @@ import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import format_date
+from odoo.tools import format_date, float_is_zero, float_compare
 
 _logger = logging.getLogger(__name__)
 
@@ -69,15 +70,27 @@ class AccountMove(models.Model):
     def _check_price_in_zero(self):
         from_pos = self.env.context.get('from_pos', False)
         for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
-            if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
+            if line.display_type in ("line_section", "line_note"):
+                continue
+
+            precision = line.currency_id.decimal_places
+            if float_is_zero(line.price_unit, precision_digits=precision):
                 from_loyalty = self.env.context.get('from_loyalty', False)
-                if (
-                    self.env.company.sale_discount_product_id
-                    and line.product_id == self.env.company.sale_discount_product_id
-                ):
-                    continue
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
+
+            if float_compare(line.price_unit, 0, precision_digits=precision) == -1:
+                from_loyalty = self.env.context.get('from_loyalty', False)
+                
+                is_official_discount = (
+                    self.env.company.sale_discount_product_id
+                    and line.product_id == self.env.company.sale_discount_product_id
+                )
+                
+                is_reward = any(l.reward_id or l.coupon_id for l in line.sale_line_ids)
+                
+                if not from_pos and not from_loyalty and not is_official_discount and not is_reward:
+                    raise ValidationError(_("An invoice cannot have a line with a negative price unless it is a registered discount or reward"))
 
     def action_post(self):
         for record in self:
