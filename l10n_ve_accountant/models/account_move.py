@@ -112,14 +112,13 @@ class AccountMove(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         store=True,
-       
+        digits="Tasa",
         tracking=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        
         store=True,
         index=True,
         readonly=False,
@@ -163,6 +162,7 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
+    display_foreign_balance_warning = fields.Boolean(compute="_compute_total_debit_credit")
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
@@ -174,11 +174,8 @@ class AccountMove(models.Model):
     @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
     def _compute_foreign_amount_residual(self):
         for rec in self:
-            if rec.amount_residual and self.env.company.currency_id and self.env.company.currency_id == self.env.ref("base.VEF"):
-                rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
-            else:
-                rec.foreign_amount_residual = rec.amount_residual / rec.foreign_inverse_rate
-
+            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+            
          
 
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
@@ -212,9 +209,10 @@ class AccountMove(models.Model):
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
         for move in self:
-            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
-            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
+            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
+            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
             move.foreign_balance = move.foreign_currency_id.round((move.foreign_debit - move.foreign_credit))
+            move.display_foreign_balance_warning = not move.foreign_currency_id.is_zero(move.foreign_balance)
 
     def _get_journal_income_account(self, journal):
         """
@@ -389,12 +387,7 @@ class AccountMove(models.Model):
 
         return moves
 
-    @api.onchange("partner_id")
-    def onchange_date(self):
-        for rec in self:
-            if rec.partner_id:
-                rec.invoice_date = fields.Date.today()
-                rec.foreign_currency_id = rec.default_alternate_currency()
+  
 
     def write(self, vals):
         """
@@ -777,7 +770,6 @@ class AccountMove(models.Model):
         "invoice_line_ids.price_total",
         "invoice_line_ids.price_subtotal",
         "invoice_payment_term_id",
-        "partner_id",
         "currency_id",
         "foreign_rate",
     )

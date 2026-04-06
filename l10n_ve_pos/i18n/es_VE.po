@@ -965,3 +965,38 @@ msgstr "Permite la venta bajo pedido sin tener el producto disponible"
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos
 msgid "report.l10n_ve_pos.payment_report_pos"
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#, python-format
+msgid "Cross Move per Operation - Session: %s"
+msgstr "Cruce por Operación - Sesión: %s"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#, python-format
+msgid "Unique PoS Cross Move - Sesión: %s"
+msgstr "Cruce Único PoS - Sesión: %s"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#, python-format
+msgid "PoS Payment Method Adjustment"
+msgstr "Ajuste del método de pago POS"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+#, python-format
+msgid "You cannot enable 'Apply a single adjustment entry' and 'Identify customer' "
+"together for the same payment method."
+msgstr "No puedes habilitar 'Aplicar un único asiento de ajuste' junto a 'Identificar cliente' "
+"para un mismo método de pago"

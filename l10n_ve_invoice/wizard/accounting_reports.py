@@ -106,19 +106,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         
         multiplier = -1 if move.move_type == "in_refund" else 1
 
-        # if move.journal_id.is_purchase_international :
-        #     tax_keys_to_check = [
-            
-        #         "amount_reduced_aliquot_international", "amount_general_aliquot_international", "amount_extend_aliquot_international",
-        #         "tax_base_reduced_aliquot_international", "tax_base_general_aliquot_international", "tax_base_extend_aliquot_international",
-        #         "international_tax_base_exempt_aliquot", "international_amount_taxed"
-        #     ]
-
-        #     total_tax_value = sum(taxes.get(key, 0) for key in tax_keys_to_check)
-        #     if total_tax_value == 0:
-        #         return None
-    
-
         fields_purchase_book_line = {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
@@ -690,6 +677,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             ("move_type", "in", move_type),
             ("correlative", "not in", ['/',False])
         ]
+            
+        if hasattr(self, 'account_analytic_id') and self.account_analytic_id:
+
+            if self.account_analytic_id.name == "Main Subsidiary":
+                
+                all_subsidiaries = self.env['account.analytic.account'].search([
+                    ('is_subsidiary', '=', True),
+                    ('company_id', '=', self.company_id.id)
+                ])
+                if all_subsidiaries:
+                    search_domain += [("account_analytic_id", "in", all_subsidiaries.ids)]
+            else:
+                
+                search_domain += [("account_analytic_id", "=", self.account_analytic_id.id)]
         return search_domain
 
     def generate_report(self):
@@ -760,6 +761,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return "03-ANU"
 
     def search_moves(self):
+        #TODO: Revisar si este uso de order es correcto
         order = "invoice_date asc" if self.report == "purchase" else "correlative asc"
         env = self.env
         move_model = env["account.move"]
@@ -1197,6 +1199,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         current_col_index = 0
         color_index = 0 
         last_col_index = 0 
+        
+        ventas_internas_start_col = 0
+        ventas_internas_end_col = 0
 
         for group in sale_groups:
             group_fields = group['fields']
@@ -1223,6 +1228,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     header_format
                 )
             
+            if group['header'] != 'DETALLE DEL DOCUMENTO' and ventas_internas_start_col == 0:
+                ventas_internas_start_col = start_col
+            
+            if group['header'] == 'ALÍCUOTA ADICIONAL (31%)':
+                ventas_internas_end_col = end_col
+            
             for field in group_fields:
                 col_index = current_col_index
                 
@@ -1235,7 +1246,31 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             
             color_index += 1 
         
-        last_col_index = current_col_index - 1 
+        last_col_index = current_col_index - 1
+        
+        if ventas_internas_end_col == 0:
+            ventas_internas_end_col = last_col_index
+        
+        if ventas_internas_start_col > 0 and ventas_internas_end_col > 0:
+            ventas_internas_start_name = utility.xl_col_to_name(ventas_internas_start_col)
+            ventas_internas_end_name = utility.xl_col_to_name(ventas_internas_end_col)
+            ventas_internas_range = f"{ventas_internas_start_name}5:{ventas_internas_end_name}5"
+            
+            ventas_internas_format = workbook.add_format({
+                "bold": True, 
+                "border": 1, 
+                "align": "center", 
+                "valign": "vcenter", 
+                "bg_color": "#4472C4",
+                "font_color": "#FFFFFF",
+                "locked": True
+            })
+            
+            worksheet.merge_range(
+                ventas_internas_range,
+                "Ventas Internas",
+                ventas_internas_format
+            ) 
                 
         name_columns = flat_fields 
         total_idx = 0
@@ -1424,6 +1459,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         is_purchase = self.report == "purchase"
         header_idx = index_to_start + 2
         resume_headers = self.resume_book_headers()
+        
+        # Aumentar el ancho de la columna de descripción (columna B, índice 1)
+        # para mejorar la legibilidad de los nombres en el resumen
+        worksheet.set_column(1, 1, 50)
 
         for idx, header in enumerate(resume_headers):
             nidx = idx * 2
@@ -1541,7 +1580,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         general_aliquot_fields = [
             {"name": "Base imponible (16%)", "field": "tax_base_general_aliquot", "format": "number", "size": 16},
-            {"name": "Alicuota (16%)", "field": "general_aliquot", "format": "percent", "size": 16},
             {"name": "IVA 16%", "field": "amount_general_aliquot", "format": "number", "size": 16},
         ]
         sale_groups.append({'header': 'ALÍCUOTA GENERAL (16%)', 'fields': general_aliquot_fields})
@@ -1550,7 +1588,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if not company.not_show_reduced_aliquot_sale:
             reduced_aliquot_fields.extend([
                 {"name": "Base imponible (8%)", "field": "tax_base_reduced_aliquot", "format": "number"},
-                {"name": "Alicuota (8%)", "field": "reduced_aliquot", "format": "percent"},
                 {"name": "IVA 8%", "field": "amount_reduced_aliquot", "format": "number"}
             ])
 
@@ -1561,7 +1598,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if not company.not_show_extend_aliquot_sale:
             extend_aliquot_fields.extend([
                 {"name": "Base imponible (31%)", "field": "tax_base_extend_aliquot", "format": "number"},
-                {"name": "Alicuota (31%)", "field": "extend_aliquot", "format": "percent"},
                 {"name": "IVA 31%", "field": "amount_extend_aliquot", "format": "number"}
             ])
             
@@ -1620,21 +1656,18 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
        
         national_deductible_fields.extend([
             {"name": "Base imponible (16%)", "field": "tax_base_general_aliquot", "format": "number", "size": 16},
-            {"name": "Alicuota (16%)", "field": "general_aliquot", "format": "percent", "size": 16},
             {"name": "IVA 16%", "field": "amount_general_aliquot", "format": "number", "size": 16},
         ])
             
         if not company.not_show_reduced_aliquot_purchase:
             national_deductible_fields.extend([
                 {"name": "Base imponible (8%)", "field": "tax_base_reduced_aliquot", "format": "number"},
-                {"name": "Alicuota (8%)", "field": "reduced_aliquot", "format": "percent"},
                 {"name": "IVA 8%", "field": "amount_reduced_aliquot", "format": "number"}
             ])
 
         if not company.not_show_extend_aliquot_purchase:
             national_deductible_fields.extend([
                 {"name": "Base imponible (31%)", "field": "tax_base_extend_aliquot", "format": "number"},
-                {"name": "Alicuota (31%)", "field": "extend_aliquot", "format": "percent"},
                 {"name": "IVA 31%", "field": "amount_extend_aliquot", "format": "number"}
             ])
 
@@ -1645,24 +1678,42 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if not company.not_show_general_aliquot_purchase_international:
             international_fields.extend([
                 {"name": "Base imponible (16%)", "field": "tax_base_general_aliquot_international", "format": "number"},
-                {"name": "Alicuota Int. (16%)", "field": "general_aliquot", "format": "percent"},
                 {"name": "IVA Int. 16%", "field": "amount_general_aliquot_international", "format": "number"}
             ])
 
         if not company.not_show_reduced_aliquot_purchase_international:
             international_fields.extend([
                 {"name": "Base imponible (8%)", "field": "tax_base_reduced_aliquot_international", "format": "number"},
-                {"name": "Alicuota Int. (8%)", "field": "reduced_aliquot", "format": "percent"},
                 {"name": "IVA Int. 8%", "field": "amount_reduced_aliquot_international", "format": "number"}
             ])
 
         if not company.not_show_extend_aliquot_purchase_international:
             international_fields.extend([
                 {"name": "Base imponible (31%)", "field": "tax_base_extend_aliquot_international", "format": "number"},
-                {"name": "Alicuota Int. (31%)", "field": "extend_aliquot", "format": "percent"},
                 {"name": "IVA Int. 31%", "field": "amount_extend_aliquot_international", "format": "number"}
             ])
         
+        international_total_fields = [
+        ]
+
+        if not company.not_show_total_purchases_international:
+            international_total_fields.append(            
+                {"name": "Total compras", "field": "total_purchases_international", "format": "number"},
+            )
+
+        if not company.not_show_total_purchases_with_international_iva:
+            international_total_fields.append(            
+                {"name": "Total compras con IVA", "field": "total_purchases_iva_international", "format": "number"},
+            )
+
+        if not company.not_show_exempt_total_purchases:
+            international_total_fields.append(            
+                {"name": "Total compras exentas", "field": "total_purchases_not_iva_international", "format": "number"},
+            )
+
+        if international_total_fields:
+            purchase_groups.append({'header': 'TOTALES INTERNACIONALES', 'fields': international_total_fields})
+
         international_total_fields = [
         ]
 
@@ -1698,21 +1749,18 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             if company.no_deductible_general_aliquot_purchase:
                 no_deductible_fields.extend([
                     {"name": "Base imponible (16%)", "field": "tax_base_general_aliquot_no_deductible", "format": "number"},
-                    {"name": "Alicuota (16%)", "field": "general_aliquot_no_deductible", "format": "percent"},
                     {"name": "Crédito Fisc. (16%)", "field": "amount_general_aliquot_no_deductible", "format": "number"}
                 ])
 
             if company.no_deductible_reduced_aliquot_purchase:
                 no_deductible_fields.extend([
                     {"name": "Base imponible (8%)", "field": "tax_base_reduced_aliquot_no_deductible", "format": "number"},
-                    {"name": "Alicuota (8%)", "field": "reduced_aliquot_no_deductible", "format": "percent"},
                     {"name": "Crédito Fisc. (8%)", "field": "amount_reduced_aliquot_no_deductible", "format": "number"}
                 ])
 
             if company.no_deductible_extend_aliquot_purchase:
                 no_deductible_fields.extend([
                     {"name": "Base imponible (31%)", "field": "tax_base_extend_aliquot_no_deductible", "format": "number"},
-                    {"name": "Alicuota (31%)", "field": "extend_aliquot_no_deductible", "format": "percent"},
                     {"name": "Crédito Fisc. (31%)", "field": "amount_extend_aliquot_no_deductible", "format": "number"}
                 ])
 

@@ -51,7 +51,7 @@ class ControllerMunicipalRetentionXlsx(http.Controller):
             name_document = _("Draft Municipal Ret %s", retention.date.strftime("%d-%m-%Y"))
         elif retention.state == "emitted":
             name_document = _("Municipal Ret {retention_name} {retention_date}").format(
-                retention_name=retention.name, retention_date=retention.date.strftime("%d-%m-%Y")
+                retention_name=retention.number, retention_date=retention.date.strftime("%d-%m-%Y")
             )
         else:
             name_document = _("Cancelled Municipal Ret")
