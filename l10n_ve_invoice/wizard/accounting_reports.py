@@ -874,7 +874,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "national_amount_taxed":0.0,
                 "national_tax_base_exempt_aliquot": 0.0,
                 "international_amount_taxed":0.0,
-                "amount_import_international": 0,
                 "international_tax_base_exempt_aliquot": 0.0,
                 "amount_import_international": 0,
                 "tax_base_reduced_aliquot_international": 0,
@@ -953,7 +952,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "amount_extend_aliquot": 0,
                 "national_amount_taxed":national_amount_taxed if not move.journal_id.is_purchase_international else 0,
                 "international_amount_taxed":international_amount_taxed if move.journal_id.is_purchase_international else 0,
-                "amount_import_international": 0,
                 "national_tax_base_exempt_aliquot": 0.0,
                 "international_tax_base_exempt_aliquot": 0.0,
                 "amount_import_international": 0,
@@ -1692,27 +1690,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 {"name": "Base imponible (31%)", "field": "tax_base_extend_aliquot_international", "format": "number"},
                 {"name": "IVA Int. 31%", "field": "amount_extend_aliquot_international", "format": "number"}
             ])
-        
-        international_total_fields = [
-        ]
-
-        if not company.not_show_total_purchases_international:
-            international_total_fields.append(            
-                {"name": "Total compras", "field": "total_purchases_international", "format": "number"},
-            )
-
-        if not company.not_show_total_purchases_with_international_iva:
-            international_total_fields.append(            
-                {"name": "Total compras con IVA", "field": "total_purchases_iva_international", "format": "number"},
-            )
-
-        if not company.not_show_exempt_total_purchases:
-            international_total_fields.append(            
-                {"name": "Total compras exentas", "field": "total_purchases_not_iva_international", "format": "number"},
-            )
-
-        if international_total_fields:
-            purchase_groups.append({'header': 'TOTALES INTERNACIONALES', 'fields': international_total_fields})
 
         international_total_fields = [
         ]
