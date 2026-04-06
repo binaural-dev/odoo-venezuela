@@ -714,3 +714,45 @@ msgstr "Activar revalorización por defecto."
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__keep_alter_value_vef
 msgid "Keep Amount in alter value"
 msgstr "Activar revalorización"
+
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "You have"
+msgstr "Tiene"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding credits"
+msgstr "créditos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding debits"
+msgstr "débitos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "advances"
+msgstr "anticipos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "listed below for this customer."
+msgstr "que se muestran a continuación para este cliente."
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "listed below for this vendor."
+msgstr "que se muestran a continuación para este proveedor."
+
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding credits and advances"
+msgstr "créditos y anticipos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding debits and advances"
+msgstr "débitos y anticipos pendientes"
