@@ -468,6 +468,7 @@ class AccountMove(models.Model):
                 move._compute_rate()
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
+                _logger.warning("ENTROOOOOOOO AQUIIIIIIIIII %s" , move.reversed_entry_id.foreign_inverse_rate)
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(

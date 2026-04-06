@@ -1,5 +1,5 @@
 <templates id="template" xml:space="preserve">
-    <t t-name="DebugWidget" t-inherit="point_of_sale.DebugWidget" t-inherit-mode="extension">
+    <!-- <t t-name="DebugWidget" t-inherit="point_of_sale.DebugWidget" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('content')][1]" position="before">
             <p class="category">Binaural</p>
             <ul>
@@ -9,5 +9,5 @@
                 <li class="button" t-on-click="logger">LOGGER THIS</li>
             </ul>
         </xpath>
-    </t>
+    </t> -->
 </templates>
