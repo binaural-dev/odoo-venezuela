@@ -304,7 +304,7 @@
                     <tr style="line-height:1.2px;">
                         <td>
                             <span t-if="group.get('tax_amount_currency', 0.0) != 0.0" t-out="'Total G ' + group.get('group_name', '')"/>
-                            <span t-if="group.get('tax_amount_currency', 0.0) == 0.0" t-out="'IVA 0%'"/>
+                            <span t-elif="group.get('tax_amount_currency', 0.0) == 0.0" t-out="'IVA 0%'"/>
                             <span t-else="">Exento</span>
                         </td>
                         <td class="text-end o_price_total">
