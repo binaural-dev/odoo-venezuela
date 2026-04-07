@@ -5,6 +5,13 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="arch" type="xml">
+            <xpath expr="//button[@name='button_draft']" position="attributes">
+                <attribute name="invisible">is_donation and state != 'draft' or move_type != 'entry'</attribute>
+            </xpath>
+
+            <button name="button_draft" position="attributes">
+                <attribute name="invisible">move_type in ['out_invoice', 'out_refund'] or state == 'draft' or is_donation</attribute>
+            </button>
             <xpath expr="//form//header" position="inside">
                 <button
                     name="print_donation_certificate"
