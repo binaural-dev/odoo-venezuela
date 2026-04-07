@@ -35,7 +35,7 @@ class AccountMove(models.Model):
         :return: An account.move recordset, reverse of the current self.
         """
         for move in self:
-            if move.is_donation:
+            if move.is_donation and move.move_type != "entry":
                 reverse_moves = self.env['account.move']
                 for move, default_values in zip(self, default_values_list):
                     line_vals_list = []
@@ -81,7 +81,7 @@ class AccountMove(models.Model):
 
     def product_line_donation(self):
         """Adds the donation product lines to invoice_line_ids grouped by tax.
-        Uses skip_invoice_sync=True to maintain consistency with manually 
+        Uses skip_invoice_sync=True to malintain consistency with manually 
         constructed tax lines in _reverse_moves.
         """
         product = self.env["product.template"].search(
