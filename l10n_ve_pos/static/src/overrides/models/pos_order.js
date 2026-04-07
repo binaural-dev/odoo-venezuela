@@ -166,7 +166,7 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_total_with_tax() {
-    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax() || 0);
+    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0);
   },
 
   get foreign_total_with_tax() {
