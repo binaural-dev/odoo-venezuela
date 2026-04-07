@@ -5,7 +5,7 @@ import { patch } from "@web/core/utils/patch";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
-import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
+import { ReprintInvoiceButton } from "@l10n_ve_pos_mf/overrides/ReprintInvoiceButton/ReprintInvoiceButton";
 import { roundDecimals as round_di } from "@web/core/utils/numbers";
 
 patch(TicketScreen, {
