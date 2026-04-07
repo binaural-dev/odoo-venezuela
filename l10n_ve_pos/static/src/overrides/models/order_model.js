@@ -243,7 +243,7 @@ patch(Order.prototype, {
         this.orderlines.reduce(function (sum, orderLine) {
           return sum + orderLine.get_foreign_tax();
         }, 0),
-        this.foreign_currency.rounding,
+        this.pos.foreign_currency.rounding,
       );
     }
   },
