@@ -1,0 +1,14 @@
+<odoo>
+    <data>
+        <record id="l10n_ve_stock_account_product_template_form_view" model="ir.ui.view">
+            <field name="name">l10n_ve_stock_account.product.template.form.view</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group[1]/field[@name='type']" position="after">
+                    <field name="is_donation_product" invisible="type != 'service'"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
