@@ -93,7 +93,7 @@ patch(PosStore.prototype, {
       if (company.country && company.country.code === "IN") {
         let total_tax_amount = 0.0;
         for (const [i, tax_factor] of incl_tax_amounts.percent_taxes) {
-          const tax_amount = round_pr(base_amount * tax_factor / (100 + percent_amount), this.foreign_currency.rounding);
+          const tax_amount = round_pr(base_amount * tax_factor / (100 + percent_amount), this.pos.foreign_currency.rounding);
           total_tax_amount += tax_amount;
           cached_tax_amounts[i] = tax_amount;
           fixed_amount += tax_amount;
