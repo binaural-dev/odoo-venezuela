@@ -4,11 +4,18 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-	    <notebook position="inside">
-		<page name="ciu_ids" string="Economic Activities">
-		    <field name="ciu_ids" options="{'no_create': True}"/>
-		</page>
-	    </notebook>
+
+            <xpath expr="//page[@name='invoicing']/group[@name='properties']/group[@name='payables']" position="inside">
+                <field name="payment_concept" invisible="detailed_type != 'service'"/>
+                <field name="detailed_type" invisible="1"/>
+            </xpath>
+            <notebook position="inside">
+                <page name="ciu_ids" string="Economic Activities">
+                    <field name="ciu_ids" options="{'no_create': True}"/>
+                </page>
+            </notebook>
         </field>
     </record>
+
+    
 </odoo>
