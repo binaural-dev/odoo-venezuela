@@ -5,7 +5,7 @@
     "summary": "Venezuela - Donaciones",
     "author": "",
     "website": "",
-    "depends": ["l10n_ve_accountant", "l10n_ve_stock"],
+    "depends": ["l10n_ve_accountant", "l10n_ve_stock", "l10n_ve_sale"],
     "data": [
         "data/donation_certificate_paperformat.xml",
         "report/donation_certificate_report.xml",
