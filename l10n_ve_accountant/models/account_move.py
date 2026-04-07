@@ -1037,7 +1037,7 @@ class AccountMove(models.Model):
             if (
                 invoice.company_id.account_use_credit_limit
                 and invoice.partner_id.use_partner_credit_limit
-                and invoice.move_type in ("out_invoice")
+                and invoice.move_type == "out_invoice"
             ):
                 total_pay = invoice.partner_id.credit + invoice.amount_residual
                 if total_pay > invoice.partner_id.credit_limit:
