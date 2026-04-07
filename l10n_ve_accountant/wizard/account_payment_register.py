@@ -50,7 +50,7 @@ class AccountPaymentRegister(models.TransientModel):
         rate_record = self.env['res.currency.rate'].search([
             ('currency_id', '=', foreign_currency.id),
             ('company_id', '=', company.id),
-            ('name', '<=', fields.Date.today())
+            ('name', '<=', fields.Date.context_today(self))
         ], limit=1, order="name desc")
 
         if rate_record:
