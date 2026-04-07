@@ -161,7 +161,7 @@ class StockPicking(models.Model):
                     "padding": 5,
                 }
             )
-        return guide_number.next_by_id(guide_number.id)
+        return guide_number.next_by_id()
 
     # === MAIN FUNCTIONS ===#
 
