@@ -88,9 +88,9 @@ class WizardAccountingReports(models.TransientModel):
         sale_groups = super()._get_sale_book_field_groups()
 
         retention_fields = [
-            {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},
-            {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
-            {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
+            {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 12},
+            {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 12},
+            {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 12},
         ]
         
         sale_groups.append({
@@ -133,9 +133,9 @@ class WizardAccountingReports(models.TransientModel):
         purchase_groups = super()._get_purchase_book_field_groups() 
 
         retention_fields = [
-            {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},
-            {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
-            {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
+            {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 12},
+            {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 12},
+            {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 12},
         ]
         
         purchase_groups.append({

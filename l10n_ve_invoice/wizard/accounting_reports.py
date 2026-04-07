@@ -1073,10 +1073,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
         worksheet = workbook.add_worksheet()
 
+        worksheet.set_landscape()
+        worksheet.set_paper(1)
+        worksheet.set_margins(left=0.3, right=0.3, top=0.4, bottom=0.4)
+        worksheet.fit_to_pages(1, 0)
+
         cell_bold = workbook.add_format(
             {"bold": True, "center_across": True, "text_wrap": True, "bottom": True, "locked": True}
         )
-        
+
         base_style = {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "locked": True}
         format1 = workbook.add_format(base_style); format1.set_bg_color('#D9D9D9')
         format2 = workbook.add_format(base_style); format2.set_bg_color('#F4B183')
@@ -1139,12 +1144,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             
             for field in group_fields:
                 col_index = current_col_index
-                
-                worksheet.write(6, col_index, field.get("name"), header_format) 
-                
-                worksheet.set_column(col_index, col_index, 25)
+
+                worksheet.write(6, col_index, field.get("name"), header_format)
+
+                col_width = field.get("size", 14)
+                if col_width is None:
+                    col_width = 20
+                worksheet.set_column(col_index, col_index, col_width)
                 flat_fields.append(field)
-                
+
                 current_col_index += 1
             
             color_index += 1 
@@ -1155,7 +1163,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         total_idx = 0
 
         for index, field in enumerate(name_columns):
-            
+
             for index_line, line in enumerate(sale_book_lines):
                 total_idx = (8 + index_line)
                 if field["field"] == "index":
@@ -1177,7 +1185,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray", "locked": True}
         )
         self.generate_book_resume(worksheet, total_idx, merge_format_base, cell_formats, last_col_index)
-        
+
         worksheet.protect(password=password_protection)
 
         workbook.close()
@@ -1198,8 +1206,13 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         password_protection = "secure"
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True,"constant_memory": False})
-        workbook.set_calc_mode('auto') 
+        workbook.set_calc_mode('auto')
         worksheet = workbook.add_worksheet()
+
+        worksheet.set_landscape()
+        worksheet.set_paper(1)
+        worksheet.set_margins(left=0.3, right=0.3, top=0.4, bottom=0.4)
+        worksheet.fit_to_pages(1, 0)
 
         cell_bold = workbook.add_format(
             {"bold": True, "center_across": True, "text_wrap": True, "bottom": True, "locked": True}
@@ -1272,23 +1285,26 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             
             for field in group_fields:
                 col_index = current_col_index
-                
-                worksheet.write(6, col_index, field.get("name"), header_format) 
-                
-                worksheet.set_column(col_index, col_index, 25)
+
+                worksheet.write(6, col_index, field.get("name"), header_format)
+
+                col_width = field.get("size", 14)
+                if col_width is None:
+                    col_width = 20
+                worksheet.set_column(col_index, col_index, col_width)
                 flat_fields.append(field)
-                
+
                 current_col_index += 1
-            
-            color_index += 1 
-        
+
+            color_index += 1
+
         last_col_index = current_col_index - 1
-                
-        name_columns = flat_fields 
+
+        name_columns = flat_fields
         total_idx = 0
 
         for index, field in enumerate(name_columns):
-            
+
             for index_line, line in enumerate(purchase_book_lines):
                 total_idx = (8 + index_line)
                 if field["field"] == "index":
@@ -1306,7 +1322,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             )
         
         self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats, last_col_index)
-        
+
         worksheet.protect(password=password_protection)
 
         workbook.close()
@@ -1412,15 +1428,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         sale_groups = []
 
         basic_fields = [
-            {"name": "N° operacion", "field": "index",},
-            {"name": "Fecha del documento", "field": "document_date", "size": 16},
-            {"name": "RIF", "field": "vat", "size": 16},
-            {"name": "Nombre/Razón social", "field": "partner_name", "size": None},
-            {"name": "Tipo", "field": "move_type", "size": 16},
-            {"name": "N° de documento", "field": "document_number", "size": 16},
-            {"name": "N° de control", "field": "correlative", "size": 16},
-            {"name": "Tipo de transacción", "field": "transaction_type"},
-            {"name": "N° Factura afectada", "field": "number_invoice_affected", "size": 16},
+            {"name": "N° operacion", "field": "index", "size": 6},
+            {"name": "Fecha del documento", "field": "document_date", "size": 12},
+            {"name": "RIF", "field": "vat", "size": 12},
+            {"name": "Nombre/Razón social", "field": "partner_name", "size": 20},
+            {"name": "Tipo", "field": "move_type", "size": 6},
+            {"name": "N° de documento", "field": "document_number", "size": 14},
+            {"name": "N° de control", "field": "correlative", "size": 12},
+            {"name": "Tipo de transacción", "field": "transaction_type", "size": 10},
+            {"name": "N° Factura afectada", "field": "number_invoice_affected", "size": 14},
         ]
         sale_groups.append({'header': 'DETALLE DEL DOCUMENTO', 'fields': basic_fields})
 
@@ -1436,7 +1452,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             {"name": "IVA 16%", "field": "amount_general_aliquot", "format": "number", "size": 16},
         ]
         sale_groups.append({'header': 'ALÍCUOTA GENERAL (16%)', 'fields': general_aliquot_fields})
-        
+
         reduced_aliquot_fields = []
         if not company.not_show_reduced_aliquot_sale:
             reduced_aliquot_fields.extend([
@@ -1467,15 +1483,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         purchase_groups = []
 
         basic_fields = [
-            {"name": "N° operacion", "field": "index",},
-            {"name": "Fecha del documento", "field": "document_date", "size": 16},
-            {"name": "RIF", "field": "vat", "size": 16},
-            {"name": "Nombre/Razón social", "field": "partner_name", "size": None},
-            {"name": "Tipo", "field": "move_type", "size": 16},
-            {"name": "N° de documento", "field": "document_number", "size": 16},
-            {"name": "N° de control", "field": "correlative", "size": 16},
-            {"name": "Tipo de transacción", "field": "transaction_type"},
-            {"name": "N° Factura afectada", "field": "number_invoice_affected", "size": 16},
+            {"name": "N° operacion", "field": "index", "size": 6},
+            {"name": "Fecha del documento", "field": "document_date", "size": 12},
+            {"name": "RIF", "field": "vat", "size": 12},
+            {"name": "Nombre/Razón social", "field": "partner_name", "size": 20},
+            {"name": "Tipo", "field": "move_type", "size": 6},
+            {"name": "N° de documento", "field": "document_number", "size": 14},
+            {"name": "N° de control", "field": "correlative", "size": 12},
+            {"name": "Tipo de transacción", "field": "transaction_type", "size": 10},
+            {"name": "N° Factura afectada", "field": "number_invoice_affected", "size": 14},
         ]
         purchase_groups.append({'header': 'DETALLE DEL DOCUMENTO', 'fields': basic_fields})
 
@@ -1486,13 +1502,13 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         purchase_groups.append({'header': 'TOTALES', 'fields': total_fields})
 
         national_deductible_fields = []
-       
+
         national_deductible_fields.extend([
             {"name": "Base imponible (16%)", "field": "tax_base_general_aliquot", "format": "number", "size": 16},
             {"name": "Alicuota (16%)", "field": "general_aliquot", "format": "percent", "size": 16},
             {"name": "IVA 16%", "field": "amount_general_aliquot", "format": "number", "size": 16},
         ])
-            
+
         if not company.not_show_reduced_aliquot_purchase:
             national_deductible_fields.extend([
                 {"name": "Base imponible (8%)", "field": "tax_base_reduced_aliquot", "format": "number"},
@@ -1534,10 +1550,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         if international_fields:
             international_fields.insert(0,
-                {"name": "Número de Declaración Única de Aduana", "field": "declaration_unique_of_customs"}
+                {"name": "Número de Declaración Única de Aduana", "field": "declaration_unique_of_customs", "size": 16}
             )
             international_fields.insert(1,
-                {"name": "Valor total de las importaciones definitivas", "field": "amount_import_international", "format": "number"}
+                {"name": "Valor total de las importaciones definitivas", "field": "amount_import_international", "format": "number", "size": 14}
             )
             purchase_groups.append({'header': 'COMPRAS INTERNACIONALES', 'fields': international_fields})
 
