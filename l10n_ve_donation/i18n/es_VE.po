@@ -336,8 +336,8 @@ msgstr "Por favor configure una cuenta de donación en los ajustes de la empresa
 #. module: l10n_ve_donation
 #. odoo-python
 #: code:addons/l10n_ve_donation/models/account_move.py:0
-msgid "Please configure a donation product in the company settings."
-msgstr "Por favor configure un producto de donación en los ajustes de la empresa."
+msgid "Please configure a donation product in the company settings. The product is type to service."
+msgstr "Por favor configure un producto de donación en los ajustes de la empresa. El producto es de tipo servicio."
 
 #. module: l10n_ve_donation
 #: model:ir.model,name:l10n_ve_donation.model_product_template
