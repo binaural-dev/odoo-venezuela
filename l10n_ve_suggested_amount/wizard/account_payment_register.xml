@@ -1,0 +1,26 @@
+<odoo>
+    <data>
+        <record id="view_account_payment_register_form_suggested_amount" model="ir.ui.view">
+            <field name="name">view.account.payment.register.form.suggested.amount</field>
+            <field name="model">account.payment.register</field>
+            <field name="inherit_id" ref="account.view_account_payment_register_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='amount_div'][1]" position="after">
+                    <label for="suggested_custom_amount"
+                           invisible="suggested_custom_amount == 0.0"/>
+                    <div name="suggested_custom_amount_div"
+                         class="o_row"
+                         invisible="suggested_custom_amount == 0.0">
+                        <field
+                            name="suggested_custom_amount"
+                            widget="monetary"
+                            options="{'currency_field': 'currency_id'}"
+                            readonly="1"
+                            force_save="1"
+                        />
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
