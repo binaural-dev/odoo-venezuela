@@ -684,12 +684,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def download_sales_book(self):
         self.ensure_one()
-        url = "/web/download_sales_book?company_id=%s" % self.company_id.id
+        url = "/web/download_sales_book?company_id=%s&wizard_id=%s" % (self.company_id.id, self.id)
         return {"type": "ir.actions.act_url", "url": url, "target": "self"}
 
     def download_purchases_book(self):
         self.ensure_one()
-        url = "/web/download_purchase_book?company_id=%s" % self.company_id.id
+        url = "/web/download_purchase_book?company_id=%s&wizard_id=%s" % (self.company_id.id, self.id)
         return {"type": "ir.actions.act_url", "url": url, "target": "self"}
 
     def _format_date(self, date):
@@ -1211,8 +1211,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 ventas_internas_format
             ) 
                 
-        name_columns = flat_fields 
-        total_idx = 0
+        name_columns = flat_fields
+        total_idx = INIT_LINES + len(sale_book_lines)
 
         for index, field in enumerate(name_columns):
             
@@ -1344,8 +1344,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         
         last_col_index = current_col_index - 1
                 
-        name_columns = flat_fields 
-        total_idx = 0
+        name_columns = flat_fields
+        total_idx = INIT_LINES + len(purchase_book_lines)
 
         for index, field in enumerate(name_columns):
             
@@ -1390,8 +1390,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             worksheet.write(header_idx + 1, nidx + 1, header.get("headers")[1])
 
         moves = self.search_moves()
-        if not moves:
-            raise UserError(_('There are no moves to show'))
         resume_columns = (
             self._resume_purchase_book_fields(moves)
             if is_purchase
@@ -1642,4 +1640,4 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if no_deductible_fields:
             purchase_groups.append({'header': 'IMPUESTOS NO DEDUCIBLES', 'fields': no_deductible_fields})
 
-        
+        return purchase_groups
