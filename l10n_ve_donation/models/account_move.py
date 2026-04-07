@@ -88,7 +88,7 @@ class AccountMove(models.Model):
             [("is_donation_product", "=", True)], limit=1
         )
         if not product:
-            raise UserError(_("Please configure a donation product in the company settings."))
+            raise UserError(_("Please configure a donation product in the company settings. The product is type to service."))
 
         company = self.company_id or self.env.company
         donation_account_id = company.donation_account_id.id if company else False
