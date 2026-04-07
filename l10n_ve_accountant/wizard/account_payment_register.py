@@ -8,15 +8,18 @@ class AccountPaymentRegister(models.TransientModel):
 
     def default_alternate_currency(self):
         """
-        This method is used to always return the USD currency as default.
+        This method is used to get the foreign currency of the company and set it as the default value of the foreign currency field
 
         Returns
         -------
         type = int
-            The id of the USD currency
+            The id of the foreign currency of the company
+
         """
-        usd_currency = self.env.ref('base.USD', raise_if_not_found=False)
-        return usd_currency.id
+        alternate_currency = self.env.company.foreign_currency_id.id
+        if alternate_currency:
+            return alternate_currency
+        return False
     
 
     def default_alternate_rate(self):
