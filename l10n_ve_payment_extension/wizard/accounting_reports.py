@@ -85,7 +85,7 @@ class WizardAccountingReports(models.TransientModel):
 
     
     def _get_sale_book_field_groups(self):
-        sale_groups = super()._get_sale_book_field_groups()
+        sale_groups = super()._get_sale_book_field_groups() or []
 
         retention_fields = [
             {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},
@@ -130,7 +130,7 @@ class WizardAccountingReports(models.TransientModel):
         return fields_sale_book_line
     
     def _get_purchase_book_field_groups(self):
-        purchase_groups = super()._get_purchase_book_field_groups() 
+        purchase_groups = super()._get_purchase_book_field_groups() or []
 
         retention_fields = [
             {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},

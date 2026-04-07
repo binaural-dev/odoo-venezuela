@@ -13,8 +13,9 @@ class AccountingReportsController(http.Controller):
         sale_book_model_su = env_su["wizard.accounting.reports"]
 
         company_id = int(kw.get("company_id", 1))
-
-        sale_book = sale_book_model_su.search([], order="id desc", limit=1)
+        wizard_id = int(kw.get("wizard_id", 0) or 0)
+        domain = [("id", "=", wizard_id)] if wizard_id else [("create_uid", "=", env_request.uid)]
+        sale_book = sale_book_model_su.search(domain, order="id desc", limit=1)
 
         file = sale_book.generate_sales_book(company_id)
 
@@ -41,8 +42,9 @@ class AccountingReportsController(http.Controller):
         purchase_book_model_su = env_su["wizard.accounting.reports"]
 
         company_id = int(kw.get("company_id", 1))
-
-        purchase_book = purchase_book_model_su.search([], order="id desc", limit=1)
+        wizard_id = int(kw.get("wizard_id", 0) or 0)
+        domain = [("id", "=", wizard_id)] if wizard_id else [("create_uid", "=", env_request.uid)]
+        purchase_book = purchase_book_model_su.search(domain, order="id desc", limit=1)
 
         file = purchase_book.generate_purchases_book(company_id)
         
