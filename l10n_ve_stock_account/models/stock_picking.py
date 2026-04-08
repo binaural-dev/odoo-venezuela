@@ -4,6 +4,7 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
+from odoo.tools.safe_eval import safe_eval
 from datetime import date, datetime, timedelta
 import calendar
 
@@ -80,8 +81,20 @@ class StockPicking(models.Model):
         compute="_compute_allowed_reason_ids",
     )
 
-    is_donation = fields.Boolean(related="sale_id.is_donation")
+    
+    is_donation = fields.Boolean(
+        string="Is Donation",
+        compute="_compute_is_donation",
+        readonly=False,
+        tracking=True,
+        store=True,
+    )
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
+
+    @api.depends("sale_id.is_donation")
+    def _compute_is_donation(self):
+        for picking in self:
+            picking.is_donation = picking.sale_id.is_donation if picking.sale_id else False
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
@@ -151,6 +164,35 @@ class StockPicking(models.Model):
         journal = vendor_journal_id = self.env.company.vendor_journal_id or False
         return journal
 
+    picking_type_domain = fields.Char(
+        string="Picking Type Domain",
+        compute="_compute_picking_type_domain",
+    ) 
+
+    @api.onchange("is_donation")
+    def _onchange_is_donation(self):
+        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        if self.is_donation:
+            contact_id = self.env.company.partner_id
+            self.partner_id = contact_id
+            self.is_dispatch_guide = False
+            self.transfer_reason_id = self_consumption
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        if self.is_donation:
+            if self.partner_id != self.env.company.partner_id:
+                raise UserError(_("The partner must be the company itself for a donation"))
+        
+
+    @api.depends("is_donation")
+    def _compute_picking_type_domain(self):
+        native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
+        for picking in self:
+            if picking.is_donation:
+                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
+            else:
+                picking.picking_type_domain = native_domain
 
     def action_open_invoice_wizard(self):
         return {
@@ -253,6 +295,7 @@ class StockPicking(models.Model):
         Creates customer invoice from the picking
         """
         self._validate_one_invoice_posted()
+        invoice = self.env["account.move"]
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
@@ -276,13 +319,43 @@ class StockPicking(models.Model):
                         "invoice_line_ids": invoice_line_list,
                         "transfer_ids": self,
                         "from_picking": True,
-                }
-                if picking_id.sale_id and picking_id.pricelist_id:
-                    invoice_vals["pricelist_id"] = picking_id.pricelist_id.id
-                invoice = self.env["account.move"].create(invoice_vals) ##PROBLEMA ACAAA
-            picking_id.write({"state_guide_dispatch": "invoiced"})
-            picking_id._update_order_sale_invoiced()
-        return invoice
+                        "is_donation":picking_id.is_donation,
+                    }
+                # Reincorporar la lista de precios cuando el picking procede de una venta
+                if picking_id.sale_id and picking_id.sale_id.pricelist_id:
+                    invoice_vals["pricelist_id"] = picking_id.sale_id.pricelist_id.id
+                invoice = self.env["account.move"].create(invoice_vals)
+                picking_id.write({"state_guide_dispatch": "invoiced"})
+                picking_id._update_order_sale_invoiced()
+            return invoice
+
+    def action_create_invoice(self):
+        invoice = self.create_invoice()
+        action = self.action_view_invoice(invoices=invoice)
+        return action
+
+    @api.readonly
+    def action_view_invoice(self, invoices=False):
+        action = self.env['ir.actions.actions']._for_xml_id('account.action_move_out_invoice_type')
+        form_view = [(self.env.ref('account.view_move_form').id, 'form')]
+        if 'views' in action:
+            action['views'] = form_view + [(view_id,     view_type) for view_id, view_type in action['views'] if view_type != 'form']
+        
+        if invoices:
+            action['res_id'] = invoices.id
+
+        ctx = dict(self.env.context)
+        action_ctx = action.get('context') or {}
+        if isinstance(action_ctx, str):
+            action_ctx = safe_eval(action_ctx, {'uid': self.env.uid})
+        ctx.update(action_ctx if isinstance(action_ctx, dict) else {})
+
+        ctx.update({
+            'default_move_type': 'out_invoice',
+            'default_partner_id': self.partner_id.id,
+        })
+        action['context'] = ctx
+        return action
 
     def create_bill(self):
         """This is the function for creating vendor bill
@@ -468,6 +541,18 @@ class StockPicking(models.Model):
             if move_id.sale_line_id:
                 price_unit = move_id.sale_line_id.price_unit
                 tax_ids = [(6, 0, move_id.sale_line_id.tax_ids.ids)]
+            account = (
+                move_id.product_id.property_account_income_id.id
+                if move_id.product_id.property_account_income_id
+                else move_id.product_id.categ_id.property_account_income_categ_id.id
+            )
+            if not account:
+                raise UserError(
+                    _(
+                        "Please configure the income account for the product '%s' or its category."
+                    )
+                    % move_id.product_id.name
+                )
             vals = (
                 0,
                 0,
@@ -475,13 +560,9 @@ class StockPicking(models.Model):
                     "name": move_id.description_picking,
                     "product_id": move_id.product_id.id,
                     "price_unit": price_unit,
-                    "account_id": (
-                        move_id.product_id.property_account_income_id.id
-                        if move_id.product_id.property_account_income_id
-                        else move_id.product_id.categ_id.property_account_income_categ_id.id
-                    ),
+                    "account_id": account,
                     "tax_ids": tax_ids,
-                    "quantity": move_id.quantity,
+                    "quantity": move_id.sale_line_id.qty_delivered if move_id.sale_line_id else move_id.quantity,
                     "from_picking_line": from_picking_line,
                 },
             )
@@ -844,7 +925,6 @@ class StockPicking(models.Model):
             is_invoice_empty = record.invoice_count == 0
             is_done = record.state == "done"
             is_to_invoice = record.state_guide_dispatch == "to_invoice"
-
             record.show_create_invoice = False
             record.show_create_bill = False
             record.show_create_customer_credit = False
@@ -1004,11 +1084,12 @@ class StockPicking(models.Model):
                 donation_reason = reasons.get("donation")
                 sale_reason = reasons.get("sale")
                 export_reason = reasons.get("export")
+                self_consumption_reason = reasons.get("self_consumption")
 
                 # Donations
-                if picking.is_donation and donation_reason:
-                    allowed_reason_ids.append(donation_reason.id)
-                    picking.transfer_reason_id = donation_reason.id
+                if picking.is_donation:
+                    allowed_reason_ids.append(self_consumption_reason.id)
+                    picking.transfer_reason_id = self_consumption_reason.id
 
                 # Without Donations
                 else:

@@ -208,7 +208,7 @@ class AccountMove(models.Model):
             if record.debit_origin_id:
                 affected_invoice_number = str(record.debit_origin_id.sequence_number)
 
-                affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
+                affected_invoice_date = record.debit_origin_id.invoice_date_display.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date_display else ""
 
                 if record.debit_origin_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
@@ -225,7 +225,7 @@ class AccountMove(models.Model):
             if record.reversed_entry_id:
                 affected_invoice_number = str(record.reversed_entry_id.sequence_number)
                 
-                affected_invoice_date = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
+                affected_invoice_date = record.reversed_entry_id.invoice_date_display.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date_display else ""
 
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
@@ -239,7 +239,7 @@ class AccountMove(models.Model):
                 part = record.ref.split(',')
                 affected_invoice_comment = part[1].strip()
 
-            if not record.invoice_date:
+            if not record.invoice_date_display:
                 raise UserError(_("The invoice date is not defined."))
 
             return {

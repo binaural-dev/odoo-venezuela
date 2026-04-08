@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20260105\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260313\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-11 19:16+0000\n"
-"PO-Revision-Date: 2026-03-11 19:16+0000\n"
+"POT-Creation-Date: 2026-03-24 14:09+0000\n"
+"PO-Revision-Date: 2026-03-24 14:09+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -591,6 +591,11 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_company_form
+msgid "Configuration"
+msgstr "Configuración"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model,name:l10n_ve_payment_extension.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
@@ -782,6 +787,11 @@ msgid "Display Name"
 msgstr "Nombre en pantalla"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Don't Show date issue in municipal withholding receip"
+msgstr "No mostrar fecha en comprobante de Retenciones Municipales"
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_report_municipal_retention_report_patent_view
 msgid "Download Municipal Patent XLSX Report"
 msgstr "Descargar Reporte de Patente Municipal XLSX"
@@ -870,6 +880,11 @@ msgid "Email"
 msgstr "Correo Electrónico"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__date_emision
+msgid "Emision Date"
+msgstr "Fecha Emision del Comprobante"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__state__emitted
 msgid "Emitted"
 msgstr "Emitido"
@@ -878,7 +893,8 @@ msgstr "Emitido"
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_bank_statement_line__is_third_party_retention
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_move__is_third_party_retention
 msgid "Enable to create retentions on behalf of a third-party provider."
-msgstr "Al estar habilitado, se podrán crear retenciones a nombre de un tercero."
+msgstr ""
+"Al estar habilitado, se podrán crear retenciones a nombre de un tercero."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -1083,29 +1099,44 @@ msgstr "Generar TXT"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_l10n_ve_payment_extension
 msgid "Group by Business Name"
-msgstr ""
+msgstr "Razón Social"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_l10n_ve_payment_extension
 msgid "Group by Fecha Contable"
-msgstr ""
+msgstr "Fecha Contable"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_l10n_ve_payment_extension
 msgid "Group by State"
-msgstr ""
+msgstr "Estado"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_search_l10n_ve_payment_extension
 msgid "Group by Status"
-msgstr ""
+msgstr "Estado"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
+msgid "Group by Third Party Billing"
+msgstr "Retención de Terceros"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__has_message
 msgid "Has Message"
 msgstr "Tiene mensaje"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__text_header_1_municipal_retention
+msgid "Header 1 for voucher of municipal retention"
+msgstr "Encabezado 1 para el comprobante de retención municipal"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__text_header_2_municipal_retention
+msgid "Header 2 for voucher of municipal retention"
+msgstr "Encabezado 2 para el comprobante de retención municipal"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_patent_columns_extra
@@ -1114,6 +1145,12 @@ msgid "Hide extra columns in Patent Municipal Report related to advances"
 msgstr ""
 "Ocultar columnas adicionales en el reporte de Patente Municipal relacionadas"
 " con anticipos"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_issue_date_of_municipal_withholding_receipt
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__hide_issue_date_of_municipal_withholding_receipt
+msgid "Hide issue date of municipal withholding receipt"
+msgstr "Ocultar fecha comprobante de Retencion"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_journal__id
@@ -1355,7 +1392,9 @@ msgstr "Inactivo"
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__is_third_party_retention
 msgid ""
 "Indicates if this retention was created via the third-party billing flow."
-msgstr "Indica si esta retención fue creada a través del flujo de facturación a terceros."
+msgstr ""
+"Indica si esta retención fue creada a través del flujo de facturación a "
+"terceros."
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
@@ -1571,6 +1610,11 @@ msgid "Leave blank to compare only with the value \"start\""
 msgstr "Dejar en blanco para comparar solo con el valor \"inicio\""
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_company_form
+msgid "Logo"
+msgstr "Logo"
+
+#. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/utils/utils_retention.py:0
 msgid "March"
@@ -1672,6 +1716,11 @@ msgstr "Reporte de retenciones municipales desde {date_from} hasta {date_to}"
 #: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_municipal_supplier
 msgid "Municipal Retention Suppliers"
 msgstr "Retenciones Municipales de Proveedores"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_company_form
+msgid "Municipal Retention Voucher Headers"
+msgstr "Encabezados de Comprobantes de Retención Municipal"
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
@@ -2640,6 +2689,11 @@ msgid "Third Party Billing"
 msgstr "Facturación a Terceros"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
+msgid "Third Party Retention"
+msgstr "Retención de Terceros"
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
 msgid "Third Party ISLR Ret."
 msgstr "Ret. ISLR Terceros"
@@ -2874,6 +2928,13 @@ msgstr ""
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "You cannot create retentions for a draft or cancelled invoice."
+msgstr "No se pueden crear retenciones para una factura en borrador o cancelada."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid ""
 "You cannot delete a hold linked to a posted entry. It is necessary to cancel"
@@ -2887,6 +2948,12 @@ msgstr ""
 #: code:addons/l10n_ve_payment_extension/models/ir_actions_report.py:0
 msgid "You cannot download a withholding slip in draft status. "
 msgstr "No puede descargar un comprobante de retención en estatus borrador. "
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "You cannot modify retentions for a draft or cancelled invoice."
+msgstr "No se pueden modificar retenciones para una factura en borrador o cancelada."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -2964,3 +3031,19 @@ msgstr "Impuesto retenido"
 #: code:addons/l10n_ve_payment_extension/models/payment_concept_line.py:0
 msgid "the percentage may not exceed 100% on the payment concept line"
 msgstr "El porcentaje no puede exceder el 100% en la linea de pago."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__hide_issue_date_of_municipal_withholding_receipt
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__hide_issue_date_of_municipal_withholding_receipt
+msgid "Hide issue date of municipal withholding receipt"
+msgstr "Ocultar fecha comprobante de Retencion"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Don't Show date issue in municipal withholding receip"
+msgstr "No mostrar fecha en comprobante de Retenciones Municipales"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__date_emision
+msgid "Emision Date"
+msgstr "Fecha Emision del Comprobante"

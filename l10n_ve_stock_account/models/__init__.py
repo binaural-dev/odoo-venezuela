@@ -12,4 +12,7 @@ from . import (
     stock_move_line,
     stock_warehouse,
     stock_location,
+    product_template,
+    stock_picking_type,
+    stock_scrap,
 )

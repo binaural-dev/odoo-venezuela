@@ -181,6 +181,8 @@ class AccountRetention(models.Model):
     actual_invoice_ids = fields.Many2many("account.move", string="Actual Invoices", compute="_compute_actual_invoice_ids")  
     available_invoice_ids = fields.Many2many("account.move", string="Available Invoices")
 
+    date_emision = fields.Date('Emision Date', default=False)
+
     @api.depends("retention_line_ids", "retention_line_ids.move_id")
     def _compute_actual_invoice_ids(self):
         for retention in self:
@@ -499,11 +501,22 @@ class AccountRetention(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
+        for retention in res:
+            if retention.is_third_party_retention:
+                moves = retention.retention_line_ids.mapped("move_id")
+                if any(m.state != "posted" for m in moves):
+                    raise UserError(_("You cannot create retentions for a draft or cancelled invoice."))
         res._set_sequence()
         return res
 
     def write(self, vals):
         res = super().write(vals)
+        for retention in self:
+            if retention.is_third_party_retention:
+                moves = retention.retention_line_ids.mapped("move_id")
+                if any(m.state != "posted" for m in moves):
+                    raise UserError(_("You cannot modify retentions for a draft or cancelled invoice."))
+        
         if vals.get("retention_line_ids", False):
             self._create_payments_from_retention_lines()
         return res
@@ -747,11 +760,19 @@ class AccountRetention(models.Model):
             move.write({"municipal_voucher_number": retention.number})
 
     def action_print_municipal_retention_xlsx(self):
+
+
         self.ensure_one()
+        if not self.date_emision:
+            self.write({'date_emision': fields.Date.today()})
+        
+            # 2. Forzamos el guardado para que la interfaz se actualice
+            self.flush_recordset(['date_emision'])
+
         return {
             "type": "ir.actions.act_url",
             "url": f"/web/get_xlsx_municipal_retention?&retention_id={self.id}",
-            "target": "self",
+            "target": "new",
         }
 
     def _set_sequence(self):

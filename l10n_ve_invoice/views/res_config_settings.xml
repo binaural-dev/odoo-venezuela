@@ -64,15 +64,26 @@
                             </div>
                         </div>
                         <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_auto_select_debit_note_journal">
-                        <div class="o_setting_left_pane">
-                            <field name="auto_select_debit_note_journal" class="oe_inline"/>
-                        </div>
-                        <div class="o_setting_right_pane">
-                            <label for="auto_select_debit_note_journal" class="oe_inline"/>
-                            <div class="text-muted">
-                                <span>Assists the user in selecting the appropriate journals when applying a debit note.</span>
+                            <div class="o_setting_left_pane">
+                                <field name="auto_select_debit_note_journal" class="oe_inline"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="auto_select_debit_note_journal" class="oe_inline"/>
+                                <div class="text-muted">
+                                    <span>Assists the user in selecting the appropriate journals when applying a debit note.</span>
+                                </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_block_invoice_date">
+                            <div class="o_setting_left_pane">
+                                <field name="block_invoice_display_date_upper_than_date" class="oe_inline"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="block_invoice_display_date_upper_than_date" class="oe_inline"/>
+                                <div class="text-muted">
+                                    <span>Prevent purchase invoice date from being greater than the accounting date.</span>
+                                </div>
+                            </div>
                         </div>
                     </block>
                 </xpath>

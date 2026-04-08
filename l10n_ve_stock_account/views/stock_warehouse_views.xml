@@ -7,6 +7,8 @@
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="readonly_is_consignation_warehouse" invisible="1"/>
                 <field name="is_consignation_warehouse"/>
+                <field name="readonly_is_donation_warehouse" invisible="1"/>
+                <field name="is_donation_warehouse"/>
             </xpath>
         </field>
     </record>

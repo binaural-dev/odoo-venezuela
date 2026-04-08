@@ -206,6 +206,7 @@ class TestAccountMove(TransactionCase):
             "manually_set_rate": True,
             "invoice_line_ids": invoice_lines,
             "invoice_date": fields.Date.today(),
+            "invoice_date_display": fields.Date.today(),
             "journal_id": self.journal.id,
             "correlative": 1,
         }
@@ -348,6 +349,7 @@ class TestAccountMove(TransactionCase):
             "foreign_inverse_rate": 38,
             "manually_set_rate": True,
             "invoice_date": fields.Date.today(),
+            "invoice_date_display": fields.Date.today(),
             "journal_id": self.journal.id,
             "correlative": 1,
             "invoice_line_ids": [Command.create({
