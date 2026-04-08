@@ -4,6 +4,7 @@ from zipfile import ZipFile
 
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
+from werkzeug.exceptions import BadRequest
 
 from odoo.addons.l10n_ve_invoice.controllers.accounting_reports import AccountingReportsController
 
@@ -209,6 +210,27 @@ class TestAccountingReportsController(TransactionCase):
             response["data"],
             f"sale_company:{own_sale_wizard.id}:{self.company.id}".encode(),
         )
+
+    def test_download_purchase_book_rejects_invalid_company_id(self):
+        with patch(
+            "odoo.addons.l10n_ve_invoice.controllers.accounting_reports.http.request",
+            _FakeRequest(self.env),
+        ), self.assertRaises(BadRequest):
+            self.controller.download_purchase_book.__wrapped__(
+                self.controller,
+                company_id="abc",
+            )
+
+    def test_download_sales_book_rejects_invalid_wizard_id(self):
+        with patch(
+            "odoo.addons.l10n_ve_invoice.controllers.accounting_reports.http.request",
+            _FakeRequest(self.env),
+        ), self.assertRaises(BadRequest):
+            self.controller.download_sales_book.__wrapped__(
+                self.controller,
+                company_id=str(self.company.id),
+                wizard_id="x1",
+            )
 
     def test_generate_purchase_book_without_moves_exports_zero_resume(self):
         wizard = self._create_wizard(report="purchase")
