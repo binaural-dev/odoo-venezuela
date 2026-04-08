@@ -38,7 +38,7 @@ patch(Order.prototype, {
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
     if (this.pos.currency.name == "VEF") {
-      return round_di(this.pos.config.foreign_inverse_rate, this.pos.currency.decimal_places);
+      return this.pos.config.foreign_inverse_rate;
     }
     if (this.pos.currency.name == "USD") {
       return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
@@ -434,7 +434,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      4,
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_change(paymentline) {
@@ -453,7 +453,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_di(Math.max(0, change), 4);
+    return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
   },
   get_foreign_due(paymentline) {
     if (!paymentline) {
@@ -472,7 +472,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_di(due, 4);
+    return round_pr(due, this.pos.foreign_currency.rounding);
   },
 
   get_qty_products() {
