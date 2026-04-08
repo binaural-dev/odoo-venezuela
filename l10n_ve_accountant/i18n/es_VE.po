@@ -535,6 +535,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_amount
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__foreign_amount
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_line_form_l10n_ve_invoice
 msgid "Foreign Amount"
 msgstr "Importe Alterno"
@@ -567,6 +568,8 @@ msgstr "Ajuste de crédito alterno"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__credit_foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__debit_foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_currency_id
 msgid "Foreign Currency"
@@ -631,6 +634,13 @@ msgstr "Precio alterno de la linea"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_rate
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_invoice_report_search_l10n_ve_invoice
 msgid "Foreign Rate"
+msgstr "Tasa"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/wizard/account_payment_register.py:0
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_rate_display
+msgid "Foreign Rate Display"
 msgstr "Tasa"
 
 #. module: l10n_ve_accountant
@@ -862,6 +872,14 @@ msgstr "Apunte contable"
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "La cantidad de"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/wizard/account_payment_register.py:0
+msgid ""
+"La moneda del diario debe ser igual a la moneda del importe. Diario: %s, "
+"Importe: %s"
 msgstr ""
 
 #. module: l10n_ve_accountant
@@ -1138,6 +1156,17 @@ msgstr "Línea de la orden de compra"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Purchase Tax Rates"
 msgstr "Tasas de Impuestos de Compras"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
+msgid "RIF"
+msgstr "RIF"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
+msgid "RIF/CI/PAS."
+msgstr "CI/RIF"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
@@ -1597,12 +1626,6 @@ msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
 
 #. module: l10n_ve_accountant
 #. odoo-python
-#: code:addons/l10n_ve_accountant/models/res_company.py:0
-msgid "You cannot set a currency other than 'VEF' as the system base currency."
-msgstr "No puedes colocar una moneda distinta a 'VEF' como la base del sistema."
-
-#. module: l10n_ve_accountant
-#. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_journal.py:0
 msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
@@ -1716,6 +1739,12 @@ msgstr "Total BS"
 #: model:ir.model.fields,field_description:account.field_account_move__amount_untaxed_signed
 msgid "Untaxed Amount Signed"
 msgstr "Total sin impuestos BS"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "All payment methods must have an assigned account."
+msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
 
 #. module: account
 #: model_terms:ir.ui.view,arch_db:account.view_account_bill_filter

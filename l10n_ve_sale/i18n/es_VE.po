@@ -587,3 +587,8 @@ msgstr "tasa"
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid "{}. Only has {} units of the {} demanded."
 msgstr "{}. Solo tiene {} unidades de {} exigidas."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__invoice_status__partially_billed
+msgid "Partially billed"
+msgstr "Parcialmente facturado"

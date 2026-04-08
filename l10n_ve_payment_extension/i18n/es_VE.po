@@ -2768,8 +2768,8 @@ msgstr ""
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__invoice_total
-msgid "Total invoiced"
-msgstr "Total Facturado"
+msgid "Total invoiced Bs"
+msgstr "Total Facturado Bs"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__type

@@ -32,6 +32,7 @@ class AccountMove(models.Model):
         help="Indicates when the invoice was received by the client/company",
         tracking=True,
     )
+
     last_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")

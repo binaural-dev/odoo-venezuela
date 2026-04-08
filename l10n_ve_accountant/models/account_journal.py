@@ -51,7 +51,6 @@ class AccountJournal(models.Model):
                         _("An International Purchase Journal is already enabled. Only one is allowed.")
                     )
 
-
     def write(self, vals):
         for record in self:
             if "type" in vals:

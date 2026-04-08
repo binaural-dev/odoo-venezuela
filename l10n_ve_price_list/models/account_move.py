@@ -23,4 +23,4 @@ class AccountMove(models.Model):
     
     def _compute_can_edit_pricelist(self):
         for move in self:
-            move.can_edit_pricelist = self.env.user.has_group("l10n_ve_price_list.group_pricelist_change_permission")
+            move.can_edit_pricelist = self.env.user.has_group("l10n_ve_price_list.group_pricelist_change_permission_sale")

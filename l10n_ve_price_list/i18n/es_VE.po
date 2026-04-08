@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251124\n"
+"Project-Id-Version: Odoo Server 19.0+e-20251201\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-28 19:26+0000\n"
-"PO-Revision-Date: 2025-11-28 19:26+0000\n"
+"POT-Creation-Date: 2025-12-04 14:47+0000\n"
+"PO-Revision-Date: 2025-12-04 14:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -47,14 +47,19 @@ msgid "Journal Item"
 msgstr "Apunte contable"
 
 #. module: l10n_ve_price_list
-#: model:res.groups,name:l10n_ve_price_list.group_pricelist_change_permission
-msgid "Pricelist Change Permission"
-msgstr "Permiso para cambiar listas de precios"
+#: model:res.groups,name:l10n_ve_price_list.group_pricelist_change_permission_sale
+msgid "Pricelist Change Permission Sale"
+msgstr "Edición de precios en pedidos y facturas de venta"
+
+#. module: l10n_ve_price_list
+#: model:res.groups,name:l10n_ve_price_list.group_pricelist_change_permission_purchase
+msgid "Pricelist Change Permission purchase"
+msgstr "Edicion de precios en cotizaciones"
 
 #. module: l10n_ve_price_list
 #: model:res.groups,name:l10n_ve_price_list.group_pricelist_see_permission
 msgid "Pricelist See Permission"
-msgstr "Permiso para ver listas de precios en productos"
+msgstr "Permiso para ver precio de venta en ficha productos"
 
 #. module: l10n_ve_price_list
 #: model:ir.model,name:l10n_ve_price_list.model_product_template
