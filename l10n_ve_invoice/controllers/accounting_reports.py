@@ -1,21 +1,22 @@
 from datetime import datetime
 from odoo import http
-from odoo import http ,SUPERUSER_ID
-from odoo.api import Environment
 
 class AccountingReportsController(http.Controller):
     @http.route("/web/download_sales_book", type="http", auth="user")
     def download_sales_book(self, **kw):
         env_request = http.request.env
-
-        env_su = Environment(env_request.cr, SUPERUSER_ID, env_request.context)
-
-        sale_book_model_su = env_su["wizard.accounting.reports"]
+        sale_book_model = env_request["wizard.accounting.reports"]
 
         company_id = int(kw.get("company_id", 1))
         wizard_id = int(kw.get("wizard_id", 0) or 0)
-        domain = [("id", "=", wizard_id)] if wizard_id else [("create_uid", "=", env_request.uid)]
-        sale_book = sale_book_model_su.search(domain, order="id desc", limit=1)
+        domain = [
+            ("create_uid", "=", env_request.uid),
+            ("report", "=", "sale"),
+            ("company_id", "=", company_id),
+        ]
+        if wizard_id:
+            domain.append(("id", "=", wizard_id))
+        sale_book = sale_book_model.search(domain, order="id desc", limit=1)
 
         file = sale_book.generate_sales_book(company_id)
 
@@ -36,15 +37,18 @@ class AccountingReportsController(http.Controller):
     @http.route("/web/download_purchase_book", type="http", auth="user")
     def download_purchase_book(self, **kw):
         env_request = http.request.env
-
-        env_su = Environment(env_request.cr, SUPERUSER_ID, env_request.context)
-
-        purchase_book_model_su = env_su["wizard.accounting.reports"]
+        purchase_book_model = env_request["wizard.accounting.reports"]
 
         company_id = int(kw.get("company_id", 1))
         wizard_id = int(kw.get("wizard_id", 0) or 0)
-        domain = [("id", "=", wizard_id)] if wizard_id else [("create_uid", "=", env_request.uid)]
-        purchase_book = purchase_book_model_su.search(domain, order="id desc", limit=1)
+        domain = [
+            ("create_uid", "=", env_request.uid),
+            ("report", "=", "purchase"),
+            ("company_id", "=", company_id),
+        ]
+        if wizard_id:
+            domain.append(("id", "=", wizard_id))
+        purchase_book = purchase_book_model.search(domain, order="id desc", limit=1)
 
         file = purchase_book.generate_purchases_book(company_id)
         

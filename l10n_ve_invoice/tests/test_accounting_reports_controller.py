@@ -106,6 +106,110 @@ class TestAccountingReportsController(TransactionCase):
 
         self.assertEqual(response["data"], f"fallback:{own_wizard.id}:{self.company.id}".encode())
 
+    def test_download_purchase_book_fallback_uses_purchase_report(self):
+        own_purchase_wizard = self._create_wizard(report="purchase")
+        self._create_wizard(report="sale")
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice.controllers.accounting_reports.http.request",
+            _FakeRequest(self.env),
+        ), patch(
+            "odoo.addons.l10n_ve_invoice.wizard.accounting_reports.WizardAccountingReportsBinauralInvoice.generate_purchases_book",
+            autospec=True,
+            side_effect=lambda wiz, company_id: f"purchase_type:{wiz.id}:{company_id}".encode(),
+        ):
+            response = self.controller.download_purchase_book.__wrapped__(
+                self.controller,
+                company_id=str(self.company.id),
+            )
+
+        self.assertEqual(
+            response["data"],
+            f"purchase_type:{own_purchase_wizard.id}:{self.company.id}".encode(),
+        )
+
+    def test_download_sales_book_fallback_uses_sale_report(self):
+        own_sale_wizard = self._create_wizard(report="sale")
+        self._create_wizard(report="purchase")
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice.controllers.accounting_reports.http.request",
+            _FakeRequest(self.env),
+        ), patch(
+            "odoo.addons.l10n_ve_invoice.wizard.accounting_reports.WizardAccountingReportsBinauralInvoice.generate_sales_book",
+            autospec=True,
+            side_effect=lambda wiz, company_id: f"sale_type:{wiz.id}:{company_id}".encode(),
+        ):
+            response = self.controller.download_sales_book.__wrapped__(
+                self.controller,
+                company_id=str(self.company.id),
+            )
+
+        self.assertEqual(
+            response["data"],
+            f"sale_type:{own_sale_wizard.id}:{self.company.id}".encode(),
+        )
+
+    def test_download_purchase_book_fallback_uses_same_company(self):
+        company_2 = self.env["res.company"].create({"name": "Tmp Company 2"})
+        own_purchase_wizard = self._create_wizard(report="purchase")
+        self.env["wizard.accounting.reports"].create(
+            {
+                "company_id": company_2.id,
+                "report": "purchase",
+                "date_from": fields.Date.today(),
+                "date_to": fields.Date.today(),
+            }
+        )
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice.controllers.accounting_reports.http.request",
+            _FakeRequest(self.env),
+        ), patch(
+            "odoo.addons.l10n_ve_invoice.wizard.accounting_reports.WizardAccountingReportsBinauralInvoice.generate_purchases_book",
+            autospec=True,
+            side_effect=lambda wiz, company_id: f"purchase_company:{wiz.id}:{company_id}".encode(),
+        ):
+            response = self.controller.download_purchase_book.__wrapped__(
+                self.controller,
+                company_id=str(self.company.id),
+            )
+
+        self.assertEqual(
+            response["data"],
+            f"purchase_company:{own_purchase_wizard.id}:{self.company.id}".encode(),
+        )
+
+    def test_download_sales_book_fallback_uses_same_company(self):
+        company_2 = self.env["res.company"].create({"name": "Tmp Company 3"})
+        own_sale_wizard = self._create_wizard(report="sale")
+        self.env["wizard.accounting.reports"].create(
+            {
+                "company_id": company_2.id,
+                "report": "sale",
+                "date_from": fields.Date.today(),
+                "date_to": fields.Date.today(),
+            }
+        )
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice.controllers.accounting_reports.http.request",
+            _FakeRequest(self.env),
+        ), patch(
+            "odoo.addons.l10n_ve_invoice.wizard.accounting_reports.WizardAccountingReportsBinauralInvoice.generate_sales_book",
+            autospec=True,
+            side_effect=lambda wiz, company_id: f"sale_company:{wiz.id}:{company_id}".encode(),
+        ):
+            response = self.controller.download_sales_book.__wrapped__(
+                self.controller,
+                company_id=str(self.company.id),
+            )
+
+        self.assertEqual(
+            response["data"],
+            f"sale_company:{own_sale_wizard.id}:{self.company.id}".encode(),
+        )
+
     def test_generate_purchase_book_without_moves_exports_zero_resume(self):
         wizard = self._create_wizard(report="purchase")
 
