@@ -683,6 +683,7 @@ class SaleOrder(models.Model):
             if order.state in ('sale', 'done'):
                 total_invoiced = sum(order.order_line.mapped('qty_invoiced'))
                 total_delivered = sum(order.order_line.mapped('qty_delivered'))
+
                 if total_invoiced > 0 and total_invoiced < total_delivered:
                     order.invoice_status = 'partially_billed'
                     continue
