@@ -1,20 +1,50 @@
 from datetime import datetime
 from odoo import http
-from odoo import http ,SUPERUSER_ID
-from odoo.api import Environment
+from werkzeug.exceptions import BadRequest, NotFound
 
 class AccountingReportsController(http.Controller):
+    @staticmethod
+    def _parse_int_param(kw, param_name, default_value, allow_zero=False):
+        raw_value = kw.get(param_name, default_value)
+        if raw_value in (None, ""):
+            raw_value = default_value
+
+        try:
+            parsed_value = int(raw_value)
+        except (TypeError, ValueError):
+            raise BadRequest(f"Invalid parameter: {param_name}")
+
+        if allow_zero:
+            if parsed_value < 0:
+                raise BadRequest(f"Invalid parameter: {param_name}")
+        elif parsed_value <= 0:
+            raise BadRequest(f"Invalid parameter: {param_name}")
+
+        return parsed_value
+
+    @staticmethod
+    def _get_wizard_for_report(env_request, company_id, wizard_id, report_type):
+        report_model = env_request["wizard.accounting.reports"]
+        domain = [
+            ("create_uid", "=", env_request.uid),
+            ("report", "=", report_type),
+            ("company_id", "=", company_id),
+        ]
+        if wizard_id:
+            domain.append(("id", "=", wizard_id))
+
+        wizard = report_model.search(domain, order="id desc", limit=1)
+        if not wizard:
+            raise NotFound()
+
+        return wizard
+
     @http.route("/web/download_sales_book", type="http", auth="user")
     def download_sales_book(self, **kw):
         env_request = http.request.env
-
-        env_su = Environment(env_request.cr, SUPERUSER_ID, env_request.context)
-
-        sale_book_model_su = env_su["wizard.accounting.reports"]
-
-        company_id = int(kw.get("company_id", 1))
-
-        sale_book = sale_book_model_su.search([], order="id desc", limit=1)
+        company_id = self._parse_int_param(kw, "company_id", env_request.company.id)
+        wizard_id = self._parse_int_param(kw, "wizard_id", 0, allow_zero=True)
+        sale_book = self._get_wizard_for_report(env_request, company_id, wizard_id, "sale")
 
         file = sale_book.generate_sales_book(company_id)
 
@@ -35,14 +65,9 @@ class AccountingReportsController(http.Controller):
     @http.route("/web/download_purchase_book", type="http", auth="user")
     def download_purchase_book(self, **kw):
         env_request = http.request.env
-
-        env_su = Environment(env_request.cr, SUPERUSER_ID, env_request.context)
-
-        purchase_book_model_su = env_su["wizard.accounting.reports"]
-
-        company_id = int(kw.get("company_id", 1))
-
-        purchase_book = purchase_book_model_su.search([], order="id desc", limit=1)
+        company_id = self._parse_int_param(kw, "company_id", env_request.company.id)
+        wizard_id = self._parse_int_param(kw, "wizard_id", 0, allow_zero=True)
+        purchase_book = self._get_wizard_for_report(env_request, company_id, wizard_id, "purchase")
 
         file = purchase_book.generate_purchases_book(company_id)
         
