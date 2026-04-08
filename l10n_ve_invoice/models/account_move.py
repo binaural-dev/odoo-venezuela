@@ -33,12 +33,6 @@ class AccountMove(models.Model):
         tracking=True,
     )
 
-    invoice_date = fields.Date(
-        string="Invoice Date",
-        default=fields.Date.today,
-        help="Date of the invoice. Defaults to today when creating a new invoice."
-    )
-
     last_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
