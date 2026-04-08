@@ -20,22 +20,21 @@ class AccountJournal(models.Model):
 
         return super().create(vals_list)
 
-    @api.onchange('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
+    @api.constrains('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
     def _check_payment_method_line_accounts(self):
 
+        if self.env.context.get('chart_template_load') or self.env.context.get('install_mode'):
+            return
         
         for journal in self:
-            if journal.type and journal.type == 'bank':
-                if journal.inbound_payment_method_line_ids:
-                    for line in journal.inbound_payment_method_line_ids:
-                        if not line.payment_account_id:
-                            raise ValidationError(_("All payment methods must have an assigned account."))
-                        
-                if journal.outbound_payment_method_line_ids:
-                    for line in journal.outbound_payment_method_line_ids:
-                        if not line.payment_account_id:
-                            raise ValidationError(_("All payment methods must have an assigned account.")) 
-
+            
+            if journal.type == 'bank':
+                all_lines = journal.inbound_payment_method_line_ids | journal.outbound_payment_method_line_ids
+                
+                for line in all_lines:
+                    if not line.payment_account_id:
+                       
+                        raise UserError(_("All payment methods must have an assigned account.")) 
 
     @api.constrains('is_purchase_international')
     def _check_single_international_purchase_journal(self):

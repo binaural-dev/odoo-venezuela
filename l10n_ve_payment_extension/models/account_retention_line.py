@@ -228,6 +228,29 @@ class AccountRetentionLine(models.Model):
                 record.payment_id.unlink()
         return super().unlink()
 
+    def _get_islr_type_person_id(self):
+        """Return the type person used to match ISLR concept lines.
+
+        For customer retentions (out_invoice), use the company partner type person.
+        For other flows, keep the existing partner-based behavior.
+        """
+        self.ensure_one()
+
+        if (
+            self.retention_id
+            and self.retention_id.type_retention == "islr"
+            and self.retention_id.type == "out_invoice"
+        ):
+            return self.company_id.partner_id.type_person_id
+
+        if self.retention_id and self.retention_id.partner_id:
+            return self.retention_id.partner_id.type_person_id
+
+        if self.move_id and self.move_id.partner_id:
+            return self.move_id.partner_id.type_person_id
+
+        return self.env["type.person"]
+
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
         """
@@ -245,10 +268,11 @@ class AccountRetentionLine(models.Model):
                 if record.retention_id and record.retention_id.partner_id
                 else record.move_id.partner_id
             )
+            type_person = record._get_islr_type_person_id()
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:
-                if calc_partner.type_person_id.id == line.type_person_id.id:
+                if type_person.id == line.type_person_id.id:
                     move = record.move_id._origin or record.move_id
                     islr_retention_lines = len(move.retention_islr_line_ids)
                     if not line.tariff_id.accumulated_rate:
@@ -418,8 +442,9 @@ class AccountRetentionLine(models.Model):
                 else record.move_id.partner_id
             )
             if record.payment_concept_id and record.move_id and calc_partner:
+                type_person = record._get_islr_type_person_id()
                 concept_line = record.payment_concept_id.line_payment_concept_ids.filtered(
-                    lambda l: l.type_person_id.id == calc_partner.type_person_id.id
+                    lambda l: l.type_person_id.id == type_person.id
                 )
                 if concept_line:
                     is_accumulated = concept_line[0].tariff_id.accumulated_rate
@@ -675,6 +700,7 @@ class AccountRetentionLine(models.Model):
 
     def _get_code_of_retention(self):
         for record in self:
+            type_person = record._get_islr_type_person_id()
             return record.payment_concept_id.line_payment_concept_ids.filtered(
-                lambda l: l.type_person_id == record.retention_id.partner_id.type_person_id
+                lambda l: l.type_person_id == type_person
             ).code if record.payment_concept_id else ""
