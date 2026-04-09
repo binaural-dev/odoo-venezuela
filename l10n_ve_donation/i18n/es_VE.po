@@ -216,6 +216,11 @@ msgid "Donation Certificate"
 msgstr "Certificado de Donación"
 
 #. module: l10n_ve_donation
+#: model:res.groups,name:l10n_ve_donation.group_donation_manager
+msgid "Donation Manager"
+msgstr "Gestor de Donaciones"
+
+#. module: l10n_ve_donation
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.view_stock_scrap_form_inherit
 msgid "Donation Location"
 msgstr "Ubicación de Donación"
@@ -413,6 +418,16 @@ msgid ""
 "order."
 msgstr ""
 "El campo 'Es Donación' no puede modificarse en una orden confirmada o completada."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/product_template.py:0
+msgid ""
+"There is already a donation product. Please deactivate the previous one "
+"before creating a new one."
+msgstr ""
+"Ya existe un producto de donación. Por favor desactive el anterior antes de "
+"crear uno nuevo."
 
 #. module: l10n_ve_donation
 #. odoo-python

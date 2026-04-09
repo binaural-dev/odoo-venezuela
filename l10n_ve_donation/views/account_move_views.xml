@@ -8,7 +8,9 @@
             <xpath expr="//button[@name='button_draft']" position="attributes">
                 <attribute name="invisible">is_donation and state != 'draft' or move_type != 'entry'</attribute>
             </xpath>
-
+            <xpath expr="//button[@name='%(account.action_view_account_move_reversal)d']" position="attributes">
+                <attribute name="invisible">(is_donation and not can_reverse_donation_move)and state != 'draft' or move_type != 'entry'</attribute>
+            </xpath>
             <button name="button_draft" position="attributes">
                 <attribute name="invisible">move_type in ['out_invoice', 'out_refund'] or state == 'draft' or is_donation</attribute>
             </button>

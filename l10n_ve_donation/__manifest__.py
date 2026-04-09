@@ -13,6 +13,7 @@
     ],
     "data": [
         "data/donation_certificate_paperformat.xml",
+        "security/res_groups.xml",
         "report/donation_certificate_report.xml",
         "report/donation_certificate_template.xml",
         "views/account_move_views.xml",
