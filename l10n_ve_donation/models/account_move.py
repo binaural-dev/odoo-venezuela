@@ -123,7 +123,7 @@ class AccountMove(models.Model):
         Uses skip_invoice_sync=True to malintain consistency with manually 
         constructed tax lines in _reverse_moves.
         """
-        product = self.env["product.template"].search(
+        product = self.env["product.template"].with_company(self.company_id).search(
             [("is_donation_product", "=", True)], limit=1
         )
         if not product:
