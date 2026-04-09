@@ -1,0 +1,110 @@
+<odoo>
+    <!-- Template for account move-->
+    <template id="donation_certificate_template_account_move" name="Certificado de Donación Account Move">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.basic_layout">
+                    <div class="page">
+
+                        <!-- ===== ENCABEZADO ===== -->
+                        <div class="container-fluid">
+                            <div class="row mb-3">
+                                <div class="col-12 d-flex align-items-center flex-wrap">
+                                    <!-- Logo de la empresa -->
+                                    <div class="me-3 flex-shrink-0">
+                                        <img t-if="o.company_id.logo"
+                                            t-att-src="image_data_uri(o.company_id.logo)"
+                                            style="max-height:90pt; max-width:140px; min-width:80px;"
+                                            alt="Logo" />
+                                    </div>
+                                    <!-- Datos de la empresa -->
+                                    <div>
+                                        <p class="m-0">
+                                            <span class="fw-bold">Razón Social: </span>
+                                            <span t-out="o.company_id.name" />
+                                            <br />
+                                            <span class="fw-bold">RIF: </span>
+                                            <span t-out="o.company_id.vat or ''" />
+                                            <br />
+                                            <span class="fw-bold">Dirección Fiscal: </span>
+                                            <span t-out="o.company_id.street or ''" />
+                                            <t t-if="o.company_id.city">
+                                                <span t-out="', ' + o.company_id.city" />
+                                            </t>
+                                            <br />
+                                            <span class="fw-bold">Teléfono: </span>
+                                            <span t-out="o.company_id.phone or ''" />
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Título del certificado -->
+                            <div class="row mb-4">
+                                <div class="col-12 text-center">
+                                    <h3 style="font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                                        Certificado de Donación
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <!-- ===== TEXTO DECLARATORIO ===== -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <p style="text-align: justify; line-height: 2; font-size: 14px;">
+                                        Yo, ______________________________________________________________________, de nacionalidad venezolana, 
+                                        mayor de edad, y titular de la Cédula de Identidad No. _________________________, actuando en 
+                                        nombre y representación de <strong><span t-out="o.company_id.name"/></strong>, sociedad 
+                                        mercantil inscrita en el Registro Mercantil __________________________________________________, en fecha 
+                                        ___/___/____, bajo el No. _______, Tomo _______, e inscrita en el Registro de Información 
+                                        Fiscal (R.I.F) bajo el No. <strong><span t-out="o.company_id.vat or '__________________'"/></strong>, suficientemente facultado para este acto 
+                                        según consta en ____________________________________________________________________________________________, 
+                                        por el presente documento declaro que en nombre de mi representada doy en calidad de DONACIÓN, en forma pura y simple, perfecta e 
+                                        irrevocable a <strong><span t-out="'__________________'"/></strong>, y en el 
+                                        Registro de Información Fiscal (RIF) bajo el No. <strong><span t-out="'__________________'"/></strong>, los siguientes 
+                                        bienes: 
+                                        <br/><br/>
+                                        <strong>
+                                            <span t-out="o.ref"/>
+                                        </strong>
+                                        <br/><br/>
+                                        todos estos bienes se encuentran valorados en la cantidad de ___________________________________, 
+                                        y los mismos serán destinados a lograr los objetivos de dicha organización. Con el otorgamiento de este documento, mi representada transfiere a 
+                                        <strong><span t-out="o.partner_id.name or '__________________'"/></strong>, la propiedad de los mencionados bienes.
+                                        Y nosotros _______________________________________________________________________________________, 
+                                        venezolanos, mayores de edad, de este domicilio y titulares de las cédulas de identidad No. _________________________, respectivamente, 
+                                        actuando en nuestro carácter de Representante Legal, y encontrándonos plenamente facultados, por medio del presente documento declaramos: que 
+                                        aceptamos para nuestra representada la donación de los bienes antes descritos, en los términos expuestos.
+                                    </p>
+                                    
+                                    <t t-set="doc_date" t-value="o.invoice_date if o.invoice_date else (o.date if o.date else datetime.datetime.now())"/>
+                                    <t t-set="meses" t-value="['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']"/>
+                                    
+                                    <p style="text-align: justify; line-height: 2; font-size: 14px; margin-top: 20px;">
+                                        En la ciudad de <strong><span t-out="o.company_id.city or '__________________'"/></strong> a los <strong><span t-out="doc_date.strftime('%d')"/></strong> días del mes de <strong><span t-out="meses[int(doc_date.strftime('%m')) - 1]"/></strong> de <strong><span t-out="doc_date.strftime('%Y')"/></strong>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- ===== FIRMAS ===== -->
+                            <div class="row mt-5 pt-5">
+                                <div class="col-6 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 6px; margin: 0 30px;">
+                                        <p class="m-0"><strong>Representante Legal del Donante</strong></p>
+                                        <p class="m-0" style="font-size: 11px;">Nombre, Firma y Sello</p>
+                                    </div>
+                                </div>
+                                <div class="col-6 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 6px; margin: 0 30px;">
+                                        <p class="m-0"><strong>Representante Legal del Beneficiario</strong></p>
+                                        <p class="m-0" style="font-size: 11px;">Nombre, Firma y Sello</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

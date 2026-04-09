@@ -1066,7 +1066,7 @@ class AccountMove(models.Model):
                         'view_mode': 'form',
                         'view_id': False,
                         'target': 'new',
-                        'context': {'default_move_id': self.id},
+                        'context': {'default_move_id': move.id},
                     }
 
         for invoice in self:
