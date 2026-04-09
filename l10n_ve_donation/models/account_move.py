@@ -6,6 +6,14 @@ class AccountMove(models.Model):
 
     is_donation = fields.Boolean(string="Is Donation", tracking=True)
 
+    can_reverse_donation_move = fields.Boolean(compute="_compute_can_reverse_donation_move")
+
+    def _compute_can_reverse_donation_move(self):
+        for move in self:
+            move.can_reverse_donation_move = (
+                self.env.user.has_group("l10n_ve_donation.group_donation_manager")
+            )
+
     @api.constrains("is_donation", "line_ids","line_ids.partner_id")
     def _check_partner_donation(self):
         """Validate that all journal items of a donation move use the company partner."""
@@ -13,7 +21,7 @@ class AccountMove(models.Model):
             if not move.is_donation:
                 continue
             company_partner = move.company_id.partner_id or self.env.company.partner_id
-            if move.partner_id != company_partner:
+            if move.partner_id and move.partner_id != company_partner:
                 raise ValidationError(
                     _(
                         "The contact on move '%(line)s' must be the company partner "
@@ -36,7 +44,6 @@ class AccountMove(models.Model):
                             found=line.partner_id.name,
                         )
                     )
-            
 
     def print_donation_certificate(self):
         self.ensure_one()
@@ -145,3 +152,4 @@ class AccountMove(models.Model):
                 )
         if invoice_line_vals:
             return invoice_line_vals
+ 
