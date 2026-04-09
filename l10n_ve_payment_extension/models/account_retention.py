@@ -501,11 +501,22 @@ class AccountRetention(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
+        for retention in res:
+            if retention.is_third_party_retention:
+                moves = retention.retention_line_ids.mapped("move_id")
+                if any(m.state != "posted" for m in moves):
+                    raise UserError(_("You cannot create retentions for a draft or cancelled invoice."))
         res._set_sequence()
         return res
 
     def write(self, vals):
         res = super().write(vals)
+        for retention in self:
+            if retention.is_third_party_retention:
+                moves = retention.retention_line_ids.mapped("move_id")
+                if any(m.state != "posted" for m in moves):
+                    raise UserError(_("You cannot modify retentions for a draft or cancelled invoice."))
+        
         if vals.get("retention_line_ids", False):
             self._create_payments_from_retention_lines()
         return res
