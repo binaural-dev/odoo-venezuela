@@ -60,7 +60,7 @@ class TxtWizard(models.TransientModel):
                 line_data["Número del documento afectado"] = line.move_id.reversed_entry_id.name or "0"
             
             line_data["RIF de proveedor"] = (
-                line.move_id.partner_id.prefix_vat + line.move_id.partner_id.vat
+                line.retention_id.partner_id.prefix_vat + line.retention_id.partner_id.vat
             )
             line_data["Número de documento"] = line.move_id.name
             line_data["Número de control"] = line.move_id.correlative
