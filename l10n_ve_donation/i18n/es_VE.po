@@ -383,6 +383,30 @@ msgstr "El Contacto/Cliente no puede cambiarse cuando es una donación."
 
 #. module: l10n_ve_donation
 #. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid ""
+"The contact on move '%(line)s' must be the company partner "
+"('%(expected)s') when the entry is a donation. "
+"Found: '%(found)s'."
+msgstr ""
+"El contacto en el asiento '%(line)s' debe ser el contacto de la empresa "
+"('%(expected)s') cuando el asiento es una donación. "
+"Encontrado: '%(found)s'."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid ""
+"The contact on journal item '%(line)s' must be the company partner "
+"('%(expected)s') when the entry is a donation. "
+"Found: '%(found)s'."
+msgstr ""
+"El contacto en el apunte contable '%(line)s' debe ser el contacto de la empresa "
+"('%(expected)s') cuando el asiento es una donación. "
+"Encontrado: '%(found)s'."
+
+#. module: l10n_ve_donation
+#. odoo-python
 #: code:addons/l10n_ve_donation/models/sale_order.py:0
 msgid ""
 "The field 'Is Donation' cannot be modified on a confirmed or completed "

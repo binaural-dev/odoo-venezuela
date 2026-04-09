@@ -1,10 +1,42 @@
 from odoo import models, fields, api, _, Command
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 class AccountMove(models.Model):
     _inherit = "account.move"
 
     is_donation = fields.Boolean(string="Is Donation", tracking=True)
+
+    @api.constrains("is_donation", "line_ids","line_ids.partner_id")
+    def _check_partner_donation(self):
+        """Validate that all journal items of a donation move use the company partner."""
+        for move in self:
+            if not move.is_donation:
+                continue
+            company_partner = move.company_id.partner_id or self.env.company.partner_id
+            if move.partner_id != company_partner:
+                raise ValidationError(
+                    _(
+                        "The contact on move '%(line)s' must be the company partner "
+                        "('%(expected)s') when the entry is a donation. "
+                        "Found: '%(found)s'.",
+                        line=move.name or move.display_name,
+                        expected=company_partner.name,
+                        found=move.partner_id.name,
+                    )
+                )
+            for line in move.line_ids.filtered(lambda l: l.partner_id):
+                if line.partner_id != company_partner:
+                    raise ValidationError(
+                        _(
+                            "The contact on journal item '%(line)s' must be the company partner "
+                            "('%(expected)s') when the entry is a donation. "
+                            "Found: '%(found)s'.",
+                            line=line.name or line.display_name,
+                            expected=company_partner.name,
+                            found=line.partner_id.name,
+                        )
+                    )
+            
 
     def print_donation_certificate(self):
         self.ensure_one()
@@ -59,7 +91,7 @@ class AccountMove(models.Model):
                 return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
-        
+
     def _get_tax_grouped_lines(self):
         """
         Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
