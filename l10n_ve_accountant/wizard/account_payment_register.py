@@ -90,6 +90,17 @@ class AccountPaymentRegister(models.TransientModel):
         for payment in self:
             if not bool(payment.payment_date):
                 return
+            
+            # If all invoices being paid share the same date as the payment date
+            # and have the same rate, use that exact rate to avoid decimal discrepancies.
+            moves = payment.line_ids.mapped('move_id')
+            if moves and all(m.date == payment.payment_date for m in moves):
+                rates = set(moves.mapped('foreign_inverse_rate'))
+                if len(rates) == 1 and list(rates)[0]:
+                    payment.foreign_inverse_rate = list(rates)[0]
+                    payment.foreign_rate = moves[0].foreign_rate
+                    continue
+
             rate_values = Rate.compute_rate(
                 payment.foreign_currency_id.id, payment.payment_date
             )
@@ -144,7 +155,7 @@ class AccountPaymentRegister(models.TransientModel):
         else:
             source_amount_currency = abs(sum(lines.mapped('amount_residual_currency')))
 
-        return {
+        res = {
             'company_id': company.id,
             'partner_id': payment_values['partner_id'],
             'partner_type': payment_values['partner_type'],
@@ -153,6 +164,16 @@ class AccountPaymentRegister(models.TransientModel):
             'source_amount': source_amount,
             'source_amount_currency': source_amount_currency,
         }
+        
+        # Inherit exact rates from the invoices if uniformly available
+        moves = lines.mapped('move_id')
+        if moves:
+            rates = set(moves.mapped('foreign_inverse_rate'))
+            if len(rates) == 1 and list(rates)[0]:
+                res['foreign_inverse_rate'] = list(rates)[0]
+                res['foreign_rate'] = moves[0].foreign_rate
+                
+        return res
     def calculate_amount_foreign(self,source_amount_currency,exact_rate,decimal_places):
         amout = float_round(source_amount_currency * exact_rate, precision_digits=decimal_places)
         return amout
