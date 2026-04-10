@@ -187,26 +187,26 @@ class AccountMove(models.Model):
                         foreign_amount_base_payment = partial_foreign_amount
                     
 
-                    elif (bank_amount* (rec.company_id.igtf_percentage / 100)) < igtf_amount:
+                    elif (bank_amount* (rec.company_id.igtf_percentage / 100)) > igtf_amount:
                         if (bank_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
                             
                             amount_base_payment = bank_amount
                             foreign_amount_base_payment = foreign_bank_amount
                         else:
-                            
-                            amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
-                            foreign_amount_base_payment = foreign_igtf_amount / (rec.company_id.igtf_percentage / 100)
+                            # Para pagos completos, usar el Total de la factura como BI IGTF
+                            # Esto evita errores de redondeo y asegura que coincida con el Total
+                            amount_base_payment = rec.amount_total
+                            foreign_amount_base_payment = rec.foreign_total_billed
 
                         
                         if 'pos_payment_ids' in bank_line[0].move_id._fields:
                             if bank_line[0].move_id.pos_payment_ids:
-                                amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
-                                foreign_amount_base_payment = foreign_igtf_amount / (rec.company_id.igtf_percentage / 100)
+                                amount_base_payment = rec.amount_total
+                                foreign_amount_base_payment = rec.foreign_total_billed
                     else:
-                        
-
-                        amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
-                        foreign_amount_base_payment = foreign_igtf_amount / (rec.company_id.igtf_percentage / 100)
+                        # Para pagos completos, usar el Total de la factura como BI IGTF
+                        amount_base_payment = rec.amount_total
+                        foreign_amount_base_payment = rec.foreign_total_billed
 
                 if igtf_line:
                     

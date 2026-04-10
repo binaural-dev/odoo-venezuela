@@ -149,6 +149,7 @@ class AccountMoveLine(models.Model):
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
+        "foreign_inverse_rate",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
