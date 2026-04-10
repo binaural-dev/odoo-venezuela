@@ -52,6 +52,7 @@ class AccountMove(models.Model):
     def action_post(self):
         res = super().action_post()
         donation_moves = self.filtered(lambda m: m.is_donation and m.move_type == "out_invoice")
+        donation_entries = self.filtered(lambda m: m.is_donation and m.move_type == "entry")
         for move in donation_moves:
             # ! FIXME: Buscar la manera de no ejecutar _post acá
             move._post(soft=True)
@@ -63,6 +64,10 @@ class AccountMove(models.Model):
             credit_note = wizard.new_move_ids
             credit_note.action_post()
             return res
+        for move in donation_entries:
+            company_partner = move.company_id.partner_id or self.env.company.partner_id
+            for line in move.line_ids:
+                line.write({"partner_id": company_partner.id})
         return res
 
     def _reverse_moves(self, default_values_list=None, cancel=False):

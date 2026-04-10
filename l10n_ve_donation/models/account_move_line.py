@@ -30,11 +30,3 @@ class AccountMoveLine(models.Model):
                     raise UserError(_("Account %s is of receivable type, but is used in a purchase operation.", line.account_id.code))
                 if (line.display_type == 'payment_term') ^ (account_type == 'liability_payable'):
                     raise UserError(_("Any journal item on a payable account must have a due date and vice versa."))
-    def write(self, vals):
-        res = super().write(vals)
-        if self.move_id.is_donation:
-            company_partner = self.env.company.partner_id
-            for line in self:
-                if line.partner_id != company_partner:
-                    line.partner_id = company_partner
-        return res
