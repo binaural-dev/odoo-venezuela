@@ -737,11 +737,8 @@ class AccountMoveLine(models.Model):
             initial_company = abs(initial_company_residual or 0.0)
             new_company = abs(new_company_residual or 0.0)
             line_foreign_total = 0.0
-            # For credit line, use foreign_credit directly for currency calculation
-            if line and line.foreign_credit is not None:
-                line_foreign_total = abs(line.foreign_credit)
-            elif line and line.foreign_debit is not None:
-                line_foreign_total = abs(line.foreign_debit)
+            if line:
+                line_foreign_total = max(abs(line.foreign_debit or 0.0), abs(line.foreign_credit or 0.0))
             initial_foreign = line_foreign_total or abs(initial_foreign_residual or 0.0)
             if initial_foreign_residual_currency is not None:
                 initial_foreign_currency = abs(initial_foreign_residual_currency)
@@ -831,7 +828,27 @@ class AccountMoveLine(models.Model):
                 preferred_candidates.append(credit_foreign_amount_currency)
 
         partial_foreign_amount = 0.0
-        partial_foreign_amount = partial_vals.get("amount") *line_for_company.foreign_inverse_rate if company_foreign_currency == self.env.ref("base.VEF") else partial_vals.get("amount") / line_for_company.foreign_inverse_rate
+        if preferred_candidates:
+            if len(preferred_candidates) == 1:
+                partial_foreign_amount = preferred_candidates[0]
+            else:
+                company_currency = self.env.company.currency_id
+                debit_consumed = (
+                    new_debit_amount_residual is not None
+                    and company_currency.is_zero(new_debit_amount_residual)
+                )
+                credit_consumed = (
+                    new_credit_amount_residual is not None
+                    and company_currency.is_zero(new_credit_amount_residual)
+                )
+                if debit_consumed and not credit_consumed and debit_foreign_amount_currency:
+                    partial_foreign_amount = debit_foreign_amount_currency
+                elif credit_consumed and not debit_consumed and credit_foreign_amount_currency:
+                    partial_foreign_amount = credit_foreign_amount_currency
+                else:
+                    partial_foreign_amount = min(preferred_candidates)
+        else:
+            partial_foreign_amount = partial_vals.get("amount") *line_for_company.foreign_inverse_rate if company_foreign_currency == self.env.ref("base.VEF") else partial_vals.get("amount") / line_for_company.foreign_inverse_rate
 
         partial_vals.update(
             {
