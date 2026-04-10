@@ -28,13 +28,13 @@ class WizardAccountingReports(models.TransientModel):
         fields = super().sale_book_fields()
         fields.extend(
             [
+                # {
+                #     "name": "Bi igtf",
+                #     "field": "bi_igtf",
+                #     "format": "number",
+                # },
                 {
-                    "name": "Bi igtf",
-                    "field": "bi_igtf",
-                    "format": "number",
-                },
-                {
-                    "name": "Igtf",
+                    "name": "IGTF",
                     "field": "igtf",
                     "format": "number",
                 },
@@ -59,13 +59,13 @@ class WizardAccountingReports(models.TransientModel):
         fields = super().purchase_book_fields()
         fields.extend(
             [
+                # {
+                #     "name": "Bi igtf",
+                #     "field": "bi_igtf",
+                #     "format": "number",
+                # },
                 {
-                    "name": "Bi igtf",
-                    "field": "bi_igtf",
-                    "format": "number",
-                },
-                {
-                    "name": "Igtf",
+                    "name": "IGTF",
                     "field": "igtf",
                     "format": "number",
                 },
@@ -94,12 +94,14 @@ class WizardAccountingReports(models.TransientModel):
         Returns:
             dict: Updated field values for the sale book line.
         """
+        is_check_currency_system = self.currency_system
         fields = super()._fields_sale_book_line(move, taxes)
         multiplier = -1 if move.move_type == "out_refund" else 1
         bi_igtf = move.foreign_bi_igtf if not self.currency_system else move.bi_igtf
-        igtf = move.foreign_alter_bi_igtf if not self.currency_system else move.alter_bi_igtf
-        fields |= {"bi_igtf": bi_igtf,}
-        fields |= {"igtf": igtf,}
+        is_igtf = bool(move.alter_bi_igtf > 0 or move.foreign_alter_bi_igtf > 0)
+        igtf = (move.tax_totals["igtf"]["igtf_amount"] if is_check_currency_system else move.tax_totals["igtf"]["foreign_igtf_amount"]) if is_igtf else 0
+        # fields |= {"bi_igtf": bi_igtf,}
+        fields |= {"igtf": igtf * multiplier,}
         return fields
 
     def _fields_purchase_book_line(self, move, taxes):
@@ -123,12 +125,14 @@ class WizardAccountingReports(models.TransientModel):
         Returns:
             dict: Updated field values for the purchase book line.
         """
+        is_check_currency_system = self.currency_system
         fields = super()._fields_purchase_book_line(move, taxes)
         multiplier = -1 if move.move_type == "in_refund" else 1
         bi_igtf = move.foreign_bi_igtf if not self.currency_system else move.bi_igtf
-        igtf = move.foreign_alter_bi_igtf if not self.currency_system else move.alter_bi_igtf
-        fields |= {"bi_igtf": bi_igtf,}
-        fields |= {"igtf": igtf,}
+        is_igtf = bool(move.alter_bi_igtf > 0 or move.foreign_alter_bi_igtf > 0)
+        igtf =  (move.tax_totals["igtf"]["igtf_amount"] if is_check_currency_system else move.tax_totals["igtf"]["foreign_igtf_amount"]) if is_igtf else 0
+        # fields |= {"bi_igtf": bi_igtf,}
+        fields |= {"igtf": igtf * multiplier,}
         return fields
     
     def _get_sale_book_field_groups(self):
@@ -150,10 +154,10 @@ class WizardAccountingReports(models.TransientModel):
         igtf_fields = [
         ]
 
-        if not self.env.company.not_show_bi_igtf_sale_order:
-            igtf_fields.append(            
-                {"name": "Bi igtf", "field": "bi_igtf", "format": "number"},
-            )
+        # if not self.env.company.not_show_bi_igtf_sale_order:
+        #     igtf_fields.append(            
+        #         {"name": "Bi igtf", "field": "bi_igtf", "format": "number"},
+        #     )
 
         if not self.env.company.not_show_igtf_sale_order:
             igtf_fields.append(            
@@ -188,10 +192,10 @@ class WizardAccountingReports(models.TransientModel):
         igtf_fields = [
         ]
 
-        if not self.env.company.not_show_bi_igtf_purchase_order:
-            igtf_fields.append(            
-                {"name": "Bi igtf", "field": "bi_igtf", "format": "number"},
-            )
+        # if not self.env.company.not_show_bi_igtf_purchase_order:
+        #     igtf_fields.append(            
+        #         {"name": "Bi igtf", "field": "bi_igtf", "format": "number"},
+        #     )
 
         if not self.env.company.not_show_igtf_purchase_order:
             igtf_fields.append(            

@@ -30,6 +30,12 @@ class ResCompany(models.Model):
 
     not_show_extend_aliquot_purchase = fields.Boolean()
 
+    not_show_total_purchases_with_iva = fields.Boolean()
+
+    not_show_national_exempt_total_purchases = fields.Boolean()
+
+    not_show_total_purchases_national = fields.Boolean()
+
     config_deductible_tax = fields.Boolean()
 
     no_deductible_general_aliquot_purchase = fields.Many2one(
@@ -42,6 +48,10 @@ class ResCompany(models.Model):
         "account.tax", domain=[("type_tax_use", "=", "purchase")]
     )
 
+    #International sale fields
+    zero_aliquot_sale_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "sale")])
+
+    #International purchase fields
     exent_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
     general_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])
     reduced_aliquot_purchase_international = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "purchase")])

@@ -23,3 +23,10 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.optional_internal_movement_guidance',
         readonly=False,
     )
+
+    is_subcontracting = fields.Boolean(
+        string="Subcontracting",
+        help="Enable Maquila option in Reason for Transfer",
+        related="company_id.is_subcontracting", 
+        readonly=False
+    )
