@@ -7,7 +7,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-@tagged('l10n_ve_invoice_digital', 'invoice digital') 
+@tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "invoice_digital") 
 class TestAccountMoveApiCalls(TransactionCase):
 
     def setUp(self):
@@ -26,6 +26,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "currency_id": self.currency_usd.id,
                 "currency_foreign_id": self.currency_vef.id,
                 "invoice_digital_tfhka": True,
+                "country_id": self.env.ref('base.ve').id,
             }
         )
 
@@ -169,12 +170,16 @@ class TestAccountMoveApiCalls(TransactionCase):
             'street': 'Calle Falsa 123',
         })
 
-        # Crear impuesto IVA 16%
+        self.tax_group = self.env['account.tax.group'].create({
+            'name': 'IVA',
+        })
+        
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
             'amount': 16,
             'amount_type': 'percent',
             'type_tax_use': 'sale',
+            'tax_group_id': self.tax_group.id,
         })
 
         # Crear el producto
@@ -183,7 +188,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             'type': 'service',
             'list_price': 100,
             'barcode': '123456789',
-            'taxes_id': [(6, 0, [self.tax_iva16.id])],
+            'taxes_id': [Command.set([self.tax_iva16.id])],
         })
 
     def _create_invoice(
@@ -209,6 +214,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "quantity": product.get("quantity", 1),
                     "price_unit": product["price_unit"],
                     "tax_ids": product.get("tax_ids", []),
+                    "account_id": self.acc_income.id, 
                 }
             )
             for product in products
