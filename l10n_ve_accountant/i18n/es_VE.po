@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20260105\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260313\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-19 15:16+0000\n"
-"PO-Revision-Date: 2026-03-19 15:16+0000\n"
+"POT-Creation-Date: 2026-04-10 20:16+0000\n"
+"PO-Revision-Date: 2026-04-10 20:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -815,9 +815,17 @@ msgid "Instant payment"
 msgstr "Contado"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__international_purchase_exent_product
+msgid "International Purchase Exent Product"
+msgstr "Producto de importación exento"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_purchase_international
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_journal__is_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_purchase_international
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__is_purchase_international
 msgid "International purchase"
-msgstr "Compra internacional"
+msgstr "Es Compra Internacional"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
@@ -1419,8 +1427,8 @@ msgid ""
 "The amount expressed in an optional other currency if it is a multi-currency"
 " entry."
 msgstr ""
-"La cantidad expresada en una moneda alternativa si se trata de un asiento "
-"multimoneda."
+"La cantidad que se expresa en una moneda alternativa si se trata de un "
+"asiento multimoneda."
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__move_currency_to_company_currency_rate

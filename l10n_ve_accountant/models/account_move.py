@@ -19,6 +19,7 @@ class AccountMove(models.Model):
     _inherit = "account.move"
     
     invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.today)
+    is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
 
     @api.depends('invoice_date_display')
     def _compute_date(self):
@@ -145,6 +146,12 @@ class AccountMove(models.Model):
     def _onchange_move_type(self):
         self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
         self.invoice_date_display = False if self.move_type == "entry" else fields.Date.today()
+
+    @api.onchange("journal_id")
+    def _onchange_journal_id_reset_international_exempt(self):
+        for move in self:
+            if not move.journal_id.is_purchase_international:
+                move.invoice_line_ids.update({"international_purchase_exent_product": False})
 
     def default_rate(self):
         """
