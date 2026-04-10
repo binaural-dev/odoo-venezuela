@@ -461,7 +461,7 @@ class TestAccountingReports(TransactionCase):
             correlative="CTRL-NO-DATE",
         )
 
-        with self.assertRaisesRegex(Exception, "invoice date"):
+        with self.assertRaisesRegex(UserError, "invoice date"):
             self.wizard._fields_purchase_book_line(move, dict(self.sample_taxes))
 
     def test_fields_sale_book_line_regular_invoice(self):
