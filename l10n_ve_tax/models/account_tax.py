@@ -180,6 +180,11 @@ class AccountTax(models.Model):
         # Identificar la cuenta a cobrar/pagar de la factura
         target_account_ids = move.line_ids.filtered(lambda l: l.account_id.account_type in ['asset_receivable', 'liability_payable']).mapped('account_id.id')
 
+        content = invoice_payments.get('content') or []
+        
+        # Identificar la cuenta a cobrar/pagar de la factura
+        target_account_ids = move.line_ids.filtered(lambda l: l.account_id.account_type in ['asset_receivable', 'liability_payable']).mapped('account_id.id')
+
         for payment in content:
             move_id = payment.get('move_id')
             payment_id = self.env['account.move'].browse(move_id)
