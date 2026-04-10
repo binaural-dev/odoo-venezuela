@@ -176,18 +176,26 @@ class AccountTax(models.Model):
             return amounts
 
         content = invoice_payments.get('content') or []
+        
+        # Identificar la cuenta a cobrar/pagar de la factura
+        target_account_ids = move.line_ids.filtered(lambda l: l.account_id.account_type in ['asset_receivable', 'liability_payable']).mapped('account_id.id')
+
         for payment in content:
-            
             move_id = payment.get('move_id')
             payment_id = self.env['account.move'].browse(move_id)
             foreign_amt = 0.0
+            igtf_foreign_amt = 0.0
+            
+            # Sólo sumar el saldo de las líneas de cuentas por cobrar/pagar
             for line in payment_id.line_ids:
-              
+                if line.account_id.id in target_account_ids:
+                    foreign_amt += abs(line.foreign_balance)
+
+                # Aislar la línea cargada con el gasto del IGTF
+                if line.name == 'IGTF' or (line.account_id.id in [self.env.company.customer_account_igtf_id.id, self.env.company.supplier_account_igtf_id.id]):
+                    igtf_foreign_amt += abs(line.foreign_balance)
                 
-                foreign_amt = abs(line.foreign_balance)
-                
-            foreign_amt = foreign_amt
-            amounts.append(foreign_amt)
+            amounts.append(foreign_amt - igtf_foreign_amt)
         return amounts
 
     def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
