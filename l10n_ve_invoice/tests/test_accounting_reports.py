@@ -4,7 +4,9 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import xlsxwriter
+from dateutil.relativedelta import relativedelta
 
+from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
@@ -1198,3 +1200,56 @@ class TestAccountingReports(TransactionCase):
         self.assertNotIn("TOTALES NACIONALES", headers)
         self.assertNotIn("COMPRAS INTERNACIONALES", headers)
         self.assertNotIn("IMPUESTOS NO DEDUCIBLES", headers)
+
+    def test_default_date_to_returns_today(self):
+        wizard = self.wizard_model.create({"report": "sale"})
+
+        self.assertEqual(wizard._default_date_to(), fields.Date.today())
+
+    def test_default_date_from_returns_previous_month(self):
+        wizard = self.wizard_model.create({"report": "sale"})
+
+        self.assertEqual(
+            wizard._default_date_from(),
+            fields.Date.today() + relativedelta(months=-1),
+        )
+
+    def test_default_company_id_returns_current_company(self):
+        wizard = self.wizard_model.create({"report": "sale"})
+
+        self.assertEqual(
+            self.env["res.company"].browse(wizard._default_company_id()),
+            self.env.company,
+        )
+
+    def test_default_check_currency_system_returns_false_for_non_vef(self):
+        wizard = self.wizard_model.create({"report": "sale"})
+
+        self.assertFalse(wizard._default_check_currency_system())
+
+    def test_default_currency_system_returns_false_for_non_vef(self):
+        wizard = self.wizard_model.create({"report": "sale"})
+
+        self.assertFalse(wizard._default_currency_system())
+
+    def test_default_check_currency_system_returns_true_for_vef(self):
+        self.company.write(
+            {
+                "currency_id": self.env.ref("base.VEF").id,
+                "currency_foreign_id": self.env.ref("base.USD").id,
+            }
+        )
+        wizard = self.wizard_model.create({"report": "sale"})
+
+        self.assertTrue(wizard._default_check_currency_system())
+
+    def test_default_currency_system_returns_true_for_vef(self):
+        self.company.write(
+            {
+                "currency_id": self.env.ref("base.VEF").id,
+                "currency_foreign_id": self.env.ref("base.USD").id,
+            }
+        )
+        wizard = self.wizard_model.create({"report": "sale"})
+
+        self.assertTrue(wizard._default_currency_system())
