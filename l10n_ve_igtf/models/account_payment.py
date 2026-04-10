@@ -1,6 +1,6 @@
 from odoo import api, models, fields, _, Command
 from odoo.exceptions import UserError
-from odoo.tools import float_is_zero , float_compare
+from odoo.tools import float_is_zero , float_compare,float_round
 
 import logging
 
@@ -121,10 +121,15 @@ class AccountPaymentIgtf(models.Model):
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
                         payment._prepare_outbound_move_line_igtf_vals(vals, write_off_line_vals)
+    
+    def calculate_igtf_amount_foreign(self,amount,igtf_percentage,foreign_inverse_rate,decimal_places):
+        amout = float_round((amount * (igtf_percentage / 100) * foreign_inverse_rate), precision_digits=decimal_places)
+        return amout
 
     def _create_inbound_move_line_igtf_vals(self, vals):
         
         for rec in self:
+            
             igtf_account = (
                 self.env.company.customer_account_igtf_id.id
                 if rec.partner_type == "customer"
@@ -135,14 +140,21 @@ class AccountPaymentIgtf(models.Model):
             currency = self.currency_id 
             precision = currency.rounding
             if float_compare(igtf_amount, 0.0, precision_rounding=precision) > 0.0:
+
+                if rec.foreign_inverse_rate:
+                    exact_foreign_igtf = float_round(igtf_amount * rec.foreign_inverse_rate, precision_rounding=rec.company_currency_id.rounding)
+                else:
+                    exact_foreign_igtf = igtf_amount
+                
                 
                 vals.append(
                     {
                         "name": "IGTF",
                         "currency_id": rec.currency_id.id,
-                        "amount_currency": -igtf_amount,
+                        "amount_currency": -igtf_amount,                        
                         "account_id": account_id,
                         "partner_id": rec.partner_id.id,
+                        "foreign_credit_adjustment": exact_foreign_igtf,
                     }
                 )
         return vals
@@ -150,6 +162,7 @@ class AccountPaymentIgtf(models.Model):
     def _create_outbound_move_line_igtf_vals(self, vals):
         
         for rec in self:
+            
             igtf_account = (
                 self.env.company.customer_account_igtf_id.id
                 if rec.partner_type == "customer"
@@ -160,7 +173,9 @@ class AccountPaymentIgtf(models.Model):
             currency = self.currency_id 
             precision = currency.rounding
             if float_compare(igtf_amount, 0.0, precision_rounding=precision) > 0.0:
-               
+                               
+                exact_foreign_igtf = (rec.amount * (rec.igtf_percentage / 100)) * rec.foreign_inverse_rate if rec.foreign_inverse_rate else igtf_amount
+
                 vals.append(
                     {
                         "name": "IGTF",
@@ -168,6 +183,7 @@ class AccountPaymentIgtf(models.Model):
                         "amount_currency": igtf_amount,
                         "account_id": account_id,
                         "partner_id": rec.partner_id.id,
+                        "foreign_debit_adjustment": exact_foreign_igtf,
                     }
                 )
 
