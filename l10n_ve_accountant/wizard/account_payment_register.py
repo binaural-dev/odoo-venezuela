@@ -69,17 +69,9 @@ class AccountPaymentRegister(models.TransientModel):
         for payment in self:
             if not bool(payment.foreign_rate):
                 return
-
-            batch_result = payment._get_batches()[0]
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(
                 payment.foreign_rate
             )
-            total_amount_residual_in_wizard_currency = (
-                payment._get_total_amount_in_wizard_currency_to_full_reconcile(
-                    batch_result, early_payment_discount=False
-                )[0]
-            )
-            payment.amount = total_amount_residual_in_wizard_currency
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):
@@ -162,32 +154,28 @@ class AccountPaymentRegister(models.TransientModel):
 
         for wizard in self:
             if wizard.currency_id == wizard.company_id.currency_foreign_id:
-                
                 exact_rate = wizard.foreign_inverse_rate
                 if not exact_rate:
                     Rate = self.env["res.currency.rate"]
                     rate_values = Rate.compute_rate(wizard.source_currency_id.id, wizard.payment_date)
                     exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
-                
                 if exact_rate and wizard.company_id.currency_foreign_id == wizard.currency_id:
-                    
                     moves = wizard.line_ids.mapped('move_id')
                     total_foreign_debt = sum(moves.mapped('foreign_amount_residual')) if moves else 0.0
-                    
                     if total_foreign_debt:
                         wizard.amount = total_foreign_debt
                     else:
                         wizard.amount = self.calculate_amount_foreign(wizard.source_amount_currency,exact_rate, wizard.currency_id.decimal_places)
+            elif wizard.can_edit_wizard and wizard.currency_id == wizard.company_id.currency_id:
+                wizard.amount = wizard.source_amount
 
     @api.depends('can_edit_wizard', 'amount', 'foreign_inverse_rate')
     def _compute_payment_difference(self):
         super()._compute_payment_difference()
-        
         for wizard in self:
             if wizard.can_edit_wizard and wizard.currency_id == wizard.company_id.currency_foreign_id:
                 moves = wizard.line_ids.mapped('move_id')
                 total_foreign_debt = sum(moves.mapped('foreign_amount_residual')) if moves else 0.0
-                
                 if total_foreign_debt:
                     wizard.payment_difference = total_foreign_debt - wizard.amount
                 else:
@@ -196,7 +184,8 @@ class AccountPaymentRegister(models.TransientModel):
                         Rate = self.env["res.currency.rate"]
                         rate_values = Rate.compute_rate(wizard.source_currency_id.id, wizard.payment_date)
                         exact_rate = rate_values.get('foreign_inverse_rate', 0.0)
-                    
                     if exact_rate:
                         exact_debt = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
                         wizard.payment_difference = exact_debt - wizard.amount
+            elif wizard.can_edit_wizard and wizard.currency_id == wizard.company_id.currency_id:
+                wizard.payment_difference = wizard.source_amount - wizard.amount
