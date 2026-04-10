@@ -83,13 +83,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         base_amount, 
                         wizard.igtf_percentage
                     )
-                total_igtf_amount += float_round(igtf_for_invoice,wizard.currency_id.decimal_places)
+                # No redondear el IGTF aquí, mantener la precisión completa
+                total_igtf_amount += igtf_for_invoice
                 final_amount = base_amount + total_igtf_amount
                 wizard.amount = final_amount
                 wizard.igtf_amount = total_igtf_amount
                 wizard.igtf_to_show = total_igtf_amount
                 wizard.last_computed_amount = final_amount
-      
            
     
     def get_moves(self):
@@ -213,13 +213,14 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         principal_amount = min(payment_amount, principal_debt)
         
 
+        # Calcular el IGTF sin redondear para mantener la precisión
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
-      
+       
         igtf_top = invoice.igtf_top_aply
 
         alter_bi_igtf = invoice.alter_bi_igtf
 
-        igtf= igtf_unrounded
+        igtf = igtf_unrounded
 
         invoice_residual = invoice.amount_residual if self.company_currency_id != self.env.ref("base.VEF") else invoice.foreign_amount_residual
     
@@ -239,6 +240,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
             return 0.0
         
+        # No redondear el IGTF aquí, mantener la precisión para el cálculo en Bs
         return igtf
         
     @api.onchange('journal_id')

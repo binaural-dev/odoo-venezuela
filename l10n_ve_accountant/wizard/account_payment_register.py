@@ -153,7 +153,9 @@ class AccountPaymentRegister(models.TransientModel):
             'source_amount': source_amount,
             'source_amount_currency': source_amount_currency,
         }
-    
+    def calculate_amount_foreign(self,source_amount_currency,exact_rate,decimal_places):
+        amout = float_round(source_amount_currency * exact_rate, precision_digits=decimal_places)
+        return amout
     @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date')
     def _compute_amount(self):
         super()._compute_amount()
@@ -175,7 +177,7 @@ class AccountPaymentRegister(models.TransientModel):
                     if total_foreign_debt:
                         wizard.amount = total_foreign_debt
                     else:
-                        wizard.amount = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
+                        wizard.amount = self.calculate_amount_foreign(wizard.source_amount_currency,exact_rate, wizard.currency_id.decimal_places)
 
     @api.depends('can_edit_wizard', 'amount', 'foreign_inverse_rate')
     def _compute_payment_difference(self):
