@@ -15,7 +15,6 @@ class AccountMove(models.Model):
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
-    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
 
     invoice_date = fields.Date(
         string="Invoice Date",
