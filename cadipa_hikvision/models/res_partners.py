@@ -1,5 +1,7 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError
+from datetime import datetime, time as py_time
+from zoneinfo import ZoneInfo
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -127,6 +129,15 @@ class ResPartner(models.Model):
                 year=fields.Date.today().year + 1
             )
 
+        vz_tz = ZoneInfo("America/Caracas")
+        utc_tz = ZoneInfo("UTC")
+
+        start_dt_naive = datetime.combine(start_date, py_time(0, 0, 0))
+        start_date_db = start_dt_naive.replace(tzinfo=vz_tz).astimezone(utc_tz).replace(tzinfo=None)
+
+        end_dt_naive = datetime.combine(end_date, py_time(23, 59, 59))
+        end_date_db = end_dt_naive.replace(tzinfo=vz_tz).astimezone(utc_tz).replace(tzinfo=None)
+
         default_department = HikDepartments.search(
             [("default_membership_dept", "=", True)], limit=1
         )
@@ -157,8 +168,8 @@ class ResPartner(models.Model):
         return {
             "partner_id": self.id,
             "is_visitor": False,
-            "start_date": start_date,
-            "end_date": end_date,
+            "start_date": start_date_db,
+            "end_date": end_date_db,
             "parent_user_id": parent_hik_user.id if parent_hik_user else False,
             "department_id": department_id,
             "access_level_ids": [(6, 0, ids_to_assign)],
