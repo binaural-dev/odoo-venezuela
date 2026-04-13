@@ -156,6 +156,5 @@ class AccountMove(models.Model):
                         }
                     )
                 )
-        if invoice_line_vals:
-            return invoice_line_vals
+        return invoice_line_vals
  
