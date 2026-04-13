@@ -684,6 +684,12 @@ msgstr "N/A"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_scrap.py:0
+msgid "New"
+msgstr "Nuevo"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 msgid ""
 "No consignation warehouse found. \n"
