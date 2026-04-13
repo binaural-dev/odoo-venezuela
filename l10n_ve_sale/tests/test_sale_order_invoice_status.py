@@ -12,7 +12,7 @@ class TestSaleOrderInvoiceStatus(TransactionCase):
         cls.customer = cls.env['res.partner'].create({'name': 'Cliente Prueba l10n_ve'})
         cls.product = cls.env['product.product'].create({
             'name': 'Producto de Prueba',
-            'type': 'product',
+            'type': 'consu',
             'invoice_policy': 'delivery',
         })
 
