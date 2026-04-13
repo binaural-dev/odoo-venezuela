@@ -13,6 +13,7 @@
         "l10n_ve_invoice",
         "l10n_ve_accountant",
         "l10n_ve_sale",
+        "l10n_ve_donation",
         "sale_stock",
         "web",
     ],
