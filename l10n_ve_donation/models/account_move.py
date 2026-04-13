@@ -78,29 +78,30 @@ class AccountMove(models.Model):
         ('type' & 'reversed_entry_id' are computed in the method).
         :return: An account.move recordset, reverse of the current self.
         """
-        for move in self:
-            if move.is_donation and move.move_type != "entry":
-                reverse_moves = self.env['account.move']
-                for move, default_values in zip(self, default_values_list):
-                    line_vals_list = []
-                    for line in move.line_ids:
-                        invoice_line_vals = move.product_line_donation()
-                        move_vals = {
-                            "move_type": "out_refund",
-                            "journal_id": move.journal_id.id,
-                            "date": default_values.get("date", fields.Date.today()),
-                            "ref": default_values.get("ref", move.ref),
-                            "reversed_entry_id": move.id,
-                            "partner_id": move.partner_id.id,
-                            "is_donation": True,
-                            "invoice_line_ids": invoice_line_vals,
-                        }
-                        reverse_move = self.env['account.move'].with_context(
-                            check_move_validity=False,
-                            skip_invoice_sync=True,
-                        ).create(move_vals)
-                        reverse_moves += reverse_move
-                return reverse_moves
+        donation_moves = self.filtered(lambda move: move.is_donation and move.move_type != "entry")
+        if donation_moves:
+            reverse_moves = self.env['account.move']
+            default_values_list = default_values_list or [{} for _move in self]
+            for move, default_values in zip(self, default_values_list):
+                if not (move.is_donation and move.move_type != "entry"):
+                    continue
+                invoice_line_vals = move.product_line_donation()
+                move_vals = {
+                    "move_type": "out_refund",
+                    "journal_id": move.journal_id.id,
+                    "date": default_values.get("date", fields.Date.today()),
+                    "ref": default_values.get("ref", move.ref),
+                    "reversed_entry_id": move.id,
+                    "partner_id": move.partner_id.id,
+                    "is_donation": True,
+                    "invoice_line_ids": invoice_line_vals,
+                }
+                reverse_move = self.env['account.move'].with_context(
+                    check_move_validity=False,
+                    skip_invoice_sync=True,
+                ).create(move_vals)
+                reverse_moves += reverse_move
+            return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
 
