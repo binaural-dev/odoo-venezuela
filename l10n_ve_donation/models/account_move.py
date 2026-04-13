@@ -126,7 +126,7 @@ class AccountMove(models.Model):
 
     def product_line_donation(self):
         """Adds the donation product lines to invoice_line_ids grouped by tax.
-        Uses skip_invoice_sync=True to malintain consistency with manually 
+        Uses skip_invoice_sync=True to maintain consistency with manually 
         constructed tax lines in _reverse_moves.
         """
         product = self.env["product.template"].with_company(self.company_id).search(
