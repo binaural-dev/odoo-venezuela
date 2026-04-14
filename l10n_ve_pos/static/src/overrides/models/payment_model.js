@@ -18,6 +18,8 @@ patch(PosPayment.prototype, {
         res["foreign_rate"] = this.order.get_conversion_rate();
         return res;
     },
+
+    
     get_foreign_amount() {
         return this.foreign_amount || 0;
     },

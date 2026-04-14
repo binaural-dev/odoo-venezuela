@@ -59,6 +59,18 @@ patch(PaymentScreen.prototype, {
     return super.updateSelectedPaymentline(amount);
 
   },
+  
+  // async validateOrder() {
+  //     const order = this.pos.get_order();
+  //     const selectedLine = order.get_selected_paymentline();
+
+  //     if (selectedLine) {
+  //         console.log("Selected Amount:", selectedLine.get_amount());
+  //         console.log("Payment Method:", selectedLine.payment_method.name);
+  //     }
+      
+  //     await super.validateOrder(...arguments);
+  // },
 
   toggleIsToInvoice() {
     this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
