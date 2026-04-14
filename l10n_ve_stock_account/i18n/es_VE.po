@@ -426,6 +426,40 @@ msgstr "Crear crédito de proveedor"
 #: model:ir.model,website_form_label:l10n_ve_stock_account.model_res_partner
 msgid "Create a Customer"
 msgstr "Crear un cliente"
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__create_date
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__create_date
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__create_date
+msgid "Created on"
+msgstr "Creado en"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__customer_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__customer_journal_id
+msgid "Customer Journal"
+msgstr "Diario de clientes"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__invoice_cron_type
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__invoice_cron_type
+msgid "Date Cron Invoice"
+msgstr "Fecha del Cron de Facturación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__date_done
+msgid "Date Invoiced"
+msgstr "Fecha de Facturación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_move_line__date_done
+msgid "Date at which the transfer has been processed or cancelled."
+msgstr "Fecha en la que se ha procesado o cancelado la transferencia."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
@@ -473,6 +507,18 @@ msgstr "Guías de Despacho"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__display_name
 msgid "Display Name"
 msgstr "Nombre para mostrar"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__document
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__document
+msgid "Document"
+msgstr "Documento"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_sale_order__document
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__document
+msgid "Document type for the sale order."
+msgstr "Tipo de documento para el pedido de venta."
 
 #. module: l10n_ve_stock_account
 #: model:ir.actions.act_window,name:l10n_ve_stock_account.view_stock_scrap_action_donation
@@ -760,6 +806,14 @@ msgstr "Lista de traslados"
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+msgid ""
+"Please configure the income account for the product '%s' or its category."
+msgstr ""
+"Por favor configure la cuenta de ingresos para el producto '%s' o su categoría."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid "Please configure the journal from settings"
 msgstr "Por favor configure el diario desde la configuración"
 
@@ -963,6 +1017,12 @@ msgid "Transfer"
 msgstr "Transferir"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__transfer_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__transfer_ids
+msgid "Transfers"
+msgstr "Transferencias"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid "Transporte (Conductor)"
 msgstr "Transporte (Conductor)"
@@ -1079,4 +1139,3 @@ msgstr "Último día del mes"
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid "transfer_ids"
-msgstr "IDs de transferencias"
