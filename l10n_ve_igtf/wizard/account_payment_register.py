@@ -385,6 +385,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
         source_amount = wizard_values['source_amount_currency'] 
         source = wizard_values['source_amount']
+        currency = wizard_values['source_currency_id']
 
         wizard_values['igtf_amount'] = 0.0
         wizard_values['igtf_percentage'] = self.igtf_percentage
@@ -395,15 +396,31 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         total_igtf_amount = 0.0
         if create and create.is_igtf:
             
-            igtf_for_invoice = self.calculate_igtf_for_payment(
-                invoice_ids, 
-                invoice_ids.amount_residual,
-                self.currency_id 
-            )
-            total_igtf_amount += igtf_for_invoice
-            base_abs = abs(source_amount)
-            final_amount_with_igtf = base_abs + total_igtf_amount
-            igtf = self.convert_to_company_currency(invoice_ids.currency_id, total_igtf_amount, self.payment_date)
+            if currency != self.env.ref("base.VEF").id:
+               
+                igtf_for_invoice = self.calculate_igtf_for_payment(
+                    invoice_ids, 
+                    invoice_ids.amount_residual,
+                    self.currency_id 
+                )
+                total_igtf_amount += igtf_for_invoice
+                base_abs = abs(source_amount)
+                final_amount_with_igtf = base_abs + total_igtf_amount
+                igtf = self.convert_to_company_currency(invoice_ids.currency_id, total_igtf_amount, self.payment_date)
+            else:
+
+                
+                currency = self.env['res.currency'].browse(currency)
+                source = currency._convert(source_amount, self.currency_id, self.company_id, self.payment_date)
+                igtf_for_invoice = self.calculate_igtf_for_payment(
+                    invoice_ids, 
+                    source,
+                    self.currency_id 
+                )
+                total_igtf_amount += igtf_for_invoice
+                base_abs = abs(source)
+                final_amount_with_igtf = base_abs + total_igtf_amount
+                igtf = self.convert_to_company_currency(invoice_ids.currency_id, total_igtf_amount, self.payment_date)
 
             wizard_values['source_amount'] = source  + igtf 
             wizard_values['source_amount_currency'] =  final_amount_with_igtf 
