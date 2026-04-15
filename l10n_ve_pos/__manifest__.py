@@ -8,7 +8,7 @@
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "17.0.0.0.6",
+    "version": "17.0.0.0.9",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
