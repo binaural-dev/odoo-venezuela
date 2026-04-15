@@ -643,28 +643,40 @@ class AccountMoveLine(models.Model):
         if not res.get('partial_values'):
             return res
 
+        partial_vals = res['partial_values']
+        amount_company = partial_vals['amount']  # Monto conciliado en moneda base (Bs)
+
+        def get_foreign_partial_amount(aml, amount_to_reconcile_bs):
+            f_currency = aml.company_id.currency_foreign_id # Usar la de la compañía
+            if not f_currency or aml.currency_id == f_currency:
+                # Si la línea ya está en la moneda foránea, Odoo ya tiene amount_currency
+                return abs(aml.amount_currency)
+            
+            # Si el balance en Bs es 0 (evitar división por cero)
+            if not aml.balance:
+                return 0.0
+
+            # CALCULAMOS LA PROPORCIÓN
+            # Si estoy conciliando 50 Bs de una factura de 100 Bs, 
+            # debo conciliar el 50% del balance foráneo.
+            total_bs = abs(aml.balance)
+            total_foreign = abs(aml.foreign_balance)
+            
+            # Regla de 3: (Monto Conciliado Bs * Total Foráneo) / Total Bs
+            ratio = amount_to_reconcile_bs / total_bs
+            partial_foreign = total_foreign * ratio
+            
+            return f_currency.round(partial_foreign)
+
         debit_aml = debit_values['aml']
         credit_aml = credit_values['aml']
-        partial_vals = res['partial_values']
-        
-        amount_company = partial_vals['amount']
 
+        # Calculamos cuánto aporta cada lado a la conciliación en moneda foránea
+        foreign_debit_amount = get_foreign_partial_amount(debit_aml, amount_company)
+        foreign_credit_amount = get_foreign_partial_amount(credit_aml, amount_company)
 
-        def get_foreign_partial_amount(aml):
-            f_currency = aml.foreign_currency_id
-            if not f_currency:
-                return 0.0
-           
-            total_foreign = abs(aml.foreign_balance) 
-
-            
-            return total_foreign
-
-   
-        foreign_debit_amount = get_foreign_partial_amount(debit_aml)
-        foreign_credit_amount = get_foreign_partial_amount(credit_aml)
-
-
+        # El monto de la conciliación parcial foránea es el mínimo de ambos lados proporcionalmente
+        # pero usualmente en una conciliación parcial, el 'amount' de la partial es único.
         res['partial_values'].update({
             'foreign_amount': min(foreign_debit_amount, foreign_credit_amount),
             'debit_foreign_amount_currency': foreign_debit_amount,
