@@ -37,7 +37,6 @@ class SaleOrder(models.Model):
         readonly=False,
     )
 
-
     def default_rate(self):
         """
         This method is used to get the rate of the payment.
@@ -106,8 +105,9 @@ class SaleOrder(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
-    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
-                                            compute='_compute_foreign_untaxed_total' )
+    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id",
+                                            store=True,
+                                            compute='_compute_foreign_untaxed_total')
 
     pricelist_id = fields.Many2one(
         domain=lambda self: (
@@ -132,12 +132,13 @@ class SaleOrder(models.Model):
         currency_field="company_currency_id",
         store=True,
     )
-    
+
     company_currency_id = fields.Many2one(
         related="company_id.currency_id",
         string="Company Currency",
         readonly=True,
     )
+
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None, **kwargs):
         if 'load' in kwargs:
@@ -152,9 +153,9 @@ class SaleOrder(models.Model):
         for order in self:
             for line in order.order_line:
                 if (
-                    len(line.tax_ids) != 1
-                    and not line.display_type
-                    and self.env.company.unique_tax
+                        len(line.tax_ids) != 1
+                        and not line.display_type
+                        and self.env.company.unique_tax
                 ):
                     raise ValidationError(_("All products must contain only one tax."))
 
@@ -200,7 +201,7 @@ class SaleOrder(models.Model):
         for move in self:
             move.foreign_total_billed = False
             if move.order_line:
-                move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
+                move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency", 0)
 
     @api.depends("tax_totals")
     def _compute_foreign_untaxed_total(self):
@@ -210,7 +211,7 @@ class SaleOrder(models.Model):
         for move in self:
             move.foreign_untaxed_total = False
             if move.order_line:
-                move.foreign_untaxed_total = move.tax_totals.get("base_amount_foreign_currency",0)
+                move.foreign_untaxed_total = move.tax_totals.get("base_amount_foreign_currency", 0)
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -248,10 +249,12 @@ class SaleOrder(models.Model):
                     "l10n_ve_sale.view_sale_order_form_l10n_ve_sales"
                 ).id
                 doc = etree.XML(res["arch"])
-                foreign_price_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_price']")
+                foreign_price_order_line = doc.xpath(
+                    "//notebook/page/field[@name='order_line']/list/field[@name='foreign_price']")
                 if foreign_price_order_line:
                     foreign_price_order_line[0].set("string", _("Price") + " " + foreign_currency_name)
-                foreign_subtotal_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_subtotal']")
+                foreign_subtotal_order_line = doc.xpath(
+                    "//notebook/page/field[@name='order_line']/list/field[@name='foreign_subtotal']")
                 if foreign_subtotal_order_line:
                     foreign_subtotal_order_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
                 page = doc.xpath("//page[@name='foreign_currency']")
@@ -265,7 +268,7 @@ class SaleOrder(models.Model):
                 foreign_total_billed = doc.xpath("//field[@name='foreign_total_billed']")
                 if foreign_total_billed:
                     foreign_total_billed[0].set("string", _("Total") + " " + foreign_currency_name)
-                
+
                 foreign_untaxed_total = doc.xpath("//field[@name='foreign_untaxed_total']")
                 if foreign_untaxed_total:
                     foreign_untaxed_total[0].set("string", _("Untaxed Total") + " " + foreign_currency_name)
@@ -273,11 +276,11 @@ class SaleOrder(models.Model):
                 total_signed = doc.xpath("//field[@name='amount_total_signed']")
                 if total_signed:
                     total_signed[0].set("string", _("Total") + " " + company_currency_symbol)
-                
+
                 untaxed_total_signed = doc.xpath("//field[@name='amount_untaxed_total_signed']")
                 if untaxed_total_signed:
                     untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + company_currency_symbol)
-                
+
                 res["arch"] = etree.tostring(doc, encoding="unicode")
             elif view_type == "pivot":
                 _logger.warning("Pivot view")
@@ -285,7 +288,7 @@ class SaleOrder(models.Model):
                 foreign_total_billed = doc.xpath("//field[@name='foreign_total_billed']")
                 if foreign_total_billed:
                     foreign_total_billed[0].set("string", _("Total") + " " + foreign_currency_name)
-                
+
                 foreign_untaxed_total = doc.xpath("//field[@name='foreign_untaxed_total']")
                 if foreign_untaxed_total:
                     foreign_untaxed_total[0].set("string", _("Untaxed Total") + " " + foreign_currency_name)
@@ -293,13 +296,13 @@ class SaleOrder(models.Model):
                 total_signed = doc.xpath("//field[@name='amount_total_signed']")
                 if total_signed:
                     total_signed[0].set("string", _("Total") + " " + company_currency_symbol)
-                
+
                 untaxed_total_signed = doc.xpath("//field[@name='amount_untaxed_total_signed']")
                 if untaxed_total_signed:
                     untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + company_currency_symbol)
-                
+
                 res["arch"] = etree.tostring(doc, encoding="unicode")
-                
+
         return res
 
     @api.depends(
@@ -350,17 +353,17 @@ class SaleOrder(models.Model):
         # compute the rate when it is not zero.
         for sale in self:
             if (
-                sale.manually_set_rate
-                or "website_id" in sale._fields
-                and sale.website_id
+                    sale.manually_set_rate
+                    or "website_id" in sale._fields
+                    and sale.website_id
             ):
                 continue
             if (
-                not self.env.company.update_sale_order_rate_using_date_order
-                and not float_is_zero(
-                    sale.foreign_rate,
-                    precision_rounding=self.env.company.currency_id.rounding,
-                )
+                    not self.env.company.update_sale_order_rate_using_date_order
+                    and not float_is_zero(
+                sale.foreign_rate,
+                precision_rounding=self.env.company.currency_id.rounding,
+            )
             ):
                 continue
             rate_values = Rate.compute_rate(
@@ -418,7 +421,7 @@ class SaleOrder(models.Model):
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
         invoice_vals["manually_set_rate"] = (
-            self.manually_set_rate or self.env.company.use_invoice_rate_from_sale_order
+                self.manually_set_rate or self.env.company.use_invoice_rate_from_sale_order
         )
         invoice_vals["foreign_rate"] = self.foreign_rate
         invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
@@ -452,7 +455,7 @@ class SaleOrder(models.Model):
                     body=_(
                         "The rate has been updated from %(last_rate)s to %(rate)s ",
                     )
-                    % ({"rate": sale.foreign_rate, "last_rate": last_foreign_rate})
+                         % ({"rate": sale.foreign_rate, "last_rate": last_foreign_rate})
                 )
         return res
 
@@ -461,15 +464,15 @@ class SaleOrder(models.Model):
             vals.update({"last_foreign_rate": self.foreign_rate})
         res = super().write(vals)
         if (
-            vals.get("foreign_rate", False)
-            and self.manually_set_rate
-            and self.foreign_rate != self.last_foreign_rate
+                vals.get("foreign_rate", False)
+                and self.manually_set_rate
+                and self.foreign_rate != self.last_foreign_rate
         ):
             self.message_post(
                 body=_(
                     "The rate has been updated from %(last_rate)s to %(rate)s ",
                 )
-                % ({"rate": self.foreign_rate, "last_rate": self.last_foreign_rate})
+                     % ({"rate": self.foreign_rate, "last_rate": self.last_foreign_rate})
             )
         return res
 
@@ -575,9 +578,9 @@ class SaleOrder(models.Model):
             if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
                 for line in order.order_line:
                     if (
-                        line.product_id.is_storable
-                        and line.product_id.type == "consu"
-                        and line.product_id.qty_available < line.product_uom_qty
+                            line.product_id.is_storable
+                            and line.product_id.type == "consu"
+                            and line.product_id.qty_available < line.product_uom_qty
                     ):
                         msg = _("Does not have enough units available for the product ")
                         msg += _("{}. Only has {} units of the {} demanded.").format(
@@ -586,11 +589,10 @@ class SaleOrder(models.Model):
                             line.product_uom_qty,
                         )
                         raise ValidationError(msg)
-            
 
                 if (
-                    order.company_id.account_use_credit_limit
-                    and order.partner_id.use_partner_credit_limit_order
+                        order.company_id.account_use_credit_limit
+                        and order.partner_id.use_partner_credit_limit_order
                 ):
                     total_pay = order.partner_id.credit + order.amount_total
                     if total_pay > order.partner_id.credit_limit:
@@ -607,14 +609,13 @@ class SaleOrder(models.Model):
 
                     order._block_valid_confirm()
 
-
         res = super().action_confirm()
         product_limit = self.env.company.limit_product_qty_out
         for sale in self:
             picking = sale.picking_ids
             if product_limit > 0:
                 picking_moves = picking.move_ids_without_package
-                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
+                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id'])
                 picking_vals = {
                     key: (value[0] if isinstance(value, tuple) else value)
                     for key, value in picking_vals[0].items()
@@ -622,16 +623,15 @@ class SaleOrder(models.Model):
                 picking_vals['origin'] = picking.origin
                 picking_vals['partner_id'] = picking.partner_id.id
                 picking_vals['user_id'] = picking.user_id.id
-                
-                list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
+
+                list_pickings_moves = [picking_moves[i:i + product_limit] for i in
+                                       range(0, len(picking_moves), product_limit)]
                 picking.move_ids_without_package = list_pickings_moves[0]
-                
+
                 for list_moves in list_pickings_moves[1:]:
                     picking_vals["move_ids_without_package"] = list_moves
                     new_picking = self.env['stock.picking'].create(picking_vals)
-                
 
-                
         return res
 
     def cancel_order_after_date(self):
@@ -650,8 +650,6 @@ class SaleOrder(models.Model):
             order.amount_untaxed = order.tax_totals['base_amount_currency']
             order.amount_tax = order.tax_totals['tax_amount_currency']
             order.amount_total = order.tax_totals['total_amount_currency']
-
-   
 
     @api.depends("amount_untaxed", "amount_total", "currency_id", "date_order", "company_id")
     def _compute_amount_signed(self):
@@ -676,15 +674,29 @@ class SaleOrder(models.Model):
     invoice_status = fields.Selection(
         selection_add=[('partially_billed', 'Partially billed')],
     )
-    
-    @api.depends('state', 'order_line.invoice_status', 'order_line.qty_invoiced', 'order_line.product_uom_qty')
+
+    @api.depends(
+        'state',
+        'order_line.invoice_status',
+        'order_line.qty_invoiced',
+        'order_line.product_uom_qty',
+        'order_line.qty_delivered',
+        'order_line.product_id.invoice_policy',
+        'order_line.display_type',
+    )
     def _compute_invoice_status(self):
         for order in self:
             if order.state in ('sale', 'done'):
-                total_invoiced = sum(order.order_line.mapped('qty_invoiced'))
-                total_ordered = sum(order.order_line.mapped('product_uom_qty'))
+                invoiceable_lines = order.order_line.filtered(lambda line: not line.display_type)
+                total_invoiced = sum(invoiceable_lines.mapped('qty_invoiced'))
+                total_invoiceable = sum(
+                    line.product_uom_qty
+                    if line.product_id.invoice_policy == 'order'
+                    else line.qty_delivered
+                    for line in invoiceable_lines
+                )
 
-                if total_invoiced > 0 and total_invoiced != total_ordered:
+                if total_invoiced > 0 and total_invoiced < total_invoiceable:
                     order.invoice_status = 'partially_billed'
                     continue
             super(SaleOrder, order)._compute_invoice_status()
