@@ -6,6 +6,7 @@ import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
+import { roundDecimals as round_di } from "@web/core/utils/numbers";
 
 patch(TicketScreen, {
   components: {
@@ -134,23 +135,33 @@ patch(PosStore.prototype, {
 
         let amount = vef_base ? el.price : el.get_foreign_unit_price()
 
+
+        let discount = el.get_discount()
+        if (discount > 0) {
+          let decimals = vef_base ? this.currency.decimal_places : this.foreign_currency.decimal_places
+          amount = round_di(amount * (1 - discount / 100), decimals)
+        }
         return {
           price_unit: amount,
-          discount: el.get_discount(),
+          discount: discount,
           quantity: Math.abs(el.quantity),
           name: this.normalizeProductName(el.product.display_name),
           code: el.product.default_code,
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
       })
-      invoice['payment_lines'] = order.paymentlines.map((el) => {
-
-        let amount = vef_base ? el.amount : el.get_foreign_amount()
-        return {
-          payment_method: el.payment_method.code_fiscal_printer,
-          amount: amount,
-        }
-      })
+      invoice['payment_lines'] = order.paymentlines
+        .filter((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return amount > 0
+        })
+        .map((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return {
+            payment_method: el.payment_method.code_fiscal_printer,
+            amount: amount,
+          }
+        })
     }
     invoice["valid"] = true
     return invoice
