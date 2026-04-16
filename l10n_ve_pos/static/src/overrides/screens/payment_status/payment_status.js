@@ -1,20 +1,36 @@
 /** @odoo-module */
 import { PaymentScreenStatus } from "@point_of_sale/app/screens/payment_screen/payment_status/payment_status";
 import { patch } from "@web/core/utils/patch";
+import { onWillUpdateProps } from "@odoo/owl";
+
 // New orders are now associated with the current table, if any.
 patch(PaymentScreenStatus.prototype, {
-  // },
+  setup() {
+    super.setup(...arguments);
+    onWillUpdateProps((nextProps) => {
+      nextProps.foreignChangeText
+    });
+  },
   get foreignRemainingText() {
+    const foreignDue = this.props.order.get_foreign_due();
     return this.env.utils.formatForeignCurrency(
-      this.props.order.get_foreign_due() > 0 ? this.props.order.get_foreign_due() : 0
+      foreignDue > 0 ? foreignDue : 0
     );
   },
-  // get foreignChangeText() {
-  //   let payment_lines = this.props.order.get_paymentlines();
-  //   return this.env.utils.formatForeignCurrency(
-  //     this.props.order.get_foreign_change(payment_lines)
-  //   );
-  // },
+
+  // ESTO NO VA ACA, PERO LO DEJO POR SI ACASO
+  get foreignChangeText() {
+    const selectedLine =
+      this.props.order.get_order_payment_lines?.()
+        .find((line) => line.isSelected()) || null;
+        
+    // console.log('Calculating foreign change for selected payment line', this.props.order.get_order_payment_lines());
+    // console.log('Selected payment line:', selectedLine);
+    return this.env.utils.formatForeignCurrency(
+      this.props.order.get_foreign_change(selectedLine)
+    );
+  },
+  
   get currentOrder() {
     return this.props.order
   }

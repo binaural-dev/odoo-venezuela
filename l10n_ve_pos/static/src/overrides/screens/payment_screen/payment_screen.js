@@ -14,7 +14,8 @@ patch(PaymentScreen.prototype, {
 
     super.setup(...arguments)
     this.utils = useEnv().utils,
-      this.dialog = useService("dialog");
+    this.dialog = useService("dialog");
+
   },
 
 

@@ -3,15 +3,11 @@
     <!-- Por cada linea de  Metodo de pago -->
     <t t-name="l10n_ve_pos.PaymentScreenPaymentLines" t-inherit="point_of_sale.PaymentScreenPaymentLines" t-inherit-mode="extension">
         <xpath expr="//div[@class='paymentline d-flex align-items-center bg-view border rounded-3'][1]/div[@class='payment-infos d-flex align-items-center justify-content-between flex-grow-1 px-3 py-3 text-truncate cursor-pointer fs-2'][1]">
-             <!--TODO: y si pruebo dentro?  -->
              <t t-if="line.isSelected()">   
                     <t t-out="formatLineAmount(line)"/>
              </t>
              <t t-out="formatLineAmount(line)"/>
             
         </xpath>
-        <!-- <xpath expr="//div[@class='paymentline">
-            XDDDDDDD
-        </xpath> -->
     </t>
 </templates>
