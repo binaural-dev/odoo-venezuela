@@ -1,0 +1,50 @@
+<odoo>
+<record id="view_stock_scrap_form_inherit_l10n_ve_donation" model="ir.ui.view">
+    <field name="name">stock.scrap.form.inherit.l10n.ve.donation</field>
+    <field name="model">stock.scrap</field>
+    <field name="inherit_id" ref="stock.stock_scrap_form_view"/>
+    <field name="arch" type="xml">
+        <xpath expr="//field[@name='product_id']" position="after">
+            <field name="is_donation" invisible="not is_donation" readonly="1"/>
+        </xpath>
+        <xpath expr="//field[@name='scrap_location_id']" position="attributes">
+            <attribute name="domain">scrap_location_domain</attribute>
+            <attribute name="nolabel">1</attribute>
+        </xpath>
+        <xpath expr="//field[@name='scrap_location_id']" position="before">
+            <field name="scrap_location_domain" invisible="1"/>
+            <div class="o_td_label">
+                <label for="scrap_location_id" string="Scrap Location" style="font-weight:bold;"
+                    invisible="is_donation"/>
+                <label for="scrap_location_id" string="Donation Location" style="font-weight:bold;"
+                    invisible="not is_donation"/>
+            </div>
+        </xpath>
+    </field>
+</record>
+
+<record id="view_stock_scrap_action_donation" model="ir.actions.act_window">
+    <field name="name">Donation</field>
+    <field name="res_model">stock.scrap</field>
+    <field name="view_mode">tree,form</field>
+    <field name="domain">[('is_donation', '=', True)]</field>
+    <field name="context">{'default_is_donation': True}</field>
+</record>
+
+<record model="ir.actions.act_window" id="stock.action_stock_scrap">
+    <field name="name">Scrap Orders</field>
+    <field name="res_model">stock.scrap</field>
+    <field name="view_mode">tree,form,kanban,pivot,graph</field>
+    <field name="domain">[('is_donation', '=', False)]</field>
+    <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Scrap products
+            </p><p>
+                Scrapping a product will remove it from your stock. The product will
+                end up in a scrap location that can be used for reporting purpose.
+            </p>
+    </field>
+</record>
+
+<menuitem id="menu_stock_scrap_donation" name="Donation" parent="stock.menu_stock_adjustments" sequence="100" action="view_stock_scrap_action_donation"/>
+</odoo>
