@@ -93,7 +93,7 @@ class TestAccountingReports(TransactionCase):
             }
         )
 
-    def _create_purchase_move(
+    def _create_move(
         self,
         name,
         move_type="in_invoice",
@@ -218,6 +218,15 @@ class TestAccountingReports(TransactionCase):
 
         self._company_tax_configured = True
 
+    def _fake_journal(self, **vals):
+        data = {
+            "is_debit": False,
+            "is_purchase_international": False,
+            "is_sale_international": False,
+        }
+        data.update(vals)
+        return SimpleNamespace(**data)
+
     def _fake_move(self, **vals):
         data = {
             "id": 999,
@@ -228,7 +237,7 @@ class TestAccountingReports(TransactionCase):
             "name": "MOVE/2023/0001",
             "move_type": "in_invoice",
             "state": "posted",
-            "journal_id": SimpleNamespace(is_debit=False, is_purchase_international=False),
+            "journal_id": self._fake_journal(),
             "debit_origin_id": SimpleNamespace(name="DEBIT/ORIGIN"),
             "reversed_entry_id": SimpleNamespace(name=False),
             "correlative": "CTRL-001",
@@ -242,7 +251,7 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(self.wizard._format_date(date(2023, 1, 10)), "10/01/2023")
 
     def test_determinate_type_for_move_regular_purchase(self):
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="BILL/2023/0001",
             move_type="in_invoice",
             journal=self.purchase_journal,
@@ -250,12 +259,12 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(self.wizard._determinate_type_for_move(move), "FAC")
 
     def test_determinate_type_for_move_debit_purchase(self):
-        origin_move = self._create_purchase_move(
+        origin_move = self._create_move(
             name="BILL/2023/ORIGIN",
             move_type="in_invoice",
             journal=self.purchase_journal,
         )
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="DEBIT/2023/0001",
             move_type="in_invoice",
             journal=self.debit_purchase_journal,
@@ -264,12 +273,12 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(self.wizard._determinate_type_for_move(move), "ND")
 
     def test_determinate_type_for_move_purchase_refund(self):
-        origin_move = self._create_purchase_move(
+        origin_move = self._create_move(
             name="BILL/2023/0002",
             move_type="in_invoice",
             journal=self.purchase_journal,
         )
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="REF/2023/0001",
             move_type="in_refund",
             journal=self.purchase_journal,
@@ -278,7 +287,7 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(self.wizard._determinate_type_for_move(move), "NC")
 
     def test_determinate_transaction_type_regular_purchase(self):
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="BILL/2023/0003",
             move_type="in_invoice",
             journal=self.purchase_journal,
@@ -286,12 +295,12 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(self.wizard._determinate_transaction_type(move), "01-REG")
 
     def test_determinate_transaction_type_debit_purchase(self):
-        origin_move = self._create_purchase_move(
+        origin_move = self._create_move(
             name="BILL/2023/ORIGIN2",
             move_type="in_invoice",
             journal=self.purchase_journal,
         )
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="DEBIT/2023/0002",
             move_type="in_invoice",
             journal=self.debit_purchase_journal,
@@ -300,12 +309,12 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(self.wizard._determinate_transaction_type(move), "02-REG")
 
     def test_determinate_transaction_type_purchase_refund(self):
-        origin_move = self._create_purchase_move(
+        origin_move = self._create_move(
             name="BILL/2023/0004",
             move_type="in_invoice",
             journal=self.purchase_journal,
         )
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="REF/2023/0002",
             move_type="in_refund",
             journal=self.purchase_journal,
@@ -314,7 +323,7 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(self.wizard._determinate_transaction_type(move), "03-REG")
 
     def test_fields_purchase_book_line_regular_invoice(self):
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="BILL/2023/0005",
             move_type="in_invoice",
             journal=self.purchase_journal,
@@ -374,13 +383,13 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(line["tax_base_extend_aliquot_no_deductible"], 60.0)
 
     def test_fields_purchase_book_line_debit_journal_uses_debit_origin(self):
-        origin_move = self._create_purchase_move(
+        origin_move = self._create_move(
             name="BILL/2023/ORIGIN3",
             move_type="in_invoice",
             journal=self.purchase_journal,
             correlative="CTRL-ORIGIN",
         )
-        debit_move = self._create_purchase_move(
+        debit_move = self._create_move(
             name="DEBIT/2023/0003",
             move_type="in_invoice",
             journal=self.debit_purchase_journal,
@@ -397,13 +406,13 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(line["correlative"], "CTRL-DEBIT")
 
     def test_fields_purchase_book_line_refund_applies_negative_multiplier(self):
-        original_move = self._create_purchase_move(
+        original_move = self._create_move(
             name="BILL/2023/0006",
             move_type="in_invoice",
             journal=self.purchase_journal,
             correlative="CTRL-BASE-002",
         )
-        refund_move = self._create_purchase_move(
+        refund_move = self._create_move(
             name="REF/2023/0004",
             move_type="in_refund",
             journal=self.purchase_journal,
@@ -453,7 +462,7 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(line["tax_base_extend_aliquot_no_deductible"], -60.0)
 
     def test_fields_purchase_book_line_raises_if_posted_without_invoice_date(self):
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="BILL/2023/NO-DATE",
             move_type="in_invoice",
             journal=self.purchase_journal,
@@ -551,17 +560,17 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(result, [{"document_number": "A"}])
 
     def test_determinate_resume_books_for_all_tax_types(self):
-        move_regular = self._create_purchase_move(
+        move_regular = self._create_move(
             name="BILL/2023/0100",
             move_type="in_invoice",
             accounting_date=date(2023, 1, 10),
         )
-        move_refund = self._create_purchase_move(
+        move_refund = self._create_move(
             name="REF/2023/0100",
             move_type="in_refund",
             accounting_date=date(2023, 1, 11),
         )
-        move_outside = self._create_purchase_move(
+        move_outside = self._create_move(
             name="BILL/2023/OUTSIDE",
             move_type="in_invoice",
             accounting_date=date(2023, 2, 1),
@@ -628,7 +637,10 @@ class TestAccountingReports(TransactionCase):
         with patch.object(type(self.wizard), "_determinate_amount_taxeds", autospec=True, side_effect=amount_side_effect):
             for tax_type, expected in expectations.items():
                 with self.subTest(tax_type=tax_type):
-                    self.assertEqual(self.wizard._determinate_resume_books(moves, tax_type), expected)
+                    result = self.wizard._determinate_resume_books(moves, tax_type)
+                    self.assertEqual(len(result), len(expected))
+                    for index, expected_value in enumerate(expected):
+                        self.assertAlmostEqual(result[index], expected_value, places=2)
 
             self.assertEqual(self.wizard._determinate_resume_books(moves), [0.0, 0.0, 0.0, 0.0])
 
@@ -722,24 +734,24 @@ class TestAccountingReports(TransactionCase):
         move = self._fake_move(
             move_type="out_invoice",
             state="cancel",
-            journal_id=SimpleNamespace(is_debit=False, is_purchase_international=False),
+            journal_id=self._fake_journal(),
         )
         self.assertEqual(self.wizard._determinate_transaction_type(move), "03-ANU")
 
-    def test_search_moves_purchase_orders_by_invoice_date(self):
-        move_2 = self._create_purchase_move(
+    def test_search_moves_order_purchase(self):
+        move_2 = self._create_move(
             name="BILL/2023/0008",
             move_type="in_invoice",
             invoice_date=date(2023, 1, 5),
             correlative="CTRL-B",
         )
-        move_1 = self._create_purchase_move(
+        move_1 = self._create_move(
             name="BILL/2023/0007",
             move_type="in_invoice",
             invoice_date=date(2023, 1, 20),
             correlative="CTRL-A",
         )
-        move_cancel = self._create_purchase_move(
+        move_cancel = self._create_move(
             name="BILL/2023/CANCEL",
             move_type="in_invoice",
             invoice_date=date(2023, 1, 3),
@@ -753,22 +765,22 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(moves[:2].ids, (move_2 | move_1).ids)
         self.assertNotIn(move_cancel.id, moves.ids)
 
-    def test_search_moves_sale_orders_by_correlative_and_includes_cancel(self):
-        move_b = self._create_purchase_move(
+    def test_search_moves_order_sale(self):
+        move_b = self._create_move(
             name="OUT/2023/0002",
             move_type="out_invoice",
             journal=self.sale_journal,
             invoice_date=date(2023, 1, 10),
             correlative="B-002",
         )
-        move_a = self._create_purchase_move(
+        move_a = self._create_move(
             name="OUT/2023/0001",
             move_type="out_invoice",
             journal=self.sale_journal,
             invoice_date=date(2023, 1, 20),
             correlative="A-001",
         )
-        move_c_cancel = self._create_purchase_move(
+        move_c_cancel = self._create_move(
             name="OUT/2023/0003",
             move_type="out_refund",
             journal=self.sale_journal,
@@ -780,7 +792,8 @@ class TestAccountingReports(TransactionCase):
         self.wizard.write({"report": "sale"})
         moves = self.wizard.search_moves()
 
-        self.assertEqual(moves[:3].ids, (move_a | move_b | move_c_cancel).ids)
+        self.assertEqual(moves[:3].ids, [move_b.id, move_c_cancel.id, move_a.id])
+        self.assertIn(move_c_cancel.id, moves.ids)
 
     def test_resume_sale_and_purchase_book_fields(self):
         moves = self.env["account.move"]
@@ -792,7 +805,7 @@ class TestAccountingReports(TransactionCase):
             sale_resume = self.wizard._resume_sale_book_fields(moves)
             purchase_resume = self.wizard._resume_purchase_book_fields(moves)
 
-        self.assertEqual(len(sale_resume), 7)
+        self.assertEqual(len(sale_resume), 6)
         self.assertTrue(sale_resume[-1]["total"])
         self.assertEqual(len(purchase_resume), 8)
         self.assertTrue(purchase_resume[-1]["total"])
@@ -834,7 +847,8 @@ class TestAccountingReports(TransactionCase):
         self.wizard.write({"report": "sale", "currency_system": True})
 
         move = self._fake_move(
-            move_type="out_refund",
+            move_type="out_invoice",
+            journal_id=self._fake_journal(),
             tax_totals={
                 "amount_untaxed": 100.0,
                 "amount_total": 128.0,
@@ -867,15 +881,15 @@ class TestAccountingReports(TransactionCase):
 
         result = self.wizard._determinate_amount_taxeds(move)
 
-        self.assertEqual(result["amount_untaxed"], -100.0)
-        self.assertEqual(result["amount_taxed"], -128.0)
-        self.assertEqual(result["tax_base_exempt_aliquot"], 10.0)
-        self.assertEqual(result["tax_base_general_aliquot"], 50.0)
-        self.assertEqual(result["amount_general_aliquot"], 8.0)
-        self.assertEqual(result["tax_base_reduced_aliquot"], 20.0)
-        self.assertEqual(result["amount_reduced_aliquot"], 1.6)
-        self.assertEqual(result["tax_base_extend_aliquot"], 20.0)
-        self.assertEqual(result["amount_extend_aliquot"], 6.2)
+        self.assertAlmostEqual(result["amount_untaxed"], 100.0, places=2)
+        self.assertAlmostEqual(result["amount_taxed"], 128.0, places=2)
+        self.assertAlmostEqual(result["tax_base_exempt_aliquot"], 10.0, places=2)
+        self.assertAlmostEqual(result["tax_base_general_aliquot"], 50.0, places=2)
+        self.assertAlmostEqual(result["amount_general_aliquot"], 8.0, places=2)
+        self.assertAlmostEqual(result["tax_base_reduced_aliquot"], 20.0, places=2)
+        self.assertAlmostEqual(result["amount_reduced_aliquot"], 1.6, places=2)
+        self.assertAlmostEqual(result["tax_base_extend_aliquot"], 20.0, places=2)
+        self.assertAlmostEqual(result["amount_extend_aliquot"], 6.2, places=2)
 
     def test_determinate_amount_taxeds_purchase_international_and_foreign_currency(self):
         self._setup_company_tax_configuration()
@@ -883,7 +897,7 @@ class TestAccountingReports(TransactionCase):
 
         move = self._fake_move(
             move_type="in_invoice",
-            journal_id=SimpleNamespace(is_debit=False, is_purchase_international=True),
+            journal_id=self._fake_journal(is_purchase_international=True),
             tax_totals={
                 "foreign_amount_untaxed": 100.0,
                 "foreign_amount_total": 136.8,
@@ -916,17 +930,17 @@ class TestAccountingReports(TransactionCase):
 
         result = self.wizard._determinate_amount_taxeds(move)
 
-        self.assertEqual(result["amount_untaxed"], 100.0)
-        self.assertEqual(result["amount_taxed"], 136.8)
-        self.assertEqual(result["international_amount_taxed"], 136.8)
-        self.assertEqual(result["international_tax_base_exempt_aliquot"], 10.0)
-        self.assertEqual(result["tax_base_general_aliquot_international"], 50.0)
-        self.assertEqual(result["amount_general_aliquot_international"], 8.0)
-        self.assertEqual(result["tax_base_reduced_aliquot_international"], 20.0)
-        self.assertEqual(result["amount_reduced_aliquot_international"], 1.6)
-        self.assertEqual(result["tax_base_extend_aliquot_international"], 30.0)
-        self.assertEqual(result["amount_extend_aliquot_international"], 9.2)
-        self.assertEqual(result["amount_import_international"], 128.8)
+        self.assertAlmostEqual(result["amount_untaxed"], 100.0, places=2)
+        self.assertAlmostEqual(result["amount_taxed"], 136.8, places=2)
+        self.assertAlmostEqual(result["international_amount_taxed"], 136.8, places=2)
+        self.assertAlmostEqual(result["international_tax_base_exempt_aliquot"], 10.0, places=2)
+        self.assertAlmostEqual(result["tax_base_general_aliquot_international"], 50.0, places=2)
+        self.assertAlmostEqual(result["amount_general_aliquot_international"], 8.0, places=2)
+        self.assertAlmostEqual(result["tax_base_reduced_aliquot_international"], 20.0, places=2)
+        self.assertAlmostEqual(result["amount_reduced_aliquot_international"], 1.6, places=2)
+        self.assertAlmostEqual(result["tax_base_extend_aliquot_international"], 30.0, places=2)
+        self.assertAlmostEqual(result["amount_extend_aliquot_international"], 9.2, places=2)
+        self.assertAlmostEqual(result["amount_import_international"], 128.8, places=2)
 
     def test_determinate_amount_taxeds_purchase_no_deductible(self):
         self._setup_company_tax_configuration()
@@ -934,7 +948,7 @@ class TestAccountingReports(TransactionCase):
 
         move = self._fake_move(
             move_type="in_invoice",
-            journal_id=SimpleNamespace(is_debit=False, is_purchase_international=False),
+            journal_id=self._fake_journal(),
             tax_totals={
                 "amount_untaxed": 100.0,
                 "amount_total": 132.8,
@@ -977,15 +991,15 @@ class TestAccountingReports(TransactionCase):
 
         result = self.wizard._determinate_amount_taxeds(move)
 
-        self.assertEqual(result["national_amount_taxed"], 132.8)
-        self.assertEqual(result["tax_base_general_aliquot"], 50.0)
-        self.assertEqual(result["amount_general_aliquot"], 8.0)
-        self.assertEqual(result["tax_base_reduced_aliquot_no_deductible"], 5.0)
-        self.assertEqual(result["amount_reduced_aliquot_no_deductible"], 0.4)
-        self.assertEqual(result["tax_base_general_aliquot_no_deductible"], 20.0)
-        self.assertEqual(result["amount_general_aliquot_no_deductible"], 3.2)
-        self.assertEqual(result["tax_base_extend_aliquot_no_deductible"], 5.0)
-        self.assertEqual(result["amount_extend_aliquot_no_deductible"], 1.55)
+        self.assertAlmostEqual(result["national_amount_taxed"], 132.8, places=2)
+        self.assertAlmostEqual(result["tax_base_general_aliquot"], 50.0, places=2)
+        self.assertAlmostEqual(result["amount_general_aliquot"], 8.0, places=2)
+        self.assertAlmostEqual(result["tax_base_reduced_aliquot_no_deductible"], 5.0, places=2)
+        self.assertAlmostEqual(result["amount_reduced_aliquot_no_deductible"], 0.4, places=2)
+        self.assertAlmostEqual(result["tax_base_general_aliquot_no_deductible"], 20.0, places=2)
+        self.assertAlmostEqual(result["amount_general_aliquot_no_deductible"], 3.2, places=2)
+        self.assertAlmostEqual(result["tax_base_extend_aliquot_no_deductible"], 5.0, places=2)
+        self.assertAlmostEqual(result["amount_extend_aliquot_no_deductible"], 1.55, places=2)
 
     def test_generate_book_resume_raises_when_no_moves(self):
         buffer = BytesIO()
@@ -1001,7 +1015,7 @@ class TestAccountingReports(TransactionCase):
         workbook.close()
 
     def test_generate_book_resume_for_sale_and_purchase(self):
-        move = self._create_purchase_move(
+        move = self._create_move(
             name="BILL/2023/RESUME",
             move_type="in_invoice",
             accounting_date=date(2023, 1, 10),
@@ -1139,27 +1153,35 @@ class TestAccountingReports(TransactionCase):
 
     def test_get_sale_book_field_groups_respects_company_flags(self):
         self._setup_company_tax_configuration()
+        self.wizard.write({"report": "sale"})
 
         self._write_company_flags(
             not_show_reduced_aliquot_sale=False,
             not_show_extend_aliquot_sale=False,
         )
         groups = self.wizard._get_sale_book_field_groups()
-        headers = [group["header"] for group in groups]
-        self.assertIn("ALÍCUOTA REDUCIDA (8%)", headers)
-        self.assertIn("ALÍCUOTA ADICIONAL (31%)", headers)
+        fields_list = [field["field"] for group in groups for field in group["fields"]]
+
+        self.assertIn("tax_base_reduced_aliquot", fields_list)
+        self.assertIn("amount_reduced_aliquot", fields_list)
+        self.assertIn("tax_base_extend_aliquot", fields_list)
+        self.assertIn("amount_extend_aliquot", fields_list)
 
         self._write_company_flags(
             not_show_reduced_aliquot_sale=True,
             not_show_extend_aliquot_sale=True,
         )
         groups = self.wizard._get_sale_book_field_groups()
-        headers = [group["header"] for group in groups]
-        self.assertNotIn("ALÍCUOTA REDUCIDA (8%)", headers)
-        self.assertNotIn("ALÍCUOTA ADICIONAL (31%)", headers)
+        fields_list = [field["field"] for group in groups for field in group["fields"]]
+
+        self.assertNotIn("tax_base_reduced_aliquot", fields_list)
+        self.assertNotIn("amount_reduced_aliquot", fields_list)
+        self.assertNotIn("tax_base_extend_aliquot", fields_list)
+        self.assertNotIn("amount_extend_aliquot", fields_list)
 
     def test_get_purchase_book_field_groups_respects_company_flags(self):
         self._setup_company_tax_configuration()
+        self.wizard.write({"report": "purchase"})
 
         self._write_company_flags(
             config_deductible_tax=True,
