@@ -1,6 +1,6 @@
 <templates id="template" xml:space="preserve">
-    <t t-name="l10n_ve_pos.ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension" owl="1">
-        <xpath expr="//div/main/div" position="replace">
+    <!-- <t t-name="l10n_ve_pos.ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div/main" position="replace">
             <div class="payment-methods-container">
                 <div class="payment-methods-overview overflow-auto">
                     <table class="text-start">
@@ -77,5 +77,5 @@
                 }
             </style>
         </xpath>
-    </t>
+    </t> -->
 </templates>

@@ -1321,6 +1321,8 @@ class AccountMove(models.Model):
 # Unbalanced Lines Synchronization
     @contextmanager
     def _sync_tax_lines(self, container):
+        """ Context manager to synchronize the tax lines of the move with the base lines when the base lines are modified in the view. This is necessary because the tax lines are not directly 
+        linked to the base lines and they can be modified manually by the user."""
         AccountTax = self.env['account.tax']
         fake_base_line = AccountTax._prepare_base_line_for_taxes_computation(None)
 
@@ -1401,6 +1403,7 @@ class AccountMove(models.Model):
                 continue
 
             tax_lines = get_tax_lines(move)
+            
             base_lines = get_base_lines(move)
             move_tax_lines_values_before = tax_lines_values_before.get(move, {})
             move_base_lines_values_before = base_lines_values_before.get(move, {})

@@ -11,7 +11,7 @@ class PosPayment(models.Model):
 
     foreign_rate = fields.Float(
         help="The rate that is gonna be always shown to the user.",
-        default=0.0,
+        # default=0.0,
         readonly=False,
     )
     foreign_amount = fields.Float(readonly=True, digits=(16, 2))
@@ -47,12 +47,13 @@ class PosPayment(models.Model):
 
             payment_move.write(
                 {
-                    "foreign_rate": payment.foreign_rate,
-                    "foreign_inverse_rate": payment.foreign_rate,
+                    # "foreign_rate": payment.foreign_rate,
+                    # "foreign_inverse_rate": payment.foreign_inverse_rate,
                     "manually_set_rate": True,
                 }
             )
             for line in payment_move.line_ids:
+                
                 line.write(
                     {
                         "not_foreign_recalculate": True,
