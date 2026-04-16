@@ -441,8 +441,8 @@ class PosSession(models.Model):
         # if account_payment.pos_payment_method_id.apply_one_cross_move:
         #     self._create_cross_move_payment(res)
         return res
-
     def _create_cross_move_payment(self, move):
+        super()._create_cross_move_payment(move)
         move = self.env["account.move"].create(
             {
                 "name": _("PoS Payment Method Adjustment"),
@@ -535,6 +535,7 @@ class PosSession(models.Model):
             amount_to_balance,
             bank_payment_method_diffs,
         )
+        _logger.warning("RES CREATE ACCOUNT MOVE %s", res)
         self.move_id.write(
             {
                 "foreign_rate": self.config_id.foreign_rate,
@@ -733,42 +734,41 @@ class PosSession(models.Model):
 
     def _create_cash_statement_lines_and_cash_move_lines(self, data):
         res = super()._create_cash_statement_lines_and_cash_move_lines(data)
-        # split_receivables_cash = res.get("split_receivables_cash")
-        # combine_receivables_cash = res.get("combine_receivables_cash")
-        # split_cash_statement_lines = res.get("split_cash_statement_lines")
-        # combine_cash_statement_lines = res.get("combine_cash_statement_lines")
-        # split_cash_receivable_lines = res.get("split_cash_receivable_lines")
-        # combine_cash_receivable_lines = res.get("combine_cash_receivable_lines")
+        split_receivables_cash = data.get("split_receivables_cash") or {}
+        combine_receivables_cash = data.get("combine_receivables_cash") or {}
+        split_cash_statement_lines = res.get("split_cash_statement_lines")
+        combine_cash_statement_lines = res.get("combine_cash_statement_lines")
+        split_cash_receivable_lines = res.get("split_cash_receivable_lines")
+        combine_cash_receivable_lines = res.get("combine_cash_receivable_lines")
 
-        # for payment, amounts in split_receivables_cash.items():
-        #     if isinstance(split_cash_receivable_lines, dict):
-        #         receivable_lines = split_cash_receivable_lines.get(payment, [])
-        #     else:
-        #         receivable_lines = split_cash_receivable_lines or []
+        def _get_lines(container, key):
+            if isinstance(container, dict):
+                return list(container.get(key, []))
+            return list(container or [])
 
-        #     if isinstance(split_cash_statement_lines, dict):
-        #         statement_lines = split_cash_statement_lines.get(payment, [])
-        #     else:
-        #         statement_lines = split_cash_statement_lines or []
+        for payment, amounts in split_receivables_cash.items():
+            lines = _get_lines(split_cash_receivable_lines, payment) + _get_lines(
+                split_cash_statement_lines,
+                payment,
+            )
+            for line in lines:
+                self.set_foreign_amount_in_line(
+                    line,
+                    amounts.get("foreign_amount", 0.0),
+                    amounts.get("amount", 0.0),
+                )
 
-        #     lines = list(receivable_lines) + list(statement_lines)
-        #     for line in lines:
-        #         self.set_foreign_amount_in_line(line, amounts["foreign_amount"], amounts["amount"])
-
-        # for payment_method, amounts in combine_receivables_cash.items():
-        #     if isinstance(combine_cash_receivable_lines, dict):
-        #         receivable_lines = combine_cash_receivable_lines.get(payment_method, [])
-        #     else:
-        #         receivable_lines = combine_cash_receivable_lines or []
-
-        #     if isinstance(combine_cash_statement_lines, dict):
-        #         statement_lines = combine_cash_statement_lines.get(payment_method, [])
-        #     else:
-        #         statement_lines = combine_cash_statement_lines or []
-
-        #     lines = list(receivable_lines) + list(statement_lines)
-        #     for line in lines:
-        #         self.set_foreign_amount_in_line(line, amounts["foreign_amount"], amounts["amount"])
+        for payment_method, amounts in combine_receivables_cash.items():
+            lines = _get_lines(combine_cash_receivable_lines, payment_method) + _get_lines(
+                combine_cash_statement_lines,
+                payment_method,
+            )
+            for line in lines:
+                self.set_foreign_amount_in_line(
+                    line,
+                    amounts.get("foreign_amount", 0.0),
+                    amounts.get("amount", 0.0),
+                )
         return res
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
