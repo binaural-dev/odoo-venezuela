@@ -145,14 +145,15 @@ class ResPartner(models.Model):
         default_access_levels = HikAccessLevels.search(
             [("default_membership_access_level", "=", True)]
         )
-        if not default_access_levels:
-            raise UserError(_("No default access levels defined."))
 
         ids_to_assign = []
         if parent_hik_user and parent_hik_user.access_level_ids:
             ids_to_assign = parent_hik_user.access_level_ids.ids
-        else:
+        elif default_access_levels:
             ids_to_assign = default_access_levels.ids
+
+        if not ids_to_assign:
+            raise UserError(_("No access levels available for beneficiary."))
 
         return {
             "partner_id": self.id,

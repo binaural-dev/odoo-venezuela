@@ -926,3 +926,24 @@ msgstr "¿Estás seguro de que quieres eliminar a este invitado de la cita?"
 #: model_terms:ir.ui.view,arch_db:cadipa_hikvision.appointment_validated_guests_qr_image_modal_edit
 msgid "nuevo@correo.com"
 msgstr "nuevo@correo.com"
+#. module: cadipa_hikvision
+#: model:ir.model.fields,field_description:cadipa_hikvision.field_membership_type_plan__hikcentral_access_level_ids
+msgid "HikCentral Access Levels"
+msgstr "Niveles de Acceso de HikCentral"
+
+#. module: cadipa_hikvision
+#: model:ir.model.fields,help:cadipa_hikvision.field_membership_type_plan__hikcentral_access_level_ids
+msgid "Access levels assigned to members of this plan by default."
+msgstr "Niveles de acceso asignados a los miembros de este plan por defecto."
+
+#. module: cadipa_hikvision
+#: code:addons/cadipa_hikvision/models/action_partner.py:0
+#, python-format
+msgid "No HikCentral access levels defined for membership plan '%s' and no default access levels set."
+msgstr "No se han definido niveles de acceso de HikCentral para el plan de membresía '%s' y no se han establecido niveles de acceso predeterminados."
+
+#. module: cadipa_hikvision
+#: code:addons/cadipa_hikvision/models/res_partners.py:0
+#, python-format
+msgid "No access levels available for beneficiary."
+msgstr "No hay niveles de acceso disponibles para el beneficiario."
