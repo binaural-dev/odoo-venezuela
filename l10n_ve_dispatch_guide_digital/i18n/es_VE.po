@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250821\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251016\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-12 20:04+0000\n"
-"PO-Revision-Date: 2025-09-12 20:04+0000\n"
+"POT-Creation-Date: 2025-11-04 23:08+0000\n"
+"PO-Revision-Date: 2025-11-04 23:08+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -149,6 +149,17 @@ msgstr ""
 #, python-format
 msgid "The numbering range is exhausted. Please contact the administrator."
 msgstr "El rango de numeración está agotado. Por favor, contacte al administrador."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The series '%(series)s' is not configured in The Factory HKA. Please contact"
+" the administrator."
+msgstr ""
+"La serie '%(series)s' no está configurada en The Factory HKA. Por favor, contacte "
+"al administrador."
 
 #. module: l10n_ve_dispatch_guide_digital
 #: model:ir.model,name:l10n_ve_dispatch_guide_digital.model_stock_picking
