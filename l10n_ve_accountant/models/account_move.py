@@ -273,6 +273,41 @@ class AccountMove(models.Model):
                                             compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
 
+    amount_residual_company = fields.Monetary(
+        string='residual amount',
+        compute='_compute_amount',
+        store=True,
+        currency_field='company_currency_id'
+    )
+
+    @api.depends(
+        'line_ids.matched_debit_ids.debit_move_id.move_id.origin_payment_id.is_matched',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.origin_payment_id.is_matched',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.balance',
+        'line_ids.currency_id',
+        'line_ids.amount_currency',
+        'line_ids.amount_residual',
+        'line_ids.amount_residual_currency',
+        'line_ids.payment_id.state',
+        'line_ids.full_reconcile_id',
+        'state')
+    def _compute_amount(self):
+        super()._compute_amount()
+
+        for move in self:
+            total_residual_company = 0.0
+            
+            for line in move.line_ids:
+                if line.display_type == 'payment_term':
+                    total_residual_company += line.amount_residual
+            sign = move.direction_sign
+            #raise UserError(_("total_residual_company: %s") % total_residual_company)
+            move.amount_residual_company = -sign * total_residual_company
+
     @api.onchange('invoice_date_display')
     def _onchange_invoice_date_display(self):
         for move in self:
@@ -1005,6 +1040,7 @@ class AccountMove(models.Model):
         res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
         return res
 
+    
     def action_update_account_id(self):
         """
         Action to update account lines if product dont have account and category dont have account
@@ -1030,7 +1066,7 @@ class AccountMove(models.Model):
                         'view_mode': 'form',
                         'view_id': False,
                         'target': 'new',
-                        'context': {'default_move_id': self.id},
+                        'context': {'default_move_id': move.id},
                     }
 
         for invoice in self:

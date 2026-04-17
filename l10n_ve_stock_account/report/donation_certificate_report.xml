@@ -1,0 +1,12 @@
+<odoo>
+    <!-- Actions Report for account.move-->
+    <record id="action_donation_certificate_account_move" model="ir.actions.report">
+        <field name="name">Donation Certificate</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_ve_stock_account.donation_certificate_template_account_move</field>
+        <field name="report_file">l10n_ve_stock_account.donation_certificate_template_account_move</field>
+        <field name="print_report_name">"Donation Certificate - " + object.name</field>
+        <field name="paperformat_id" ref="l10n_ve_stock_account.paperformat_donation_certificate"/>
+    </record>
+</odoo>
