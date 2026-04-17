@@ -22,6 +22,16 @@ class TestPosOrderDryRun(TransactionCase):
                 'number_next_actual': 1,
             })
 
+        self.invoice_sequence = self.env['ir.sequence'].search([('code', '=', 'account.move')], limit=1)
+        if not self.invoice_sequence:
+            self.invoice_sequence = self.env['ir.sequence'].create({
+                'name': 'Invoice Sequence',
+                'code': 'account.move',
+                'prefix': 'INV/',
+                'padding': 5,
+                'number_next_actual': 500,
+            })
+
     def test_01_validate_order_dry_run_returns_true(self):
         """Returns True when dry-run order validation completes without errors."""
         orders = [{'data': {'name': 'Test Order'}}]
@@ -47,3 +57,26 @@ class TestPosOrderDryRun(TransactionCase):
 
         self.sequence = self.env['ir.sequence'].browse(self.sequence.id)
         self.assertEqual(self.sequence.number_next_actual, original_next)
+
+    def test_03_validate_order_dry_run_restores_invoice_sequence_on_success(self):
+        """Ensures invoice sequence is restored when simulation succeeds."""
+        orders = [{'data': {
+            'name': 'Test Order Invoiced', 
+            'to_invoice': True
+        }}]
+        original_invoice_next = self.invoice_sequence.number_next_actual
+
+        def create_from_ui_side_effect_success(_orders):
+            self.invoice_sequence.write({'number_next_actual': self.invoice_sequence.number_next_actual + 1})
+            return []
+
+        with patch.object(self.pos_order_model.__class__, 'create_from_ui', side_effect=create_from_ui_side_effect_success):
+            result = self.pos_order_model.validate_order_dry_run(orders)
+
+        self.assertTrue(result)
+        self.invoice_sequence = self.env['ir.sequence'].browse(self.invoice_sequence.id)
+        self.assertEqual(
+            self.invoice_sequence.number_next_actual, 
+            original_invoice_next,
+            "The invoice sequence increased during successful simulation."
+        )

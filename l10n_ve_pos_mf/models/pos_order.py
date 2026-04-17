@@ -47,9 +47,18 @@ class PosOrderInherit(models.Model):
 
     @api.model
     def validate_order_dry_run(self, orders):
-        sequence = self.env['ir.sequence'].search([('code', '=', 'pos.order')], limit=1)
+        session_id = False
+        if orders and isinstance(orders, list):
+            session_id = orders[0].get('data', {}).get('pos_session_id')
+
+        sequence = False
         last_next_number = False
-        
+
+        if session_id:
+            session = self.env['pos.session'].browse(session_id)
+            
+            sequence = session.config_id.sequence_id
+
         if sequence:
             last_next_number = sequence.number_next_actual
 
@@ -60,11 +69,11 @@ class PosOrderInherit(models.Model):
         except Exception as e:
             self.env.cr.execute('ROLLBACK TO SAVEPOINT pos_dry_run')
             if sequence and last_next_number:
-                sequence.write({'number_next_actual': last_next_number})
+                sequence.sudo().write({'number_next_actual': last_next_number})
             raise e
                 
         self.env.cr.execute('ROLLBACK TO SAVEPOINT pos_dry_run')
         if sequence and last_next_number:
-            sequence.write({'number_next_actual': last_next_number})
+            sequence.sudo().write({'number_next_actual': last_next_number})
                 
         return True
