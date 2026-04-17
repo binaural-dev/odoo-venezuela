@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
@@ -34,49 +34,62 @@ class TestPosOrderDryRun(TransactionCase):
 
     def test_01_validate_order_dry_run_returns_true(self):
         """Returns True when dry-run order validation completes without errors."""
-        orders = [{'data': {'name': 'Test Order'}}]
+        orders = [{'data': {'name': 'Test Order', 'pos_session_id': 1}}]
 
-        with patch.object(self.pos_order_model.__class__, 'create_from_ui', return_value=None) as create_from_ui_mock:
-            result = self.pos_order_model.validate_order_dry_run(orders)
+        session_mock = MagicMock()
+        session_mock.config_id.sequence_id = self.sequence
+
+        with patch.object(type(self.env['pos.session']), 'browse', return_value=session_mock):
+            with patch.object(self.pos_order_model.__class__, 'create_from_ui', return_value=None) as create_from_ui_mock:
+                result = self.pos_order_model.validate_order_dry_run(orders)
 
         create_from_ui_mock.assert_called_once_with(orders)
         self.assertTrue(result)
 
     def test_02_validate_order_dry_run_rolls_back_sequence_on_error(self):
         """Restores sequence counter when an exception occurs during dry-run validation."""
-        orders = [{'data': {'name': 'Test Order'}}]
+        orders = [{'data': {'name': 'Test Order', 'pos_session_id': 1}}]
         original_next = self.sequence.number_next_actual
 
         def create_from_ui_side_effect(_orders):
             self.sequence.write({'number_next_actual': self.sequence.number_next_actual + 1})
             raise UserError('Simulated failure')
 
-        with patch.object(self.pos_order_model.__class__, 'create_from_ui', side_effect=create_from_ui_side_effect):
-            with self.assertRaises(UserError):
-                self.pos_order_model.validate_order_dry_run(orders)
+        session_mock = MagicMock()
+        session_mock.config_id.sequence_id = self.sequence
+
+        with patch.object(type(self.env['pos.session']), 'browse', return_value=session_mock):
+            with patch.object(self.pos_order_model.__class__, 'create_from_ui', side_effect=create_from_ui_side_effect):
+                with self.assertRaises(UserError):
+                    self.pos_order_model.validate_order_dry_run(orders)
 
         self.sequence = self.env['ir.sequence'].browse(self.sequence.id)
         self.assertEqual(self.sequence.number_next_actual, original_next)
 
     def test_03_validate_order_dry_run_restores_invoice_sequence_on_success(self):
-        """Ensures invoice sequence is restored when simulation succeeds."""
+        """Ensures format/POS sequence is restored when simulation succeeds."""
         orders = [{'data': {
             'name': 'Test Order Invoiced', 
-            'to_invoice': True
+            'to_invoice': True,
+            'pos_session_id': 1
         }}]
-        original_invoice_next = self.invoice_sequence.number_next_actual
+        original_next = self.sequence.number_next_actual
 
         def create_from_ui_side_effect_success(_orders):
-            self.invoice_sequence.write({'number_next_actual': self.invoice_sequence.number_next_actual + 1})
+            self.sequence.write({'number_next_actual': self.sequence.number_next_actual + 1})
             return []
 
-        with patch.object(self.pos_order_model.__class__, 'create_from_ui', side_effect=create_from_ui_side_effect_success):
-            result = self.pos_order_model.validate_order_dry_run(orders)
+        session_mock = MagicMock()
+        session_mock.config_id.sequence_id = self.sequence
+
+        with patch.object(type(self.env['pos.session']), 'browse', return_value=session_mock):
+            with patch.object(self.pos_order_model.__class__, 'create_from_ui', side_effect=create_from_ui_side_effect_success):
+                result = self.pos_order_model.validate_order_dry_run(orders)
 
         self.assertTrue(result)
-        self.invoice_sequence = self.env['ir.sequence'].browse(self.invoice_sequence.id)
+        self.sequence = self.env['ir.sequence'].browse(self.sequence.id)
         self.assertEqual(
-            self.invoice_sequence.number_next_actual, 
-            original_invoice_next,
-            "The invoice sequence increased during successful simulation."
+            self.sequence.number_next_actual, 
+            original_next,
+            "The POS billing sequence increased during successful simulation."
         )
