@@ -55,7 +55,7 @@
     </t>
     <!-- Foreign Currency Totals-->
     <t t-name="l10n_ve_accountant.TaxForeignTotalsField" owl="1">
-        <table class="oe_right">
+        <table class="float-end">
             <tbody>
                 <h1>
                     <span t-out="totals.currency_id.symbol"/>
@@ -106,7 +106,7 @@
     </t>
     <!-- VES ONLY FIELDS -->
     <t t-name="l10n_ve_accountant.TaxVesTotalsField" owl="1">
-        <table class="oe_right">
+        <table class="float-end">
             <tbody>
                 <t t-foreach="totals.subtotals" t-as="subtotal" t-key="subtotal.name">
                     <tr>
