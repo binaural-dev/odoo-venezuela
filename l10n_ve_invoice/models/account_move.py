@@ -123,14 +123,6 @@ class AccountMove(models.Model):
                         continue
                     if not line.tax_ids:
                         raise ValidationError(_("Add a tax to each product line. You cannot confirm the invoice if any product line is missing a tax."))
-
-            sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
-            correlative = str(sequence.number_next_actual).zfill(sequence.padding)
-
-            invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])
-
-            if invoices and record.move_type in ["out_invoice","out_refund"]:
-                raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
         return super().action_post()
 
     @api.model_create_multi

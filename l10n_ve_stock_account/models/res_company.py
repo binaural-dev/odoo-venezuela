@@ -52,12 +52,3 @@ class ResCompany(models.Model):
         help="If enabled, the weight field will be hidden in the dispatch guide.",
     )
 
-    donation_account_id = fields.Many2one(
-        "account.account",
-        check_company=True,
-        string="Donation Account",
-        readonly=False,
-        domain=[
-            ("account_type", "=", "expense"),
-        ],
-    )
