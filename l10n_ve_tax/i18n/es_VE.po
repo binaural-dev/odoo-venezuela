@@ -413,6 +413,8 @@ msgstr "Total a pagar"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__unique_tax
 msgid "Unique Tax"
 msgstr "Impuesto único"
+
+#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__zero_aliquot_sale_international
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__zero_aliquot_sale_international
 msgid "Zero Aliquot Sale International"
