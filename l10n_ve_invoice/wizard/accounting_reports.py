@@ -1113,8 +1113,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             )
         )
         if move.journal_id.is_purchase_international:
-            if not has_manual_international_amounts:
-                amount_import_international += tax_result.get("international_tax_base_exempt_aliquot", 0.0)
+            amount_import_international += tax_result.get("international_tax_base_exempt_aliquot", 0.0)
             if not self.company_id.not_show_general_aliquot_purchase_international:
                 if move.tax_base_for_international_purchase:
                     old_base = tax_result.get('tax_base_general_aliquot_international', 0.0)
@@ -1135,9 +1134,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 amount_import_international += tax_result.get("tax_base_extend_aliquot_international", 0.0) + tax_result.get("amount_extend_aliquot_international", 0.0)
 
             if has_manual_international_amounts:
-                tax_result["tax_base_exempt_aliquot"] = 0.0
-                tax_result["amount_exempt_aliquot"] = 0.0
-                tax_result["international_tax_base_exempt_aliquot"] = 0.0
                 tax_result["international_amount_taxed"] = amount_import_international
                 tax_result["amount_taxed"] = amount_import_international
 
