@@ -61,5 +61,3 @@ class StockScrap(models.Model):
         if normal_scraps:
             return super(StockScrap, normal_scraps).do_scrap()
         return True
-        # else:
-        #     return super().do_scrap()

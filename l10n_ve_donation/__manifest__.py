@@ -6,6 +6,7 @@
     "author": "",
     "website": "",
     "depends": [
+        "account_asset",
         "l10n_ve_accountant",
         "l10n_ve_stock",
         "l10n_ve_invoice",

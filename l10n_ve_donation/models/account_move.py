@@ -51,6 +51,10 @@ class AccountMove(models.Model):
 
     def action_post(self):
         res = super().action_post()
+
+        if isinstance(res, dict):
+            return res
+
         donation_moves = self.filtered(lambda m: m.is_donation and m.move_type == "out_invoice")
         donation_entries = self.filtered(lambda m: m.is_donation and m.move_type == "entry")
         for move in donation_moves:
