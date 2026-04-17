@@ -7,7 +7,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-@tagged('l10n_ve_invoice_digital', 'invoice digital') 
+@tagged('l10n_ve_dispatch_guide_digital', 'invoice digital') 
 class TestStockPickingApiCalls(TransactionCase):
 
     def setUp(self):
@@ -39,6 +39,7 @@ class TestStockPickingApiCalls(TransactionCase):
                 "group_sales_invoicing_series": True,
                 "sequence_validation_tfhka": True,
                 "invoice_digital_tfhka": True,
+                "dispatch_guide_digital_tfhka": True,
             }
         )
         
@@ -168,7 +169,7 @@ class TestStockPickingApiCalls(TransactionCase):
         return {"codigo": "200"}
     
     # API de TFHKA para consultar numeraciones
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api')
     def test_01_query_numbering_success(self, mock_call):
 
         mock_call.return_value = {
@@ -194,7 +195,7 @@ class TestStockPickingApiCalls(TransactionCase):
         _logger.info("Test passed: Query numbering successfully.")
 
     # API de TFHKA para obtener el último número de documento
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api')
     def test_02_get_last_document_number_success(self, mock_call):
         mock_call.return_value = {
             "numeroDocumento": 126,
@@ -209,7 +210,7 @@ class TestStockPickingApiCalls(TransactionCase):
         _logger.info("Test passed: Get last document number successfully.")
 
     # API de TFHKA para generar documento digital (Guia de despacho)
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api')
     def test_03_generate_document_data_success(self, mock_call):
         mock_call.return_value = {
             "resultado": {
@@ -238,7 +239,7 @@ class TestStockPickingApiCalls(TransactionCase):
         _logger.info("Test passed: Document data generated successfully.")
 
     # Generar Guia de despacho interno
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
     def test_04_create_stock_picking(self, mock_call):
         """Test creating a stock picking with valid data."""
         outgoing_int_picking = self.create_picking()
@@ -248,7 +249,7 @@ class TestStockPickingApiCalls(TransactionCase):
         _logger.info("Test passed: Document digital generated successfully.")
 
     # Generar Guia de despacho entrega
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
     def test_05_create_stock_picking(self, mock_call):
         """Test creating a stock picking with valid data."""
         outgoing_out_picking = self.create_picking()
@@ -258,7 +259,7 @@ class TestStockPickingApiCalls(TransactionCase):
         _logger.info("Test passed: Document digital generated successfully.")
     
     # Generar Guia de despacho recepción
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
     def test_06_create_stock_picking(self, mock_call):
         """Test creating a stock picking with valid data."""
         incoming_picking = self.create_picking(self.picking_type_in.id, self.supplier_location.id, self.stock_location.id,)
@@ -268,7 +269,7 @@ class TestStockPickingApiCalls(TransactionCase):
         _logger.info("Test passed: Document digital generated successfully.")
 
     # Validacion de secuencia entre la API y Odoo
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
     def test_07_generate_document_digital_sequence_error(self, mock_call):
         """Test creating a stock picking with valid data."""
         self.sequence_guide.write({'number_next_actual': 1,})
@@ -358,7 +359,7 @@ class TestStockPickingApiCalls(TransactionCase):
         _logger.info("Test passed: Token for TFHKA is empty, UserError raised as expected.")
 
     # # Generar Guia de despacho con Sucursal
-    # @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
+    # @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
     # def test_12_create_stock_picking_subsidiary(self, mock_call):
     #     self.company.write({"subsidiary": True})
     #     """Test creating a stock picking with valid data."""
@@ -372,7 +373,7 @@ class TestStockPickingApiCalls(TransactionCase):
     #     _logger.info("Test passed: Document digital generated successfully.")
     
     # # Error de referencia de Retencion con Sucursal
-    # @patch('odoo.addons.l10n_ve_invoice_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
+    # @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
     # def test_13_create_stock_picking_subsidiary_error(self, mock_call):
     #     self.company.write({"subsidiary": True})
     #     outgoing_out_picking = self.create_picking()
