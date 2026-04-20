@@ -419,7 +419,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     self.currency_id 
                 )
                 total_igtf_amount += igtf_for_invoice
-                base_abs = abs(source)
+                base_abs = abs(source_amount)
                 final_amount_with_igtf = base_abs + total_igtf_amount
                 igtf = self.convert_to_company_currency(invoice_ids.currency_id, total_igtf_amount, self.payment_date)
 
@@ -476,7 +476,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         if currency != self.currency_id.id:
             currency = self.env['res.currency'].browse(currency)
             source_amount = invoice_ids.amount_residual
-            new_val = currency._convert(source_amount, self.currency_id, self.company_id, self.payment_date)
+            new_val = currency._convert(source_amount, self.currency_id, self.company_id, self.payment_date) + batch_values['igtf_amount']
 
         payment_vals = {
             'date': self.payment_date,
