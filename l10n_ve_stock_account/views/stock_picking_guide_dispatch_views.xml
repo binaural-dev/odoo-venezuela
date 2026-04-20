@@ -39,34 +39,74 @@
                  <field name="invoice_ids" widget="many2many_tags" optional="hide"/>
                  <field name="pricelist_id" string="Pricelist" optional="hide"/>
                 <button 
-                    name="action_create_invoice" 
+                    name="%(l10n_ve_stock_account.action_stock_picking_create_invoice_from_guide_dispatch)d" 
                     class="btn btn-link text-info" 
                     icon="fa-file-text" 
                     string="Create Invoice" 
-                    type="object"
+                    type="action"
                     invisible="not show_create_invoice"/>
                 <button 
-                    name="create_bill" 
+                    name="%(l10n_ve_stock_account.action_stock_picking_create_bill_from_guide_dispatch)d" 
                     class="btn btn-link text-info" 
                     icon="fa-file-text" 
                     string="Create Bill" 
-                    type="object"
+                    type="action"
                     invisible="not show_create_bill"/>
                 <button 
-                    name="create_customer_credit" 
+                    name="%(l10n_ve_stock_account.action_stock_picking_create_customer_credit_from_guide_dispatch)d" 
                     class="btn btn-link text-info" 
                     icon="fa-file-text" 
                     string="Create Credit Note" 
-                    type="object"
+                    type="action"
                     invisible="not show_create_customer_credit"/>
                 <button 
-                    name="create_vendor_credit" 
+                    name="%(l10n_ve_stock_account.action_stock_picking_create_vendor_credit_from_guide_dispatch)d" 
                     class="btn btn-link text-info" 
                     icon="fa-file-text" 
                     string="Create Vendor Credit" 
-                    type="object"
+                    type="action"
                     invisible="not show_create_vendor_credit"/>
             </list>
+        </field>
+    </record>
+    <record id="action_stock_picking_create_invoice_from_guide_dispatch" model="ir.actions.server">
+        <field name="name">Create Invoice</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.ensure_one()
+                action = records.action_create_invoice()
+        </field>
+    </record>
+    <record id="action_stock_picking_create_bill_from_guide_dispatch" model="ir.actions.server">
+        <field name="name">Create Bill</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.ensure_one()
+                records.create_bill()
+        </field>
+    </record>
+    <record id="action_stock_picking_create_customer_credit_from_guide_dispatch" model="ir.actions.server">
+        <field name="name">Create Customer Credit</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.ensure_one()
+                records.create_customer_credit()
+        </field>
+    </record>
+    <record id="action_stock_picking_create_vendor_credit_from_guide_dispatch" model="ir.actions.server">
+        <field name="name">Create Vendor Credit</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.ensure_one()
+                records.create_vendor_credit()
         </field>
     </record>
     <record id="stock_picking_guide_dispatch_view_search" model="ir.ui.view">
