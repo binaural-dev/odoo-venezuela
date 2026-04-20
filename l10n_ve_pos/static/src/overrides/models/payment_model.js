@@ -24,11 +24,16 @@ patch(Payment.prototype, {
 		return this.foreign_amount || 0;
 	},
 	set_amount(amount, only = false) {
-		
-		super.set_amount(...arguments);
-		this.foreign_amount = amount * this.pos.foreign_currency.rate; 
-		
-		
+		let is_due = amount == this.order.get_due();
+		let res = super.set_amount(...arguments);
+		if (!only) {
+			if (is_due) {
+				this.set_foreign_amount(this.order.get_foreign_due() + this.order.get_foreign_rounding_applied(), true);
+				return res;
+			}
+			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
+		}
+		return res;
 	},
 	set_foreign_amount(amount, only = false) {
 		this.foreign_amount = amount;

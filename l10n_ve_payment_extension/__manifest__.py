@@ -7,17 +7,19 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "17.0.0.0.25",
+    "version": "17.0.0.0.30",
     "depends": [
         "base",
         "account",
+        "product",
+        "stock",
         "l10n_ve_rate",
         "l10n_ve_accountant",
         "l10n_ve_invoice",
         "l10n_ve_location",
         "l10n_ve_contact",
         "l10n_ve_tax_payer",
-        "product",
+        
     ],
     "data": [
         "security/ir.model.access.csv",

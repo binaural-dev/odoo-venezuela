@@ -25,10 +25,12 @@ class AccountPaymentRegister(models.TransientModel):
     foreign_currency_id = fields.Many2one(
         "res.currency",
         default=default_alternate_currency,
+        
     )
 
     foreign_rate = fields.Float(
         help="The rate of the payment",
+        digits="Tasa",
     )
     foreign_inverse_rate = fields.Float(
         help=(
@@ -63,20 +65,9 @@ class AccountPaymentRegister(models.TransientModel):
         Onchange the foreign rate and compute the foreign inverse rate
         """
         Rate = self.env["res.currency.rate"]
-        for payment in self:
-            if not bool(payment.foreign_rate):
-                return
-
-            batch_result = payment._get_batches()[0]
-            payment.foreign_inverse_rate = Rate.compute_inverse_rate(
-                payment.foreign_rate
-            )
-            total_amount_residual_in_wizard_currency = (
-                payment._get_total_amount_in_wizard_currency_to_full_reconcile(
-                    batch_result, early_payment_discount=False
-                )[0]
-            )
-            payment.amount = total_amount_residual_in_wizard_currency
+        rate_values = Rate.compute_rate(self.foreign_currency_id.id, self.payment_date)
+        self.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")  
+            
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):
@@ -106,23 +97,6 @@ class AccountPaymentRegister(models.TransientModel):
         )
         return payment_vals
 
-    @api.depends("can_edit_wizard", "amount", "foreign_inverse_rate")
-    def _compute_payment_difference(self):
-        for wizard in self:
-            if wizard.can_edit_wizard:
-                batch_result = wizard._get_batches()[0]
-                total_amount_residual_in_wizard_currency = (
-                    wizard._get_total_amount_in_wizard_currency_to_full_reconcile(
-                        batch_result, early_payment_discount=False
-                    )[0]
-                )
-                wizard.payment_difference = (
-                    total_amount_residual_in_wizard_currency - wizard.amount
-                )
-            else:
-                wizard.payment_difference = 0.0
-
-
 
     @api.model
     def _get_wizard_values_from_batch(self, batch_result):
@@ -133,7 +107,7 @@ class AccountPaymentRegister(models.TransientModel):
         '''
         payment_values = batch_result['payment_values']
         lines = batch_result['lines']
-        company = min(lines.company_id, key=lambda c: len(c.sudo().parent_ids)) if not self._from_sibling_companies(lines) else lines.company_id.root_id
+        company = min(lines.company_id, key=lambda c: len(c.sudo().parent_ids))
 
         source_amount = abs(sum(lines.mapped('amount_residual')))
         if payment_values['currency_id'] == company.currency_id.id:
