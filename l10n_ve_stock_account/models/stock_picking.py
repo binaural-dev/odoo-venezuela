@@ -4,6 +4,7 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
+from odoo.tools.safe_eval import safe_eval
 from datetime import date, datetime, timedelta
 import calendar
 
@@ -104,7 +105,6 @@ class StockPicking(models.Model):
     
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
-
     def get_customer_journal(self):
         journal = customer_journal_id = self.env.company.customer_journal_id or False
         return journal
@@ -316,6 +316,7 @@ class StockPicking(models.Model):
         Creates customer invoice from the picking
         """
         self._validate_one_invoice_posted()
+        invoice = self.env["account.move"]
         for picking_id in self:
             current_user = self.env.uid
             if picking_id.picking_type_id.code == "outgoing":
@@ -548,6 +549,18 @@ class StockPicking(models.Model):
             if move_id.sale_line_id:
                 price_unit = move_id.sale_line_id.price_unit
                 tax_ids = [(6, 0, move_id.sale_line_id.tax_ids.ids)]
+            account = (
+                move_id.product_id.property_account_income_id.id
+                if move_id.product_id.property_account_income_id
+                else move_id.product_id.categ_id.property_account_income_categ_id.id
+            )
+            if not account:
+                raise UserError(
+                    _(
+                        "Please configure the income account for the product '%s' or its category."
+                    )
+                    % move_id.product_id.name
+                )
             vals = (
                 0,
                 0,
@@ -555,11 +568,7 @@ class StockPicking(models.Model):
                     "name": move_id.description_picking,
                     "product_id": move_id.product_id.id,
                     "price_unit": price_unit,
-                    "account_id": (
-                        move_id.product_id.property_account_income_id.id
-                        if move_id.product_id.property_account_income_id
-                        else move_id.product_id.categ_id.property_account_income_categ_id.id
-                    ),
+                    "account_id": account,
                     "tax_ids": tax_ids,
                     "quantity": move_id.sale_line_id.qty_delivered if move_id.sale_line_id else move_id.quantity,
                     "from_picking_line": from_picking_line,
@@ -1253,13 +1262,11 @@ class StockPicking(models.Model):
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
     def alert_views(self,company_ids_str):
-
         company_ids = [
             int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
         ]
         domain = self._get_domain_for_return_picking()
         domain.append(("company_id", "in", company_ids))
-
         pickings_combined = (
             self.env["stock.picking"]
             .sudo()
@@ -1305,6 +1312,7 @@ class StockPicking(models.Model):
     def print_donation_certificate(self):
         self.ensure_one()
         return self.env.ref("l10n_ve_stock_account.action_donation_certificate_stock_picking").report_action(self)
+
 
     def get_foreign_currency_is_vef(self):
         return self.env.company.foreign_currency_id == self.env.ref("base.VEF")

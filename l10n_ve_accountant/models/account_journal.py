@@ -10,6 +10,8 @@ class AccountJournal(models.Model):
 
     # ESTA HERENCIA NO SE IMPORTARÁ PORQUE ESTÁ GENERANDO ERROR, AL SOLUCIONAR, VOLVER A AGREGAR EN EN IMPORT
 
+    is_purchase_international = fields.Boolean(string="International purchase",default=False)
+
     @api.model_create_multi
     def create(self, vals_list):
 
@@ -18,7 +20,21 @@ class AccountJournal(models.Model):
 
         return super().create(vals_list)
 
-    is_purchase_international = fields.Boolean(string="International purchase",default=False)
+    @api.constrains('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
+    def _check_payment_method_line_accounts(self):
+
+        if self.env.context.get('chart_template_load') or self.env.context.get('install_mode'):
+            return
+        
+        for journal in self:
+            
+            if journal.type == 'bank':
+                all_lines = journal.inbound_payment_method_line_ids | journal.outbound_payment_method_line_ids
+                
+                for line in all_lines:
+                    if not line.payment_account_id:
+                       
+                        raise UserError(_("All payment methods must have an assigned account.")) 
 
     @api.constrains('is_purchase_international')
     def _check_single_international_purchase_journal(self):

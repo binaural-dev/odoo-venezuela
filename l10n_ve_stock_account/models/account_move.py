@@ -4,7 +4,6 @@ from odoo.exceptions import UserError, ValidationError
 import logging
 
 _logger = logging.getLogger(__name__)
-
 TYPE_REVERSE_MAP = {
     'entry': 'entry',
     'out_invoice': 'out_refund',
@@ -150,3 +149,4 @@ class AccountMove(models.Model):
                 )
         if invoice_line_vals:
             return invoice_line_vals
+

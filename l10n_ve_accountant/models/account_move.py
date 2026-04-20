@@ -146,7 +146,6 @@ class AccountMove(models.Model):
     def _onchange_move_type(self):
         self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
         self.invoice_date_display = False if self.move_type == "entry" else fields.Date.today()
-
     @api.onchange("journal_id")
     def _onchange_journal_id_reset_international_exempt(self):
         for move in self:
@@ -279,7 +278,6 @@ class AccountMove(models.Model):
     foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
                                             compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
-
     @api.onchange('invoice_date_display')
     def _onchange_invoice_date_display(self):
         for move in self:
@@ -1012,6 +1010,7 @@ class AccountMove(models.Model):
         res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
         return res
 
+    
     def action_update_account_id(self):
         """
         Action to update account lines if product dont have account and category dont have account

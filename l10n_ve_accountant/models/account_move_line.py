@@ -102,7 +102,6 @@ class AccountMoveLine(models.Model):
     config_deductible_tax = fields.Boolean(related="company_id.config_deductible_tax")
 
     not_deductible_tax = fields.Boolean(default=False)
-
     @api.depends('international_purchase_exent_product')
     def _compute_tax_ids(self):
         super()._compute_tax_ids()
@@ -112,7 +111,6 @@ class AccountMoveLine(models.Model):
         if self.international_purchase_exent_product and self.company_id.exent_aliquot_purchase_international:
             res = self.company_id.exent_aliquot_purchase_international
         return res
-    
 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):

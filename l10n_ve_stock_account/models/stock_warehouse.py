@@ -53,3 +53,4 @@ class StockWarehouse(models.Model):
             and self.search_count([("is_donation_warehouse", "=", True)]) > 1
         ):
             raise ValidationError(_("There can only be one donation warehouse."))
+

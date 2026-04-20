@@ -169,3 +169,4 @@ class StockMove(models.Model):
         self.env["stock.move"].browse(move_to_link).account_move_id = account_move.id
         account_move._post()
         return account_move
+

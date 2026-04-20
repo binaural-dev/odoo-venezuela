@@ -228,6 +228,29 @@ class AccountRetentionLine(models.Model):
                 record.payment_id.unlink()
         return super().unlink()
 
+    def _get_islr_type_person_id(self):
+        """Return the type person used to match ISLR concept lines.
+
+        For customer retentions (out_invoice), use the company partner type person.
+        For other flows, keep the existing partner-based behavior.
+        """
+        self.ensure_one()
+
+        if (
+            self.retention_id
+            and self.retention_id.type_retention == "islr"
+            and self.retention_id.type == "out_invoice"
+        ):
+            return self.company_id.partner_id.type_person_id
+
+        if self.retention_id and self.retention_id.partner_id:
+            return self.retention_id.partner_id.type_person_id
+
+        if self.move_id and self.move_id.partner_id:
+            return self.move_id.partner_id.type_person_id
+
+        return self.env["type.person"]
+
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
         """

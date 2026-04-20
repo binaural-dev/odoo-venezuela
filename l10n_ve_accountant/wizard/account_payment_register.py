@@ -174,7 +174,6 @@ class AccountPaymentRegister(models.TransientModel):
         )
         return payment_vals
 
-
     def _compute_validation_currency_amount(self):
         """
         Validates that the journal's currency matches the payment amount's currency, unless the journal has no currency.
@@ -200,4 +199,3 @@ class AccountPaymentRegister(models.TransientModel):
 
         return super().action_create_payments()
         
-    

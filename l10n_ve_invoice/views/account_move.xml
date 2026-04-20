@@ -209,15 +209,4 @@
         </field>
     </record>
 
-    <record id="view_account_move_filter_l10n_ve_invoice" model="ir.ui.view">
-        <field name="name">view.account.move.filter.l10n.ve.invoice</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
-        <field name="arch" type="xml">
-            <search>
-                <field name="declaration_unique_of_customs" string="Number of Declaration Unique of Customs"/>
-                <filter name="declaration_unique_of_customs" string="Number of Declaration Unique of Customs" domain="[('declaration_unique_of_customs', '!=' , False)]"/>
-            </search>
-        </field>
-    </record>
 </odoo>

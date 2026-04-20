@@ -9,7 +9,6 @@ class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
     from_picking_line = fields.Boolean(string="From Picking", default=False)
-
     # TODO: Validar que solo se puedan agregar productos de tipo servicio cuando la factura proviene de un picking
     #
     # Problema: la validación comentada además de no permitir agregar productos que no sean de tipo servicio en la factura,
@@ -32,7 +31,7 @@ class AccountMoveLine(models.Model):
     #     for line in self:
     #         if line.move_id.is_donation and line.account_id.account_type == 'asset_receivable':
     #             line.account_id = (line.company_id.donation_account_id or self.env.company.donation_account_id)
-    
+
     @api.constrains('account_id', 'display_type')
     def _check_payable_receivable(self):
         """
