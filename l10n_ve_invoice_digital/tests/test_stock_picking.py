@@ -56,7 +56,6 @@ class TestStockPickingApiCalls(TransactionCase):
             'type': 'consu',
             'categ_id': self.product_category.id,
             'uom_id': self.uom_unit.id,
-            'uom_po_id': self.uom_unit.id,
         })
         
         # Crear producto almacenable
@@ -65,7 +64,6 @@ class TestStockPickingApiCalls(TransactionCase):
             'type': 'product',
             'categ_id': self.product_category.id,
             'uom_id': self.uom_unit.id,
-            'uom_po_id': self.uom_unit.id,
         })
         
         # Crear partner (cliente)

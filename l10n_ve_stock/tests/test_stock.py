@@ -65,14 +65,9 @@ class TestProductTemplate(TransactionCase):
             "company_id": self.env.company.id,
         })
         with self.assertRaises(ValidationError):
-            self.env["product.product"].create({
+            self.env["product.template"].create({
                 "name": "Product 1",
-                "barcode": "123456",
-                "type": 'consu',
+                "type": "consu",
                 "taxes_id": [(6, 0, [tax1.id, tax2.id])],
-                "product_tmpl_id": self.env["product.template"].create({
-                    "name": "Prod1",
-                    "uom_id": self.env.ref('uom.product_uom_unit').id,
-                    "uom_po_id": self.env.ref('uom.product_uom_unit').id,
-                }).id,
+                "uom_id": self.env.ref("uom.product_uom_unit").id,
             })

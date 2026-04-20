@@ -27,7 +27,6 @@ class TestWizardStockBookReport(TransactionCase):
         "name": "Producto de Prueba",
         "type": "service",
         "uom_id": cls.uom_unit.id,
-        "uom_po_id": cls.uom_unit.id,
         "categ_id": cls.category_all.id,
         })
 
@@ -197,7 +196,6 @@ class TestWizardStockBookReport(TransactionCase):
             "name": "Producto Sin Movimientos",
             "type": "service",
             "uom_id": self.uom_unit.id,
-            "uom_po_id": self.uom_unit.id,
             "categ_id": self.category_all.id,
         })
         product = tmpl.product_variant_id
@@ -215,7 +213,6 @@ class TestWizardStockBookReport(TransactionCase):
             "name": "Producto Sin Movimientos",
             "type": "service",
             "uom_id": self.uom_unit.id,
-            "uom_po_id": self.uom_unit.id,
             "categ_id": self.category_all.id,
         })
         product = tmpl.product_variant_id
