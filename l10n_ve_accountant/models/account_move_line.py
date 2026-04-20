@@ -148,6 +148,10 @@ class AccountMoveLine(models.Model):
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
+            if line.move_id.journal_id == line.company_id.currency_exchange_journal_id:
+                line.foreign_debit = 0.0
+                line.foreign_credit = 0.0
+                continue
             if line.not_foreign_recalculate:
                 if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                     self._calculate_from_adjustment(line)
