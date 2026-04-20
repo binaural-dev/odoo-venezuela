@@ -32,7 +32,7 @@ class TestProductPaymentConcept(TransactionCase):
                          "El concepto de pago debería mantenerse para productos de tipo servicio.")
 
     def test_02_consu_product_resets_concept(self):
-        """ CASO 2: Producto tipo CONSUMIBLE.
+        """ CASO 2: Producto tipo BIENES.
             El onchange debe borrar el concepto de pago si se asigna. """
         product_consu = self.env['product.template'].create({
             'name': 'Resma de Papel',
@@ -47,18 +47,25 @@ class TestProductPaymentConcept(TransactionCase):
                          "El concepto de pago debe resetearse a False si el producto no es un servicio.")
 
     def test_03_storable_product_resets_concept(self):
-        """ CASO 3: Producto ALMACENABLE.
+        """ CASO 3: Producto COMBO.
             Similar al consumible, debe limpiar el campo. """
+        
+        sub_product = self.env['product.product'].create({'name': 'Accesorio','type': 'consu'})
+
         product_stock = self.env['product.template'].create({
             'name': 'Laptop Oficina',
-            'type': 'product', # En Odoo 17 'product' es Almacenable
+            'type': 'combo', 
             'payment_concept': self.concept_honorarios.id,
+            'combo_ids': [(0, 0, {
+                'name': 'Opciones de Laptop',
+                'combo_item_ids': [(0, 0, {'product_id': sub_product.id})]
+            })]
         })
 
         
         product_stock._onchange_payment_concept()
         
         self.assertFalse(product_stock.payment_concept, 
-                         "Los productos almacenables no deben tener concepto de retención ISLR.")
+                         "Los productos COMBO no deben tener concepto de retención ISLR.")
 
    
