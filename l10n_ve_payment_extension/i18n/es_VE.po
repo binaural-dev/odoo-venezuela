@@ -3034,3 +3034,25 @@ msgstr "Estado"
 msgid "tax incurred"
 msgstr "Impuesto retenido"
 
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid "Already exists a record with the value  %s for the date %s."
+msgstr "Ya existe un registro con el valor %s para la fecha %s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid "There cannot be two tax units with the same date (%s)."
+msgstr "No pueden existir dos unidades tributarias con la misma fecha (%s)."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__available_date
+msgid "Publish Date"
+msgstr "Fecha Gaceta Oficial"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid "You cannot edit a tax unit that is not active."
+msgstr "No puedes editar una unidad tributaria que no esté activa."
