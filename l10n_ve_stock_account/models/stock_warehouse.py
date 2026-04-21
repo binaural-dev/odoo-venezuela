@@ -16,25 +16,13 @@ class StockWarehouse(models.Model):
         compute="_compute_readonly_is_consignation_warehouse",
     )
 
-    is_donation_warehouse = fields.Boolean(
-        string="Donation Warehouse",
-        default=False,
-        help="Indicates if this warehouse is used for donation purposes.",
-    )
 
-    readonly_is_donation_warehouse = fields.Boolean(
-        string="Readonly Donation Warehouse",
-        compute="_compute_readonly_is_donation_warehouse",
-    )
 
     ### COMPUTES ###
     def _compute_readonly_is_consignation_warehouse(self):
         for warehouse in self:
             warehouse.readonly_is_consignation_warehouse = warehouse.is_consignation_warehouse
 
-    def _compute_readonly_is_donation_warehouse(self):
-        for warehouse in self:
-            warehouse.readonly_is_donation_warehouse = warehouse.is_donation_warehouse
 
     ### CONSTRAINTS ###
 

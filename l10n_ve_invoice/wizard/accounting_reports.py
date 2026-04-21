@@ -1266,11 +1266,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             end_col_name = utility.xl_col_to_name(end_col)
             merge_range = f"{start_col_name}6:{end_col_name}6"
 
-            worksheet.merge_range(
-                merge_range, 
-                group['header'], 
-                header_format
-            )
+            if start_col == end_col:
+                worksheet.write(f"{start_col_name}6", group['header'], header_format)
+            else:
+
+                worksheet.merge_range(
+                    merge_range,
+                    group['header'],
+                    header_format
+                )
             
             for field in group_fields:
                 col_index = current_col_index
@@ -1306,7 +1310,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 worksheet.write_formula(
                     total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
                 )
-        
+
+            if field.get("field") == "igtf":
+                worksheet.write(
+                total_idx, index, f'=SUM({col}8:{col}{total_idx})', cell_formats.get("number")
+            )
         
         merge_format_base = workbook.add_format(
             {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray", "locked": True}
@@ -1399,11 +1407,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             end_col_name = utility.xl_col_to_name(end_col)
             merge_range = f"{start_col_name}6:{end_col_name}6"
 
-            worksheet.merge_range(
-                merge_range, 
-                group['header'], 
-                header_format
-            )
+            if start_col == end_col:
+                worksheet.write(f"{start_col_name}6", group['header'], header_format)
+            else:
+
+                worksheet.merge_range(
+                    merge_range,
+                    group['header'],
+                    header_format
+                )
             
             for field in group_fields:
                 col_index = current_col_index
@@ -1438,6 +1450,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 col = utility.xl_col_to_name(index)
                 worksheet.write_formula(
                 total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
+            )
+        
+            if field.get("field") == "igtf":
+                worksheet.write(
+                total_idx, index, f'=SUM({col}8:{col}{total_idx})', cell_formats.get("number")
             )
         
         self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats, last_col_index)

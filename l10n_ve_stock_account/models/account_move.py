@@ -25,7 +25,6 @@ class AccountMove(models.Model):
     # 0: not printed yet, 1: first print (original), 2 or more: copies
     free_form_copy_number = fields.Integer(default=0, copy=False)
 
-    is_donation = fields.Boolean(string="Is Donation", tracking=True)
 
     def print_invoice_free_form(self):
 
@@ -96,6 +95,7 @@ class AccountMove(models.Model):
                 return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
+
     def _get_tax_grouped_lines(self):
         """
         Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
@@ -149,4 +149,3 @@ class AccountMove(models.Model):
                 )
         if invoice_line_vals:
             return invoice_line_vals
-

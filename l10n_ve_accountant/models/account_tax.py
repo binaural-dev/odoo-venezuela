@@ -14,13 +14,11 @@ class AccountTax(models.Model):
     def _get_tax_totals_summary(
         self, base_lines, currency, company, cash_rounding=None
     ):
-        
-        ## Base currency
         res = super()._get_tax_totals_summary(
             base_lines, currency, company, cash_rounding
         )
 
-        #only ves currency
+
         ves_currency = self.env.ref('base.VEF')
         
         active_model = self.env.context.get('active_model')
@@ -69,10 +67,8 @@ class AccountTax(models.Model):
 
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
-        #? QUESTION do i need to put the amount without discount?
-        
+        #? QUESTION do i need to put the amount without discount? 
         #total amount discount 
-        
         formatted_total_discount = 0.0
         formatted_total_discount_ves = 0.0
         if has_discount:
@@ -94,23 +90,15 @@ class AccountTax(models.Model):
                 currency_obj=ves_currency
             )
         foreign_lines = []
-        #has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
-        # if has_discount:
-        #     base_without_discount = [line.copy() for line in base_lines if line]
-        #     for base_line in base_without_discount:
-        #         base_line["discount"] = 0
-
-        #     res_without_discount = super()._get_tax_totals_summary(
-        #         base_lines,
-        #         currency,
-        #         company,
-        #         cash_rounding
-        #     )
         if record._name == 'account.move':
             foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
         elif record._name in ('sale.order','purchase.order'):
-            company_id = (self.company_id or self.env.company)
-            foreign_lines = [line._prepare_foreign_base_line_for_taxes_computation() for line in record.order_line]
+            company_id = (record.company_id or self.env.company)
+            foreign_lines = [
+                line._prepare_foreign_base_line_for_taxes_computation()
+                for line in record.order_line
+                if hasattr(line, '_prepare_foreign_base_line_for_taxes_computation')
+            ]
             
             self._add_tax_details_in_base_lines(foreign_lines, company_id)
             self._round_base_lines_tax_details(foreign_lines, company_id)
@@ -235,8 +223,6 @@ class AccountTax(models.Model):
             )
 
             #Amount discount
-            
-
             for res_tax_group, foreign_tax_group in zip(res_subtotal.get("tax_groups", []), foreign_subtotal.get("tax_groups", [])):
                 res_tax_group["tax_amount_foreign_currency"] = foreign_tax_group.get("tax_amount_currency", 0.0)
                 res_tax_group["base_amount_foreign_currency"] = foreign_tax_group.get("base_amount_currency", 0.0)

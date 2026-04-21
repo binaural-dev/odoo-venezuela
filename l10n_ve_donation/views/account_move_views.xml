@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="l10n_ve_donation_account_move_form_view" model="ir.ui.view">
+        <field name="name">l10n.ve.donation.account.move.form.view</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='button_draft']" position="attributes">
+                <attribute name="invisible">is_donation and state != 'draft' or move_type != 'entry'</attribute>
+            </xpath>
+            <xpath expr="//button[@name='%(account.action_view_account_move_reversal)d']" position="attributes">
+                <attribute name="invisible">(is_donation and not can_reverse_donation_move)and state != 'draft' or move_type != 'entry'</attribute>
+            </xpath>
+            <button name="button_draft" position="attributes">
+                <attribute name="invisible">move_type in ['out_invoice', 'out_refund'] or state == 'draft' or is_donation</attribute>
+            </button>
+            <xpath expr="//form//header" position="inside">
+                <button
+                    name="print_donation_certificate"
+                    string="Generar Certificado de Donación"
+                    type="object"
+                    class="btn-primary"
+                    invisible="not is_donation or (state != 'posted' or move_type != 'entry')"/>
+            </xpath>
+            <xpath expr="//field[@name='ref']" position="after">
+                <field name="is_donation" readonly="state != 'draft' or move_type != 'entry'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
