@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "19.0.2.0.2",
+    "version": "19.0.2.0.4",
     "depends": [
         "base",
         "account",
@@ -39,6 +39,7 @@
         "views/economic_activity.xml",
         "views/economic_branch.xml",
         "views/payment_concept.xml",
+        "views/tax_unit.xml",
         "views/product.xml",
         "views/product_category.xml",
         "views/res_company.xml",
