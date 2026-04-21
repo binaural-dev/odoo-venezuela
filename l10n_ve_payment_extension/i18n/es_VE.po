@@ -2987,3 +2987,23 @@ msgstr "No mostrar fecha en comprobante de Retenciones Municipales"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__date_emision
 msgid "Emision Date"
 msgstr "Fecha Emision del Comprobante"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "Check the hold lines and ensure they have positive values."
+msgstr "Revise las líneas de retención y asegúrese que tengan valores positivos."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__text_header_1_municipal_retention
+msgid "Header 1 for voucher of municipal retention"
+msgstr "Encabezado 1 para el comprobante de retención municipal"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__text_header_2_municipal_retention
+msgid "Header 2 for voucher of municipal retention"
+msgstr "Encabezado 2 para el comprobante de retención municipal"
