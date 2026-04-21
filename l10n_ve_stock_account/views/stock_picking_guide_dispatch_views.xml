@@ -39,32 +39,32 @@
                  <field name="invoice_ids" widget="many2many_tags" optional="hide"/>
                  <field name="pricelist_id" string="Pricelist" optional="hide"/>
                 <button 
-                    name="%(l10n_ve_stock_account.action_stock_picking_create_invoice_from_guide_dispatch)d" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Invoice" 
-                    type="action"
+                    name="create_invoice"
+                    class="btn btn-link text-info"
+                    icon="fa-file-text"
+                    string="Create Invoice"
+                    type="object"
                     invisible="not show_create_invoice"/>
-                <button 
-                    name="%(l10n_ve_stock_account.action_stock_picking_create_bill_from_guide_dispatch)d" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Bill" 
-                    type="action"
+                <button
+                    name="create_bill"
+                    class="btn btn-link text-info"
+                    icon="fa-file-text"
+                    string="Create Bill"
+                    type="object"
                     invisible="not show_create_bill"/>
-                <button 
-                    name="%(l10n_ve_stock_account.action_stock_picking_create_customer_credit_from_guide_dispatch)d" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Credit Note" 
-                    type="action"
+                <button
+                    name="create_customer_credit"
+                    class="btn btn-link text-info"
+                    icon="fa-file-text"
+                    string="Create Credit Note"
+                    type="object"
                     invisible="not show_create_customer_credit"/>
-                <button 
-                    name="%(l10n_ve_stock_account.action_stock_picking_create_vendor_credit_from_guide_dispatch)d" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Vendor Credit" 
-                    type="action"
+                <button
+                    name="create_vendor_credit"
+                    class="btn btn-link text-info"
+                    icon="fa-file-text"
+                    string="Create Vendor Credit"
+                    type="object"
                     invisible="not show_create_vendor_credit"/>
             </list>
         </field>
