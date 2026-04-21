@@ -38,32 +38,32 @@
                  />
                  <field name="invoice_ids" widget="many2many_tags" optional="hide"/>
                  <field name="pricelist_id" string="Pricelist" optional="hide"/>
-                <button 
-                    name="action_create_invoice" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Invoice" 
+                <button
+                    name="create_invoice"
+                    class="btn btn-link text-info"
+                    icon="fa-file-text"
+                    string="Create Invoice"
                     type="object"
                     invisible="not show_create_invoice"/>
-                <button 
-                    name="create_bill" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Bill" 
+                <button
+                    name="create_bill"
+                    class="btn btn-link text-info"
+                    icon="fa-file-text"
+                    string="Create Bill"
                     type="object"
                     invisible="not show_create_bill"/>
-                <button 
-                    name="create_customer_credit" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Credit Note" 
+                <button
+                    name="create_customer_credit"
+                    class="btn btn-link text-info"
+                    icon="fa-file-text"
+                    string="Create Credit Note"
                     type="object"
                     invisible="not show_create_customer_credit"/>
-                <button 
-                    name="create_vendor_credit" 
-                    class="btn btn-link text-info" 
-                    icon="fa-file-text" 
-                    string="Create Vendor Credit" 
+                <button
+                    name="create_vendor_credit"
+                    class="btn btn-link text-info"
+                    icon="fa-file-text"
+                    string="Create Vendor Credit"
                     type="object"
                     invisible="not show_create_vendor_credit"/>
             </list>
