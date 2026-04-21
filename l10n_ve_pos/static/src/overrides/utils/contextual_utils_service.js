@@ -26,7 +26,8 @@ patch(contextualUtilsService, {
       return formatCurrency(parseFloat(valueStr), hasSymbol);
     };
     const formatRate = (value) => {
-      value = String(value).replace(".", ",");
+      const decimals = pos.dp["Tasa"];
+      value = Number(value).toFixed(decimals).replace(".", ",");
       const formatted = [foreign_currency.symbol, value];
       if (foreign_currency.position === "after") {
         formatted.reverse();
