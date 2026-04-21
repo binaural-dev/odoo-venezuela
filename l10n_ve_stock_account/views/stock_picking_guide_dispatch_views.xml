@@ -69,6 +69,46 @@
             </list>
         </field>
     </record>
+    <record id="action_stock_picking_create_invoice_from_guide_dispatch" model="ir.actions.server">
+        <field name="name">Create Invoice</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.ensure_one()
+                action = records.create_invoice()
+        </field>
+    </record>
+    <record id="action_stock_picking_create_bill_from_guide_dispatch" model="ir.actions.server">
+        <field name="name">Create Bill</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.ensure_one()
+                records.create_bill()
+        </field>
+    </record>
+    <record id="action_stock_picking_create_customer_credit_from_guide_dispatch" model="ir.actions.server">
+        <field name="name">Create Customer Credit</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.ensure_one()
+                records.create_customer_credit()
+        </field>
+    </record>
+    <record id="action_stock_picking_create_vendor_credit_from_guide_dispatch" model="ir.actions.server">
+        <field name="name">Create Vendor Credit</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">
+            if records:
+                records.ensure_one()
+                records.create_vendor_credit()
+        </field>
+    </record>
     <record id="stock_picking_guide_dispatch_view_search" model="ir.ui.view">
         <field name="name">stock.picking.guide.dispatch.view.search</field>
         <field name="model">stock.picking</field>

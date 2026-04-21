@@ -95,7 +95,7 @@
             </xpath>
             <xpath expr="//button[@name='action_cancel']" position="after">
                 <button 
-                    name="action_create_invoice" class="oe_highlight"
+                    name="create_invoice" class="oe_highlight"
                     string="Create Invoice" type="object"
                     groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
@@ -106,7 +106,7 @@
         </field>
     </record>
     <!-- ### ACTIONS SERVERS ### -->
-    <record id="action_create_invoice_for_multi_transfer" model="ir.actions.server">
+    <record id="create_invoice_for_multi_transfer" model="ir.actions.server">
         <field name="name">Create Invoice/Bill</field>
         <field name="model_id" ref="stock.model_stock_picking"/>
         <field name="binding_model_id" ref="stock.model_stock_picking"/>
