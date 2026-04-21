@@ -426,6 +426,8 @@ msgstr "Crear crédito de proveedor"
 #: model:ir.model,website_form_label:l10n_ve_stock_account.model_res_partner
 msgid "Create a Customer"
 msgstr "Crear un cliente"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__create_uid
