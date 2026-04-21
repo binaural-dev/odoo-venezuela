@@ -45,7 +45,7 @@ patch(Order.prototype, {
     }
   },
   get_display_rate() {
-    return round_di(this.pos.config.foreign_rate, this.pos.dp["Tasa"]);
+    return parseFloat(this.pos.config.foreign_rate.toFixed(this.pos.dp["Tasa"]));
   },
 
   add_orderline(line) {
