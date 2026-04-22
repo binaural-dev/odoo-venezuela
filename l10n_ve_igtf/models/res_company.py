@@ -38,6 +38,9 @@ class ResCompany(models.Model):
     revalorize_payments_vef = fields.Boolean(copy=False, default = False
     )
 
+    not_show_igtf_sale_order = fields.Boolean(default=False)
+    not_show_igtf_purchase_order = fields.Boolean(default=False)
+
     @api.onchange('advance_customer_account_id','advance_supplier_account_id')
     def _onchange_default_igtf_account(self):
         for rec in self:
