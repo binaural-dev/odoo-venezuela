@@ -74,6 +74,7 @@ class TestCancelVisibility(TransactionCase):
             'move_type': move_type,
             'partner_id': self.partner.id,
             'invoice_date': date_str,
+            'invoice_date_display': date_str,
             'date': date_str,
             'journal_id': self.journal_sale.id if 'out' in move_type else self.journal_purchase.id,
             'invoice_line_ids': [Command.create({

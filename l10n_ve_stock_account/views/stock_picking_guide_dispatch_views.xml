@@ -37,8 +37,9 @@
                     optional="hide"
                  />
                  <field name="invoice_ids" widget="many2many_tags" optional="hide"/>
+                 <field name="pricelist_id" string="Pricelist" optional="hide"/>
                 <button 
-                    name="create_invoice" 
+                    name="action_create_invoice" 
                     class="btn btn-link text-info" 
                     icon="fa-file-text" 
                     string="Create Invoice" 

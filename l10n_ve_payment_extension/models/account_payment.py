@@ -51,10 +51,8 @@ class AccountPayment(models.Model):
 
     @api.depends("date")
     def _compute_rate(self):
-        for payment in self:
-            if payment.is_retention and payment.foreign_rate:
-                continue
-            return super()._compute_rate()
+        to_compute = self.filtered(lambda p: not (p.is_retention and p.foreign_rate))
+        super(AccountPayment, to_compute)._compute_rate()
 
     def _synchronize_to_moves(self, changed_fields):
         """
@@ -96,7 +94,7 @@ class AccountPayment(models.Model):
 
     def unlink(self):
         for payment in self:
-            if any(isinstance(id, models.NewId) for id in self.retention_line_ids.ids):
+            if any(isinstance(id, api.NewId) for id in self.retention_line_ids.ids):
                 payment.retention_line_ids = False
             else:
                 payment.retention_line_ids = False

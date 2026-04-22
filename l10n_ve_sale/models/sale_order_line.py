@@ -74,18 +74,26 @@ class SaleOrderLine(models.Model):
             )
             line.invoiced = invoiced
 
-    @api.depends("price_unit", "foreign_inverse_rate")
+    @api.depends(
+        "price_unit",
+        "order_id.date_order",
+        "currency_id",
+        "company_id",
+    )
     def _compute_foreign_price(self):
         for line in self:
 
-            invoice_date = (
-                line.invoice_lines and line.invoice_lines.move_ids.date
-            ) or fields.Date.today()
+            order_date = line.order_id.date_order or fields.Date.today()
 
             company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
             if line.currency_id.id == company_currency.id:
-                line.foreign_price = line.price_unit * line.foreign_inverse_rate
+                line.foreign_price = line.currency_id._convert(
+                    line.price_unit,
+                    foreign_currency,
+                    line.company_id,
+                    order_date,
+                )
             elif line.currency_id.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
             else:
@@ -93,9 +101,14 @@ class SaleOrderLine(models.Model):
                     line.price_unit,
                     company_currency,
                     line.company_id,
-                    invoice_date,
+                    order_date,
                 )
-                line.foreign_price = price_in_company * line.foreign_inverse_rate 
+                line.foreign_price = company_currency._convert(
+                    price_in_company,
+                    foreign_currency,
+                    line.company_id,
+                    order_date,
+                )
 
     @api.depends("product_uom_qty", "foreign_price", "discount")
     def _compute_foreign_subtotal(self):
@@ -104,3 +117,21 @@ class SaleOrderLine(models.Model):
                 1 - (line.discount / 100.0)
             )
             line.foreign_subtotal = line_discount_price_unit * line.product_uom_qty
+
+    
+    def _prepare_foreign_base_line_for_taxes_computation(self):
+        """ Convert the current record to a dictionary in order to use the generic taxes computation method
+        defined on account.tax.
+
+        :return: A python dictionary.
+        """
+        self.ensure_one()
+        return self.env['account.tax']._prepare_foreign_base_line_for_taxes_computation(
+            self,
+            price_unit=self.foreign_price,
+            tax_ids=self.tax_ids,
+            quantity=self.product_uom_qty,
+            partner_id=self.order_id.partner_id,
+            currency_id=self.order_id.currency_id or self.order_id.company_id.currency_id,
+            rate=getattr(self.order_id, 'currency_rate', 1.0),
+        )

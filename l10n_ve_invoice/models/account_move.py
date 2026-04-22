@@ -14,6 +14,19 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
+    declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
+    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
+
+    invoice_date = fields.Date(
+        string="Invoice Date",
+        default=fields.Date.today,
+        help="Date of the invoice. Defaults to today when creating a new invoice."
+    )
+    
+    tax_base_for_international_purchase = fields.Float(string='Tax Base for International Purchase', help='Tax base for international purchase to show in purchase book')
+    
+    tax_amount_for_international_purchase = fields.Float(string='Tax Amount for International Purchase', help='Tax amount for international purchase to show in purchase book')
+    
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
@@ -36,6 +49,16 @@ class AccountMove(models.Model):
     entry_in_period = fields.Boolean(
         compute="_compute_entry_in_period",
     )
+
+
+    @api.constrains('invoice_date_display', 'date')
+    def _check_invoice_date_display_purchases(self):
+        for move in self:
+            _logger.warning(f"Checking invoice_date_display constraint for move {move.id} with move_type {move.move_type} and company setting block_invoice_display_date_upper_than_date {move.company_id.block_invoice_display_date_upper_than_date}")
+            if move.is_purchase_document(include_receipts=True) and move.company_id.block_invoice_display_date_upper_than_date:
+                if move.invoice_date_display and move.date and move.invoice_date_display > move.date:
+                    raise ValidationError(_("The invoice date cannot be greater than the accounting date."))
+    import_file_number_purchase_international = fields.Char(string="Import File Number Purchase International")
 
     @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
@@ -89,8 +112,6 @@ class AccountMove(models.Model):
     @api.onchange("move_type")
     def _onchange_move_type(self):
         if self.move_type == "out_invoice":
-            self.invoice_date = False
-        elif not self.invoice_date:
             self.invoice_date = fields.Date.today()
 
     def action_post(self):
@@ -102,15 +123,15 @@ class AccountMove(models.Model):
                         continue
                     if not line.tax_ids:
                         raise ValidationError(_("Add a tax to each product line. You cannot confirm the invoice if any product line is missing a tax."))
-
-            sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
-            correlative = str(sequence.number_next_actual).zfill(sequence.padding)
-
-            invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])
-
-            if invoices and record.move_type in ["out_invoice","out_refund"]:
-                raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
         return super().action_post()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        for move in moves:
+            if move.is_purchase_international and move.declaration_unique_of_customs and not move.correlative:
+                move.correlative = move.declaration_unique_of_customs
+        return moves
 
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
@@ -225,18 +246,29 @@ class AccountMove(models.Model):
             )
 
     def _post(self, soft=True):
-        res = super()._post(soft)
+        # Filtramos para asegurarnos de que solo intentamos publicar lo que está en borrador
+        # Esto evita el error de "debe ser un borrador" en procesos automáticos
+        draft_moves = self.filtered(lambda m: m.state == 'draft')
+        
+        # Si no hay nada en borrador (porque ya se publicó en un paso previo), 
+        # devolvemos el self original para no romper el flujo.
+        if not draft_moves:
+            return self
+
+        res = super(AccountMove, draft_moves)._post(soft)
+        
         for move in res:
-            
-            if "invoice_print_type" in move.company_id._fields:
-                invoice_print_type = move.company_id.invoice_print_type
-            else:
-                invoice_print_type = None
-            
-            if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
+            # Solo aplicamos número de control a facturas de cliente/notas crédito
+            # Evitamos tocar asientos de diferencia de cambio (entry) o pagos
+            if move.is_invoice(include_receipts=True):
+                if "invoice_print_type" in move.company_id._fields:
+                    invoice_print_type = move.company_id.invoice_print_type
+                else:
+                    invoice_print_type = None
                 
-                move.correlative = move.get_sequence()
-                
+                if move.is_valid_to_sequence() and invoice_print_type != "fiscal":
+                    move.correlative = move.get_sequence()
+                    
         return res
         
 
@@ -303,3 +335,14 @@ class AccountMove(models.Model):
         for picking in self:
             action = picking.env.ref('account_debit_note.action_view_account_move_debit').read()[0]
         return action
+
+    def write(self, vals):
+        res = super().write(vals)
+        for move in self:
+            if move.is_purchase_international and move.declaration_unique_of_customs:
+                if move.correlative != move.declaration_unique_of_customs:
+                    move.correlative = move.declaration_unique_of_customs
+            elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
+                move.correlative = False
+                move.declaration_unique_of_customs = False
+        return res

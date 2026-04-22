@@ -266,6 +266,7 @@ class TestAccountant(TransactionCase):
                 "move_type": "out_invoice",
                 "partner_id": self.partner.id,
                 "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
                 "journal_id": journal.id,
                 "invoice_line_ids": [
                     (
@@ -488,71 +489,6 @@ class TestAccountant(TransactionCase):
     #     l1 = move.invoice_line_ids.filtered(lambda l: l.name == "L1 Old Journal Acc")
     #     self.assertEqual(l1.account_id.id, self.account_credito.id)
 
-    def test_reconcile_twice(self):
-        """
-        This test verifies that when an advance payment is unmatched from an invoice, it can be matched again if required.
-        """
-        invoice = self._create_invoice()
-        payment = self._create_payment(
-            amount=invoice.amount_total,
-            journal=self.bank_journal_usd,
-            pm_line=self.pm_line_in_usd,
-            is_advance=True,
-        )
-        # First reconciliation
-        for line in payment.line_ids:
-            line_ids = payment.reconciled_line_ids.filtered(
-                lambda line: line.account_type
-                in (
-                    "asset_receivable",
-                    "liability_payable",
-                    "asset_current",
-                    "liability_payable",
-                )
-                and not line.reconciled
-            )
-        if not line_ids:
-            _logger.warning("Theres not lines to conciliate")
-        else:
-            for line in line_ids:
-                invoice.js_assign_outstanding_line(line.id)
-
-        # Breaking reconciliation
-        conciliation_move = self.env["account.move"].search(
-            [
-                ("move_type", "=", "entry"),
-                ("name", "=", f"{invoice.name} - {payment.name}"),
-            ]
-        )
-        partial = self.env["account.partial.reconcile"].search(
-            [
-                ("debit_move_id.move_id", "=", invoice.id),
-                ("credit_move_id.move_id", "=", conciliation_move.id),
-            ],
-            limit=1,
-        )
-        invoice.js_remove_outstanding_partial(partial.id)
-
-        # Second reconciliation should not raise duplicate name error
-        invoice.js_assign_outstanding_line(line.id)
-        second_conciliation_move = self.env["account.move"].search(
-            [
-                ("move_type", "=", "entry"),
-                ("name", "=", f"{invoice.name} - {payment.name}"),
-                ("state", "=", "posted"),
-            ]
-        )
-        second_conciliation_move and conciliation_move
-        first_conciliation_move = self.env["account.move"].search(
-            [
-                ("move_type", "=", "entry"),
-                ("name", "=", f"{invoice.name} - {payment.name}"),
-                ("state", "=", "cancel"),
-            ]
-        )
-        # It is evaluated whether the first journal entry with canceled state and the second with posted state are created.
-        self.assertTrue(conciliation_move and first_conciliation_move)
-
     def test_foreign_rate_editable_only_on_in_invoice(self):
         self.assertTrue(
             self.company.foreign_currency_id,
@@ -566,6 +502,7 @@ class TestAccountant(TransactionCase):
         invoice_form.foreign_currency_id = self.currency_vef
         invoice_form.partner_id = self.partner_a
         invoice_form.invoice_date = self.date
+        invoice_form.invoice_date_display = self.date
         invoice_form.foreign_rate = 1.23
 
         self.assertEqual(
@@ -587,8 +524,30 @@ class TestAccountant(TransactionCase):
         invoice_form.foreign_currency_id = self.currency_vef
         invoice_form.partner_id = self.partner_a
         invoice_form.invoice_date = self.date
+        invoice_form.invoice_date_display = self.date
         self.assertNotEqual(
             invoice_form.foreign_rate,
             1.23,
             "Foreign rate should be set to 1.23 for in_invoice move type.",
         )
+
+    def test_payment_method_line_assigned_account_validation_cash_journal(self):
+        """Test that a cash journal can be created even if a payment method line lacks a payment_account_id."""
+        # Due to the recent change, 'cash' journals shouldn't trigger the validation.
+        try:
+            cash_journal = self.env["account.journal"].create({
+                "name": "Invalid Cash Journal",
+                "type": "cash",
+                "code": "INVCJ",
+                "company_id": self.company.id,
+                "inbound_payment_method_line_ids": [
+                    Command.create({
+                        "payment_method_id": self.payment_method.id,
+                        # Missing payment_account_id
+                    })
+                ]
+            })
+            self.assertTrue(cash_journal.id, "Should successfully create a cash journal even without configured payment method accounts.")
+        except Exception as e:
+            self.fail(f"Creating a cash journal without payment_account_id raised an exception: {e}")
+

@@ -33,8 +33,8 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         return [
             ("state", "=", "posted"),
             ("company_id", "=", wizard.company_id.id),
-            ("invoice_date", ">=", wizard.date_from),
-            ("invoice_date", "<=", wizard.date_to),
+            ("invoice_date_display", ">=", wizard.date_from),
+            ("invoice_date_display", "<=", wizard.date_to),
             ("move_type", "in", ["out_invoice", "out_refund"]),
         ]
 

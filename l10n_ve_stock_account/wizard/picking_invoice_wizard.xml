@@ -1,44 +1,46 @@
 <odoo>
-<!--    view for picking invoice wizard-->
-    <record id="picking_invoice_wizard_view_form" model="ir.ui.view">
-        <field name="name">picking.invoice.wizard.view.form</field>
-        <field name="model">picking.invoice.wizard</field>
-        <field name="arch" type="xml">
-            <form string="Generate Invoice For Multiple Picking">
-                <sheet>
-                    <p>Invoice will generate for selected picking</p>
-                    <group>
+    <data>
+        <!-- view for picking invoice wizard -->
+        <record id="picking_invoice_wizard_view_form" model="ir.ui.view">
+            <field name="name">picking.invoice.wizard.view.form</field>
+            <field name="model">picking.invoice.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Generate Invoice For Multiple Picking">
+                    <sheet>
+                        <p>Invoice will generate for selected picking</p>
                         <group>
-                            <field name="invoice_type_selection" widget='radio'/>
+                            <group>
+                                <field name="invoice_type_selection" widget="radio"/>
+                            </group>
+                            <field name="pickings_ids">
+                                <list>
+                                    <field name="guide_number"/>
+                                    <field name="partner_id"/>
+                                    <field name="state_guide_dispatch"/>
+                                    <field name="transfer_reason_id"/>
+                                    <field name="pricelist_id"/>
+                                </list>
+                            </field>
                         </group>
-                        <field name="pickings_ids">
-                            <list>
-                                <field name='guide_number'/>
-                                <field name='partner_id'/>
-                                <field name='state_guide_dispatch'/>
-                                <field name='transfer_reason_id'/>
-                            </list>
-                        </field>
-                    </group>
-                </sheet>
-                <footer>
-                    <button name="picking_selection_invoice" string="Create Invoice"
-                            type="object" class="oe_highlight"/>
-                    <button string="Cancel" class="btn btn-default"
-                            special="cancel"/>
-                </footer>
-            </form>
-        </field>
-    </record>
+                    </sheet>
+                    <footer>
+                        <button name="picking_selection_invoice" string="Create Invoice"
+                                type="object" class="oe_highlight"/>
+                        <button string="Cancel" class="btn btn-default"
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
 
-    <act_window
-            id="action_picking_multi_invoice"
-            name="Create Invoices"
-            res_model="picking.invoice.wizard"
-            binding_model="stock.picking"
-            binding_views="list"
-            view_mode="form"
-            target="new"
-    />
+        <record id="action_picking_multi_invoice" model="ir.actions.act_window">
+            <field name="name">Create Invoices</field>
+            <field name="res_model">picking.invoice.wizard</field>
+            <field name="binding_model_id" ref="stock.model_stock_picking"/>
+            <field name="binding_view_types">list</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+    </data>
 
 </odoo>

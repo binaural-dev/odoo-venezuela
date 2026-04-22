@@ -85,7 +85,18 @@ patch(TaxTotalsComponent.prototype, {
   },
 });
 
-export class TaxTotalsComponents extends TaxTotalsComponent { }
+Object.defineProperty(TaxTotalsComponent.prototype, "readonly", {
+  get() {
+    return true;
+  },
+  configurable: true,
+});
+
+export class TaxTotalsComponents extends TaxTotalsComponent {
+  get readonly() {
+    return true;
+  }
+}
 TaxTotalsComponents.template = "l10n_ve_accountant.TaxForeignTotalsField";
 TaxTotalsComponents.template = "l10n_ve_accountant.TaxVesTotalsField";
 TaxTotalsComponents.props = {

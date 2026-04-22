@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250321\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260324\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 17:30+0000\n"
-"PO-Revision-Date: 2025-03-27 17:30+0000\n"
+"POT-Creation-Date: 2026-04-01 18:10+0000\n"
+"PO-Revision-Date: 2026-04-01 18:10+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,39 +17,84 @@ msgstr ""
 
 #. module: l10n_ve_igtf
 #. odoo-javascript
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#, python-format
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals.xml:0
 msgid "(Suggested)"
 msgstr "(Sugerido)"
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_account_payment_register_form_igtf
-msgid "<span style=\"vertical-align: middle;\">%):</span>"
+msgid "<span>%</span>"
 msgstr ""
 
 #. module: l10n_ve_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_account_payment_register_form_igtf
-msgid "<span style=\"vertical-align: middle;\">IGTF (</span>"
-msgstr ""
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_journal.py:0
+msgid "A journal marked as IGTF must have a foreign currency assigned."
+msgstr "Un diario marcado como IGTF debe tener una moneda diferente a Bs"
 
 #. module: l10n_ve_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.report_freeform_document
-msgid ""
-"<span>Todo pago està sujeto a la aplicaciòn de la  <strong>LIGTF GO 6687 y la PA SNAT/2022/000013</strong></span>\n"
-"                <span>Se designa a sujetos pasivos especiales como Agente de Percepciòn del <strong>IGTF 3%</strong></span>"
-msgstr ""
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.move_action_cancel_advance_payment_wizard
+msgid "Accept"
+msgstr "Aceptar"
 
 #. module: l10n_ve_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.document_tax_totals
-msgid "<strong>Total con IGTF</strong>"
-msgstr ""
+#: model:ir.model,name:l10n_ve_igtf.model_account_account
+msgid "Account"
+msgstr "Cuenta"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_with_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_account__is_advance_account
+msgid "Account used for advance payment"
+msgstr "Cuenta usada para pagos de anticipo"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_res_company__advance_customer_account_id
+#: model:ir.model.fields,help:l10n_ve_igtf.field_res_config_settings__advance_customer_account_id
+msgid "Account used for advance payments from customers"
+msgstr "Cuenta usada para pagos de anticipos de Clientes"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_res_company__advance_supplier_account_id
+#: model:ir.model.fields,help:l10n_ve_igtf.field_res_config_settings__advance_supplier_account_id
+msgid "Account used for advance payments to suppliers"
+msgstr "Cuenta usada para pagos de anticipos de Proveedores"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Active and reconcilable accounting account"
+msgstr "Cuenta contable activa y conciliable"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__advance_customer_account_id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__advance_customer_account_id
+msgid "Advance Customer Account"
+msgstr "Cuenta de anticipo de clientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Advance Payment"
+msgstr "Anticipos"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Advance Payment IGTF"
+msgstr "Anticipos - IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__advance_payment_igtf_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__advance_payment_igtf_journal_id
+msgid "Advance Payment IGTF Journal"
+msgstr "Diario de Anticipos para IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__advance_supplier_account_id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__advance_supplier_account_id
+msgid "Advance Supplier Account"
+msgstr "Cuenta de anticipo de proveedores"
+
+#. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_with_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_to_show
 msgid "Amount with IGTF"
 msgstr "Monto con IGTF"
 
@@ -59,18 +104,57 @@ msgid "Amount without Difference"
 msgstr "Monto sin IGTF"
 
 #. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_account.py:0
+msgid ""
+"An account flagged for advances must be of type 'Current Assets' or 'Current"
+" Liabilities'."
+msgstr "Una cuenta marcada para anticipos debe ser de tipo 'Activos Corrientes'"
+" o 'Pasivos Corrientes'."
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "Anticipos"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__advanced_move_ids
+msgid "Anticipos (account.move) aplicados a este pago."
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__advanced_move_ids
+msgid "Asientos de Anticipo"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.move_action_cancel_advance_payment_wizard
+msgid "Asientos de Cruce"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__available_journal_ids
+msgid "Available Journal"
+msgstr "Diario disponible"
+
+#. module: l10n_ve_igtf
 #. odoo-javascript
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals.xml:0
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__bi_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__bi_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__bi_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.tax_groups_totals
-#, python-format
 msgid "BI IGTF"
-msgstr ""
+msgstr "Base imponible del IGTF"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.move_action_cancel_advance_payment_wizard
+msgid "Cancel"
+msgstr "cancelar"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__is_advance_payment
+msgid "Check this box if this payment is an advance payment"
+msgstr "Marque esta casilla si este pago es un anticipo"
 
 #. module: l10n_ve_igtf
 #: model:ir.model,name:l10n_ve_igtf.model_res_company
@@ -83,35 +167,116 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,website_form_label:l10n_ve_igtf.model_res_partner
+msgid "Create a Customer"
+msgstr "Crear un cliente"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__customer_account_igtf_id
 msgid "Customer Account Igtf"
 msgstr "Cuenta de cliente de IGTF"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__customer_account_igtf_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
 msgid "Customer IGTF Account"
 msgstr "Cuenta de cliente de IGTF"
 
 #. module: l10n_ve_igtf
-#: model:ir.actions.server,name:l10n_ve_igtf.action_fix_bi_igtf_invoices
-msgid "Fix Venezuela BI IGTF Invoices"
-msgstr "Recalcular BI de IGTF en Facturas"
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_partner__default_advance_customer_account_id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_users__default_advance_customer_account_id
+msgid "Default Advance Customer Account"
+msgstr "Cuenta de anticipos de clientes por defecto"
 
 #. module: l10n_ve_igtf
-#. odoo-javascript
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__is_igtf
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__is_igtf
-#, python-format
-msgid "IGTF"
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_partner__default_advance_supplier_account_id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_users__default_advance_supplier_account_id
+msgid "Default Advance Supplier Account"
+msgstr "Cuenta de anticipos de proveedor por defecto"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__destination_account_id_domain
+msgid "Destination Account Id Domain"
+msgstr "Dominio cuentas destino"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_account__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_journal__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_tax__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_partner__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_wizard_accounting_reports__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.move_action_cancel_advance_payment_wizard
+msgid "Factura"
 msgstr ""
 
 #. module: l10n_ve_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.tax_groups_totals
-msgid "IGTF 3.0%"
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+msgid ""
+"For customer advances, the account must be 'Current Liabilities' and flagged"
+" as an 'Advance Account'."
+msgstr ""
+"Para anticipos de clientes, la cuenta debe ser de tipo 'Pasivos Corrientes' y estar"
+" marcada como una 'Cuenta de Anticipo'."
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+msgid ""
+"For vendor advances, the account must be 'Current Assets' and flagged as an "
+"'Advance Account'."
+msgstr ""
+"Para anticipos a proveedores, la cuenta debe ser de tipo 'Activos Corrientes' y estar"
+" marcada como una 'Cuenta de Anticipo'."
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_account__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_journal__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_tax__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_partner__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_wizard_accounting_reports__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals.xml:0
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__is_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__is_igtf
+msgid "IGTF"
 msgstr ""
 
 #. module: l10n_ve_igtf
@@ -123,65 +288,92 @@ msgid "IGTF Amount"
 msgstr "Monto de IGTF"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_to_pay_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__amount_to_pay_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_to_pay_igtf
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__amount_to_pay_igtf
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__amount_to_pay_igtf
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__amount_to_pay_igtf
-msgid "IGTF Paid"
-msgstr "IGTF Pagado"
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__alter_bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__alter_bi_igtf
+msgid "IGTF Apply"
+msgstr "Igtf aplicado"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "IGTF Journal"
+msgstr "Diario de IGTF"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_percentage
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_percentage
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__igtf_percentage
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__igtf_percentage
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__igtf_percentage
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__igtf_percentage
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
 msgid "IGTF Percentage"
 msgstr "Porcentaje de IGTF"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_residual_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__amount_residual_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_residual_igtf
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__amount_residual_igtf
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__amount_residual_igtf
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__amount_residual_igtf
-msgid "IGTF Residual"
-msgstr "IGTF Restante"
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_percentage
+msgid "IGTF Percentage Aplicado"
+msgstr "Porcentaje de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__igtf_percentage
+msgid ""
+"IGTF aplicado, obtenido de la configuración de la compañía en el momento de "
+"la creación."
+msgstr "Porcentaje de IGTF"
 
 #. module: l10n_ve_igtf
 #. odoo-python
-#: code:addons/l10n_ve_igtf/models/account_payment.py:0
-#: code:addons/l10n_ve_igtf/models/account_payment.py:0
-#, python-format
-msgid "IGTF already exists in the move line values"
-msgstr "El IGTF ya existe en los valores de las lineas de pago"
+#: code:addons/l10n_ve_igtf/models/account_journal.py:0
+msgid "IGTF journals require a foreign currency."
+msgstr "Diarios de Igtf requeren una moneda diferente a Bs"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__is_igtf_on_foreign_exchange
+msgid "IGTF on Foreign Exchange"
+msgstr "¿Aplica IGTF?"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__is_igtf_on_foreign_exchange
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__is_igtf_on_foreign_exchange
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__is_igtf_on_foreign_exchange
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__is_igtf_on_foreign_exchange
 msgid "IGTF on Foreign Exchange?"
 msgstr "¿Aplica IGTF?"
 
 #. module: l10n_ve_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.account_payment_igtf_view_form
-msgid "IGTF("
-msgstr "IGTF"
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+msgid "Igtf Account in must be assigned in companies settings"
+msgstr "Cuenta de IGTF debe estar asignada en configuraciones de la compañia"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__igtf_two_percentage_account
-msgid "Igtf Two Percentage Account"
-msgstr "Cuenta de IGTF al dos por ciento"
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__invoice_outstanding_credits_debits_widget_advance_payment
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__invoice_outstanding_credits_debits_widget_advance_payment
+msgid "Invoice Outstanding Credits Debits Widget Advance Payment"
+msgstr "Widget de créditos y débitos de anticipos en facturas"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__invoices_origin_ids
+msgid "Invoices Origin"
+msgstr "Factura origen del pago"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__is_advance_move
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__is_advance_move
+msgid "Is Advance Move?"
+msgstr "Es asiento de anticipo"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__is_advance_payment
+msgid "Is Advance Payment"
+msgstr "Es Anticipo"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_journal__is_igtf
 msgid "Is a IGTF journal?"
 msgstr "¿Es un diario de IGTF?"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_account_payment_form_binaural_advance_payment
+msgid "Is advance payment"
+msgstr "Es anticipo"
 
 #. module: l10n_ve_igtf
 #: model:ir.model,name:l10n_ve_igtf.model_account_journal
@@ -194,34 +386,145 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_paid
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__amount_paid
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_paid
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__amount_paid
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__amount_paid
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__amount_paid
-msgid "Paid"
-msgstr "Importe pagado"
+#: model:ir.model,name:l10n_ve_igtf.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__payment_igtf_id
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__payment_igtf_id
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__payment_igtf_id
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__payment_igtf_id
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__payment_igtf_id
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__payment_igtf_id
-msgid "Payment IGTF"
-msgstr "Pago de IGTF"
+#: model:ir.model.fields,help:l10n_ve_igtf.field_res_company__advance_payment_igtf_journal_id
+#: model:ir.model.fields,help:l10n_ve_igtf.field_res_config_settings__advance_payment_igtf_journal_id
+msgid "Journal used for advance payments with IGTF"
+msgstr "Diario utilizado para pagos anticipados con IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__last_computed_amount
+msgid "Last Computed Amount"
+msgstr "Ultimo monto computado del Igtf"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "Less Payment"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__igtf_top_aply
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__igtf_top_aply
+msgid "Max Igtf amount to be apply"
+msgstr "Monto Maximo de Igtf a Aplicar"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__move_id
+msgid "Move"
+msgstr "Asiento"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_move_action_cancel_advance_payment_wizard
+msgid "Move Action Cancel Advance Payment"
+msgstr "Anular asiento de anticipo"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__cross_move_ids
+msgid "Moves to Cancel"
+msgstr "Asiento"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "No accounts receivable/payable line found on the invoice."
+msgstr "No se encontró ninguna línea de cuenta a cobrar/pagar en la factura."
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "No associated Payment record found."
+msgstr "No se encontró ningún registro de pago asociado."
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_igtf_purchase_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_igtf_purchase_order
+msgid "Not Show Igtf Purchase Order"
+msgstr "No mostrar IGTF (Compras Nacionales)"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_igtf_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_igtf_sale_order
+msgid "Not Show Igtf Sale Order"
+msgstr "No mostrar IGTF (Ventas)"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "Only posted/cancelled journal entries can be reset to draft."
+msgstr "Solo los asientos publicados/cancelados pueden ser revertidos a Borrador"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__origin_payment_advanced_payment_id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__origin_payment_advanced_payment_id
+msgid "Origin Payment Advanced Payment"
+msgstr "Pago origen de anticipo"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "Outstanding credits"
+msgstr "Créditos pendientes"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "Outstanding debits"
+msgstr "Débitos pendientes"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__partial_id
+msgid "Partial"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Passive and reconcilable accounting account"
+msgstr "Cuenta contable de pasivo y conciliable"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_account_payment_register
+msgid "Pay"
+msgstr "Pagar"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_move_action_cancel_advance_payment_wizard__payment_id
+msgid "Payment"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move_line__payment_id_advance
+msgid "Payment Advance"
+msgstr "Anticipo"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__payment_difference
+msgid "Payment Difference"
+msgstr "Diferencia de pago"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__payment_from_wizard
+msgid "Payment From Wizard"
+msgstr "Pago desde el Wizard"
 
 #. module: l10n_ve_igtf
 #: model:ir.model,name:l10n_ve_igtf.model_account_payment
 msgid "Payments"
 msgstr "Pagos"
-
-#. module: l10n_ve_igtf
-#: model:ir.model,name:l10n_ve_igtf.model_account_payment_register
-msgid "Register Payment"
-msgstr "Registrar pago"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__show_igtf_suggested_account_move
@@ -236,16 +539,35 @@ msgid "Show Igtf Suggested Sale Order"
 msgstr "Mostrar sugerencia de IGTF en pedidos de venta"
 
 #. module: l10n_ve_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
-msgid ""
-"Show suggestion of the igtf amount based on the total amount of the Invoice"
-msgstr "Mostrar sugerencia del monto de IGTF basado en el monto total de la factura"
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__show_payment_difference
+msgid "Show Payment Difference"
+msgstr "Mostrar diferencia de pago"
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
-msgid ""
-"Show suggestion of the igtf amount based on the total amount of the Order"
-msgstr "Mostrar sugerencia del monto de IGTF basado en el monto total del pedido"
+msgid "Show in Invoice"
+msgstr "Mostrar en factura"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Show in Sale Order"
+msgstr "Mostrar en Ordenes de Venta"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Show suggestion based on total amount of the Invoice"
+msgstr "Mostrar sugerido basado en el monto total de la factura"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Show suggestion based on total amount of the Order"
+msgstr "Mostrar sugerido basado en el monto total de la Orden"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+msgid "Standard payments must use 'Receivable' or 'Payable' account types."
+msgstr "Pagos estandar deben utilizar tipos de cuenta 'Por cobrar' o 'Por pagar'."
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__supplier_account_igtf_id
@@ -254,6 +576,7 @@ msgstr "Cuenta de proveedor de IGTF"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__supplier_account_igtf_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
 msgid "Supplier IGTF Account"
 msgstr "Cuenta de proveedor de IGTF"
 
@@ -263,21 +586,187 @@ msgid "Tax"
 msgstr "Impuesto"
 
 #. module: l10n_ve_igtf
-#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.document_tax_totals
-msgid "Total con IGTF"
-msgstr "Total con IGTF"
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/res_company.py:0
+msgid ""
+"The account for Advance Customer Account must be type liability_current, "
+"is_advance_account and reconciliable"
+msgstr ""
+"La cuenta para Anticipo de Cliente debe ser de tipo 'Pasivos Corrientes', "
+" estar marcada como 'Cuenta de Anticipo' y ser conciliable."
 
 #. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/res_company.py:0
+msgid ""
+"The account for Advance Supplier Account must be type asset_current, "
+"is_advance_account and reconciliable"
+msgstr ""
+"La cuenta para Anticipo de Proveedor debe ser de tipo 'Activos Corrientes', "
+" estar marcada como 'Cuenta de Anticipo' y ser conciliable."
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "The advance amount to apply was not found."
+msgstr "No se encontró el monto del anticipo a aplicar."
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid "The partial reconciliation record is mandatory for cancellation."
+msgstr ""
+"El registro de conciliación parcial es obligatorio para la cancelación."
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+msgid ""
+"The selected journal is configured for IGTF, must be is_advance_payment"
+msgstr ""
+"El diario seleccionado esta configurado para IGTF, el tipo de pago debe ser Anticipo"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+msgid ""
+"The selected journal is configured for IGTF, so the destination account must"
+" be is_advance_account"
+msgstr ""
+"El diario seleccionado esta configurado para IGTF, la cuenta destino debe "
+" estar marcado para cuenta de anticipo."
+#. module: l10n_ve_igtf
 #. odoo-javascript
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
-#, python-format
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals.xml:0
 msgid "Total with IGTF"
 msgstr "Total con IGTF"
 
 #. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.move_action_cancel_advance_payment_wizard
+msgid ""
+"Unreconciling or Canceling this Payment/Entry will cancel the cross-entry "
+"entries (or cross moves) related to the payment."
+msgstr ""
+"Desconciliar o Cancelar este Pago/Asiento contable cancelará los asientos de"
+" contrapartida (o movimientos cruzados) relacionados con el pago."
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.move_action_cancel_advance_payment_wizard
+msgid "Validation"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid ""
+"You can't reset to draft those journal entries. You need to request a "
+"cancellation instead."
+msgstr ""
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move_line.py:0
+msgid "You cannot register payments for different companies at the same time."
+msgstr "No puedes registrar un pago para facturas de diferentes compañias al mismo tiempo"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move_line.py:0
+msgid ""
+"You cannot register payments for different partners at the same time. Please"
+" select invoices belonging to a single contact."
+msgstr ""
+"No puedes registrar pago para facturas para diferentes contactos al mismo tiempo. Porfavor"
+" Selecciones facturas pertenecientes al mismo contacto"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move_line.py:0
+msgid ""
+"You cannot register payments with multiple currencies. All selected invoices"
+" must have the same currency."
+msgstr ""
+"No puedes registrar un pago para facturas con monedas diferentes. Todas las facturas seleccionadas"
+" deben tener la misma moneda"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+msgid ""
+"You cannot use an 'Advance Account' for a standard payment. Please uncheck "
+"'Is Advance Payment' or change the account."
+msgstr ""
+"La cuenta destino esta marcada como 'Cuenta de Anticipo', solo puede ser usada cuando 'Anticipo' esta marcado. Porfavor"
+" Seleccione 'Anticipo' o cambie la cuenta destino"
+
+#. module: l10n_ve_igtf
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__bi_igtf
 #: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__bi_igtf
-#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__bi_igtf
 msgid "subtotal with igtf"
 msgstr "Subtotal con IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_account__is_advance_account
+msgid "¿is advance account?"
+msgstr "¿Es cuenta de anticipo?"
+
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
+msgid "Revalorice all payments in Bsf"
+msgstr "" 
+"Al marcar esta opción, todos los nuevos pagos/anticipos registrados se calcularan segun su valor en divisas de forma automática." 
+" Podrá desactivarlo manualmente en cada transacción si lo desea."
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__revalorize_payments_vef
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__revalorize_payments_vef
+msgid "Revalorize Payments Vef"
+msgstr "Activar revalorización por defecto."
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__keep_alter_value_vef
+msgid "Keep Amount in alter value"
+msgstr "Activar revalorización"
+
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "You have"
+msgstr "Tiene"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding credits"
+msgstr "créditos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding debits"
+msgstr "débitos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "advances"
+msgstr "anticipos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "listed below for this customer."
+msgstr "que se muestran a continuación para este cliente."
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "listed below for this vendor."
+msgstr "que se muestran a continuación para este proveedor."
+
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding credits and advances"
+msgstr "créditos y anticipos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding debits and advances"
+msgstr "débitos y anticipos pendientes"

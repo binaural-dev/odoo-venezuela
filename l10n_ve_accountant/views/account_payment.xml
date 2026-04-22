@@ -7,10 +7,39 @@
             <!-- <xpath expr="//group[1]/field[@name='ref']" position="after">
                 <field name="concept" />
             </xpath> -->
-            <xpath expr="//group[2]/field[@name='partner_bank_id'][3]" position="after">
-                <field name="foreign_rate" readonly="state == 'posted'" />
-                <field name="foreign_inverse_rate" invisible="1" />
-                <field name="foreign_inverse_rate" groups="base.group_no_one" />
+            <xpath expr="//field[@name='partner_id']" position="before">
+                <field name="block_change_partner_after_post" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id'][1]" position="attributes">
+                <attribute name="readonly">block_change_partner_after_post</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id'][2]" position="attributes">
+                <attribute name="readonly">block_change_partner_after_post</attribute>
+            </xpath>
+            <xpath expr="//group[2]/field[@name='partner_bank_id'][3]" position="after">                
+                <label for="foreign_rate" invisible="(not is_foreign_currency and currency_id != company_currency_id) or currency_id == company_currency_id"/>
+                <div class="o_row d-flex" invisible="(not is_foreign_currency and currency_id != company_currency_id) or currency_id == company_currency_id">
+                    <field name="custom_rate_currency_name" readonly="1" nolabel="1" style="width: auto !important; margin-right: 20px; flex-grow: 0; font-weight: bold;"/>
+                    <field name="foreign_rate" readonly="1" style="width: 4rem !important; flex-grow: 0;" force_save="1"/>
+                    <field name="company_currency_symbol" readonly="1" nolabel="1" style="width: auto !important; margin-left: 2px; flex-grow: 0; font-weight: bold;"/>
+                </div>
+                <field name="foreign_inverse_rate" force_save="1" groups="base.group_no_one" invisible="(not is_foreign_currency and currency_id != company_currency_id) or currency_id == company_currency_id"/>                
+                
+                <label for="other_rate" invisible="is_foreign_currency or currency_id == company_currency_id"/>
+                <div class="o_row d-flex" invisible="is_foreign_currency or currency_id == company_currency_id">
+                    <field name="custom_rate_currency_name" readonly="1" nolabel="1" style="width: auto !important; margin-right: 20px; flex-grow: 0; font-weight: bold;"/>
+                    <field name="other_rate" readonly="1" force_save="1" style="width: 4rem !important; flex-grow: 0;" />
+                    <field name="company_currency_symbol" readonly="1" nolabel="1" style="width: auto !important; margin-left: 2px; flex-grow: 0; font-weight: bold;"/>
+                </div>
+                <field name="other_rate_inverse" groups="base.group_no_one" force_save="1" invisible="is_foreign_currency or currency_id == company_currency_id"/>
+            </xpath>
+
+            <xpath expr="//div[@name='amount_div']" position="after">
+                <label for="foreign_amount" invisible="currency_id == foreign_currency_id"/>
+                <div name="foreign_amount" class="o_row" invisible="currency_id == foreign_currency_id">
+                    <field name="foreign_currency_id" invisible="1"/>
+                    <field name="foreign_amount" readonly="1" force_save="1" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+                </div>
             </xpath>
         </field>
     </record>

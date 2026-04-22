@@ -1,5 +1,5 @@
-from odoo.exceptions import UserError
-from odoo import api, models, _
+from odoo.exceptions import UserError, ValidationError
+from odoo import api, models, _, fields
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -10,6 +10,8 @@ class AccountJournal(models.Model):
 
     # ESTA HERENCIA NO SE IMPORTARÁ PORQUE ESTÁ GENERANDO ERROR, AL SOLUCIONAR, VOLVER A AGREGAR EN EN IMPORT
 
+    is_purchase_international = fields.Boolean(string="International purchase",default=False)
+
     @api.model_create_multi
     def create(self, vals_list):
 
@@ -17,6 +19,38 @@ class AccountJournal(models.Model):
             self._validate_support_user_group(vals)
 
         return super().create(vals_list)
+
+    @api.constrains('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
+    def _check_payment_method_line_accounts(self):
+
+        if self.env.context.get('chart_template_load') or self.env.context.get('install_mode'):
+            return
+        
+        for journal in self:
+            
+            if journal.type == 'bank':
+                all_lines = journal.inbound_payment_method_line_ids | journal.outbound_payment_method_line_ids
+                
+                for line in all_lines:
+                    if not line.payment_account_id:
+                       
+                        raise UserError(_("All payment methods must have an assigned account.")) 
+
+    @api.constrains('is_purchase_international')
+    def _check_single_international_purchase_journal(self):
+        
+        for record in self:
+            if record.is_purchase_international:
+                domain = [
+                    ('is_purchase_international', '=', True),
+                    ('id', '!=', record.id),
+                ]
+                
+                if self.search_count(domain) > 0:
+                    raise ValidationError(
+                        _("An International Purchase Journal is already enabled. Only one is allowed.")
+                    )
+
 
     def write(self, vals):
         for record in self:
