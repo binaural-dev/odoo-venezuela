@@ -1202,6 +1202,7 @@ msgstr "Cuenta de Retención de ISLR"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
 #: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_islr_client
 #: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_islr_supplier
@@ -3056,3 +3057,42 @@ msgstr "Fecha Gaceta Oficial"
 #: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
 msgid "You cannot edit a tax unit that is not active."
 msgstr "No puedes editar una unidad tributaria que no esté activa."
+
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"Invoice %s has already been paid. You cannot generate an ISLR retention for "
+"a paid or canceled invoice."
+msgstr ""
+"La factura %s ya ha sido pagada. No se puede generar una retención de ISLR "
+"sobre una factura pagada o cancelada."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "Invoice %s must be in 'Posted' state to generate a retention."
+msgstr "La factura %s debe estar en estado 'Publicado' para poder generar una retención."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"No services with a configured 'Payment Concept' were found in the lines of "
+"invoice %s."
+msgstr ""
+"No se encontraron servicios con 'Concepto de Pago' configurado en las líneas "
+"de la factura %s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "This action is only valid for customer or vendor invoices."
+msgstr "Esta accion solo es validad para facturas de Clientes o Proveedores"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "Invoice %s already has a posted ISLR retention. You cannot create another one."
+msgstr "La factura %s ya tiene una retención de ISLR publicada. No se puede crear otra."

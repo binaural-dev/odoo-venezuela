@@ -1151,3 +1151,25 @@ class AccountRetention(models.Model):
                     raise ValidationError(
                         _("The number must be exactly 14 numeric digits.")
                     )
+                
+    @api.model
+    def default_get(self, fields_list):
+        res = super(AccountRetention, self).default_get(fields_list)
+
+        islr_lines_data = self.env.context.get('default_islr_lines')
+        move_id = self.env.context.get('default_move_id')
+        ret_type = self.env.context.get('default_type')
+        
+        if islr_lines_data and move_id:
+            line_commands = []
+            for concept_id, total_base in islr_lines_data.items():
+                line_vals = {
+                    'move_id': move_id,
+                    'payment_concept_id': int(concept_id),
+                    'invoice_amount': total_base,
+                    'invoice_type': str(ret_type),
+                }
+                line_commands.append(Command.create(line_vals))
+            res['retention_line_ids'] = line_commands
+            
+        return res
