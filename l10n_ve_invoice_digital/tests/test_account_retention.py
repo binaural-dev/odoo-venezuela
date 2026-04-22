@@ -1,228 +1,219 @@
-from odoo.tests import TransactionCase, tagged
-from datetime import date, timedelta
-from odoo.exceptions import UserError
+from odoo.tests import TransactionCase, tagged, Form
+from datetime import date
+from odoo.exceptions import UserError, ValidationError
 from odoo import Command, fields
 from unittest.mock import patch, MagicMock
-
 import logging
 
 _logger = logging.getLogger(__name__)
 
-@tagged('l10n_ve_invoice_digital', 'invoice digital') 
+@tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "retention_digital") 
 class TestAccumulatedRate(TransactionCase):
     def setUp(self):
         super().setUp()
-
-        self.company = self.env.company
-        self.currency = self.env.ref("base.VEF")
-        self.foreign_currency = self.env.ref("base.USD")
+        self.currency_vef = self.env.ref("base.VEF")
+        self.currency_usd = self.env.ref("base.USD")
+        self.company = self.env.ref("base.main_company")
         self.env.user.tz = "America/Caracas"
-        self.company.write(
-            {
-                'currency_id': self.currency.id,
-                'currency_foreign_id': self.foreign_currency.id, 
-                "username_tfhka": "usuario_prueba",
-                "password_tfhka": "clave_prueba",
-                "url_tfhka": "https://api.tfhka.com",
-                "token_auth_tfhka": "token_fake",
-                "invoice_digital_tfhka": True,
-                "sequence_validation_tfhka": False,
-            }
-        )
-
-        self.purchase_journal = self.env['account.journal'].search([
-            ('company_id', '=', self.company.id),
-            ('type', '=', 'purchase')
-        ], limit=1)
-
-        if not self.purchase_journal:
-            self.purchase_journal = self.env['account.journal'].create({
-                'name': 'Purchase Journal',
-                'code': 'PURCH',
-                'type': 'purchase',
-                'company_id': self.company.id,
-            })
-
-        self.expense_account = self.env['account.account'].search([
-            ('company_id', '=', self.company.id),
-            ('account_type', '=', 'expense'),
-            ('deprecated', '=', False)
-        ], limit=1)
-
-        if not self.expense_account:
-            self.expense_account = self.env['account.account'].create({
-                'name': 'Test Expense Account',
-                'code': '600000',
-                'account_type': 'expense',
-                'company_id': self.company.id,
-                'reconcile': False,
-            })
-
-        # Cuenta de pasivo (para partner)
-        self.payable_account = self.env['account.account'].search([
-            ('company_id', '=', self.company.id),
-            ('account_type', '=', 'liability_payable'),
-            ('deprecated', '=', False)
-        ], limit=1)
-
-        if not self.payable_account:
-            self.payable_account = self.env['account.account'].create({
-                'name': 'Test Payable Account',
-                'code': '200000',
-                'account_type': 'liability_payable',
-                'company_id': self.company.id,
-                'reconcile': True,
-            })
-
-        self.type_person = self.env['type.person'].create({
-            'name': 'No Juridica',
+        iva_sequence = self.env["ir.sequence"].create({
+            "name": "Secuencia de iva para proveedores",
+            "code": "payment.retention.iva",
+            "prefix": "",
+            "padding": 8,
+            "number_next_actual": 1,
         })
 
-        self.partner = self.env['res.partner'].create({
-            'name': 'Cliente Prueba',
+        bank_account = self.env["account.account"].search([("account_type", "=", "liquidity")], limit=1)
+        transitory_account = self.env["account.account"].search([("account_type", "=", "other")], limit=1)
+        profit_account = self.env["account.account"].search([("account_type", "=", "income")], limit=1)
+        loss_account = self.env["account.account"].search([("account_type", "=", "expense")], limit=1)
+
+        self.iva_journal = self.env["account.journal"].create({
+            "name": "Retenciones IVA",
+            "code": "RETIVA",
+            "type": "bank",
+            "sequence_id": iva_sequence.id,
+            "company_id": self.env.company.id,
+            "bank_account_id": bank_account.id,
+            "default_account_id": transitory_account.id,
+            "profit_account_id": profit_account.id,
+            "loss_account_id": loss_account.id,
+        })
+
+        self.payment_method_inbound = self.env['account.payment.method'].create({
+                'name': 'Manual',
+                'code': 12,
+                'payment_type': 'inbound'
+        })
+
+        self.payment_method_outbound = self.env['account.payment.method'].create({
+            'name': 'Manual',
+            'code': 12,
+            'payment_type': 'outbound'
+            })
+
+        self.islr_supplier_retention_journal = self.env["account.journal"].create({
+            "name": "Retenciones ISLR PROVEEDOR",
+            "code": "RTISLR",
+            "type": "bank",
+            "sequence_id": iva_sequence.id,
+            "company_id": self.env.company.id,
+            "bank_account_id": bank_account.id,
+            "default_account_id": transitory_account.id,
+            "profit_account_id": profit_account.id,
+            "loss_account_id": loss_account.id,
+            "inbound_payment_method_line_ids": [Command.create({
+                'payment_method_id':self.payment_method_inbound.id, 
+                'name': 'Manual'
+            })],
+            "outbound_payment_method_line_ids": [Command.create({
+                'payment_method_id': self.payment_method_outbound.id, 
+                'name': 'Manual'
+            })],
+        })
+
+        self.company.write({
+            "currency_id": self.currency_usd.id,
+            "currency_foreign_id": self.currency_vef.id,
+            "iva_supplier_retention_journal_id": self.iva_journal.id,
+            "islr_supplier_retention_journal_id": self.islr_supplier_retention_journal.id,
+            "url_tfhka": "https://api.tfhka.com",
+            "token_auth_tfhka": "token_fake",
+            "invoice_digital_tfhka": True,
+        })
+
+        self.tax_group_iva16 = self.env["account.tax.group"].create({"name": "IVA 16%"})
+
+        self.tax_iva16 = self.env["account.tax"].create({
+            "name": "IVA 16%",
+            "amount": 16,
+            "amount_type": "percent",
+            "type_tax_use": "purchase",
+            "tax_group_id": self.tax_group_iva16.id,
+        })
+
+        self.product = self.env["product.product"].create({
+            "name": "Producto Prueba",
+            "type": "service",
+            "list_price": 100,
+            "barcode": "123456789",
+            "purchase_ok": True,
+            "supplier_taxes_id": [(6, 0, [self.tax_iva16.id])],
+            "taxes_id": [(6, 0, [self.tax_iva16.id])],
+        })
+
+        self.payment_concept = self.env["payment.concept"].create({
+            "name": "Test Payment Concept",
+            "status": True,
+        })
+
+        self.line_payment_concept = self.env["payment.concept.line"].create({
+            'type_person_id': self.env.ref('l10n_ve_payment_extension.type_person_l10n_ve_payment_extension').id,
+            'payment_concept_id': self.payment_concept.id,
+            'code': 52,
+            'percentage_tax_base': 100,
+            'tariff_id': self.env.ref('l10n_ve_payment_extension.fees_retention_data_percentage_one_l10n_ve_payment_extension').id,
+            'pay_from': 0.13,
+        })
+
+        self.payment_concept.write({"line_payment_concept_ids": [(6, 0, [self.line_payment_concept.id])]})
+
+        self.partner_a = self.env["res.partner"].create({
+            "name": "Test Partner A",
+            "customer_rank": 1,
             'vat': 'J12345678',
-            'prefix_vat': 'J',
-            'country_id': self.env.ref('base.ve').id,
+            "country_id": self.env.ref('base.ve').id,
             'phone': '04141234567',
             'email': 'cliente@prueba.com',
             'street': 'Calle Falsa 123',
-            'type_person_id': self.type_person.id,
-            'property_account_payable_id': self.payable_account.id,
+            "type_person_id": self.env.ref('l10n_ve_payment_extension.type_person_l10n_ve_payment_extension').id,
+            "withholding_type_id": self.env["account.withholding.type"]
+            .search([("name", "=", "75%")], limit=1)
+            .id,
         })
 
-        self.tax_unit = self.env['tax.unit'].create({
-            'name': 'UT 2025',
-            'value': 9.0,
+        sequence = self.env["ir.sequence"].create({
+            "name": "Secuencia Factura",
+            "code": "account.move",
+            "prefix": "INV/",
+            "padding": 8,
+            "number_next_actual": 1,
+        })
+        refund_sequence = self.env["ir.sequence"].create({
+            "name": "nota de credito",
+            "code": "",
+            "prefix": "NC/",
+            "padding": 8,
+            "number_next_actual": 1,
         })
 
-        self.tariff = self.env['fees.retention'].create({
-            'name': 'Tarifa con tramos',
-            'accumulated_rate': True,
-            'tax_unit_ids': self.tax_unit.id
-        })
-
-        self.tariff.accumulated_rate_ids = [(0, 0, {
-            'name': 'Tier 1',
-            'start': 0,
-            'stop': 2000,
-            'percentage': 15,
-            'subtract_ut': 0,
-        }), (0, 0, {
-            'name': 'Tier 2',
-            'start': 2001,
-            'stop': 3000,
-            'percentage': 22,
-            'subtract_ut': 140,
-        }), (0, 0, {
-            'name': 'Tier 3',
-            'start': 3001,
-            'stop': 0,
-            'percentage': 34,
-            'subtract_ut': 500,
-        })]
-
-        self.payment_concept = self.env['payment.concept'].create({
-            'name': 'Concepto Acumulado',
-        })
-
-        self.line_concept = self.env['payment.concept.line'].create({
-            'payment_concept_id': self.payment_concept.id,
-            'type_person_id': self.type_person.id,
-            'code': 73,
-            'percentage_tax_base': 100,
-            'tariff_id': self.tariff.id,
-            'pay_from': 100,
-        })
-
-        self.payment_concept.write({
-            'line_payment_concept_ids': [(4, self.line_concept.id, 0)]
-        })
-
-        self.tax_iva16 = self.env['account.tax'].create({
-            'name': 'IVA 16%',
-            'amount': 16,
-            'amount_type': 'percent',
-            'type_tax_use': 'sale',
-        })
-
-        self.product = self.env['product.product'].create({
-            'name': 'Producto Prueba',
-            'type': 'service',
-            'list_price': 100,
-            'barcode': '123456789',
-            'taxes_id': [(6, 0, [self.tax_iva16.id])],
+        self.journal = self.env["account.journal"].create({
+            "name": "Diario de Ventas",
+            "code": "VEN",
+            "type": "purchase",
+            "sequence_id": sequence.id,
+            "refund_sequence_id": refund_sequence.id,
+            "company_id": self.env.company.id,
         })
 
     def _create_invoice(self):
-        move = self.env['account.move'].create({
-            'partner_id': self.partner.id,
-            'move_type': 'in_invoice',
-            'journal_id': self.purchase_journal.id,
-            'invoice_date': date.today(),
-            'currency_id': self.company.currency_id.id,
-            'invoice_line_ids': [(0, 0, {
-                'name': 'Servicio Nuevo',
-                'quantity': 1,
-                'price_unit': 300,
-                'product_id': self.product.id,
-                'account_id': self.expense_account.id,
-                'tax_ids': [(6, 0, [self.tax_iva16.id])],
-            })]
+        invoice = self.env["account.move"].create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner_a.id,
+            "journal_id": self.journal.id,
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                (
+                    0,
+                    0,
+                    {
+                        "product_id": self.product.id,
+                        "quantity": 2,
+                        "price_unit": 100,
+                        "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                        "price_subtotal": 200,
+                        "price_total": 232,
+                        "foreign_rate": 2.0,
+                        "foreign_price": 200,
+                        "foreign_subtotal": 400,
+                        "foreign_price_total": 464,
+                    },
+                ),
+            ],
         })
 
-        move._onchange_invoice_line_ids()
-        move.foreign_rate = 5.0
-        move.action_post()
-        return move
-    
-        # Simula las respuestas SUCCES de la API de TFHKA
-    
-    def _create_subsidiary(self, name="Sucursal prueba"):
-        analytic_plan = self.env['account.analytic.plan'].create({
-            'name': 'Plan para pruebas',
-        })
+        return invoice
 
-        return self.env['account.analytic.account'].create({
-            'name': name,
-            'is_subsidiary': True,
-            'company_id': self.env.company.id,
-            'plan_id': analytic_plan.id,
-            'code': "002",
-        })
-    
-    def _create_retention(self, type_retention, account_move, number = "20250600000002", subsidiary = None):
-        retention_date = fields.Date.today()
-        retention = self.env["account.retention"].create(
-            {   
-                "number": number,
-                "type_retention": type_retention,
-                "type": "in_invoice",
-                "company_id": self.company.id,
-                "partner_id": self.partner.id,
-                "date": retention_date,
-                "date_accounting": retention_date,
-                "retention_line_ids": [
-                    Command.create(
-                        {
-                            "retention_amount": 100,
-                            "invoice_total": 100,
-                            "foreign_retention_amount": 100,
-                            "invoice_amount": 100,
-                            "foreign_invoice_amount": 100,
-                            "retention_amount": 100,
-                            "foreign_currency_rate": 1.0,
-                            "name": "Retencion ISLR",
-                            "move_id": account_move.id,
-                            "payment_concept_id": self.payment_concept.id,
-                        }
-                    ),
-                ],
-            }
-        )
-        if subsidiary:
-            retention.account_analytic_id = subsidiary.id
-        retention.action_post()
+    def _create_retention(self, type_retention, invoice):
+        today = fields.Date.today()
+
+        with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":type_retention})) as retention_form:
+            retention_form.partner_id = self.partner_a
+            retention_form.date_accounting = today
+
+        retention = retention_form.save()
+
+        with Form(retention) as retention_form_edit:
+            with retention_form_edit.retention_line_ids.new() as line:
+                line.move_id = invoice
+                line.payment_concept_id = self.payment_concept
+
+        retention = retention_form_edit.save()
+
         return retention
+
+    # def _create_subsidiary(self, name="Sucursal prueba"):
+    #     analytic_plan = self.env['account.analytic.plan'].create({
+    #         'name': 'Plan para pruebas',
+    #     })
+
+    #     return self.env['account.analytic.account'].create({
+    #         'name': name,
+    #         'is_subsidiary': True,
+    #         'company_id': self.env.company.id,
+    #         'plan_id': analytic_plan.id,
+    #         'code': "002",
+    #     })
 
     def mock_api(endpoint_key, payload):
 
@@ -243,18 +234,23 @@ class TestAccumulatedRate(TransactionCase):
     @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
     def test_01_create_retention_iva_success(self, mock_call):
         account_move = self._create_invoice()
+        account_move.action_post()
         retention_iva = self._create_retention("iva", account_move) 
-        
-        retention_iva.generate_document_digital()
+        retention_iva.action_post()
+        _logger.info(f"Estado de la retencion: {retention_iva.state}")
+
+        retention_iva.with_context(account_retention_alert=True).generate_document_digital()
         self.assertEqual(retention_iva.is_digitalized, True)
 
     @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
     def test_02_create_retention_islr_success(self, mock_call):
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention_islr = self._create_retention("islr", account_move)
+        retention_islr.action_post()
 
-        retention_islr.generate_document_digital()
+        retention_islr.with_context(account_retention_alert=True).generate_document_digital()
         self.assertEqual(retention_islr.is_digitalized, True)
 
     # API de TFHKA para consultar numeraciones
@@ -279,7 +275,9 @@ class TestAccumulatedRate(TransactionCase):
         }
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention = self._create_retention("iva", account_move)
+        retention.action_post()
 
         series = ""
         response = retention.query_numbering(series)
@@ -298,7 +296,9 @@ class TestAccumulatedRate(TransactionCase):
         }
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention = self._create_retention("iva", account_move)
+        retention.action_post()
 
         document_type = "02"
         response = retention.get_last_document_number(document_type)
@@ -330,7 +330,9 @@ class TestAccumulatedRate(TransactionCase):
         }
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention = self._create_retention("iva", account_move)
+        retention.action_post()
 
         document_type = "02"
         document_number = "12345678"
@@ -347,7 +349,9 @@ class TestAccumulatedRate(TransactionCase):
         self.company.write({"sequence_validation_tfhka": True,})
 
         account_move = self._create_invoice()
-        retention = self._create_retention("iva", account_move, "20230800000003")
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
 
         res = retention.with_context(account_retention_alert=True).generate_document_digital()
 
@@ -380,7 +384,10 @@ class TestAccumulatedRate(TransactionCase):
         }
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention = self._create_retention("iva", account_move)
+        retention.action_post()
+
         series = ""
         with self.assertRaises(UserError) as e:
             retention.query_numbering(series)
@@ -393,7 +400,9 @@ class TestAccumulatedRate(TransactionCase):
         self.company.write({"url_tfhka": "",})
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention = self._create_retention("iva", account_move)
+        retention.action_post()
 
         endpoint_key = "emision"
         payload={
@@ -412,7 +421,9 @@ class TestAccumulatedRate(TransactionCase):
         self.company.write({"token_auth_tfhka": ""})
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention = self._create_retention("iva", account_move)
+        retention.action_post()
 
         endpoint_key = "emision"
         payload={
@@ -434,7 +445,9 @@ class TestAccumulatedRate(TransactionCase):
         mock_call.return_value = mock_response
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention = self._create_retention("iva", account_move)
+        retention.action_post()
 
         endpoint_key = "emision"
         payload={
@@ -460,7 +473,9 @@ class TestAccumulatedRate(TransactionCase):
         mock_call.return_value = mock_response
 
         account_move = self._create_invoice()
+        account_move.action_post()
         retention = self._create_retention("iva", account_move)
+        retention.action_post()
 
         endpoint_key = "emision"
         payload={
