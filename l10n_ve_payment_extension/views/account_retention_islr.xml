@@ -67,9 +67,12 @@
                                             column_invisible="not parent.code_visible" />
                                         <field name="company_id" optional="hide"
                                             groups="base.group_multi_company" />
+                                        <field name="allowed_payment_concept_ids" column_invisible="True"/>
                                         <field name="payment_concept_id" 
                                             column_invisible="parent.type_retention != 'islr'"
-                                            force_save="1" />
+                                            domain="[('id', 'in', allowed_payment_concept_ids)]"
+                                            force_save="1" 
+                                            readonly="not move_id"/>
                                         <field name="is_retention_client" column_invisible="True" />
                                         <field
                                             name="invoice_total"

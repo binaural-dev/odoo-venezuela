@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
-
+from collections import defaultdict
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -485,3 +485,90 @@ class AccountMoveRetention(models.Model):
                 move.foreign_rate = move.origin_payment_id.foreign_rate
                 move.foreign_inverse_rate = move.origin_payment_id.foreign_rate
         return res
+        
+    def action_crear_islr_from_invoice(self):
+        for record in self:
+            lineas_existentes = self.env['account.retention.line'].search([
+                ('move_id', '=', self.id),
+                ('state', '=', 'draft'),
+                ('retention_id.type_retention', '=', 'islr')
+            ])
+            retentions = lineas_existentes.mapped('retention_id')
+            published_retentions = lineas_existentes.filtered(lambda l: l.retention_id.state == 'posted').mapped('retention_id')
+
+            if published_retentions:
+                 raise UserError(_(
+                    "Invoice %s already has a posted ISLR retention. You cannot create another one."
+                ) % record.name)
+            
+            if retentions:
+                if len(retentions) == 1:
+                    return {
+                        'name': _('ISLR Retention'),
+                        'type': 'ir.actions.act_window',
+                        'res_model': 'account.retention',
+                        'view_mode': 'form',
+                        'res_id': retentions.id,
+                        'target': 'current',
+                    }
+                else:
+                    return {
+                        'name': _('ISLR Retention'),
+                        'type': 'ir.actions.act_window',
+                        'res_model': 'account.retention',
+                        'view_mode': 'list,form',
+                        'domain': [('id', 'in', retentions.ids)],
+                        'target': 'current',
+                    }
+            
+            if record.state != 'posted':
+                raise UserError(_(
+                    "Invoice %s must be in 'Posted' state to generate a retention."
+                ) % record.name)
+            
+            if record.payment_state in ['paid', 'in_payment']:
+                raise UserError(_(
+                    "Invoice %s has already been paid. You cannot generate an ISLR retention for a paid or canceled invoice."
+                ) % record.name)
+            
+            lineas_servicio = self.invoice_line_ids.filtered(
+                lambda l: l.product_id.product_tmpl_id.type == 'service' and bool(l.product_id.product_tmpl_id.payment_concept)
+            )
+            
+            if not lineas_servicio:
+                raise UserError(_(
+                    "No services with a configured 'Payment Concept' were found in the lines of invoice %s."
+                ) % record.name)
+
+            conceptos_montos = defaultdict(float)
+        
+            for line in self.invoice_line_ids:
+                if line.product_id.product_tmpl_id.type == 'service' and bool(line.product_id.product_tmpl_id.payment_concept):
+                    concept_id = line.product_id.product_tmpl_id.payment_concept.id
+                    conceptos_montos[concept_id] += line.price_subtotal
+
+            if self.move_type == 'in_invoice':
+                xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_supplier'
+            elif self.move_type == 'out_invoice':
+                xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_client'
+            else:
+                raise UserError(_("This action is only valid for customer or vendor invoices."))
+
+
+            action = self.env.ref(xml_action_id).read()[0]
+            ctx = eval(action.get('context', '{}'))
+            ctx.update({
+                'default_partner_id': self.partner_id.id,
+                'default_move_id': self.id,
+                'default_date_accounting': fields.Date.today(),
+                'default_type': self.move_type,
+                'default_type_retention': 'islr',
+                'default_islr_lines': conceptos_montos,
+            })
+
+            action['context'] = ctx
+            action['views'] = [(self.env.ref('l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension').id, 'form')]
+            action['view_mode'] = 'form'
+            action['target'] = 'current'
+            
+            return action

@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "19.0.2.0.6",
+    "version": "19.0.2.0.7",
     "depends": [
         "base",
         "account",
@@ -29,6 +29,7 @@
         "data/report_paperformat_data.xml",
         "data/fees_retention_data.xml",
         "data/payment_concept_data.xml",
+        "data/retencion_accion.xml",
         "report/retention_line_report_views.xml",
         "report/retention_voucher_templates.xml",
         "report/retention_voucher_reports.xml",
