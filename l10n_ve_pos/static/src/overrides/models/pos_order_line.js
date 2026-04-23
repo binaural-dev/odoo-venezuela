@@ -124,7 +124,7 @@ patch(PosOrderline.prototype, {
 
   get_foreign_calculation_price(currency, price) {
     const rate = this.get_rate(currency);
-    return parseFloat((price * rate).toFixed(2));
+    return parseFloat((price * rate).toFixed(6));
   },
 
   get foreign_price_unit_display() {

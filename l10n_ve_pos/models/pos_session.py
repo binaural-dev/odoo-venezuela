@@ -63,7 +63,7 @@ class PosSession(models.Model):
             "warehouse": self.config_id.picking_type_id.warehouse_id.id,
         }
         return params
-    
+
     def _loader_params_res_company(self):
         return {
             'search_params': {
@@ -157,7 +157,7 @@ class PosSession(models.Model):
                         order_payment.payment_method_id.cross_account_journal
                         and order_payment.payment_method_id.cross_journal
                     ):
-                        
+
                         if order_payment.amount < 0:
                             line_vals = session._line_vals_move_cross_outgoing(order_payment)
                         else:
@@ -302,15 +302,15 @@ class PosSession(models.Model):
     def _get_pos_ui_product_category(self, params):
         categories = self.env['product.category'].search_read(**params['search_params'])
         category_by_id = {category['id']: category for category in categories}
-        
+
         for category in categories:
             try:
                 category['parent'] = category_by_id[category['parent_id'][0]] if category['parent_id'] else None
             except KeyError as e:
                 raise ValueError(_(f"The category %s does not belong to this company.") % category['parent_id'][1]) from e
-                
+
         return categories
-    
+
     def _process_pos_ui_product_product(self, products):
         """
         Modify the list of products to add the categories as well as adapt the lst_price
@@ -319,12 +319,12 @@ class PosSession(models.Model):
         if self.config_id.currency_id != self.company_id.currency_id:
             for product in products:
                 product['lst_price'] = self.company_id.currency_id._convert(
-                    product['lst_price'], 
+                    product['lst_price'],
                     self.config_id.currency_id,
-                    self.company_id, 
+                    self.company_id,
                     fields.Date.today()
                 )
-        
+
         categories = self._get_pos_ui_product_category(self._loader_params_product_category())
         product_category_by_id = {category['id']: category for category in categories}
 
@@ -361,7 +361,7 @@ class PosSession(models.Model):
                 "company_id": self.company_id.id,
             }
         )
-        return move #TODO esta funcion no hace nada, esta definida y no me explico como es que no 
+        return move #TODO esta funcion no hace nada, esta definida y no me explico como es que no
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
@@ -389,9 +389,9 @@ class PosSession(models.Model):
                         # Asegúrate de que el impuesto no se aplique nuevamente en el reembolso
                         line.price_subtotal = self._apply_rounding(line.price_subtotal / (1 + (tax.amount / 100)))
                         line.price_total = self._apply_rounding(line.price_total / (1 + (tax.amount / 100)))
-    
+
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
-        res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
+        res = super(PosSession, self.with_context(from_pos=False))._create_combine_account_payment(
             payment_method, amounts, diff_amount
         )
 
@@ -404,43 +404,18 @@ class PosSession(models.Model):
             }
         )
         for line in account_payment.move_id.line_ids:
-            if line.credit > 0 and amounts.get("foreign_amount", False):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(amounts["foreign_amount"])
-
-            if line.debit > 0 and amounts.get("foreign_amount", False):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(amounts["foreign_amount"])
-        # if account_payment.pos_payment_method_id.apply_one_cross_move:
-        #     self._create_cross_move_payment(res)
-        return res
-
-    def _create_split_account_payment(self, payment, amounts):
-        res = super(PosSession, self.with_context(from_pos=True))._create_split_account_payment(
-            payment, amounts
-        )
-        account_payment = res
-
-        account_payment.write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-                "manually_set_rate": True,
-            }
-        )
- 
-        for line in account_payment.move_id.line_ids:
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = abs(payment.foreign_amount)
+                line.foreign_credit = line.credit / self.config_id.foreign_rate
+                _logger.warning(f"LINE CREDIT: {line.credit} - FOREIGN CREDIT: {line.foreign_credit}")
 
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = abs(payment.foreign_amount)
-
-        # if account_payment.pos_payment_method_id.apply_one_cross_move:
-        #     self._create_cross_move_payment(res)
+                line.foreign_debit = line.debit / self.config_id.foreign_rate
+                _logger.warning(f"LINE DEBIT: {line.debit} - FOREIGN DEBIT: {line.foreign_debit}")
+        # raise ValidationError("XD")
         return res
+
     def _create_cross_move_payment(self, move):
         super()._create_cross_move_payment(move)
         move = self.env["account.move"].create(
@@ -518,7 +493,7 @@ class PosSession(models.Model):
                         }
                     ),
                 ]
-                
+
             )
 
             return move_lines
@@ -535,7 +510,6 @@ class PosSession(models.Model):
             amount_to_balance,
             bank_payment_method_diffs,
         )
-        _logger.warning("RES CREATE ACCOUNT MOVE %s", res)
         self.move_id.write(
             {
                 "foreign_rate": self.config_id.foreign_rate,
@@ -595,8 +569,12 @@ class PosSession(models.Model):
             values = bucket.get(key)
             if values is None:
                 values = {"amount": 0.0, "amount_converted": 0.0}
+            _logger.warning("VALUES BEFORE ADDING FOREIGN AMOUNT %s", values)
             values["foreign_amount"] = values.get("foreign_amount", 0.0) + value
+            _logger.warning("VALUES AFTER ADDING FOREIGN AMOUNT %s", values)
             bucket[key] = values
+
+        _logger.warning("DATA EN _ACCUMULATE_AMOUNTS %s", data)
 
         currency_rounding = self.currency_id.rounding
         for order in self.order_ids:
@@ -604,7 +582,10 @@ class PosSession(models.Model):
             for payment in order.payment_ids:
                 amount = payment.amount
                 foreign_amount = payment.foreign_amount
-                if float_is_zero(amount, precision_rounding=currency_rounding):
+                if float_is_zero(amount, precision_rounding=currency_rounding) and float_is_zero(
+                    foreign_amount,
+                    precision_rounding=currency_rounding,
+                ):
                     continue
                 payment_method = payment.payment_method_id
                 is_split_payment = payment.payment_method_id.split_transactions
@@ -612,6 +593,7 @@ class PosSession(models.Model):
 
                 if payment_type != "pay_later":
                     if is_split_payment and payment_type == "cash":
+
                         _add_foreign_amount(
                             split_receivables_cash,
                             payment,
@@ -623,12 +605,14 @@ class PosSession(models.Model):
                             payment_method,
                             foreign_amount,
                         )
+                    #no es un pago completo
                     elif is_split_payment and payment_type == "bank":
                         _add_foreign_amount(
                             split_receivables_bank,
                             payment,
                             foreign_amount,
                         )
+                    #es un pago completo
                     elif not is_split_payment and payment_type == "bank":
                         _add_foreign_amount(
                             combine_receivables_bank,
@@ -661,6 +645,7 @@ class PosSession(models.Model):
                 "split_invoice_receivables": split_invoice_receivables,
             }
         )
+        # raise ValidationError(_("The session cannot be closed because the payment %s has amount %s and foreign amount %s. Please, review the payments of the session.") % (payment.id, amount, foreign_amount))
         return data
 
     def _update_amounts(
@@ -676,31 +661,30 @@ class PosSession(models.Model):
         return new_amounts
 
     def _create_invoice_receivable_lines(self, data):
-        """ This method is used to create the invoice receivable lines, is override to set the foreign amounts in the move lines of the invoice receivables.""" 
+        """ This method is used to create the invoice receivable lines, is override to set the foreign amounts in the move lines of the invoice receivables."""
         res = super()._create_invoice_receivable_lines(data)
         combine_invoice_receivable_lines = res.get("combine_invoice_receivable_lines")
         split_invoice_receivable_lines = res.get("split_invoice_receivable_lines")
         combine_invoice_receivables = res.get("combine_invoice_receivables")
         for payment_method, amounts in combine_invoice_receivables.items():
             line = combine_invoice_receivable_lines[payment_method]
-            
+
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = abs(amounts["foreign_amount"])
+                line.foreign_credit = line.credit / self.config_id.foreign_rate
+
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = abs(amounts["foreign_amount"])
-
+                line.foreign_debit = line.debit / self.config_id.foreign_rate
+        #TODO: use inverse rate when the currency of the session is the foreign currency
         for payment in split_invoice_receivable_lines.keys():
             line = split_invoice_receivable_lines[payment]
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = abs(payment.foreign_amount)
+                line.foreign_credit = line.credit / self.config_id.foreign_rate
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = abs(payment.foreign_amount)
-        _logger.warning("RES INVOICE RECEIVABLE LINES %s", res)
-        # raise ValidationError(_("The session cannot be closed because the cross move is not created yet. Please, try again."))
+                line.foreign_debit = line.debit / self.config_id.foreign_rate
         return res
 
     def _create_bank_payment_moves(self, data):
@@ -716,20 +700,24 @@ class PosSession(models.Model):
             for line in lines:
                 if line.credit > 0:
                     line.not_foreign_recalculate = True
-                    line.foreign_credit = abs(amounts["foreign_amount"])
+                    line.foreign_credit = line.credit / self.config_id.foreign_rate
+                    _logger.warning(f"LINE CREDIT: {line.credit} - FOREIGN CREDIT: {line.foreign_credit}")
                 if line.debit > 0:
                     line.not_foreign_recalculate = True
-                    line.foreign_debit = abs(amounts["foreign_amount"])
+                    line.foreign_debit = line.debit / self.config_id.foreign_rate
+                    _logger.warning(f"LINE DEBIT: {line.debit} - FOREIGN DEBIT: {line.foreign_debit}")
 
         for payment in payment_to_receivable_lines.keys():
             lines = payment_to_receivable_lines[payment]
             for line in lines:
                 if line.credit > 0:
                     line.not_foreign_recalculate = True
-                    line.foreign_credit = abs(payment.foreign_amount)
+                    line.foreign_credit = line.credit / self.config_id.foreign_rate
+                    _logger.warning(f"LINE CREDIT: {line.credit} - FOREIGN CREDIT: {line.foreign_credit}")
                 if line.debit > 0:
                     line.not_foreign_recalculate = True
-                    line.foreign_debit = abs(payment.foreign_amount)
+                    line.foreign_debit = line.debit / self.config_id.foreign_rate
+                    _logger.warning(f"LINE DEBIT: {line.debit} - FOREIGN DEBIT: {line.foreign_debit}")
         return res
 
     def _create_cash_statement_lines_and_cash_move_lines(self, data):
@@ -740,7 +728,7 @@ class PosSession(models.Model):
         combine_cash_statement_lines = res.get("combine_cash_statement_lines")
         split_cash_receivable_lines = res.get("split_cash_receivable_lines")
         combine_cash_receivable_lines = res.get("combine_cash_receivable_lines")
-
+        _logger.warning("RES CASH STATEMENT LINES %s", res)
         def _get_lines(container, key):
             if isinstance(container, dict):
                 return list(container.get(key, []))
@@ -751,6 +739,7 @@ class PosSession(models.Model):
                 split_cash_statement_lines,
                 payment,
             )
+
             for line in lines:
                 self.set_foreign_amount_in_line(
                     line,
@@ -769,38 +758,38 @@ class PosSession(models.Model):
                     amounts.get("foreign_amount", 0.0),
                     amounts.get("amount", 0.0),
                 )
+
         return res
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
-        other_lines = line.move_id.line_ids.filtered(
-            lambda x: x != line and x.account_id.account_type != "asset_receivable"
-        )
+        foreign_amount = abs(foreign_amount or 0.0)
+        if not foreign_amount:
+            return
 
-        if other_lines:
-            other_line = other_lines[0]
-            
-            # Aseguramos que el asiento tenga las tasas correctas para evitar inflado de montos
-            line.move_id.write({
+        other_lines = line.move_id.line_ids.filtered(lambda x: x != line)
+
+        # Aseguramos que el asiento tenga las tasas correctas para evitar inflado de montos
+        line.move_id.write(
+            {
                 "foreign_rate": self.config_id.foreign_rate,
                 "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
                 "manually_set_rate": True,
-            })
+            }
+        )
 
-            if (
-                abs(line.credit) > 0
-                and float_compare(
-                    line.credit, abs(amount), precision_rounding=self.currency_id.rounding
-                ) == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(foreign_amount)
-                if other_line.foreign_debit != line.foreign_credit:
-                    other_line.foreign_debit = abs(line.foreign_credit)
-            if (
-                abs(line.debit) > 0
-                and float_compare(line.debit, abs(amount), precision_rounding=self.currency_id.rounding) == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(foreign_amount)
-                if other_line.foreign_credit != line.foreign_debit:
-                    other_line.foreign_credit = abs(line.foreign_debit)
+        line.not_foreign_recalculate = True
+        if abs(line.credit) > 0:
+            line.foreign_credit = foreign_amount
+            counterpart_candidates = other_lines.filtered(lambda l: abs(l.debit) > 0)
+            if counterpart_candidates:
+                counterpart = max(counterpart_candidates, key=lambda l: abs(l.debit))
+                counterpart.not_foreign_recalculate = True
+                counterpart.foreign_debit = foreign_amount
+
+        if abs(line.debit) > 0:
+            line.foreign_debit = foreign_amount
+            counterpart_candidates = other_lines.filtered(lambda l: abs(l.credit) > 0)
+            if counterpart_candidates:
+                counterpart = max(counterpart_candidates, key=lambda l: abs(l.credit))
+                counterpart.not_foreign_recalculate = True
+                counterpart.foreign_credit = foreign_amount

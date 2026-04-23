@@ -13,6 +13,8 @@ patch(PaymentScreenStatus.prototype, {
   },
   get foreignRemainingText() {
     const foreignDue = this.props.order.get_foreign_due();
+    const due = this
+
     return this.env.utils.formatForeignCurrency(
       foreignDue > 0 ? foreignDue : 0
     );
@@ -23,9 +25,7 @@ patch(PaymentScreenStatus.prototype, {
     const selectedLine =
       this.props.order.get_order_payment_lines?.()
         .find((line) => line.isSelected()) || null;
-        
-    // console.log('Calculating foreign change for selected payment line', this.props.order.get_order_payment_lines());
-    // console.log('Selected payment line:', selectedLine);
+    
     return this.env.utils.formatForeignCurrency(
       this.props.order.get_foreign_change(selectedLine)
     );

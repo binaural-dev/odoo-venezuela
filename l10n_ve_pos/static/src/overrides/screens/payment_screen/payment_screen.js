@@ -23,11 +23,7 @@ patch(PaymentScreen.prototype, {
     return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_tax())
   },
 
-  get foreignRemainingText() {
-    return this.utils.formatForeignCurrency(
-      this.currentOrder.get_foreign_due() > 0 ? this.currentOrder.get_foreign_due() : 0
-    );
-  },
+
 
   shouldDownloadInvoice() {
     return false;

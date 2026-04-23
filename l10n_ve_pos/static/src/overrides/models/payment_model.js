@@ -6,7 +6,9 @@ import { patch } from "@web/core/utils/patch";
 patch(PosPayment.prototype, {
     setup(_defaultObj, options) {
         super.setup(...arguments);
-
+        if (!Number.isFinite(this.foreign_amount)) {
+            this.foreign_amount = 0;
+        }
     },
 
     init_from_JSON(json) {
@@ -16,10 +18,43 @@ patch(PosPayment.prototype, {
     },
 
     export_as_JSON() {
+        this._recompute_foreign_amount();
         let res = super.export_as_JSON(...arguments);
         res["foreign_amount"] = this.foreign_amount;
-        res["foreign_rate"] = this.order.get_conversion_rate();
+        const { directRate } = this._get_foreign_rate_values();
+        res["foreign_rate"] = directRate || this.order.get_conversion_rate() || 0;
         return res;
+    },
+
+    _recompute_foreign_amount() {
+        const computed = this.get_foreign_amount?.();
+        this.foreign_amount = Number.isFinite(computed) ? computed : 0;
+    },
+
+    _convert_order_to_foreign(orderAmount = 0) {
+        const amount = Number(orderAmount) || 0;
+        const { directRate, inverseRate } = this._get_foreign_rate_values();
+
+        if (directRate > 0) {
+            return amount / directRate;
+        }
+        if (inverseRate > 0) {
+            return amount / inverseRate;
+        }
+        return amount;
+    },
+
+    _convert_foreign_to_order(foreignAmount = 0) {
+        const amount = Number(foreignAmount) || 0;
+        const { directRate, inverseRate } = this._get_foreign_rate_values();
+
+        if (directRate > 0) {
+            return amount / directRate;
+        }
+        if (inverseRate > 0) {
+            return amount * inverseRate;
+        }
+        return amount;
     },
 
     _get_foreign_rate_values() {
@@ -51,29 +86,30 @@ patch(PosPayment.prototype, {
         if ((!inverseRate || inverseRate <= 0) && directRate > 0) {
             inverseRate = 1 / directRate;
         }
-        console.log('Calculated foreign rates', { directRate, inverseRate });
+        
         return { directRate: directRate || 0, inverseRate: inverseRate || 0 };
     },
 
     get_foreign_amount() {
-        const amount = this.amount || 0;
-        const paymentMethod = this.payment_method || this.payment_method_id;
-        const isForeignMethod = Boolean(paymentMethod?.is_foreign_currency);
-        const { directRate, inverseRate } = this._get_foreign_rate_values();
-        console.log('Calculating foreign amount', { amount, isForeignMethod, directRate, inverseRate });
-        if (directRate && directRate > 0) {
-            return amount / directRate;
-        }
+        const currentOrder =
+            this.order ||
+            this.pos?.get_order?.() ||
+            this.pos?.getOrder?.() ||
+            null;
 
-        if (inverseRate && inverseRate > 0) {
-            return amount * inverseRate;
-        }
-
-        if (!isForeignMethod && this.order?.init_conversion_rate > 0) {
-            return amount / this.order.init_conversion_rate;
-        }
-
-        return amount;
+        const config = currentOrder?.config || this.pos?.config || this.env?.pos?.config || {};
+        
+        let directRate =
+            this.pos?.foreign_currency?.rate ||
+            currentOrder?.get_display_rate?.() ||
+            currentOrder?.get_conversion_rate?.() ||
+            config.foreign_rate ||
+            this.foreign_rate ||
+            0;
+        
+        const amount = this.amount || 0 * (directRate > 0 ? 1 / directRate : 1);
+                
+        return amount
     },
 
     set_amount(amount, only = false) {
@@ -84,37 +120,17 @@ patch(PosPayment.prototype, {
                 this.set_foreign_amount(this.order.get_foreign_due(), true);
                 return res;
             }
-            this.foreign_amount = this.get_foreign_amount();
+            this._recompute_foreign_amount();
         }
         return res;
     },
 
     set_foreign_amount(amount, only = false) {
-        this.foreign_amount = amount;
-        const paymentMethod = this.payment_method || this.payment_method_id;
-        const isForeignMethod = Boolean(paymentMethod?.is_foreign_currency);
-        const { directRate, inverseRate } = this._get_foreign_rate_values();
+        this.foreign_amount = Number.isFinite(amount) ? amount : 0;
 
         if (!only) {
-            if (this.pos?.currency?.name == "VEF") {
-                if (isForeignMethod) {
-                    this.amount = directRate > 0 ? this.foreign_amount / directRate : this.foreign_amount;
-                    return;
-                }
-                this.amount = amount / this.order.get_conversion_rate();
-            }
-            if (this.pos?.currency?.name == "USD") {
-                if (isForeignMethod) {
-                    this.set_amount(
-                        inverseRate > 0 ? this.foreign_amount * inverseRate : this.foreign_amount,
-                    );
-                    return;
-                }
-                this.set_amount(
-                    this.foreign_amount * this.order.init_conversion_rate,
-                    true,
-                );
-            }
+            const orderAmount = this._convert_foreign_to_order(this.foreign_amount);
+            super.set_amount(orderAmount, true);
         }
     },
 });

@@ -8,7 +8,7 @@
                 <!-- Left side -->
                 <div class="left-side" style="flex: 1;">
                     <div class="rate_bcv">
-                        Tasa BCV: <t t-out="(props.conversion_rate  || 0).toFixed(2) "/>
+                        Tasa BCV: <t t-out="(props.conversion_rate  || 0).toFixed(env.utils.getDecimalPrecision()) "/>
                     </div>
                     <div class="cant_prod">
                         Total de productos: <t t-out="props.quantity_products"/>
