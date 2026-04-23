@@ -49,6 +49,12 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.not_show_extend_aliquot_purchase", readonly=False
     )
 
+    not_show_total_purchases_with_iva = fields.Boolean(related="company_id.not_show_total_purchases_with_iva", readonly=False)
+
+    not_show_national_exempt_total_purchases = fields.Boolean(related="company_id.not_show_national_exempt_total_purchases", readonly=False)
+
+    not_show_total_purchases_national = fields.Boolean(related="company_id.not_show_total_purchases_national", readonly=False)
+
     config_deductible_tax = fields.Boolean(
         related="company_id.config_deductible_tax", readonly=False
     )
@@ -69,6 +75,8 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
     )
 
+    zero_aliquot_sale_international = fields.Many2one("account.tax",
+        related="company_id.zero_aliquot_sale_international", readonly=False)
 
     exent_aliquot_purchase_international = fields.Many2one("account.tax",
         related="company_id.exent_aliquot_purchase_international", readonly=False)
@@ -84,36 +92,8 @@ class ResConfigSettings(models.TransientModel):
 
     not_show_extend_aliquot_purchase_international = fields.Boolean(related="company_id.not_show_extend_aliquot_purchase_international", readonly=False)
 
-    not_show_international_purchase_in_book = fields.Boolean(string ="Hide international alicuotes", related="company_id.not_show_international_purchase_in_book", readonly=False)
+    not_show_total_purchases_with_international_iva = fields.Boolean(related="company_id.not_show_total_purchases_with_international_iva", readonly=False)
 
+    not_show_exempt_total_purchases = fields.Boolean(related="company_id.not_show_exempt_total_purchases", readonly=False)
 
-    @api.onchange(
-        'not_show_reduced_aliquot_purchase_international',
-        'not_show_extend_aliquot_purchase_international',
-        'not_show_general_aliquot_purchase_international')
-    def _onchange_international_purchase(self):
-      
-        for rec in self:
-            all_sub_aliquots_hidden = (
-                rec.not_show_general_aliquot_purchase_international and
-                rec.not_show_reduced_aliquot_purchase_international and
-                rec.not_show_extend_aliquot_purchase_international
-            )
-            
-            if all_sub_aliquots_hidden and not rec.not_show_international_purchase_in_book:
-                rec.not_show_international_purchase_in_book = True
-            
-            if not all_sub_aliquots_hidden and rec.not_show_international_purchase_in_book:
-                rec.not_show_international_purchase_in_book = False
-
-    
-    @api.onchange('not_show_international_purchase_in_book')
-    def _onchange_international_purchase_all(self):
-        for rec in self:
-            is_hidden = rec.not_show_international_purchase_in_book
-            rec.not_show_general_aliquot_purchase_international = is_hidden
-            rec.not_show_reduced_aliquot_purchase_international = is_hidden
-            rec.not_show_extend_aliquot_purchase_international = is_hidden
-
-
-
+    not_show_total_purchases_international = fields.Boolean(related="company_id.not_show_total_purchases_international", readonly=False)

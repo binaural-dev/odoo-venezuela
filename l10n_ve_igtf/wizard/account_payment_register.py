@@ -55,7 +55,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         compute='_compute_available_journal_ids'
     )
 
-    last_computed_amount = fields.Float("Last Computed Amount", digits=(16, 2))
+    last_computed_amount = fields.Float("Last Computed Amount")
 
 
     @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date')
@@ -140,8 +140,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             amount_without_difference = 0.0
             move_ids=self.get_moves()
             for move_id in move_ids:
-                residual = move_id.company_currency_id._convert( move_id.amount_residual,self.currency_id,company=self.company_id,date=self.payment_date) if move_id.company_currency_id == self.env.ref("base.VEF") else move_id.amount_residual
                 
+                residual = move_id.amount_residual if move_id.company_currency_id != self.env.ref("base.VEF") else move_id.amount_residual / rec.foreign_inverse_rate
 
                 if rec.amount <= residual + residual * (rec.igtf_percentage / 100):
                     amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
@@ -160,8 +160,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if payment.journal_id.is_igtf and payment.partner_id:
                 move_ids=self.get_moves()
                 for move_id in move_ids:
-                    if payment.partner_id._check_igtf_apply_improved(move_id.move_type):
+                    if payment.partner_id._check_igtf_apply_improved(move_id):
                         payment.is_igtf = True
+
+            if payment.journal_id.is_purchase_international:
+                payment.is_igtf = False
 
                    
                         
@@ -204,9 +207,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         currency = self.currency_id
         precision = currency.rounding
 
-        due_amount = float(self.source_amount)
-
-        due_currency_id = self.source_currency_id
+        due_amount = float(self.source_amount) if invoice.company_currency_id != self.env.ref("base.VEF") else float(self.source_amount) / self.foreign_inverse_rate
 
         principal_debt = due_amount
 
@@ -215,7 +216,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
         igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
 
-        igtf_top = due_currency_id._convert( invoice.alter_igtf_top_aply,self.currency_id,company=self.company_id,date=self.payment_date) if invoice.company_currency_id == self.env.ref("base.VEF") else invoice.igtf_top_aply
+        igtf_top = invoice.igtf_top_aply
 
         alter_bi_igtf = invoice.alter_bi_igtf
 
@@ -249,6 +250,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if record.journal_id.currency_id and record.journal_id.currency_id == self.env.ref("base.USD"):
                 record.is_igtf_on_foreign_exchange = True
             else:
+                record.is_igtf_on_foreign_exchange = False
+            
+            if record.journal_id.is_purchase_international:
                 record.is_igtf_on_foreign_exchange = False
     
     @api.depends('available_journal_ids')
@@ -399,11 +403,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     epd_aml_values_list.append({
                         'aml': aml,
                         'amount_currency': -aml.amount_residual_currency,
-                        'balance': currency._convert(-aml.amount_residual_currency, aml.company_currency_id, self.company_id, self.payment_date),
+                        'balance': currency._convert(-aml.amount_residual_currency, aml.company_currency_id, self.company_id, self.payment_date,self.foreign_inverse_rate),
                     })
 
             open_amount_currency = (batch_values['source_amount_currency'] - total_amount) * (-1 if batch_values['payment_type'] == 'outbound' else 1)
-            open_balance = currency._convert(open_amount_currency, aml.company_currency_id, self.company_id, self.payment_date)
+            open_balance = currency._convert(open_amount_currency, aml.company_currency_id, self.company_id, self.payment_date,self.foreign_inverse_rate)
             early_payment_values = self.env['account.move']\
                 ._get_invoice_counterpart_amls_for_early_payment_discount(epd_aml_values_list, open_balance)
             for aml_values_list in early_payment_values.values():
