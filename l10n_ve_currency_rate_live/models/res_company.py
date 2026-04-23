@@ -63,3 +63,11 @@ class ResCompany(models.Model):
         except Exception as e:
             _logger.error(e)
             return (1, False)
+
+    @api.depends('country_id')
+    def _compute_currency_provider(self):
+        super(ResCompany, self)._compute_currency_provider()
+        
+        for record in self:
+            if record.country_id and record.country_id.code == 'VE':
+                record.currency_provider = 'bcv'

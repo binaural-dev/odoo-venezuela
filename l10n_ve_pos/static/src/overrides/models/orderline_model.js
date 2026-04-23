@@ -101,7 +101,7 @@ patch(Orderline.prototype, {
 
     var all_taxes = this.compute_all(
       product_taxes,
-      price_unit,
+      round_pr(price_unit, this.pos.foreign_currency.rounding),
       qty,
       this.pos.foreign_currency.rounding,
     );
@@ -118,7 +118,6 @@ patch(Orderline.prototype, {
         base: tax.base,
       };
     });
-
     return {
       priceWithTax: all_taxes.total_included,
       priceWithoutTax: all_taxes.total_excluded,
