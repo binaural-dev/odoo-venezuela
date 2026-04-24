@@ -1,4 +1,4 @@
-from odoo import models
+from odoo import models, api, fields,Command
 from odoo.tools.misc import formatLang
 import logging
 
@@ -8,7 +8,15 @@ _logger = logging.getLogger(__name__)
 class StockMove(models.Model):
     _inherit = "stock.move"
 
-    def _get_line_values(self):
+    qty_return = fields.Float(string="Quantity Return", compute="_compute_qty_return",store=True,default=0.0)
+
+    @api.depends("returned_move_ids")
+    def _compute_qty_return(self):
+        for line in self:
+            line.qty_return = sum(line.returned_move_ids.mapped("quantity"))
+
+
+    def _get_line_values(self, use_foreign_currency=False):
         """
         Calculate and return all relevant values for a stock move line, including:
         - Quantity
@@ -117,3 +125,4 @@ class StockMove(models.Model):
         )
 
         return ves_price_unit
+    

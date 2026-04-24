@@ -1,5 +1,8 @@
+import logging
 from odoo import api, models, fields, _
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class FeesRetention(models.Model):
@@ -29,7 +32,7 @@ class FeesRetention(models.Model):
         if self.percentage < 0:
             raise ValidationError(_("The rate percentage cannot be negative.\n"))
 
-    @api.depends("apply_subtracting", "percentage", "tax_unit_ids")
+    @api.depends("apply_subtracting", "percentage", "tax_unit_ids", "tax_unit_ids.value")
     def _compute_amount_subtract(self):
         for record in self:
             if record.apply_subtracting:

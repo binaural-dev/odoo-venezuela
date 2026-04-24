@@ -8,6 +8,10 @@ _logger = logging.getLogger(__name__)
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
+    destination_account_id = fields.Many2one(
+        "account.account",
+        domain="[('account_type', 'in', ('asset_receivable', 'liability_payable', 'asset_current', 'liability_current'))]",
+    )
     def default_alternate_currency(self):
         """
         This method is used to get the foreign currency of the company and set it as the default
@@ -79,6 +83,8 @@ class AccountPayment(models.Model):
         store=True,
     )
 
+    block_change_partner_after_post = fields.Boolean(default=False, copy=False)
+
     other_rate = fields.Float(
         compute="_compute_other_rate",
         digits="Tasa",
@@ -95,6 +101,23 @@ class AccountPayment(models.Model):
     )
     custom_rate_currency_name = fields.Char(compute="_compute_rate_currency_name")
     company_currency_symbol = fields.Char(related="company_id.currency_id.symbol")
+
+    foreign_amount = fields.Monetary('foreign_amount',currency_field="foreign_currency_id",  compute="_compute_foreign_amount", store=True, readonly=False)
+
+    @api.depends("amount", "currency_id")
+    def _compute_foreign_amount(self):
+        for payment in self:
+            if payment.currency_id != payment.foreign_currency_id:
+                payment.foreign_amount = payment.currency_id._convert(
+                    payment.amount,
+                    payment.foreign_currency_id,
+                    payment.company_id,
+                    payment.date or fields.Date.today(),
+                )
+            else:
+                payment.foreign_amount = 0.0
+
+
 
     @api.depends("company_id", "currency_id")
     def _compute_rate_currency_name(self):
@@ -204,6 +227,13 @@ class AccountPayment(models.Model):
             if not bool(payment.other_rate):
                 return
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
+
+    def action_post(self):
+        res = super().action_post()
+        # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
+        self.write({"block_change_partner_after_post": True})
+        return res
+            
 
     # @api.model
     # def _get_trigger_fields_to_synchronize(self):

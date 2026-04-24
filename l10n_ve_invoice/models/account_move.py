@@ -22,6 +22,11 @@ class AccountMove(models.Model):
         default=fields.Date.today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
+    
+    tax_base_for_international_purchase = fields.Float(string='Tax Base for International Purchase', help='Tax base for international purchase to show in purchase book')
+    
+    tax_amount_for_international_purchase = fields.Float(string='Tax Amount for International Purchase', help='Tax amount for international purchase to show in purchase book')
+    
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
@@ -45,6 +50,14 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
+
+    @api.constrains('invoice_date_display', 'date')
+    def _check_invoice_date_display_purchases(self):
+        for move in self:
+            _logger.warning(f"Checking invoice_date_display constraint for move {move.id} with move_type {move.move_type} and company setting block_invoice_display_date_upper_than_date {move.company_id.block_invoice_display_date_upper_than_date}")
+            if move.is_purchase_document(include_receipts=True) and move.company_id.block_invoice_display_date_upper_than_date:
+                if move.invoice_date_display and move.date and move.invoice_date_display > move.date:
+                    raise ValidationError(_("The invoice date cannot be greater than the accounting date."))
     import_file_number_purchase_international = fields.Char(string="Import File Number Purchase International")
 
     @api.depends("invoice_date", "state")
@@ -110,14 +123,6 @@ class AccountMove(models.Model):
                         continue
                     if not line.tax_ids:
                         raise ValidationError(_("Add a tax to each product line. You cannot confirm the invoice if any product line is missing a tax."))
-
-            sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
-            correlative = str(sequence.number_next_actual).zfill(sequence.padding)
-
-            invoices = record.env['account.move'].sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"])])
-
-            if invoices and record.move_type in ["out_invoice","out_refund"]:
-                raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
         return super().action_post()
 
     @api.model_create_multi

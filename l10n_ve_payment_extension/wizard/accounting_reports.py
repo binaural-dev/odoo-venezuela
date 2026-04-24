@@ -256,19 +256,26 @@ class WizardAccountingReports(models.TransientModel):
 
     def _sum_retention_total(self, lines):
         is_check_currency_system = self.currency_system
-        retention = lines.mapped("retention_id")
+        
+        total = 0.0
+        for line in lines:
+            if line.move_id.state == "cancel":
+                continue
+                
+            retention = line.retention_id
+            if (
+                self.report == "purchase"
+                and retention
+                and self._check_future_retention_dates(retention.date)
+            ):
+                continue
 
-        if (
-            self.report == "purchase"
-            and retention
-            and self._check_future_retention_dates(retention.date)
-            or lines.move_id.state == "cancel"
-        ):
-            return 0.0
-        if not is_check_currency_system:
-            return sum(lines.mapped("foreign_retention_amount"))
+            if not is_check_currency_system:
+                total += line.foreign_retention_amount
+            else:
+                total += line.retention_amount
 
-        return sum(lines.mapped("retention_amount"))
+        return total
 
     def _check_future_retention_dates(self, cmp_date):
         return cmp_date < self.date_from or cmp_date > self.date_to

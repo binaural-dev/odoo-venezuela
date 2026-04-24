@@ -12,7 +12,7 @@ class AccountRetentionLine(models.Model):
     check_company = True
 
     name = fields.Char(
-        string="Description", required=True, compute="_compute_name", store=True, readonly=False
+        string="Description", compute="_compute_name", store=True, readonly=False
     )
     company_id = fields.Many2one(
         "res.company",
@@ -139,8 +139,17 @@ class AccountRetentionLine(models.Model):
 
             invoice_id = record.move_id
 
-            # Lógica para obtener el monto de retención del partner
-            withholding_amount = invoice_id.partner_id.withholding_type_id.value
+            # Use the retention's partner for third-party billing, otherwise the invoice's partner
+            withholding_partner = (
+                record.retention_id.partner_id
+                if record.retention_id and record.retention_id.partner_id
+                else invoice_id.partner_id
+            )
+            withholding_amount = (
+                withholding_partner.withholding_type_id.value
+                if withholding_partner and withholding_partner.withholding_type_id
+                else 0
+            )
 
             # Aquí va la lógica de tu método original
             tax_ids = invoice_id.invoice_line_ids.filtered(
@@ -165,6 +174,7 @@ class AccountRetentionLine(models.Model):
 
                 tax = taxes[0]
                 retention_amount = tax_group["tax_amount"] * (withholding_amount / 100)
+                record.name = _("Iva Retention")
                 record.invoice_type = invoice_id.move_type
                 record.move_id = invoice_id.id
                 record.aliquot = tax.amount
@@ -215,6 +225,29 @@ class AccountRetentionLine(models.Model):
                 record.payment_id.unlink()
         return super().unlink()
 
+    def _get_islr_type_person_id(self):
+        """Return the type person used to match ISLR concept lines.
+
+        For customer retentions (out_invoice), use the company partner type person.
+        For other flows, keep the existing partner-based behavior.
+        """
+        self.ensure_one()
+
+        if (
+            self.retention_id
+            and self.retention_id.type_retention == "islr"
+            and self.retention_id.type == "out_invoice"
+        ):
+            return self.company_id.partner_id.type_person_id
+
+        if self.retention_id and self.retention_id.partner_id:
+            return self.retention_id.partner_id.type_person_id
+
+        if self.move_id and self.move_id.partner_id:
+            return self.move_id.partner_id.type_person_id
+
+        return self.env["type.person"]
+
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
         """
@@ -226,13 +259,17 @@ class AccountRetentionLine(models.Model):
             and (not l.retention_id or l.retention_id.type_retention == "islr")
         )
         for record in lines_from_islr_retention:
+            # Use the retention's partner for third-party billing, otherwise the invoice's partner
+            calc_partner = (
+                record.retention_id.partner_id
+                if record.retention_id and record.retention_id.partner_id
+                else record.move_id.partner_id
+            )
+            type_person = record._get_islr_type_person_id()
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:
-                # if not record.move_id.partner_id.type_person_id:
-                #     raise UserError(_("The partner does not have a type of person"))
-
-                if record.move_id.partner_id.type_person_id.id == line.type_person_id.id:
+                if type_person.id == line.type_person_id.id:
                     move = record.move_id._origin or record.move_id
                     islr_retention_lines = len(move.retention_islr_line_ids)
                     if not line.tariff_id.accumulated_rate:
@@ -258,7 +295,7 @@ class AccountRetentionLine(models.Model):
                                 record.invoice_amount = record.invoice_amount or 0
                                 record.foreign_invoice_amount = record.foreign_invoice_amount or 0
                     else:
-                        invoice_date = record.move_id.invoice_date or fields.Date.today()
+                        invoice_date = record.move_id.invoice_date_display or fields.Date.today()
 
                         fiscalyear_last_day = int(record.company_id.fiscalyear_last_day)
                         fiscalyear_last_month = int(record.company_id.fiscalyear_last_month)
@@ -278,11 +315,11 @@ class AccountRetentionLine(models.Model):
                             raise UserError(_("The tariff does not have a valid tax unit."))
                         
                         previous_invoices = self.env['account.move'].search([
-                            ('partner_id', '=', record.move_id.partner_id.id),
+                            ('partner_id', '=', calc_partner.id),
                             ('move_type', '=', 'in_invoice'),
                             ('state', '=', 'posted'),
-                            ('invoice_date', '>=', fiscalyear_start),
-                            ('invoice_date', '<', invoice_date),
+                            ('invoice_date_display', '>=', fiscalyear_start),
+                            ('invoice_date_display', '<', invoice_date),
                             ('company_id', '=', record.company_id.id),
                         ])
                         previous_invoices = previous_invoices.filtered(
@@ -395,9 +432,16 @@ class AccountRetentionLine(models.Model):
                 foreign_rate = 1
             ut_value = 0.0
             is_accumulated = False
-            if record.payment_concept_id and record.move_id and record.move_id.partner_id:
+            # Use the retention's partner for third-party billing, otherwise the invoice's partner
+            calc_partner = (
+                record.retention_id.partner_id
+                if record.retention_id and record.retention_id.partner_id
+                else record.move_id.partner_id
+            )
+            if record.payment_concept_id and record.move_id and calc_partner:
+                type_person = record._get_islr_type_person_id()
                 concept_line = record.payment_concept_id.line_payment_concept_ids.filtered(
-                    lambda l: l.type_person_id.id == record.move_id.partner_id.type_person_id.id
+                    lambda l: l.type_person_id.id == type_person.id
                 )
                 if concept_line:
                     is_accumulated = concept_line[0].tariff_id.accumulated_rate
@@ -562,6 +606,9 @@ class AccountRetentionLine(models.Model):
     )
     def _constraint_amounts_in_zero(self):
         for record in self:
+            # Solo validamos si la línea está vinculada a una retención real
+            if not record.retention_id:
+                continue
             if any(
                 (
                     record.retention_amount == 0,
@@ -650,6 +697,7 @@ class AccountRetentionLine(models.Model):
 
     def _get_code_of_retention(self):
         for record in self:
+            type_person = record._get_islr_type_person_id()
             return record.payment_concept_id.line_payment_concept_ids.filtered(
-                lambda l: l.type_person_id == record.retention_id.partner_id.type_person_id
+                lambda l: l.type_person_id == type_person
             ).code if record.payment_concept_id else ""

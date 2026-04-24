@@ -16,17 +16,24 @@ class StockWarehouse(models.Model):
         compute="_compute_readonly_is_consignation_warehouse",
     )
 
+
+
     ### COMPUTES ###
     def _compute_readonly_is_consignation_warehouse(self):
         for warehouse in self:
             warehouse.readonly_is_consignation_warehouse = warehouse.is_consignation_warehouse
 
+
     ### CONSTRAINTS ###
 
     @api.constrains("is_consignation_warehouse")
     def _check_unique_consignation_warehouse(self):
-        if (
-            self.is_consignation_warehouse
-            and self.search_count([("is_consignation_warehouse", "=", True)]) > 1
-        ):
-            raise ValidationError(_("There can only be one consignation warehouse."))
+        for warehouse in self:
+            if warehouse.is_consignation_warehouse and self.search_count(
+                [
+                    ("is_consignation_warehouse", "=", True),
+                    ("id", "!=", warehouse.id),
+                ]
+            ) > 0:
+                raise ValidationError(_("There can only be one consignation warehouse."))
+

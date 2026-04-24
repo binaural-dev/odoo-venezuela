@@ -64,12 +64,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     currency_system = fields.Boolean(string="Report in currency system", default=_default_currency_system)
 
     def _fields_sale_book_line(self, move, taxes):
-        if not move.invoice_date:
+        if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
         values =  {
             "_id": move.id,
-            "document_date": self._format_date(move.invoice_date),
+            "document_date": self._format_date(move.invoice_date_display),
             "accounting_date": self._format_date(move.date),
             "vat": move.vat or '--',
             "partner_name": move.invoice_partner_display_name,
@@ -104,7 +104,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return values
 
     def _fields_purchase_book_line(self, move, taxes):
-        if not move.invoice_date:
+        if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
 
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
@@ -127,7 +127,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         fields_purchase_book_line = {
             "_id": move.id,
-            "document_date": self._format_date(move.invoice_date),
+            "document_date": self._format_date(move.invoice_date_display),
             "accounting_date": self._format_date(move.date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
@@ -812,7 +812,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return "03-ANU"
 
     def search_moves(self):
-        order = "invoice_date asc" if self.report == "purchase" else "correlative asc"
+        order = "invoice_date_display asc" if self.report == "purchase" else "correlative asc"
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
@@ -1118,18 +1118,22 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         })
 
         if move.journal_id.is_purchase_international:
+            # Use custom fields if available, otherwise use calculated taxes for GENERAL (16%)
+            tb_general_intl = move.tax_base_for_international_purchase or tax_base_general_aliquot
+            am_general_intl = move.tax_amount_for_international_purchase or amount_general_aliquot
+
             tax_result.update({
-                "tax_base_reduced_aliquot_international": tax_result.get("tax_base_reduced_aliquot", 0.0),
-                "amount_reduced_aliquot_international": tax_result.get("amount_reduced_aliquot", 0.0),
-                "tax_base_general_aliquot_international": tax_result.get("tax_base_general_aliquot", 0.0),
-                "amount_general_aliquot_international": tax_result.get("amount_general_aliquot", 0.0),
-                "tax_base_extend_aliquot_international": tax_result.get("tax_base_extend_aliquot", 0.0),
-                "amount_extend_aliquot_international": tax_result.get("amount_extend_aliquot", 0.0),
+                "tax_base_reduced_aliquot_international": tax_base_reduced_aliquot,
+                "amount_reduced_aliquot_international": amount_reduced_aliquot,
+                "tax_base_general_aliquot_international": tb_general_intl,
+                "amount_general_aliquot_international": am_general_intl,
+                "tax_base_extend_aliquot_international": tax_base_extend_aliquot,
+                "amount_extend_aliquot_international": amount_extend_aliquot,
                 "international_tax_base_exempt_aliquot": tax_result.get("international_tax_base_exempt_aliquot", 0.0),
                 "international_amount_taxed": (
-                    tax_result.get("tax_base_reduced_aliquot", 0.0) + tax_result.get("amount_reduced_aliquot", 0.0) +
-                    tax_result.get("tax_base_general_aliquot", 0.0) + tax_result.get("amount_general_aliquot", 0.0) +
-                    tax_result.get("tax_base_extend_aliquot", 0.0) + tax_result.get("amount_extend_aliquot", 0.0) +
+                    tax_base_reduced_aliquot + amount_reduced_aliquot +
+                    tb_general_intl + am_general_intl +
+                    tax_base_extend_aliquot + amount_extend_aliquot +
                     tax_result.get("international_tax_base_exempt_aliquot", 0.0)
                 ),
              })
@@ -1245,11 +1249,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             end_col_name = utility.xl_col_to_name(end_col)
             merge_range = f"{start_col_name}6:{end_col_name}6"
 
-            worksheet.merge_range(
-                merge_range, 
-                group['header'], 
-                header_format
-            )
+            if start_col == end_col:
+                worksheet.write(f"{start_col_name}6", group['header'], header_format)
+            else:
+
+                worksheet.merge_range(
+                    merge_range,
+                    group['header'],
+                    header_format
+                )
             
             for field in group_fields:
                 col_index = current_col_index
@@ -1285,7 +1293,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 worksheet.write_formula(
                     total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
                 )
-        
+
+            if field.get("field") == "igtf":
+                worksheet.write(
+                total_idx, index, f'=SUM({col}8:{col}{total_idx})', cell_formats.get("number")
+            )
         
         merge_format_base = workbook.add_format(
             {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray", "locked": True}
@@ -1378,11 +1390,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             end_col_name = utility.xl_col_to_name(end_col)
             merge_range = f"{start_col_name}6:{end_col_name}6"
 
-            worksheet.merge_range(
-                merge_range, 
-                group['header'], 
-                header_format
-            )
+            if start_col == end_col:
+                worksheet.write(f"{start_col_name}6", group['header'], header_format)
+            else:
+
+                worksheet.merge_range(
+                    merge_range,
+                    group['header'],
+                    header_format
+                )
             
             for field in group_fields:
                 col_index = current_col_index
@@ -1417,6 +1433,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 col = utility.xl_col_to_name(index)
                 worksheet.write_formula(
                 total_idx, index, f"=SUM({col}8:{col}{total_idx})", cell_formats.get("number")
+            )
+        
+            if field.get("field") == "igtf":
+                worksheet.write(
+                total_idx, index, f'=SUM({col}8:{col}{total_idx})', cell_formats.get("number")
             )
         
         self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats, last_col_index)
