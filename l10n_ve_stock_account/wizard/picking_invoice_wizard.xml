@@ -31,14 +31,12 @@
         </field>
     </record>
 
-    <act_window
-            id="action_picking_multi_invoice"
-            name="Create Invoices"
-            res_model="picking.invoice.wizard"
-            binding_model="stock.picking"
-            binding_views="list"
-            view_mode="form"
-            target="new"
-    />
+    <record id="action_picking_multi_invoice" model="ir.actions.act_window">
+        <field name="name">Create Invoices</field>
+        <field name="res_model">picking.invoice.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+    </record>
 
 </odoo>
