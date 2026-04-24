@@ -402,14 +402,11 @@ class PosSession(models.Model):
         for line in account_payment.move_id.line_ids:
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = line.credit / self.config_id.foreign_rate
-                _logger.warning(f"LINE CREDIT: {line.credit} - FOREIGN CREDIT: {line.foreign_credit}")
+                line.foreign_credit = line.credit * self.config_id.foreign_inverse_rate
 
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = line.debit / self.config_id.foreign_rate
-                _logger.warning(f"LINE DEBIT: {line.debit} - FOREIGN DEBIT: {line.foreign_debit}")
-        # raise ValidationError("XD")
+                line.foreign_debit = line.debit * self.config_id.foreign_inverse_rate
         return res
 
     def _create_cross_move_payment(self, move):
@@ -565,12 +562,9 @@ class PosSession(models.Model):
             values = bucket.get(key)
             if values is None:
                 values = {"amount": 0.0, "amount_converted": 0.0}
-            _logger.warning("VALUES BEFORE ADDING FOREIGN AMOUNT %s", values)
             values["foreign_amount"] = values.get("foreign_amount", 0.0) + value
-            _logger.warning("VALUES AFTER ADDING FOREIGN AMOUNT %s", values)
             bucket[key] = values
 
-        _logger.warning("DATA EN _ACCUMULATE_AMOUNTS %s", data)
 
         currency_rounding = self.currency_id.rounding
         for order in self.order_ids:
@@ -641,7 +635,6 @@ class PosSession(models.Model):
                 "split_invoice_receivables": split_invoice_receivables,
             }
         )
-        # raise ValidationError(_("The session cannot be closed because the payment %s has amount %s and foreign amount %s. Please, review the payments of the session.") % (payment.id, amount, foreign_amount))
         return data
 
     def _update_amounts(
@@ -658,7 +651,11 @@ class PosSession(models.Model):
         return new_amounts
 
     def _create_invoice_receivable_lines(self, data):
-        """ This method is used to create the invoice receivable lines, is override to set the foreign amounts in the move lines of the invoice receivables."""
+        """ 
+            This method is used to 
+            create the invoice receivable lines, is override to set the foreign amounts in the move lines 
+            of the invoice receivables.
+        """
         res = super()._create_invoice_receivable_lines(data)
         combine_invoice_receivable_lines = res.get("combine_invoice_receivable_lines")
         split_invoice_receivable_lines = res.get("split_invoice_receivable_lines")
@@ -668,21 +665,23 @@ class PosSession(models.Model):
 
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = line.credit / self.config_id.foreign_rate
+                line.foreign_credit = line.credit * self.config_id.foreign_inverse_rate
 
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = line.debit / self.config_id.foreign_rate
-        #TODO: use inverse rate when the currency of the session is the foreign currency
+                line.foreign_debit = line.debit * self.config_id.foreign_inverse_rate
+        
         for payment in split_invoice_receivable_lines.keys():
             line = split_invoice_receivable_lines[payment]
         
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = line.credit / self.config_id.foreign_rate
+                line.foreign_credit = line.credit * self.config_id.foreign_inverse_rate
+        
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = line.debit / self.config_id.foreign_rate
+                line.foreign_debit = line.debit * self.config_id.foreign_inverse_rate
+        
         return res
 
     def _create_bank_payment_moves(self, data):
@@ -698,24 +697,20 @@ class PosSession(models.Model):
             for line in lines:
                 if line.credit > 0:
                     line.not_foreign_recalculate = True
-                    line.foreign_credit = line.credit / self.config_id.foreign_rate
-                    _logger.warning(f"LINE CREDIT: {line.credit} - FOREIGN CREDIT: {line.foreign_credit}")
+                    line.foreign_credit = line.credit * self.config_id.foreign_inverse_rate
                 if line.debit > 0:
                     line.not_foreign_recalculate = True
-                    line.foreign_debit = line.debit / self.config_id.foreign_rate
-                    _logger.warning(f"LINE DEBIT: {line.debit} - FOREIGN DEBIT: {line.foreign_debit}")
+                    line.foreign_debit = line.debit * self.config_id.foreign_inverse_rate
 
         for payment in payment_to_receivable_lines.keys():
             lines = payment_to_receivable_lines[payment]
             for line in lines:
                 if line.credit > 0:
                     line.not_foreign_recalculate = True
-                    line.foreign_credit = line.credit / self.config_id.foreign_rate
-                    _logger.warning(f"LINE CREDIT: {line.credit} - FOREIGN CREDIT: {line.foreign_credit}")
+                    line.foreign_credit = line.credit * self.config_id.foreign_inverse_rate
                 if line.debit > 0:
                     line.not_foreign_recalculate = True
-                    line.foreign_debit = line.debit / self.config_id.foreign_rate
-                    _logger.warning(f"LINE DEBIT: {line.debit} - FOREIGN DEBIT: {line.foreign_debit}")
+                    line.foreign_debit = line.debit * self.config_id.foreign_inverse_rate
         return res
 
     def _create_cash_statement_lines_and_cash_move_lines(self, data):
@@ -727,7 +722,6 @@ class PosSession(models.Model):
         combine_cash_statement_lines = res.get("combine_cash_statement_lines")
         split_cash_receivable_lines = res.get("split_cash_receivable_lines")
         combine_cash_receivable_lines = res.get("combine_cash_receivable_lines")
-        _logger.warning("RES CASH STATEMENT LINES %s", res)
         def _get_lines(container, key):
             if isinstance(container, dict):
                 return list(container.get(key, []))
