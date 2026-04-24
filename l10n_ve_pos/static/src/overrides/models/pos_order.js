@@ -17,7 +17,6 @@ patch(PosOrder.prototype, {
   setup() {
     this.get_foreign_total_tax()
     super.setup(...arguments);
-    // this.foreign_total_with_tax = this.get_foreign_total_with_tax();
   },
 
   get_foreign_currency() {
