@@ -820,7 +820,7 @@ class AccountMove(models.Model):
                     total_bi_igtf += amount_base_payment
 
                     date_conver = False
-                    if payment_move.date <= rec.invoice_date:
+                    if rec.invoice_date != False and payment_move.date <= rec.invoice_date:
                         date_conver = rec.invoice_date
                     else:
                         date_conver = payment_move.date
