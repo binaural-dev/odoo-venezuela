@@ -681,9 +681,15 @@ class SaleOrder(models.Model):
     def _compute_invoice_status(self):
         for order in self:
             if order.state in ('sale', 'done'):
-                total_invoiced = sum(order.order_line.mapped('qty_invoiced'))
-                total_ordered = sum(order.order_line.mapped('product_uom_qty'))
+                invoiceable_lines = order.order_line.filtered(lambda line: not line.display_type)
+                total_invoiced = sum(invoiceable_lines.mapped('qty_invoiced'))
+                total_invoiceable = sum(
+                    line.product_uom_qty
+                    if line.product_id.invoice_policy == 'order'
+                    else line.qty_delivered
+                    for line in invoiceable_lines
+                )
 
-                if total_invoiced > 0 and total_invoiced != total_ordered:
+                if total_invoiced > 0 and total_invoiced < total_invoiceable:
                     order.invoice_status = 'partially_billed'
                     continue
