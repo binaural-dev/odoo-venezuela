@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from unittest.mock import patch
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import UserError
 from odoo import Command
@@ -7,7 +8,7 @@ from odoo import Command
 _logger = logging.getLogger(__name__)
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "test_create_invoice")
 class TestCreateInvoiceFromPicking(TransactionCase):
     """
     Tests for create_invoice and create_multi_invoice methods
@@ -324,3 +325,41 @@ class TestCreateInvoiceFromPicking(TransactionCase):
         invoice = picking1.create_multi_invoice(pickings)
 
         self.assertTrue(invoice, "Invoice should be created even without explicit pricelist")
+
+    # =========================================================================
+    # action_view_invoice context handling tests
+    # =========================================================================
+
+    def test_action_view_invoice_parses_string_context(self):
+        """Regression: action context may come as a python-literal string."""
+        picking = self._create_sale_order(pricelist=self.pricelist_ves)
+        invoice = picking.create_invoice()
+
+        fake_action = {
+            "views": [(False, "list"), (False, "form")],
+            "context": "{'default_move_type': 'out_invoice', 'default_filter_partner': 'customer'}",
+        }
+
+        with patch.object(type(self.env["ir.actions.actions"]), "_for_xml_id", return_value=fake_action):
+            action = picking.action_view_invoice(invoices=invoice)
+
+        self.assertEqual(action["res_id"], invoice.id)
+        self.assertEqual(action["context"].get("default_filter_partner"), "customer")
+        self.assertEqual(action["context"].get("default_partner_id"), picking.partner_id.id)
+
+    def test_action_view_invoice_ignores_non_dict_context(self):
+        """If context evaluates to a non-dict value, method should not crash."""
+        picking = self._create_sale_order(pricelist=self.pricelist_ves)
+        invoice = picking.create_invoice()
+
+        fake_action = {
+            "views": [(False, "list"), (False, "form")],
+            "context": "'invalid_context'",
+        }
+
+        with patch.object(type(self.env["ir.actions.actions"]), "_for_xml_id", return_value=fake_action):
+            action = picking.action_view_invoice(invoices=invoice)
+
+        self.assertEqual(action["res_id"], invoice.id)
+        self.assertEqual(action["context"].get("default_move_type"), "out_invoice")
+        self.assertEqual(action["context"].get("default_partner_id"), picking.partner_id.id)

@@ -21,11 +21,31 @@ patch(contextualUtilsService, {
       });
     };
 
-    /**
-     * Versión para strings.
-     */
     const formatStrForeignCurrency = (valueStr, hasSymbol = true) => {
       return formatForeignCurrency(valueStr, hasSymbol);
+    };
+
+    const getDecimalPrecisionModel = () => {
+      return pos.models?.["decimal.precision"] || null;
+    };
+
+    const getDecimalPrecision = (precisionName = "Tasa", fallback = 2) => {
+      const decimalPrecisionModel = getDecimalPrecisionModel();
+      const recordsContainer = decimalPrecisionModel?.records;
+      const records = recordsContainer?.values
+        ? Array.from(recordsContainer.values())
+        : Array.isArray(recordsContainer)
+          ? recordsContainer
+          : [];
+
+      const precisionRecord = records.find((record) => record?.name === precisionName);
+      const digits = precisionRecord?.digits;
+
+      if (Number.isFinite(digits)) {
+        return Math.trunc(digits);
+      }
+
+      return fallback;
     };
 
     // Inyectamos en env.utils para que sea accesible en OWL (vistas y componentes)
@@ -34,6 +54,8 @@ patch(contextualUtilsService, {
     Object.assign(env.utils, {
       formatForeignCurrency,
       formatStrForeignCurrency,
+      getDecimalPrecisionModel,
+        getDecimalPrecision: getDecimalPrecision,
     });
 
     return res;

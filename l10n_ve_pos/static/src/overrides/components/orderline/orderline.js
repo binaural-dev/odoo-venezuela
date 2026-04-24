@@ -1,6 +1,6 @@
 import { patch } from "@web/core/utils/patch";
 import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
-import { onWillUpdateProps, onWillStart, onMounted } from "@odoo/owl";
+import { onWillUpdateProps } from "@odoo/owl";
 
 patch(Orderline.prototype, {
   setup() {

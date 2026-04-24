@@ -273,6 +273,41 @@ class AccountMove(models.Model):
                                             compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
 
+    amount_residual_company = fields.Monetary(
+        string='residual amount',
+        compute='_compute_amount',
+        store=True,
+        currency_field='company_currency_id'
+    )
+
+    @api.depends(
+        'line_ids.matched_debit_ids.debit_move_id.move_id.origin_payment_id.is_matched',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.origin_payment_id.is_matched',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.balance',
+        'line_ids.currency_id',
+        'line_ids.amount_currency',
+        'line_ids.amount_residual',
+        'line_ids.amount_residual_currency',
+        'line_ids.payment_id.state',
+        'line_ids.full_reconcile_id',
+        'state')
+    def _compute_amount(self):
+        super()._compute_amount()
+
+        for move in self:
+            total_residual_company = 0.0
+            
+            for line in move.line_ids:
+                if line.display_type == 'payment_term':
+                    total_residual_company += line.amount_residual
+            sign = move.direction_sign
+            #raise UserError(_("total_residual_company: %s") % total_residual_company)
+            move.amount_residual_company = -sign * total_residual_company
+
     @api.onchange('invoice_date_display')
     def _onchange_invoice_date_display(self):
         for move in self:
@@ -468,7 +503,6 @@ class AccountMove(models.Model):
                 move._compute_rate()
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
-                _logger.warning("ENTROOOOOOOO AQUIIIIIIIIII %s" , move.reversed_entry_id.foreign_inverse_rate)
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
@@ -1006,6 +1040,7 @@ class AccountMove(models.Model):
         res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
         return res
 
+    
     def action_update_account_id(self):
         """
         Action to update account lines if product dont have account and category dont have account
@@ -1286,6 +1321,8 @@ class AccountMove(models.Model):
 # Unbalanced Lines Synchronization
     @contextmanager
     def _sync_tax_lines(self, container):
+        """ Context manager to synchronize the tax lines of the move with the base lines when the base lines are modified in the view. This is necessary because the tax lines are not directly 
+        linked to the base lines and they can be modified manually by the user."""
         AccountTax = self.env['account.tax']
         fake_base_line = AccountTax._prepare_base_line_for_taxes_computation(None)
 
@@ -1366,6 +1403,7 @@ class AccountMove(models.Model):
                 continue
 
             tax_lines = get_tax_lines(move)
+            
             base_lines = get_base_lines(move)
             move_tax_lines_values_before = tax_lines_values_before.get(move, {})
             move_base_lines_values_before = base_lines_values_before.get(move, {})

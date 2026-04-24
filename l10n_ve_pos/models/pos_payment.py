@@ -47,21 +47,17 @@ class PosPayment(models.Model):
 
             payment_move.write(
                 {
-                    "foreign_rate": payment.foreign_rate,
-                    "foreign_inverse_rate": payment.foreign_inverse_rate,
+                    # "foreign_rate": payment.foreign_rate,
+                    # "foreign_inverse_rate": payment.foreign_inverse_rate,
                     "manually_set_rate": True,
                 }
             )
             for line in payment_move.line_ids:
-                
-                _logger.warning("CREDITO FORANEO %s", abs(payment.foreign_amount) if line.credit > 0 else 0)
-                _logger.warning("DEBITO FORANEO %s", abs(payment.foreign_amount) if line.debit > 0 else 0)
-
+                _logger.warning("Adding to move line %s the foreign amount %s", line.id, payment.foreign_amount)
                 line.write(
                     {
-                        "not_foreign_recalculate": True,
-                        "foreign_debit": abs(payment.foreign_amount) if line.debit > 0 else 0,
-                        "foreign_credit":  abs(payment.foreign_amount) if line.credit > 0 else 0,
+                        "foreign_debit": abs(payment.foreign_amount),
+                        "foreign_credit":  abs(payment.foreign_amount)
                     }
                 )
         return move_id

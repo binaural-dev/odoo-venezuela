@@ -42,6 +42,7 @@ patch(PosOrderline.prototype, {
     return this.get_all_foreign_prices().priceWithTax;
 
   },
+
   get_foreign_total_tax() {
     return round_pr(
       this.get_foreign_price_without_tax() * (this.get_tax() / 100),
@@ -52,13 +53,13 @@ patch(PosOrderline.prototype, {
 
   get_rate(currency) {
     const inverse_rate = currency.rate;
-    return inverse_rate
+    return inverse_rate.toFixed(6);
   },
 
   get_foreign_unit_price() {
 
     const foreign_currency = this.get_foreign_currency()
-    const price = this.get_foreign_calculation_price(foreign_currency, this.price_unit)
+    const price = this.get_foreign_calculation_price(foreign_currency, this.price_unit.toFixed(6))
     this.foreign_price_unit = price
 
     return this.foreign_price_unit;
@@ -124,7 +125,7 @@ patch(PosOrderline.prototype, {
 
   get_foreign_calculation_price(currency, price) {
     const rate = this.get_rate(currency);
-    return parseFloat((price * rate).toFixed(2));
+    return parseFloat((price * rate).toFixed(6));
   },
 
   get foreign_price_unit_display() {

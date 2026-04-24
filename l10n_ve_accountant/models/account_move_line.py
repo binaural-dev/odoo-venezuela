@@ -173,12 +173,48 @@ class AccountMoveLine(models.Model):
                 continue
 
             if line.display_type in ("payment_term", "tax"):
-                line.foreign_debit = (
-                    abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-                )
-                line.foreign_credit = (
-                    abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-                )
+                if float_compare(
+                    line.foreign_balance,
+                    0.0,
+                    precision_rounding=line.foreign_currency_id.rounding,
+                ) != 0:
+                    line.foreign_debit = (
+                        abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
+                    )
+                    line.foreign_credit = (
+                        abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
+                    )
+                    continue
+
+                if line.currency_id == line.company_id.foreign_currency_id and line.amount_currency:
+                    line.foreign_debit = (
+                        abs(line.amount_currency) if line.amount_currency > 0 else 0.0
+                    )
+                    line.foreign_credit = (
+                        abs(line.amount_currency) if line.amount_currency < 0 else 0.0
+                    )
+                    continue
+
+                if line.currency_id and line.currency_id not in (
+                    line.company_id.currency_id,
+                    line.company_id.foreign_currency_id,
+                ):
+                    line.foreign_debit = line.currency_id._convert(
+                        line.debit,
+                        line.company_id.foreign_currency_id,
+                        line.company_id,
+                        line.date or fields.Date.context_today(line),
+                    )
+                    line.foreign_credit = line.currency_id._convert(
+                        line.credit,
+                        line.company_id.foreign_currency_id,
+                        line.company_id,
+                        line.date or fields.Date.context_today(line),
+                    )
+                    continue
+
+                line.foreign_debit = line.debit * line.foreign_inverse_rate
+                line.foreign_credit = line.credit * line.foreign_inverse_rate
                 continue
                 # 1 Case: Payment Term
                 # In this case, we don't want to calculate the foreign debit and credit

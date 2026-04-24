@@ -34,6 +34,14 @@ class ValidateQtyProducts(http.Controller):
                 product_qty_position += 1
 
             return data
+        
+    # @http.route(
+    #     "/decimal_precision", type="json", auth="public", website=False, sitemap=False
+    # )
+    # def decimal_precision(self, **kwargs):
+    #     decimal_precision = request.env["decimal.precision"].sudo().precision_get("tasa")
+    #     _logger.warning(f"Decimal Precision: {decimal_precision}")
+    #     return decimal_precision
 
     @http.route(
         "/validate_products_in_warehouse", type="json", auth="public", website=False, sitemap=False
@@ -101,4 +109,26 @@ class ValidateQtyProducts(http.Controller):
             )
 
         return data
+
+    @http.route(
+        "/get_decimal_precision", type="json", auth="public", website=False, sitemap=False
+    )
+    def get_decimal_precision(self, precision_name="Account", **kwargs):
+        precision = None
+        name = precision_name or "Account"
+
+        try:
+            precision = request.env["decimal.precision"].sudo().precision_get(name)
+        except KeyError:
+            precision = None
+
+        if precision in (None, False):
+            precision = request.env.company.currency_id.decimal_places or 2
+
+        return {
+            "status": 200,
+            "msg": "Success",
+            "precision_name": name,
+            "precision": int(precision),
+        }
     

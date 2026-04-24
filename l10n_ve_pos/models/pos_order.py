@@ -11,12 +11,6 @@ class PosOrder(models.Model):
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.foreign_currency_id")
     foreign_amount_total = fields.Float(string="Foreign Total", readonly=True, required=True)
     foreign_currency_rate = fields.Float(readonly=True, required=False)
-    
-    #TODO: esto no da probleas al procesar ordenes, porque al parecer no encuentra ordenes
-    # def _process_order(self, order, draft, existing_order):
-    #     res = super()._process_order(self ,order, draft, existing_order)
-    #     order = self.browse(res)
-    #     return res
 
     @api.model
     def _order_fields(self, ui_order):
@@ -27,8 +21,15 @@ class PosOrder(models.Model):
 
     def _payment_fields(self, order, ui_paymentline):
         res = super()._payment_fields(order, ui_paymentline)
-        res["foreign_amount"] = ui_paymentline.get("foreign_amount", 0.0)
-        res["foreign_rate"] = ui_paymentline.get("foreign_rate", 0.0)
+        foreign_amount = ui_paymentline.get("foreign_amount", 0.0)
+        foreign_rate = ui_paymentline.get("foreign_rate", 0.0)
+        amount = ui_paymentline.get("amount", 0.0)
+
+        if not foreign_amount and foreign_rate:
+            foreign_amount = amount / foreign_rate
+
+        res["foreign_amount"] = foreign_amount
+        res["foreign_rate"] = foreign_rate
         return res
 
     def _prepare_invoice_vals(self):
@@ -41,17 +42,7 @@ class PosOrder(models.Model):
                 "manually_set_rate": True,
             }
         )
-        return res
-
-    # def _export_for_ui(self, order):
-    #     res = super()._export_for_ui(order)
-    #     # res["foreign_currency_rate"] = order.foreign_currency_rate
-    #     return res 
-    # # @api.model
-    # def _get_invoice_lines_values(line_values, pos_order_line):
-    #     res = super()._get_invoice_lines_values(line_values, pos_order_line)
-    #     res["foreign_price"] = pos_order_line.foreign_price
-    #     return res
+        return res 
 
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"

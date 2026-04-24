@@ -14,7 +14,8 @@ patch(PaymentScreen.prototype, {
 
     super.setup(...arguments)
     this.utils = useEnv().utils,
-      this.dialog = useService("dialog");
+    this.dialog = useService("dialog");
+
   },
 
 
@@ -22,11 +23,7 @@ patch(PaymentScreen.prototype, {
     return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_tax())
   },
 
-  get foreignRemainingText() {
-    return this.utils.formatForeignCurrency(
-      this.currentOrder.get_foreign_due() > 0 ? this.currentOrder.get_foreign_due() : 0
-    );
-  },
+
 
   shouldDownloadInvoice() {
     return false;
@@ -59,6 +56,18 @@ patch(PaymentScreen.prototype, {
     return super.updateSelectedPaymentline(amount);
 
   },
+  
+  // async validateOrder() {
+  //     const order = this.pos.get_order();
+  //     const selectedLine = order.get_selected_paymentline();
+
+  //     if (selectedLine) {
+  //         console.log("Selected Amount:", selectedLine.get_amount());
+  //         console.log("Payment Method:", selectedLine.payment_method.name);
+  //     }
+      
+  //     await super.validateOrder(...arguments);
+  // },
 
   toggleIsToInvoice() {
     this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
