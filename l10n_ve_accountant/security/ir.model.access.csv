@@ -18,4 +18,4 @@ base.access_ir_sequence_group_system,base.access_ir_sequence_group_system,base.m
 account.access_account_journal_group_manager,account.access_account_journal_group_manager,account.model_account_journal_group,account.group_account_manager,1,1,1,0
 account.access_account_tax_manager,account.access_account_tax_manager,account.model_account_tax,account.group_account_manager,1,1,1,0
 
-access_decimal_precision_internal,decimal.precision.internal,base.model_decimal_precision,base.group_user,1,0,0,0
+access_decimal_precision_internal,access_decimal_precision_internal,base.model_decimal_precision,base.group_user,1,0,0,0
