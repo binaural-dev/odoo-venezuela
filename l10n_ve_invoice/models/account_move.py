@@ -16,7 +16,6 @@ class AccountMove(models.Model):
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
-    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
@@ -39,6 +38,10 @@ class AccountMove(models.Model):
     entry_in_period = fields.Boolean(
         compute="_compute_entry_in_period",
     )
+
+    tax_base_for_international_purchase = fields.Float(string='Tax Base for International Purchase', help='Tax base for international purchase to show in purchase book')
+    
+    tax_amount_for_international_purchase = fields.Float(string='Tax Amount for International Purchase', help='Tax amount for international purchase to show in purchase book')
 
     @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
