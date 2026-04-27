@@ -54,7 +54,3 @@ class TestSaleOrderInvoiceStatus(TransactionCase):
             'partially_billed',
             "El estado debería ser 'partially_billed' porque facturamos 5 y entregamos 10"
         )
-
-    def test_02_full_billed_status(self):
-        """Validar que el estado vuelva a lo estándar (invoiced) si se completa la factura."""
-        pass
