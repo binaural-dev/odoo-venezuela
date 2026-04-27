@@ -1759,3 +1759,8 @@ msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
 msgid "foreign_amount"
 msgstr "Importe alterno"
 
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__amount_residual_company
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__amount_residual_company
+msgid "residual amount"
+msgstr "Importe adeudado"

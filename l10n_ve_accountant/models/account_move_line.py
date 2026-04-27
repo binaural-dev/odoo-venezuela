@@ -186,6 +186,9 @@ class AccountMoveLine(models.Model):
                 continue
 
             if line.display_type in ("payment_term", "tax"):
+                # 1 Case: Payment Term / Tax
+                # foreign_balance is set by _sync_tax_lines / _inverse_foreign_balance.
+                # payment_term will be overwritten by the residue block below.
                 line.foreign_debit = (
                     abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
                 )
@@ -193,31 +196,27 @@ class AccountMoveLine(models.Model):
                     abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
                 )
                 continue
-                # 1 Case: Payment Term
-                # In this case, we don't want to calculate the foreign debit and credit
 
             if line.display_type in ("line_section", "line_note"):
+                # 2 Case: Section / Note — no foreign amount
                 line.foreign_debit = line.foreign_credit = 0.0
-                # 2 Case: not Product
-                # In this case, we don't want to calculate the foreign debit and credit
                 continue
 
             if line.foreign_debit_adjustment:
+                # 3 Case: Foreign Debit Adjustment (manual override)
                 line.foreign_debit = abs(line.foreign_debit_adjustment)
-                # 3 Case: Foreign Debit Adjustment
-                # In this case, we need to set the foreign debit manually
                 continue
 
             if line.foreign_credit_adjustment:
+                # 4 Case: Foreign Credit Adjustment (manual override)
                 line.foreign_credit = abs(line.foreign_credit_adjustment)
-                # 4 Case: Foreign Credit Adjustment
-                # In this case, we need to set the foreign credit manually
                 continue
 
             if (
                 line.currency_id == line.company_id.foreign_currency_id
                 and line.amount_currency
             ):
+                # 5 Case: Line already in foreign currency — use amount_currency directly
                 line.foreign_debit = (
                     abs(line.amount_currency) if line.amount_currency > 0 else 0.0
                 )
@@ -231,8 +230,7 @@ class AccountMoveLine(models.Model):
                 and "retention_foreign_amount" in self.env["account.payment"]._fields
                 and line.move_id.origin_payment_id.is_retention
             ):
-                # 5 Case: Retention
-                # In this case, we need to set the foreign debit and credit of the retention
+                # 6 Case: Retention — use the retention's own foreign amount
                 if not line.currency_id.is_zero(line.debit):
                     line.foreign_debit = (
                         line.move_id.origin_payment_id.retention_foreign_amount
@@ -245,54 +243,92 @@ class AccountMoveLine(models.Model):
                     continue
 
             if not line.move_id.is_invoice(include_receipts=True):
-                # 6 Case: Not Invoice
-                # In this case, we need to calculate the foreign debit and credit with rate
+                # 7 Case: Not Invoice (journal entry, payment, etc.)
                 foreign_lines = line.move_id.line_ids.filtered(
                     lambda l: l.currency_id == l.company_id.foreign_currency_id
                 )
                 currency_lines = line.move_id.line_ids.filtered(
                     lambda l: l.currency_id == l.company_id.currency_id
                 )
-
                 balance = sum((foreign_lines).mapped("amount_currency"))
                 if balance and len(currency_lines) == 1:
                     line.foreign_debit = abs(balance) if balance < 0 else 0.0
                     line.foreign_credit = abs(balance) if balance > 0 else 0.0
                     continue
-
                 if line.currency_id and line.currency_id != line.company_id.foreign_currency_id and line.currency_id != line.company_id.currency_id:
-                     line.foreign_debit = line.company_id.currency_id._convert(
-                         line.debit,
-                         line.company_id.foreign_currency_id,
-                         line.company_id,
-                         line.date or fields.Date.context_today(line)
-                     )
-                     line.foreign_credit = line.company_id.currency_id._convert(
-                         line.credit,
-                         line.company_id.foreign_currency_id,
-                         line.company_id,
-                         line.date or fields.Date.context_today(line)
-                     )
+                    line.foreign_debit = line.company_id.currency_id._convert(
+                        line.debit,
+                        line.company_id.foreign_currency_id,
+                        line.company_id,
+                        line.date or fields.Date.context_today(line)
+                    )
+                    line.foreign_credit = line.company_id.currency_id._convert(
+                        line.credit,
+                        line.company_id.foreign_currency_id,
+                        line.company_id,
+                        line.date or fields.Date.context_today(line)
+                    )
                 else:
                     line.foreign_debit = line.debit * line.foreign_inverse_rate
                     line.foreign_credit = line.credit * line.foreign_inverse_rate
                 continue
 
             if line.display_type in ("product", "cogs"):
-                # 7 Case: Product
-                # In this case, we need to calculate the foreign debit and credit with subtotal
+                # 8 Case: Product / COGS — use foreign_subtotal
                 sign = line.move_id.direction_sign * -1
                 amount = line.foreign_subtotal * sign
                 line.foreign_debit = abs(amount) if amount < 0 else 0.0
                 line.foreign_credit = abs(amount) if amount > 0 else 0.0
                 continue
 
-            # line.foreign_debit = (
-            #     abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-            # )
-            # line.foreign_credit = (
-            #     abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-            # )
+        # ── Ajuste de residuo: payment_term en facturas ───────────────────────
+        # El loop calcula payment_term con foreign_balance (conversión individual),
+        # lo que introduce diferencia de centavo al sumar múltiples líneas con tasa.
+        # Leemos move.line_ids completo (no solo self) porque Odoo puede disparar
+        # este compute solo para la payment_term cuando las otras ya están en DB.
+        for move in self.mapped("move_id"):
+            if not move.is_invoice(include_receipts=True):
+                continue
+            pt_lines = self.filtered(
+                lambda l: l.move_id == move
+                and l.display_type == "payment_term"
+                and not l.not_foreign_recalculate
+            )
+            if not pt_lines:
+                continue
+            all_other = move.line_ids.filtered(
+                lambda l: l.display_type != "payment_term"
+            )
+            total_debit = sum(all_other.mapped("foreign_debit"))
+            total_credit = sum(all_other.mapped("foreign_credit"))
+            foreign_currency = move.company_id.foreign_currency_id
+            pt_sorted = pt_lines.sorted("id")
+            n = len(pt_sorted)
+            total_balance = sum(abs(l.balance) for l in pt_sorted)
+
+            for i, pt_line in enumerate(pt_sorted):
+                is_credit_side = pt_line.credit > 0
+                foreign_total = total_debit if is_credit_side else total_credit
+
+                if n == 1:
+                    my_foreign = foreign_total
+                elif i < n - 1:
+                    ratio = abs(pt_line.balance) / total_balance if total_balance else 0.0
+                    my_foreign = foreign_currency.round(ratio * foreign_total)
+                else:
+                    assigned = sum(
+                        foreign_currency.round(abs(l.balance) / total_balance * foreign_total)
+                        if total_balance else 0.0
+                        for l in list(pt_sorted)[:-1]
+                    )
+                    my_foreign = foreign_total - assigned
+
+                if is_credit_side:
+                    pt_line.foreign_credit = my_foreign
+                    pt_line.foreign_debit = 0.0
+                else:
+                    pt_line.foreign_debit = my_foreign
+                    pt_line.foreign_credit = 0.0
 
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
