@@ -53,11 +53,10 @@ class AccountMove(models.Model):
         for move in self:
             move.entry_in_period = False
 
-            if move.state == "cancel":
+            if move.state in ["cancel", "draft"]:
                 continue
 
-
-            if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
+            if move.move_type == "out_refund" or move.move_type == "out_invoice":
                 if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
                     if taxpayer_type == "special" and move.invoice_date.day < 15 < period_limit.day:
                         move.entry_in_period = False
@@ -100,7 +99,7 @@ class AccountMove(models.Model):
 
     def action_post(self):
         for record in self:
-            sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
+            sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)], limit=1)
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
