@@ -672,3 +672,34 @@ class SaleOrder(models.Model):
             else:
                 order.amount_untaxed_total_signed = order.amount_untaxed
                 order.amount_total_signed = order.amount_total
+
+    invoice_status = fields.Selection(
+        selection_add=[('partially_billed', 'Partially billed')],
+    )
+
+    @api.depends('state', 'order_line.invoice_status', 'order_line.qty_invoiced', 'order_line.product_uom_qty')
+    def _compute_invoice_status(self):
+        sale_done_orders = self.filtered(lambda order: order.state in ('sale', 'done'))
+        other_orders = self - sale_done_orders
+
+        if sale_done_orders:
+            super(SaleOrder, sale_done_orders)._compute_invoice_status()
+
+        if other_orders:
+            super(SaleOrder, other_orders)._compute_invoice_status()
+
+        for order in sale_done_orders:
+            invoiceable_lines = order.order_line.filtered(lambda line: not line.display_type)
+            total_invoiced = sum(invoiceable_lines.mapped('qty_invoiced'))
+            total_invoiceable = sum(
+                line.product_uom_qty
+                if line.product_id.invoice_policy == 'order'
+                else line.qty_delivered
+                for line in invoiceable_lines
+            )
+
+            if total_invoiced > 0 and total_invoiced < total_invoiceable:
+                order.invoice_status = 'partially_billed'
+
+        for order in other_orders:
+            order.invoice_status = order.invoice_status
