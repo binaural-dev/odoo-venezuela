@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "17.0.1.0.0",
+    "version": "17.0.1.0.1",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "",
@@ -24,6 +24,7 @@
         "views/res_config_setting_views.xml",
         "views/sale_order_views.xml",
         "views/stock_picking_type_views.xml",
+        "views/stock_picking_views.xml",
         "views/stock_scrap_views.xml",
         "views/stock_warehouse_views.xml",
     ],

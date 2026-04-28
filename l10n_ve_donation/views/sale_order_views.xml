@@ -7,6 +7,10 @@
             <xpath expr="//field[@name='is_donation']" position="attributes">
                 <attribute name="force_save">1</attribute>
             </xpath>
+
+            <field name="document" position="attributes">
+                <attribute name="readonly">is_donation</attribute>
+            </field>
         </field>
     </record>
 </odoo>
