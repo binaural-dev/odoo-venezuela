@@ -28,5 +28,8 @@ class MoveActionPostAlertWizard(models.TransientModel):
                         if move_type == "out_refund":
                             raise UserError(_("The credit note %s has not been digitized") % (previous_invoice.name))
                         
+        if self.move_id and not self.move_id.company_id.digitalization_with_payment_tfhka:
+            self.move_id.generate_document_digital()
+
         return res
 

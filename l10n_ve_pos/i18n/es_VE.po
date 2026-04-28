@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250313\n"
+"Project-Id-Version: Odoo Server 17.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-04 16:05+0000\n"
-"PO-Revision-Date: 2025-07-04 16:05+0000\n"
+"POT-Creation-Date: 2025-10-21 14:24+0000\n"
+"PO-Revision-Date: 2025-10-21 14:24+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -94,6 +94,8 @@ msgid ""
 "Activate product entry with barcode in\n"
 "                                                            strict mode"
 msgstr ""
+"Activar entrada de producto con\n"
+"                                       código de barras en modo estricto"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__activate_barcode_strict_mode
@@ -122,6 +124,9 @@ msgid ""
 "                                                        not in the main\n"
 "                                                        warehouse of the box."
 msgstr ""
+"Permite vender kits cuyos productos son\n"
+"                                                        no en el principal\n"
+"                                                        warehouse of the box."
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__amount_to_zero
@@ -138,7 +143,7 @@ msgstr "Monto Total"
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__apply_one_cross_move
 msgid "Apply One Cross Move"
-msgstr "Aplicar un único asiento de ajuste"
+msgstr "Aplicar un único asiento de ajuste(PDV)"
 
 #. module: l10n_ve_pos
 #: model:res.groups,name:l10n_ve_pos.group_authorized_discount_pos
@@ -251,12 +256,12 @@ msgstr "Creado en"
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__cross_account_journal
 msgid "Cross Account Journal"
-msgstr "Diario de Cruce de Cuentas"
+msgstr "Diario de Cruce de Cuentas Bancarias"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__cross_journal
 msgid "Cross Journal"
-msgstr "Diario afectado de banco o efectivo"
+msgstr "Diario afectado de tipo Banco"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__foreign_currency_id
@@ -601,6 +606,13 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/warehouse.py:0
+#, python-format
+msgid "PoS Orders"
+msgstr "Órdenes de PdV"
+
+#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "Point of Sale"
 msgstr "Punto de Venta"
@@ -623,7 +635,7 @@ msgstr "Punto de Venta Reporte de Detalles"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_order_line
 msgid "Point of Sale Order Lines"
-msgstr "Líneas de orden del punto de venta"
+msgstr "Líneas de orden del Punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_order
@@ -633,7 +645,7 @@ msgstr "Órdenes del punto de venta"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment_method
 msgid "Point of Sale Payment Methods"
-msgstr "Métodos de pago de punto de venta "
+msgstr "Métodos de pago del punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_payment
@@ -643,7 +655,7 @@ msgstr "Pagos en punto de venta"
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_pos_session
 msgid "Point of Sale Session"
-msgstr "Sesión del punto de venta"
+msgstr "Sesión de punto de venta"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__pos_config_ids
@@ -912,6 +924,11 @@ msgid "View Payments Origin"
 msgstr "Ver Pagos del Origen"
 
 #. module: l10n_ve_pos
+#: model:ir.model,name:l10n_ve_pos.model_stock_warehouse
+msgid "Warehouse"
+msgstr "Almacén"
+
+#. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
 #, python-format
@@ -938,6 +955,7 @@ msgid ""
 msgstr ""
 "No puede romper conciliación de un pago vinculado a una sesión de POS que "
 "aún está abierta"
+
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "allows sales on order without having the product available"
@@ -947,3 +965,38 @@ msgstr "Permite la venta bajo pedido sin tener el producto disponible"
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos
 msgid "report.l10n_ve_pos.payment_report_pos"
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#, python-format
+msgid "Cross Move per Operation - Session: %s"
+msgstr "Cruce por Operación - Sesión: %s"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#, python-format
+msgid "Unique PoS Cross Move - Sesión: %s"
+msgstr "Cruce Único PoS - Sesión: %s"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+#, python-format
+msgid "PoS Payment Method Adjustment"
+msgstr "Ajuste del método de pago POS"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+#, python-format
+msgid "You cannot enable 'Apply a single adjustment entry' and 'Identify customer' "
+"together for the same payment method."
+msgstr "No puedes habilitar 'Aplicar un único asiento de ajuste' junto a 'Identificar cliente' "
+"para un mismo método de pago"

@@ -3,11 +3,12 @@
 import { Payment } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import {
-	formatFloat,
-	roundDecimals as round_di,
-	roundPrecision as round_pr,
-	floatIsZero,
+  formatFloat,
+  floatIsZero,
+  roundDecimals as round_di,
+  roundPrecision as round_pr,
 } from "@web/core/utils/numbers";
+
 
 // New orders are now associated with the current table, if any.
 patch(Payment.prototype, {
@@ -33,7 +34,7 @@ patch(Payment.prototype, {
 		let res = super.set_amount(...arguments);
 		if (!only) {
 			if (is_due) {
-				this.set_foreign_amount(this.order.get_foreign_due(), true);
+				this.set_foreign_amount(this.order.get_foreign_due() + this.order.get_foreign_rounding_applied(), true);
 				return res;
 			}
 			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
@@ -45,7 +46,7 @@ patch(Payment.prototype, {
 		if (!only) {
 			if (this.pos.currency.name == "VEF") {
 				if (this.payment_method.is_foreign_currency) {
-					this.amount=this.foreign_amount / this.pos.foreign_currency.rate
+					this.amount = round_pr(this.foreign_amount * 1 / this.pos.foreign_currency.rate, this.pos.currency.rounding)
 					return;
 				}
 				this.amount = amount / this.order.get_conversion_rate();

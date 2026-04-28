@@ -158,24 +158,27 @@ class AccountRetention(models.Model):
 
         if response:
             approves = False
+            found_series = False
             for numbering in response.get("numeraciones", []):
-                if series != "":
-                    if numbering.get("serie") == series:
-                        end_number = numbering.get("hasta")
-                        start_number = numbering.get("correlativo")
-                else:
-                    if numbering.get("serie") == "NO APLICA":
-                        end_number = numbering.get("hasta")
-                        start_number = numbering.get("correlativo")
+                serie_tfhka = numbering.get("serie", "")
+                if serie_tfhka != series and serie_tfhka != "NO APLICA":
+                    continue
                 
+                end_number = numbering.get("hasta")
+                start_number = numbering.get("correlativo")
+                found_series = True
+
                 if int(start_number) < int(end_number):
                     approves = True
                     break
+                
+            if not found_series:
+                raise UserError(_("The series '%(series)s' is not configured in The Factory HKA. Please contact the administrator.") % {'series': series})
+            
+            if not approves:
+                raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
-            if approves:
-                return
-
-            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
+            return
 
     def get_document_identification(self, document_type, document_number):
         for record in self:
@@ -255,17 +258,28 @@ class AccountRetention(models.Model):
         retention_data = {}
 
         for record in self:
+
+            if record.base_currency_is_vef:
+                total_invoice = str(round(abs(record.total_invoice_amount), 2))
+                total_iva = str(round(abs(record.total_iva_amount), 2))
+                total_retention = str(round(abs(record.total_retention_amount), 2))
+            
+            else:
+                total_invoice = str(round(abs(record.foreign_total_invoice_amount), 2))
+                total_iva = str(round(abs(record.foreign_total_iva_amount), 2))
+                total_retention = str(round(abs(record.foreign_total_retention_amount), 2))
+
             retention_data = {
-                "totalBaseImponible": str(round(abs(record.total_invoice_amount), 2)), 
+                "totalBaseImponible": total_invoice, 
                 "numeroCompRetencion": record.number, 
                 "fechaEmisionCR": record.date.strftime("%d/%m/%Y"), 
-                "tipoComprobante": "" if record.total_iva_amount else "1",
+                "tipoComprobante": "" if record.total_iva_amount or record.foreign_total_iva_amount else "1",
             }
             if document_type == "05":
-                retention_data["totalRetenido"] = str(round(abs(record.total_retention_amount), 2))
-                retention_data["totalIVA"] = str(round(abs(record.total_iva_amount), 2))
+                retention_data["totalRetenido"] = total_retention
+                retention_data["totalIVA"] = total_iva
             else:
-                retention_data["TotalISRL"] = str(round(abs(record.total_iva_amount), 2))
+                retention_data["TotalISRL"] = total_retention
 
             return retention_data    
 
@@ -280,22 +294,37 @@ class AccountRetention(models.Model):
         for record in self:
             for line in record.retention_line_ids:
                 tipo_documento = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
-                document_number_ret = str(line.move_id.sequence_number)
+                serie = line.move_id.name
+                document_series_ret = ''.join([c for c in serie if c.isalpha()])
+                document_number_ret = str(''.join([c for c in serie if c.isdigit()]))
+
+                if record.base_currency_is_vef:
+                    invoice_total = str(round(line.invoice_total, 2))
+                    invoice_amount = str(round(line.invoice_amount, 2))
+                    retention_amount = str(round(line.retention_amount, 2))
+                    iva_amount = str(round(line.iva_amount, 2))
+
+                else:
+                    invoice_total = str(round(line.foreign_invoice_total, 2))
+                    invoice_amount = str(round(line.foreign_invoice_amount, 2))
+                    retention_amount = str(round(line.foreign_retention_amount, 2))
+                    iva_amount = str(round(line.foreign_iva_amount, 2))
 
                 retention_data = {
                     "numeroLinea": str(counter), 
-                    "fechaDocumento": line.date_accounting.strftime("%d/%m/%Y"), 
+                    "fechaDocumento": line.move_id.invoice_date.strftime("%d/%m/%Y"), 
                     "tipoDocumento": tipo_documento,
+                    "serieDocumento": document_series_ret,
                     "numeroDocumento": document_number_ret,
                     "numeroControl": line.move_id.correlative,
-                    "montoTotal": str(round(line.invoice_total, 2)),  
-                    "baseImponible": str(round(line.invoice_amount, 2)),
+                    "montoTotal": invoice_total,  
+                    "baseImponible": invoice_amount,
                     "moneda": record.company_id.currency_id.name,
-                    "retenido": str(round(line.retention_amount, 2)),
+                    "retenido": retention_amount,
                 }
 
                 if document_type == "05":
-                    retention_data["montoIVA"] = str(round(line.iva_amount, 2))
+                    retention_data["montoIVA"] = iva_amount
                     retention_data["porcentaje"] = str(round(line.aliquot, 2))
                     retention_data["retenidoIVA"] = str(round(line.related_percentage_tax_base, 2))
 

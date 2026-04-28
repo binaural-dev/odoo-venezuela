@@ -2,6 +2,7 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime
 from io import BytesIO
 from odoo import models, fields
+from odoo.exceptions import UserError
 import xlsxwriter
 import logging
 _logger = logging.getLogger(__name__)
@@ -9,6 +10,32 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     _inherit = "wizard.accounting.reports"
 
     with_fiscal_machine = fields.Boolean(default=False)
+
+    all_documents = fields.Boolean(
+        default=False,
+        string="Include all issued documents",
+        help="It includes all documents, both those issued by a fiscal machine and those issued by free form.",
+    )
+
+    def _get_domain_all_documents(self):
+        """ Get specific search domains for both free-form and fiscal machine documents.
+
+        This method generates two separate domains to allow retrieving documents 
+        from both sources independently:
+        1. domain_free_form: The standard domain for traditional invoices.
+        2. domain_fiscal_machine: A filtered domain that ensures the inclusion of 
+           fiscal machine specific data (Serial, Report Z, and Fiscal Number).
+
+        :return: A tuple containing (domain_free_form, domain_fiscal_machine).
+        :rtype: tuple(list, list)
+        """
+        domain_free_form = self._get_domain()
+        domain_fiscal_machine = self._get_domain()
+        domain_fiscal_machine = [d for d in domain_fiscal_machine if d != ('correlative', 'not in', ['/', False])]
+        domain_fiscal_machine.append(("mf_invoice_number", "!=", False))
+        domain_fiscal_machine.append(("mf_reportz", "!=", False))
+        domain_fiscal_machine.append(("mf_serial", "!=", False))
+        return domain_free_form, domain_fiscal_machine
 
     def _get_domain(self):
         res = super()._get_domain()
@@ -21,37 +48,71 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return res
 
     def search_moves(self):
-        if not self.with_fiscal_machine:
-            return super().search_moves()
-
+        if self.with_fiscal_machine:
+            res = super().search_moves()
+            res = res.filtered_domain([("mf_serial", "!=", False)])
+            res = res.sorted(key=lambda r: r.invoice_date)
+            return res
+        if self.all_documents:
+            domain_free_form , domain_fiscal_machine = self._get_domain_all_documents()
+            account_moves_free_form = self.env["account.move"].search(domain_free_form, order="invoice_date asc")
+            account_moves_fiscal_machine = self.env["account.move"].search(domain_fiscal_machine, order="invoice_date asc")
+            moves = account_moves_free_form | account_moves_fiscal_machine
+            return moves.sorted(key=lambda r: r.invoice_date or r.date)
         move_model = self.env["account.move"]
         domain = self._get_domain()
         moves = move_model.search(domain, order="invoice_date asc")
         return moves
 
-    def sale_book_fields(self):
-        res = super().sale_book_fields()
-        if not self.with_fiscal_machine:
-            return res
-        for i, field in enumerate(res):
-            if field.get("field", False) == "correlative":
-                del res[i]
-                break
-        res.insert(4, {"name": "Reporte Z", "field": "mf_reportz"})
-        res.insert(4, {"name": "Serial de Maquina", "field": "mf_serial"})
-        return res
+    def _get_sale_book_field_groups(self):
+        sale_groups = super()._get_sale_book_field_groups()
+
+        if not self.with_fiscal_machine and not self.all_documents:
+            return sale_groups
+
+        new_fields = [
+            {"name": "Reporte Z", "field": "mf_reportz", "size": 16},
+            {"name": "Serial de Maquina", "field": "mf_serial", "size": 16},
+        ]
+
+        for group in sale_groups:
+            if group.get('header') == 'DETALLE DEL DOCUMENTO':
+                basic_fields = group['fields']
+
+                insertion_index = -1
+                for i, field_dict in enumerate(basic_fields):
+                    if field_dict.get('field') == 'move_type':
+                        insertion_index = i + 1  
+                        break
+
+                if insertion_index != -1:
+
+                    basic_fields.insert(insertion_index, new_fields[1]) 
+
+                    basic_fields.insert(insertion_index, new_fields[0]) 
+
+                break 
+
+        return sale_groups
 
     def _fields_sale_book_line(self, move, taxes):
         res = super()._fields_sale_book_line(move, taxes)
-        if not self.with_fiscal_machine:
+        if not self.with_fiscal_machine and not self.all_documents:
             return res
-        del res["correlative"]
-        res["document_number"] = (
-            move.mf_invoice_number if move.mf_invoice_number else "-"
-        )
-        res["mf_reportz"] = move.mf_reportz if move.mf_reportz else "-"
-        res["mf_serial"] = move.mf_serial if move.mf_serial else "-"
-        res["number_invoice_affected"] = move.reversed_entry_id.mf_invoice_number or ""
+
+        if self.with_fiscal_machine:
+            del res["correlative"]
+
+        if move.mf_invoice_number:
+            res["document_number"] = move.mf_invoice_number
+
+        if move.reversed_entry_id.mf_invoice_number:
+            res["number_invoice_affected"] = move.reversed_entry_id.mf_invoice_number
+
+        res.update({
+            "mf_reportz": move.mf_reportz or "-",
+            "mf_serial": move.mf_serial or "-",
+        })
         return res
 
     def update_amounts(self, cumulative, amounts):
@@ -92,7 +153,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         }
 
     def parse_sale_book_data(self):
-        if not self.with_fiscal_machine:
+        if not self.with_fiscal_machine or self.all_documents:
             return super().parse_sale_book_data()
 
         sale_book_lines = []
@@ -217,4 +278,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                             range_last = move.mf_invoice_number
                             continue
                         range_last = move.mf_invoice_number
+        
+        sale_book_lines = sorted(
+                    sale_book_lines,
+                    key=lambda row: datetime.strptime(row['document_date'], "%d/%m/%Y")
+                )                       
         return sale_book_lines
