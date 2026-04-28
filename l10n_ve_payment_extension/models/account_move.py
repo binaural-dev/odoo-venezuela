@@ -83,6 +83,101 @@ class AccountMoveRetention(models.Model):
         string="Edit ISLR Retention Lines?", compute="_compute_state_retentions_lines"
     )
 
+    is_isrl_retention_available = fields.Boolean(
+        string="¿Is retention islr Available?", compute="_compute_retention_islr_avalability", store=True,copy=False
+    )
+
+    generate_islr_retention = fields.Boolean(
+        string="¿Generate ISLR Retention?",
+        default=False, copy=False
+    )
+
+    count_islr_retention = fields.Integer('count islr retention',compute="compute_count_retentions")
+    count_iva_retention = fields.Integer('count iva retention',compute="compute_count_retentions")
+    count_municipal_retention = fields.Integer('count iva retention', compute="compute_count_retentions")
+
+    has_emited_islr_retention = fields.Boolean('has emited islr_retention', compute="compute_count_retentions")
+    has_emited_municipal_retention = fields.Boolean('has emited municipal retention', compute="compute_count_retentions")
+    has_emited_iva_retention = fields.Boolean('has emited iva retention', compute="compute_count_retentions")
+
+    def compute_count_retentions(self):
+        
+        for rec in self:
+            lines = self.env['account.retention.line'].search([('move_id', 'in', rec.ids)])
+            ret_all = lines.filtered(lambda l: l.move_id.id == rec.id).mapped('retention_id')
+
+            islr = ret_all.filtered(lambda r: r.type_retention == 'islr')
+            iva = ret_all.filtered(lambda r: r.type_retention == 'iva')
+            muni = ret_all.filtered(lambda r: r.type_retention == 'municipal')
+            rec.write({
+                'count_islr_retention': len(islr),
+                'has_emited_islr_retention': any(r.state == 'emitted' for r in islr),
+                
+                'count_iva_retention': len(iva),
+                'has_emited_iva_retention': any(r.state == 'emitted' for r in iva),
+                
+                'count_municipal_retention': len(muni),
+                'has_emited_municipal_retention': any(r.state == 'emitted' for r in muni),
+            })
+
+    def action_view_retention(self):
+        self.ensure_one()
+        ret_type = self.env.context.get('retention_type')
+        
+        retentions = False
+        if ret_type == 'iva':
+           retentions = self.retention_iva_line_ids.mapped('retention_id')
+        elif ret_type == 'islr':
+            retentions = self.retention_islr_line_ids.mapped('retention_id')
+        else:
+            retentions = self.retention_municipal_line_ids.mapped('retention_id')
+
+        names = {
+            'iva': _('IVA Retentions'),
+            'islr': _('ISLR Retentions'),
+            'municipal': _('Municipal Retentions'),
+        }
+        # Obtenemos el nombre basado en el tipo, o un genérico por si acaso
+        action_name = names.get(ret_type, _('Retentions'))
+
+        if retentions:
+            if len(retentions) == 1:
+                
+                return {
+                    'name': action_name,
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'account.retention',
+                    'view_mode': 'form',
+                    'res_id': retentions.id,
+                    'target': 'current',
+                }
+            else:
+                return {
+                    'name': action_name,
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'account.retention',
+                    'view_mode': 'list,form',
+                    'domain': [('id', 'in', retentions.ids)],
+                    'target': 'current',
+                }
+        
+
+    @api.depends(
+        "invoice_line_ids",
+        "invoice_line_ids.product_id",
+    )
+    def _compute_retention_islr_avalability(self):
+        for record in self:
+            record.is_isrl_retention_available = any(
+                line.product_id.product_tmpl_id.type == 'service' and 
+                line.product_id.product_tmpl_id.payment_concept 
+                for line in record.invoice_line_ids
+            )
+
+            if not record.is_isrl_retention_available and record.generate_islr_retention:
+                record.generate_islr_retention = False
+
+
     def _compute_third_party_retention_counts(self):
         Retention = self.env["account.retention"]
         for record in self:
@@ -222,22 +317,16 @@ class AccountMoveRetention(models.Model):
         """
         res = super().action_post()
         for move in self:
+            if (
+                not move.islr_voucher_number and move.generate_islr_retention 
+            ):
+                #move._validate_islr_retention()
+                move.auto_create_islr_retention()
+
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
             company = move.company_id or self.env.company
-            if (
-                move.retention_islr_line_ids
-                and not move.islr_voucher_number
-                and move.retention_islr_line_ids.filtered(
-                    lambda l: l.state != "emitted"
-                )
-            ):
-                move._validate_islr_retention()
-                retention = move._create_supplier_retention("islr")
-
-                if not company.create_retentions_of_suppliers_in_draft:
-                    retention.action_post()
-                move.islr_voucher_number = retention.number
+            
 
             if (
                 move.retention_municipal_line_ids
@@ -486,15 +575,15 @@ class AccountMoveRetention(models.Model):
                 move.foreign_inverse_rate = move.origin_payment_id.foreign_rate
         return res
         
-    def action_crear_islr_from_invoice(self):
+    def action_create_islr_from_invoice(self):
         for record in self:
-            lineas_existentes = self.env['account.retention.line'].search([
+            lines = self.env['account.retention.line'].search([
                 ('move_id', '=', self.id),
                 ('state', '=', 'draft'),
                 ('retention_id.type_retention', '=', 'islr')
             ])
-            retentions = lineas_existentes.mapped('retention_id')
-            published_retentions = lineas_existentes.filtered(lambda l: l.retention_id.state == 'posted').mapped('retention_id')
+            retentions = lines.mapped('retention_id')
+            published_retentions = lines.filtered(lambda l: l.retention_id.state == 'posted').mapped('retention_id')
 
             if published_retentions:
                  raise UserError(_(
@@ -540,12 +629,12 @@ class AccountMoveRetention(models.Model):
                     "No services with a configured 'Payment Concept' were found in the lines of invoice %s."
                 ) % record.name)
 
-            conceptos_montos = defaultdict(float)
+            payment_concepts = defaultdict(float)
         
             for line in self.invoice_line_ids:
                 if line.product_id.product_tmpl_id.type == 'service' and bool(line.product_id.product_tmpl_id.payment_concept):
                     concept_id = line.product_id.product_tmpl_id.payment_concept.id
-                    conceptos_montos[concept_id] += line.price_subtotal
+                    payment_concepts[concept_id] += line.price_subtotal
 
             if self.move_type == 'in_invoice':
                 xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_supplier'
@@ -563,7 +652,7 @@ class AccountMoveRetention(models.Model):
                 'default_date_accounting': fields.Date.today(),
                 'default_type': self.move_type,
                 'default_type_retention': 'islr',
-                'default_islr_lines': conceptos_montos,
+                'default_islr_lines': payment_concepts,
             })
 
             action['context'] = ctx
@@ -572,3 +661,37 @@ class AccountMoveRetention(models.Model):
             action['target'] = 'current'
             
             return action
+    def auto_create_islr_retention(self):
+        for rec in self:
+
+            if not self.env.company.islr_supplier_retention_journal_id:
+                raise UserError(
+                    _("The company must have a journal for ISLR supplier retention.")
+                )
+            
+            if not self.partner_id.type_person_id:
+                raise UserError(_("The partner must have a type of person"))
+        
+            payment_concepts = defaultdict(float)
+            
+            for line in rec.invoice_line_ids:
+                product_tmpl = line.product_id.product_tmpl_id
+                if product_tmpl.type == 'service' and product_tmpl.payment_concept:
+                    concept_id = product_tmpl.payment_concept.id
+                    payment_concepts[concept_id] += line.price_subtotal
+
+            vals = {
+                'partner_id': rec.partner_id.id,
+                'date_accounting': fields.Date.today(),
+                'type_retention': 'islr',
+            }
+            ctx = {
+                'default_type': rec.move_type,
+                'default_move_id': rec.id,
+                'default_islr_lines': payment_concepts,
+            }
+            
+            retention = self.env['account.retention'].with_context(ctx).create(vals)
+            #if not rec.company_id.create_retentions_of_suppliers_in_draft:
+                #retention.action_post()
+            rec.islr_voucher_number = retention.number

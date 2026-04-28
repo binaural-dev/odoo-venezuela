@@ -627,7 +627,7 @@ class AccountRetentionLine(models.Model):
                     record.invoice_total == 0,
                     record.invoice_amount == 0,
                 )
-            ):
+            ) and record.retention_id.state != "draft":
                 raise ValidationError(
                     _("You can not create a retention with 0 amount.")
                 )

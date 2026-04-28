@@ -5,10 +5,96 @@
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_move_form"/>
             <field name="arch" type="xml">
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <field name="is_isrl_retention_available" invisible="1"/>
+                    <field name="has_emited_islr_retention" invisible="1"/>
+                    <field name="has_emited_iva_retention" invisible="1"/>
+                    <field name="has_emited_municipal_retention" invisible="1"/>
+
+                    <button name="action_view_retention" 
+                            type="object"
+                            class="oe_stat_button"
+                            context="{'retention_type': 'islr'}"
+                            invisible="count_islr_retention == 0"
+                            decoration-success="has_emited_islr_retention"
+                            decoration-warning="not has_emited_islr_retention">
+                        
+                        <i class="fa fa-check-circle text-success" 
+                        invisible="not has_emited_islr_retention" 
+                        style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
+                        
+                        <i class="fa fa-exclamation-circle text-warning" 
+                        invisible="has_emited_islr_retention" 
+                        style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
+
+                        <div class="o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="count_islr_retention"/>
+                            </span>
+                            <span class="o_stat_text">ISLR Retention</span>
+                        </div>
+                    </button>
+
+                    <button name="action_view_retention" 
+                            type="object"
+                            class="oe_stat_button"
+                            context="{'retention_type': 'iva'}"
+                            invisible="has_emited_iva_retention == 0"
+                            decoration-success="has_emited_iva_retention"
+                            decoration-warning="not has_emited_iva_retention">
+                        
+                        <i class="fa fa-check-circle text-success" 
+                        invisible="not has_emited_iva_retention" 
+                        style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
+                        
+                        <i class="fa fa-exclamation-circle text-warning" 
+                        invisible="has_emited_iva_retention" 
+                        style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
+
+                        <div class="o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="count_iva_retention"/>
+                            </span>
+                            <span class="o_stat_text">IVA Retention</span>
+                        </div>
+                    </button>
+
+                    <button name="action_view_retention" 
+                            type="object"
+                            class="oe_stat_button"
+                            context="{'retention_type': 'municipal'}"
+                            invisible="count_municipal_retention == 0"
+                            decoration-success="has_emited_municipal_retention"
+                            decoration-warning="not has_emited_municipal_retention">
+                        
+                        <i class="fa fa-check-circle text-success" 
+                        invisible="not has_emited_municipal_retention" 
+                        style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
+                        
+                        <i class="fa fa-exclamation-circle text-warning" 
+                        invisible="has_emited_municipal_retention" 
+                        style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
+
+                        <div class="o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="count_municipal_retention"/>
+                            </span>
+                            <span class="o_stat_text">Municipal Retention</span>
+                        </div>
+                    </button>
+
+                </xpath>
+
                 <xpath expr="//field[@name='partner_shipping_id']" position="after">
                     <field
                         name="generate_iva_retention"
                         invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
+                    />
+                    <field
+                        name="is_isrl_retention_available" invisible="1" force_save="1"
+                    />
+                    <field
+                        name="generate_islr_retention" invisible="not is_isrl_retention_available" readonly="state == 'posted'"
                     />
                     <field
                         name="is_third_party_retention"
@@ -47,8 +133,15 @@
                 </xpath>
 
                 <xpath expr="//notebook" position="inside">
-                    <page name="iva_retention" string="IVA Retentions">
-                        <field name="retention_iva_line_ids" nolabel="1" readonly="1" context="{'type':'iva'}">
+                    <field name="count_iva_retention" invisible="1"/>
+                    <field name="count_islr_retention" invisible="1"/>
+                    <field name="count_municipal_retention" invisible="1"/>
+                    <page name="iva_retention" string="IVA Retentions" invisible="count_iva_retention == 0">
+                        
+                        <field name="retention_iva_line_ids" 
+                        nolabel="1" 
+                        readonly="1" 
+                        >
                             <list editable='bottom'>
                                 <!-- Invisible Fields -->
                                 <field name="invoice_type" column_invisible="True"/>
@@ -113,13 +206,12 @@
                             </list>
                         </field>
                     </page>
-                    <page name="islr_retention" string="ISLR Retentions">
+                    <page name="islr_retention" string="ISLR Retentions" invisible="count_islr_retention == 0">
+                        
                         <field
                             name="retention_islr_line_ids"
                             nolabel="1"
-                            readonly="move_type not in ('in_invoice', 'in_refund') or (state != 'draft' or not_edit_islr_retention_lines)"
-                            context="{'type':'islr'}"
-                        >
+                            readonly="1">
                             <list editable='bottom'>
                                 <!-- Invisible Fields -->
                                 <field name="invoice_type" column_invisible="True"/>
@@ -183,12 +275,13 @@
                             </list>
                         </field>
                     </page>
-                    <page name="municipal_retention" string="Municipal Retentions">
+                    <page name="municipal_retention" string="Municipal Retentions" invisible="count_municipal_retention == 0">
+                        
                         <field
                             name="retention_municipal_line_ids"
                             nolabel="1"
-                            readonly="move_type not in ('in_invoice', 'in_refund') or (state != 'draft' or not_edit_municipal_retention_lines)"
-                            context="{'type':'municipal'}">
+                            readonly="1"
+                            >
                             <list editable='bottom'>
                                 <field name="name" force_save="1" readonly="1"/>
                                 <field name="economic_activity_id" force_save="1"/>
