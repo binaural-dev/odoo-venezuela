@@ -1,13 +1,13 @@
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.OrderDisplay" t-inherit="point_of_sale.OrderDisplay" t-inherit-mode="extension">
         <!-- XPath para insertar los nuevos datos dentro del div 'order-summary' -->
-        <xpath expr="//div[hasclass('order-summary')]" position="inside">
+        <xpath expr="//div[hasclass('order-summary')]" position="inside"> 
             <!-- Wrapper to align left and right content -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;text-align:left;font-size: 80%">
                 <!-- Left side -->
                 <div class="left-side" style="flex: 1;">
                     <div class="rate_bcv">
-                        Tasa BCV: <t t-out="props.conversion_rate"/>
+                        Tasa BCV: <t t-out="(props.conversion_rate  || 0).toFixed(env.utils.getDecimalPrecision()) "/>
                     </div>
                     <div class="cant_prod">
                         Total de productos: <t t-out="props.quantity_products"/>
@@ -21,11 +21,10 @@
                 <div class="right-side" style="flex: 1; text-align: right;">
                     <!-- Custom total -->
                     <div class="total">
-                        Total:
-                        <span t-out="props.foreign_total" class="total"/>
+                        Total: <t t-out="props.foreign_total_with_taxes" />
                     </div>
-                    <div t-if="props.tax" class="fs-6 text-muted subentry">
-                        Taxes: <span t-out="props.foreign_tax" class="tax"/>
+                    <div  class="fs-6 text-muted subentry">
+                        Taxes: <span t-out="props.foreign_tax_total" class="tax"/>
                     </div>
                 </div>
             </div>

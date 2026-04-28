@@ -6,7 +6,7 @@ import { useState, useEffect } from "@odoo/owl";
 import { useTrackedAsync } from "@point_of_sale/app/hooks/hooks";
 import { debounce } from "@web/core/utils/timing";
 
-patch(ProductCard.prototype, {
+patch(ProductCard, {
   setup() {
     this.state = useState({
       available_quantity: 0,
@@ -56,4 +56,5 @@ patch(ProductCard.prototype, {
   get stockStatus() {
     return this.fetchStock?.status || "idle";
   },
+
 });

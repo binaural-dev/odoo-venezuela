@@ -152,7 +152,7 @@
                             <th class="col-4">Moneda</th>
                             <th class="col-2">Cantidad</th>
                             <th class="text-end" t-out="foreign_currency.symbol"></th>
-                            <th class="text-end" t-out="currency.symbol">>$</th>
+                            <th class="text-end" t-out="currency.symbol">$</th>
                             <th class="col-2">%</th>
                         </tr>
                     </thead>
