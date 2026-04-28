@@ -132,6 +132,12 @@ class AccountTax(models.Model):
         foreign_amount_total = res.get('foreign_amount_total', 0.0)
 
         res["foreign_total_residual"] = foreign_amount_total - res["foreign_total_amount_paid"]
+        residual = foreign_amount_total - res["foreign_total_amount_paid"]
+        
+        if move and hasattr(move, 'fee_period') and move.invoice_date == move.fee_period:
+            if abs(residual) < 1.0: 
+                residual = 0.0
+            res["foreign_total_residual"] = residual
 
         formatted_result = 0 if float_compare(res['foreign_total_residual'], 0, precision_digits=foreign_currency.decimal_places) < 0 else res['foreign_total_residual']
         res["foreign_formatted_total_residual"] = formatLang(
@@ -303,7 +309,7 @@ class AccountTax(models.Model):
             round_tax = bool(self.env.context['round'])
 
         if not round_tax:
-            prec *= 1e-5
+            prec *= 1e-9
 
         # 3) Iterate the taxes in the reversed sequence order to retrieve the initial base of the computation.
         #     tax  |  base  |  amount  |

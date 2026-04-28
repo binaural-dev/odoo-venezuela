@@ -717,6 +717,10 @@ class AccountMove(models.Model):
                 is_sale=False,
             )
 
+            # _logger.info("=======================================")
+            # _logger.info(f"_compute_rate_for_documents:{rec._compute_rate_for_documents}")
+            # _logger.info("=======================================")
+
     @api.model
     def _compute_rate_for_documents(self, documents, is_sale):
         """
@@ -781,11 +785,10 @@ class AccountMove(models.Model):
         if self.invoice_date or self.date:
             if self.foreign_rate < 0 or self.foreign_inverse_rate < 0:
                 raise ValidationError(_("The rate entered cannot be negative"))
+            
             Rate = self.env["res.currency.rate"]
-            for move in self:
-                if not move.foreign_rate:
-                    return
-                move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
+            rate_values = Rate.compute_rate(self.foreign_currency_id.id, self.invoice_date)
+            self.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
 
     @api.onchange("foreign_inverse_rate","invoice_date")
     def _onchange_foreign_inverse_rate(self):
