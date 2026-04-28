@@ -80,6 +80,7 @@ class AccountPaymentRegister(models.TransientModel):
         Onchange the invoice date and compute the foreign rate
         """
         Rate = self.env["res.currency.rate"]
+        
         for payment in self:
             if not bool(payment.payment_date):
                 return
@@ -87,6 +88,7 @@ class AccountPaymentRegister(models.TransientModel):
                 payment.foreign_currency_id.id, payment.payment_date
             )
             payment.update(rate_values)
+            
 
     def _create_payment_vals_from_wizard(self, batch_result):
         """
