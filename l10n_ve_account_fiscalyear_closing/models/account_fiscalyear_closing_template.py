@@ -32,7 +32,7 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
                             "expense_direct_cost",
                         ],
                     ),
-                    ("company_id", "in", [self.env.company.id, False]),
+                    ("company_ids", "in", [self.env.company.id, False]),
                 ]
             )
         )
@@ -43,7 +43,7 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
             .search(
                 [
                     ("account_type", "=", "equity_unaffected"),
-                    ("company_id", "in", [self.env.company.id, False]),
+                    ("company_ids", "in", [self.env.company.id, False]),
                 ],
                 limit=1,
             )

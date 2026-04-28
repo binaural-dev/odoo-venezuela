@@ -180,7 +180,7 @@ class AccountFiscalyearClosing(models.Model):
             .search(
                 [
                     ("account_type", "=", "equity_unaffected"),
-                    ("company_id", "in", [self.company_id.id, False]),
+                    ("company_ids", "in", [self.company_id.id, False]),
                 ],
                 limit=1,
             )
@@ -204,14 +204,14 @@ class AccountFiscalyearClosing(models.Model):
     def _get_balances(self, config):
         src_accounts = self.env["account.account"].search(
             [
-                ("company_id", "=", self.company_id.id),
+                ("company_ids", "=", self.company_id.id),
                 ("code", "in", config.mapping_ids.mapped("src_accounts")),
             ],
             order="code ASC",
         )
 
         domain = [
-            ("company_id", "=", self.company_id.id),
+            ("company_ids", "=", self.company_id.id),
             ("account_id", "in", src_accounts.ids),
             ("date", ">=", self.date_start),
             ("date", "<=", self.date_end),
