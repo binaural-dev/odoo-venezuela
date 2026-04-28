@@ -87,24 +87,16 @@ class AccountPaymentRegister(models.TransientModel):
         Onchange the invoice date and compute the foreign rate
         """
         Rate = self.env["res.currency.rate"]
+        
         for payment in self:
             if not bool(payment.payment_date):
-                return
+                return    
             
-            # If all invoices being paid share the same date as the payment date
-            # and have the same rate, use that exact rate to avoid decimal discrepancies.
-            moves = payment.line_ids.mapped('move_id')
-            if moves and all(m.date == payment.payment_date for m in moves):
-                rates = set(moves.mapped('foreign_inverse_rate'))
-                if len(rates) == 1 and list(rates)[0]:
-                    payment.foreign_inverse_rate = list(rates)[0]
-                    payment.foreign_rate = moves[0].foreign_rate
-                    continue
-
             rate_values = Rate.compute_rate(
                 payment.foreign_currency_id.id, payment.payment_date
             )
             payment.update(rate_values)
+            
 
     def _create_payment_vals_from_wizard(self, batch_result):
         """

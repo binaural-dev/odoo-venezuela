@@ -111,6 +111,12 @@ class AccountMoveLine(models.Model):
     def _compute_foreign_price(self):
         for line in self:
            
+            # _logger.info(f"======================================================")
+            # _logger.info(f"line.foreign_inverse_rate:{line.foreign_inverse_rate}")
+            # _logger.info(f"line.price_unit:{line.price_unit}")
+            # _logger.info(f"result:{line.price_unit * line.foreign_inverse_rate}")
+            # _logger.info(f"======================================================")
+
             if line.price_unit and line.foreign_inverse_rate:
                 if line._origin.price_unit != line.price_unit or line.foreign_inverse_rate != line._origin.foreign_inverse_rate:
                    
@@ -183,8 +189,7 @@ class AccountMoveLine(models.Model):
                 _logger.info("Calculating from product")
                 self._calculate_from_product(line)
             else:
-                _logger.info("Calculating from balance")
-                self._calculate_from_balance(line)
+                self._calculate_for_non_invoice(line)
 
     def _calculate_from_adjustment(self, line):
         new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
@@ -265,14 +270,28 @@ class AccountMoveLine(models.Model):
                     line.move_id.origin_payment_advanced_payment_id.date if line.move_id.origin_payment_advanced_payment_id else line.date #asientos de cruce toman tasa del pago          
                 )
 
-                inverse_rate_to_use = rate if inverse_rate_to_use <= 0.0 else rate
-     
+                inverse_rate_to_use = rate if inverse_rate_to_use == 0.0 else inverse_rate_to_use
+                
         balance = sum(foreign_lines.mapped("amount_currency"))
+        # _logger.info("===========================================")
+        # _logger.info(f"new_foreign_debit:{new_foreign_debit}")
+        # _logger.info(f"new_foreign_credit:{new_foreign_credit}")
         if balance and len(currency_lines) == 1:
+            # _logger.info(">>> Calculando por BALANCE (ignora tasa)")
+            # _logger.info("===========================================")
             new_foreign_debit = abs(balance) if balance < 0 else 0.0
             new_foreign_credit = abs(balance) if balance > 0 else 0.0
         
         else:
+            # _logger.info(">>> Calculando por TASA")
+            # _logger.info(f"--- MONTO DEBITO (Bs): {line.debit}")
+            # _logger.info(f"--- MONTO CREDITO (Bs): {line.credit}")
+            # _logger.info(f"--- TASA INVERSA USADA: {inverse_rate_to_use}")
+            line_d_c = line.debit if line.debit else line.credit
+
+            # _logger.info(f"--- RESULTADO: { line_d_c * inverse_rate_to_use}")
+            # _logger.info("===========================================")
+
             new_foreign_debit = line.debit * inverse_rate_to_use
             new_foreign_credit = line.credit * inverse_rate_to_use
         
@@ -282,7 +301,7 @@ class AccountMoveLine(models.Model):
         
         if line.foreign_debit != new_foreign_debit:
             line.foreign_debit = new_foreign_debit
-        if line.foreign_credit != new_foreign_credit:
+        if new_foreign_credit:
             line.foreign_credit = new_foreign_credit
 
     def _calculate_from_product(self, line):
