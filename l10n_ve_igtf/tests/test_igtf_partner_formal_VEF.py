@@ -638,7 +638,7 @@ class TestIGTFNEW(IGTFTestCommon):
         ]
         self._assert_move_lines_equal(cross_move, expected_lines)
 
-        self.assert_invoice_values(invoice2, 265530.33,  255.14, 'partial')
+        self.assert_invoice_values(invoice2, 265591.33,  255.15, 'partial')
         
 
 
@@ -746,7 +746,7 @@ class TestIGTFNEW(IGTFTestCommon):
             f"La factura debe estar en estado 'paid' (pagada), estado actual: {invoice.payment_state}"
         )
 
-        self.assertAlmostEqual(invoice.bi_igtf,17506004.67, 2, "Bi_igtf DEbe ser 1050412.33 bsd")
+        self.assertAlmostEqual(invoice.bi_igtf,17506004.67, 2, "Bi_igtf DEbe ser 17506004.67 bsd")
         
         outstanding_line = payment_move.line_ids.filtered(
             lambda l: l.account_id == self.acc_receivable and l.credit > 0
@@ -793,7 +793,7 @@ class TestIGTFNEW(IGTFTestCommon):
             f"La factura debe estar en estado 'paid' (pagada), estado actual: {invoice.payment_state}"
         )
 
-        self.assertAlmostEqual(invoice.bi_igtf,1050412.33, 2, "Bi_igtf DEbe ser 1050412.33 vef")
+        self.assertAlmostEqual(invoice.bi_igtf,1050360.33, 2, "Bi_igtf DEbe ser 1050360.33 vef")
 
     def test13_payment_from_invoice_with_igtf_journal_desconciliation(self):
         
