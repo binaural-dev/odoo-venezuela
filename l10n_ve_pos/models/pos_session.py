@@ -406,37 +406,32 @@ class PosSession(models.Model):
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
-        other_lines = line.move_id.line_ids.filtered(
-            lambda x: x != line and x.account_id.account_type != "asset_receivable"
-        )
+        other_lines = line.move_id.line_ids
         if other_lines:
-            other_line = other_lines[0]
-            if (
-                abs(line.credit) > 0
-                and float_compare(
-                    line.credit,
-                    abs(amount),
-                    precision_rounding=self.currency_id.rounding,
-                )
-                == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(foreign_amount)
-                if other_line.foreign_debit != line.foreign_credit:
-                    other_line.foreign_debit = abs(line.foreign_credit)
-            if (
-                abs(line.debit) > 0
-                and float_compare(
-                    line.debit,
-                    abs(amount),
-                    precision_rounding=self.currency_id.rounding,
-                )
-                == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(foreign_amount)
-                if other_line.foreign_credit != line.foreign_debit:
-                    other_line.foreign_credit = abs(line.foreign_debit)
+            for other_line in other_lines:
+                
+                if (
+                    abs(line.credit) > 0
+                    and float_compare(
+                        line.credit,
+                        abs(amount),
+                        precision_rounding=self.currency_id.rounding,
+                    )
+                    == 0
+                ):
+                    line.not_foreign_recalculate = True
+                    line.foreign_credit = abs(foreign_amount)
+                if (
+                    abs(line.debit) > 0
+                    and float_compare(
+                        line.debit,
+                        abs(amount),
+                        precision_rounding=self.currency_id.rounding,
+                    )
+                    == 0
+                ):
+                    line.not_foreign_recalculate = True
+                    line.foreign_debit = abs(foreign_amount)
 
     def _validate_cross_move(self):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
@@ -523,6 +518,8 @@ class PosSession(models.Model):
             'pos_payment_method_id': payment_method.id,
             'pos_session_id': self.id,
             'company_id': self.company_id.id,
+            "foreign_rate": self.config_id.foreign_rate,
+            "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
         })
 
         diff_amount_compare_to_zero = self.currency_id.compare_amounts(diff_amount, 0)
@@ -530,13 +527,6 @@ class PosSession(models.Model):
             self._apply_diff_on_account_payment_move(account_payment, payment_method, diff_amount)
 
         account_payment.action_post()
-        account_payment.with_context(skip_account_move_synchronization=True).write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-                "destination_account_id": destination_account.id,
-            }
-        )
 
         res = account_payment.move_id.line_ids.filtered(lambda line: line.account_id == account_payment.destination_account_id)
 
