@@ -175,7 +175,7 @@ patch(PosStore.prototype, {
 
     var total_excluded = round_pr(
       recompute_base(base, incl_tax_amounts),
-      currency_rounding
+      initial_currency_rounding
     );
     var total_included = total_excluded;
 
