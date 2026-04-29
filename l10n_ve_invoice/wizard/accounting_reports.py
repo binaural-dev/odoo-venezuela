@@ -1072,11 +1072,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         password_protection = "secure"
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
         worksheet = workbook.add_worksheet()
+        worksheet.set_landscape()
+        worksheet.set_paper(9)
+        worksheet.fit_to_pages(1, 0)
+        worksheet.set_margins(left=0.3, right=0.3, top=0.5, bottom=0.5)
 
         cell_bold = workbook.add_format(
             {"bold": True, "center_across": True, "text_wrap": True, "bottom": True, "locked": True}
         )
-        
+
         base_style = {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "locked": True}
         format1 = workbook.add_format(base_style); format1.set_bg_color('#D9D9D9')
         format2 = workbook.add_format(base_style); format2.set_bg_color('#F4B183')
@@ -1198,8 +1202,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         password_protection = "secure"
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True,"constant_memory": False})
-        workbook.set_calc_mode('auto') 
+        workbook.set_calc_mode('auto')
         worksheet = workbook.add_worksheet()
+        worksheet.set_landscape()
+        worksheet.set_paper(9)
+        worksheet.fit_to_pages(1, 0)
+        worksheet.set_margins(left=0.3, right=0.3, top=0.5, bottom=0.5)
 
         cell_bold = workbook.add_format(
             {"bold": True, "center_across": True, "text_wrap": True, "bottom": True, "locked": True}
@@ -1272,23 +1280,32 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             
             for field in group_fields:
                 col_index = current_col_index
-                
-                worksheet.write(6, col_index, field.get("name"), header_format) 
-                
-                worksheet.set_column(col_index, col_index, 25)
+
+                worksheet.write(6, col_index, field.get("name"), header_format)
+
+                field_key = field.get("field", "")
+                if field_key == "partner_name":
+                    col_width = 28
+                elif field_key == "index":
+                    col_width = 7
+                elif field.get("format") == "number":
+                    col_width = 13
+                else:
+                    col_width = 11
+                worksheet.set_column(col_index, col_index, col_width)
                 flat_fields.append(field)
-                
+
                 current_col_index += 1
-            
-            color_index += 1 
-        
+
+            color_index += 1
+
         last_col_index = current_col_index - 1
-                
-        name_columns = flat_fields 
+
+        name_columns = flat_fields
         total_idx = 0
 
         for index, field in enumerate(name_columns):
-            
+
             for index_line, line in enumerate(purchase_book_lines):
                 total_idx = (8 + index_line)
                 if field["field"] == "index":
