@@ -676,8 +676,8 @@ class SaleOrder(models.Model):
     invoice_status = fields.Selection(
         selection_add=[('partially_billed', 'Partially billed')],
     )
-    
-    @api.depends('order_line.qty_invoiced', 'order_line.qty_delivered')
+
+    @api.depends('state', 'order_line.qty_invoiced', 'order_line.qty_delivered')
     def _compute_invoice_status(self):
         super()._compute_invoice_status()
         for order in self:
