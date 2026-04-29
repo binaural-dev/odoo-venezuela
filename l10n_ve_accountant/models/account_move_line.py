@@ -331,14 +331,14 @@ class AccountMoveLine(models.Model):
         """
         We overwrote the main preparer to clean the distribution JSON and avoid errors caused by the POS.
         """
-        for line in self:
-            if line.analytic_distribution:
-                clean_distribution = {
-                    key: value 
-                    for key, value in line.analytic_distribution.items()
-                    if key and str(key) != 'False'
-                }
-                line.analytic_distribution = clean_distribution
+        self.ensure_one()
+        if self.analytic_distribution:
+            clean_distribution = {
+                key: value 
+                for key, value in self.analytic_distribution.items()
+                if key and str(key) != 'False'
+            }
+            self.analytic_distribution = clean_distribution
                 
         return super()._prepare_analytic_lines()
 
