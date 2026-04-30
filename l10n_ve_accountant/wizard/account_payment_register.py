@@ -80,6 +80,7 @@ class AccountPaymentRegister(models.TransientModel):
         Onchange the invoice date and compute the foreign rate
         """
         Rate = self.env["res.currency.rate"]
+        
         for payment in self:
             if not bool(payment.payment_date):
                 return
@@ -120,7 +121,7 @@ class AccountPaymentRegister(models.TransientModel):
         else:
             source_amount_currency = abs(sum(lines.mapped('amount_residual_currency')))
 
-        return {
+        res = {
             'company_id': company.id,
             'partner_id': payment_values['partner_id'],
             'partner_type': payment_values['partner_type'],
@@ -129,3 +130,13 @@ class AccountPaymentRegister(models.TransientModel):
             'source_amount': source_amount,
             'source_amount_currency': source_amount_currency,
         }
+
+        if len(lines.move_id) == 1:
+            move = lines.move_id
+            
+            res.update({
+                'foreign_rate': move.foreign_rate,
+                'foreign_inverse_rate': move.foreign_inverse_rate,
+            })
+            
+        return res

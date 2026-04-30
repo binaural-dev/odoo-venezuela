@@ -108,7 +108,6 @@ class AccountMoveLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
-           
             if line.price_unit and line.foreign_inverse_rate:
                 line.foreign_price = line.price_unit * line.foreign_inverse_rate
             else:
@@ -239,21 +238,20 @@ class AccountMoveLine(models.Model):
                     rate_date = line.move_id.origin_payment_advanced_payment_id.date
                 else:
                     rate_date = line.date
-                rate = foreign_currency._get_conversion_rate(
-                    line.company_id.currency_id,
-                    foreign_currency,
-                    line.company_id,
-                    rate_date
-                )
-
-                inverse_rate_to_use = rate if inverse_rate_to_use == 0.0 else rate
-     
+                
+                rate = self.env["res.currency.rate"]
+                                
+                rate_values = rate.compute_rate(self.foreign_currency_id.id, self.payment_date)
+                self.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
+                inverse_rate_to_use = rate if inverse_rate_to_use == 0.0 else inverse_rate_to_use
+                
         balance = sum(foreign_lines.mapped("amount_currency"))
-        if balance and len(currency_lines) == 1:
+        if balance and len(currency_lines) == 1:                        
             new_foreign_debit = abs(balance) if balance < 0 else 0.0
             new_foreign_credit = abs(balance) if balance > 0 else 0.0
         
         else:
+            line_d_c = line.debit if line.debit else line.credit
             new_foreign_debit = line.debit * inverse_rate_to_use
             new_foreign_credit = line.credit * inverse_rate_to_use
         
@@ -263,7 +261,10 @@ class AccountMoveLine(models.Model):
         
         if new_foreign_debit:
             line.foreign_debit = new_foreign_debit
+            
+            
         if new_foreign_credit:
+            
             line.foreign_credit = new_foreign_credit
 
     def _calculate_from_product(self, line):
@@ -646,9 +647,7 @@ class AccountMoveLine(models.Model):
         debit_aml = debit_values['aml']
         credit_aml = credit_values['aml']
         partial_vals = res['partial_values']
-        
         amount_company = partial_vals['amount']
-
 
         def get_foreign_partial_amount(aml):
             f_currency = aml.foreign_currency_id

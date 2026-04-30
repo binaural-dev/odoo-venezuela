@@ -171,14 +171,14 @@ class AccountMove(models.Model):
     @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
     def _compute_foreign_amount_residual(self):
         for rec in self:
-            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate            
             
-         
-
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
-    def _compute_inverse_rate_vef(self):
+    def _compute_inverse_rate_vef(self):        
+
         Rate = self.env['res.currency.rate']
         for move in self:
+
             currency = move.company_id.currency_foreign_id
             rate = False
 
@@ -186,13 +186,10 @@ class AccountMove(models.Model):
                 date = move.invoice_date or move.date
 
                 if date:
-                    
-                    rate = Rate.search([
-                        ('currency_id', '=', currency.id),
-                        ('name', '<=', date),
-                    ], order='name desc', limit=1)
+                    rate_values = Rate.compute_rate(currency.id, date)
+                    rate = rate_values.get("foreign_inverse_rate")
 
-            move.foreign_inverse_rate_vef = rate.inverse_company_rate if rate else 0.0
+            move.foreign_inverse_rate_vef = rate if rate else 0.0
 
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -757,9 +754,9 @@ class AccountMove(models.Model):
                 and move.is_invoice(include_receipts=True)
                 and move.tax_totals
             ):
-                continue
+                continue    
             move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
-
+        
     @api.depends(
         "invoice_line_ids.currency_rate",
         "invoice_line_ids.tax_base_amount",
