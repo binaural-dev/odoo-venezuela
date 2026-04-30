@@ -7,7 +7,11 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.1.0.1",
+<<<<<<< HEAD
+    "version": "17.0.0.0.16",
+=======
+    "version": "17.0.0.0.21",
+>>>>>>> 2a749cbe ([FIX] l10n_ve_accountant,l10n_ve_tax:)
     # any module necessary for this one to work correctly
     "depends": ["base", "account", "l10n_ve_base", "l10n_ve_rate"],
     "data": [
