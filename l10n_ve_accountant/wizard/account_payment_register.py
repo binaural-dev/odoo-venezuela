@@ -96,7 +96,10 @@ class AccountPaymentRegister(models.TransientModel):
                 payment.foreign_currency_id.id, payment.payment_date
             )
             payment.update(rate_values)
+<<<<<<< HEAD
             
+=======
+>>>>>>> 2a749cbe ([FIX] l10n_ve_accountant,l10n_ve_tax:)
 
     def _create_payment_vals_from_wizard(self, batch_result):
         """
@@ -156,6 +159,7 @@ class AccountPaymentRegister(models.TransientModel):
             'source_amount': source_amount,
             'source_amount_currency': source_amount_currency,
         }
+<<<<<<< HEAD
         
         # Inherit exact rates from the invoices if uniformly available
         moves = lines.mapped('move_id')
@@ -213,3 +217,15 @@ class AccountPaymentRegister(models.TransientModel):
                     if exact_rate:
                         exact_debt = float_round(wizard.source_amount_currency, wizard.currency_id.decimal_places) * float_round(exact_rate, wizard.currency_id.decimal_places)
                         wizard.payment_difference = exact_debt - wizard.amount
+=======
+
+        if len(lines.move_id) == 1:
+            move = lines.move_id
+            
+            res.update({
+                'foreign_rate': move.foreign_rate,
+                'foreign_inverse_rate': move.foreign_inverse_rate,
+            })
+            
+        return res
+>>>>>>> 2a749cbe ([FIX] l10n_ve_accountant,l10n_ve_tax:)

@@ -171,17 +171,21 @@ class AccountMove(models.Model):
     @api.depends('tax_totals')
     def _compute_foreign_amount_residual(self):
         for rec in self:
+<<<<<<< HEAD
             if rec.tax_totals and "foreign_total_residual" in rec.tax_totals:
                 rec.foreign_amount_residual = rec.tax_totals.get("foreign_total_residual", 0.0)
             else:
                 rec.foreign_amount_residual = float_round(rec.amount_residual,rec.currency_id.decimal_places) * float_round(rec.foreign_inverse_rate,rec.currency_id.decimal_places)
+=======
+            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate            
+>>>>>>> 2a749cbe ([FIX] l10n_ve_accountant,l10n_ve_tax:)
             
-         
-
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
-    def _compute_inverse_rate_vef(self):
+    def _compute_inverse_rate_vef(self):        
+
         Rate = self.env['res.currency.rate']
         for move in self:
+
             currency = move.company_id.currency_foreign_id
             rate = False
 
@@ -189,13 +193,10 @@ class AccountMove(models.Model):
                 date = move.invoice_date or move.date
 
                 if date:
-                    
-                    rate = Rate.search([
-                        ('currency_id', '=', currency.id),
-                        ('name', '<=', date),
-                    ], order='name desc', limit=1)
+                    rate_values = Rate.compute_rate(currency.id, date)
+                    rate = rate_values.get("foreign_inverse_rate")
 
-            move.foreign_inverse_rate_vef = rate.inverse_company_rate if rate else 0.0
+            move.foreign_inverse_rate_vef = rate if rate else 0.0
 
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -724,10 +725,6 @@ class AccountMove(models.Model):
                 is_sale=False,
             )
 
-            # _logger.info("=======================================")
-            # _logger.info(f"_compute_rate_for_documents:{rec._compute_rate_for_documents}")
-            # _logger.info("=======================================")
-
     @api.model
     def _compute_rate_for_documents(self, documents, is_sale):
         """
@@ -768,9 +765,9 @@ class AccountMove(models.Model):
                 and move.is_invoice(include_receipts=True)
                 and move.tax_totals
             ):
-                continue
+                continue    
             move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
-
+        
     @api.depends(
         "invoice_line_ids.currency_rate",
         "invoice_line_ids.tax_base_amount",
