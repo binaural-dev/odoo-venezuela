@@ -1,6 +1,7 @@
 /** @odoo-module */
 
-import { Order, Payment } from "@point_of_sale/app/store/models";
+import { PosOrder } from "@point_of_sale/app/models/pos_order";
+import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
 import {
   formatFloat,
@@ -10,14 +11,14 @@ import {
 } from "@web/core/utils/numbers";
 
 // New orders are now associated with the current table, if any.
-patch(Order.prototype, {
-  setup(_defaultObj, options) {
+patch(PosOrder.prototype, {
+  setup() {
     super.setup(...arguments);
     this.igtf_amount = 0;
     this.foreign_igtf_amount = 0;
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
-    this.update_igtf();
+    console.log('POS:', this)
   },
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
@@ -34,12 +35,91 @@ patch(Order.prototype, {
     json["foreign_bi_igtf"] = this.foreign_bi_igtf;
     return json;
   },
+
+
+  _get_order_payment_lines() {
+    if (typeof this.get_paymentlines === "function") {
+      return this.get_paymentlines();
+    }
+    if (Array.isArray(this.paymentlines)) {
+      return this.paymentlines;
+    }
+    if (Array.isArray(this.paymentlines?.models)) {
+      return this.paymentlines.models;
+    }
+    if (Array.isArray(this.payment_ids)) {
+      return this.payment_ids;
+    }
+    return [];
+  },
+  _get_payment_method_data(payment) {
+    if (!payment) {
+      return null;
+    }
+
+    if (payment.payment_method && typeof payment.payment_method === "object") {
+      return payment.payment_method;
+    }
+
+    const paymentMethodIdValue = payment.payment_method_id;
+    if (
+      paymentMethodIdValue &&
+      typeof paymentMethodIdValue === "object" &&
+      !Array.isArray(paymentMethodIdValue)
+    ) {
+      return paymentMethodIdValue;
+    }
+
+    const paymentMethodIdRaw = Array.isArray(paymentMethodIdValue)
+      ? paymentMethodIdValue[0]
+      : paymentMethodIdValue;
+    const paymentMethodId = Number(paymentMethodIdRaw);
+
+    const posPaymentMethods = this.pos?.payment_methods;
+    if (Array.isArray(posPaymentMethods)) {
+      const byNumber = Number.isFinite(paymentMethodId)
+        ? posPaymentMethods.find((method) => Number(method.id) === paymentMethodId)
+        : null;
+      if (byNumber) {
+        return byNumber;
+      }
+      return (
+        posPaymentMethods.find(
+          (method) => String(method.id) === String(paymentMethodIdRaw),
+        ) || null
+      );
+    }
+    if (posPaymentMethods && typeof posPaymentMethods === "object") {
+      if (Number.isFinite(paymentMethodId) && posPaymentMethods[paymentMethodId]) {
+        return posPaymentMethods[paymentMethodId];
+      }
+      return posPaymentMethods[paymentMethodIdRaw] || null;
+    }
+    const paymentMethodModel = this.pos?.models?.["pos.payment.method"];
+    if (Array.isArray(paymentMethodModel)) {
+      return (
+        paymentMethodModel.find(
+          (method) => String(method.id) === String(paymentMethodIdRaw),
+        ) || null
+      );
+    }
+    if (paymentMethodModel?.get) {
+      return (
+        paymentMethodModel.get(paymentMethodId) ||
+        paymentMethodModel.get(paymentMethodIdRaw) ||
+        null
+      );
+    }
+    return null;
+  },
   update_igtf() {
-    var rounding = this.pos.currency.rounding;
-    const paymentlines = this.get_paymentlines();
-    let igtf_payment_methods = paymentlines.filter(
-      (payment) => payment.payment_method.apply_igtf,
-    );
+    // var rounding = this.pos.config.currency.rounding;
+    const paymentlines = this._get_order_payment_lines();
+    // console.log('ENV IS', this)
+    let igtf_payment_methods = paymentlines.filter((payment) => {
+      const paymentMethod = this._get_payment_method_data(payment);
+      return paymentMethod?.apply_igtf;
+    });
     let last_igtf_amount = 0;
     let last_foreign_igtf_amount = 0;
 
@@ -47,9 +127,7 @@ patch(Order.prototype, {
       last_igtf_amount = this.igtf_amount;
       last_foreign_igtf_amount = this.foreign_igtf_amount;
     }
-
     let is_return = this.get_total_without_igtf() < 0;
-
     this.igtf_amount = 0;
     this.foreign_igtf_amount = 0;
     this.bi_igtf = 0;
@@ -72,6 +150,7 @@ patch(Order.prototype, {
     }
 
     paymentlines.forEach((payment) => {
+      const paymentMethod = this._get_payment_method_data(payment);
       let is_change = false;
       if (!is_return) {
         is_change = payment.amount < 0;
@@ -80,14 +159,14 @@ patch(Order.prototype, {
       }
 
       if (
-        payment.payment_method.apply_igtf &&
+        paymentMethod?.apply_igtf &&
         last_igtf_amount == payment.amount
       ) {
         return;
       }
 
       if (
-        !payment.payment_method.apply_igtf &&
+        !paymentMethod?.apply_igtf &&
         igtf_payment_methods.length <= 0
       ) {
         foreign_bi_igtf = this.get_foreign_total_without_igtf();
@@ -131,12 +210,14 @@ patch(Order.prototype, {
         return;
       }
 
-      bi_igtf += round_pr(payment.amount, rounding);
-      foreign_bi_igtf += round_pr(payment.get_foreign_amount(), rounding);
-      repeat_same_method.push(payment.payment_method.id);
+      bi_igtf += round_pr(payment.amount, 6);
+      foreign_bi_igtf += round_pr(payment.get_foreign_amount(), 6);
+      if (paymentMethod?.id) {
+        repeat_same_method.push(paymentMethod.id);
+      }
       bi_payments.push(payment.cid);
 
-      if (payment.payment_method.apply_igtf) {
+      if (paymentMethod?.apply_igtf) {
         payment.set_include_igtf(true);
       }
       let amount_to_pay = payment.amount;
@@ -151,9 +232,17 @@ patch(Order.prototype, {
       }
 
       if (!is_change) {
-        payment.set_igtf_amount(this.compute_igtf_amount(amount_to_pay));
+        payment.set_igtf_amount(
+          this.compute_igtf_amount(
+            amount_to_pay,
+            paymentMethod?.igtf_percentage,
+          ),
+        );
         payment.set_foreign_igtf_amount(
-          this.compute_igtf_amount(foreign_amount_to_pay),
+          this.compute_igtf_amount(
+            foreign_amount_to_pay,
+            paymentMethod?.igtf_percentage,
+          ),
         );
 
         igtf_amount += payment.igtf_amount;
@@ -170,8 +259,14 @@ patch(Order.prototype, {
     ) {
       bi_igtf = this.get_total_without_igtf();
       foreign_bi_igtf = this.get_foreign_total_without_igtf();
-      igtf_amount = this.compute_igtf_amount(bi_igtf);
-      foreign_igtf_amount = this.compute_igtf_amount(foreign_bi_igtf);
+      igtf_amount = this.compute_igtf_amount(
+        bi_igtf,
+        this._get_order_igtf_percentage(),
+      );
+      foreign_igtf_amount = this.compute_igtf_amount(
+        foreign_bi_igtf,
+        this._get_order_igtf_percentage(),
+      );
 
       let payment_without_change = paymentlines.filter((payment) => {
         if (!bi_payments.includes(payment.cid)) {
@@ -222,55 +317,99 @@ patch(Order.prototype, {
     }
     return this.igtf_amount;
   },
-  compute_igtf_amount(amount) {
-    var rounding = this.pos.currency.rounding;
-    return round_pr(amount * (this.pos.config.igtf_percentage / 100), rounding);
+  _get_order_igtf_percentage() {
+    const paymentlines = this._get_order_payment_lines();
+    const paymentWithIgtf = paymentlines.find((payment) => {
+      const paymentMethod = this._get_payment_method_data(payment);
+      return paymentMethod?.apply_igtf;
+    });
+    const paymentMethod = this._get_payment_method_data(paymentWithIgtf);
+    const fromMethod = paymentMethod?.igtf_percentage;
+    if (typeof fromMethod === "number") {
+      return fromMethod;
+    }
+    return this.pos.config.igtf_percentage || 0;
+  },
+
+  compute_igtf_amount(amount, percentage = false) {
+    var rounding = this.pos.config.currency.rounding;
+    const igtfPercentage =
+      typeof percentage === "number"
+        ? percentage
+        : this._get_order_igtf_percentage();
+    return round_pr(amount * (igtfPercentage / 100), rounding);
   },
 
   get_bi_igtf() {
     return this.bi_igtf;
   },
 
-  get_total_without_igtf() {
-    const res = super.get_total_with_tax(...arguments);
-    return res;
-  },
-  get_foreign_total_without_igtf() {
-    const res = super.get_foreign_total_with_tax(...arguments);
-    return res;
-  },
   get_total_with_tax() {
-    const res = super.get_total_with_tax(...arguments);
-    let paymentlines = this.get_paymentlines();
-    if (paymentlines.length > 0) {
-      let igtf_payment_methods = paymentlines.filter(
-        (payment) => payment.payment_method.apply_igtf,
-      );
-      if (igtf_payment_methods.length === 0) {
-        return res;
-      } else {
-        for (let payment of paymentlines) {
-          if (payment.payment_method.apply_igtf) {
-            return res + this.igtf_amount;
-          }
-        }
-      }
-    } else {
+    if (typeof this.total_with_tax === "number") {
+      return this.total_with_tax;
+    }
+    const total_without_tax =
+      (typeof this.get_total_without_tax === "function" &&
+        this.get_total_without_tax(...arguments)) || 0;
+    const total_tax =
+      (typeof this.get_total_tax === "function" &&
+        this.get_total_tax(...arguments)) || 0;
+    return total_without_tax + total_tax;
+  },
+
+  get_total_without_igtf() {
+    const res = this.get_total_with_tax(...arguments);
+    return res;
+  },
+
+  get_foreign_total_without_igtf() {
+    const subtotal = this.get_foreign_total_without_tax?.(...arguments) || 0;
+    const taxes = this.get_foreign_total_tax_per_line?.(...arguments) || 0;
+    return subtotal + taxes;
+  },
+
+  totalDue() {
+    const res = this.get_total_with_tax(...arguments);
+    const paymentlines = this._get_order_payment_lines();
+    if (paymentlines.length === 0) {
       return res;
     }
+
+    const has_igtf_payment = paymentlines.some((payment) => {
+      const paymentMethod = this._get_payment_method_data(payment);
+      return paymentMethod?.apply_igtf;
+    });
+    return has_igtf_payment ? res + this.igtf_amount : res;
   },
+
+  foreignTotalDue() {
+    const res = this.get_foreign_total_without_igtf(...arguments);
+    const paymentlines = this._get_order_payment_lines();
+    if (paymentlines.length === 0) {
+      return res;
+    }
+
+    const has_igtf_payment = paymentlines.some((payment) => {
+      const paymentMethod = this._get_payment_method_data(payment);
+      return paymentMethod?.apply_igtf;
+    });
+    return has_igtf_payment ? res + this.foreign_igtf_amount : res;
+  },
+
   get_foreign_total_with_tax() {
-    const res = super.get_foreign_total_with_tax(...arguments);
-    let paymentlines = this.get_paymentlines();
+    const res = this.get_foreign_total_without_igtf(...arguments);
+    const paymentlines = this._get_order_payment_lines();
     if (paymentlines.length > 0) {
-      let igtf_payment_methods = paymentlines.filter(
-        (payment) => payment.payment_method.apply_igtf,
-      );
+      let igtf_payment_methods = paymentlines.filter((payment) => {
+        const paymentMethod = this._get_payment_method_data(payment);
+        return paymentMethod?.apply_igtf;
+      });
       if (igtf_payment_methods.length === 0) {
         return res;
       } else {
         for (let payment of paymentlines) {
-          if (payment.payment_method.apply_igtf) {
+          const paymentMethod = this._get_payment_method_data(payment);
+          if (paymentMethod?.apply_igtf) {
             return res + this.foreign_igtf_amount;
           }
         }
@@ -279,12 +418,33 @@ patch(Order.prototype, {
       return res;
     }
   },
-  get_max_total_with_igtf() {
-    const result =
-      this.compute_igtf_amount(super.get_foreign_total_with_tax()) +
-      this.props.order.get_foreign_rounding_applied();
-    return result;
-  },
+  
+  // get_foreign_total_with_tax() {
+  //   const res = super.get_foreign_total_with_tax(...arguments);
+  //   // let paymentlines = this.get_paymentlines();
+  //   if (paymentlines.length > 0) {
+  //     let igtf_payment_methods = paymentlines.filter(
+  //       (payment) => payment.payment_method.apply_igtf,
+  //     );
+  //     if (igtf_payment_methods.length === 0) {
+  //       return res;
+  //     } else {
+  //       for (let payment of paymentlines) {
+  //         if (payment.payment_method.apply_igtf) {
+  //           return res + this.foreign_igtf_amount;
+  //         }
+  //       }
+  //     }
+  //   } else {
+  //     return res;
+  //   }
+  // },
+  // get_max_total_with_igtf() {
+  //   const result =
+  //     this.compute_igtf_amount(super.get_foreign_total_with_tax()) +
+  //     this.props.order.get_foreign_rounding_applied();
+  //   return result;
+  // },
 
   get_igtf_amount() {
     return this.igtf_amount;
@@ -308,11 +468,11 @@ patch(Order.prototype, {
       is_change
     ) {
       let res = super.add_paymentline(...arguments);
-      this.update_igtf();
+      // this.update_igtf();
       return res;
     }
     let res_igtf = this.add_paymentline_without_igtf(...arguments);
-    this.update_igtf();
+    // this.update_igtf();
     return res_igtf;
   },
 
@@ -321,7 +481,7 @@ patch(Order.prototype, {
     if (this.electronic_payment_in_progress()) {
       return false;
     } else {
-      var newPaymentline = new Payment(
+      var newPaymentline = new PosPayment(
         { env: this.env },
         { order: this, payment_method: payment_method, pos: this.pos },
       );

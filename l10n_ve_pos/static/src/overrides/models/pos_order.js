@@ -12,7 +12,6 @@ import {
 } from "@web/core/utils/numbers";
 
 
-// New orders are now associated with the current table, if any.
 patch(PosOrder.prototype, {
   setup() {
     this.get_foreign_total_tax()
@@ -167,7 +166,8 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_total_with_tax() {
-    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0);
+    const rounding = this.get_foreign_currency()?.rounding || 0.01;
+    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0) 
   },
 
   get foreign_total_with_tax() {
@@ -179,10 +179,9 @@ patch(PosOrder.prototype, {
     const foreign_currency = this.get_foreign_currency();
 
     const total = lines.reduce((acumulador, line) => {
-      const precio = line.foreign_price_unit || 0;
-      return acumulador + (precio * line.getQuantity());
+      const linePrices = line.get_all_foreign_prices ? line.get_all_foreign_prices() : { priceWithoutTax: 0 };
+      return acumulador + (linePrices.priceWithoutTax || 0);
     }, 0);
-    // 3. Validación de moneda para evitar error al redondear
     const rounding = foreign_currency ? foreign_currency.rounding : 0.01;
     return round_pr(total, rounding);
 
@@ -222,13 +221,13 @@ patch(PosOrder.prototype, {
 
         const taxDetails = line.get_foreign_tax_details?.() || {};
         for (const [taxId, detail] of Object.entries(taxDetails)) {
-          acc[taxId] = (detail.amount || 0);
+          acc[taxId] = (acc[taxId] || 0) + (detail.amount || 0);
         }
         return acc;
       }, {});
 
       totalTax = Object.values(groupTaxes).reduce(
-        (sum, amount) => sum + round_pr(amount, rounding),
+        (sum, amount) => sum + amount,
         0
       );
     } else {
@@ -237,7 +236,7 @@ patch(PosOrder.prototype, {
         return sum + lineTax;
       }, 0);
     }
-    return round_pr(totalTax, rounding);
+    return totalTax;
   },
 
 
@@ -252,7 +251,7 @@ patch(PosOrder.prototype, {
       return sum + (tax_amounts.tax || 0);
     }, 0);
 
-    return round_pr(totalTax, rounding);
+    return totalTax;
   },
 
 

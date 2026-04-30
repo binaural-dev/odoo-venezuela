@@ -6,12 +6,13 @@ import { patch } from "@web/core/utils/patch";
 // New orders are now associated with the current table, if any.
 patch(PaymentScreen.prototype, {
 
-  addNewPaymentLine(paymentMethod) {
-    let res = super.addNewPaymentLine(...arguments);
-      this.pos.get_order().update_igtf()
-     
+  async addNewPaymentLine(paymentMethod) {
+    const res = await super.addNewPaymentLine(...arguments);
+    const order = this.currentOrder || this.pos.get_order();
+    order?.update_igtf();
+
     this.render();
-    return res
+    return res;
   },
   updateSelectedPaymentline(amount = false) {
     super.updateSelectedPaymentline(amount);

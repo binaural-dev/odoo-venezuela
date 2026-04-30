@@ -20,7 +20,6 @@ patch(PaymentScreenStatus.prototype, {
     );
   },
 
-  // ESTO NO VA ACA, PERO LO DEJO POR SI ACASO
   get foreignChangeText() {
     const selectedLine =
       this.props.order.get_order_payment_lines?.()

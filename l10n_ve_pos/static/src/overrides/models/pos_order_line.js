@@ -19,19 +19,27 @@ patch(PosOrderline.prototype, {
     return this.config.foreign_currency_id;
   },
 
+  get price_unit_with_taxes_raw() {
+    return this.unitPrices?.raw_total_included_currency || 0;
+  },
+
+  get price_unit_with_taxes() {
+    const raw = this.price_unit_with_taxes_raw;
+    if (this.currency?.round) {
+      return this.currency.round(raw);
+    }
+    return round_pr(raw, this.currency?.rounding || 0.01, "UP");
+  },
+
   get foreign_subtotal_display() {
     return this.get_all_foreign_prices();
   },
 
   get_foreign_price_without_tax() {
-    if (!this.get_foreign_unit_price) {
+    if (!this.get_all_foreign_prices) {
+      return 0;
     }
-
-    const digits = 2;
-    return round_pr(
-      this.get_foreign_unit_price() * this.getQuantity(),
-      digits
-    );
+    return this.get_all_foreign_prices().priceWithoutTax || 0;
   },
 
   get_foreign_tax_details() {
@@ -44,24 +52,19 @@ patch(PosOrderline.prototype, {
   },
 
   get_foreign_total_tax() {
-    return round_pr(
-      this.get_foreign_price_without_tax() * (this.get_tax() / 100),
-      this.foreign_currency.rounding,
-    );
+    return this.get_all_foreign_prices().tax || 0;
   },
-
 
   get_rate(currency) {
     const inverse_rate = currency.rate;
-    return inverse_rate.toFixed(6);
+    return inverse_rate;
   },
 
   get_foreign_unit_price() {
-
     const foreign_currency = this.get_foreign_currency()
-    const price = this.get_foreign_calculation_price(foreign_currency, this.price_unit.toFixed(6))
+    const unitPrice = Number(this.price_unit || 0);
+    const price = this.get_foreign_calculation_price(foreign_currency, unitPrice)
     this.foreign_price_unit = price
-
     return this.foreign_price_unit;
 
   },
@@ -100,16 +103,17 @@ patch(PosOrderline.prototype, {
     );
     accountTaxHelpers.add_tax_details_in_base_line(baseLineNoDiscount, company);
     accountTaxHelpers.round_base_lines_tax_details([baseLineNoDiscount], company);
-
+    
     // Tax details.
     const taxDetails = {};
     for (const taxData of baseLine.tax_details.taxes_data) {
+      console.log("taxData", taxData.tax_amount_currency)
       taxDetails[taxData.tax.id] = {
         amount: taxData.tax_amount_currency,
         base: taxData.base_amount_currency,
       };
     }
-
+    console.log("Montos de impuestos or something", baseLine)
     return {
       priceWithTax: baseLine.tax_details.total_included_currency,
       priceWithoutTax: baseLine.tax_details.total_excluded_currency,
@@ -123,9 +127,10 @@ patch(PosOrderline.prototype, {
     };
   },
 
-  get_foreign_calculation_price(currency, price) {
+ get_foreign_calculation_price(currency, price) {
     const rate = this.get_rate(currency);
-    return parseFloat((price * rate).toFixed(6));
+    const amount = price * rate;
+    return amount   
   },
 
   get foreign_price_unit_display() {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension" owl="1">
-        <xpath expr="//div[hasclass('total')]" position="replace">
+    <t t-name="l10n_ve_pos.PaymentScreenDue" t-inherit="point_of_sale.PaymentScreenDue" t-inherit-mode="extension" owl="1">
+        <xpath expr="//section[1]" position="after">
             <div style="font-size:35px;" class="d-flex w-100 justify-content-center py-2 text-success">
                     <span>
                         <t t-esc="totalDueText" /> 
@@ -21,8 +21,6 @@
                     </span>
                     <t t-esc="totalDueTextWithIGTFDisplay" />
             </div>
-        </xpath>
-        <xpath expr="//div[hasclass('payment-status-change')]" position="after">
             <div class="payment-status-total-change py-2 fs-3">
                 <span class="label pe-2">BI IGTF</span>
                 <span class="amount" t-esc="biAmount"/>

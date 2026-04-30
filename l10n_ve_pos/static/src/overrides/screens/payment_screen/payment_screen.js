@@ -44,11 +44,11 @@ patch(PaymentScreen.prototype, {
       is_change
     ) {
       let res = super.add_paymentline(...arguments);
-      this.update_igtf();
+      // this.update_igtf();
       return res;
     }
     let res_igtf = this.add_paymentline_without_igtf(...arguments);
-    this.update_igtf();
+    // this.update_igtf();
     return res_igtf;
   },
 

@@ -27,7 +27,7 @@ patch(PaymentScreenStatus.prototype, {
     let payment_lines = this.props.order.get_paymentlines();
     let is_igtf = false;
     payment_lines.forEach(function (payment_line) {
-      if (payment_line.payment_method.apply_igtf) {
+      if (payment_line.payment_method_id.apply_igtf) {
         is_igtf = true;
       }
     })

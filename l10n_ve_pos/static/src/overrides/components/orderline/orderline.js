@@ -45,10 +45,7 @@ patch(Orderline.prototype, {
       parsed_price || 0,
       this.pos.dp["Foreign Product Price"],
     );
-    this.foreign_price = round_di(
-      parsed_price * this.get_rate() || 0,
-      this.pos.dp["Foreign Product Price"],
-    );
+    this.foreign_price = parsed_price * this.get_rate() || 0;
   },
 
   set_foreign_unit_price(price) {
@@ -58,14 +55,11 @@ patch(Orderline.prototype, {
       : isNaN(parseFloat(price))
         ? 0
         : oParseFloat("" + price);
-    this.foreign_price = round_di(
-      parsed_price || 0,
-      this.pos.dp["Foreign Product Price"],
-    );
+    this.foreign_price = parsed_price * this.get_rate() || 0;
   },
 
-  get_all_prices(qty = this.getQuantity()) {
-    return super.get_all_prices(qty);
+  getPriceWithOptions() {
+    return super.getPriceWithOptions();
   },
 
   get_foreign_price_without_tax() {
