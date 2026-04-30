@@ -52,7 +52,7 @@ class TestAccountRetentionSequence(TransactionCase):
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "currency_foreign_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_vef.id,
                 "iva_supplier_retention_journal_id": self.iva_journal.id,
             }
         )
@@ -136,6 +136,7 @@ class TestAccountRetentionSequence(TransactionCase):
                 "partner_id": self.partner_a.id,
                 "journal_id": self.journal.id,
                 "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
                 "invoice_line_ids": [
                     (
                         0,

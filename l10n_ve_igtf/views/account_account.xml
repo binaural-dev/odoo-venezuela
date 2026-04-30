@@ -1,0 +1,15 @@
+<odoo>
+    <record id="view_account_form_advance_account" model="ir.ui.view">
+        <field name="name">account.account.form.advance.inherit</field>
+        <field name="model">account.account</field>
+        <field name="inherit_id" ref="account.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='code']" position="after">
+                <div class="mt-2">
+                    <field name="is_advance_account" class="oe_inline" invisible="account_type not in ['asset_current', 'liability_current']"/>
+                    <label for="is_advance_account" class="ms-2" invisible="account_type not in ['asset_current', 'liability_current']"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

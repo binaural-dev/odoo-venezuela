@@ -17,29 +17,39 @@
                             confirm="Are you sure you want to cancel this voucher? The associated accounting entries will be reversed" />
                         <field name="state" widget="statusbar" nolabel="1" />
                     </header>
-                    <group colspan="4" col="4">
-                        <!-- Invisible fields -->
-                        <field name="base_currency_is_vef" invisible="1" />
-                        <field name="company_currency_id" invisible="1" />
-                        <field name="foreign_currency_id" invisible="1" />
-                        <field name="allowed_lines_move_ids" invisible="1" />
-                        <field name="type_retention" invisible="1" force_save="1" />
-                        <field name="type" force_save="1" select="2" />
-                        <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
-                            select="1"
-                            invisible="not type"
-                            readonly="state in ['emitted', 'cancel']" />
-                        <field name="date_accounting" select="1"
-                            readonly="state in ['emitted', 'cancel']" />
-                        <field name="number" force_save="1"
-                            readonly="type == 'in_invoice' or state in ['emitted', 'cancel']"
-                            required="type == 'out_invoice'" />
-                        <field name="correlative" force_save="1"
-                            invisible="1"
-                            readonly="type == 'in_invoice'" />
-                        <field name="date"
-                            readonly="state in ['emitted', 'cancel']" />
+
+                    <group colspan="2">
+                        <group >
+                            <!-- Invisible fields -->
+                            <field name="base_currency_is_vef" invisible="1" />
+                            <field name="company_currency_id" invisible="1" />
+                            <field name="foreign_currency_id" invisible="1" />
+                            <field name="allowed_lines_move_ids" invisible="1" />
+                            <field name="type_retention" invisible="1" force_save="1" />
+                            <field name="type" force_save="1" select="2" />
+                            <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
+                                select="1"
+                                invisible="not type"
+                                readonly="state in ['emitted', 'cancel']" />
+                           
+                            <field name="number" force_save="1"
+                                readonly="type == 'in_invoice' or state in ['emitted', 'cancel']"
+                                required="type == 'out_invoice'" />
+                            <field name="correlative" force_save="1"
+                                invisible="1"
+                                readonly="type == 'in_invoice'" />
+                        </group>
+                        <group >
+                            <field name="date_accounting" select="1"
+                                    readonly="state in ['emitted', 'cancel']" />
+                            <field name="date"
+                                readonly="state in ['emitted', 'cancel']" />
+
+                            <field name="date_emision" 
+                                readonly="state in ['emitted', 'cancel']" force_save="1" />
+                        </group>
                     </group>
+                   
                     <notebook>
                         <page name="retention_lines" string="Retention Lines">
                             <field colspan="4" name="retention_line_ids" nolabel="1"
@@ -50,7 +60,7 @@
                                     <field name="invoice_type" column_invisible="True" />
                                     <field name="company_currency_id" column_invisible="True" />
                                     <field name="foreign_currency_id" column_invisible="True" />
-                                    <field name="name" />
+                                    <field name="name" required="1" />
                                     <field
                                         name="move_id"
                                         domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('municipal_voucher_number', '=',False)]"

@@ -81,13 +81,12 @@ class AccountTax(models.Model):
             foreign_base_igtf = res.get("foreign_amount_total", 0)
 
         if invoice.bi_igtf:
-               
-            base_igtf = invoice.company_id.currency_id._convert(
-            invoice.bi_igtf, 
-            invoice.currency_id,
-            invoice.company_id, 
-            invoice.invoice_date
-            )
+            if invoice.currency_id.id != invoice.company_id.currency_id.id:
+                base_igtf = invoice.foreign_bi_igtf
+                foreign_base_igtf = invoice.bi_igtf
+            else:
+                base_igtf = invoice.bi_igtf
+                foreign_base_igtf = invoice.foreign_bi_igtf
 
         igtf_base_amount = base_igtf 
         igtf_foreign_base_amount = foreign_base_igtf 
@@ -129,12 +128,12 @@ class AccountTax(models.Model):
         )
         
 
-        res["amount_total_igtf"] = res["base_amount_currency"] + igtf_amount
+        res["amount_total_igtf"] = res["total_amount_currency"] + igtf_amount
         
         res["formatted_amount_total_igtf"] = formatLang(
             self.env, res["amount_total_igtf"], currency_obj=currency
         )
-        res["foreign_amount_total_igtf"] = res["base_amount_currency"] + foreign_igtf_amount
+        res["foreign_amount_total_igtf"] = res["total_amount_currency"] + foreign_igtf_amount
         
         res["formatted_foreign_amount_total_igtf"] = formatLang(
             self.env, res["foreign_amount_total_igtf"], currency_obj=foreign_currency

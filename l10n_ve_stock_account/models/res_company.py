@@ -39,3 +39,16 @@ class ResCompany(models.Model):
         default=False,
         help="If enabled, dispatch guide amounts will use the date of the stock picking for currency conversion.",
     )
+    
+    hide_disc_field_dispatch_guide = fields.Boolean(
+        string="Hide discount field in dispatch guide",
+        default=False,
+        help="If enabled, the discount field will be hidden in the dispatch guide.",
+    )
+
+    hide_weight_field_dispatch_guide = fields.Boolean(
+        string="Hide weight field in dispatch guide",
+        default=False,
+        help="If enabled, the weight field will be hidden in the dispatch guide.",
+    )
+

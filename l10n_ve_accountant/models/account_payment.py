@@ -8,6 +8,10 @@ _logger = logging.getLogger(__name__)
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
+    destination_account_id = fields.Many2one(
+        "account.account",
+        domain="[('account_type', 'in', ('asset_receivable', 'liability_payable', 'asset_current', 'liability_current'))]",
+    )
     def default_alternate_currency(self):
         """
         This method is used to get the foreign currency of the company and set it as the default
@@ -34,7 +38,7 @@ class AccountPayment(models.Model):
             The rate of the payment
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.ref("base.VEF").id,
+            self.foreign_currency_id.id or self.company_id.currency_id,
             self.date or fields.Date.today(),
         )
         rate = rate_values.get("foreign_rate", 0)
@@ -50,11 +54,12 @@ class AccountPayment(models.Model):
             The inverse rate of the payment
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.ref("base.VEF").id,
+            self.foreign_currency_id.id or self.company_id.currency_id,
             self.date or fields.Date.today(),
         )
         rate = rate_values.get("foreign_inverse_rate", 0)
         return rate
+
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
@@ -73,6 +78,66 @@ class AccountPayment(models.Model):
     )
 
     concept = fields.Char()
+    is_foreign_currency = fields.Boolean(
+        compute="_compute_is_foreign_currency",
+        store=True,
+    )
+
+    block_change_partner_after_post = fields.Boolean(default=False, copy=False)
+
+    other_rate = fields.Float(
+        compute="_compute_other_rate",
+        digits="Tasa",
+        store=True,
+        readonly=False,
+        help="This field is shown when the payment is different from the company currency and the company foreign currency. Show the rate of the currency of the payment. NOTE: This field is not the same as the foreign_rate field.",
+    )
+    other_rate_inverse = fields.Float(
+        compute="_compute_other_rate",
+        digits=(16, 15),
+        store=True,
+        readonly=False,
+        help="This field is shown when the payment is different from the company currency and the company foreign currency. Show the inverse rate of the currency of the payment. NOTE: This field is not the same as the foreign_inverse_rate field.",
+    )
+    custom_rate_currency_name = fields.Char(compute="_compute_rate_currency_name")
+    company_currency_symbol = fields.Char(related="company_id.currency_id.symbol")
+
+    foreign_amount = fields.Monetary('foreign_amount',currency_field="foreign_currency_id",  compute="_compute_foreign_amount", store=True, readonly=False)
+
+    @api.depends("amount", "currency_id","date")
+    def _compute_foreign_amount(self):
+        for payment in self:
+            if payment.date and payment.currency_id != payment.foreign_currency_id:
+                payment.foreign_amount = payment.currency_id._convert(
+                    payment.amount,
+                    payment.foreign_currency_id,
+                    payment.company_id,
+                    payment.date 
+                )
+            else:
+                payment.foreign_amount = 0.0
+
+
+
+    @api.depends("company_id", "currency_id")
+    def _compute_rate_currency_name(self):
+        for payment in self:
+            if (
+                 payment.currency_id == payment.company_id.currency_id
+                 or payment.currency_id == payment.company_id.foreign_currency_id
+             ):
+                payment.custom_rate_currency_name = payment.company_id.foreign_currency_id.name
+            else:
+                payment.custom_rate_currency_name = payment.currency_id.name
+
+    
+
+    @api.depends("currency_id", "company_id")
+    def _compute_is_foreign_currency(self):
+        for payment in self:
+            payment.is_foreign_currency = (
+                payment.currency_id == payment.company_id.foreign_currency_id
+            )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -115,9 +180,29 @@ class AccountPayment(models.Model):
         Rate = self.env["res.currency.rate"]
         for payment in self:
             rate_values = Rate.compute_rate(
-                payment.currency_id.id, payment.date or fields.Date.today()
+                payment.foreign_currency_id.id, payment.date or fields.Date.today()
             )
             payment.update(rate_values)
+
+    @api.depends("date", "currency_id")
+    def _compute_other_rate(self):
+        """
+        Compute the visual rate of the payment using the compute_rate method of the res.currency.rate model.
+        """
+        Rate = self.env["res.currency.rate"]
+        for payment in self:
+            if (
+                payment.currency_id != payment.company_id.currency_id
+                and payment.currency_id != payment.company_id.foreign_currency_id
+            ):
+                rate_values = Rate.compute_rate(
+                    payment.currency_id.id, payment.date or fields.Date.today()
+                )
+                payment.other_rate = rate_values.get("foreign_rate", 0)
+                payment.other_rate_inverse = rate_values.get("foreign_inverse_rate", 0)
+            else:
+                payment.other_rate = 0
+                payment.other_rate_inverse = 0
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -131,6 +216,24 @@ class AccountPayment(models.Model):
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(
                 payment.foreign_rate
             )
+
+    @api.onchange("other_rate")
+    def _onchange_other_rate(self):
+        """
+        Onchange the other rate and compute the other inverse rate
+        """
+        Rate = self.env["res.currency.rate"]
+        for payment in self:
+            if not bool(payment.other_rate):
+                return
+            payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
+
+    def action_post(self):
+        res = super().action_post()
+        # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
+        self.write({"block_change_partner_after_post": True})
+        return res
+            
 
     # @api.model
     # def _get_trigger_fields_to_synchronize(self):

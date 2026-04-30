@@ -29,6 +29,11 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.auto_select_debit_note_journal", 
         readonly=False
     )
+    
+    block_invoice_display_date_upper_than_date = fields.Boolean(
+        related="company_id.block_invoice_display_date_upper_than_date", 
+        readonly=False
+    )
 
     @api.onchange("group_sales_invoicing_series")
     def onchange_group_sales_invoicing_series(self):

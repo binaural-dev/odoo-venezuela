@@ -106,6 +106,8 @@ class SaleOrder(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
+    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
+                                            compute='_compute_foreign_untaxed_total' )
 
     pricelist_id = fields.Many2one(
         domain=lambda self: (
@@ -117,6 +119,25 @@ class SaleOrder(models.Model):
 
     mobile = fields.Char(related="partner_id.mobile")
 
+    amount_untaxed_total_signed = fields.Monetary(
+        string="Total Untaxed Signed",
+        compute="_compute_amount_signed",
+        currency_field="company_currency_id",
+        store=True,
+    )
+
+    amount_total_signed = fields.Monetary(
+        string="Total Signed",
+        compute="_compute_amount_signed",
+        currency_field="company_currency_id",
+        store=True,
+    )
+    
+    company_currency_id = fields.Many2one(
+        related="company_id.currency_id",
+        string="Company Currency",
+        readonly=True,
+    )
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None, **kwargs):
         if 'load' in kwargs:
@@ -181,6 +202,16 @@ class SaleOrder(models.Model):
             if move.order_line:
                 move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
 
+    @api.depends("tax_totals")
+    def _compute_foreign_untaxed_total(self):
+        """
+        Compute the foreign untaxed total of the order
+        """
+        for move in self:
+            move.foreign_untaxed_total = False
+            if move.order_line:
+                move.foreign_untaxed_total = move.tax_totals.get("base_amount_foreign_currency",0)
+
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
         """
@@ -210,6 +241,8 @@ class SaleOrder(models.Model):
         if foreign_currency_id:
             foreign_currency_symbol = foreign_currency_id.symbol
             foreign_currency_name = foreign_currency_id.name
+            company_currency_id = self.env.company.currency_id
+            company_currency_symbol = company_currency_id.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "l10n_ve_sale.view_sale_order_form_l10n_ve_sales"
@@ -227,6 +260,46 @@ class SaleOrder(models.Model):
                         "string", _("Foreign Currency ") + foreign_currency_symbol
                     )
                 res["arch"] = etree.tostring(doc, encoding="unicode")
+            elif view_type == "list":
+                doc = etree.XML(res["arch"])
+                foreign_total_billed = doc.xpath("//field[@name='foreign_total_billed']")
+                if foreign_total_billed:
+                    foreign_total_billed[0].set("string", _("Total") + " " + foreign_currency_name)
+                
+                foreign_untaxed_total = doc.xpath("//field[@name='foreign_untaxed_total']")
+                if foreign_untaxed_total:
+                    foreign_untaxed_total[0].set("string", _("Untaxed Total") + " " + foreign_currency_name)
+
+                total_signed = doc.xpath("//field[@name='amount_total_signed']")
+                if total_signed:
+                    total_signed[0].set("string", _("Total") + " " + company_currency_symbol)
+                
+                untaxed_total_signed = doc.xpath("//field[@name='amount_untaxed_total_signed']")
+                if untaxed_total_signed:
+                    untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + company_currency_symbol)
+                
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+            elif view_type == "pivot":
+                _logger.warning("Pivot view")
+                doc = etree.XML(res["arch"])
+                foreign_total_billed = doc.xpath("//field[@name='foreign_total_billed']")
+                if foreign_total_billed:
+                    foreign_total_billed[0].set("string", _("Total") + " " + foreign_currency_name)
+                
+                foreign_untaxed_total = doc.xpath("//field[@name='foreign_untaxed_total']")
+                if foreign_untaxed_total:
+                    foreign_untaxed_total[0].set("string", _("Untaxed Total") + " " + foreign_currency_name)
+
+                total_signed = doc.xpath("//field[@name='amount_total_signed']")
+                if total_signed:
+                    total_signed[0].set("string", _("Total") + " " + company_currency_symbol)
+                
+                untaxed_total_signed = doc.xpath("//field[@name='amount_untaxed_total_signed']")
+                if untaxed_total_signed:
+                    untaxed_total_signed[0].set("string", _("Untaxed Total") + " " + company_currency_symbol)
+                
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+                
         return res
 
     @api.depends(
@@ -577,3 +650,56 @@ class SaleOrder(models.Model):
             order.amount_untaxed = order.tax_totals['base_amount_currency']
             order.amount_tax = order.tax_totals['tax_amount_currency']
             order.amount_total = order.tax_totals['total_amount_currency']
+
+   
+
+    @api.depends("amount_untaxed", "amount_total", "currency_id", "date_order", "company_id")
+    def _compute_amount_signed(self):
+        for order in self:
+            if order.currency_id and order.company_id and order.currency_id != order.company_id.currency_id:
+                order.amount_untaxed_total_signed = order.currency_id._convert(
+                    order.amount_untaxed,
+                    order.company_id.currency_id,
+                    order.company_id,
+                    order.date_order or fields.Date.today(),
+                )
+                order.amount_total_signed = order.currency_id._convert(
+                    order.amount_total,
+                    order.company_id.currency_id,
+                    order.company_id,
+                    order.date_order or fields.Date.today(),
+                )
+            else:
+                order.amount_untaxed_total_signed = order.amount_untaxed
+                order.amount_total_signed = order.amount_total
+
+    invoice_status = fields.Selection(
+        selection_add=[('partially_billed', 'Partially billed')],
+    )
+
+    @api.depends('state', 'order_line.invoice_status', 'order_line.qty_invoiced', 'order_line.product_uom_qty')
+    def _compute_invoice_status(self):
+        sale_done_orders = self.filtered(lambda order: order.state in ('sale', 'done'))
+        other_orders = self - sale_done_orders
+
+        if sale_done_orders:
+            super(SaleOrder, sale_done_orders)._compute_invoice_status()
+
+        if other_orders:
+            super(SaleOrder, other_orders)._compute_invoice_status()
+
+        for order in sale_done_orders:
+            invoiceable_lines = order.order_line.filtered(lambda line: not line.display_type)
+            total_invoiced = sum(invoiceable_lines.mapped('qty_invoiced'))
+            total_invoiceable = sum(
+                line.product_uom_qty
+                if line.product_id.invoice_policy == 'order'
+                else line.qty_delivered
+                for line in invoiceable_lines
+            )
+
+            if total_invoiced > 0 and total_invoiced < total_invoiceable:
+                order.invoice_status = 'partially_billed'
+
+        for order in other_orders:
+            order.invoice_status = order.invoice_status

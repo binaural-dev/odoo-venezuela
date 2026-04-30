@@ -19,7 +19,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.0.0.3",
+    "version": "19.0.1.2.1",
 
     "depends": [
         "base",
@@ -29,14 +29,15 @@
         "l10n_ve_base",
     ],
     "data": [
-        
+        "security/res_groups.xml",
         "security/ir.model.access.csv",
         "views/account_journal.xml",
+        "views/account_account.xml",
         "views/account_move.xml",
         "views/account_payment.xml",
         "wizard/account_payment_register.xml",
-        "views/res_company.xml",
         "views/res_config_settings.xml",
+        "views/res_partner.xml",
         "wizard/move_action_cancel_advance_payment.xml",
         
     ],
