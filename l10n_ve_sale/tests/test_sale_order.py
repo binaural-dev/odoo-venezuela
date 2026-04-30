@@ -225,3 +225,79 @@ class TestSaleOrderInvoice(TransactionCase):
             order.action_confirm()
             order._create_invoices()
         _logger.info("test_02_error_generate_invoice_from_sale_order --- successfully (%s)",e.exception,)
+
+    def test_03_reconfirm_sale_order_with_pickings(self):
+        """Test reconfirming a sale order after it was confirmed, cancelled and set to draft.
+        This flow was causing a singleton error in stock.picking.
+        """
+        # Create a storable product
+        product_storable = self.env["product.product"].create({
+            "name": "Producto Almacenable",
+            "type": "product",
+            "invoice_policy": "order",
+            "list_price": 50,
+            "taxes_id": [(6, 0, [self.tax_iva16.id])],
+            "barcode": "ST12345",
+        })
+        
+        # Give some stock
+        warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
+        self.env['stock.quant'].with_context(inventory_mode=True).create({
+            'product_id': product_storable.id,
+            'location_id': warehouse.lot_stock_id.id,
+            'inventory_quantity': 10,
+        }).action_apply_inventory()
+
+        rate = 5.0
+        # Create order with 2 lines of 1 unit each to trigger split picking logic
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "manually_set_rate": True,
+            "foreign_rate": rate,
+            "foreign_inverse_rate": 1 / rate,
+            "order_line": [
+                (0, 0, {
+                    "product_id": product_storable.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 100,
+                    "tax_id": [(6, 0, [self.tax_iva16.id])],
+                    "name": "Line 1",
+                }),
+                (0, 0, {
+                    "product_id": product_storable.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 100,
+                    "tax_id": [(6, 0, [self.tax_iva16.id])],
+                    "name": "Line 2",
+                })
+            ]
+        })
+
+        # Seteamos el límite de pickings para que se dividan
+        self.company.write({'limit_product_qty_out': 1})
+
+        # 1. Confirm the order
+        order.action_confirm()
+        self.assertEqual(order.state, 'sale')
+        self.assertTrue(len(order.picking_ids) > 1, "Should have created multiple pickings due to limit_product_qty_out=1")
+        
+        # 2. Cancel related pickings to allow SO cancellation
+        for picking in order.picking_ids:
+            picking.move_ids.write({'state': 'cancel'})
+            picking.write({'state': 'cancel'})
+        
+        # 3. Cancel the order
+        order.action_cancel()
+        if order.state != 'cancel':
+            order.write({'state': 'cancel'})
+            
+        self.assertEqual(order.state, 'cancel')
+        
+        # 4. Set back to draft
+        order.action_draft()
+        self.assertEqual(order.state, 'draft')
+        
+        # 5. Confirm again (This validates the fix for the singleton error)
+        order.action_confirm()
+        self.assertEqual(order.state, 'sale')
+        _logger.info("test_03_reconfirm_sale_order_with_pickings --- successfully")
