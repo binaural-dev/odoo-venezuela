@@ -81,10 +81,6 @@ class AccountPaymentRegister(models.TransientModel):
         """
         Rate = self.env["res.currency.rate"]
         
-        # _logger.info(f"=====================")
-        # _logger.info(f"Rate:{Rate}")
-        # _logger.info(f"=====================")
-
         for payment in self:
             if not bool(payment.payment_date):
                 return
@@ -94,10 +90,6 @@ class AccountPaymentRegister(models.TransientModel):
                 payment.foreign_currency_id.id, payment.payment_date
             )
             payment.update(rate_values)
-            
-            # _logger.info(f"payment_date:{payment.payment_date}")
-            # _logger.info(f"foreign_currency_id:{payment.foreign_currency_id.id}")
-            # _logger.info(f"=====================")
 
     def _create_payment_vals_from_wizard(self, batch_result):
         """
@@ -131,7 +123,7 @@ class AccountPaymentRegister(models.TransientModel):
         else:
             source_amount_currency = abs(sum(lines.mapped('amount_residual_currency')))
 
-        return {
+        res = {
             'company_id': company.id,
             'partner_id': payment_values['partner_id'],
             'partner_type': payment_values['partner_type'],
@@ -140,3 +132,13 @@ class AccountPaymentRegister(models.TransientModel):
             'source_amount': source_amount,
             'source_amount_currency': source_amount_currency,
         }
+
+        if len(lines.move_id) == 1:
+            move = lines.move_id
+            
+            res.update({
+                'foreign_rate': move.foreign_rate,
+                'foreign_inverse_rate': move.foreign_inverse_rate,
+            })
+            
+        return res

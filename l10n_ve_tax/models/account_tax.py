@@ -1,5 +1,5 @@
 from odoo.tools.float_utils import float_round, float_compare
-from odoo import api, models, _
+from odoo import api, models, fields
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.misc import formatLang
 
@@ -174,6 +174,7 @@ class AccountTax(models.Model):
         for payment in content:
             # Extraemos directamente el valor que vemos en tu imagen
             # Usamos .get() por seguridad si el campo no existe en algún pago
+            
             f_amount = payment.get('foreign_amount', 0.0)
 
             # Opcional: Validar que el pago sea de la moneda que buscas
@@ -190,15 +191,20 @@ class AccountTax(models.Model):
         taxes = []
         for base_line in foreign_base_lines:
             is_exists_foreign_price = "foreign_price" in base_line["record"]
-
+            base_line["currency"] = currency
             if is_exists_foreign_price:
-                base_line["price_unit"] = base_line["record"].foreign_price
-                base_line["price_subtotal"] = base_line["record"].foreign_subtotal
-                base_line["currency"] = currency
+                
+                rate = base_line["record"].foreign_inverse_rate
+                base_line["price_unit"] = base_line["record"].price_unit * rate
+                base_line["price_subtotal"] = base_line["record"].price_subtotal * rate
+
             else:
-                base_line["price_unit"] = base_line["record"].price_unit
-                base_line["price_subtotal"] = base_line["record"].price_subtotal
-                base_line["currency"] = base_line["record"].currency_id
+                if not rate:
+                    move = base_line["record"].move_id
+                    rate = move.foreign_inverse_rate or self.env['res.currency.rate'].compute_rate(move.foreign_currency_id.id, move.invoice_date or fields.Date.today()).get('foreign_inverse_rate', 0.0)
+                
+                base_line["price_unit"] = base_line["record"].price_unit * rate
+                base_line["price_subtotal"] = base_line["record"].price_subtotal * rate
 
             if base_line["taxes"]:
                 taxes.append(
@@ -299,7 +305,6 @@ class AccountTax(models.Model):
         # the 'Account' decimal precision + 5), and that way it's like
         # rounding after the sum of the tax amounts of each line
         prec = currency.rounding
-
         # In some cases, it is necessary to force/prevent the rounding of the tax and the total
         # amounts. For example, in SO/PO line, we don't want to round the price unit at the
         # precision of the currency.
@@ -308,8 +313,9 @@ class AccountTax(models.Model):
         if 'round' in self.env.context:
             round_tax = bool(self.env.context['round'])
 
-        if not round_tax:
-            prec *= 1e-9
+        prec = currency.rounding
+        if self._context.get('round_base') is False:
+            prec = 0.000000001
 
         # 3) Iterate the taxes in the reversed sequence order to retrieve the initial base of the computation.
         #     tax  |  base  |  amount  |
@@ -374,7 +380,9 @@ class AccountTax(models.Model):
         #   Line 2: sum(taxes) = 10920 - 2176 = 8744
         #   amount_tax = 4311 + 8744 = 13055
         #   amount_total = 31865 + 13055 = 37920
+
         base = price_unit * quantity
+
         if self._context.get('round_base', True):
             base = currency.round(base)
 
@@ -488,7 +496,7 @@ class AccountTax(models.Model):
                     tax_base_amount, sign * price_unit, quantity, product, partner, fixed_multiplicator)
 
             # Round the tax_amount multiplied by the computed repartition lines factor.
-            tax_amount = float_round(tax_amount, precision_rounding=prec)
+            
             factorized_tax_amount = float_round(tax_amount * sum_repartition_factor, precision_rounding=prec)
 
             if price_include and total_included_checkpoints.get(i) is None:
@@ -517,13 +525,15 @@ class AccountTax(models.Model):
             # The factorized_tax_amount will be 0.06 (200% x 0.03). However, each line taken independently will compute
             # 50% * 0.03 = 0.01 with rounding. It means there is 0.06 - 0.04 = 0.02 as total_rounding_error to dispatch
             # in lines as 2 x 0.01.
-            repartition_line_amounts = [float_round(tax_amount * line.factor, precision_rounding=prec) for line in tax_repartition_lines]
+            # repartition_line_amounts = [float_round(tax_amount * line.factor, precision_rounding=prec) for line in tax_repartition_lines]
+            line_factor = [line.factor for line in tax_repartition_lines]                        
+            
+            repartition_line_amounts = [tax_amount]           
             total_rounding_error = float_round(factorized_tax_amount - sum(repartition_line_amounts), precision_rounding=prec)
             nber_rounding_steps = int(abs(total_rounding_error / currency.rounding))
             rounding_error = float_round(nber_rounding_steps and total_rounding_error / nber_rounding_steps or 0.0, precision_rounding=prec)
 
             for repartition_line, line_amount in zip(tax_repartition_lines, repartition_line_amounts):
-
                 if nber_rounding_steps:
                     line_amount += rounding_error
                     nber_rounding_steps -= 1
