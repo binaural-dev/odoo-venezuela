@@ -172,18 +172,6 @@ class AccountTax(models.Model):
         content = widget_data.get('content') or []
 
         for payment in content:
-<<<<<<< HEAD
-            move_id = payment.get('move_id')
-            payment_id = self.env['account.move'].browse(move_id)
-            foreign_amt = 0.0
-            
-            # Sólo sumar el saldo de las líneas de cuentas por cobrar/pagar
-            for line in payment_id.line_ids:
-                if line.account_id.id in target_account_ids:
-                    foreign_amt += abs(line.foreign_balance)
-                
-            amounts.append(foreign_amt)
-=======
             # Extraemos directamente el valor que vemos en tu imagen
             # Usamos .get() por seguridad si el campo no existe en algún pago
             
@@ -193,7 +181,6 @@ class AccountTax(models.Model):
             # En tu imagen sale 'foreign_id': 2
             amounts.append(f_amount)
 
->>>>>>> 2a749cbe ([FIX] l10n_ve_accountant,l10n_ve_tax:)
         return amounts
 
     def get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):
