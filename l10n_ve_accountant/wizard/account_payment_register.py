@@ -88,10 +88,7 @@ class AccountPaymentRegister(models.TransientModel):
                 payment.foreign_currency_id.id, payment.payment_date
             )
             payment.update(rate_values)
-<<<<<<< HEAD
-            
-=======
->>>>>>> 2a749cbe ([FIX] l10n_ve_accountant,l10n_ve_tax:)
+
 
     def _create_payment_vals_from_wizard(self, batch_result):
         """
