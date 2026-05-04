@@ -737,7 +737,7 @@ class AccountMove(models.Model):
                 rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
-                final_payment_moves = receivable_payable_lines.reconciled_lines_excluding_exchange_diff_ids.mapped('move_id')
+                final_payment_moves = receivable_payable_lines.reconciled_lines_ids.mapped('move_id')
 
                 account = [rec.company_id.customer_account_igtf_id.id,rec.company_id.supplier_account_igtf_id.id ]
                 
@@ -784,35 +784,32 @@ class AccountMove(models.Model):
                         if igtf_line and partial:
                         
                             igtf_amount = abs(igtf_line[0].balance)
-                            partial_amount = partial_amount
+                            partial_amount = sum(partial.mapped('amount'))
                             bank_amount = partial_amount
                         
                         if not igtf_line and bank_line and partial:
                             igtf_top += bank_amount
                             
                         
-
                         if igtf_line and bank_line and partial:
+
                             if payment_move.origin_payment_id and payment_move.origin_payment_id.reconciled_invoices_count > 1:
 
                                 amount_base_payment = bank_amount
 
-                            
-                            elif (bank_amount * (rec.company_id.igtf_percentage / 100)) < igtf_amount:
-                                if (bank_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
-                                    
-                                    amount_base_payment = bank_amount
-                                else:
-                                    
-                                    amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
-                                    
-                                
-                                if 'pos_payment_ids' in bank_line[0].move_id._fields:
+                            elif 'pos_payment_ids' in bank_line[0].move_id._fields:
                                     if bank_line[0].move_id.pos_payment_ids:
                                         amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
+
+                            elif (bank_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
+                                    
+                                amount_base_payment = bank_amount
+                                igtf_amount = amount_base_payment * (rec.company_id.igtf_percentage / 100)
+                               
                             else:
                                 
-                                amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
+                                igtf_amount = partial_amount * (rec.company_id.igtf_percentage / 100)
+                                amount_base_payment = partial_amount
 
                         if igtf_line and partial:
                             alter_bi_igtf += igtf_amount
@@ -832,7 +829,8 @@ class AccountMove(models.Model):
                         date_conver,
                         round = False
                     )
-                
+
+                    
                 
                 apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
                 rec.igtf_top_aply = apply
