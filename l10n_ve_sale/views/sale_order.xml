@@ -68,10 +68,10 @@
 
             <xpath expr="//button[@id='create_invoice'][1]" position="replace">
                 <button id="create_invoice" name="%(sale.action_view_sale_advance_payment_inv)d"
-                    string="Create Invoice"
-                    type="action" class="btn-primary" data-hotkey="q"
-                    invisible="invoice_status != 'to invoice'"
-                    groups="!l10n_ve_sale.create_invoice_sale_order_group" />
+                string="Create Invoice"
+                type="action" class="btn-primary" data-hotkey="q"
+                invisible="invoice_status != 'to invoice' and invoice_status != 'partially_billed'"
+                groups="!l10n_ve_sale.create_invoice_sale_order_group" />
             </xpath>
 
             <xpath expr="//button[@id='create_invoice_percentage'][1]" position="replace">
