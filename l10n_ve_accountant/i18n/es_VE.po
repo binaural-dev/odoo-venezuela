@@ -1769,3 +1769,14 @@ msgstr "Importe adeudado"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_amount
 msgid "foreign_amount"
 msgstr "Importe alterno"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+msgid ""
+"You can't delete a posted or cancel journal item. Don’t play games with your "
+"accounting records; reset the journal entry to draft before deleting it."
+msgstr ""
+"No puede eliminar un apunte contable publicado o cancelado. No tome a la ligera sus "
+"registros contables; reestablezca el apunte contable a borrador antes de "
+"eliminarlo."

@@ -521,3 +521,11 @@ class AccountMoveLine(models.Model):
     def _onchange_price_unit(self):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_posted(self):
+        # 1. Ejecutamos la validación nativa de Odoo primero
+        super(AccountMoveLine, self)._unlink_except_posted()
+
+        if not self.env.context.get('force_delete') and any(m.state in ['posted','cancel'] and m.move_type in ['out_invoice', 'out_refund', 'out_receipt'] or m.name != '/' for m in self.move_id):
+            raise UserError(_("You can't delete a posted or cancel journal item. Don’t play games with your accounting records; reset the journal entry to draft before deleting it."))
