@@ -6,6 +6,8 @@
         <field name="inherit_id" ref="account.view_account_journal_form"/>
         <field name="arch" type="xml">
             <field name="type" position="after">
+                <field name="digital_invoice_lock" invisible="1"/>
+                <field name="digital_invoice" readonly="digital_invoice_lock" invisible="type not in ['sale', 'purchase', 'cash', 'bank']"/>
                 <field name="payment_method_code"/>
             </field>
         </field>
