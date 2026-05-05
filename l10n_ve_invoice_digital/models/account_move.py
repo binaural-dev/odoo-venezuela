@@ -23,6 +23,55 @@ class AccountMove(models.Model):
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
+    def action_post(self):
+        for invoice in self:
+            invoice._tfhka_validate_mixed_invoicing()
+
+        res = super(AccountMove, self).action_post()
+        return res
+
+    def _is_eligible_for_tfhka(self):
+        """Check if the invoice should process TFHKA logic."""
+        self.ensure_one()
+        config_invoice_can_be_digitalized = self.company_id.invoice_digital_tfhka
+        if not self.journal_id.digital_invoice or not config_invoice_can_be_digitalized:
+            return False
+        if self.move_type not in ("out_invoice", "out_refund"):
+            return False
+        return True
+
+    def _tfhka_validate_mixed_invoicing(self):
+        """Validates if mixed invoicing is allowed."""
+        self.ensure_one()
+        config_invoice_can_be_digitalized = self.company_id.invoice_digital_tfhka
+        config_mix_invoicing = self.company_id.mix_invoicing_tfhka
+
+        if not self.journal_id.digital_invoice and config_invoice_can_be_digitalized and not config_mix_invoicing:
+            if self.move_type in ['out_invoice', 'out_refund']:
+                raise ValidationError(_(
+                    "The company is configured for strict digital invoicing (mixed invoicing is disabled). "
+                    "Only journals with digital invoicing enabled are allowed for this operation. "
+                    "Please check the company configuration or select a valid digital journal."
+                ))
+
+    def _tfhka_get_document_type_and_series(self):
+        """Returns the TFHKA document type and series."""
+        self.ensure_one()
+        document_type = ""
+        if self.move_type == "out_invoice":
+            document_type = "03" if self.debit_origin_id else "01"
+        elif self.move_type == "out_refund" and self.reversed_entry_id:
+            document_type = "02"
+        
+        series = ""
+        if self.company_id.group_sales_invoicing_series and self.journal_id.series_correlative_sequence_id:
+            if self.journal_id.sequence_id and self.journal_id.sequence_id.prefix:
+                series = re.sub(r'[^a-zA-Z0-9]', '', self.journal_id.sequence_id.prefix)
+            else:
+                raise UserError(_("The selected series is not configured"))
+                
+        return document_type, series
+
     def generate_document_digital(self):
         if not self.company_id.invoice_digital_tfhka:
             return
@@ -47,12 +96,13 @@ class AccountMove(models.Model):
             
         self.query_numbering(series)
         document_number = self.get_last_document_number(document_type, series)
-        document_number = document_number + 1
-        current_number = self.sequence_number
-
-        if document_number != current_number and self.company_id.sequence_validation_tfhka:
-            raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
-
+        
+        try:
+            document_number_int = int(document_number)
+        except (ValueError, TypeError):
+            document_number_int = 0
+            
+        document_number = document_number_int + 1
         document_number = str(document_number)
 
         self.generate_document_data(document_number, document_type, series)
@@ -136,6 +186,19 @@ class AccountMove(models.Model):
             )
             num_control_tfhka = response.get("resultado").get("numeroControl")
             self.correlative = num_control_tfhka
+            
+            # Autocorrección reactiva de secuencia local posterior a la generación
+            if self.company_id.sequence_validation_tfhka:
+                nuevo_correlativo_tfhka = int(document_number) + 1
+                try:
+                    if self.move_type == "out_refund":
+                        self.journal_id.sudo().write({"refund_sequence_number_next": nuevo_correlativo_tfhka})
+                    else:
+                        self.journal_id.sudo().write({"sequence_number_next": nuevo_correlativo_tfhka})
+                    _logger.info("Secuencia actualizada localmente a %s basada en la última generación a TFHKA", nuevo_correlativo_tfhka)
+                except Exception as e:
+                    _logger.error("No se pudo actualizar la secuencia post-generación TFHKA: %s", e)
+                    
             return
 
     def get_last_document_number(self, document_type, series):
@@ -646,7 +709,7 @@ class AccountMove(models.Model):
             record.show_digital_debit_note = True
             record.show_digital_credit_note = True
 
-            if record.state != "posted" or record.is_digitalized or not self.company_id.invoice_digital_tfhka:
+            if record.state != "posted" or record.is_digitalized or not self.company_id.invoice_digital_tfhka or not record.journal_id.digital_invoice:
                 continue
 
             if (
