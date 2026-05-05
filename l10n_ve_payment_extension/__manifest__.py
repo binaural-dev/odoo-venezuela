@@ -29,7 +29,7 @@
         "data/report_paperformat_data.xml",
         "data/fees_retention_data.xml",
         "data/payment_concept_data.xml",
-        "data/retencion_accion.xml",
+        "data/ir_actions_server_data.xml",
         "report/retention_line_report_views.xml",
         "report/retention_voucher_templates.xml",
         "report/retention_voucher_reports.xml",
