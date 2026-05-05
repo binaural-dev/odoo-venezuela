@@ -137,7 +137,6 @@ class AccountMoveRetention(models.Model):
             'islr': _('ISLR Retentions'),
             'municipal': _('Municipal Retentions'),
         }
-        # Obtenemos el nombre basado en el tipo, o un genérico por si acaso
         action_name = names.get(ret_type, _('Retentions'))
 
         if retentions:
@@ -620,11 +619,11 @@ class AccountMoveRetention(models.Model):
                     "Invoice %s has already been paid. You cannot generate an ISLR retention for a paid or canceled invoice."
                 ) % record.name)
             
-            lineas_servicio = self.invoice_line_ids.filtered(
+            service_lines = self.invoice_line_ids.filtered(
                 lambda l: l.product_id.product_tmpl_id.type == 'service' and bool(l.product_id.product_tmpl_id.payment_concept)
             )
             
-            if not lineas_servicio:
+            if not service_lines:
                 raise UserError(_(
                     "No services with a configured 'Payment Concept' were found in the lines of invoice %s."
                 ) % record.name)
