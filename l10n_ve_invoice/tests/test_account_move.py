@@ -264,7 +264,7 @@ class TestAccountMove(TransactionCase):
             ],
             move_type="out_refund",
             invoice_date=invoice_date,
-            journal=self.purchase_journal,
+            journal=self.sales_journal,
         )
 
         class FakeDate(real_date):
