@@ -28,6 +28,15 @@ class ResCompany(models.Model):
              "(VES or USD line prices + dual totals if USD selected). An additional "
              "checkbox + currency selector will appear on each invoice."
     )
+    mix_invoicing_tfhka = fields.Boolean(default=True, string="Allow Mixed Invoicing")
+    mix_invoicing_type_tfhka = fields.Selection(
+        [
+            ("free_form", "Free form"),
+            ("fiscal_machine", "Fiscal Machine"),
+        ],
+        default="free_form",
+    )
+
     
     def generate_token_tfhka(self):
         self.ensure_one()
