@@ -17,6 +17,15 @@ class ResCompany(models.Model):
     dispatch_guide_digital_tfhka = fields.Boolean()
     sequence_validation_tfhka = fields.Boolean(default=True)
     digitalization_with_payment_tfhka = fields.Boolean(default=False)
+    mix_invoicing_tfhka = fields.Boolean(default=True, string="Allow Mixed Invoicing")
+    mix_invoicing_type_tfhka = fields.Selection(
+        [
+            ("free_form", "Free form"),
+            ("fiscal_machine", "Fiscal Machine"),
+        ],
+        default="free_form",
+    )
+
     
     def generate_token_tfhka(self):
         self.ensure_one()
