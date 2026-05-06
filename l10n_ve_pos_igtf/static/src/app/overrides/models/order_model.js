@@ -10,7 +10,6 @@ import {
   floatIsZero,
 } from "@web/core/utils/numbers";
 
-// New orders are now associated with the current table, if any.
 patch(PosOrder.prototype, {
   setup() {
     super.setup(...arguments);
@@ -18,7 +17,7 @@ patch(PosOrder.prototype, {
     this.foreign_igtf_amount = 0;
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
-    console.log('POS:', this)
+    this.update_igtf();
   },
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
@@ -35,7 +34,6 @@ patch(PosOrder.prototype, {
     json["foreign_bi_igtf"] = this.foreign_bi_igtf;
     return json;
   },
-
 
   _get_order_payment_lines() {
     if (typeof this.get_paymentlines === "function") {
@@ -112,14 +110,49 @@ patch(PosOrder.prototype, {
     }
     return null;
   },
+
+  _is_invoice_order() {
+    if (typeof this.is_to_receipt === "function") {
+      return !this.is_to_receipt();
+    }
+    if (typeof this.to_invoice === "boolean") {
+      return this.to_invoice;
+    }
+    return true;
+  },
+
+  _get_default_payment_amounts(payment_method) {
+    const orderDue = this.get_due?.() || 0;
+    const foreignDue = this.get_foreign_due?.() || 0;
+
+    if (!payment_method?.apply_igtf || !this._is_invoice_order()) {
+      return {
+        orderAmount: orderDue,
+        foreignAmount: foreignDue,
+      };
+    }
+
+    const percentage =
+      typeof payment_method?.igtf_percentage === "number"
+        ? payment_method.igtf_percentage
+        : this._get_order_igtf_percentage();
+
+    return {
+      orderAmount: orderDue + this.compute_igtf_amount(orderDue, percentage),
+      foreignAmount:
+        foreignDue + this.compute_igtf_amount(foreignDue, percentage),
+    };
+  },
+
   update_igtf() {
-    // var rounding = this.pos.config.currency.rounding;
+
     const paymentlines = this._get_order_payment_lines();
-    // console.log('ENV IS', this)
+    
     let igtf_payment_methods = paymentlines.filter((payment) => {
       const paymentMethod = this._get_payment_method_data(payment);
       return paymentMethod?.apply_igtf;
     });
+
     let last_igtf_amount = 0;
     let last_foreign_igtf_amount = 0;
 
@@ -127,6 +160,7 @@ patch(PosOrder.prototype, {
       last_igtf_amount = this.igtf_amount;
       last_foreign_igtf_amount = this.foreign_igtf_amount;
     }
+
     let is_return = this.get_total_without_igtf() < 0;
     this.igtf_amount = 0;
     this.foreign_igtf_amount = 0;
@@ -145,7 +179,7 @@ patch(PosOrder.prototype, {
       payment.set_include_igtf(false);
     });
 
-    if (!this.to_invoice) {
+    if (!this._is_invoice_order()) {
       return;
     }
 
@@ -198,13 +232,15 @@ patch(PosOrder.prototype, {
               payment.set_igtf_amount(
                 igtf_amount / payment_without_change.length,
               );
+              
               payment.set_foreign_igtf_amount(
                 foreign_igtf_amount / payment_without_change.length,
               );
+
               return;
             }
-            // payment.set_igtf_amount(igtf_amount / payment_without_change.length)
-            // payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
+            payment.set_igtf_amount(0)
+            payment.set_foreign_igtf_amount(0)
           });
         }
         return;
@@ -238,6 +274,7 @@ patch(PosOrder.prototype, {
             paymentMethod?.igtf_percentage,
           ),
         );
+
         payment.set_foreign_igtf_amount(
           this.compute_igtf_amount(
             foreign_amount_to_pay,
@@ -292,13 +329,13 @@ patch(PosOrder.prototype, {
           if (!payment.include_igtf) {
             return;
           }
-          // payment.set_igtf_amount(igtf_amount / payment_without_change.length)
-          // payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
+          // Keep per-line IGTF based on each line amount, no proration by line count.
         });
       }
     }
 
     if (igtf_payment_methods.length > 0) {
+      
       let amount_sum = 0;
       let foreign_amount_sum = 0;
       let igtf_amount_sum = 0;
@@ -306,10 +343,12 @@ patch(PosOrder.prototype, {
 
       for (let payments of igtf_payment_methods) {
         amount_sum += payments.amount;
+        
         foreign_amount_sum += payments.foreign_amount;
         igtf_amount_sum += payments.igtf_amount;
-        foreign_igtf_amount_sum += payments.foreign_igtf_amount;
+        foreign_igtf_amount_sum += payments.foreign_igtf_amount ;
       }
+      
       this.bi_igtf = amount_sum;
       this.foreign_bi_igtf = foreign_amount_sum;
       this.igtf_amount = igtf_amount_sum;
@@ -317,27 +356,29 @@ patch(PosOrder.prototype, {
     }
     return this.igtf_amount;
   },
+
   _get_order_igtf_percentage() {
     const paymentlines = this._get_order_payment_lines();
+    
     const paymentWithIgtf = paymentlines.find((payment) => {
       const paymentMethod = this._get_payment_method_data(payment);
       return paymentMethod?.apply_igtf;
     });
+
     const paymentMethod = this._get_payment_method_data(paymentWithIgtf);
     const fromMethod = paymentMethod?.igtf_percentage;
     if (typeof fromMethod === "number") {
       return fromMethod;
     }
-    return this.pos.config.igtf_percentage || 0;
+    return this.config.igtf_percentage || 0;
   },
 
   compute_igtf_amount(amount, percentage = false) {
-    var rounding = this.pos.config.currency.rounding;
     const igtfPercentage =
       typeof percentage === "number"
         ? percentage
         : this._get_order_igtf_percentage();
-    return round_pr(amount * (igtfPercentage / 100), rounding);
+    return amount * igtfPercentage / 100;
   },
 
   get_bi_igtf() {
@@ -345,15 +386,14 @@ patch(PosOrder.prototype, {
   },
 
   get_total_with_tax() {
+
     if (typeof this.total_with_tax === "number") {
       return this.total_with_tax;
     }
-    const total_without_tax =
-      (typeof this.get_total_without_tax === "function" &&
-        this.get_total_without_tax(...arguments)) || 0;
-    const total_tax =
-      (typeof this.get_total_tax === "function" &&
-        this.get_total_tax(...arguments)) || 0;
+
+    const total_without_tax = this.priceExcl || 0
+    const total_tax = this.amountTaxes || 0
+
     return total_without_tax + total_tax;
   },
 
@@ -418,33 +458,21 @@ patch(PosOrder.prototype, {
       return res;
     }
   },
-  
-  // get_foreign_total_with_tax() {
-  //   const res = super.get_foreign_total_with_tax(...arguments);
-  //   // let paymentlines = this.get_paymentlines();
-  //   if (paymentlines.length > 0) {
-  //     let igtf_payment_methods = paymentlines.filter(
-  //       (payment) => payment.payment_method.apply_igtf,
-  //     );
-  //     if (igtf_payment_methods.length === 0) {
-  //       return res;
-  //     } else {
-  //       for (let payment of paymentlines) {
-  //         if (payment.payment_method.apply_igtf) {
-  //           return res + this.foreign_igtf_amount;
-  //         }
-  //       }
-  //     }
-  //   } else {
-  //     return res;
-  //   }
-  // },
-  // get_max_total_with_igtf() {
-  //   const result =
-  //     this.compute_igtf_amount(super.get_foreign_total_with_tax()) +
-  //     this.props.order.get_foreign_rounding_applied();
-  //   return result;
-  // },
+
+
+  getDefaultAmountDueToPayIn(paymentMethod) {
+    const baseAmount = super.getDefaultAmountDueToPayIn(...arguments);
+    if (!paymentMethod?.apply_igtf || !this._is_invoice_order()) {
+      return baseAmount;
+    }
+
+    const percentage =
+      typeof paymentMethod?.igtf_percentage === "number"
+        ? paymentMethod.igtf_percentage
+        : this._get_order_igtf_percentage();
+
+    return baseAmount + this.compute_igtf_amount(baseAmount, percentage);
+  },
 
   get_igtf_amount() {
     return this.igtf_amount;
@@ -468,11 +496,11 @@ patch(PosOrder.prototype, {
       is_change
     ) {
       let res = super.add_paymentline(...arguments);
-      // this.update_igtf();
+      this.update_igtf();
       return res;
     }
     let res_igtf = this.add_paymentline_without_igtf(...arguments);
-    // this.update_igtf();
+    this.update_igtf();
     return res_igtf;
   },
 
@@ -491,11 +519,13 @@ patch(PosOrder.prototype, {
         this.selected_paymentline.set_amount(0);
       }
 
+      const defaultAmounts = this._get_default_payment_amounts(payment_method);
+
       newPaymentline.set_foreign_amount(
-        this.get_foreign_due() - this.get_foreign_igtf_amount(),
+        defaultAmounts.foreignAmount,
         true,
       );
-      newPaymentline.set_amount(this.get_due() - this.get_igtf_amount(), true);
+      newPaymentline.set_amount(defaultAmounts.orderAmount, true);
 
       if (payment_method.payment_terminal) {
         newPaymentline.set_payment_status("pending");

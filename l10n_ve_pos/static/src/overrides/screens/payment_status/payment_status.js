@@ -11,6 +11,7 @@ patch(PaymentScreenStatus.prototype, {
       nextProps.foreignChangeText
     });
   },
+
   get foreignRemainingText() {
     const foreignDue = this.props.order.get_foreign_due();
     const due = this
@@ -32,5 +33,6 @@ patch(PaymentScreenStatus.prototype, {
   
   get currentOrder() {
     return this.props.order
-  }
+  },
+
 })

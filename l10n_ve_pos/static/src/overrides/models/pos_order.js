@@ -13,6 +13,10 @@ import {
 
 
 patch(PosOrder.prototype, {
+  _get_pos_store() {
+    return this.pos || this.env?.services?.pos || this.env?.pos || null;
+  },
+
   setup() {
     this.get_foreign_total_tax()
     super.setup(...arguments);
@@ -23,11 +27,13 @@ patch(PosOrder.prototype, {
   },
 
   get_display_rate() {
-    return this.env.pos.config.foreign_rate;
+    const posStore = this._get_pos_store();
+    return posStore?.config?.foreign_rate || this.config?.foreign_rate || 1;
   },
 
   get_foreign_inverse_rate() {
-    return this.env.pos.config.foreign_inverse_rate;
+    const posStore = this._get_pos_store();
+    return posStore?.config?.foreign_inverse_rate || this.config?.foreign_inverse_rate || 1;
   },
 
   assert_editable() { },
@@ -91,10 +97,27 @@ patch(PosOrder.prototype, {
   },
 
   reload_taxes() {
-    this.orderlines.forEach((el) => {
-      el.product.taxes_id = el.product.originalTaxes;
-      el.tax_ids = el.product.taxes_id;
-    });
+    console.log('RELOAD TAXES', this.lines)
+    const lines = this.get_orderlines?.() || this.lines || [];
+    for (const line of lines) {
+      const originalTaxes =
+      line.product?.originalTaxes ?? line.product?.taxes_id ?? [];
+      const taxIds = Array.isArray(originalTaxes)
+      ? [...originalTaxes]
+      : [originalTaxes];
+
+      
+      if (typeof line.set_taxes === "function") {
+      line.set_taxes(taxIds);
+      } else if (typeof line.setTaxIds === "function") {
+      line.setTaxIds(taxIds);
+      } else {
+      line.tax_ids = taxIds;
+      }
+
+      // Recalcular importes/impuestos si existen estos métodos
+      line.compute_all?.();
+    }
   },
 
   toggle_receipt_invoice(to_receipt) {
@@ -106,13 +129,22 @@ patch(PosOrder.prototype, {
     }
     this.assert_editable();
     this.to_receipt = to_receipt;
-    // this.reload_taxes();
+    console.log('TO RECEIPT', to_receipt)
+    this.reload_taxes();
   },
   export_as_JSON() {
     let json = super.export_as_JSON();
     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
+    json["foreign_currency_rate"] = this.get_conversion_rate?.() || this.get_display_rate?.() || 0;
     json["to_receipt"] = this.is_to_receipt();
     return json;
+  },
+
+  serializeForORM(opts = {}) {
+    const data = super.serializeForORM(opts);
+    data.foreign_amount_total = this.get_foreign_total_with_tax();
+    data.foreign_currency_rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 0;
+    return data;
   },
 
   is_to_receipt() {
@@ -239,8 +271,6 @@ patch(PosOrder.prototype, {
     return totalTax;
   },
 
-
-
   get_foreign_total_tax_per_line() {
     const orderlines = this.get_orderlines();
     const foreignCurrency = this.get_foreign_currency();
@@ -253,7 +283,6 @@ patch(PosOrder.prototype, {
 
     return totalTax;
   },
-
 
   get_foreign_tax_details() {
     var details = {};
@@ -314,6 +343,7 @@ patch(PosOrder.prototype, {
   async pay() {
     let order = this.pos.get_order();
     let lines = order.get_orderlines();
+    console.log('LINEAS DE ORDEN', lines)
 
     if (order.getHasRefundLines()) {
       return await super.pay();

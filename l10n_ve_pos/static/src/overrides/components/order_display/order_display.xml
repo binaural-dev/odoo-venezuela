@@ -7,10 +7,10 @@
                 <!-- Left side -->
                 <div class="left-side" style="flex: 1;">
                     <div class="rate_bcv">
-                        Tasa BCV: <t t-out="(props.conversion_rate  || 0).toFixed(env.utils.getDecimalPrecision()) "/>
+                        Tasa BCV: <t t-out="(conversion_rate_display || 0).toFixed(env.utils.getDecimalPrecision()) "/>
                     </div>
                     <div class="cant_prod">
-                        Total de productos: <t t-out="props.quantity_products"/>
+                        Total de productos: <t t-out="quantity_products_display"/>
                     </div>
                 </div>
 
@@ -21,10 +21,10 @@
                 <div class="right-side" style="flex: 1; text-align: right;">
                     <!-- Custom total -->
                     <div class="total">
-                        Total: <t t-out="props.foreign_total_with_taxes" />
+                        Total: <t t-out="env.utils.formatForeignCurrency(foreign_total_with_taxes_display)" />
                     </div>
                     <div  class="fs-6 text-muted subentry">
-                        Taxes: <span t-out="props.foreign_tax_total" class="tax"/>
+                        Taxes: <span t-out="env.utils.formatForeignCurrency(foreign_tax_total_display)" class="tax"/>
                     </div>
                 </div>
             </div>

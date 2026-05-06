@@ -70,6 +70,7 @@ class AccountMove(models.Model):
             if move.state == 'posted' and move.is_invoice(include_receipts=True):
                 reconciled_vals = []
                 reconciled_partials = move.sudo()._get_all_reconciled_invoice_partials()
+                
                 for reconciled_partial in reconciled_partials:
                     counterpart_line = reconciled_partial['aml']
                     if counterpart_line.move_id.ref:
@@ -81,7 +82,6 @@ class AccountMove(models.Model):
                     else:
                         foreign_currency = False
                     
-
                     reconciled_vals.append({
                         'name': counterpart_line.name,
                         'journal_name': counterpart_line.journal_id.name,
@@ -96,6 +96,7 @@ class AccountMove(models.Model):
                         'ref': reconciliation_ref,
                         # these are necessary for the views to change depending on the values
                         'is_exchange': reconciled_partial['is_exchange'],
+                        'is_refund': reconciled_partial.get('is_refund', False),
                         'amount_company_currency': formatLang(self.env, abs(counterpart_line.balance), currency_obj=counterpart_line.company_id.currency_id),
                         'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency)
                     })

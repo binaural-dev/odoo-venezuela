@@ -8,6 +8,7 @@ import {
   floatIsZero,
 } from "@web/core/utils/numbers";
 
+
 patch(PosOrderline.prototype, {
 
   setup() {
@@ -61,6 +62,7 @@ patch(PosOrderline.prototype, {
   },
 
   get_foreign_unit_price() {
+
     const foreign_currency = this.get_foreign_currency()
     const unitPrice = Number(this.price_unit || 0);
     const price = this.get_foreign_calculation_price(foreign_currency, unitPrice)
@@ -107,13 +109,11 @@ patch(PosOrderline.prototype, {
     // Tax details.
     const taxDetails = {};
     for (const taxData of baseLine.tax_details.taxes_data) {
-      console.log("taxData", taxData.tax_amount_currency)
       taxDetails[taxData.tax.id] = {
         amount: taxData.tax_amount_currency,
         base: taxData.base_amount_currency,
       };
     }
-    console.log("Montos de impuestos or something", baseLine)
     return {
       priceWithTax: baseLine.tax_details.total_included_currency,
       priceWithoutTax: baseLine.tax_details.total_excluded_currency,
@@ -132,10 +132,5 @@ patch(PosOrderline.prototype, {
     const amount = price * rate;
     return amount   
   },
-
-  get foreign_price_unit_display() {
-    return this.get_all_foreign_prices().priceWithTax;
-  },
-
 
 });

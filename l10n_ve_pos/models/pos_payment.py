@@ -47,8 +47,8 @@ class PosPayment(models.Model):
 
             payment_move.write(
                 {
-                    # "foreign_rate": payment.foreign_rate,
-                    # "foreign_inverse_rate": payment.foreign_inverse_rate,
+                    "foreign_rate": payment.foreign_rate,
+                    "foreign_inverse_rate": payment.foreign_inverse_rate,
                     "manually_set_rate": True,
                 }
             )

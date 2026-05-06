@@ -3,7 +3,7 @@
         <xpath expr="//button[@t-on-click='toggleIsToInvoice']" position="replace">
             <button 
                 class="button js_invoice btn btn-light py-3 text-start rounded-0 border-bottom" 
-                t-att-class="{ 'highlight text-bg-primary': currentOrder.useReceiptConfiguration  }" 
+                t-att-class="{ 'highlight text-bg-primary': currentOrder &amp;&amp; !currentOrder.is_to_receipt() }" 
                 t-on-click="toggleIsToInvoice">
                     <i class="fa fa-file-text-o me-2" /> 
                         Invoice
