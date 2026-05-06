@@ -309,6 +309,12 @@ class AccountRetentionLine(models.Model):
                             else:
                                 record.invoice_amount = record.invoice_amount or 0
                                 record.foreign_invoice_amount = record.foreign_invoice_amount or 0
+                        else:
+
+                            if record.related_percentage_tax_base and record.invoice_amount == 0 and record.invoice_total > 0:
+                                invoice_amount  = (record.invoice_total * record.related_percentage_tax_base) / 100
+                                record.invoice_amount = invoice_amount
+                              
                     else:
                         invoice_date = record.move_id.invoice_date_display or fields.Date.today()
 
@@ -570,44 +576,7 @@ class AccountRetentionLine(models.Model):
                 }
             )
 
-    # @api.onchange("foreign_retention_amount", "foreign_invoice_amount")
-    # def onchange_foreign_retention_amount(self):
-    #     """
-    #     Making sure that the retention amount and the invoice amount are updated when the foreign
-    #     retention amount or the foreign invoice amount are changed on the retention line of the
-    #     customer retentions.
-
-    #     This is made to be triggered only when the foreign currency is VEF, as this is the only
-    #     case when the foreign retention amount and the foreign iva amount are shown on the views of
-    #     the customer retentions, because the amounts of the retention lines are always shown in VEF.
-    #     """
-    #     _logger.warning("noonchange context: %s", self.env.context)
-    #     if self.env.context.get("noonchange", False):
-    #         return
-    #     for line in self.filtered(
-    #         lambda l: not l.retention_id or l.retention_id.type == "out_invoice"
-    #     ):
-    #         if not line.move_id:
-    #             continue
-    #         line_with_ctx = line.with_context(noonchange=True)
-    #         if not line.retention_id or line.retention_id.type_retention in ("islr", "municipal"):
-    #             _logger.warning("rate: %s", line.move_id.foreign_rate)
-    #             _logger.warning("inverse rate: %s", line.move_id.foreign_inverse_rate)
-    #             _logger.warning("move id: %s", line.move_id)
-    #             line_with_ctx.update(
-    #                 {
-    #                     "invoice_amount": line.foreign_invoice_amount
-    #                     * (1 / line.move_id.foreign_rate)
-    #                 }
-    #             )
-    #         _logger.warning("rate: %s", line.move_id.foreign_rate)
-    #         _logger.warning("inverse rate: %s", line.move_id.foreign_inverse_rate)
-    #         line_with_ctx.update(
-    #             {
-    #                 "retention_amount": line.foreign_retention_amount
-    #                 * (1 / line.move_id.foreign_rate)
-    #             }
-    #         )
+   
 
     @api.constrains(
         "retention_amount",

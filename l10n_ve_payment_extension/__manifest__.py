@@ -59,6 +59,7 @@
         "wizard/municipal_retention_patent_report.xml",
         "wizard/wizard_retention_islr.xml",
         "wizard/wizard_retention_iva.xml",
+        "wizard/batch_retentions_wizard.xml",
         "views/menu.xml",
     ],
     "images": ["static/description/icon.png"],

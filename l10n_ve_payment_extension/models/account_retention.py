@@ -463,40 +463,6 @@ class AccountRetention(models.Model):
                 ),
             }
         )
-
-    # Esta vaina se le quito el onchange pero no fue eliminado
-    # hablando con Saul se observa que en realidad este onchange genera un comportamiento raro 
-    # def onchange_retention_line_ids(self):
-    #     """
-    #     On the IVA supplier retention when a line is deleted, delete all the others lines that have
-    #     the same invoice.
-    #     """
-    #     for retention in self.filtered(
-    #         lambda r: (r.type_retention, r.state) == ("iva", "draft") and r.partner_id
-    #     ):
-    #         original_lines_per_invoice_counter = json.loads(
-    #             retention.original_lines_per_invoice_counter
-    #         )
-    #         lines_per_invoice_counter = defaultdict(int)
-    #         for line in retention.retention_line_ids:
-    #             lines_per_invoice_counter[str(line.move_id.id)] += 1
-    #
-    #         for line in retention.retention_line_ids:
-    #             if (
-    #                 line.move_id.id
-    #                 and lines_per_invoice_counter[str(line.move_id.id)]
-    #                 != original_lines_per_invoice_counter.get(str(line.move_id.id), 0)
-    #             ):
-    #                 retention.retention_line_ids -= line
-    #
-    #         return {
-    #             "value": {
-    #                 "original_lines_per_invoice_counter": json.dumps(
-    #                     lines_per_invoice_counter
-    #                 )
-    #             }
-    #         }
-        
     
     @api.model_create_multi
     def create(self, vals_list):
@@ -729,7 +695,7 @@ class AccountRetention(models.Model):
             if retention.type_retention == "islr" and retention.type == "in_invoice":
                 retention._validate_islr_retention()
 
-        self.payment_ids.write({"date": self.date_accounting})
+        
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
@@ -922,6 +888,7 @@ class AccountRetention(models.Model):
                     "foreign_inverse_rate": line.move_id.foreign_inverse_rate,
                     "retention_line_ids": [Command.link(line.id)],
                     "currency_id": self.env.user.company_id.currency_id.id,
+                    "date": self.date_accounting
                 }
             )
 
@@ -931,8 +898,6 @@ class AccountRetention(models.Model):
                 else:
                     payment_vals[-1]['account_analytic_id'] = False
 
-
-        # payments = Payment.create(payment_vals)
         payments = self.env["account.payment"]
         for vals in payment_vals:
             payments += Payment.create(vals)
@@ -969,7 +934,7 @@ class AccountRetention(models.Model):
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "liability_payable"
-                and l.debit > 0
+                and abs(l.balance) > 0
             )
             if not lines:
                 raise ValidationError(
@@ -985,7 +950,7 @@ class AccountRetention(models.Model):
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "liability_payable"
-                and l.credit > 0
+                and abs(l.balance) > 0
             )
             if not lines:
                 raise ValidationError(
@@ -1038,7 +1003,7 @@ class AccountRetention(models.Model):
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "asset_receivable"
-                and l.debit > 0
+                and abs(l.balance) > 0
             )
 
             if not lines:
@@ -1054,7 +1019,7 @@ class AccountRetention(models.Model):
         elif payment.payment_type == "inbound":
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "asset_receivable"
-                and l.credit > 0
+                and abs(l.balance) > 0
             )
 
             if not lines:
@@ -1157,19 +1122,30 @@ class AccountRetention(models.Model):
         res = super(AccountRetention, self).default_get(fields_list)
 
         islr_lines_data = self.env.context.get('default_islr_lines')
-        move_id = self.env.context.get('default_move_id')
+        move_id = self.env.context.get('default_invoice_id')
         ret_type = self.env.context.get('default_type')
-        
-        if islr_lines_data and move_id:
+        multi = self.env.context.get('multi',False)
+
+        if islr_lines_data and move_id and not multi:
             line_commands = []
             for concept_id, total_base in islr_lines_data.items():
                 line_vals = {
                     'move_id': move_id,
                     'payment_concept_id': int(concept_id),
-                    'invoice_amount': total_base,
                     'invoice_type': str(ret_type),
                 }
                 line_commands.append(Command.create(line_vals))
             res['retention_line_ids'] = line_commands
-            
+        
+        elif multi:
+            line_commands = []
+            for invoice, concept_id in islr_lines_data.items():
+                line_vals = {
+                    'move_id': invoice.id,
+                    'payment_concept_id': int(concept_id),
+                    'invoice_type': str(ret_type),
+                }
+                line_commands.append(Command.create(line_vals))
+            res['retention_line_ids'] = line_commands
+        
         return res
