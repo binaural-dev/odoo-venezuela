@@ -6,7 +6,7 @@
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
         <field name="code">
-            action = record.action_create_islr_from_invoice()
+            action = records.action_create_islr_from_invoice()
         </field>
     </record>
 </odoo>

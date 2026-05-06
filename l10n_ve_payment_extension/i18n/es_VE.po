@@ -2242,6 +2242,7 @@ msgid "Retention reference"
 msgstr "Nro de Comprobante"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__count_islr_retention
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__retention_line_ids
 msgid "Retentions"
 msgstr "Retenciones"
@@ -3059,15 +3060,7 @@ msgid "You cannot edit a tax unit that is not active."
 msgstr "No puedes editar una unidad tributaria que no esté activa."
 
 
-#. module: l10n_ve_payment_extension
-#. odoo-python
-#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
-msgid ""
-"Invoice %s has already been paid. You cannot generate an ISLR retention for "
-"a paid or canceled invoice."
-msgstr ""
-"La factura %s ya ha sido pagada. No se puede generar una retención de ISLR "
-"sobre una factura pagada o cancelada."
+
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -3096,3 +3089,169 @@ msgstr "Esta accion solo es validad para facturas de Clientes o Proveedores"
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 msgid "Invoice %s already has a posted ISLR retention. You cannot create another one."
 msgstr "La factura %s ya tiene una retención de ISLR publicada. No se puede crear otra."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Warning: You have ISLR retentions to aproved"
+msgstr "Advertencia: Tiene retenciones del ISLR por aprobar"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__generate_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__generate_islr_retention
+msgid "¿Generate ISLR Retention?"
+msgstr "¿Generar retencion ISLR?"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+#: model:ir.actions.server,name:l10n_ve_payment_extension.action_generar_retencion_islr
+msgid "Generate ISLR Retention"
+msgstr "Generar Retencion ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__has_emited_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__has_emited_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__has_emited_islr_retention
+msgid "has emited islr_retention"
+msgstr "Tiene retenciones ISLR emitidas"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__has_emited_iva_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__has_emited_iva_retention
+msgid "has emited iva retention"
+msgstr "Tiene retenciones de IVA emitida"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__has_emited_municipal_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__has_emited_municipal_retention
+msgid "has emited municipal retention"
+msgstr "Tiene Retencion municipal Emitida"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__has_not_allow_retentions_islr_invoices
+msgid "has not allow retentions islr invoices"
+msgstr "No Existen facturas validas para emitir retencion ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__has_draft_cancel_invoices
+msgid "hast draft and cancel invoices"
+msgstr "Existen facturas en estado Borrador/Cancelado"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__count_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_islr_retention
+msgid "count islr retention"
+msgstr "Cantidad de retenciones ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__count_iva_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__count_municipal_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_iva_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_municipal_retention
+msgid "count iva retention"
+msgstr "Cantidad de retenciones de IVa"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__is_isrl_retention_available
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__is_isrl_retention_available
+msgid "¿Is retention islr Available?"
+msgstr "¿Es valido para retencion ISLR?"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__partner_id
+msgid "partner"
+msgstr "Razon social"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__valid_line_ids
+msgid "Valid Invoices"
+msgstr "Facturas Validas"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Valid invoices for retentions"
+msgstr "Facturas validas para generar retencion"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/wizard/batch_retentions_wizard.py:0
+msgid "There are not valid retentions to Process"
+msgstr "No existen Facturas validas para procesar"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "There are some invoices that are not allow ISLR Retention"
+msgstr "Existen algunas facturas que no aplican Retenciones ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__type_retention
+msgid "Retention Type"
+msgstr "Tipo de retencion"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Process Retentions"
+msgstr "Crear retenciones"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Not valid invoices for retentions"
+msgstr "Facturas no validas"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__line_ids
+msgid "Invoices to Process"
+msgstr "Facturas a Procesar"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__invalid_line_ids
+msgid "Invalid Invoices"
+msgstr "Facturas Invalidas"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__move_id
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__group_retentions
+msgid "Grouped Retentions by partner"
+msgstr "Agrupar retenciones por Razon social"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__has_payed_invoices
+msgid "Has payed invoices"
+msgstr "Tiene facturas pagadas"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_batch_retentions_wizard__group_retentions
+msgid "Generate retentions grouped Invoices by partner"
+msgstr "Generar retencion agrupada por Razon social"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Draft or cancel moves will not be considerer in this operation."
+msgstr "Facturas en estado Borrador/Cancelado no seran consideradas en esta operacion."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__post_retention
+msgid "Post"
+msgstr "Emitir automaticamente"
+
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid ""
+"Emited withholdings for paid invoices will remain as outstanding credits."
+msgstr ""
+"Las retenciones emitidas para facturas 'Pagadas' permaneceran como creditos pendientes"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__payment_state
+msgid "Invoice Payment status"
+msgstr "Estado de Pago Factura"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__state
+msgid "Invoice Status"
+msgstr "Estado de Factura"
