@@ -149,7 +149,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     wizard.show_payment_difference = True
 
 
-    @api.onchange("igtf_to_show")
+    @api.onchange("igtf_to_show","is_igtf")
     def _compute_amount_without_difference(self):
         for rec in self:
             
