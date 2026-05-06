@@ -30,6 +30,7 @@ class PosPayment(models.Model):
         return accounting_partner.with_company(order.company_id).property_account_receivable_id.id
 
     def _create_payment_move(self, payment, order, payment_method, journal):
+        rate, inverse_rate = self._get_payment_rate_values(payment)
         payment_move = (
             self.env["account.move"]
             .with_context(default_journal_id=journal.id)
@@ -39,6 +40,9 @@ class PosPayment(models.Model):
                     "date": fields.Date.context_today(order, order.date_order),
                     "ref": _("Invoice payment for %s (%s) using %s")
                     % (order.name, order.account_move.name, payment_method.name),
+                    "foreign_rate": rate,
+                    "foreign_inverse_rate": inverse_rate,
+                    "manually_set_rate": True,
                     "pos_payment_ids": payment.ids,
                 }
             )
@@ -47,13 +51,14 @@ class PosPayment(models.Model):
         return payment_move
 
     def _build_credit_line_without_igtf(self, pos_session, payment_move, account_id, partner_id, amounts, payment):
+        foreign_amount = self._get_payment_foreign_amount(payment)
         return pos_session._credit_amounts(
             {
                 "account_id": account_id,
                 "partner_id": partner_id,
                 "move_id": payment_move.id,
                 "not_foreign_recalculate": True,
-                **self._get_foreign_debit_credit_vals(payment.foreign_amount),
+                **self._get_foreign_debit_credit_vals(foreign_amount),
             },
             amounts["amount"],
             amounts["amount_converted"],
@@ -73,8 +78,9 @@ class PosPayment(models.Model):
         )
 
     def _build_credit_line_igtf_base(self, pos_session, payment_move, account_id, partner_id, amounts, amount_igtf, payment):
+        foreign_amount = self._get_payment_foreign_amount(payment)
         amount_without_igtf = float_round(
-            payment.foreign_amount - payment.foreign_igtf_amount,
+            foreign_amount - payment.foreign_igtf_amount,
             precision_rounding=payment.currency_id.rounding,
         )
         return pos_session._credit_amounts(
@@ -103,6 +109,7 @@ class PosPayment(models.Model):
         return account_id, is_split_transaction
 
     def _build_debit_line(self, pos_session, payment_move, account_id, accounting_partner, is_split_transaction, is_reverse, amounts, payment):
+        foreign_amount = self._get_payment_foreign_amount(payment)
         return pos_session._debit_amounts(
             {
                 "account_id": account_id,
@@ -111,11 +118,11 @@ class PosPayment(models.Model):
                 if is_split_transaction and is_reverse
                 else False,
                 "not_foreign_recalculate": True,
-                "foreign_debit": abs(payment.foreign_amount)
-                if payment.foreign_amount > 0
+                "foreign_debit": abs(foreign_amount)
+                if foreign_amount > 0
                 else 0,
-                "foreign_credit": abs(payment.foreign_amount)
-                if payment.foreign_amount < 0
+                "foreign_credit": abs(foreign_amount)
+                if foreign_amount < 0
                 else 0,
             },
             amounts["amount"],
@@ -127,7 +134,13 @@ class PosPayment(models.Model):
 
         for payment in self:
             order = payment.pos_order_id
-            _logger.warning(" pago foraneo: %s", payment.foreign_amount)
+            _logger.warning(
+                "POS payment move payload amount=%s foreign_amount=%s foreign_rate=%s foreign_inverse_rate=%s",
+                payment.amount,
+                payment.foreign_amount,
+                payment.foreign_rate,
+                payment.foreign_inverse_rate,
+            )
             add_credit_line_vals = False
             payment_method = payment.payment_method_id
 

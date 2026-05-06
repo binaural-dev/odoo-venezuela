@@ -178,10 +178,6 @@ patch(PosPayment.prototype, {
         return res;
     },
 
-    set_amount(amount, only = false) {
-        return this.setAmount(amount, only);
-    },
-
     setForeignAmount(amount, only = false) {
         const numericAmount = Number(amount);
         this.foreign_amount = Number.isFinite(numericAmount) ? numericAmount : 0;

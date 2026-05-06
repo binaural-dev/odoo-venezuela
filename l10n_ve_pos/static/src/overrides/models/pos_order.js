@@ -41,7 +41,7 @@ patch(PosOrder.prototype, {
   get init_conversion_rate() {
     if (this.currency.name == "VEF") {
 
-      const companyId = this.user;      
+      const companyId = this.user;
       return this.config.foreign_rate;
     }
   },
@@ -96,29 +96,29 @@ patch(PosOrder.prototype, {
     return this.lines;
   },
 
-  reload_taxes() {
-    console.log('RELOAD TAXES', this.lines)
-    const lines = this.get_orderlines?.() || this.lines || [];
-    for (const line of lines) {
-      const originalTaxes =
-      line.product?.originalTaxes ?? line.product?.taxes_id ?? [];
-      const taxIds = Array.isArray(originalTaxes)
-      ? [...originalTaxes]
-      : [originalTaxes];
+  // reload_taxes() {
+  //   console.log('RELOAD TAXES', this.lines)
+  //   const lines = this.get_orderlines?.() || this.lines || [];
+  //   for (const line of lines) {
+  //     const originalTaxes =
+  //     line.product?.originalTaxes ?? line.product?.taxes_id ?? [];
+  //     const taxIds = Array.isArray(originalTaxes)
+  //     ? [...originalTaxes]
+  //     : [originalTaxes];
 
-      
-      if (typeof line.set_taxes === "function") {
-      line.set_taxes(taxIds);
-      } else if (typeof line.setTaxIds === "function") {
-      line.setTaxIds(taxIds);
-      } else {
-      line.tax_ids = taxIds;
-      }
 
-      // Recalcular importes/impuestos si existen estos métodos
-      line.compute_all?.();
-    }
-  },
+  //     if (typeof line.set_taxes === "function") {
+  //     line.set_taxes(taxIds);
+  //     } else if (typeof line.setTaxIds === "function") {
+  //     line.setTaxIds(taxIds);
+  //     } else {
+  //     line.tax_ids = taxIds;
+  //     }
+
+  //     // Recalcular importes/impuestos si existen estos métodos
+  //     line.compute_all?.();
+  //   }
+  // },
 
   toggle_receipt_invoice(to_receipt) {
     if (this.getHasRefundLines()) {
@@ -129,8 +129,8 @@ patch(PosOrder.prototype, {
     }
     this.assert_editable();
     this.to_receipt = to_receipt;
-    console.log('TO RECEIPT', to_receipt)
-    this.reload_taxes();
+    // console.log('TO RECEIPT', to_receipt)
+    // this.reload_taxes();
   },
   export_as_JSON() {
     let json = super.export_as_JSON();
@@ -199,7 +199,7 @@ patch(PosOrder.prototype, {
 
   get_foreign_total_with_tax() {
     const rounding = this.get_foreign_currency()?.rounding || 0.01;
-    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0) 
+    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0)
   },
 
   get foreign_total_with_tax() {
@@ -532,7 +532,7 @@ patch(PosOrder.prototype, {
     }
 
     const lines = this.get_order_payment_lines();
-  
+
     const endIndex = lines.findIndex((line) => line === paymentline);
     const linesToSum = endIndex >= 0 ? lines.slice(0, endIndex + 1) : lines;
     const change = linesToSum.reduce(
@@ -546,14 +546,14 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_due(paymentline) {
-    
+
     const rounding = this.get_foreign_rounding();
     const lines = this.get_order_payment_lines();
 
     const baseAmount = this.remainingDue || 0;
 
     const rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 1;
-    
+
     const paidAmount = lines.reduce(
       (sum, line) => sum + (this.get_payment_foreign_amount(line) || 0),
       0
