@@ -1378,7 +1378,7 @@ class StockPicking(models.Model):
             if (
                 picking.operation_code == "internal"
                 and picking.transfer_reason_id.id
-                == picking.env.ref(
+                == self.env.ref(
                     "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses"
                 ).id
             ):
