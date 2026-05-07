@@ -12,3 +12,10 @@ class ResCompany(models.Model):
             ("account_type", "=", "expense"),
         ],
     )
+    account_stock_journal_id = fields.Many2one(
+        "account.journal",
+        string="Stock Journal",
+        domain="[('type', '=', 'general'), ('company_id', '=', id)]",
+        check_company=True,
+        readonly=False,
+    )

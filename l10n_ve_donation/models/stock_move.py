@@ -32,7 +32,9 @@ class StockMove(models.Model):
         if not aml_vals_list:
             return self.env["account.move"]
 
-        journal = self[0].product_id.categ_id.property_stock_journal
+        journal = self.company_id.account_stock_journal_id
+        if not journal:
+            journal = self[0].product_id.categ_id.property_stock_journal
         if not journal:
             journal = self.env["account.journal"].search(
                 [("company_id", "=", self.company_id.id), ("type", "=", "general")],

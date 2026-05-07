@@ -4,9 +4,9 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="l10n_ve_stock_account.view_order_form_l10n_ve_stock_account" />
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='is_donation']" position="attributes">
-                <attribute name="force_save">1</attribute>
-            </xpath>
+            <field name="is_donation" position="replace">
+                <field name="is_donation" readonly="state in ['sale', 'done', 'cancel']" force_save="1"/>
+            </field>
 
             <field name="document" position="attributes">
                 <attribute name="readonly">is_donation</attribute>

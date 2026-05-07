@@ -101,6 +101,7 @@ class AccountMove(models.Model):
                     }
                     reverse_move = self.env['account.move'].with_context(
                         check_move_validity=False,
+                        skip_invoice_sync=True,
                     ).create(move_vals)
                     reverse_moves += reverse_move
                 return reverse_moves
