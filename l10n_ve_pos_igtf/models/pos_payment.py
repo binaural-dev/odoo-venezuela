@@ -97,16 +97,33 @@ class PosPayment(models.Model):
 
     def _get_reversed_move_receivable_account_id(self, payment, accounting_partner, order, is_reverse):
         is_split_transaction = payment.payment_method_id.split_transactions
+        valid_types = ("asset_receivable", "liability_payable")
+
+        def _ensure_standard_account(account):
+            if account and account.account_type in valid_types:
+                return account
+            fallback = accounting_partner.with_company(order.company_id).property_account_receivable_id
+            if account:
+                _logger.warning(
+                    "POS payment account '%s' (%s) is not receivable/payable. Falling back to partner receivable '%s'.",
+                    account.display_name,
+                    account.account_type,
+                    fallback.display_name,
+                )
+            return fallback
+
         if is_split_transaction and is_reverse:
-            account_id = self._get_receivable_account_id(accounting_partner, order)
+            account = accounting_partner.with_company(order.company_id).property_account_receivable_id
         elif is_reverse:
-            account_id = (
-                payment.payment_method_id.receivable_account_id.id
-                or self.company_id.account_default_pos_receivable_account_id.id
+            account = (
+                payment.payment_method_id.receivable_account_id
+                or self.company_id.account_default_pos_receivable_account_id
             )
         else:
-            account_id = self.company_id.account_default_pos_receivable_account_id.id
-        return account_id, is_split_transaction
+            account = self.company_id.account_default_pos_receivable_account_id
+
+        account = _ensure_standard_account(account)
+        return account.id, is_split_transaction
 
     def _build_debit_line(self, pos_session, payment_move, account_id, accounting_partner, is_split_transaction, is_reverse, amounts, payment):
         foreign_amount = self._get_payment_foreign_amount(payment)

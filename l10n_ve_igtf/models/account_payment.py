@@ -814,6 +814,21 @@ class AccountPaymentAndIgtf(models.Model):
                             "For customer advances, the account must be 'Current Liabilities' and flagged as an 'Advance Account'."
                         ))
             else:
+                is_pos_payment = 'pos_payment_method_id' in rec._fields and bool(rec.pos_payment_method_id)
+
+                if is_pos_payment:
+                    # POS standard payments can use transitional current accounts.
+                    if acc.account_type not in (
+                        'asset_receivable',
+                        'liability_payable',
+                        'asset_current',
+                        'liability_current',
+                    ):
+                        raise UserError(_(
+                            "POS standard payments must use 'Receivable', 'Payable' or transitional current account types."
+                        ))
+                    continue
+
                 if acc.is_advance_account:
                     raise UserError(_(
                         "You cannot use an 'Advance Account' for a standard payment. Please uncheck 'Is Advance Payment' or change the account."

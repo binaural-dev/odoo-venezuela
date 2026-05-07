@@ -18,8 +18,8 @@ patch(PaymentScreen.prototype, {
 
   },
 
-  get foreignTotalDueText() {
-    return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_tax())
+  get foreignTotalDueTexts() {
+    return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_taxes())
   },
 
   shouldDownloadInvoice() {
@@ -60,20 +60,6 @@ patch(PaymentScreen.prototype, {
       order?.getSelectedPaymentline?.() ||
       order?.selected_paymentline ||
       null;
-
-    if (selectedLine) {
-      console.log(
-        "Selected Amount:",
-        selectedLine.amount ?? selectedLine.get_amount?.() ?? 0,
-      );
-
-      console.log(
-        "Payment Method:",
-        selectedLine.payment_method_id?.name ||
-          selectedLine.payment_method?.name ||
-          "",
-      );
-    }
 
     return await super.validateOrder(isForceValidate);
   },

@@ -40,8 +40,8 @@ patch(PosOrder.prototype, {
 
   get init_conversion_rate() {
     if (this.currency.name == "VEF") {
-
       const companyId = this.user;
+      console.log(this.config.foreign_rate)
       return this.config.foreign_rate;
     }
   },
@@ -96,7 +96,7 @@ patch(PosOrder.prototype, {
     return this.lines;
   },
 
-  // reload_taxes() {
+  // reload_taxes() { ? que hace esto? se llama cada vez que se agrega una línea, no es muy performance
   //   console.log('RELOAD TAXES', this.lines)
   //   const lines = this.get_orderlines?.() || this.lines || [];
   //   for (const line of lines) {
@@ -129,8 +129,7 @@ patch(PosOrder.prototype, {
     }
     this.assert_editable();
     this.to_receipt = to_receipt;
-    // console.log('TO RECEIPT', to_receipt)
-    // this.reload_taxes();
+
   },
   export_as_JSON() {
     let json = super.export_as_JSON();
@@ -197,13 +196,13 @@ patch(PosOrder.prototype, {
     );
   },
 
-  get_foreign_total_with_tax() {
+  get_foreign_total_with_taxes() {
     const rounding = this.get_foreign_currency()?.rounding || 0.01;
     return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0)
   },
 
-  get foreign_total_with_tax() {
-    return this.get_foreign_total_with_tax()
+  get foreign_total_with_taxes() {
+    return this.get_foreign_total_with_taxes()
   },
 
   get_foreign_total_without_tax() {
