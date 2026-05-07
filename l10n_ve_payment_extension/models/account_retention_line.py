@@ -311,9 +311,9 @@ class AccountRetentionLine(models.Model):
                                 record.foreign_invoice_amount = record.foreign_invoice_amount or 0
                         else:
 
-                            if record.related_percentage_tax_base and record.invoice_amount == 0 and record.invoice_total > 0:
-                                invoice_amount  = (record.invoice_total * record.related_percentage_tax_base) / 100
-                                record.invoice_amount = invoice_amount
+                            if record.invoice_amount == 0 and record.invoice_total > 0:
+                                record.invoice_amount = float(move.amount_untaxed_base)
+                                record.foreign_invoice_amount = float(move.amount_untaxed)
                               
                     else:
                         invoice_date = record.move_id.invoice_date_display or fields.Date.today()
@@ -405,6 +405,11 @@ class AccountRetentionLine(models.Model):
                             else:
                                 record.invoice_amount = record.invoice_amount or 0
                                 record.foreign_invoice_amount = record.foreign_invoice_amount or 0
+                        else:
+
+                            if record.invoice_amount == 0 and record.invoice_total > 0:
+                                record.invoice_amount = float(move.amount_untaxed_base)
+                                record.foreign_invoice_amount = float(move.amount_untaxed)
 
     @api.depends("invoice_amount", "foreign_invoice_amount")
     def _compute_amounts(self):
