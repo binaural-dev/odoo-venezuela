@@ -1,12 +1,20 @@
 import { patch } from "@web/core/utils/patch";
 import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
-import { onWillUpdateProps } from "@odoo/owl";
-
+import { onWillUpdateProps, onWillStart, useState } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 patch(Orderline.prototype, {
   setup() {
-    super.setup();
-    onWillUpdateProps((nextProps) => {
-      nextProps.line.foreign_price_unit_display
+    super.setup(...arguments);
+    this.orm = useService("orm");
+    this.state = useState({ foreign_price_unit_display_server: 0 });
+    this._lastReqId = 0;
+
+    onWillStart(async () => {
+      await this._syncForeignPriceUnitDisplay(this.props?.line);
+    });
+
+    onWillUpdateProps(async (nextProps) => {
+      await this._syncForeignPriceUnitDisplay(nextProps?.line);
     });
   },
 
@@ -26,6 +34,7 @@ patch(Orderline.prototype, {
   get currency_rate_display() {
     return this.order.get_display_rate;
   },
+  
   get_refund_orderline() {
     for (let id of Object.keys(this.pos.toRefundLines)) {
       if (this.refunded_orderline_id == id) {
@@ -34,6 +43,7 @@ patch(Orderline.prototype, {
     }
     return false;
   },
+
   set set_unit_price(price) {
     this.order.assert_editable();
     var parsed_price = !isNaN(price)
@@ -45,10 +55,7 @@ patch(Orderline.prototype, {
       parsed_price || 0,
       this.pos.dp["Foreign Product Price"],
     );
-    this.foreign_price = round_di(
-      parsed_price * this.get_rate() || 0,
-      this.pos.dp["Foreign Product Price"],
-    );
+    this.foreign_price = parsed_price * this.get_rate() || 0;
   },
 
   set_foreign_unit_price(price) {
@@ -58,14 +65,11 @@ patch(Orderline.prototype, {
       : isNaN(parseFloat(price))
         ? 0
         : oParseFloat("" + price);
-    this.foreign_price = round_di(
-      parsed_price || 0,
-      this.pos.dp["Foreign Product Price"],
-    );
+    this.foreign_price = parsed_price * this.get_rate() || 0;
   },
 
-  get_all_prices(qty = this.getQuantity()) {
-    return super.get_all_prices(qty);
+  getPriceWithOptions() {
+    return super.getPriceWithOptions();
   },
 
   get_foreign_price_without_tax() {
@@ -79,6 +83,10 @@ patch(Orderline.prototype, {
   },
   get_foreign_tax() {
     return this.get_all_foreign_prices().tax;
+  },
+
+  get foreign_price_unit_display() {
+    return this.state.foreign_price_unit_display_server;
   },
 
   get_display_foreign_price() {
@@ -151,6 +159,42 @@ patch(Orderline.prototype, {
       return "(E)";
     }
     return "(G)";
+  },
+
+
+  async _syncForeignPriceUnitDisplay(line) {
+
+    const amount = Number(
+      line?.price_unit_with_taxes ??
+      line?.get_price_with_tax?.() ??
+      line?.price_unit ??
+      0
+    );
+
+    if (!Number.isFinite(amount)) {
+      this.state.foreign_price_unit_display_server = 0;
+      return;
+    }
+    const reqId = ++this._lastReqId;
+    try {
+      const converted = await this.orm.call(
+        "pos.order.line",
+        "convert_amount",
+        [amount],
+        { context: { amount } }
+      );
+      console.log("Converted amount from server:", converted);
+      if (reqId === this._lastReqId) {
+        const qty = Number(line?.qty ?? line?.qty ?? 1);
+        this.state.foreign_price_unit_display_server =
+          Number(converted || 0) * (Number.isFinite(qty) ? qty : 1);
+      }
+    } catch {
+      if (reqId === this._lastReqId) {
+        const rate = Number(this.pos?.foreign_currency?.rate || 1);
+        this.state.foreign_price_unit_display_server = amount * rate;
+      }
+    }
   },
 
 

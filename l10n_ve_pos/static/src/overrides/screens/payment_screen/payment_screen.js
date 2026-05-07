@@ -18,12 +18,9 @@ patch(PaymentScreen.prototype, {
 
   },
 
-
-  get foreignTotalDueText() {
-    return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_tax())
+  get foreignTotalDueTexts() {
+    return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_taxes())
   },
-
-
 
   shouldDownloadInvoice() {
     return false;
@@ -51,26 +48,25 @@ patch(PaymentScreen.prototype, {
     this.update_igtf();
     return res_igtf;
   },
-
+  
   updateSelectedPaymentline(amount = false) {
     return super.updateSelectedPaymentline(amount);
 
   },
   
-  // async validateOrder() {
-  //     const order = this.pos.get_order();
-  //     const selectedLine = order.get_selected_paymentline();
+  async validateOrder(isForceValidate) {
+    const order = this.currentOrder || this.pos.get_order();
+    const selectedLine =
+      order?.getSelectedPaymentline?.() ||
+      order?.selected_paymentline ||
+      null;
 
-  //     if (selectedLine) {
-  //         console.log("Selected Amount:", selectedLine.get_amount());
-  //         console.log("Payment Method:", selectedLine.payment_method.name);
-  //     }
-      
-  //     await super.validateOrder(...arguments);
-  // },
+    return await super.validateOrder(isForceValidate);
+  },
 
   toggleIsToInvoice() {
     this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
+    this.render();
   },
   async _isOrderValid(isForceValidate) {
     let res = await super._isOrderValid(isForceValidate)
@@ -89,6 +85,7 @@ patch(PaymentScreen.prototype, {
     }
     return res
   },
+
   async showPaymentsOrigin() {
     let id = []
     if (Object.values(this.pos.toRefundLines).length == 0) {

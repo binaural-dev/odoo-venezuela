@@ -12,8 +12,11 @@ import {
 } from "@web/core/utils/numbers";
 
 
-// New orders are now associated with the current table, if any.
 patch(PosOrder.prototype, {
+  _get_pos_store() {
+    return this.pos || this.env?.services?.pos || this.env?.pos || null;
+  },
+
   setup() {
     this.get_foreign_total_tax()
     super.setup(...arguments);
@@ -24,19 +27,21 @@ patch(PosOrder.prototype, {
   },
 
   get_display_rate() {
-    return this.env.pos.config.foreign_rate;
+    const posStore = this._get_pos_store();
+    return posStore?.config?.foreign_rate || this.config?.foreign_rate || 1;
   },
 
   get_foreign_inverse_rate() {
-    return this.env.pos.config.foreign_inverse_rate;
+    const posStore = this._get_pos_store();
+    return posStore?.config?.foreign_inverse_rate || this.config?.foreign_inverse_rate || 1;
   },
 
   assert_editable() { },
 
   get init_conversion_rate() {
     if (this.currency.name == "VEF") {
-
-      const companyId = this.user;      
+      const companyId = this.user;
+      console.log(this.config.foreign_rate)
       return this.config.foreign_rate;
     }
   },
@@ -91,12 +96,29 @@ patch(PosOrder.prototype, {
     return this.lines;
   },
 
-  reload_taxes() {
-    this.orderlines.forEach((el) => {
-      el.product.taxes_id = el.product.originalTaxes;
-      el.tax_ids = el.product.taxes_id;
-    });
-  },
+  // reload_taxes() { ? que hace esto? se llama cada vez que se agrega una línea, no es muy performance
+  //   console.log('RELOAD TAXES', this.lines)
+  //   const lines = this.get_orderlines?.() || this.lines || [];
+  //   for (const line of lines) {
+  //     const originalTaxes =
+  //     line.product?.originalTaxes ?? line.product?.taxes_id ?? [];
+  //     const taxIds = Array.isArray(originalTaxes)
+  //     ? [...originalTaxes]
+  //     : [originalTaxes];
+
+
+  //     if (typeof line.set_taxes === "function") {
+  //     line.set_taxes(taxIds);
+  //     } else if (typeof line.setTaxIds === "function") {
+  //     line.setTaxIds(taxIds);
+  //     } else {
+  //     line.tax_ids = taxIds;
+  //     }
+
+  //     // Recalcular importes/impuestos si existen estos métodos
+  //     line.compute_all?.();
+  //   }
+  // },
 
   toggle_receipt_invoice(to_receipt) {
     if (this.getHasRefundLines()) {
@@ -107,13 +129,21 @@ patch(PosOrder.prototype, {
     }
     this.assert_editable();
     this.to_receipt = to_receipt;
-    // this.reload_taxes();
+
   },
   export_as_JSON() {
     let json = super.export_as_JSON();
     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
+    json["foreign_currency_rate"] = this.get_conversion_rate?.() || this.get_display_rate?.() || 0;
     json["to_receipt"] = this.is_to_receipt();
     return json;
+  },
+
+  serializeForORM(opts = {}) {
+    const data = super.serializeForORM(opts);
+    data.foreign_amount_total = this.get_foreign_total_with_tax();
+    data.foreign_currency_rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 0;
+    return data;
   },
 
   is_to_receipt() {
@@ -166,12 +196,13 @@ patch(PosOrder.prototype, {
     );
   },
 
-  get_foreign_total_with_tax() {
-    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0);
+  get_foreign_total_with_taxes() {
+    const rounding = this.get_foreign_currency()?.rounding || 0.01;
+    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0)
   },
 
-  get foreign_total_with_tax() {
-    return this.get_foreign_total_with_tax()
+  get foreign_total_with_taxes() {
+    return this.get_foreign_total_with_taxes()
   },
 
   get_foreign_total_without_tax() {
@@ -179,10 +210,9 @@ patch(PosOrder.prototype, {
     const foreign_currency = this.get_foreign_currency();
 
     const total = lines.reduce((acumulador, line) => {
-      const precio = line.foreign_price_unit || 0;
-      return acumulador + (precio * line.getQuantity());
+      const linePrices = line.get_all_foreign_prices ? line.get_all_foreign_prices() : { priceWithoutTax: 0 };
+      return acumulador + (linePrices.priceWithoutTax || 0);
     }, 0);
-    // 3. Validación de moneda para evitar error al redondear
     const rounding = foreign_currency ? foreign_currency.rounding : 0.01;
     return round_pr(total, rounding);
 
@@ -222,13 +252,13 @@ patch(PosOrder.prototype, {
 
         const taxDetails = line.get_foreign_tax_details?.() || {};
         for (const [taxId, detail] of Object.entries(taxDetails)) {
-          acc[taxId] = (detail.amount || 0);
+          acc[taxId] = (acc[taxId] || 0) + (detail.amount || 0);
         }
         return acc;
       }, {});
 
       totalTax = Object.values(groupTaxes).reduce(
-        (sum, amount) => sum + round_pr(amount, rounding),
+        (sum, amount) => sum + amount,
         0
       );
     } else {
@@ -237,10 +267,8 @@ patch(PosOrder.prototype, {
         return sum + lineTax;
       }, 0);
     }
-    return round_pr(totalTax, rounding);
+    return totalTax;
   },
-
-
 
   get_foreign_total_tax_per_line() {
     const orderlines = this.get_orderlines();
@@ -252,9 +280,8 @@ patch(PosOrder.prototype, {
       return sum + (tax_amounts.tax || 0);
     }, 0);
 
-    return round_pr(totalTax, rounding);
+    return totalTax;
   },
-
 
   get_foreign_tax_details() {
     var details = {};
@@ -315,6 +342,7 @@ patch(PosOrder.prototype, {
   async pay() {
     let order = this.pos.get_order();
     let lines = order.get_orderlines();
+    console.log('LINEAS DE ORDEN', lines)
 
     if (order.getHasRefundLines()) {
       return await super.pay();
@@ -503,7 +531,7 @@ patch(PosOrder.prototype, {
     }
 
     const lines = this.get_order_payment_lines();
-  
+
     const endIndex = lines.findIndex((line) => line === paymentline);
     const linesToSum = endIndex >= 0 ? lines.slice(0, endIndex + 1) : lines;
     const change = linesToSum.reduce(
@@ -517,14 +545,14 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_due(paymentline) {
-    
+
     const rounding = this.get_foreign_rounding();
     const lines = this.get_order_payment_lines();
 
     const baseAmount = this.remainingDue || 0;
 
     const rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 1;
-    
+
     const paidAmount = lines.reduce(
       (sum, line) => sum + (this.get_payment_foreign_amount(line) || 0),
       0

@@ -1,14 +1,11 @@
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
-        <xpath expr="//div[hasclass('product-price')]" position="after">
-                / <t t-out="env.utils.formatForeignCurrency(props.line.foreign_price_unit_display)"/>
+        <xpath expr="//div[hasclass('product-price')]" position="replace">
+            <span class="product-price fw-bolder">
+                <t t-out="env.utils.formatCurrency(props.line.price_unit_with_taxes)"/>
+                /
+                <t t-out="env.utils.formatForeignCurrency(foreign_price_unit_display)"/>
+            </span>
         </xpath>
-
-        <!-- <xpath expr="//div[hasclass('product-name')]" position="inside">
-            <t t-out="line.aliquot_type"/> 
-            <t  t-if="this.env.debug">
-                (Tasa: <t t-out="line.foreign_currency_rate_display"/>)
-            </t>
-        </xpath> -->
     </t>
 </templates>

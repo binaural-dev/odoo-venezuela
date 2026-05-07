@@ -14,7 +14,7 @@ patch(contextualUtilsService, {
      * Formatea un valor numérico a la moneda foránea del POS.
      */
     const formatForeignCurrency = (value, hasSymbol = true) => {
-      const amount = (typeof value === "string" ? parseFloat(value) : value) || 0;
+      const amount = (typeof value === "string" ? (value) : value) || 0;
       return formatMonetary(amount, {
         currencyId: foreign_currency?.id,
         noSymbol: !hasSymbol,
