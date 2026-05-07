@@ -109,16 +109,15 @@ class AccountMoveRetention(models.Model):
             islr = ret_all.filtered(lambda r: r.type_retention == 'islr')
             iva = ret_all.filtered(lambda r: r.type_retention == 'iva')
             muni = ret_all.filtered(lambda r: r.type_retention == 'municipal')
-            rec.write({
-                'count_islr_retention': len(islr),
-                'has_emited_islr_retention': any(r.state == 'emitted' for r in islr),
-                
-                'count_iva_retention': len(iva),
-                'has_emited_iva_retention': any(r.state == 'emitted' for r in iva),
-                
-                'count_municipal_retention': len(muni),
-                'has_emited_municipal_retention': any(r.state == 'emitted' for r in muni),
-            })
+
+            rec.count_islr_retention = len(islr)
+            rec.has_emited_islr_retention = any(r.state == 'emitted' for r in islr)
+            
+            rec.count_iva_retention = len(iva)
+            rec.has_emited_iva_retention = any(r.state == 'emitted' for r in iva)
+            
+            rec.count_municipal_retention = len(muni)
+            rec.has_emited_municipal_retention = any(r.state == 'emitted' for r in muni)
 
     def action_view_retention(self):
         self.ensure_one()
