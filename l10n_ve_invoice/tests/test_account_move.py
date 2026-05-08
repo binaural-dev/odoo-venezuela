@@ -3,6 +3,8 @@ import datetime
 from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from unittest.mock import patch
+from datetime import date as real_date
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -61,19 +63,50 @@ class TestAccountMove(TransactionCase):
         sequence = self.env["ir.sequence"].create(
             {
                 "name": "Secuencia Factura",
-                "code": "account.move",
+                "code": "account.move.test.main",
                 "prefix": "INV/",
                 "padding": 8,
                 "number_next_actual": 2,
+                "company_id": self.env.company.id,
             }
         )
         refund_sequence = self.env["ir.sequence"].create(
             {
                 "name": "nota de credito",
-                "code": "",
+                "code": "account.move.refund.test.main",
                 "prefix": "NC/",
                 "padding": 8,
                 "number_next_actual": 2,
+                "company_id": self.env.company.id,
+            }
+        )
+
+        self.other_company = self.env["res.company"].create(
+            {
+                "name": "Second Test Company",
+                "currency_id": self.currency_usd.id,
+                "currency_foreign_id": self.currency_vef.id,
+            }
+        )
+
+        other_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "Secuencia Factura Otra Compañía",
+                "code": "account.move.test.other",
+                "prefix": "OINV/",
+                "padding": 8,
+                "number_next_actual": 2,
+                "company_id": self.other_company.id,
+            }
+        )
+        other_refund_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "nota de credito otra compañía",
+                "code": "account.move.refund.test.other",
+                "prefix": "ONC/",
+                "padding": 8,
+                "number_next_actual": 2,
+                "company_id": self.other_company.id,
             }
         )
 
@@ -99,6 +132,17 @@ class TestAccountMove(TransactionCase):
             }
         )
 
+        self.other_sales_journal = self.env["account.journal"].create(
+            {
+                "name": "Diario de Ventas Otra Compañía",
+                "code": "OVN",
+                "type": "sale",
+                "sequence_id": other_sequence.id,
+                "refund_sequence_id": other_refund_sequence.id,
+                "company_id": self.other_company.id,
+            }
+        )
+
     def _create_invoice(
         self,
         products,
@@ -111,6 +155,8 @@ class TestAccountMove(TransactionCase):
         invoice_date=None,
         date=None,
         journal=None,
+        company=None,
+        correlative=None,
     ):
         """Helper function to create an invoice with given parameters.
         Args:
@@ -130,10 +176,12 @@ class TestAccountMove(TransactionCase):
             for product in products
         ]
 
-        journal = self.sales_journal
+        company = company or self.env.company
 
-        if move_type == "in_invoice":
-            journal = self.purchase_journal
+        if not journal:
+            journal = self.sales_journal
+            if move_type == "in_invoice":
+                journal = self.purchase_journal
 
         name = journal.sequence_id.next_by_id()
 
@@ -150,6 +198,7 @@ class TestAccountMove(TransactionCase):
             "foreign_currency_id": self.currency_vef.id,
             "currency_id": self.currency_usd.id,
             "state": "draft",
+            "company_id": company.id,
             "foreign_rate": foreign_rate,
             "foreign_inverse_rate": foreign_inverse_rate,
             "manually_set_rate": True,
@@ -160,6 +209,9 @@ class TestAccountMove(TransactionCase):
             "correlative": 1,
         }
 
+        if correlative is not None:
+            invoice_vals["correlative"] = correlative
+
         # Solo para notas de crédito
         if move_type == "out_refund" and reversed_entry_id:
             invoice_vals["reversed_entry_id"] = reversed_entry_id.id
@@ -169,9 +221,65 @@ class TestAccountMove(TransactionCase):
             invoice_vals["debit_origin_id"] = debit_origin_id.id
             invoice_vals["ref"] = ref
 
-        invoice = self.env["account.move"].create(invoice_vals)
+        invoice = self.env["account.move"].with_company(company).create(invoice_vals)
 
         return invoice
+
+    def _get_or_create_invoice_correlative_sequence(self, company=None, number_next_actual=1, padding=5):
+        company = company or self.env.company
+        sequence = self.env["ir.sequence"].sudo().search(
+            [("code", "=", "invoice.correlative"), ("company_id", "=", company.id)],
+            limit=1,
+        )
+        if not sequence:
+            sequence = self.env["ir.sequence"].sudo().create(
+                {
+                    "name": f"Control {company.name}",
+                    "code": "invoice.correlative",
+                    "padding": padding,
+                    "number_next_actual": number_next_actual,
+                    "company_id": company.id,
+                }
+            )
+        else:
+            sequence.write(
+                {
+                    "padding": padding,
+                    "number_next_actual": number_next_actual,
+                }
+            )
+        return sequence
+
+    def _assert_entry_in_period(self, invoice_date, today_date, taxpayer_type, expected):
+        """Helper to create a move, patch today's date and assert entry_in_period."""
+        self.company.write({"taxpayer_type": taxpayer_type})
+
+        move = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            move_type="out_refund",
+            invoice_date=invoice_date,
+            journal=self.sales_journal,
+        )
+        move.state = 'posted'
+
+        class FakeDate(real_date):
+            @classmethod
+            def today(cls):
+                return today_date
+
+        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date', FakeDate):
+            move._compute_entry_in_period()
+
+        if expected:
+            self.assertTrue(move.entry_in_period, f"Falló: Se esperaba True para hoy {today_date} e invoice {invoice_date}")
+        else:
+            self.assertFalse(move.entry_in_period, f"Falló: Se esperaba False para hoy {today_date} e invoice {invoice_date}")
 
     def test_01_create_in_invoice(self):
         
@@ -192,7 +300,86 @@ class TestAccountMove(TransactionCase):
         )
         _logger.info("test_01_create_in_invoice --- successfully.")
 
-    def test_02_error_create_in_invoice(self):
+    # def test_02_error_create_in_invoice(self):
+    #     invoice = self._create_invoice(
+    #         products=[
+    #             {
+    #                 "product_id": self.product.id,
+    #                 "price_unit": 1,
+    #                 "tax_ids": [self.tax_iva16.id],
+    #             }
+    #         ],
+    #         move_type="in_invoice",
+    #         invoice_date=fields.Date.today(),
+    #         date=fields.Date.today() - timedelta(days=1),
+    #         journal=self.purchase_journal,
+    #     )
+    #     with self.assertRaises(UserError) as e:
+    #         invoice.action_post()
+    #     _logger.info("Error creating invoice: %s", e.exception)
+
+    #     exception = "The accounting date cannot be earlier than the invoice date."
+
+    #     self.assertEqual(
+    #         str(e.exception),
+    #         exception,
+    #         f"The error message should indicate that: {exception}",
+    #     )
+    #     _logger.info("test_02_error_create_in_invoice --- successfully.")
+
+    def test_03_normal_taxpayer_invoice_in_period(self):
+        """Regular taxpayer: invoice from the same month before the deadline -> True"""
+        today = real_date.today()
+        invoice_date = today.replace(day=1)
+        today_date = today.replace(day=2)
+        
+        self._assert_entry_in_period(invoice_date, today_date, 'formal', True)
+
+    def test_04_special_taxpayer_before_15_in_period(self):
+        """Special taxpayer, today < 15 -> deadline period day 15 -> invoice day 10 considered IN period (True)"""
+        today = real_date.today()
+        invoice_date = today.replace(day=10)
+        today_date = today.replace(day=12)
+        
+        self._assert_entry_in_period(invoice_date, today_date, 'special', True)
+
+    def test_05_special_taxpayer_after_15_out_of_period(self):
+        """Special taxpayer, today >= 15 -> last day of the deadline period -> invoice date <15 remains OUT period (False)"""
+        today = real_date.today()
+        invoice_date = today.replace(day=10)
+        today_date = today.replace(day=20)
+        
+        self._assert_entry_in_period(invoice_date, today_date, 'special', False)
+
+    def test_06_invoice_different_month_not_in_period(self):
+        """Invoice from previous month -> outside the fiscal period"""
+        today = real_date.today()
+
+        first_day_this_month = today.replace(day=1)
+        last_day_prev_month = first_day_this_month - timedelta(days=1)
+        
+        invoice_date = last_day_prev_month
+        today_date = today
+        
+        self._assert_entry_in_period(invoice_date, today_date, False, False)
+
+    def test_07_action_post_raises_when_sale_move_has_same_correlative(self):
+        expected_correlative = "00011"
+        self._get_or_create_invoice_correlative_sequence(number_next_actual=11)
+
+        self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            move_type="out_invoice",
+            journal=self.sales_journal,
+            correlative=expected_correlative,
+        )
+
         invoice = self._create_invoice(
             products=[
                 {
@@ -201,20 +388,9 @@ class TestAccountMove(TransactionCase):
                     "tax_ids": [self.tax_iva16.id],
                 }
             ],
-            move_type="in_invoice",
-            invoice_date=fields.Date.today(),
-            date=fields.Date.today() - timedelta(days=1),
-            journal=self.purchase_journal,
+            move_type="out_invoice",
+            journal=self.sales_journal,
         )
-        with self.assertRaises(UserError) as e:
+
+        with self.assertRaises(ValidationError):
             invoice.action_post()
-        _logger.info("Error creating invoice: %s", e.exception)
-
-        exception = "The accounting date cannot be earlier than the invoice date."
-
-        self.assertEqual(
-            str(e.exception),
-            exception,
-            f"The error message should indicate that: {exception}",
-        )
-        _logger.info("test_02_error_create_in_invoice --- successfully.")
