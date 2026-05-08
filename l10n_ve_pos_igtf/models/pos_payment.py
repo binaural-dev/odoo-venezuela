@@ -20,6 +20,31 @@ class PosPayment(models.Model):
         res["foreign_igtf_amount"] = payment.foreign_igtf_amount
         return res
 
+    def _convert_company_to_foreign_amount(self, payment, amount):
+        company_currency = payment.company_id.currency_id
+        foreign_currency = payment.company_id.foreign_currency_id
+        date = payment.payment_date or fields.Date.context_today(payment)
+
+        if not foreign_currency or foreign_currency == company_currency:
+            return amount
+
+        converted = company_currency._convert(
+            amount,
+            foreign_currency,
+            payment.company_id,
+            date,
+        )
+        return converted
+
+    def _get_igtf_amounts_for_move(self, payment):
+        """Calculate the IGTf amount in company currency and convert it to foreign currency if needed, to be used in the payment move lines."""
+        company_igtf_amount = payment.igtf_amount
+        foreign_igtf_amount = self._convert_company_to_foreign_amount(
+            payment,
+            company_igtf_amount,
+        )
+        return company_igtf_amount, foreign_igtf_amount
+
     def _get_foreign_debit_credit_vals(self, foreign_amount):
         return {
             "foreign_debit": abs(foreign_amount) if foreign_amount < 0 else 0,
@@ -27,9 +52,11 @@ class PosPayment(models.Model):
         }
 
     def _get_receivable_account_id(self, accounting_partner, order):
+        """Determine the appropriate receivable account to use for the payment move lines, ensuring it is always a standard receivable/payable account to allow proper reconciliation, and log a warning if the configured account is not suitable."""
         return accounting_partner.with_company(order.company_id).property_account_receivable_id.id
 
     def _create_payment_move(self, payment, order, payment_method, journal):
+        """Create the payment move with the appropriate foreign exchange values if the payment is in foreign currency, and link it to the payment."""
         rate, inverse_rate = self._get_payment_rate_values(payment)
         payment_move = (
             self.env["account.move"]
@@ -51,6 +78,7 @@ class PosPayment(models.Model):
         return payment_move
 
     def _build_credit_line_without_igtf(self, pos_session, payment_move, account_id, partner_id, amounts, payment):
+        """Build a standard credit line without IGTf tax, with the appropriate foreign debit/credit values if the payment is in foreign currency."""
         foreign_amount = self._get_payment_foreign_amount(payment)
         return pos_session._credit_amounts(
             {
@@ -64,25 +92,25 @@ class PosPayment(models.Model):
             amounts["amount_converted"],
         )
 
-    def _build_credit_line_igtf(self, pos_session, payment_move, partner_id, payment, amount_igtf):
+    def _build_credit_line_igtf(self, pos_session, payment_move, partner_id, amount_igtf, foreign_amount_igtf):
+        """Build a credit line for the IGTf tax. The line will be created on the customer account specified for IGTf in the company configuration, and will have the IGTf amount as credit, with the appropriate foreign debit/credit values if the payment is in foreign currency."""
         return pos_session._credit_amounts(
             {
                 "account_id": self.env.company.customer_account_igtf_id.id,
                 "partner_id": partner_id,
                 "move_id": payment_move.id,
                 "not_foreign_recalculate": True,
-                **self._get_foreign_debit_credit_vals(payment.foreign_igtf_amount),
+                **self._get_foreign_debit_credit_vals(foreign_amount_igtf),
             },
             amount_igtf,
             amount_igtf,
         )
 
-    def _build_credit_line_igtf_base(self, pos_session, payment_move, account_id, partner_id, amounts, amount_igtf, payment):
+    def _build_credit_line_igtf_base(self, pos_session, payment_move, account_id, partner_id, amounts, amount_igtf, foreign_amount_igtf, payment):
+        """Build a credit line for the base amount excluding the IGTf tax. The line will be created on the specified account, and will have the base amount as credit, with the appropriate foreign debit/credit values if the payment is in foreign currency."""
         foreign_amount = self._get_payment_foreign_amount(payment)
-        amount_without_igtf = float_round(
-            foreign_amount - payment.foreign_igtf_amount,
-            precision_rounding=payment.currency_id.rounding,
-        )
+        amount_without_igtf = foreign_amount - foreign_amount_igtf
+
         return pos_session._credit_amounts(
             {
                 "account_id": account_id,
@@ -96,6 +124,7 @@ class PosPayment(models.Model):
         )
 
     def _get_reversed_move_receivable_account_id(self, payment, accounting_partner, order, is_reverse):
+        """Determine the appropriate receivable account for the reversed move line in case of split transactions with reversal, ensuring it is always a standard receivable/payable account to allow proper reconciliation, and log a warning if the configured account is not suitable."""
         is_split_transaction = payment.payment_method_id.split_transactions
         valid_types = ("asset_receivable", "liability_payable")
 
@@ -126,6 +155,8 @@ class PosPayment(models.Model):
         return account.id, is_split_transaction
 
     def _build_debit_line(self, pos_session, payment_move, account_id, accounting_partner, is_split_transaction, is_reverse, amounts, payment):
+        """In case of split transactions with reversal, the debit line should always be created on the partner's receivable account to properly link the move lines for reconciliation, even if the payment method has a specific receivable account configured. For other cases, it will use the payment method's receivable account or fallback to the default one.
+        """
         foreign_amount = self._get_payment_foreign_amount(payment)
         return pos_session._debit_amounts(
             {
@@ -147,24 +178,13 @@ class PosPayment(models.Model):
         )
 
     def _create_payment_moves(self, is_reverse=False):
+        """Override to create an additional credit line for the IGTf tax when included in the payment, and to handle properly the receivable account in case of split transactions with reversal."""
         result = self.env["account.move"]
 
         for payment in self:
             order = payment.pos_order_id
-            _logger.warning(
-                "POS payment move payload amount=%s foreign_amount=%s foreign_rate=%s foreign_inverse_rate=%s",
-                payment.amount,
-                payment.foreign_amount,
-                payment.foreign_rate,
-                payment.foreign_inverse_rate,
-            )
             add_credit_line_vals = False
             payment_method = payment.payment_method_id
-
-            if payment_method.type == "pay_later" or float_is_zero(
-                payment.amount, precision_rounding=order.currency_id.rounding
-            ):
-                continue
 
             accounting_partner = self.env["res.partner"]._find_accounting_partner(
                 payment.partner_id
@@ -180,16 +200,18 @@ class PosPayment(models.Model):
                 payment.payment_date,
             )
 
-            amount_igtf = float_round(
-                payment.igtf_amount,
-                precision_rounding=payment.currency_id.rounding,
+            amount_igtf, foreign_amount_igtf = self._get_igtf_amounts_for_move(
+                payment,
             )
 
             receivable_account_id = self._get_receivable_account_id(accounting_partner, order)
 
             if payment.include_igtf:
                 # Keep the original behavior: only add base line when net amount is not exactly zero.
-                if not (amounts["amount"] - amount_igtf == 0):
+                if not float_is_zero(
+                    amounts["amount"] - amount_igtf,
+                    precision_rounding=payment.company_id.currency_id.rounding,
+                ):
                     add_credit_line_vals = self._build_credit_line_igtf_base(
                         pos_session=pos_session,
                         payment_move=payment_move,
@@ -197,6 +219,7 @@ class PosPayment(models.Model):
                         partner_id=accounting_partner.id,
                         amounts=amounts,
                         amount_igtf=amount_igtf,
+                        foreign_amount_igtf=foreign_amount_igtf,
                         payment=payment,
                     )
 
@@ -204,8 +227,8 @@ class PosPayment(models.Model):
                     pos_session=pos_session,
                     payment_move=payment_move,
                     partner_id=accounting_partner.id,
-                    payment=payment,
                     amount_igtf=amount_igtf,
+                    foreign_amount_igtf=foreign_amount_igtf,
                 )
             else:
                 credit_line_vals = self._build_credit_line_without_igtf(
