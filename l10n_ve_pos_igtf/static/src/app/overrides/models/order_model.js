@@ -147,14 +147,6 @@ patch(PosOrder.prototype, {
       };
     }
 
-    // If an IGTF line already exists, remaining due is already in IGTF context.
-    if (this._has_any_igtf_payment_line()) {
-      return {
-        orderAmount: orderDue,
-        foreignAmount: foreignDue,
-      };
-    }
-
     const percentage =
       typeof payment_method?.igtf_percentage === "number"
         ? payment_method.igtf_percentage
@@ -167,238 +159,152 @@ patch(PosOrder.prototype, {
     };
   },
 
-  update_igtf() {
+  // --- MÉTODOS AUXILIARES PARA IGTF ---
 
-    const paymentlines = this._get_order_payment_lines();
-    
-    let igtf_payment_methods = paymentlines.filter((payment) => {
-      const paymentMethod = this._get_payment_method_data(payment);
-      return paymentMethod?.apply_igtf;
-    });
+  _is_change_payment(payment, is_return) {
+    return is_return ? (payment.amount > 0) : (payment.amount < 0);
+  },
 
-    let last_igtf_amount = 0;
-    let last_foreign_igtf_amount = 0;
+  _compute_line_igtf(payment, percentage, remaining_base, remaining_foreign_base, is_return) {
 
-    if (paymentlines.length > 0) {
-      last_igtf_amount = this.igtf_amount;
-      last_foreign_igtf_amount = this.foreign_igtf_amount;
+    const rounding = this.pos?.currency?.rounding || 0.01;
+    const divisor = 1 + (percentage / 100);
+
+    // Extraer la base imponible teórica de la línea
+    let amount_to_pay = round_pr((payment.amount || 0) / divisor, rounding);
+    let foreign_amount_to_pay = (payment.get_foreign_amount() || 0) / divisor;
+
+    // Aplicar límite (capping) para no cobrar IGTF sobre el dinero entregado de más (vuelto)
+    if (!is_return) {
+      if (amount_to_pay > remaining_base + 0.001) {
+        amount_to_pay = Math.max(0, remaining_base);
+        foreign_amount_to_pay = Math.max(0, remaining_foreign_base);
+      }
+    } else {
+      if (amount_to_pay < remaining_base - 0.001) {
+        amount_to_pay = Math.min(0, remaining_base);
+        foreign_amount_to_pay = Math.min(0, remaining_foreign_base);
+      }
     }
 
-    let is_return = this.get_total_without_igtf() < 0;
+    // Calcular el impuesto exacto redondeado
+    const igtf_amount = round_pr(amount_to_pay * (percentage / 100), rounding);
+    const foreign_igtf_amount = foreign_amount_to_pay * (percentage / 100);
+
+    return {
+      base: amount_to_pay,
+      foreign_base: foreign_amount_to_pay,
+      tax: igtf_amount,
+      foreign_tax: foreign_igtf_amount
+    };
+  },
+
+  // --- FIN MÉTODOS AUXILIARES ---
+
+  update_igtf() {
+    const paymentlines = this._get_order_payment_lines();
+    const is_return = this.get_total_without_igtf() < 0;
+
+    // 1. Reiniciar contadores globales de la orden
     this.igtf_amount = 0;
     this.foreign_igtf_amount = 0;
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
 
-    let bi_igtf = 0;
-    let foreign_bi_igtf = 0;
-    let repeat_same_method = [];
-    let bi_payments = [];
-
-    let igtf_amount = 0;
-    let foreign_igtf_amount = 0;
-
-    paymentlines.forEach((payment) => {
-      payment.set_include_igtf(false);
-    });
-
+    // Si la orden no está marcada para facturar, limpiamos las líneas y terminamos
     if (!this._is_invoice_order()) {
-      return;
+      paymentlines.forEach((payment) => {
+        payment.set_include_igtf(false);
+        payment.set_igtf_amount(0);
+        payment.set_foreign_igtf_amount(0);
+      });
+      return 0;
     }
+
+    // 2. Separar líneas y calcular totales de métodos que NO aplican IGTF
+    let non_igtf_total = 0;
+    let non_foreign_igtf_total = 0;
+    const igtf_lines = [];
 
     paymentlines.forEach((payment) => {
       const paymentMethod = this._get_payment_method_data(payment);
-      let is_change = false;
-      if (!is_return) {
-        is_change = payment.amount < 0;
-      } else {
-        is_change = payment.amount > 0;
-      }
-
-      if (
-        paymentMethod?.apply_igtf &&
-        last_igtf_amount == payment.amount
-      ) {
-        return;
-      }
-
-      if (
-        !paymentMethod?.apply_igtf &&
-        igtf_payment_methods.length <= 0
-      ) {
-        foreign_bi_igtf = this.get_foreign_total_without_igtf();
-        igtf_amount = 0;
-        foreign_igtf_amount = 0;
-
-        let payment_without_change = paymentlines.filter((payment) => {
-          if (!bi_payments.includes(payment.cid)) {
-            return false;
-          }
-
-          let is_change = false;
-          if (!is_return) {
-            is_change = payment.amount < 0;
-          } else {
-            is_change = payment.amount > 0;
-          }
-
-          if (is_change) {
-            return false;
-          }
-
-          return true;
-        });
-
-        if (payment_without_change.length > 0) {
-          payment_without_change.forEach((payment) => {
-            if (!payment.include_igtf) {
-              payment.set_igtf_amount(
-                igtf_amount / payment_without_change.length,
-              );
-              
-              payment.set_foreign_igtf_amount(
-                foreign_igtf_amount / payment_without_change.length,
-              );
-
-              return;
-            }
-            payment.set_igtf_amount(0)
-            payment.set_foreign_igtf_amount(0)
-          });
-        }
-        return;
-      }
-
-      bi_igtf += round_pr(payment.amount, 6);
-      foreign_bi_igtf += round_pr(payment.get_foreign_amount(), 6);
-      if (paymentMethod?.id) {
-        repeat_same_method.push(paymentMethod.id);
-      }
-      bi_payments.push(payment.cid);
 
       if (paymentMethod?.apply_igtf) {
-        payment.set_include_igtf(true);
-      }
-      let amount_to_pay = payment.amount;
-      let foreign_amount_to_pay = payment.get_foreign_amount();
-
-      if (
-        (payment.amount > this.get_total_with_tax() && !is_return) ||
-        (payment.amount < this.get_total_with_tax() && is_return)
-      ) {
-        amount_to_pay = this.get_total_with_tax();
-        foreign_amount_to_pay = this.get_foreign_total_with_tax();
-      }
-
-      if (!is_change) {
-        payment.set_igtf_amount(
-          this.compute_igtf_amount(
-            amount_to_pay,
-            paymentMethod?.igtf_percentage,
-          ),
-        );
-
-        payment.set_foreign_igtf_amount(
-          this.compute_igtf_amount(
-            foreign_amount_to_pay,
-            paymentMethod?.igtf_percentage,
-          ),
-        );
-
-        igtf_amount += payment.igtf_amount;
-        foreign_igtf_amount += payment.foreign_igtf_amount;
+        igtf_lines.push({
+          payment,
+          percentage: typeof paymentMethod.igtf_percentage === "number" ? paymentMethod.igtf_percentage : this._get_order_igtf_percentage()
+        });
       } else {
         payment.set_include_igtf(false);
+        payment.set_igtf_amount(0);
+        payment.set_foreign_igtf_amount(0);
+        non_igtf_total += round_pr(payment.amount || 0, 6);
+        non_foreign_igtf_total += round_pr(payment.get_foreign_amount() || 0, 6);
       }
     });
 
-    if (
-      bi_igtf !== 0 &&
-      bi_igtf >= this.get_total_without_igtf() &&
-      !is_return
-    ) {
-      bi_igtf = this.get_total_without_igtf();
-      foreign_bi_igtf = this.get_foreign_total_without_igtf();
-      igtf_amount = this.compute_igtf_amount(
-        bi_igtf,
-        this._get_order_igtf_percentage(),
-      );
-      foreign_igtf_amount = this.compute_igtf_amount(
-        foreign_bi_igtf,
-        this._get_order_igtf_percentage(),
-      );
-
-      let payment_without_change = paymentlines.filter((payment) => {
-        if (!bi_payments.includes(payment.cid)) {
-          return false;
-        }
-
-        let is_change = false;
-        if (!is_return) {
-          is_change = payment.amount < 0;
-        } else {
-          is_change = payment.amount > 0;
-        }
-
-        if (is_change) {
-          return false;
-        }
-
-        return true;
-      });
-
-      if (payment_without_change.length > 0) {
-        payment_without_change.forEach((payment) => {
-          if (!payment.include_igtf) {
-            return;
-          }
-          // Keep per-line IGTF based on each line amount, no proration by line count.
-        });
-      }
+    // Si no hay líneas con IGTF, terminamos temprano (los totales globales y líneas ya están en 0)
+    if (igtf_lines.length === 0) {
+      return 0;
     }
 
-    if (igtf_payment_methods.length > 0) {
-      
-      let amount_sum = 0;
-      let foreign_amount_sum = 0;
-      let igtf_amount_sum = 0;
-      let foreign_igtf_amount_sum = 0;
+    // 3. Calcular la base disponible para IGTF (Base Factura - Pagos Exentos)
+    let remaining_base = this.get_total_without_igtf() - non_igtf_total;
+    let remaining_foreign_base = this.get_foreign_total_without_igtf() - non_foreign_igtf_total;
 
-      for (let payments of igtf_payment_methods) {
-        const paymentMethod = this._get_payment_method_data(payments);
-        const percentage =
-          typeof paymentMethod?.igtf_percentage === "number"
-            ? paymentMethod.igtf_percentage
-            : this._get_order_igtf_percentage();
-        const divisor = 1 + percentage / 100;
+    let total_bi_igtf = 0;
+    let total_foreign_bi_igtf = 0;
+    let total_igtf_amount = 0;
+    let total_foreign_igtf_amount = 0;
 
-        const rawAmount = Number(payments.amount || 0);
-        const rawForeignAmount = Number(
-          payments.foreign_amount ?? payments.get_foreign_amount?.() ?? 0,
-        );
+    // 4. Procesar matemáticamente las líneas que SÍ aplican IGTF
+    igtf_lines.forEach(({ payment, percentage }) => {
+      payment.set_include_igtf(true);
 
-        // If the payment line amount already includes IGTF, recover net taxable base.
-        const baseAmount = percentage > 0 ? rawAmount / divisor : rawAmount;
-        const foreignBaseAmount =
-          percentage > 0 ? rawForeignAmount / divisor : rawForeignAmount;
-
-        amount_sum += baseAmount;
-        foreign_amount_sum += foreignBaseAmount;
-        igtf_amount_sum += Number(payments.igtf_amount || 0);
-        foreign_igtf_amount_sum += Number(payments.foreign_igtf_amount || 0);
+      // Si el pago representa un vuelto, no genera IGTF
+      if (this._is_change_payment(payment, is_return)) {
+        payment.set_igtf_amount(0);
+        payment.set_foreign_igtf_amount(0);
+        return;
       }
-      
-      this.bi_igtf = amount_sum;
-      this.foreign_bi_igtf = foreign_amount_sum;
-      this.igtf_amount = igtf_amount_sum;
-      this.foreign_igtf_amount = foreign_igtf_amount_sum;
-    }
+
+      // Calcular base e impuesto usando el submétodo
+      const computed = this._compute_line_igtf(
+        payment,
+        percentage,
+        remaining_base,
+        remaining_foreign_base,
+        is_return
+      );
+
+      // Asignar los montos calculados a la línea
+      payment.set_igtf_amount(computed.tax);
+      payment.set_foreign_igtf_amount(computed.foreign_tax);
+
+      // Acumular al consolidado de la orden
+      total_bi_igtf += computed.base;
+      total_foreign_bi_igtf += computed.foreign_base;
+      total_igtf_amount += computed.tax;
+      total_foreign_igtf_amount += computed.foreign_tax;
+
+      // Restar base consumida para la siguiente iteración (si hay múltiples pagos IGTF)
+      remaining_base -= computed.base;
+      remaining_foreign_base -= computed.foreign_base;
+    });
+
+    // 5. Guardar los totales consolidados
+    this.bi_igtf = total_bi_igtf;
+    this.foreign_bi_igtf = total_foreign_bi_igtf;
+    this.igtf_amount = total_igtf_amount;
+    this.foreign_igtf_amount = total_foreign_igtf_amount;
+
+    console.log(this.bi_igtf, this.foreign_bi_igtf, this.igtf_amount, this.foreign_igtf_amount, 'valores');
     return this.igtf_amount;
   },
 
   _get_order_igtf_percentage() {
     const paymentlines = this._get_order_payment_lines();
-    
+
     const paymentWithIgtf = paymentlines.find((payment) => {
       const paymentMethod = this._get_payment_method_data(payment);
       return paymentMethod?.apply_igtf;
@@ -461,7 +367,7 @@ patch(PosOrder.prototype, {
     if (!has_igtf_payment) {
       return res;
     }
-    return res + this.compute_igtf_amount(res, this._get_order_igtf_percentage());
+    return res + this.get_igtf_amount();
   },
 
   get priceIncl() {
@@ -479,7 +385,7 @@ patch(PosOrder.prototype, {
       return base;
     }
 
-    return base + this.compute_igtf_amount(base, this._get_order_igtf_percentage());
+    return base + this.get_igtf_amount();
   },
 
   get_foreign_total_with_tax() {
@@ -493,10 +399,7 @@ patch(PosOrder.prototype, {
       if (igtf_payment_methods.length === 0) {
         return res;
       } else {
-        return (
-          res +
-          this.compute_igtf_amount(res, this._get_order_igtf_percentage())
-        );
+        return res + this.get_foreign_igtf_amount();
       }
     } else {
       return res;

@@ -54,9 +54,9 @@ patch(PaymentScreen.prototype, {
 
   get totalDueTextWithIGTFDisplay() {
     const order = this._getCurrentOrder();
-    
+
     const percentage = order?._get_order_igtf_percentage?.() || this.config.igtf_percentage || 0;
-  
+
     const base = order?.get_total_with_tax?.() || 0;
     return this.env.utils.formatCurrency(base + (base * (percentage / 100)));
   },

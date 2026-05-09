@@ -497,12 +497,27 @@ patch(PosOrder.prototype, {
     if (!paymentLine) {
       return 0;
     }
-    const foreignAmount = paymentLine.get_foreign_amount?.(); //to payment model
 
-    if (Number.isFinite(foreignAmount)) {
-      return foreignAmount;
-    }
+    const foreignAmount =
+      (typeof paymentLine.get_foreign_amount === "function" && paymentLine.get_foreign_amount()) ??
+      paymentLine.foreign_amount;
 
+    return Number.isFinite(foreignAmount) ? foreignAmount : 0;
+  },
+
+  get_foreign_due(paymentline) {
+    const lines = this.get_order_payment_lines();
+    const baseAmount = this.remainingDue || 0;
+    const rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 1;
+
+    const paidAmount = lines.reduce(
+      (sum, line) => sum + (this.get_payment_foreign_amount(line) || 0),
+      0
+    );
+
+    // paidAmount ya esta en moneda extranjera; no volver a multiplicar por inverse_rate
+    const due = (baseAmount / rate) - paidAmount;
+    return due;
   },
 
   get_foreign_total_paid() {
