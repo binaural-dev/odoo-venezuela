@@ -475,11 +475,12 @@ class AccountPaymentAndIgtf(models.Model):
                     fecha_unica = list(fechas)[0] if len(fechas) == 1 else False
                 
                     total_base_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
+                    total_with_igtf= abs(total_base_residual) + abs(igtf_converted)
                     diferencia = abs(total_base_residual) - abs(amount)
                     
-                    if abs(diferencia) != 0 and fecha_unica == rec.date:
+                    if abs(diferencia) != 0 and fecha_unica == rec.date and total_with_igtf == credit_line_unrounded:
                         if abs(credit_amount) > abs(total_base_residual):
-
+                            
                             amount  = abs(total_base_residual)
 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
@@ -546,9 +547,10 @@ class AccountPaymentAndIgtf(models.Model):
                     fecha_unica = list(fechas)[0] if len(fechas) == 1 else False
                 
                     total_base_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
+                    total_with_igtf= abs(total_base_residual) + abs(igtf_converted)
                     diferencia = abs(total_base_residual) - abs(amount)
                     
-                    if abs(diferencia) != 0 and fecha_unica == rec.date:
+                    if abs(diferencia) != 0 and fecha_unica == rec.date and abs(total_with_igtf) == abs(debit_line_unrounded):
                         if abs(debit_amount) > abs(total_base_residual):
 
                             amount  = abs(total_base_residual)
