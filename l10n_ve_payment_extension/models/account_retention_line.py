@@ -312,8 +312,8 @@ class AccountRetentionLine(models.Model):
                         else:
 
                             if record.invoice_amount == 0 and record.invoice_total > 0:
-                                record.invoice_amount = float(move.amount_untaxed_base)
-                                record.foreign_invoice_amount = float(move.amount_untaxed)
+                                record.invoice_amount =  move.tax_totals["base_amount"]
+                                record.foreign_invoice_amount = move.tax_totals["base_amount_currency"]
                               
                     else:
                         invoice_date = record.move_id.invoice_date_display or fields.Date.today()
@@ -408,8 +408,8 @@ class AccountRetentionLine(models.Model):
                         else:
 
                             if record.invoice_amount == 0 and record.invoice_total > 0:
-                                record.invoice_amount = float(move.amount_untaxed_base)
-                                record.foreign_invoice_amount = float(move.amount_untaxed)
+                                record.invoice_amount = record.move_id.tax_totals["base_amount"]
+                                record.foreign_invoice_amount = record.move_id.tax_totals["base_amount_currency"]
 
     @api.depends("invoice_amount", "foreign_invoice_amount")
     def _compute_amounts(self):
@@ -437,6 +437,7 @@ class AccountRetentionLine(models.Model):
         "related_amount_subtract_fees",
         "foreign_currency_rate",
         "move_id",
+        "payment_concept_id"
     )
     def _compute_retention_amount(self):
         """
@@ -451,6 +452,9 @@ class AccountRetentionLine(models.Model):
         )
         for record in islr_supplier_retention_lines:
             foreign_rate = record.move_id.foreign_rate
+            related_percentage_tax_base = record.related_percentage_tax_base 
+            related_percentage_fees = record.related_percentage_fees
+            related_amount_subtract_fees = record.related_amount_subtract_fees
             if not foreign_rate:
                 foreign_rate = 1
             ut_value = 0.0
@@ -475,9 +479,9 @@ class AccountRetentionLine(models.Model):
                 if not base_currency_is_vef:
                     base_vef = record.foreign_invoice_amount
                     base_ut = round(base_vef / ut_value, 2)
-                    aplicable_ut = round(base_ut * (record.related_percentage_tax_base / 100.0), 2)
-                    retention_ut = round(aplicable_ut * (record.related_percentage_fees / 100.0), 2)
-                    subtract_ut = round(record.related_amount_subtract_fees / ut_value, 2) if ut_value else 0.0
+                    aplicable_ut = round(base_ut * (related_percentage_tax_base / 100.0), 2)
+                    retention_ut = round(aplicable_ut * (related_percentage_fees / 100.0), 2)
+                    subtract_ut = round(related_amount_subtract_fees / ut_value, 2) if ut_value else 0.0
                     final_retention_vef = (retention_ut - subtract_ut) * ut_value
 
                     record.foreign_retention_amount = abs(final_retention_vef)
@@ -485,9 +489,9 @@ class AccountRetentionLine(models.Model):
                 else:
                     base_vef = record.invoice_amount
                     base_ut = round(base_vef / ut_value, 2)
-                    aplicable_ut = round(base_ut * (record.related_percentage_tax_base / 100.0), 2)
-                    retention_ut = round(aplicable_ut * (record.related_percentage_fees / 100.0), 2)
-                    subtract_ut = round(record.related_amount_subtract_fees / ut_value, 2) if ut_value else 0.0
+                    aplicable_ut = round(base_ut * (related_percentage_tax_base / 100.0), 2)
+                    retention_ut = round(aplicable_ut * (related_percentage_fees / 100.0), 2)
+                    subtract_ut = round(related_amount_subtract_fees / ut_value, 2) if ut_value else 0.0
                     final_retention_vef = (retention_ut - subtract_ut) * ut_value
 
                     record.retention_amount = abs(final_retention_vef)
@@ -496,21 +500,21 @@ class AccountRetentionLine(models.Model):
                 if not base_currency_is_vef:
                     record.retention_amount = abs((
                         record.invoice_amount
-                        * (record.related_percentage_tax_base / 100)
-                        * (record.related_percentage_fees / 100)
-                    ) - record.related_amount_subtract_fees / foreign_rate)
+                        * (related_percentage_tax_base / 100.0)
+                        * (related_percentage_fees / 100.0)
+                    ) - related_amount_subtract_fees / foreign_rate)
                 else:
                     record.retention_amount = abs((
                         record.invoice_amount
-                        * (record.related_percentage_tax_base / 100)
-                        * (record.related_percentage_fees / 100)
-                    ) - record.related_amount_subtract_fees)
+                        * (related_percentage_tax_base / 100.0)
+                        * (related_percentage_fees / 100.0)
+                    ) - related_amount_subtract_fees)
 
                 record.foreign_retention_amount = abs((
                     record.foreign_invoice_amount
-                    * (record.related_percentage_tax_base / 100)
-                    * (record.related_percentage_fees / 100)
-                ) - record.related_amount_subtract_fees)
+                    * (related_percentage_tax_base / 100.0)
+                    * (related_percentage_fees / 100.0)
+                ) - related_amount_subtract_fees)
 
     @api.onchange("economic_activity_id", "move_id")
     def onchange_economic_activity_id(self):
