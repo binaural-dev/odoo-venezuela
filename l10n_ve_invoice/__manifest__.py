@@ -3,7 +3,11 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
+<<<<<<< HEAD
     "version": "17.0.1.0.2",
+=======
+    "version": "17.0.0.1.12",
+>>>>>>> 8bb0b9df ([FIX] l10n_ve_invoice: Error de formato de impresion)
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
