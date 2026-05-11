@@ -1199,22 +1199,30 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         password_protection = "secure"
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
         worksheet = workbook.add_worksheet()
+        worksheet.set_landscape()
+        worksheet.set_paper(9)
+        worksheet.fit_to_pages(1, 0)
+        worksheet.set_margins(left=0.3, right=0.3, top=0.5, bottom=0.5)
+        worksheet.set_default_row(20)
+        worksheet.set_row(6, 45)
 
         cell_bold = workbook.add_format(
             {"bold": True, "center_across": True, "text_wrap": True, "bottom": True, "locked": True}
         )
-        
-        base_style = {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "locked": True}
+
+        base_style = {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "text_wrap": True, "locked": True}
         format1 = workbook.add_format(base_style); format1.set_bg_color('#D9D9D9')
         format2 = workbook.add_format(base_style); format2.set_bg_color('#F4B183')
         format3 = workbook.add_format(base_style); format3.set_bg_color('#A9D18E')
         format4 = workbook.add_format(base_style); format4.set_bg_color('#8FAADC')
 
-        color_formats = [format1, format1, format2, format3, format4] 
-        
+        color_formats = [format1, format1, format2, format3, format4]
+
         cell_formats = {
-            "number": workbook.add_format({"num_format": "#,##0.00", "locked": True}),
-            "percent": workbook.add_format({"num_format": "0.00%", "locked": True}),
+            "default": workbook.add_format({"border": 1, "valign": "vcenter", "locked": True}),
+            "number": workbook.add_format({"num_format": "#,##0.00", "border": 1, "valign": "vcenter", "locked": True}),
+            "percent": workbook.add_format({"num_format": "0.00%", "border": 1, "valign": "vcenter", "locked": True}),
+            "text_wrap": workbook.add_format({"text_wrap": True, "border": 1, "valign": "vcenter", "locked": True}),
         }
 
         worksheet.merge_range(
@@ -1279,18 +1287,27 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             
             for field in group_fields:
                 col_index = current_col_index
-                
-                worksheet.write(6, col_index, field.get("name"), header_format) 
-                
-                worksheet.set_column(col_index, col_index, 25)
+
+                worksheet.write(6, col_index, field.get("name"), header_format)
+
+                field_key = field.get("field", "")
+                if field_key == "partner_name":
+                    col_width = 18
+                elif field_key == "index":
+                    col_width = 4
+                elif field.get("format") == "number":
+                    col_width = 11
+                else:
+                    col_width = 10
+                worksheet.set_column(col_index, col_index, col_width)
                 flat_fields.append(field)
-                
+
                 current_col_index += 1
-            
-            color_index += 1 
-        
+
+            color_index += 1
+
         last_col_index = current_col_index - 1
-        
+
         if ventas_internas_end_col == 0:
             ventas_internas_end_col = last_col_index
         
@@ -1315,20 +1332,31 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 ventas_internas_format
             ) 
                 
-        name_columns = flat_fields 
+        name_columns = flat_fields
         total_idx = 0
 
+        for index_line, line in enumerate(sale_book_lines):
+            partner_name = line.get("partner_name") or ""
+            n_lines = max(1, -(-len(partner_name) // 18))
+            row_height = max(20, n_lines * 15)
+            worksheet.set_row(INIT_LINES + index_line, row_height)
+
         for index, field in enumerate(name_columns):
-            
+
             for index_line, line in enumerate(sale_book_lines):
                 total_idx = (8 + index_line)
                 if field["field"] == "index":
-                    worksheet.write(INIT_LINES + index_line, index, index_line + 1)
+                    worksheet.write(INIT_LINES + index_line, index, index_line + 1, cell_formats.get("default"))
                 else:
-                    cell_format = cell_formats.get(field.get("format"), workbook.add_format({"locked": True}))
-                    worksheet.write(
-                        INIT_LINES + index_line, index, line.get(field["field"]), cell_format
-                    )
+                    if field.get("field") == "partner_name":
+                        cell_format = cell_formats.get("text_wrap")
+                    else:
+                        cell_format = cell_formats.get(field.get("format")) or cell_formats.get("default")
+                    value = line.get(field["field"])
+                    if value is None:
+                        worksheet.write_blank(INIT_LINES + index_line, index, None, cell_format)
+                    else:
+                        worksheet.write(INIT_LINES + index_line, index, value, cell_format)
 
             if field.get("format") == "number":
                 col = utility.xl_col_to_name(index)
@@ -1373,6 +1401,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True,"constant_memory": False})
         workbook.set_calc_mode('auto') 
         worksheet = workbook.add_worksheet()
+        worksheet.set_landscape()
+        worksheet.set_paper(9)
+        worksheet.fit_to_pages(1, 0)
+        worksheet.set_margins(left=0.3, right=0.3, top=0.5, bottom=0.5)
+        worksheet.set_default_row(20)
+        worksheet.set_row(6, 45)
 
         cell_bold = workbook.add_format(
             {"bold": True, "center_across": True, "text_wrap": True, "bottom": True, "locked": True}
@@ -1381,20 +1415,22 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         merge_format = workbook.add_format(
             {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "locked": True}
         )
-        merge_format.set_bg_color('#D9D9D9') 
-        
-        base_style = {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "locked": True}
+        merge_format.set_bg_color('#D9D9D9')
+
+        base_style = {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "text_wrap": True, "locked": True}
 
         format1 = workbook.add_format(base_style); format1.set_bg_color('#D9D9D9')
         format2 = workbook.add_format(base_style); format2.set_bg_color('#C6E0B4')
         format3 = workbook.add_format(base_style); format3.set_bg_color('#FFE699')
         format4 = workbook.add_format(base_style); format4.set_bg_color('#B4C6E7')
 
-        color_formats = [format1, format1, format2, format3, format4, format4] 
-        
+        color_formats = [format1, format1, format2, format3, format4, format4]
+
         cell_formats = {
-            "number": workbook.add_format({"num_format": "#,##0.00","locked": True}),
-            "percent": workbook.add_format({"num_format": "0.00%", "locked": True}),
+            "default": workbook.add_format({"border": 1, "valign": "vcenter", "locked": True}),
+            "number": workbook.add_format({"num_format": "#,##0.00", "border": 1, "valign": "vcenter", "locked": True}),
+            "percent": workbook.add_format({"num_format": "0.00%", "border": 1, "valign": "vcenter", "locked": True}),
+            "text_wrap": workbook.add_format({"text_wrap": True, "border": 1, "valign": "vcenter", "locked": True}),
         }
 
         worksheet.merge_range(
@@ -1449,10 +1485,19 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             
             for field in group_fields:
                 col_index = current_col_index
-                
-                worksheet.write(6, col_index, field.get("name"), header_format) 
-                
-                worksheet.set_column(col_index, col_index, 25)
+
+                worksheet.write(6, col_index, field.get("name"), header_format)
+
+                field_key = field.get("field", "")
+                if field_key == "partner_name":
+                    col_width = 18
+                elif field_key == "index":
+                    col_width = 4
+                elif field.get("format") == "number":
+                    col_width = 11
+                else:
+                    col_width = 10
+                worksheet.set_column(col_index, col_index, col_width)
                 flat_fields.append(field)
                 
                 current_col_index += 1
@@ -1464,17 +1509,28 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         name_columns = flat_fields 
         total_idx = 0
 
+        for index_line, line in enumerate(purchase_book_lines):
+            partner_name = line.get("partner_name") or ""
+            n_lines = max(1, -(-len(partner_name) // 18))
+            row_height = max(20, n_lines * 15)
+            worksheet.set_row(INIT_LINES + index_line, row_height)
+
         for index, field in enumerate(name_columns):
             
             for index_line, line in enumerate(purchase_book_lines):
                 total_idx = (8 + index_line)
                 if field["field"] == "index":
-                    worksheet.write(INIT_LINES + index_line, index, index_line + 1)
+                    worksheet.write(INIT_LINES + index_line, index, index_line + 1, cell_formats.get("default"))
                 else:
-                    cell_format = cell_formats.get(field.get("format"), workbook.add_format({"locked": True}))
-                    worksheet.write(
-                        INIT_LINES + index_line, index, line.get(field["field"]), cell_format
-                    )
+                    if field.get("field") == "partner_name":
+                        cell_format = cell_formats.get("text_wrap")
+                    else:
+                        cell_format = cell_formats.get(field.get("format")) or cell_formats.get("default")
+                    value = line.get(field["field"])
+                    if value is None:
+                        worksheet.write_blank(INIT_LINES + index_line, index, None, cell_format)
+                    else:
+                        worksheet.write(INIT_LINES + index_line, index, value, cell_format)
 
             if field.get("format") == "number":
                 col = utility.xl_col_to_name(index)
@@ -1502,10 +1558,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         is_purchase = self.report == "purchase"
         header_idx = index_to_start + 2
         resume_headers = self.resume_book_headers()
-        
-        # Aumentar el ancho de la columna de descripción (columna B, índice 1)
-        # para mejorar la legibilidad de los nombres en el resumen
-        worksheet.set_column(1, 1, 50)
+
+        resume_name_format = cell_formats.get("text_wrap")
 
         for idx, header in enumerate(resume_headers):
             nidx = idx * 2
@@ -1527,8 +1581,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         for idx, resume in enumerate(resume_columns):
             row_resume = (index_to_start + 4) + idx
 
+            name = resume.get("name") or ""
+            n_lines = max(1, -(-len(name) // 8))
+            worksheet.set_row(row_resume, max(20, n_lines * 14))
+
             worksheet.write(row_resume, 0, idx + 1)
-            worksheet.write(row_resume, 1, resume.get("name"))
+            worksheet.write(row_resume, 1, name, resume_name_format)
 
             total_line = 0
             for idx_line, line in enumerate(resume.get("values")):
