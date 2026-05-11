@@ -13,6 +13,7 @@ import platform
 from functools import reduce
 import traceback
 import subprocess
+import random
 from collections import defaultdict
 from datetime import datetime
 from odoo.exceptions import UserError
@@ -169,12 +170,12 @@ class SerialFiscalDriver(SerialDriver):
     ##
 
     def __init__(self, identifier, device):
+        self.tfhka = None
         super(SerialFiscalDriver, self).__init__(identifier, device)
         self.device_manufacturer = "HKA"
         self.identifier = identifier
         self.device_type = "fiscal_data_module"
         self.device_connection = "serial"
-        self.tfhka = NotImplemented
         self._load_dll()
         self._connection = None
         self._set_actions()
@@ -252,7 +253,7 @@ class SerialFiscalDriver(SerialDriver):
 
         try:
             from clr import AddReference
-            AddReference('TfhkaNet')
+            AddReference(self.dll_path)
             from TfhkaNet.IF.VE import Tfhka
         except Exception as e:
             _logger.error("Error al cargar la DLL o importar Tfhka: %s", e)
@@ -260,16 +261,130 @@ class SerialFiscalDriver(SerialDriver):
 
         self.tfhka = Tfhka()
         _logger.info("DLL TfhkaNet cargada correctamente.")
-
-    def connect(self, port):
+        
+    def connect(
+        self,
+        port,
+        retries=4,
+        base_delay=0.08,
+        backoff=2.0,
+        cap=0.45,
+        jitter=0.04,
+    ):
         """
-        Establece conexión con la impresora fiscal.
+        Establece conexión con la impresora fiscal con backoff exponencial corto.
         """
-        if not self.tfhka.OpenFpCtrl(port):
-            _logger.error("No se pudo abrir el puerto: %s", port)
-        self.port = port
-        _logger.info("Conexión exitosa al puerto %s", port)
+        last_error = False
+        for attempt in range(retries):
+            try:
+                if self.tfhka.OpenFpCtrl(port):
+                    self.port = port
+                    _logger.info("Conexión exitosa al puerto %s", port)
+                    return True
+                _logger.warning(
+                    "No se pudo abrir el puerto %s (intento %s/%s)",
+                    port,
+                    attempt + 1,
+                    retries,
+                )
+            except Exception as err:
+                last_error = err
+                _logger.warning(
+                    "Error al abrir puerto %s (intento %s/%s): %s",
+                    port,
+                    attempt + 1,
+                    retries,
+                    err,
+                )
+            if attempt < retries - 1:
+                sleep_for = min(cap, base_delay * (backoff ** attempt))
+                if jitter and jitter > 0:
+                    sleep_for += random.uniform(0, jitter)
+                time.sleep(sleep_for)
 
+        _logger.error("No se pudo abrir el puerto: %s", port)
+        if last_error:
+            raise UserError(_("No se pudo abrir el puerto fiscal: %s (%s)") % (port, last_error))
+        raise UserError(_("No se pudo abrir el puerto fiscal: %s") % port)
+
+    def get_s1_printer_data_with_retry(
+        self,
+        retries=3,
+        base_delay=0.2,
+        backoff=2.0,
+        cap=0.8,
+        raise_on_error=True,
+        jitter=0.05,
+        timeout_sec=None,
+    ):
+        """Obtiene S1 con reintentos, backoff y timeout global.
+
+        Este wrapper protege la lectura de S1 ante colisiones/transitorios del puerto
+        fiscal. Intenta hasta ``retries`` veces aplicando backoff exponencial
+        (``base_delay`` * ``backoff``^n), limitado por ``cap`` y con ``jitter``.
+
+        Si ``timeout_sec`` está definido, la función corta cuando se agota la
+        ventana total de tiempo (aunque queden intentos).
+
+        :param int retries: número máximo de intentos.
+        :param float base_delay: delay base entre intentos (segundos).
+        :param float backoff: factor exponencial de incremento de delay.
+        :param float cap: tope máximo de espera entre intentos (segundos).
+        :param bool raise_on_error: si True, relanza el último error capturado.
+        :param float jitter: variación aleatoria adicional para evitar sincronía.
+        :param float|None timeout_sec: timeout total acumulado para toda la lectura.
+        :return: objeto S1 cuando hay éxito; ``False`` cuando se agotan intentos/timeout.
+        """
+        last_error = False
+        _logger.info("[MF-S1] Iniciando lectura S1 con retry=%s base_delay=%.3f", retries, base_delay)
+        started_at = time.monotonic()
+        for attempt in range(retries):
+            if timeout_sec is not None:
+                elapsed = time.monotonic() - started_at
+                if elapsed >= timeout_sec:
+                    _logger.error(
+                        "[MF-S1] Timeout alcanzado (%.3fs) antes del intento %s/%s",
+                        timeout_sec,
+                        attempt + 1,
+                        retries,
+                    )
+                    break
+            try:
+                data = self.get_s1_printer_data()
+                if data:
+                    _logger.info(
+                        "[MF-S1] Lectura S1 OK en intento %s/%s | LastInvoice=%s | Serial=%s | Z=%s",
+                        attempt + 1,
+                        retries,
+                        getattr(data, "LastInvoiceNumber", "?"),
+                        getattr(data, "RegisteredMachineNumber", "?"),
+                        getattr(data, "DailyClosureCounter", "?"),
+                    )
+                    return data
+            except Exception as err:
+                last_error = err
+                _logger.warning("[MF-S1] Intento %s/%s falló: %s", attempt + 1, retries, err)
+            if attempt < retries - 1:
+                sleep_for = min(cap, base_delay * (backoff ** attempt))
+                if jitter and jitter > 0:
+                    sleep_for += random.uniform(0, jitter)
+                if timeout_sec is not None:
+                    elapsed = time.monotonic() - started_at
+                    remaining = timeout_sec - elapsed
+                    if remaining <= 0:
+                        _logger.error("[MF-S1] Timeout alcanzado (%.3fs) sin más reintentos", timeout_sec)
+                        break
+                    sleep_for = min(sleep_for, max(0.0, remaining))
+                time.sleep(sleep_for)
+        _logger.error(
+            "[MF-S1] Agotados reintentos/timeout de S1. last_error=%s timeout_sec=%s",
+            last_error,
+            timeout_sec,
+        )
+        if raise_on_error and last_error:
+            raise last_error
+        return False
+    
     def disconnect(self):
         """Cierra la conexión con la impresora fiscal."""
         try:
@@ -308,34 +423,34 @@ class SerialFiscalDriver(SerialDriver):
     def _do_action(self, data):
         """Helper function that calls a specific action method on the device.
 
-            :param data: the `_actions` key mapped to the action method we want to call
-            :type data: string
-            """
+        :param data: the `_actions` key mapped to the action method we want to call
+        :type data: string
+        """
 
-        with self._device_lock:
-            try:
-                result = self._actions[data['action']](data)
-                time.sleep(self._protocol.commandDelay)
-
-                return result 
-
-            except Exception:
-                msg =(f'An error occurred while performing action "{data}" on "{self.device_name}"')
-                _logger.exception(msg)
-                self._status = {'status': self.STATUS_ERROR, 'message_title': msg, 'message_body': traceback.format_exc()}
-                self._push_status()
-            self._status = {'status': self.STATUS_CONNECTED, 'message_title': '', 'message_body': ''}
-            self.data['status'] = self._status
-
+        try:
+            result = self._actions[data['action']](data)
+            time.sleep(self._protocol.commandDelay)
+            return result
+        except Exception:
+            msg =(f'An error occurred while performing action "{data}" on "{self.device_name}"')
+            _logger.exception(msg)
+            self._status = {'status': self.STATUS_ERROR, 'message_title': msg, 'message_body': traceback.format_exc()}
+            self._push_status()
+        self._status = {'status': self.STATUS_CONNECTED, 'message_title': '', 'message_body': ''}
+        self.data['status'] = self._status
+        
     def action(self, data):
         """
         Establece conexión, ejecuta la acción y desconecta.
         """
-        try:
-            self.connect(self.identifier)  # Conecta antes de la acción
-            result = self._do_action(data)
-        finally:
-            self.disconnect()  # Desconecta después de la acción
+        with self._device_lock:
+            try:
+                self.connect(self.identifier)  # Conecta antes de la acción
+                if data.get("action") == "status1":
+                    time.sleep(0.35)
+                result = self._do_action(data)
+            finally:
+                self.disconnect()  # Desconecta después de la acción
 
         return {
             "jsonrpc": "2.0",
@@ -534,8 +649,8 @@ class SerialFiscalDriver(SerialDriver):
                     self.data["value"] = send_result
                     event_manager.device_changed(self)
                     return send_result
-
-                result = self.finalize_invoice(True)
+                
+                result = self.finalize_invoice(invoice)
                 self.data["value"] = result
 
         event_manager.device_changed(self)
@@ -707,17 +822,50 @@ class SerialFiscalDriver(SerialDriver):
 
     def finalize_invoice(self, data):
         """
-        Finaliza el proceso de impresión y devuelve el resultado.
-        :return: Resultado de la operación.
-        """
-        msg = "Factura impresa correctamente"
-        estado_s1 = self.get_s1_printer_data()
+        Finaliza una factura fiscal y resuelve metadata S1 con tolerancia a fallos.
 
+        Flujo:
+        1) Extrae ``order_ref`` (si viene en ``info`` como ``PEDIDO: ...``).
+        2) Intenta leer S1 con política robusta (reintentos + timeout global).
+        3) Si obtiene S1, devuelve tripleta fiscal (sequence/serial_machine/mf_reportz).
+        4) Si no obtiene S1 dentro de la ventana, NO bloquea venta: responde
+           ``valid=True`` con flags ``pending_sync`` para reconciliación posterior.
+
+        :param dict data: payload de acción fiscal recibido desde IoT/POS.
+        :return dict: respuesta final para POS con éxito completo o éxito pendiente de sync.
+        """
+        order_ref = "unknown"
+        try:
+            invoice_data = data.get("data", {}) if isinstance(data, dict) else {}
+            for info_line in invoice_data.get("info", []):
+                if isinstance(info_line, str) and info_line.startswith("PEDIDO:"):
+                    order_ref = info_line.replace("PEDIDO:", "").strip()
+                    break
+        except Exception:
+            pass
+
+        _logger.info("[MF-FINALIZE] Iniciando finalize_invoice para pedido=%s", order_ref)
+        msg = "Factura impresa correctamente"
+        estado_s1 = self.get_s1_printer_data_with_retry(
+            retries=60,
+            base_delay=0.25,
+            cap=1.0,
+            timeout_sec=30.0,
+            raise_on_error=False,
+        )
+        
         if estado_s1:
             number = estado_s1.LastInvoiceNumber
             machine_number = estado_s1.RegisteredMachineNumber
             number_z = estado_s1.DailyClosureCounter + 1
-
+            _logger.info(
+                "[MF-FINALIZE] Pedido=%s | sequence=%s | serial_machine=%s | mf_reportz=%s",
+                order_ref,
+                number,
+                machine_number,
+                number_z,
+            )
+            
             return{
                 "valid": True,
                 "data": {
@@ -729,7 +877,20 @@ class SerialFiscalDriver(SerialDriver):
             }
 
         else:
-            self.data["value"] = {"valid": False, "message": "No se pudo obtener el número de la última factura."}
+            _logger.error(
+                "[MF-FINALIZE] Pedido=%s | No se obtuvo S1 luego de imprimir. Se devuelve respuesta sin metadata fiscal.",
+                order_ref,
+            )
+            self.data["value"] = {
+                "valid": True,
+                "pending_sync": True,
+                "fiscal_pending_sync": True,
+                "fiscal_pending_sync_printed": True,
+                "fiscal_pending_sync_recoverable": True,
+                "fiscal_pending_reason": "mf_s1_missing",
+                "fiscal_pending_error": "No se pudo obtener S1 luego de imprimir el documento.",
+                "message": "Factura impresa, pero sin metadata S1. Requiere sincronización pendiente.",
+            }
             event_manager.device_changed(self)
 
             return self.data["value"]
@@ -1866,10 +2027,18 @@ class SerialFiscalDriver(SerialDriver):
         except serial.SerialException:
             m = None
         return m
-
-    def get_s1_printer_data(self):
+    
+    def get_s1_printer_data(self, data=None):
         """
-        Obtiene los datos del estado S1.
+        Lee el estado S1 directamente desde la impresora fiscal (sin retry).
+
+        Esta función es el acceso "raw" al driver/DLL. Cualquier estrategia de
+        resiliencia (reintentos, backoff, timeout) debe hacerse en
+        ``get_s1_printer_data_with_retry``.
+
+        :param dict|None data: parámetro legado, no utilizado en la lectura actual.
+        :return: objeto S1 retornado por ``self.tfhka.GetS1PrinterData()``.
+        :raises Exception: propaga errores del driver para que el wrapper decida política.
         """
         try:
             data = self.tfhka.GetS1PrinterData()
