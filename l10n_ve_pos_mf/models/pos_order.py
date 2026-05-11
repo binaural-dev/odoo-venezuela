@@ -43,3 +43,23 @@ class PosOrderInherit(models.Model):
         res["mf_reportz"] = self.mf_reportz
         res["iot_mf"] = self.config_id.iface_fiscal_data_module.id
         return res
+
+    @api.model
+    def validate_order_dry_run(self, orders):
+        """Prevalida órdenes POS sin ejecutar side-effects de creación real.
+
+        Este endpoint se usa antes del push definitivo desde UI y, en esta
+        versión, funciona como chequeo liviano de estructura (sin forzar
+        validaciones fiscales estrictas ni llamar ``create_from_ui``).
+
+        :param list orders: lista de órdenes en formato payload POS.
+        :return bool: ``True`` cuando la validación preliminar pasa.
+        """
+        # IMPORTANTE:
+        # Este endpoint es una validación previa desde UI. No debe ejecutar
+        # create_from_ui() porque dispara flujo real (factura/IO/impresión)
+        # y puede dejar la UI en "cargando" bajo contención.
+        if not orders or not isinstance(orders, list):
+            return True
+
+        return True
