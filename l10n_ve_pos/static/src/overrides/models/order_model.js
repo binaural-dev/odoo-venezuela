@@ -427,7 +427,7 @@ patch(Order.prototype, {
   },
 
   get_foreign_total_paid() {
-    return round_di(
+    return round_pr(
       this.paymentlines.reduce(function (sum, paymentLine) {
         if (paymentLine.is_done()) {
           sum += paymentLine.get_foreign_amount();
