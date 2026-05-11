@@ -5,7 +5,9 @@ import { patch } from "@web/core/utils/patch";
 // New orders are now associated with the current table, if any.
 patch(PaymentScreenPaymentLines.prototype, {
 
-  formatLineAmount(paymentline) {    
-    return this.env.utils.formatForeignCurrency(paymentline.amount / this.pos.config.foreign_rate)
+  formatLineAmount(paymentline) {
+    const foreignAmount = paymentline.get_foreign_amount()
+
+    return this.env.utils.formatForeignCurrency(foreignAmount);
   },
 })

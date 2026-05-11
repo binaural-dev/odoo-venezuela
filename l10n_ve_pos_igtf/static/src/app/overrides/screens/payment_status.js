@@ -102,10 +102,4 @@ patch(PaymentScreenStatus.prototype, {
     );
   },
 
-  // get totalDueText() {
-  //   return this.env.utils.formatCurrency(
-  //     this.props.order.get_total_with_igtf()
-  //   );
-  // },
-
 })
