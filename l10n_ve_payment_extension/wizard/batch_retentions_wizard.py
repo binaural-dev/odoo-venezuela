@@ -94,14 +94,7 @@ class BatchRetentionsWizard(models.TransientModel):
         retencion_ids = []
         if not self.group_retentions:
             for rec in lines_to_process:
-                payment_concepts = defaultdict(float)
-                
-                for line in rec.move_id.invoice_line_ids:
-                    product_tmpl = line.product_id.product_tmpl_id
-                    if product_tmpl.type == 'service' and product_tmpl.payment_concept:
-                        concept_id = product_tmpl.payment_concept.id
-                        payment_concepts[concept_id] += line.move_id.amount_total_signed
-                    
+                payment_concepts = rec.move_id._get_payment_concepts_from_invoice()
 
                 if not payment_concepts:
                     continue
@@ -135,22 +128,20 @@ class BatchRetentionsWizard(models.TransientModel):
                 partner_data[p_id]['moves'] |= line.move_id
             
             for partner_id, data in partner_data.items():
-                inv_lines = data['moves'].mapped('invoice_line_ids').filtered(
-                    lambda l: l.product_id.type == 'service' and l.product_id.product_tmpl_id.payment_concept
-                )
+                multi_islr_lines = []
+                for move in data['moves']:
+                    concepts = move._get_payment_concepts_from_invoice()
+                    if concepts:
+                        multi_islr_lines.extend(concepts)
                 
-                concepts_map = defaultdict(float)
-                for iline in inv_lines:
-                    concepts_map[iline.move_id] += iline.product_id.product_tmpl_id.payment_concept.id
-                
-                if not concepts_map:
+                if not multi_islr_lines:
                     continue
+            
 
                 ref_move = data['moves'][0]
                 ctx = {
                     'default_type': ref_move.move_type,
-                    'default_invoice_id': ref_move.id,
-                    'default_islr_lines': concepts_map,
+                    'default_islr_lines': multi_islr_lines,
                     'multi':True
                 }
                 

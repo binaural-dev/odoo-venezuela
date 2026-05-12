@@ -565,13 +565,8 @@ class AccountMoveRetention(models.Model):
                         'target': 'current',
                     }
             
-            payment_concepts = defaultdict(float)
-        
-            for line in self.invoice_line_ids:
-                if line.product_id.product_tmpl_id.type == 'service' and bool(line.product_id.product_tmpl_id.payment_concept):
-                    concept_id = line.product_id.product_tmpl_id.payment_concept.id
-                    payment_concepts[concept_id] += line.move_id.amount_total_signed
-
+            payment_concepts = self._get_payment_concepts_from_invoice()
+                        
             if record.move_type == 'in_invoice':
                 xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_supplier'
             elif record.move_type == 'out_invoice':
@@ -597,6 +592,32 @@ class AccountMoveRetention(models.Model):
             action['target'] = 'current'
             
             return action
+    
+    def _get_payment_concepts_from_invoice(self):
+
+        for rec in self:
+            payment_concepts = []
+
+            valid_lines = rec.invoice_line_ids.filtered(
+                lambda l: l.product_id.product_tmpl_id.type == 'service' and 
+                        l.product_id.product_tmpl_id.payment_concept
+            )
+            use_price_unit = len(valid_lines) > 1
+
+            for line in rec.invoice_line_ids:
+                if line.product_id.product_tmpl_id.type == 'service' and bool(line.product_id.product_tmpl_id.payment_concept):
+                    product_tmpl = line.product_id.product_tmpl_id
+                    if product_tmpl.type == 'service' and product_tmpl.payment_concept:
+
+                        concept_id = product_tmpl.payment_concept.id
+                        base_amount = line.price_unit if use_price_unit else line.move_id.amount_total_signed
+                        payment_concepts.append((
+                            concept_id,
+                            base_amount,
+                            line.id, 
+                        ))
+            return payment_concepts
+        
         
     def auto_create_islr_retention(self):
         for rec in self:
@@ -609,13 +630,7 @@ class AccountMoveRetention(models.Model):
             if not self.partner_id.type_person_id:
                 raise UserError(_("The partner must have a type of person"))
         
-            payment_concepts = defaultdict(float)
-            
-            for line in rec.invoice_line_ids:
-                product_tmpl = line.product_id.product_tmpl_id
-                if product_tmpl.type == 'service' and product_tmpl.payment_concept:
-                    concept_id = product_tmpl.payment_concept.id
-                    payment_concepts[concept_id] += line.move_id.amount_total_signed
+            payment_concepts = rec._get_payment_concepts_from_invoice()
 
             vals = {
                 'partner_id': rec.partner_id.id,

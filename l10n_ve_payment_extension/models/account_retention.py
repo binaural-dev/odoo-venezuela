@@ -1128,23 +1128,28 @@ class AccountRetention(models.Model):
 
         if islr_lines_data and move_id and not multi:
             line_commands = []
-            for concept_id, total_base in islr_lines_data.items():
+            for line_data in islr_lines_data:
+                concept_id, base_amount, invoice_line_id = line_data
                 line_vals = {
                     'move_id': move_id,
-                    'payment_concept_id': int(concept_id),
+                    'payment_concept_id': concept_id, 
                     'invoice_type': str(ret_type),
+                    'invoice_amount': base_amount, 
                 }
                 line_commands.append(Command.create(line_vals))
             res['retention_line_ids'] = line_commands
         
         elif multi:
             line_commands = []
-            for invoice, concept_id in islr_lines_data.items():
+            for line_data in islr_lines_data:
+                concept_id, base_amount, invoice_line_id = line_data
+                actual_move_id = self.env['account.move.line'].browse(invoice_line_id).move_id.id
                 line_vals = {
-                    'move_id': invoice.id,
+                    'move_id': actual_move_id,
                     'payment_concept_id': int(concept_id),
                     'invoice_type': str(ret_type),
-                }
+                    'invoice_amount': base_amount,
+                 }
                 line_commands.append(Command.create(line_vals))
             res['retention_line_ids'] = line_commands
         
