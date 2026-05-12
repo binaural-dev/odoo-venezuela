@@ -23,5 +23,16 @@
                 </xpath>
             </field>
         </record>
+
+        <record id="res_config_settings_view_form_inherit_rates" model="ir.ui.view">
+            <field name="name">res.config.settings.view.form.inherit.rates</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//setting[@id='update_exchange_rates']" position="attributes">
+                    <attribute name="invisible">0</attribute>
+                </xpath>
+            </field>
+        </record>
     </data>
 </odoo>
