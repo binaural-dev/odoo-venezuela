@@ -808,8 +808,8 @@ class AccountMove(models.Model):
                                
                             else:
                                 
-                                igtf_amount = partial_amount * (rec.company_id.igtf_percentage / 100)
-                                amount_base_payment = partial_amount
+                                amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
+                                igtf_amount = igtf_amount 
 
                         if igtf_line and partial:
                             alter_bi_igtf += igtf_amount
