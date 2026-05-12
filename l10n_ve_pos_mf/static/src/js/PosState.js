@@ -269,6 +269,7 @@ patch(PosStore.prototype, {
       }
     }
   },
+
   async push_single_order(order, opts) {
     if (this.useFiscalMachine() && !order.mf_invoice_number) {
 

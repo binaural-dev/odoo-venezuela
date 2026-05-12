@@ -9,66 +9,66 @@ patch(PosOrderAccounting.prototype, {
         return Number.isFinite(numeric) ? numeric : fallback;
     },
 
-    // _hasIgtfPaymentLine() {
-    //     const order = this._getOrder();
-    //     const lines = this._getPaymentLines(order);
-        
-    //     return lines.some((line) => {
-    //         const method =
-    //             typeof order?._get_payment_method_data === "function"
-    //                 ? order._get_payment_method_data(line)
-    //                 : line?.payment_method_id;
-    //         console.log(Boolean(method));
-    //         return Boolean(method?.apply_igtf);
-    //     });
-    // },
+    _hasIgtfPaymentLine() {
+        const order = this._getOrder();
+        const lines = this._getPaymentLines(order);
 
-    // _isIgtfContext() {
-    //     const order = this._getOrder();
-    //     if (!order) {
-    //         return false;
-    //     }
+        return lines.some((line) => {
+            const method =
+                typeof order?._get_payment_method_data === "function"
+                    ? order._get_payment_method_data(line)
+                    : line?.payment_method_id;
+            console.log(Boolean(method));
+            return Boolean(method?.apply_igtf);
+        });
+    },
 
-    //     if (this._hasIgtfPaymentLine()) {
-    //         return true;
-    //     }
+    _isIgtfContext() {
+        const order = this._getOrder();
+        if (!order) {
+            return false;
+        }
 
-    //     const totalDue =
-    //         typeof order.totalDue === "function"
-    //             ? this._toNumber(order.totalDue(), 0)
-    //             : this._toNumber(order.total_due, 0);
-    //     const baseTotal =
-    //         typeof order.get_total_with_tax === "function"
-    //             ? this._toNumber(order.get_total_with_tax(), 0)
-    //             : this._toNumber(order.total_with_tax, 0);
+        if (this._hasIgtfPaymentLine()) {
+            return true;
+        }
 
-    //     return Math.abs(totalDue - baseTotal) > 0.000001;
-    // },
+        const totalDue =
+            typeof order.totalDue === "function"
+                ? this._toNumber(order.totalDue(), 0)
+                : this._toNumber(order.total_due, 0);
+        const baseTotal =
+            typeof order.get_total_with_tax === "function"
+                ? this._toNumber(order.get_total_with_tax(), 0)
+                : this._toNumber(order.total_with_tax, 0);
 
-    // _getPaymentLines(order = this._getOrder()) {
-    //     const orderLines =
-    //         (typeof order?._get_order_payment_lines === "function" &&
-    //             order._get_order_payment_lines()) ||
-    //         order?.get_paymentlines?.() ||
-    //         order?.paymentlines?.models ||
-    //         order?.paymentlines ||
-    //         order?.payment_ids ||
-    //         order?.payment_lines ||
-    //         [];
+        return Math.abs(totalDue - baseTotal) > 0.000001;
+    },
 
-    //     if (Array.isArray(orderLines) && orderLines.length) {
-    //         return orderLines;
-    //     }
+    _getPaymentLines(order = this._getOrder()) {
+        const orderLines =
+            (typeof order?._get_order_payment_lines === "function" &&
+                order._get_order_payment_lines()) ||
+            order?.get_paymentlines?.() ||
+            order?.paymentlines?.models ||
+            order?.paymentlines ||
+            order?.payment_ids ||
+            order?.payment_lines ||
+            [];
 
-    //     const accountingLines =
-    //         this.paymentlines?.models ||
-    //         this.paymentlines ||
-    //         this.payment_ids ||
-    //         this.payment_lines ||
-    //         [];
+        if (Array.isArray(orderLines) && orderLines.length) {
+            return orderLines;
+        }
 
-    //     return Array.isArray(accountingLines) ? accountingLines : [];
-    // },
+        const accountingLines =
+            this.paymentlines?.models ||
+            this.paymentlines ||
+            this.payment_ids ||
+            this.payment_lines ||
+            [];
+
+        return Array.isArray(accountingLines) ? accountingLines : [];
+    },
 
     get amountPaid() {
         return this._toNumber(super.amountPaid, 0);

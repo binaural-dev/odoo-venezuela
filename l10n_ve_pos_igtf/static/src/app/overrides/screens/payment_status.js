@@ -21,11 +21,11 @@ patch(PaymentScreenStatus.prototype, {
   get biAmount() {
     return this.env.utils.formatCurrency(this.props.order.get_bi_igtf(), 'Product Price')
   },
-  
+
   get igtfForeignAmount() {
     return this.env.utils.formatForeignCurrency(this.props.order.get_foreign_igtf_amount(), 'Product Price')
   },
-  
+
   get isIgtf() {
     let payment_lines = this.props.order.get_paymentlines();
     let is_igtf = false;
@@ -60,7 +60,7 @@ patch(PaymentScreenStatus.prototype, {
 
     return this.env.utils.formatCurrency(igtfAmount, 'Product Price');
   },
-  
+
   /**
    * Computes the suggested IGTF amount based on the order total and configured percentage.
    */
@@ -69,14 +69,13 @@ patch(PaymentScreenStatus.prototype, {
     var result = round_pr(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), rounding);
     return this.env.utils.formatCurrency(result);
   },
-  
+
   get foreignTotalDueTextWithIGTF() {
-    
+    // :INFO estoy sobreescrbiendo este metodo basado en el monto parent nativo de la 19
     return this.env.utils.formatForeignCurrency(
       (this.props.order.get_foreign_total_with_tax() * ((this.config.igtf_percentage / 100) + 1)) + this.props.order.get_foreign_rounding_applied()
     );
   },
-
 
   get totalDueTextWithIGTF() {
 
@@ -87,16 +86,14 @@ patch(PaymentScreenStatus.prototype, {
         (this.props.order.get_total_with_tax()));
     } else {
       return this.env.utils.formatCurrency(
-        (this.props.order.get_total_without_igtf())
-      );
+        (this.props.order.get_total_without_igtf()));
     }
 
   },
 
   get totalDueTextWithIGTFDisplay() {
-    let rounding = this.pos.currency.rounding;
     let result = this.props.order.get_total_with_tax() * (this.config.igtf_percentage / 100);
-   
+
     return this.env.utils.formatCurrency(
       (this.props.order.get_total_with_tax() + result)
     );
