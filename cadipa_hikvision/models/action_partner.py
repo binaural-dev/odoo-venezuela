@@ -174,11 +174,18 @@ class ActionPartner(models.Model):
             [("default_membership_access_level", "=", True)]
         )
 
-        if not default_access_levels:
+        access_level_ids_to_assign = []
+        if self.membership_type_plan.hikcentral_access_level_ids:
+            access_level_ids_to_assign = self.membership_type_plan.hikcentral_access_level_ids.ids
+        elif default_access_levels:
+            access_level_ids_to_assign = default_access_levels.ids
+
+        if not access_level_ids_to_assign:
             raise UserError(
                 _(
-                    "No default HikCentral access levels for memberships defined. Please set one access level as default for memberships."
+                    "No HikCentral access levels defined for membership plan '%s' and no default access levels set."
                 )
+                % self.membership_type_plan.name
             )
 
         return {
@@ -188,7 +195,7 @@ class ActionPartner(models.Model):
             "comment": self.number,
             "end_date": end_date_db,
             "department_id": department_id,
-            "access_level_ids": [(6, 0, default_access_levels.ids)],
+            "access_level_ids": [(6, 0, access_level_ids_to_assign)],
         }
 
 
