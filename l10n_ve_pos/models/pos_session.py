@@ -606,6 +606,9 @@ class PosSession(models.Model):
             line_ids = self._line_vals_move_cross_payment_incoming(move, amounts)
         else:
             line_ids = self._line_vals_move_cross_payment_outgoing(move, amounts)
+        if not line_ids:
+            return move
+            
         move_ref_value = _("Cross Move per Operation - Session: %s") % self.name
         move = self.env["account.move"].create(
             {
@@ -765,7 +768,7 @@ class PosSession(models.Model):
                     ),
                 ]
             )
-            return move_lines
+        return move_lines
 
     def _line_vals_move_cross_outgoing_aggregated(self, payment_method, amounts):
         """
@@ -842,7 +845,7 @@ class PosSession(models.Model):
                 ]
             )
 
-            return move_lines
+        return move_lines
     
     def _line_vals_move_cross_payment_incoming(self, move, amounts):
         """
