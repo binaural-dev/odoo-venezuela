@@ -380,6 +380,8 @@ class SerialFiscalDriver(SerialDriver):
                 "PE14PDV 04",
                 "PE15CREDITO 01",
                 "PE16CREDITO 02",
+                "PE17CREDITO 03",
+                "PE18CREDITO 04",
                 "PE19DIVISA 02",
                 "PE20DIVISA 01",
                 "PE21ZELLE",
@@ -629,27 +631,31 @@ class SerialFiscalDriver(SerialDriver):
             cmd.append("3")
             
             payment_lines = self.group_payments(invoice_data["payment_lines"])
+            
+            closing_method = "01"
+            if payment_lines:
+                closing_payment = max(payment_lines, key=lambda x: x["amount"])
+                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
  
             for item in payment_lines:
-                if item["amount"] > 0 and item["payment_method"] != "01":
+                method_code = str(item["payment_method"]).strip().zfill(2)
+                if item["amount"] > 0 and method_code != closing_method:
                     
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     
                     payment_command = str(
                         "2"
-                        + str(item["payment_method"])
+                        + method_code
                         + str(amount_i_filled)
                         + str(amount_d)
                     )
                     cmd.append(payment_command)
-                else:
-                    continue
             
             if invoice_data.get("has_cashbox", False):
                 cmd.append("w")
             
-            cmd.append(str("101"))
+            cmd.append(str("1" + closing_method))
             
             if len(invoice_data.get("aditional_lines", [])) > 0:
                 for index, aditional_lines in enumerate(invoice_data.get("aditional_lines")):
@@ -689,7 +695,7 @@ class SerialFiscalDriver(SerialDriver):
             for command in cmd:
                 result = self.send_command(command)
                 
-                if not result and command not in ["101","199"]:
+                if not result and not (command.startswith("1") and len(command) == 3):
                     msg.append(f"Fallo al enviar comando: {command}")
                     self.send_command("199")
                     return {"valid": False, "message": msg}
@@ -928,28 +934,26 @@ class SerialFiscalDriver(SerialDriver):
             for item in new_payment_lines:
                 item["amount"] = abs(item["amount"])
 
-            if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
-                cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
-            elif len(invoice["payment_lines"]) > 1 and len(
-                list(filter(filter_unique_type_method, invoice["payment_lines"]))
-            ) == len(invoice["payment_lines"]):
-                cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
-            else:
-                for item in new_payment_lines:
+            closing_method = "01"
+            if new_payment_lines:
+                closing_payment = max(new_payment_lines, key=lambda x: x["amount"])
+                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
+
+            for item in new_payment_lines:
+                method_code = str(item["payment_method"]).strip().zfill(2)
+                if item["amount"] > 0 and method_code != closing_method:
                     amount_i, amount_d = self.split_amount(
                         item["amount"],
                         dec=max_payment_amount_decimal,
                     )
                     cmd.append(
                         "2"
-                        + str(
-                            (item["payment_method"] or "01")
-                            + amount_i.zfill(max_payment_amount_int)
-                            + amount_d
-                        )
+                        + method_code
+                        + amount_i.zfill(max_payment_amount_int)
+                        + amount_d
                     )
 
-            cmd.append(str("101"))
+            cmd.append(str("1" + closing_method))
             if len(invoice.get("aditional_lines", [])) > 0:
                 for index, aditional_lines in enumerate(invoice.get("aditional_lines")):
                     cmd.append(f"i{str(index).zfill(2)}{aditional_lines}")
@@ -1081,12 +1085,19 @@ class SerialFiscalDriver(SerialDriver):
             
             payment_lines = self.group_payments(invoice.get("payment_lines", []))
             payment_commands = []
+            
+            closing_method = "01"
+            if payment_lines:
+                closing_payment = max(payment_lines, key=lambda x: x["amount"])
+                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
+
             for item in payment_lines:
                 _logger.info("ITEM : %s", item)
-                if item["amount"] > 0 and item["payment_method"] != "01":
+                method_code = str(item["payment_method"]).strip().zfill(2)
+                if item["amount"] > 0 and method_code != closing_method:
                     amount_i, amount_d = self.split_amount(item["amount"], dec=2)  
                     amount_i_filled = amount_i.zfill(10)  
-                    payment_command = f"2{item['payment_method']}{amount_i_filled}{amount_d}"
+                    payment_command = f"2{method_code}{amount_i_filled}{amount_d}"
                     payment_commands.append(payment_command)
 
             cmd2 = [
@@ -1096,7 +1107,7 @@ class SerialFiscalDriver(SerialDriver):
                     cmd_serial,
                     cmd_vat,
                     cmd_name
-                ] + aditional_lines + product_lines + ['3'] + payment_commands + ['101', '199']
+                ] + aditional_lines + product_lines + ['3'] + payment_commands + [str("1" + closing_method), '199']
             
             status = self.ReadFpStatus(True)
             if status["data"]["error"]["code"] != "0":
