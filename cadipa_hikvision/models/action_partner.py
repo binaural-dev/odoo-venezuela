@@ -1,6 +1,8 @@
 from odoo import models, api, fields, _
 from odoo.exceptions import ValidationError, UserError
 from dateutil.relativedelta import relativedelta
+from datetime import datetime, time as py_time
+from zoneinfo import ZoneInfo
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -141,6 +143,15 @@ class ActionPartner(models.Model):
                 fields.Date.today() + relativedelta(years=1)
             )
 
+        vz_tz = ZoneInfo("America/Caracas")
+        utc_tz = ZoneInfo("UTC")
+
+        start_dt_naive = datetime.combine(start_date, py_time(0, 0, 0))
+        start_date_db = start_dt_naive.replace(tzinfo=vz_tz).astimezone(utc_tz).replace(tzinfo=None)
+
+        end_dt_naive = datetime.combine(end_date, py_time(23, 59, 59))
+        end_date_db = end_dt_naive.replace(tzinfo=vz_tz).astimezone(utc_tz).replace(tzinfo=None)
+
         default_department = HikDepartments.search(
             [("default_membership_dept", "=", True)], limit=1
         )
@@ -180,9 +191,9 @@ class ActionPartner(models.Model):
         return {
             "partner_id": self.owner_id.id,
             "is_visitor": False,
-            "start_date": start_date,
+            "start_date": start_date_db,
             "comment": self.number,
-            "end_date": end_date,
+            "end_date": end_date_db,
             "department_id": department_id,
             "access_level_ids": [(6, 0, access_level_ids_to_assign)],
         }
