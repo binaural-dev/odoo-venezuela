@@ -14,3 +14,8 @@ class MembershipTypePlan(models.Model):
         "hikcentral.department",
         help="The Hikcentral department associated with this membership type plan.",
     )
+    hikcentral_access_level_ids = fields.Many2many(
+        "hikcentral.access.level",
+        string="HikCentral Access Levels",
+        help="Access levels assigned to members of this plan by default.",
+    )

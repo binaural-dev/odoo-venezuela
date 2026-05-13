@@ -9,6 +9,7 @@
             <field name="membership_sequence" position="after">
                 <group name="hikcentral_settings" string="Hikcentral Settings">
                     <field name="hikcentral_department_id" required="1" options="{'no_create':1}"/>
+                    <field name="hikcentral_access_level_ids" widget="many2many_tags" options="{'no_create':1}"/>
                 </group>
             </field>
         </field>
