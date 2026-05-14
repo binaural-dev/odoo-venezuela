@@ -9,6 +9,13 @@
 		    <field name="ciu_ids" options="{'no_create': True}"/>
 		</page>
 	    </notebook>
+
+        <xpath expr="//field[@name='property_account_expense_id']" position="after">
+            <field name="payment_concept" invisible="type != 'service'"/>
+            <field name="type" invisible="1"/>
+        </xpath>
         </field>
     </record>
+
+    
 </odoo>

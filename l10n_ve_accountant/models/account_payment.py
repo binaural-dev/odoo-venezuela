@@ -104,15 +104,15 @@ class AccountPayment(models.Model):
 
     foreign_amount = fields.Monetary('foreign_amount',currency_field="foreign_currency_id",  compute="_compute_foreign_amount", store=True, readonly=False)
 
-    @api.depends("amount", "currency_id")
+    @api.depends("amount", "currency_id","date")
     def _compute_foreign_amount(self):
         for payment in self:
-            if payment.currency_id != payment.foreign_currency_id:
+            if payment.date and payment.currency_id != payment.foreign_currency_id:
                 payment.foreign_amount = payment.currency_id._convert(
                     payment.amount,
                     payment.foreign_currency_id,
                     payment.company_id,
-                    payment.date or fields.Date.today(),
+                    payment.date 
                 )
             else:
                 payment.foreign_amount = 0.0

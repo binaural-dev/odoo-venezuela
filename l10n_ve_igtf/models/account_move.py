@@ -452,12 +452,13 @@ class AccountMove(models.Model):
             )
         
         vef_line1 = payment.currency_id.round(_to_vef(amount_line1))
-        vef_line2 = payment.currency_id.round(_to_vef(amount_line2))
+        vef_igtf = payment.currency_id.round(_to_vef(igtf_amount))
 
-        if abs(vef_line1) > abs(self.amount_residual_signed) and self.invoice_date == payment.date:
+        vef_line2 = abs(vef_line1) - abs(vef_igtf)
+
+        if abs(vef_line1) > abs(self.amount_residual_signed) and self.invoice_date == payment.date and igtf_amount == 0.0:
             vef_line2 = abs(self.amount_residual_signed)
 
-        vef_igtf = abs(vef_line1) - abs(vef_line2)
         vef_igtf = float(float_repr(vef_igtf, precision_digits= payment.currency_id.decimal_places))
 
         amount_currency_igtf = abs(amount_line1) - abs(amount_line2)
@@ -513,7 +514,6 @@ class AccountMove(models.Model):
             "account_id": account_rp,
             "amount_currency": amount_line2,
             "currency_id": payment.currency_id.id,
-            #line_2:vef_line2,
             **common_vals
         }))
 
@@ -523,8 +523,6 @@ class AccountMove(models.Model):
             "account_id": account_adv,
             "amount_currency": amount_line1,
             "currency_id": payment.currency_id.id,
-            #"debit": vef_line1 if is_customer else 0.0,
-            #"credit": vef_line1 if not is_customer else 0.0,
             **common_vals
         }))
 
@@ -535,9 +533,14 @@ class AccountMove(models.Model):
                 "account_id": igtf_account,
                 "amount_currency": amount_currency_igtf,
                 "currency_id": payment.currency_id.id,
-                #igtf_line:vef_igtf,
+                igtf_line:vef_igtf,
                 **common_vals
             }))
+
+            line_vals[0][2][line_2] = vef_line2
+    
+            line_vals[1][2]["debit"] = vef_line1 if is_customer else 0.0
+            line_vals[1][2]["credit"] = vef_line1 if not is_customer else 0.0
 
         # --- Creación del Asiento ---
         advance_journal = self.env.company.advance_payment_igtf_journal_id
@@ -818,7 +821,7 @@ class AccountMove(models.Model):
                     total_bi_igtf += amount_base_payment
 
                     date_conver = False
-                    if payment_move.date <= rec.invoice_date:
+                    if rec.invoice_date != False and payment_move.date <= rec.invoice_date:
                         date_conver = rec.invoice_date
                     else:
                         date_conver = payment_move.date
