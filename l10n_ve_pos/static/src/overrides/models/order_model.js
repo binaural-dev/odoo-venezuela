@@ -398,7 +398,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      this.pos.dp["Foreign Product Price"],
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_change(paymentline) {
@@ -417,7 +417,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_di(Math.max(0, change), this.pos.dp["Foreign Product Price"]);
+    return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
   },
   get_foreign_due(paymentline) {
     if (!paymentline) {
@@ -436,7 +436,7 @@ patch(Order.prototype, {
         }
       }
     }
-    return round_di(due, this.pos.dp["Foreign Product Price"]);
+    return round_pr(due, this.pos.foreign_currency.rounding);
   },
 
   get_qty_products() {
