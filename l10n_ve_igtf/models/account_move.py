@@ -734,7 +734,7 @@ class AccountMove(models.Model):
     def compute_bi_igtf(self):
         for rec in self:
             if abs(rec.amount_total_signed) > 0 or rec.payment_state in ['paid','in_payment']: 
-                rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
+                rec.igtf_top_aply = rec.currency_id.round(abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100))
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
                 final_payment_moves = receivable_payable_lines.reconciled_lines_excluding_exchange_diff_ids.mapped('move_id')
@@ -746,56 +746,51 @@ class AccountMove(models.Model):
                 alter_bi_igtf = 0.0
                 foreign_bi_igtf = 0.0
                 bank_amount = 0.0
-
                 target_account = False
-
                 partial_amount = 0.0
 
                 partner_context = rec.partner_id.with_company(rec.company_id)
                 for payment_move in final_payment_moves:
-                    igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
-                    bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.account_type in ['asset_cash','asset_current','liability_current','asset_receivable'])
-                    
-                    bank_amount = 0.0
-                    igtf_amount = 0.0
-                    target_account = False
-                    amount_base_payment = 0.0
-                    if bank_line:
+                    if rec.move_type in ['out_invoice', 'out_refund']:
+                        target_account = partner_context.property_account_receivable_id
+                    else:
+                        target_account = partner_context.property_account_payable_id
 
-                        if rec.move_type in ['out_invoice', 'out_refund']:
-                            target_account = partner_context.property_account_receivable_id
-                        else:
-                            target_account = partner_context.property_account_payable_id
+                    igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
+                    partner_line = payment_move.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
+                    bank_line = payment_move.line_ids.filtered(lambda line: line.account_id.id not in partner_line.mapped('account_id').ids and line.account_id.id not in igtf_line.mapped('account_id').ids)
+                    
+                    igtf_amount = 0.0
+                    amount_base_payment = 0.0
+                    if bank_line and partner_line:
 
                         factura_line = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
 
-                        pago_line = payment_move.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
-                        
                         partial = self.env['account.partial.reconcile'].search([
                             '|',
-                            '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', pago_line.ids),
-                            '&', ('debit_move_id', '=', pago_line.ids), ('credit_move_id', '=', factura_line.id)
+                            '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', partner_line.ids),
+                            '&', ('debit_move_id', '=', partner_line.ids), ('credit_move_id', '=', factura_line.id)
                         ])
-                        
+                        bank_amount = abs(bank_line[0].amount_currency)
+                        bank_amount_balance = abs(bank_line[0].balance)
                         if partial:
                             partial_amount = sum(partial.mapped('amount'))
-                            bank_amount = partial_amount
                         
                         if igtf_line and partial:
                         
                             igtf_amount = abs(igtf_line[0].balance)
-                            partial_amount = partial_amount
-                            bank_amount = partial_amount
+                            igtf_amount_currency = abs(igtf_line[0].amount_currency)
+                            partial_amount = sum(partial.mapped('amount'))
                         
                         if not igtf_line and bank_line and partial:
-                            igtf_top += bank_amount
+                            igtf_top += partial_amount
                             
                         
 
                         if igtf_line and bank_line and partial:
                             if payment_move.origin_payment_id and payment_move.origin_payment_id.reconciled_invoices_count > 1:
 
-                                amount_base_payment = bank_amount
+                                amount_base_payment = partial_amount
 
                             
                             elif (bank_amount * (rec.company_id.igtf_percentage / 100)) < igtf_amount:
@@ -809,31 +804,48 @@ class AccountMove(models.Model):
                                 
                                 if 'pos_payment_ids' in bank_line[0].move_id._fields:
                                     if bank_line[0].move_id.pos_payment_ids:
-                                        amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
+                                        amount_base_payment = rec.company_id.currency_id.round(igtf_amount / (rec.company_id.igtf_percentage / 100))
+
+                            elif  rec.company_id.currency_id.round(partial_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
+                                    
+                                amount_base_payment = partial_amount
+                                igtf_amount = amount_base_payment * (rec.company_id.igtf_percentage / 100)
+                               
                             else:
-                                
-                                amount_base_payment = igtf_amount / (rec.company_id.igtf_percentage / 100)
+                                if rec.company_id.currency_id.round(bank_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount_currency:
+                                    
+                                    amount_base_payment = bank_amount_balance
+                                    igtf_amount = igtf_amount 
+                                else:
+                                    amount_base_payment = partial_amount
+                                    igtf_amount = igtf_amount 
 
                         if igtf_line and partial:
                             alter_bi_igtf += igtf_amount
-                            
-                    total_bi_igtf += amount_base_payment
 
                     date_conver = False
+
                     if rec.invoice_date != False and payment_move.date <= rec.invoice_date:
                         date_conver = rec.invoice_date
                     else:
                         date_conver = payment_move.date
+
+                    total_bi_igtf += amount_base_payment
+
+                    if total_bi_igtf > rec.amount_total_signed:
+                        total_bi_igtf = rec.amount_total_signed 
 
                     foreign_bi_igtf += rec.company_id.currency_id._convert(
                         amount_base_payment, 
                         rec.currency_id, 
                         rec.company_id, 
                         date_conver,
-                        round = False
                     )
-                
-                
+
+                    if foreign_bi_igtf > rec.amount_total:
+                        foreign_bi_igtf = rec.amount_total 
+
+
                 apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
                 rec.igtf_top_aply = apply
                 rec.alter_bi_igtf = alter_bi_igtf
