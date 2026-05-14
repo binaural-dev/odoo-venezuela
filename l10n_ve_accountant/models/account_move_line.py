@@ -327,21 +327,6 @@ class AccountMoveLine(models.Model):
         res["foreign_amount"] = foreign_amount
         return res
 
-    def _prepare_analytic_lines(self):
-        """
-        We overwrote the main preparer to clean the distribution JSON and avoid errors caused by the POS.
-        """
-        self.ensure_one()
-        if self.analytic_distribution:
-            clean_distribution = {
-                key: value 
-                for key, value in self.analytic_distribution.items()
-                if key and str(key) != 'False'
-            }
-            self.analytic_distribution = clean_distribution
-                
-        return super()._prepare_analytic_lines()
-
     @api.model
     def _prepare_move_line_residual_amounts(
         self,
