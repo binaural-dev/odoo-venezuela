@@ -30,3 +30,12 @@ class Product(models.Model):
                 raise ValidationError(
                     _("You cannot select more than one CIU when you have just one subsidiary")
                 )
+            
+    
+    payment_concept = fields.Many2one('payment.concept', string='Islr retention concept')
+
+    @api.onchange('payment_concept','type')
+    def _onchange_payment_concept(self):
+        for rec in self:
+            if rec.type != 'service':
+                rec.payment_concept = False

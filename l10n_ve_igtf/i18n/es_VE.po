@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20260107\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260324\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-11 18:37+0000\n"
-"PO-Revision-Date: 2026-03-11 18:37+0000\n"
+"POT-Creation-Date: 2026-04-01 18:10+0000\n"
+"PO-Revision-Date: 2026-04-01 18:10+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -226,6 +226,7 @@ msgstr "Dominio cuentas destino"
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__display_name
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__display_name
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_partner__display_name
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_wizard_accounting_reports__display_name
 msgid "Display Name"
 msgstr "Nombre en pantalla"
 
@@ -266,6 +267,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__id
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__id
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_partner__id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_wizard_accounting_reports__id
 msgid "ID"
 msgstr ""
 
@@ -447,6 +449,18 @@ msgstr "No se encontró ninguna línea de cuenta a cobrar/pagar en la factura."
 #: code:addons/l10n_ve_igtf/models/account_move.py:0
 msgid "No associated Payment record found."
 msgstr "No se encontró ningún registro de pago asociado."
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_igtf_purchase_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_igtf_purchase_order
+msgid "Not Show Igtf Purchase Order"
+msgstr "No mostrar IGTF (Compras Nacionales)"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__not_show_igtf_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__not_show_igtf_sale_order
+msgid "Not Show Igtf Sale Order"
+msgstr "No mostrar IGTF (Ventas)"
 
 #. module: l10n_ve_igtf
 #. odoo-python
@@ -714,3 +728,45 @@ msgstr "Activar revalorización por defecto."
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__keep_alter_value_vef
 msgid "Keep Amount in alter value"
 msgstr "Activar revalorización"
+
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "You have"
+msgstr "Tiene"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding credits"
+msgstr "créditos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding debits"
+msgstr "débitos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "advances"
+msgstr "anticipos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "listed below for this customer."
+msgstr "que se muestran a continuación para este cliente."
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "listed below for this vendor."
+msgstr "que se muestran a continuación para este proveedor."
+
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding credits and advances"
+msgstr "créditos y anticipos pendientes"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
+msgid "outstanding debits and advances"
+msgstr "débitos y anticipos pendientes"

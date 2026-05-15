@@ -1,8 +1,21 @@
 <odoo>
     <record id="group_pricelist_change_permission" model="res.groups">
         <field name="name">Pricelist Change Permission</field>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
+
+    <record id="group_pricelist_change_permission_purchase" model="res.groups">
+        <field name="name">Pricelist Change Permission purchase</field>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+    
+    <record id="group_pricelist_change_permission_sale" model="res.groups">
+        <field name="name">Pricelist Change Permission Sale</field>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
     <record id="group_pricelist_see_permission" model="res.groups">
         <field name="name">Pricelist See Permission</field>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 </odoo>

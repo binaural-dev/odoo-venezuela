@@ -102,6 +102,23 @@ class AccountPayment(models.Model):
     custom_rate_currency_name = fields.Char(compute="_compute_rate_currency_name")
     company_currency_symbol = fields.Char(related="company_id.currency_id.symbol")
 
+    foreign_amount = fields.Monetary('foreign_amount',currency_field="foreign_currency_id",  compute="_compute_foreign_amount", store=True, readonly=False)
+
+    @api.depends("amount", "currency_id","date")
+    def _compute_foreign_amount(self):
+        for payment in self:
+            if payment.date and payment.currency_id != payment.foreign_currency_id:
+                payment.foreign_amount = payment.currency_id._convert(
+                    payment.amount,
+                    payment.foreign_currency_id,
+                    payment.company_id,
+                    payment.date 
+                )
+            else:
+                payment.foreign_amount = 0.0
+
+
+
     @api.depends("company_id", "currency_id")
     def _compute_rate_currency_name(self):
         for payment in self:

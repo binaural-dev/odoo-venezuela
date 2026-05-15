@@ -7,9 +7,9 @@ from . import (
     res_partner,
     stock_move,
     stock_picking,
+    stock_location,
     account_move,
     account_move_line,
     stock_move_line,
     stock_warehouse,
-    stock_location,
 )
