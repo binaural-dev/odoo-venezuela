@@ -110,9 +110,7 @@ class AccountMoveLine(models.Model):
         for line in self:
            
             if line.price_unit and line.foreign_inverse_rate:
-                if line._origin.price_unit != line.price_unit or line.foreign_inverse_rate != line._origin.foreign_inverse_rate:
-                   
-                    line.foreign_price = line.price_unit * line.foreign_inverse_rate
+                line.foreign_price = line.price_unit * line.foreign_inverse_rate
             else:
                 line.foreign_price = 0.0
 
@@ -737,8 +735,8 @@ class AccountMoveLine(models.Model):
             residual = line.balance - debit_amount + credit_amount
             residual_currency = line.amount_currency - debit_amount_currency + credit_amount_currency
             
-            line.amount_residual = comp_curr.round(residual)
-            line.amount_residual_currency = foreign_curr.round(residual_currency)
+            line.amount_residual = residual
+            line.amount_residual_currency = residual_currency
             # Para determinar si está conciliado, usamos una tolerancia mínima 
             # en lugar de un cero absoluto, o comparamos directamente.
             line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
