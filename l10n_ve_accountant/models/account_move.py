@@ -1561,4 +1561,4 @@ class AccountMove(models.Model):
     def _unlink_except_posted_or_was_posted(self):
         for move in self:
             if move.posted_before and not self._context.get('force_delete'):
-                raise UserError(_("You can't delete a posted or cancel journal item. Don’t play games with your accounting records; reset the journal entry to draft before deleting it."))
+                raise UserError(_("You cannot delete a journal item that is posted, cancelled, or has been previously posted."))

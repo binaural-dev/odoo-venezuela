@@ -1768,10 +1768,5 @@ msgstr "Importe adeudado"
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
-msgid ""
-"You can't delete a posted or cancel journal item. Don’t play games with your "
-"accounting records; reset the journal entry to draft before deleting it."
-msgstr ""
-"No puede eliminar un asiento contable publicado o cancelado. No tome a la ligera sus "
-"registros contables; reestablezca el asiento contable a borrador antes de "
-"eliminarlo."
+msgid "You cannot delete a journal item that is posted, cancelled, or has been previously posted."
+msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente publicados."
