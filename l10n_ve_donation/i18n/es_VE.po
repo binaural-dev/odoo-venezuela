@@ -465,3 +465,11 @@ msgstr "de"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
 msgid "días del mes de"
 msgstr "días del mes de"
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_warehouse.py:0
+#, python-format
+msgid "There can only be one donation warehouse per company/subsidiary."
+msgstr "Solo puede haber un almacén de donaciones por empresa/subsidiaria."
+

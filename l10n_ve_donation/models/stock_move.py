@@ -49,11 +49,13 @@ class StockMove(models.Model):
         }
 
         if is_donation:
+            scrap_reason = self.filtered(lambda m: m.scrap_id and m.scrap_id.donation_reason).mapped('scrap_id.donation_reason')
+            ref = ", ".join(scrap_reason) if scrap_reason else "Donación por Desecho"
             move_vals.update(
                 {
                     "is_donation": True,
                     "partner_id": company_partner.id,
-                    "ref": "Donación por Desecho",
+                    "ref": ref,
                 }
             )
 

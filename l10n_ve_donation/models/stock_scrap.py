@@ -8,6 +8,7 @@ class StockScrap(models.Model):
     _inherit = 'stock.scrap'
 
     is_donation = fields.Boolean(string='Is Donation', default=False)
+    donation_reason = fields.Char(string='Donation Reason')
 
     scrap_location_domain = fields.Char(
         string="Picking Type Domain",

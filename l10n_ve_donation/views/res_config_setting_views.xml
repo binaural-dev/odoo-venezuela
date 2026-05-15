@@ -16,10 +16,6 @@
                             <div class="mt16">
                                 <field name="donation_account_id"/>
                             </div>
-                            <div class="mt16">
-                                <label for="account_stock_journal_id"/>
-                                <field name="account_stock_journal_id"/>
-                            </div>
                         </div>
                     </div>
                 </div>

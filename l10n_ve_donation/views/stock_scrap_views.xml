@@ -6,6 +6,7 @@
     <field name="arch" type="xml">
         <xpath expr="//field[@name='product_id']" position="after">
             <field name="is_donation" invisible="not is_donation" readonly="1"/>
+            <field name="donation_reason" string="Motivo de Donación" invisible="not is_donation" required="is_donation"/>
         </xpath>
         <xpath expr="//field[@name='scrap_location_id']" position="attributes">
             <attribute name="domain">scrap_location_domain</attribute>
@@ -16,7 +17,7 @@
             <div class="o_td_label">
                 <label for="scrap_location_id" string="Scrap Location" style="font-weight:bold;"
                     invisible="is_donation"/>
-                <label for="scrap_location_id" string="Donation Location" style="font-weight:bold;"
+                <label for="scrap_location_id" string="Localizacion de Donación" style="font-weight:bold;"
                     invisible="not is_donation"/>
             </div>
         </xpath>
