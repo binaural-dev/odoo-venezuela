@@ -917,7 +917,7 @@ class PosSession(models.Model):
                 ]
             )
 
-            return move_lines
+        return move_lines
 
     def _line_vals_move_cross_payment_outgoing(self, move, amounts):
         """
@@ -994,4 +994,4 @@ class PosSession(models.Model):
                 ]
             )
 
-            return move_lines
+        return move_lines
