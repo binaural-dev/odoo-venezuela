@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 import logging
 
@@ -229,8 +230,19 @@ class AccountPayment(models.Model):
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
 
     def action_post(self):
+        # Validate that bank payments have a payment account configured on their method line.
+        # This guard runs before core posting so no partial state changes occur on failure.
+        bank_payments = self.filtered(lambda p: p.journal_id.type == "bank")
+        for payment in bank_payments:
+            if not payment.payment_method_line_id.payment_account_id:
+                raise UserError(
+                    _(
+                        "You must configure a Payment Account on the payment method "
+                        "for bank journal payments before posting."
+                    )
+                )
         res = super().action_post()
-        # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
+        # Set the boolean on all payments in a single write for efficiency
         self.write({"block_change_partner_after_post": True})
         return res
             

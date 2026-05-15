@@ -1617,6 +1617,16 @@ msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_payment.py:0
+msgid ""
+"You must configure a Payment Account on the payment method "
+"for bank journal payments before posting."
+msgstr ""
+"Debes configurar una Cuenta de Pago en el método de pago "
+"para pagos de diarios bancarios antes de contabilizar."
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "____________________________________________"
 msgstr ""

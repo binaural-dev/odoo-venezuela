@@ -531,23 +531,126 @@ class TestAccountant(TransactionCase):
             "Foreign rate should be set to 1.23 for in_invoice move type.",
         )
 
-    def test_payment_method_line_assigned_account_validation_cash_journal(self):
-        """Test that a cash journal can be created even if a payment method line lacks a payment_account_id."""
-        # Due to the recent change, 'cash' journals shouldn't trigger the validation.
+    def test_journal_creation_without_payment_account_id(self):
+        """Regression: creating a bank journal without payment_account_id on method lines must not raise."""
         try:
-            cash_journal = self.env["account.journal"].create({
-                "name": "Invalid Cash Journal",
-                "type": "cash",
-                "code": "INVCJ",
+            bank_journal = self.env["account.journal"].create({
+                "name": "Bank No Account",
+                "type": "bank",
+                "code": "BNKNA",
                 "company_id": self.company.id,
                 "inbound_payment_method_line_ids": [
                     Command.create({
                         "payment_method_id": self.payment_method.id,
-                        # Missing payment_account_id
+                        # Intentionally missing payment_account_id
                     })
-                ]
+                ],
             })
-            self.assertTrue(cash_journal.id, "Should successfully create a cash journal even without configured payment method accounts.")
+            self.assertTrue(
+                bank_journal.id,
+                "Should create a bank journal without payment_account_id on method lines.",
+            )
         except Exception as e:
-            self.fail(f"Creating a cash journal without payment_account_id raised an exception: {e}")
+            self.fail(
+                f"Creating a bank journal without payment_account_id raised an unexpected error: {e}"
+            )
+
+    def test_payment_post_fails_without_payment_account_id(self):
+        """Bank payment without payment_account_id on the method line must raise UserError on action_post."""
+        from odoo.exceptions import UserError
+
+        # Create a fresh bank journal with NO payment_account_id on its method line
+        bank_journal = self.env["account.journal"].create({
+            "name": "Bank No Acct Post",
+            "type": "bank",
+            "code": "BNKAP",
+            "company_id": self.company.id,
+        })
+        # Find (or create) the inbound method line for this journal and clear payment_account_id
+        pm_line = self.env["account.payment.method.line"].search(
+            [("journal_id", "=", bank_journal.id)], limit=1
+        )
+        if pm_line:
+            pm_line.write({"payment_account_id": False})
+        else:
+            pm_line = self.env["account.payment.method.line"].create({
+                "journal_id": bank_journal.id,
+                "payment_method_id": self.payment_method.id,
+                "payment_account_id": False,
+            })
+
+        payment = self.env["account.payment"].create({
+            "payment_type": "inbound",
+            "partner_type": "customer",
+            "partner_id": self.partner_a.id,
+            "amount": 100.0,
+            "currency_id": self.currency_usd.id,
+            "journal_id": bank_journal.id,
+            "payment_method_line_id": pm_line.id,
+            "date": self.date,
+        })
+
+        self.assertEqual(payment.state, "draft", "Payment should start in draft state.")
+        with self.assertRaises(UserError):
+            payment.action_post()
+        self.assertEqual(
+            payment.state,
+            "draft",
+            "Payment must remain in draft after a failed action_post.",
+        )
+
+    def test_payment_post_succeeds_with_payment_account_id(self):
+        """Bank payment with payment_account_id set on the method line must post successfully."""
+        from odoo.exceptions import UserError
+
+        # Create a dedicated account for the payment method line
+        payment_account = self.env["account.account"].create({
+            "name": "Payment Method Account",
+            "code": "999001",
+            "account_type": "asset_current",
+            "company_ids": [(6, 0, [self.company.id])],
+        })
+
+        # Create a fresh bank journal
+        bank_journal = self.env["account.journal"].create({
+            "name": "Bank With Acct",
+            "type": "bank",
+            "code": "BNKWA",
+            "company_id": self.company.id,
+        })
+
+        # Get or create a method line with the account set
+        pm_line = self.env["account.payment.method.line"].search(
+            [("journal_id", "=", bank_journal.id)], limit=1
+        )
+        if pm_line:
+            pm_line.write({"payment_account_id": payment_account.id})
+        else:
+            pm_line = self.env["account.payment.method.line"].create({
+                "journal_id": bank_journal.id,
+                "payment_method_id": self.payment_method.id,
+                "payment_account_id": payment_account.id,
+            })
+
+        payment = self.env["account.payment"].create({
+            "payment_type": "inbound",
+            "partner_type": "customer",
+            "partner_id": self.partner_a.id,
+            "amount": 50.0,
+            "currency_id": self.currency_usd.id,
+            "journal_id": bank_journal.id,
+            "payment_method_line_id": pm_line.id,
+            "date": self.date,
+        })
+
+        self.assertEqual(payment.state, "draft")
+        try:
+            payment.action_post()
+        except UserError as e:
+            self.fail(f"action_post raised UserError unexpectedly: {e}")
+        self.assertIn(
+            payment.state,
+            ("posted", "in_process", "paid"),
+            "Payment should be posted after action_post with payment_account_id configured.",
+        )
 
