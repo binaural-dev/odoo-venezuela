@@ -38,10 +38,10 @@ patch(Order.prototype, {
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name    
     if (this.pos.currency.name == "VEF") {
-      return round_di(this.pos.config.foreign_inverse_rate, this.pos.currency.decimal_places);
+      return this.pos.config.foreign_inverse_rate;
     }
     if (this.pos.currency.name == "USD") {
-      return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
+      return this.pos.config.foreign_rate;
     }
   },
   get_display_rate() {
@@ -53,10 +53,10 @@ patch(Order.prototype, {
     this.reload_taxes();
     return res;
   },
-  async get_conversion_rate() {
+  get_conversion_rate() {
     
     
-    const init_conversion_r = await this.init_conversion_rate
+    const init_conversion_r =  this.init_conversion_rate
     if (this.orderlines.length > 0) {
       return this.orderlines[0].currency_rate_display();
 

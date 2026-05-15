@@ -100,6 +100,11 @@ class AccountMove(models.Model):
                 amount = rec.foreign_total_billed
             rec.igtf_top_aply = amount * (self.company_id.igtf_percentage / 100)
 
+            if rec.company_currency_id == self.env.ref("base.VEF"):
+                rec.alter_igtf_top_aply = rec.igtf_top_aply / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0
+            else:
+                rec.alter_igtf_top_aply = rec.igtf_top_aply * rec.foreign_inverse_rate
+
             receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
             account = [self.company_id.customer_account_igtf_id.id,self.company_id.supplier_account_igtf_id.id ]
@@ -215,6 +220,13 @@ class AccountMove(models.Model):
                 total_foreign_bi_igtf += foreign_amount_base_payment
             
             apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
+            alter_apply = 0.0
+            if rec.company_currency_id == self.env.ref("base.VEF"):
+                alter_apply = apply / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0
+            else:
+                alter_apply = apply * rec.foreign_inverse_rate
+
+            
             rec.write({
                 'igtf_top_aply': apply,
                 'alter_bi_igtf': alter_bi_igtf,
