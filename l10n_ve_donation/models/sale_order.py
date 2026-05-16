@@ -42,18 +42,18 @@ class SaleOrder(models.Model):
                     )
                 )
 
-    @api.constrains("is_donation", "state")
-    def _check_is_donation(self):
-        for order in self:
-            if (order.state in ["sale", "done"]) and order._origin:
-                if order.is_donation != order._origin.is_donation:
+    def _prepare_invoice(self):
+        invoice_vals = super()._prepare_invoice()
+        invoice_vals["is_donation"] = self.is_donation
+        return invoice_vals
+
+    def write(self, vals):
+        if "is_donation" in vals:
+            for order in self:
+                if order.state in ["sale", "done"] and order.is_donation != vals["is_donation"]:
                     raise ValidationError(
                         _(
                             "The field 'Is Donation' cannot be modified on a confirmed or completed order."
                         )
                     )
-
-    def _prepare_invoice(self):
-        invoice_vals = super()._prepare_invoice()
-        invoice_vals["is_donation"] = self.is_donation
-        return invoice_vals
+        return super().write(vals)
