@@ -12,7 +12,11 @@ class SaleOrder(models.Model):
             self.partner_id = self.company_id.partner_id
             self.document = "invoice"
             warehouse_id = self.env["stock.warehouse"].search(
-                [("is_donation_warehouse", "=", True)], limit=1
+                [
+                    ("is_donation_warehouse", "=", True),
+                    ("company_id", "=", self.company_id.id),
+                ],
+                limit=1,
             )
             if not warehouse_id:
                 raise ValidationError(
@@ -25,7 +29,12 @@ class SaleOrder(models.Model):
             if getattr(self, 'is_consignation', False):
                 return
             warehouse_id = self.env["stock.warehouse"].search(
-                [("is_donation_warehouse", "=", False), ("is_consignation_warehouse", "=", False)], limit=1
+                [
+                    ("is_donation_warehouse", "=", False),
+                    ("is_consignation_warehouse", "=", False),
+                    ("company_id", "=", self.company_id.id),
+                ],
+                limit=1,
             )
             if warehouse_id:
                 self.warehouse_id = warehouse_id

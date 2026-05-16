@@ -130,3 +130,25 @@ class TestStockScrap(TestDonationCommon):
         self.assertTrue(vals.get("is_donation"))
         # ref should not contain extra dash when no reason
         self.assertEqual(vals.get("ref"), False)
+
+    def test_07_multi_company_scrap_location_domain(self):
+        """Domain MUST filter by current company."""
+        company_b = self.env["res.company"].create({"name": "Company B"})
+        warehouse_b = self.env["stock.warehouse"].create({
+            "name": "Donation WH B",
+            "code": "DWHB",
+            "company_id": company_b.id,
+            "is_donation_warehouse": True,
+        })
+
+        scrap_a = self.env["stock.scrap"].create({
+            "product_id": self.product_storable.id,
+            "scrap_qty": 1,
+            "location_id": self.location_stock.id,
+            "company_id": self.company.id,
+            "is_donation": True,
+        })
+        scrap_a._compute_scrap_location_domain()
+        
+        domain_a = scrap_a.scrap_location_domain
+        self.assertIn("'company_id', '=', company_id", domain_a)

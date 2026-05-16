@@ -19,12 +19,12 @@ class StockScrap(models.Model):
         domain=[],
     )
 
-    @api.depends("is_donation")
+    @api.depends("is_donation", "company_id")
     def _compute_scrap_location_domain(self):
         native_domain = "[('usage', '=', 'inventory')]"
         for picking in self:
             if picking.is_donation:
-                picking.scrap_location_domain = "[('is_donation_warehouse', '=', True)]"
+                picking.scrap_location_domain = "[('is_donation_warehouse', '=', True), ('company_id', '=', company_id)]"
             else:
                 picking.scrap_location_domain = native_domain
 
@@ -44,11 +44,9 @@ class StockScrap(models.Model):
 
     def do_scrap(self):
         self._check_company()
-        # Separar scraps de donación y no-donación
         donation_scraps = self.filtered('is_donation')
         normal_scraps = self - donation_scraps
 
-        # Procesar scraps de donación con la lógica personalizada
         for scrap in donation_scraps:
             scrap.name = self.env['ir.sequence'].next_by_code('stock.donation') or _('New')
             move = self.env['stock.move'].create(scrap._prepare_move_values())
@@ -58,7 +56,6 @@ class StockScrap(models.Model):
             if scrap.should_replenish:
                 scrap.do_replenish()
 
-        # Delegar scraps no-donación al comportamiento estándar
         if normal_scraps:
             return super(StockScrap, normal_scraps).do_scrap()
         return True

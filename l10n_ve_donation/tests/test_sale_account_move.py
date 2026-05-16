@@ -415,3 +415,33 @@ class TestSaleAccountMove(TestDonationCommon):
         settings = self.env["res.config.settings"].create({})
         self.assertEqual(settings.donation_account_id, self.account_expense)
         self.assertEqual(settings.account_stock_journal_id, self.journal_general)
+
+    def test_19_multi_company_warehouse_selection(self):
+        """Sale Order MUST pick donation warehouse of the current company."""
+        company_b = self.env["res.company"].create({"name": "Company B"})
+        warehouse_b = self.env["stock.warehouse"].create({
+            "name": "Donation WH B",
+            "code": "DWHB",
+            "company_id": company_b.id,
+            "is_donation_warehouse": True,
+        })
+
+        order_a = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "company_id": self.company.id,
+        })
+        order_a.is_donation = True
+        order_a._onchange_is_donation()
+        
+        self.assertEqual(order_a.warehouse_id, self.warehouse_donation)
+        self.assertNotEqual(order_a.warehouse_id, warehouse_b)
+
+        order_b = self.env["sale.order"].with_company(company_b).create({
+            "partner_id": self.partner.id,
+            "company_id": company_b.id,
+        })
+        order_b.is_donation = True
+        order_b._onchange_is_donation()
+
+        self.assertEqual(order_b.warehouse_id, warehouse_b)
+        self.assertNotEqual(order_b.warehouse_id, self.warehouse_donation)
