@@ -3,7 +3,7 @@
     <t t-name="l10n_ve_pos.PaymentScreenStatusDue" t-inherit="point_of_sale.PaymentScreenDue" t-inherit-mode="extension">
         <xpath expr="//div[@class='total text-center text-dark'][1]" position="inside">
             <span class="foreign-amount fs-4 opacity-75">
-              / <t t-out="foreignTotalDueTexts" />
+              / <t t-out="this.env.utils.formatForeignCurrency(foreignDueTotalWithTaxes)" />
             </span>
         </xpath>
     </t>

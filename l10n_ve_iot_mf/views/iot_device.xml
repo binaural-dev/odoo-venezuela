@@ -10,31 +10,31 @@
                     <widget 
                         name="iot-mf-button" 
                         action="get_serial_machine" 
-                        invisible="type != 'fiscal_data_module'"/>
+                         />
                     <widget 
                         name="iot-mf-button" 
                         action="generate_report_z"  
-                        invisible="type != 'fiscal_data_module'"/>
+                        />
                     <widget 
                         name="iot-mf-button" 
                         action="generate_report_x" 
-                        invisible="type != 'fiscal_data_module'"/>
+                        />
                     <widget 
                         name="iot-mf-button" 
                         action="programacion" 
-                        invisible="type != 'fiscal_data_module' or manufacturer_type != 'HKA'"/>
+                        />
                     <widget 
                         name="iot-mf-button" 
                         action="status_error" 
-                        invisible="type != 'fiscal_data_module' or manufacturer_type != 'HKA'"/>
+                        />
                     <widget 
                         name="iot-mf-button" 
                         action="test" 
-                        invisible="type != 'fiscal_data_module' or manufacturer_type != 'HKA'"/>
+                        />
                     <widget 
                         name="iot-mf-button" 
                         action="configure_device" 
-                        invisible="type != 'fiscal_data_module' or manufacturer_type != 'HKA'"/>
+                        />
                 </header>
             </xpath>
             <xpath expr="//notebook" position="inside">
