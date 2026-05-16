@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 import logging
 
@@ -43,3 +44,36 @@ class PosOrderInherit(models.Model):
         res["mf_reportz"] = self.mf_reportz
         res["iot_mf"] = self.config_id.iface_fiscal_data_module.id
         return res
+
+    @api.model
+    def validate_order_dry_run(self, orders):
+        session_id = False
+        if orders and isinstance(orders, list):
+            session_id = orders[0].get('data', {}).get('pos_session_id')
+
+        sequence = False
+        last_next_number = False
+
+        if session_id:
+            session = self.env['pos.session'].browse(session_id)
+            
+            sequence = session.config_id.sequence_id
+
+        if sequence:
+            last_next_number = sequence.number_next_actual
+
+        self.env.cr.execute('SAVEPOINT pos_dry_run')
+        
+        try:
+            self.create_from_ui(orders)
+        except Exception as e:
+            self.env.cr.execute('ROLLBACK TO SAVEPOINT pos_dry_run')
+            if sequence and last_next_number:
+                sequence.sudo().write({'number_next_actual': last_next_number})
+            raise e
+                
+        self.env.cr.execute('ROLLBACK TO SAVEPOINT pos_dry_run')
+        if sequence and last_next_number:
+            sequence.sudo().write({'number_next_actual': last_next_number})
+                
+        return True

@@ -4,6 +4,7 @@ import { Orderline } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import {
   formatFloat,
+  roundPrecision as round_pr,
   roundDecimals as round_di,
   floatIsZero,
 } from "@web/core/utils/numbers";
@@ -101,7 +102,7 @@ patch(Orderline.prototype, {
 
     var all_taxes = this.compute_all(
       product_taxes,
-      price_unit,
+      round_pr(price_unit, this.pos.foreign_currency.rounding),
       qty,
       this.pos.foreign_currency.rounding,
     );

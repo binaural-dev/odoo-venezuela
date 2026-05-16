@@ -203,22 +203,38 @@ class TestStockPickingInvoice(TransactionCase):
         )
         return order
 
-    def create_picking(self, trasfer_reason_code='external_storage'):
-        reason_sale = self.env['transfer.reason'].search([('code', '=', trasfer_reason_code)], limit=1)
+    def create_picking(self, trasfer_reason_id=None, operation_code='outgoing'):
+        if isinstance(trasfer_reason_id, str):
+            trasfer_reason_id = self.env['transfer.reason'].search([('code', '=', trasfer_reason_id)], limit=1)
 
         warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
+        
+        # Búsqueda del tipo de operación (outgoing, internal, etc)
         picking_type = self.env['stock.picking.type'].search([
-            ('code', '=', 'outgoing'), 
+            ('code', '=', operation_code), 
             ('warehouse_id', '=', warehouse.id)
         ], limit=1)
+        
+        if not picking_type:
+            # Creación automática si no existe en DB limpia
+            picking_type = self.env['stock.picking.type'].create({
+                'name': f'Test {operation_code}',
+                'code': operation_code,
+                'warehouse_id': warehouse.id,
+                'sequence_code': 'TEST',
+                'reservation_method': 'at_confirm',
+            })
+
+        loc_id = picking_type.default_location_src_id.id or warehouse.lot_stock_id.id
+        loc_dest_id = picking_type.default_location_dest_id.id or (self.env.ref('stock.stock_location_customers').id if operation_code == 'outgoing' else warehouse.lot_stock_id.id)
 
         picking = self.env['stock.picking'].create({
             'partner_id': self.partner.id,
             'picking_type_id': picking_type.id,
-            'location_id': picking_type.default_location_src_id.id,
-            'location_dest_id': self.env.ref('stock.stock_location_customers').id,
+            'location_id': loc_id,
+            'location_dest_id': loc_dest_id,
             'origin': 'Manual Test Picking',
-            'transfer_reason_id': reason_sale.id if reason_sale else False,
+            'transfer_reason_id': trasfer_reason_id.id if trasfer_reason_id else False,
             'is_dispatch_guide': True,
         })
 
@@ -358,3 +374,27 @@ class TestStockPickingInvoice(TransactionCase):
 
         order_res.action_confirm()
         self.assertFalse(order_res.show_document, "No se debe mostrar el documento si la orden no está en borrador")
+
+    def test_07_batch_validate_pickings(self):
+        """Verificar que validar múltiples pickings en lote no lance error de singleton."""
+        reason_transfer = self.env.ref("l10n_ve_stock_account.transfer_reason_transfer_between_warehouses")
+        
+        # Se crean dos pickings con motivo de transferencia entre almacenes e internos
+        picking_1 = self.create_picking(reason_transfer, operation_code="internal")
+        picking_2 = self.create_picking(reason_transfer, operation_code="internal")
+        
+        pickings = picking_1 | picking_2
+        
+        for move in pickings.move_ids_without_package:
+            move.quantity = move.product_uom_qty
+            
+        # Esto llamará a button_validate() en el recordset de 2 pickings
+        pickings.button_validate()
+        
+        self.assertEqual(picking_1.state, "done")
+        self.assertEqual(picking_2.state, "done")
+        
+        # Verificar que la lógica de state_guide_dispatch = 'emited' se aplicó a ambos
+        self.assertEqual(picking_1.state_guide_dispatch, "emited")
+        self.assertEqual(picking_2.state_guide_dispatch, "emited")
+        _logger.info("test_07_batch_validate_pickings --- successfully.")
