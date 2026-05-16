@@ -426,6 +426,11 @@ class TestSaleAccountMove(TestDonationCommon):
             "is_donation_warehouse": True,
         })
 
+        partner_b = self.env["res.partner"].create({
+            "name": "Test Partner B",
+            "company_id": False,
+        })
+
         order_a = self.env["sale.order"].create({
             "partner_id": self.partner.id,
             "company_id": self.company.id,
@@ -437,7 +442,7 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertNotEqual(order_a.warehouse_id, warehouse_b)
 
         order_b = self.env["sale.order"].with_company(company_b).create({
-            "partner_id": self.partner.id,
+            "partner_id": partner_b.id,
             "company_id": company_b.id,
         })
         order_b.is_donation = True
