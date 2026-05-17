@@ -131,27 +131,27 @@ patch(Order.prototype, {
   },
   /* ---- Payment Status --- */
   get_foreign_subtotal() {
-    return round_di(
+    return round_pr(
       this.orderlines.reduce(function (sum, orderLine) {
         return sum + orderLine.get_display_foreign_price();
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.foreign_currency.rounding || 0.01,
     );
   },
   get_foreign_total_with_tax() {
     return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
   },
   get_foreign_total_without_tax() {
-    return round_di(
+    return round_pr(
       this.orderlines.reduce(function (sum, orderLine) {
         return sum + orderLine.get_foreign_price_without_tax();
       }, 0),
-      this.pos.foreign_currency.rounding
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_total_discount() {
     const ignored_product_ids = this._get_ignored_product_ids_total_discount();
-    return round_di(
+    return round_pr(
       this.orderlines.reduce((sum, orderLine) => {
         if (!ignored_product_ids.includes(orderLine.product.id)) {
           sum +=
@@ -167,7 +167,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.foreign_currency.rounding || 0.01,
     );
   },
   get_foreign_total_tax() {
@@ -324,7 +324,8 @@ patch(Order.prototype, {
       if (!only_cash || (only_cash && last_line_is_cash)) {
         var rounding_method = this.pos.cash_rounding[0].rounding_method;
         var remaining =
-          this.get_foreign_total_with_tax() - this.get_total_paid();
+this.get_foreign_total_with_tax() -
+            this.get_foreign_total_paid();
         var sign = this.get_foreign_total_with_tax() > 0 ? 1.0 : -1.0;
         if (
           ((this.get_foreign_total_with_tax() < 0 && remaining > 0) ||
@@ -391,22 +392,23 @@ patch(Order.prototype, {
   },
 
   get_foreign_total_paid() {
-    return round_di(
+    const result = round_pr(
       this.paymentlines.reduce(function (sum, paymentLine) {
         if (paymentLine.is_done()) {
           sum += paymentLine.get_foreign_amount();
         }
         return sum;
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.foreign_currency.rounding || 0.01,
     );
+    return result;
   },
   get_foreign_change(paymentline) {
     if (!paymentline) {
       var change =
-        this.get_foreign_total_paid() -
-        this.get_foreign_total_with_tax() -
-        this.get_rounding_applied();
+this.get_foreign_total_paid() -
+            this.get_foreign_total_with_tax() -
+            this.get_foreign_rounding_applied();
     } else {
       change = -this.get_foreign_total_with_tax();
       var lines = this.paymentlines;
@@ -419,12 +421,12 @@ patch(Order.prototype, {
     }
     return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
   },
-  get_foreign_due(paymentline) {
+get_foreign_due(paymentline) {
     if (!paymentline) {
       var due =
-        this.get_foreign_total_with_tax() -
-        this.get_foreign_total_paid() +
-        this.get_rounding_applied();
+this.get_foreign_total_with_tax() -
+            this.get_foreign_total_paid() +
+            this.get_foreign_rounding_applied();
     } else {
       due = this.get_foreign_total_with_tax();
       var lines = this.paymentlines;
