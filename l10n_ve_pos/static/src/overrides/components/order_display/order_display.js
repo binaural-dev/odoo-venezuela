@@ -38,7 +38,6 @@ patch(OrderDisplay.prototype, {
 
   //converts amount
   async _syncForeignAmountDisplay(amount) {
-    console.log("Syncing foreign amount display for amount:", amount);
     if (!Number.isFinite(amount)) {
       return 0;
     }

@@ -183,7 +183,6 @@ patch(PosOrder.prototype, {
   },
 
   get change() {
-    console.log('Super.change', round_pr(super.change, 0.01));
     return round_pr(super.change, 0.01);
   },
 
@@ -195,11 +194,8 @@ patch(PosOrder.prototype, {
 
     // Extraer la base imponible teórica de la línea
     let amount_to_pay = round_pr((payment.amount || 0) / divisor, rounding);
-    let foreign_amount_to_pay = round_pr(
-      this._get_payment_foreign_amount(payment) / divisor,
-      foreignRounding,
-    );
-
+    let foreign_amount_to_pay = this._get_payment_foreign_amount(payment)
+  
     // Aplicar límite (capping) para no cobrar IGTF sobre el dinero entregado de más (vuelto)
     if (!is_return) {
       if (amount_to_pay > remaining_base + 0.001) {
@@ -357,6 +353,7 @@ patch(PosOrder.prototype, {
     this.bi_igtf = total_bi_igtf;
     this.foreign_bi_igtf = total_foreign_bi_igtf;
     this.igtf_amount = total_igtf_amount;
+    console.log("EL IGTF EEEEEEEEEEEES:", total_foreign_igtf_amount)
     this.foreign_igtf_amount = total_foreign_igtf_amount;
 
     return this.igtf_amount;
