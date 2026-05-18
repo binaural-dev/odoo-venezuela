@@ -16,6 +16,12 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         required=True,
         default=date.today().replace(day=1) + relativedelta(months=1, days=-1),
     )
+    company_id = fields.Many2one(
+        "res.company",
+        string="Company",
+        required=True,
+        default=lambda self: self.env.company,
+    )
 
     def print_xlsx(self):
         return {
@@ -73,7 +79,7 @@ class MunicipalRetentionPatentReport(models.TransientModel):
 
         invoice_lines = invoice_lines.filtered(lambda l: l.price_unit > 0)
         usd_currency = self.env.ref("base.USD")
-        company_currency = self.env.company.currency_id
+        company_currency = self.company_id.currency_id
 
         nc_financial = 0
         nd_financial = 0
@@ -108,7 +114,7 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         worksheet2.write_array_formula("H" + str(col2 + 1), f"=SUM(H2:H{col2})", money_format)
         
         
-        if not self.env.company.hide_patent_columns_extra:
+        if not self.company_id.hide_patent_columns_extra:
             worksheet2.write_array_formula("I" + str(col2 + 1), f"=SUM(I2:I{col2})", money_format)
             worksheet2.write_array_formula("J" + str(col2 + 1), f"=SUM(J2:J{col2})", money_format)
             worksheet2.write_array_formula("L" + str(col2 + 1), f"=SUM(L2:L{col2})", money_format)
@@ -123,7 +129,7 @@ class MunicipalRetentionPatentReport(models.TransientModel):
                 f"H{line}", f"=D{line}-E{line}-F{line}+G{line}", money_format
             )
 
-            if not self.env.company.hide_patent_columns_extra:
+            if not self.company_id.hide_patent_columns_extra:
                 worksheet2.write_array_formula(f"I{line}", f"=H{line}*0.9", money_format)
                 worksheet2.write_array_formula(f"J{line}", f"=H{line}-I{line}", money_format)
                 worksheet2.write_array_formula(f"L{line}", f"=H{line}*K{line}/100", money_format)
@@ -144,6 +150,7 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
             ("move_id.financial_document", "=", True),
             ("move_id.state", "=", "posted"),
+            ("move_id.company_id", "=", self.company_id.id),
         ]
 
     def _get_xlsx_municipality_retention_report(self):
@@ -151,10 +158,13 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         invoice_lines = self.env["account.move.line"].search(domain)
 
         invoice_lines = invoice_lines.filtered(lambda l: any(l.ciu_id))
+        invoice_lines = invoice_lines.filtered(
+            lambda l: not l.ciu_id.company_id or l.ciu_id.company_id == self.company_id
+        )
 
         groups = {}
         usd_currency = self.env.ref("base.USD")
-        company_currency = self.env.company.currency_id
+        company_currency = self.company_id.currency_id
 
         for line in invoice_lines:
             price_subtotal = 0
@@ -204,7 +214,7 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             ]
         )
         
-        if self.env.company.hide_patent_columns_extra:
+        if self.company_id.hide_patent_columns_extra:
             for col_name in [
                 "INGRESOS 90%",
                 "INGRESOS 10%",
@@ -237,4 +247,5 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
             ("move_id.financial_document", "=", False),
             ("move_id.state", "=", "posted"),
+            ("move_id.company_id", "=", self.company_id.id),
         ]

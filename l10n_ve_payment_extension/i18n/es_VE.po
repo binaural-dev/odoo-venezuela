@@ -613,6 +613,9 @@ msgstr "Compañías"
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__company_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__company_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__company_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__company_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__company_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__company_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__company_id
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_retention_islr_view

@@ -7,6 +7,7 @@
             <form string="Municipal Patent Report">
                 <sheet>
                     <group>
+                        <field name="company_id" groups="base.group_multi_company" />
                         <field name="date_start" />
                         <field name="date_end" />
                     </group>
