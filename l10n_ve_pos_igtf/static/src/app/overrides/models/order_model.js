@@ -194,7 +194,7 @@ patch(PosOrder.prototype, {
     const divisor = 1 + (percentage / 100);
 
     // Extraer la base imponible teórica de la línea
-    let amount_to_pay = round_pr((payment.amount || 0) / divisor, rounding);
+    let amount_to_pay = payment.amount || 0 / divisor;
     let foreign_amount_to_pay = this._get_payment_foreign_amount(payment)
   
     // Aplicar límite (capping) para no cobrar IGTF sobre el dinero entregado de más (vuelto)
