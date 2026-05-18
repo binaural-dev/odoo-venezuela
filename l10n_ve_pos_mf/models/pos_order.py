@@ -8,19 +8,23 @@ _logger = logging.getLogger(__name__)
 class PosOrderInherit(models.Model):
     _inherit = "pos.order"
 
-    mf_reportz = fields.Char(string="Codigo de reporte Z", default=False, copy=False, readonly=True)
+    mf_reportz = fields.Char(string="Z's code report", default=False, copy=False, readonly=True)
     fiscal_machine = fields.Char(
-        string="Serial de Maquina fiscal", default=False, copy=False, readonly=True
+        string="Fiscal Machine serial", default=False, copy=False, readonly=True
     )
     mf_invoice_number = fields.Char(
-        string="Sequencia en maquina fiscal", default=False, copy=False, readonly=True
+        string="Fiscal Machine invoice number", default=False, copy=False, readonly=True
     )
 
     def get_order_by_uid(self, uid):
+        """
+        @return: A list of orders that have the given uid.
+        """
         return self.env["pos.order"].search_read([("pos_reference", "ilike", uid)])
 
     @api.model
     def _order_fields(self, ui_order):
+        # TODO: this method it's deprecated
         res = super()._order_fields(ui_order)
         res["fiscal_machine"] = ui_order.get("fiscal_machine", False)
         res["mf_invoice_number"] = ui_order.get("mf_invoice_number", False)

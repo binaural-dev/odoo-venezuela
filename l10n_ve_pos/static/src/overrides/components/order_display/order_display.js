@@ -2,7 +2,8 @@
 
 import { OrderDisplay } from "@point_of_sale/app/components/order_display/order_display";
 import { patch } from "@web/core/utils/patch";
-
+import { onWillUpdateProps, onWillStart, useState } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 patch(OrderDisplay, {
   props: {
     ...OrderDisplay.props,
@@ -12,5 +13,55 @@ patch(OrderDisplay, {
     foreign_total_tax: { optional: true },
     foreign_tax_total: { optional: true },
     quantity_products: { optional: true },
+    foreignTotalWithTaxes: { optional: true },
   },
 });
+
+patch(OrderDisplay.prototype, {
+  setup() {
+    super.setup(...arguments);
+    this._lastReqId = 0;
+    this.orm = useService("orm");
+    this.state = useState({ foreignTotalOrderDisplay: 0 });
+    onWillStart(async () => {
+      await this._syncForeignAmountDisplay(this.props.order.priceIncl);
+    });
+
+    onWillUpdateProps(async (nextProps) => {
+      await this._syncForeignAmountDisplay(nextProps.order.priceIncl);
+    });
+  },
+
+  get foreignTotalWithTaxes() {
+    return this.state.foreignTotalOrderDisplay;
+  },
+
+  //converts amount
+  async _syncForeignAmountDisplay(amount) {
+    console.log("Syncing foreign amount display for amount:", amount);
+    if (!Number.isFinite(amount)) {
+      return 0;
+    }
+    const reqId = ++this._lastReqId;
+    try {
+      const converted = await this.orm.call(
+        "pos.order",
+        "convert_amount",
+        [amount],
+        { context: { amount } }
+      );
+      if (reqId === this._lastReqId) {
+        return this.state.foreignTotalOrderDisplay = converted;
+      }
+    } catch (err) {
+      console.log("Error converting total amount:", err);
+      if (reqId === this._lastReqId) {
+        const rate = Number(this.pos?.foreing_rate || 1);
+        return this.state.foreignTotalOrderDisplay = amount * rate;
+      }
+    }
+  },
+});
+
+
+

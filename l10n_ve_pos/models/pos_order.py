@@ -67,6 +67,24 @@ class PosOrder(models.Model):
             }
         )
         return res 
+    
+    @api.model
+    def convert_amount(self, amount):
+        """Convert a company-currency amount to foreign currency without requiring order line records."""
+        company = self.env.company
+        try:
+            numeric_amount = float(amount or 0.0)
+        except (TypeError, ValueError):
+            numeric_amount = 0.0
+        
+        if not company.foreign_currency_id:
+            return numeric_amount
+        return company.currency_id._convert(
+            numeric_amount,
+            company.foreign_currency_id,
+            company,
+            fields.Date.today()
+        )
 
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"

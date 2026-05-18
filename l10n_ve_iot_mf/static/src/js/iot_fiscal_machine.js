@@ -2,11 +2,11 @@
 
 import { Widget } from "@web/views/widgets/widget";
 import { registry } from "@web/core/registry";
-import { DeviceController } from "@iot/device_controller";
+import { DeviceController } from "@iot_base/device_controller";
 import { useService } from "@web/core/utils/hooks";
 import { Component, onWillStart } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
-import { IoTConnectionErrorDialog } from '@iot/iot_connection_error_dialog';
+// import { IoTConnectionErrorDialog } from '@iot/iot_connection_error_dialog';
 
 const PRINT_ACTIONS = Object.freeze({
   OUT_INVOICE: "print_out_invoice",
@@ -16,6 +16,7 @@ const PRINT_ACTIONS = Object.freeze({
 });
 
 function onIoTActionResult(data, notification) {
+  if (!notification || typeof notification.add !== "function") return;
   if (data.result === true) {
     notification.add(_t("Successfully sent to printer!"));
   } else {
@@ -39,7 +40,8 @@ export class IoTFiscalMachineComponent extends Component {
 
     this.device = new DeviceController(
       this.env.services.iot_longpolling,
-      { iot_ip: device.iot_ip, identifier: device.identifier }
+      { iot_ip: device.iot_ip, identifier: device.identifier },
+      this.notification
     );
 
 
@@ -69,9 +71,9 @@ export class IoTFiscalMachineComponent extends Component {
     });
 
   }
-  showFailedConnection() {
-    this.dialog.add(IoTConnectionErrorDialog, { href: url });
-  }
+  // showFailedConnection() {
+  //   this.dialog.add(IoTConnectionErrorDialog, { href: url });
+  // }
   get iotDevice() {
     return this.device
   }
@@ -87,12 +89,16 @@ export class IoTFiscalMachineComponent extends Component {
       return
     }
 
-    this.iotDevice.addListener(({ value }) => {
+    this.iotDevice.addListener((data) => {
+      console.log("Respuesta recibida del fiscal:", data);
       this.iotDevice.removeListener();
-      if (!value.valid) {
-        return
+      if (!data || !data.value || !data.value.valid) {
+        if (this.notification && typeof this.notification.add === "function") {
+          this.notification.add("No se recibió respuesta válida del dispositivo fiscal", {type: "danger"});
+        }
+        return;
       }
-      this.orm.call('iot.device', 'set_serial_machine', [this.props.record.evalContext.active_id, value])
+      this.orm.call('iot.device', 'set_serial_machine', [this.props.record.evalContext.active_id, data.value])
         .then(() => {
           // window.location.reload()
         })
@@ -469,9 +475,9 @@ export class IoTFiscalMachineComponent extends Component {
     });
   }
 
-  doWarnFail(url) {
-    this.dialog.add(IoTConnectionErrorDialog, { href: url });
-  }
+  // doWarnFail(url) {
+  //   this.dialog.add(IoTConnectionErrorDialog, { href: url });
+  // }
 }
 
 IoTFiscalMachineComponent.extractProps = ({ attrs }) => {

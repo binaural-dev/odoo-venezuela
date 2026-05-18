@@ -1,8 +1,7 @@
 /** @odoo-module **/
 
 import { registry } from '@web/core/registry';
-import { IoTConnectionErrorDialog } from '@iot/iot_connection_error_dialog';
-import { IoTLongpolling } from '@iot/iot_longpolling';
+import { IoTLongpolling } from '@iot_base/network_utils/longpolling';
 
 export class BinauralIoTLongpolling extends IoTLongpolling {
   constructor(dialogService) {
