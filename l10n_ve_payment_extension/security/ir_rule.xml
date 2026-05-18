@@ -18,4 +18,22 @@
         </field>
     </record>
 
+    <record id="economic_activity_restricted_multi_company" model="ir.rule">
+        <field name="name">Economic Activity multi-company</field>
+        <field name="model_id" ref="model_economic_activity"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+        </field>
+    </record>
+
+    <record id="economic_branch_restricted_multi_company" model="ir.rule">
+        <field name="name">Economic Branch multi-company</field>
+        <field name="model_id" ref="model_economic_branch"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+        </field>
+    </record>
+
 </odoo>

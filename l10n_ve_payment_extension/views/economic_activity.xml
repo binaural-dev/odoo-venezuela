@@ -11,6 +11,7 @@
                     <field name="aliquot" />
                     <field name="minimum_monthly" />
                     <field name="minimum_annual" />
+                    <field name="company_id" optional="show" groups="base.group_multi_company" />
                 </tree>
             </field>
         </record>
@@ -29,6 +30,7 @@
                             <field name="minimum_monthly" />
                             <field name="minimum_annual" />
                             <field name="description" />
+                            <field name="company_id" groups="base.group_multi_company" />
                         </group>
                     </sheet>
                 </form>

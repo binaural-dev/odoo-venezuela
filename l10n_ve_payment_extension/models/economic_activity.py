@@ -7,13 +7,18 @@ class EconomicActivity(models.Model):
     _sql_constraints = [
         (
             "code_uniq",
-            "unique (name,municipality_id)",
-            "There cannot be two records with the same code for the selected municipality.",
+            "unique (name,municipality_id,company_id)",
+            "There cannot be two records with the same code for the selected municipality and company.",
         ),
         ("aliquot_mayor_cero", "check (aliquot > 0)", "The aliquot must be greater than zero"),
     ]
 
     name = fields.Char("Code", required=True, store=True)
+    company_id = fields.Many2one(
+        "res.company",
+        string="Company",
+        default=lambda self: self.env.company,
+    )
     municipality_id = fields.Many2one(
         "res.country.municipality", string="Municipality", required=True
     )
