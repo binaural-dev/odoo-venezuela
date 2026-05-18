@@ -128,6 +128,7 @@ patch(PosOrder.prototype, {
 
   _get_default_payment_amounts(payment_method) {
     const rounding = this.pos?.currency?.rounding || 0.01;
+    const foreignRounding = this.get_foreign_rounding?.() || this.get_foreign_currency?.()?.rounding || 0.01;
     const orderDue = this.get_due?.() || 0;
     const foreignDue = this.get_foreign_due?.() || 0;
 
@@ -152,7 +153,7 @@ patch(PosOrder.prototype, {
 
     return {
       orderAmount: round_pr(orderDue + this.compute_igtf_amount(orderDue, percentage), rounding),
-      foreignAmount: round_pr(foreignDue + this.compute_igtf_amount(foreignDue, percentage), rounding),
+      foreignAmount: round_pr(foreignDue + ((foreignDue * percentage) / 100), foreignRounding),
     };
   },
 
@@ -211,10 +212,7 @@ patch(PosOrder.prototype, {
 
     // Calcular el impuesto exacto redondeado
     const igtf_amount = round_pr(amount_to_pay * (percentage / 100), rounding);
-    const foreign_igtf_amount = round_pr(
-      foreign_amount_to_pay * (percentage / 100),
-      foreignRounding,
-    );
+    const foreign_igtf_amount = foreign_amount_to_pay * (percentage / 100)
 
     return {
       base: amount_to_pay,

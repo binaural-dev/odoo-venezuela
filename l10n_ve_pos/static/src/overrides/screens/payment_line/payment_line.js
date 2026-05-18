@@ -6,7 +6,6 @@ import { patch } from "@web/core/utils/patch";
 patch(PaymentScreenPaymentLines.prototype, {
   formatLineAmount(paymentline) {
     let foreignAmount = paymentline.get_foreign_amount()
-    console.log("Formatted foreign amount for display:", foreignAmount)
     return this.env.utils.formatForeignCurrency(foreignAmount);
   },
 })
