@@ -1,4 +1,4 @@
-from odoo.addons.hw_drivers.iot_handlers.sdk.Util import Util
+from odoo.addons.iot_drivers.iot_handlers.sdk.Util import Util
 
 
 class S3PrinterData(object):

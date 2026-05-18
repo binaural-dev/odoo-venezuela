@@ -2,8 +2,8 @@ import traceback
 from collections import namedtuple
 
 from odoo import _
-from odoo.addons.hw_drivers.event_manager import event_manager
-from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
+from odoo.addons.iot_drivers.event_manager import event_manager
+from odoo.addons.iot_drivers.iot_handlers.drivers.SerialBaseDriver import (
     SerialDriver,
     serial_connection,
 )

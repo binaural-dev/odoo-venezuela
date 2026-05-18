@@ -4,9 +4,9 @@ import serial.tools.list_ports
 import requests
 
 from odoo import _
-from odoo.addons.hw_drivers.event_manager import event_manager
+from odoo.addons.iot_drivers.event_manager import event_manager
 from .FiscalDriver import SerialProtocol, SerialBaseFiscalDriver
-from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
+from odoo.addons.iot_drivers.iot_handlers.drivers.SerialBaseDriver import (
     serial_connection,
 )
 

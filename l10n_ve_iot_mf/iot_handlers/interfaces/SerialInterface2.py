@@ -5,8 +5,8 @@ import logging
 import platform
 import urllib3
 import json
-from odoo.addons.hw_drivers.iot_handlers.interfaces.SerialInterface import SerialInterface
-from odoo.addons.hw_drivers.tools import helpers
+from odoo.addons.iot_drivers.tools import helpers
+from odoo.addons.iot_drivers.iot_handlers.interfaces.SerialInterface import SerialInterface
 
 _logger = logging.getLogger(__name__)
 
