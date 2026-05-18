@@ -120,6 +120,7 @@ patch(PosOrder.prototype, {
   // },
 
   toggle_receipt_invoice(to_receipt) {
+    console.log("toggle_receipt_invoice", !to_receipt)
     if (this.getHasRefundLines()) {
       return;
     }
@@ -128,6 +129,7 @@ patch(PosOrder.prototype, {
     }
     this.assert_editable();
     this.to_receipt = to_receipt;
+    this.to_invoice = !to_receipt;
 
   },
   export_as_JSON() {

@@ -108,6 +108,7 @@ patch(PosOrder.prototype, {
     return null;
 
   },
+  
   _is_invoice_order() {
     if (typeof this.is_to_receipt === "function") {
       return !this.is_to_receipt();
@@ -351,7 +352,6 @@ patch(PosOrder.prototype, {
     this.bi_igtf = total_bi_igtf;
     this.foreign_bi_igtf = total_foreign_bi_igtf;
     this.igtf_amount = total_igtf_amount;
-    console.log("EL IGTF EEEEEEEEEEEES:", total_foreign_igtf_amount)
     this.foreign_igtf_amount = total_foreign_igtf_amount;
 
     return this.igtf_amount;
