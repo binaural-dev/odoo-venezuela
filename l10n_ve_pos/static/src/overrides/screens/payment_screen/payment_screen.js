@@ -23,7 +23,7 @@ patch(PaymentScreen.prototype, {
   },
 
   shouldDownloadInvoice() {
-    return false;
+    return true;
   },
 
   add_paymentline(payment_method) {
