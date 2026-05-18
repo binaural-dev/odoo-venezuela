@@ -41,7 +41,6 @@ patch(PosOrder.prototype, {
   get init_conversion_rate() {
     if (this.currency.name == "VEF") {
       const companyId = this.user;
-      console.log(this.config.foreign_rate)
       return this.config.foreign_rate;
     }
   },
