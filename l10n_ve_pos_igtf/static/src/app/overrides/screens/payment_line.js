@@ -10,4 +10,6 @@ patch(PaymentScreenPaymentLines.prototype, {
     let foreign_igtf_amount = this.env.utils.formatForeignCurrency(paymentline.foreign_igtf_amount, true)
     return igtf_amount + " / " + foreign_igtf_amount
   }
+
+
 })

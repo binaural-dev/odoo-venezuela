@@ -153,8 +153,8 @@ patch(PosOrder.prototype, {
         : this._get_order_igtf_percentage();
 
     return {
-      orderAmount: round_pr(orderDue + this.compute_igtf_amount(orderDue, percentage), rounding),
-      foreignAmount: round_pr(foreignDue + ((foreignDue * percentage) / 100), foreignRounding),
+      orderAmount: round_pr(orderDue, rounding),
+      foreignAmount: round_pr(foreignDue, foreignRounding),
     };
   },
 
@@ -188,29 +188,23 @@ patch(PosOrder.prototype, {
     return round_pr(super.change, 0.01);
   },
 
-  _compute_line_igtf(payment, percentage, remaining_base, remaining_foreign_base, is_return) {
+  _compute_line_igtf(amount, foreing_amount, percentage, remaining_base, remaining_foreign_base, is_return) {
 
     const rounding = this.pos?.currency?.rounding || 0.01;
     const foreignRounding = this.get_foreign_currency?.()?.rounding || 0.01;
-    const divisor = 1 + (percentage / 100);
-
     // Cuando la línea ya incluye IGTF, primero despejamos la base imponible.
-    const gross_amount = Number(payment.amount || 0);
-    const gross_foreign_amount = Number(this._get_payment_foreign_amount(payment) || 0);
-    let amount_to_pay = divisor ? gross_amount / divisor : gross_amount;
-    let foreign_amount_to_pay = divisor ? gross_foreign_amount / divisor : gross_foreign_amount;
+    const gross_amount = Number(amount || 0);
+    const gross_foreign_amount = Number(foreing_amount || 0);
+    let amount_to_pay =  gross_amount;
+    let foreign_amount_to_pay = gross_foreign_amount;
 
-    // Aplicar límite (capping) para no cobrar IGTF sobre el dinero entregado de más (vuelto)
-    if (!is_return) {
-      if (amount_to_pay > remaining_base + 0.001) {
-        amount_to_pay = Math.max(0, remaining_base);
-        foreign_amount_to_pay = Math.max(0, remaining_foreign_base);
-      }
-    } else {
-      if (amount_to_pay < remaining_base - 0.001) {
-        amount_to_pay = Math.min(0, remaining_base);
-        foreign_amount_to_pay = Math.min(0, remaining_foreign_base);
-      }
+    // En ventas normales, una base positiva no debe producir un monto alterno negativo.
+    if (!is_return && amount_to_pay >= 0 && foreign_amount_to_pay < 0) {
+      foreign_amount_to_pay = 0;
+    }
+
+    if (is_return && amount_to_pay <= 0 && foreign_amount_to_pay > 0) {
+      foreign_amount_to_pay = 0;
     }
 
     // Calcular el impuesto exacto redondeado
@@ -321,9 +315,14 @@ patch(PosOrder.prototype, {
 
       payment.set_include_igtf(true);
 
+      const lineForeignBase = Number(this._get_payment_foreign_amount(payment) || 0);
+
+
+      
       // _compute_line_igtf extrae base del precio-con-IGTF incluido y aplica capping
       const computed = this._compute_line_igtf(
-        payment,
+        payment.amount,
+        lineForeignBase,
         percentage,
         remaining_base,
         remaining_foreign_base,
@@ -333,8 +332,9 @@ patch(PosOrder.prototype, {
       payment.set_igtf_amount(computed.tax);
       payment.set_foreign_igtf_amount(computed.foreign_tax);
 
-      total_bi_igtf += computed.base;
-      total_foreign_bi_igtf += computed.foreign_base;
+      total_bi_igtf += computed.base || 0;
+      total_foreign_bi_igtf += computed.foreign_base || 0;
+
       total_igtf_amount += computed.tax;
       total_foreign_igtf_amount += computed.foreign_tax;
 
@@ -344,6 +344,7 @@ patch(PosOrder.prototype, {
         order_total,
         is_return,
       );
+
       remaining_foreign_base = this._normalize_remaining_amount(
         remaining_foreign_base - computed.foreign_base,
         order_foreign_total,
@@ -357,14 +358,7 @@ patch(PosOrder.prototype, {
     this.foreign_bi_igtf = total_foreign_bi_igtf;
     this.igtf_amount = total_igtf_amount;
     this.foreign_igtf_amount = total_foreign_igtf_amount;
-    console.log("IGTF order totals", {
-      order_total: this.get_total_without_igtf(),
-      order_foreign_total: this.get_foreign_total_without_igtf(),
-      total_bi_igtf,
-      total_foreign_bi_igtf,
-      total_igtf_amount,
-      total_foreign_igtf_amount,
-    });
+
     return this.igtf_amount;
   },
 
@@ -477,29 +471,6 @@ patch(PosOrder.prototype, {
   },
 
 
-  getDefaultAmountDueToPayIn(paymentMethod) {
-    const baseAmount = super.getDefaultAmountDueToPayIn(...arguments);
-    if (!this._is_invoice_order()) {
-      return baseAmount;
-    }
-
-    if (!paymentMethod?.apply_igtf) {
-      return baseAmount;
-    }
-
-    // Avoid adding IGTF twice when the order already has an IGTF payment context.
-    if (this._has_any_igtf_payment_line()) {
-      return baseAmount;
-    }
-
-    const percentage =
-      typeof paymentMethod?.igtf_percentage === "number"
-        ? paymentMethod.igtf_percentage
-        : this._get_order_igtf_percentage();
-
-    const rounding = this.pos?.currency?.rounding || 0.01;
-    return round_pr(baseAmount + this.compute_igtf_amount(baseAmount, percentage), rounding);
-  },
 
   get_igtf_amount() {
     return this.igtf_amount;

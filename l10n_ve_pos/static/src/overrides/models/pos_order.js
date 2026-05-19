@@ -538,7 +538,7 @@ patch(PosOrder.prototype, {
       (sum, line) => {
         return sum + this.get_payment_foreign_amount(line);
       },
-      -this.get_due(),
+      -round_pr(this.get_due(), rounding),
     );
 
     return round_pr(Math.max(0, change), rounding);
@@ -556,7 +556,7 @@ patch(PosOrder.prototype, {
     );
 
     const due = this.get_foreign_total_with_taxes() - paidAmount;
-
+    console.log("DUE", due)
     return round_pr(due, rounding);
   },
 
