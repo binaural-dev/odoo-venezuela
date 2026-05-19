@@ -49,7 +49,7 @@
                 <field
                     name="is_dispatch_guide"
                     invisible="operation_code != 'internal' and operation_code != 'outgoing'"
-                    readonly="operation_code != 'internal' or not is_transfer_between_warehouses"  />
+                    readonly="operation_code != 'internal' or not is_transfer_between_warehouses or state == 'done'"  />
                 <field name="is_consignment_readonly" invisible="1"/>
                 <field 
                     name="transfer_reason_id"
