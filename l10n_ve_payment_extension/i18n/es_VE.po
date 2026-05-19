@@ -2599,8 +2599,8 @@ msgstr "La factura %s no tiene impuesto"
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
-msgid "The invoice has no tax."
-msgstr "La factura no tiene impuesto"
+msgid "The invoice has no applicable taxes. IVA Retention cannot be generated."
+msgstr "La factura no tiene impuestos aplicables. No se puede generar la retención de IVA."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -3255,3 +3255,101 @@ msgstr "Estado de Pago Factura"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__state
 msgid "Invoice Status"
 msgstr "Estado de Factura"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_payment_view_form_l10n_ve_payment_extension
+msgid ""
+"<small class=\"text-muted d-block\" style=\"font-size: "
+"0.75rem;\">Retained</small>"
+msgstr ""
+"<small class=\"text-muted d-block\" style=\"font-size: "
+"0.75rem;\">Retenido</small>"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension
+msgid "<span>Show</span>"
+msgstr "<span>Ver</span>"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__is_isrl_retention_available
+msgid "Available"
+msgstr "Disponible"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Batch Retentions"
+msgstr "Retenciones por Lotes"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__allowed_payment_concept_ids
+msgid "Filter payment concept for domain"
+msgstr "Dominio para filtrar conceptos de pago"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "No payments found for reconciliation."
+msgstr "No se encontraron pagos para la conciliación."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
+msgid "The invoice has no tax."
+msgstr "La factura no tiene impuestos."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The retention amount (%s) cannot be greater than the invoice total signed "
+"amount (%s) for invoice %s."
+msgstr ""
+"El monto de la retención (%s) no puede ser mayor que el monto total registrado"
+"(%s) para la factura %s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "Unknown partner type '%s' for payment reconciliation."
+msgstr "Tipo de cliente desconocido '%s' para la conciliación de pagos."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_payment.py:0
+msgid ""
+"You cannot cancel this payment because it is a retention linked to voucher "
+"%s. You must void or cancel the retention document first."
+msgstr ""
+"No puedes cancelar este pago porque es una retención vinculada al comprobante "
+"%s. Debes anular o cancelar el documento de retención primero."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_payment.py:0
+msgid ""
+"You cannot reset this payment to draft because it is a retention linked to "
+"voucher %s. You must void or cancel the retention document first."
+msgstr ""
+"No puedes regresar este pago a borrador porque es una retención vinculada al "
+"comprobante %s. Debes anular o cancelar el documento de retención primero."
+
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"You cannot unreconcile a payment that is linked to a retention. Please "
+"cancel the retention document if you want to unreconcile this payment."
+msgstr ""
+"No puedes desconciliar un pago que está vinculado a una retención. Por favor "
+"cancela el documento de retención si deseas desconciliar este pago."
+
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/payment_concept_line.py:0
+msgid "the percentage may not exceed 100% on the payment concept line"
+msgstr "el porcentaje no puede exceder 100% en la línea de concepto de pago"
