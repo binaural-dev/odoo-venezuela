@@ -67,6 +67,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
+
+        # Obtenemos los valores absolutos (sin signos previos que confundan) para evitar doble negación
+        total_sales_val = abs(taxes.get("amount_taxed", 0)) if move.state == 'posted' else 0.0
+        exempt_val = abs(taxes.get("tax_base_exempt_aliquot", 0))
+
         values =  {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date_display),
@@ -87,19 +92,18 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
             "extend_aliquot": 0.31,
-            "total_sales": taxes.get("amount_taxed", 0),
-            "total_sales_iva": taxes.get("amount_taxed", 0) - (taxes.get("tax_base_exempt_aliquot", 0) * multiplier),
-            "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0)
-            * multiplier,
-            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0)
-            * multiplier,
-            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) * multiplier,
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0)
-            * multiplier,
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0)
-            * multiplier,
-            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) * multiplier,
+            
+            "total_sales": total_sales_val * multiplier,
+            "total_sales_iva": (total_sales_val - exempt_val) * multiplier,
+            "total_sales_not_iva": exempt_val * multiplier,
+            
+            "amount_reduced_aliquot": abs(taxes.get("amount_reduced_aliquot", 0)) * multiplier,
+            "amount_general_aliquot": abs(taxes.get("amount_general_aliquot", 0)) * multiplier,
+            "amount_extend_aliquot": abs(taxes.get("amount_extend_aliquot", 0)) * multiplier,
+            
+            "tax_base_reduced_aliquot": abs(taxes.get("tax_base_reduced_aliquot", 0)) * multiplier,
+            "tax_base_general_aliquot": abs(taxes.get("tax_base_general_aliquot", 0)) * multiplier,
+            "tax_base_extend_aliquot": abs(taxes.get("tax_base_extend_aliquot", 0)) * multiplier,
         }
         return values
 
