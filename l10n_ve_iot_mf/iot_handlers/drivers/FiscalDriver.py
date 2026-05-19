@@ -1,21 +1,16 @@
 import traceback
-from collections import namedtuple
 
 from odoo import _
-from odoo.addons.hw_drivers.event_manager import event_manager
-from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
+from odoo.addons.iot_drivers.event_manager import event_manager
+from .serial_base_compat import (
     SerialDriver,
+    SerialProtocol,
     serial_connection,
 )
 
 import logging
 
 _logger = logging.getLogger(__name__)
-
-SerialProtocol = namedtuple(
-    "SerialProtocol",
-    "name baudrate bytesize stopbits parity timeout writeTimeout commandDelay measureDelay",
-)
 
 
 class SerialBaseFiscalDriver(SerialDriver):

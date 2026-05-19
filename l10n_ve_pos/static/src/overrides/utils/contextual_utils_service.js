@@ -53,10 +53,19 @@ patch(contextualUtilsService, {
       return `${sign}${groupedIntegerPart},${decimalPart}`;
     };
 
-    /**
-     * Formatea sin redondear: trunca a 2 decimales y conserva el símbolo de la moneda foránea.
-     */
     const formatForeignCurrency = (value, hasSymbol = true) => {
+      const amount = (typeof value === "string" ? (value) : value) || 0;
+      return formatMonetary(amount, {
+        currencyId: foreign_currency?.id,
+        noSymbol: !hasSymbol,
+      });
+    };
+
+    const formatStrForeignCurrency = (valueStr, hasSymbol = true) => {
+      return formatForeignCurrency(valueStr, hasSymbol);
+    };
+
+    const formatForeignCurrencyWithoutRounding = (value, hasSymbol = true) => {
       const formattedAmount = formatTruncatedAmount(value, 2);
       const currencySymbol = foreign_currency?.symbol || "";
 
@@ -67,8 +76,8 @@ patch(contextualUtilsService, {
       return `${currencySymbol} ${formattedAmount}`;
     };
 
-    const formatStrForeignCurrency = (valueStr, hasSymbol = true) => {
-      return formatForeignCurrency(valueStr, hasSymbol);
+    const formatStrForeignCurrencyWithoutRounding = (valueStr, hasSymbol = true) => {
+      return formatForeignCurrencyWithoutRounding(valueStr, hasSymbol);
     };
 
     const getDecimalPrecisionModel = () => {
@@ -100,8 +109,10 @@ patch(contextualUtilsService, {
     Object.assign(env.utils, {
       formatForeignCurrency,
       formatStrForeignCurrency,
+      formatForeignCurrencyWithoutRounding,
+      formatStrForeignCurrencyWithoutRounding,
       getDecimalPrecisionModel,
-        getDecimalPrecision: getDecimalPrecision,
+      getDecimalPrecision: getDecimalPrecision,
     });
 
     return res;

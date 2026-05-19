@@ -23,7 +23,7 @@ patch(PaymentScreenStatus.prototype, {
   },
 
   get igtfForeignAmount() {
-    return this.env.utils.formatForeignCurrency(this.props.order.get_foreign_igtf_amount(), 'Product Price')
+    return this.env.utils.formatForeignCurrencyWithoutRounding(this.props.order.get_foreign_igtf_amount(), 'Product Price')
   },
 
   get isIgtf() {
@@ -73,7 +73,7 @@ patch(PaymentScreenStatus.prototype, {
   get foreignTotalDueTextWithIGTF() {
     // :INFO estoy sobreescrbiendo este metodo basado en el monto parent nativo de la 19
     return this.env.utils.formatForeignCurrency(
-      (this.props.order.get_foreign_total_with_tax() * ((this.config.igtf_percentage / 100) + 1)) + this.props.order.get_foreign_rounding_applied()
+      (this.props.order.get_foreign_total_with_tax_custom() * ((this.config.igtf_percentage / 100) + 1)) + this.props.order.get_foreign_rounding_applied()
     );
   },
 

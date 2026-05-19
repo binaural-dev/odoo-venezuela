@@ -14,31 +14,30 @@ from functools import reduce
 import traceback
 
 from odoo.exceptions import UserError
-from odoo.addons.hw_drivers.iot_handlers.sdk.ReportData import ReportData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S1PrinterData import S1PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S2PrinterData import S2PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S3PrinterData import S3PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S4PrinterData import S4PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S5PrinterData import S5PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S6PrinterData import S6PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S7PrinterData import S7PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S8EPrinterData import S8EPrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S8PPrinterData import S8PPrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S25PrinterData import S25PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.AcumuladosX import AcumuladosX
+from odoo.addons.iot_drivers.iot_handlers.sdk.ReportData import ReportData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S1PrinterData import S1PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S2PrinterData import S2PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S3PrinterData import S3PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S4PrinterData import S4PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S5PrinterData import S5PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S6PrinterData import S6PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S7PrinterData import S7PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S8EPrinterData import S8EPrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S8PPrinterData import S8PPrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S25PrinterData import S25PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.AcumuladosX import AcumuladosX
 
-from odoo import http, _
-from odoo.addons.hw_drivers.main import iot_devices
-from odoo.addons.hw_drivers.event_manager import event_manager
-from odoo.addons.hw_drivers.tools import helpers
+from odoo import _
+from odoo.addons.iot_drivers.main import iot_devices
+from odoo.addons.iot_drivers.event_manager import event_manager
+from odoo.addons.iot_drivers.tools import helpers
 
-from odoo.addons.hw_drivers.controllers.driver import DriverController
-
-from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
+from .serial_base_compat import (
     SerialDriver,
     SerialProtocol,
     serial_connection,
 )
+
 
 FLAG_21 = {
     "30": {
@@ -89,37 +88,6 @@ TAX = {
     "2": '"',
     "3": "#",
 }
-
-
-class BinauralDriverController(DriverController):
-    @http.route(
-        "/hw_drivers/event", type="json", auth="none", cors="*", csrf=False, save_session=False
-    )
-    def event(self, listener):
-        """
-        listener is a dict in witch there are a sessions_id and a dict of device_identifier to listen
-        """
-        req = event_manager.add_request(listener)
-        # Search for previous events and remove events older than 5 seconds
-        oldest_time = time.time() - 5
-        for event in list(event_manager.events):
-            if event["time"] < oldest_time:
-                del event_manager.events[0]
-                continue
-            if (
-                event["device_identifier"] in listener["devices"]
-                and event["time"] > listener["last_event"]
-            ):
-                event["session_id"] = req["session_id"]
-                _logger.info("EVENT %s", event)
-                return event
-
-        # Wait for new event
-        if req["event"].wait(50):
-            req["event"].clear()
-            req["result"]["session_id"] = req["session_id"]
-            _logger.info("EVENT %s", req["result"])
-            return req["result"]
 
 
 _logger = logging.getLogger(__name__)
