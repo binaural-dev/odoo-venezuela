@@ -29,6 +29,8 @@ class AccountMoveRetention(models.Model):
         "move_id",
         string="ISLR Retention Lines",
         domain=[
+            "&", 
+            ("retention_id.state", "!=", "cancel"),
             "|",
             ("payment_concept_id", "!=", False),
             ("retention_id.type_retention", "=", "islr"),
@@ -39,7 +41,8 @@ class AccountMoveRetention(models.Model):
         "account.retention.line",
         "move_id",
         string="IVA Retention Lines",
-        domain=[("retention_id.type_retention", "=", "iva")],
+        domain=[("retention_id.type_retention", "=", "iva"),
+            ("retention_id.state", "!=", "cancel")],
     )
 
     retention_municipal_line_ids = fields.One2many(
@@ -47,6 +50,8 @@ class AccountMoveRetention(models.Model):
         "move_id",
         string="Municipal Retention Lines",
         domain=[
+            "&", 
+            ("retention_id.state", "!=", "cancel"),
             "|",
             ("economic_activity_id", "!=", False),
             ("retention_id.type_retention", "=", "municipal"),
@@ -56,6 +61,7 @@ class AccountMoveRetention(models.Model):
     generate_iva_retention = fields.Boolean(
         string="Generate IVA Retention?",
         default=False,
+        copy=False
     )
 
     is_third_party_retention = fields.Boolean(
@@ -103,7 +109,7 @@ class AccountMoveRetention(models.Model):
     def compute_count_retentions(self):
         
         for rec in self:
-            lines = self.env['account.retention.line'].search([('move_id', 'in', rec.ids)])
+            lines = self.env['account.retention.line'].search([('move_id', 'in', rec.ids),("retention_id.state", "!=", "cancel")])
             ret_all = lines.filtered(lambda l: l.move_id.id == rec.id).mapped('retention_id')
 
             islr = ret_all.filtered(lambda r: r.type_retention == 'islr')
@@ -174,7 +180,6 @@ class AccountMoveRetention(models.Model):
 
             if not record.is_isrl_retention_available and record.generate_islr_retention:
                 record.generate_islr_retention = False
-
 
     def _compute_third_party_retention_counts(self):
         Retention = self.env["account.retention"]
@@ -376,7 +381,7 @@ class AccountMoveRetention(models.Model):
             self.invoice_line_ids.mapped(
                 "tax_ids").filtered(lambda x: x.amount > 0)
         ):
-            raise UserError(_("The invoice has no tax."))
+            raise UserError(_("The invoice has no applicable taxes. IVA Retention cannot be generated."))
 
     def _validate_municipal_retention(self):
         """
@@ -677,6 +682,7 @@ class AccountMoveRetention(models.Model):
         all_retention_lines = self.env['account.retention.line'].search([
             ('move_id', 'in', self.ids),
             ('retention_id.type_retention', '=', 'islr')
+            ("retention_id.state", "!=", "cancel")
         ])
 
         availables_retention = self.env['account.retention']
@@ -703,4 +709,39 @@ class AccountMoveRetention(models.Model):
             availables_retention |= retentions.filtered(lambda l: l.state == 'draft').mapped('retention_id')
                 
         return availables_retention
-           
+    
+    def js_remove_outstanding_partial(self, partial_id):
+        self.ensure_one()
+
+        partial = self.env["account.partial.reconcile"].browse(partial_id)
+        partial_move_id = next((m for m in (partial.credit_move_id.move_id, partial.debit_move_id.move_id) if m.origin_payment_id or m.origin_payment_advanced_payment_id), None)
+
+        payment_id = False
+        if partial_move_id:
+            payment_id = partial_move_id.origin_payment_id or partial_move_id.origin_payment_advanced_payment_id
+      
+        if payment_id and payment_id.is_retention:
+            raise UserError(_(
+                "You cannot unreconcile a payment that is linked to a retention. "
+                "Please cancel the retention document if you want to unreconcile this payment."
+            ))
+        
+        return super().js_remove_outstanding_partial(partial.id)
+    
+
+    def button_draft(self):
+        if self.env.context.get('bypass_retention_lock'):
+            return super().button_draft()
+        
+        for payment in self:
+            
+            if payment.origin_payment_id and payment.origin_payment_id.is_retention and payment.origin_payment_id.state != 'cancel':
+                raise UserError(_(
+                    "You cannot cancel this payment because it is a retention linked to voucher %s. "
+                    "You must void or cancel the retention document first."
+                ) % payment.origin_payment_id.retention_id.display_name)
+                
+        return super().button_draft()
+    
+
+    
