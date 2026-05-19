@@ -460,7 +460,7 @@ class PosSession(models.Model):
                 ]
             )
 
-            return move_lines
+        return move_lines
 
     def _line_vals_move_cross_outgoing(self, payment):
         """
@@ -532,7 +532,7 @@ class PosSession(models.Model):
                 ]
             )
 
-            return move_lines
+        return move_lines
 
     def _create_cross_move(self, payment, line_vals):
         """
@@ -740,7 +740,7 @@ class PosSession(models.Model):
                 ]
             )
 
-            return move_lines
+        return move_lines
 
     def _accumulate_amounts(self, data):
         data = super()._accumulate_amounts(data)
