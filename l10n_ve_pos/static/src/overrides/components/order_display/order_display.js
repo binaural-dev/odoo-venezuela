@@ -24,11 +24,11 @@ patch(OrderDisplay.prototype, {
     this.orm = useService("orm");
     this.state = useState({ foreignTotalOrderDisplay: 0 });
     onWillStart(async () => {
-      await this._syncForeignAmountDisplay(this.props.order.priceIncl);
+      await this._syncForeignAmountDisplay(this.props.order.get_total_with_tax());
     });
 
     onWillUpdateProps(async (nextProps) => {
-      await this._syncForeignAmountDisplay(nextProps.order.priceIncl);
+      await this._syncForeignAmountDisplay(nextProps.order.get_total_with_tax());
     });
   },
 

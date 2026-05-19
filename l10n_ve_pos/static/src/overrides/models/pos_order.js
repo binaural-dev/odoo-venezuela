@@ -142,7 +142,7 @@ patch(PosOrder.prototype, {
 
   serializeForORM(opts = {}) {
     const data = super.serializeForORM(opts);
-    data.foreign_amount_total = this.get_foreign_total_with_tax();
+    data.foreign_amount_total = this.get_foreign_total_with_taxes();
     data.foreign_currency_rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 0;
     return data;
   },
@@ -199,7 +199,7 @@ patch(PosOrder.prototype, {
 
   get_foreign_total_with_taxes() {
     const rounding = this.get_foreign_currency()?.rounding || 0.01;
-    return (this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0)
+    return round_pr((this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0), rounding)
   },
 
   get foreign_total_with_taxes() {
@@ -214,8 +214,7 @@ patch(PosOrder.prototype, {
       const linePrices = line.get_all_foreign_prices ? line.get_all_foreign_prices() : { priceWithoutTax: 0 };
       return acumulador + (linePrices.priceWithoutTax || 0);
     }, 0);
-    const rounding = foreign_currency ? foreign_currency.rounding : 0.01;
-    return round_pr(total, rounding);
+    return total
 
   },
 
@@ -506,21 +505,6 @@ patch(PosOrder.prototype, {
     return Number.isFinite(foreignAmount) ? foreignAmount : 0;
   },
 
-  get_foreign_due(paymentline) {
-    const lines = this.get_order_payment_lines();
-    const baseAmount = this.remainingDue || 0;
-    const rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 1;
-
-    const paidAmount = lines.reduce(
-      (sum, line) => sum + (this.get_payment_foreign_amount(line) || 0),
-      0
-    );
-
-    // paidAmount ya esta en moneda extranjera; no volver a multiplicar por inverse_rate
-    const due = (baseAmount / rate) - paidAmount;
-    return due;
-  },
-
   get_foreign_total_paid() {
     const paymentlines = this.get_order_payment_lines();
     return round_pr(
@@ -561,21 +545,19 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_due(paymentline) {
-
     const rounding = this.get_foreign_rounding();
     const lines = this.get_order_payment_lines();
 
-    const baseAmount = this.remainingDue || 0;
-
-    const rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 1;
-
-    const paidAmount = lines.reduce(
+    const endIndex = lines.findIndex((line) => line === paymentline);
+    const linesToSum = endIndex >= 0 ? lines.slice(0, endIndex + 1) : lines;
+    const paidAmount = linesToSum.reduce(
       (sum, line) => sum + (this.get_payment_foreign_amount(line) || 0),
       0
     );
 
-    const due = (baseAmount / rate) - (paidAmount * this.config.foreign_inverse_rate);
-    return due
+    const due = this.get_foreign_total_with_taxes() - paidAmount;
+
+    return round_pr(due, rounding);
   },
 
   get_qty_products() {

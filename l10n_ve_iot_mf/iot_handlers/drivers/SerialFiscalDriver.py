@@ -32,7 +32,7 @@ from odoo.addons.iot_drivers.main import iot_devices
 from odoo.addons.iot_drivers.event_manager import event_manager
 from odoo.addons.iot_drivers.tools import helpers
 
-from odoo.addons.iot_drivers.iot_handlers.drivers.SerialBaseDriver import (
+from .serial_base_compat import (
     SerialDriver,
     SerialProtocol,
     serial_connection,

@@ -6,9 +6,7 @@ import requests
 from odoo import _
 from odoo.addons.iot_drivers.event_manager import event_manager
 from .FiscalDriver import SerialProtocol, SerialBaseFiscalDriver
-from odoo.addons.iot_drivers.iot_handlers.drivers.SerialBaseDriver import (
-    serial_connection,
-)
+from .serial_base_compat import serial_connection
 
 _logger = logging.getLogger(__name__)
 
@@ -21,8 +19,14 @@ FiscalProtocol = SerialProtocol(
     parity=serial.PARITY_EVEN,
     timeout=2,
     writeTimeout=5,
+    measureRegexp=None,
+    statusRegexp=None,
+    commandTerminator=b"",
     commandDelay=0.2,
     measureDelay=0.2,
+    newMeasureDelay=0.2,
+    measureCommand=b"",
+    emptyAnswerValid=False,
 )
 
 TAX = {

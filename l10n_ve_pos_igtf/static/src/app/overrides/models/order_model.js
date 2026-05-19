@@ -108,7 +108,7 @@ patch(PosOrder.prototype, {
     return null;
 
   },
-  
+
   _is_invoice_order() {
     if (typeof this.is_to_receipt === "function") {
       return !this.is_to_receipt();
@@ -194,10 +194,12 @@ patch(PosOrder.prototype, {
     const foreignRounding = this.get_foreign_currency?.()?.rounding || 0.01;
     const divisor = 1 + (percentage / 100);
 
-    // Extraer la base imponible teórica de la línea
-    let amount_to_pay = payment.amount || 0 / divisor;
-    let foreign_amount_to_pay = this._get_payment_foreign_amount(payment)
-  
+    // Cuando la línea ya incluye IGTF, primero despejamos la base imponible.
+    const gross_amount = Number(payment.amount || 0);
+    const gross_foreign_amount = Number(this._get_payment_foreign_amount(payment) || 0);
+    let amount_to_pay = divisor ? gross_amount / divisor : gross_amount;
+    let foreign_amount_to_pay = divisor ? gross_foreign_amount / divisor : gross_foreign_amount;
+
     // Aplicar límite (capping) para no cobrar IGTF sobre el dinero entregado de más (vuelto)
     if (!is_return) {
       if (amount_to_pay > remaining_base + 0.001) {
@@ -213,7 +215,10 @@ patch(PosOrder.prototype, {
 
     // Calcular el impuesto exacto redondeado
     const igtf_amount = round_pr(amount_to_pay * (percentage / 100), rounding);
-    const foreign_igtf_amount = foreign_amount_to_pay * (percentage / 100)
+    const foreign_igtf_amount = round_pr(
+      foreign_amount_to_pay * (percentage / 100),
+      foreignRounding,
+    );
 
     return {
       base: amount_to_pay,
@@ -316,7 +321,6 @@ patch(PosOrder.prototype, {
 
       payment.set_include_igtf(true);
 
-
       // _compute_line_igtf extrae base del precio-con-IGTF incluido y aplica capping
       const computed = this._compute_line_igtf(
         payment,
@@ -353,7 +357,14 @@ patch(PosOrder.prototype, {
     this.foreign_bi_igtf = total_foreign_bi_igtf;
     this.igtf_amount = total_igtf_amount;
     this.foreign_igtf_amount = total_foreign_igtf_amount;
-
+    console.log("IGTF order totals", {
+      order_total: this.get_total_without_igtf(),
+      order_foreign_total: this.get_foreign_total_without_igtf(),
+      total_bi_igtf,
+      total_foreign_bi_igtf,
+      total_igtf_amount,
+      total_foreign_igtf_amount,
+    });
     return this.igtf_amount;
   },
 
@@ -447,7 +458,7 @@ patch(PosOrder.prototype, {
     return round_pr(base + this.get_igtf_amount(), rounding);
   },
 
-  get_foreign_total_with_tax() {
+  get_foreign_total_with_tax_custom() {
     const res = this.get_foreign_total_without_igtf(...arguments);
     const paymentlines = this._get_order_payment_lines();
     if (paymentlines.length > 0) {

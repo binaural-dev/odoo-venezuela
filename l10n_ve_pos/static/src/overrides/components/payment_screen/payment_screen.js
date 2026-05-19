@@ -20,13 +20,14 @@ patch(PaymentScreen.prototype, {
         this.orm = useService("orm");
         this._lastReqId = 0;
         this.state = useState({ foreignDueTotalWithTaxes: 0 });
-
         onWillStart(async () => {
-            await this._syncForeignAmountDisplay(this.currentOrder.priceIncl);
+            await this._syncForeignAmountDisplay(this.currentOrder.totalDue);
         });
 
         onWillUpdateProps(async (nextProps) => {
-            await this._syncForeignAmountDisplay(nextProps.currentOrder.priceIncl);
+        console.log("PAYMENTSCREEN", nextProps.currentOrder.totalDue)
+            
+            await this._syncForeignAmountDisplay(nextProps.currentOrder.totalDue);
         });
 
     },

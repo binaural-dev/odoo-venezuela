@@ -6,12 +6,12 @@ import platform
 import urllib3
 import json
 from odoo.addons.iot_drivers.tools import helpers
-from odoo.addons.iot_drivers.iot_handlers.interfaces.SerialInterface import SerialInterface
+from .serial_interface_compat import CompatSerialInterface
 
 _logger = logging.getLogger(__name__)
 
 
-class SerialInterface(SerialInterface):
+class SerialInterface(CompatSerialInterface):
     connection_type = 'serial'
 
     def get_devices(self):
