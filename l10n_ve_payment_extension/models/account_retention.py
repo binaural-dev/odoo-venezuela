@@ -692,7 +692,7 @@ class AccountRetention(models.Model):
                 continue
 
             if rec.payment_ids:
-                ctx = dict(self.env.context, bypass_retention_lock=True)
+                ctx = dict(self.env.context, bypass_retention_lock=True,force_delete=True)
                 
                 reconciled_lines = rec.payment_ids.mapped("move_id.line_ids").filtered(lambda l: l.reconciled)
                 if reconciled_lines:
