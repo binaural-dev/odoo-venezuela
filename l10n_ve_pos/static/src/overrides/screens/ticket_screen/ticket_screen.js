@@ -27,7 +27,7 @@ patch(TicketScreen.prototype, {
         orderline.foreign_currency_rate;
       res["total_with_tax"] = orderline.order.get_total_with_tax();
       res["foreign_total_with_tax"] =
-        orderline.order.get_foreign_total_with_tax();
+        orderline.order.get_foreign_total_with_taxes();
       return res;
     }
   },

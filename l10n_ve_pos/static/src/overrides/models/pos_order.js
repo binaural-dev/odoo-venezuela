@@ -134,7 +134,7 @@ patch(PosOrder.prototype, {
   },
   export_as_JSON() {
     let json = super.export_as_JSON();
-    json["foreign_amount_total"] = this.get_foreign_total_with_tax();
+    json["foreign_amount_total"] = this.get_foreign_total_with_taxes();
     json["foreign_currency_rate"] = this.get_conversion_rate?.() || this.get_display_rate?.() || 0;
     json["to_receipt"] = this.is_to_receipt();
     return json;
@@ -155,7 +155,7 @@ patch(PosOrder.prototype, {
     let res = super.export_for_printing(...arguments);
     let new_res = {
       ...res,
-      foreign_amount_total: this.get_foreign_total_with_tax(),
+      foreign_amount_total: this.get_foreign_total_with_taxes(),
       foreign_total_without_tax: this.get_foreign_total_without_tax(),
       foreign_amount_tax: this.get_foreign_total_tax(),
       foreign_total_paid: this.get_foreign_total_paid(),
@@ -397,11 +397,11 @@ patch(PosOrder.prototype, {
       if (!only_cash || (only_cash && last_line_is_cash)) {
         var rounding_method = this.pos.cash_rounding[0].rounding_method;
         var remaining =
-          this.get_foreign_total_with_tax() - this.get_total_paid();
-        var sign = this.get_foreign_total_with_tax() > 0 ? 1.0 : -1.0;
+          this.get_foreign_total_with_taxes() - this.get_total_paid();
+        var sign = this.get_foreign_total_with_taxes() > 0 ? 1.0 : -1.0;
         if (
-          ((this.get_foreign_total_with_tax() < 0 && remaining > 0) ||
-            (this.get_foreign_total_with_tax() > 0 && remaining < 0)) &&
+          ((this.get_foreign_total_with_taxes() < 0 && remaining > 0) ||
+            (this.get_foreign_total_with_taxes() > 0 && remaining < 0)) &&
           rounding_method !== "HALF-UP"
         ) {
           rounding_method = rounding_method === "UP" ? "DOWN" : "UP";
@@ -421,7 +421,7 @@ patch(PosOrder.prototype, {
           // https://xkcd.com/217/
           return 0;
         } else if (
-          Math.abs(this.get_foreign_total_with_tax()) <
+          Math.abs(this.get_foreign_total_with_taxes()) <
           this.pos.cash_rounding[0].rounding
         ) {
           return 0;
@@ -525,7 +525,7 @@ patch(PosOrder.prototype, {
     if (!paymentline) {
       const change =
         this.get_foreign_total_paid() -
-        this.get_foreign_total_with_tax() -
+        this.get_foreign_total_with_taxes() -
         this.get_rounding_applied();
       return round_pr(Math.max(0, change), rounding);
     }
