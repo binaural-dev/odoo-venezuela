@@ -28,6 +28,13 @@ patch(PaymentScreen.prototype, {
     this.render();
   },
 
+  deletePaymentLine() {
+    super.deletePaymentLine(...arguments);
+    const order = this._getCurrentOrder();
+    order?.update_igtf();
+    this.render();
+  },
+
   toggleIsToInvoice() {
     super.toggleIsToInvoice();
     const order = this._getCurrentOrder();

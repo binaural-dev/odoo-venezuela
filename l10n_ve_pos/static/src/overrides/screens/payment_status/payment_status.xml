@@ -3,7 +3,7 @@
         <!-- Vuelto o cambio -->
         <xpath expr="//section[1]//div[1]//span[2]" position="inside">
             <span class="foreign-amount fs-4 opacity-75">
-                / <t t-out="foreignRemainingText" />
+                / <t t-out="foreignDueOrderAmountRound" />
             </span>
         </xpath>
     </t>

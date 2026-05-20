@@ -10,6 +10,7 @@ _logger = logging.getLogger(__name__)
 class IotDeviceInherit(models.Model):
     _inherit = "iot.device"
 
+    iot_ip = fields.Char(string="IoT IP", compute="_compute_iot_ip")
     manufacturer_type = fields.Selection(
         selection=[("HKA", "The Factory HKA"), ("PnP", "PnP Desarrollos")],
         string="Manufacturer Type",
@@ -95,6 +96,19 @@ class IotDeviceInherit(models.Model):
 
     resume_range_from = fields.Date(default=fields.Date().today())
     resume_range_to = fields.Date(default=fields.Date().today())
+
+    @api.depends()
+    def _compute_iot_ip(self):
+        for record in self:
+            iot_box = False
+            if "iot_box" in record._fields:
+                iot_box = record.iot_box
+            elif "iot_id" in record._fields:
+                iot_box = record.iot_id
+            elif "box_id" in record._fields:
+                iot_box = record.box_id
+
+            record.iot_ip = iot_box.ip if iot_box and "ip" in iot_box._fields else False
 
 
     def _compute_manufacturer_type(self):
