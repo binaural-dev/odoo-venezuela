@@ -5,6 +5,20 @@ from odoo.exceptions import MissingError
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
+    pos_user_group_xml_ids = fields.Json(
+        compute="_compute_pos_user_group_xml_ids",
+        string="POS User Group XML IDs",
+    )
+
+    @api.depends("user_ids", "user_ids.all_group_ids")
+    def _compute_pos_user_group_xml_ids(self):
+        for partner in self:
+            groups = partner.sudo().user_ids.all_group_ids
+            external_ids = groups.get_external_id()
+            partner.pos_user_group_xml_ids = sorted(
+                xml_id for xml_id in external_ids.values() if xml_id
+            )
+
     def get_default_name_by_vat_param(self, prefix_vat, vat):
         """
         Retrieves the default name from the Venezuelan CNE (National Electoral Council) based on the vat and prefix.
@@ -39,11 +53,11 @@ class ResPartner(models.Model):
     @api.model
     def _load_pos_data_fields(self, config_id):
         """
-        Extends the list of fields to be loaded for res.partner in the POS to include city_id.
+        Extends the list of fields to be loaded for res.partner in the POS.
         
         :param config_id: The ID of the current pos.config
         :return: List of field names
         """
         res = super()._load_pos_data_fields(config_id)
-        res += ['city_id']
+        res += ["city_id", "pos_user_group_xml_ids"]
         return res

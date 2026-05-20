@@ -21,7 +21,6 @@ patch(PosOrder.prototype, {
     this.get_foreign_total_tax()
     super.setup(...arguments);
     //  this.setToInvoice(true) //TODO: hay que hacer esto por grupos de seguridad
-    console.log("SETUP POS ORDER", this.session_id.user_id)
   },
 
   get_foreign_currency() {

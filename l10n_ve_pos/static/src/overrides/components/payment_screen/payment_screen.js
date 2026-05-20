@@ -10,6 +10,7 @@ patch(PaymentScreen, {
   props: {
     ...PaymentScreen.props,
     foreignDueTotalWithTaxes: { optional: true },
+    group_change_can_invoice: { optional: true },
   },
 });
 
@@ -18,18 +19,27 @@ patch(PaymentScreen.prototype, {
     setup() {
         super.setup(...arguments);
         this.orm = useService("orm");
+        
         this._lastReqId = 0;
+        
+        this.currentOrder.setToInvoice(true);
+        
         this.state = useState({ foreignDueTotalWithTaxes: 0 });
         onWillStart(async () => {
             await this._syncForeignAmountDisplay(this.currentOrder.totalDue);
         });
 
         onWillUpdateProps(async (nextProps) => {
-        console.log("PAYMENTSCREEN", nextProps.currentOrder.totalDue)
-            
             await this._syncForeignAmountDisplay(nextProps.currentOrder.totalDue);
         });
 
+    },
+
+    get groupChangeCanInvoice() {
+
+        const userGroups = this.pos.config.current_session_id.user_id.partner_id.pos_user_group_xml_ids || [];
+        return userGroups.includes("l10n_ve_pos.group_change_can_invoice");
+   
     },
 
     get foreignDueTotalWithTaxes() {
