@@ -6,8 +6,9 @@
                 t-on-click="toggleIsToInvoice">
                 <span>
                     <i class="fa fa-file-text-o me-2" />
-                    <t t-if="pos.config.canInvoice">Invoice</t>
-                    <t t-else="">Not available</t>
+                    <t t-if="currentOrder.isToInvoice()">Invoice</t>
+                    <t t-else="">Recibo</t> 
+                    <!-- Las traducciones no funcionan con ese else, se debe ver porque-->
                 </span>
                 <!-- <i class="fa me-2" t-attf-class="{{ currentOrder.isToInvoice() ? 'fa-check-square text-action' : 'fa-square-o' }}" />  -->
             </button>
