@@ -37,6 +37,7 @@ class PosPayment(models.Model):
             payment.company_id,
             conversion_date,
         )
+        
         return float_round(
             foreign_amount,
             precision_rounding=foreign_currency.rounding,

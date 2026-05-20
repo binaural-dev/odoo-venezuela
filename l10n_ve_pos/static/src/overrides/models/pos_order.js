@@ -20,6 +20,8 @@ patch(PosOrder.prototype, {
   setup() {
     this.get_foreign_total_tax()
     super.setup(...arguments);
+    //  this.setToInvoice(true) //TODO: hay que hacer esto por grupos de seguridad
+    console.log("SETUP POS ORDER", this.session_id.user_id)
   },
 
   get_foreign_currency() {
@@ -44,7 +46,6 @@ patch(PosOrder.prototype, {
       return this.config.foreign_rate;
     }
   },
-
 
   add_orderline(line) {
     let res = super.add_orderline(...arguments);
@@ -95,30 +96,6 @@ patch(PosOrder.prototype, {
     return this.lines;
   },
 
-  // reload_taxes() { ? que hace esto? se llama cada vez que se agrega una línea, no es muy performance
-  //   console.log('RELOAD TAXES', this.lines)
-  //   const lines = this.get_orderlines?.() || this.lines || [];
-  //   for (const line of lines) {
-  //     const originalTaxes =
-  //     line.product?.originalTaxes ?? line.product?.taxes_id ?? [];
-  //     const taxIds = Array.isArray(originalTaxes)
-  //     ? [...originalTaxes]
-  //     : [originalTaxes];
-
-
-  //     if (typeof line.set_taxes === "function") {
-  //     line.set_taxes(taxIds);
-  //     } else if (typeof line.setTaxIds === "function") {
-  //     line.setTaxIds(taxIds);
-  //     } else {
-  //     line.tax_ids = taxIds;
-  //     }
-
-  //     // Recalcular importes/impuestos si existen estos métodos
-  //     line.compute_all?.();
-  //   }
-  // },
-
   toggle_receipt_invoice(to_receipt) {
     console.log("toggle_receipt_invoice", !to_receipt)
     if (this.getHasRefundLines()) {
@@ -132,6 +109,7 @@ patch(PosOrder.prototype, {
     this.to_invoice = !to_receipt;
 
   },
+  
   export_as_JSON() {
     let json = super.export_as_JSON();
     json["foreign_amount_total"] = this.get_foreign_total_with_taxes();
