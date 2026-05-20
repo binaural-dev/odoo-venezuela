@@ -302,12 +302,20 @@ patch(PosOrder.prototype, {
           ? paymentMethod.igtf_percentage
           : this._get_order_igtf_percentage();
 
+      const has_foreign_balance_pending = is_return
+        ? remaining_foreign_base < (-foreignRounding / 2)
+        : remaining_foreign_base > (foreignRounding / 2);
+
       const taxable_base = is_return
         ? Math.max(lineAmount, remaining_base)
         : Math.min(lineAmount, remaining_base);
-      const taxable_foreign_base = is_return
-        ? Math.max(lineForeignAmount, remaining_foreign_base)
-        : Math.min(lineForeignAmount, remaining_foreign_base);
+      const taxable_foreign_base = has_foreign_balance_pending
+        ? (
+            is_return
+              ? Math.max(lineForeignAmount, remaining_foreign_base)
+              : Math.min(lineForeignAmount, remaining_foreign_base)
+          )
+        : 0;
 
       const computed = this._compute_line_igtf(
         taxable_base,

@@ -7,7 +7,6 @@ import { useService } from "@web/core/utils/hooks";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
 import { useEnv } from "@odoo/owl";
 
-
 patch(PaymentScreen.prototype, {
 
   setup() {
@@ -68,6 +67,8 @@ patch(PaymentScreen.prototype, {
     this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
     this.render();
   },
+
+
   async _isOrderValid(isForceValidate) {
     let res = await super._isOrderValid(isForceValidate)
     if (!this.currentOrder) {

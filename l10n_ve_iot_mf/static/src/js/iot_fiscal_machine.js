@@ -56,7 +56,7 @@ export class IoTFiscalMachineComponent extends Component {
     this.notification = useService('notification');
 
     this.device = new DeviceController(
-      this.env.services.iot_longpolling,
+      useService("iot_longpolling"),
       { iot_ip: device.iot_ip, identifier: device.identifier },
       this.notification
     );
@@ -301,23 +301,15 @@ export class IoTFiscalMachineComponent extends Component {
   }
   async test() {
     if (!this.device) {
-      this.showFailedConnection()
-      return
+      this.showFailedConnection();
+      return;
     }
-
-    this.iotDevice.addListener(({ value }) => {
-      this.iotDevice.removeListener();
-    });
-
-    this.iotDevice.action({
-      action: "test",
-      data: true,
-    })
-      .then(data => {
-        onIoTActionResult(data, this.notification)
-      })
-      .catch(error => onIoTError(error, this.notification))
-
+    try {
+      const data = await this.device.action({ action: "test", data: true });
+      onIoTActionResult(data, this.notification);
+    } catch (error) {
+      onIoTError(error, this.notification);
+    }
   }
   async command() {
     if (!this.device) {
@@ -456,7 +448,7 @@ export class IoTFiscalMachineComponent extends Component {
       );
 
       this.device = new DeviceController(
-        this.env.services.iot_longpolling,
+        useService("iot_longpolling"),
         { iot_ip: request.iot_ip, identifier: request.identifier }
       );
 
@@ -492,20 +484,9 @@ export class IoTFiscalMachineComponent extends Component {
   }
 
   async device_response(action, data) {
-    return new Promise((resolve, reject) => {
-      console.log("Enviando acción al dispositivo fiscal:", action, data);
-      const listener = ({value}) => {
-        this.iotDevice.removeListener(listener);
-        resolve(value);
-      };
-  
-      this.iotDevice.addListener(listener);
-  
-      this.iotDevice.action({
-        action: action,
-        data: data,
-      }).catch(reject);
-    });
+    console.log("Enviando acción al dispositivo fiscal:", action, data);
+    const result = await this.device.action({ action, data });
+    return result;
   }
 
   // doWarnFail(url) {

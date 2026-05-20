@@ -47,11 +47,13 @@ class PosPayment(models.Model):
         return rate, inverse_rate
 
     def _get_payment_foreign_amount(self, payment):
-        rate, inverse_rate = self._get_payment_rate_values(payment)
-        foreign_amount = payment.foreign_amount
-
-        if float_is_zero(foreign_amount, precision_rounding=0.01) and inverse_rate:
-            foreign_amount = payment.amount * inverse_rate
+        company = self.env.company
+        foreign_amount = company.currency_id._convert(
+            payment.amount,
+            company.foreign_currency_id,
+            company,
+            fields.Date.today()
+        )
 
         return foreign_amount
 
@@ -74,6 +76,8 @@ class PosPayment(models.Model):
 
             rate, inverse_rate = self._get_payment_rate_values(payment)
             foreign_amount = self._get_payment_foreign_amount(payment)
+
+            
 
             payment_move.write(
                 {

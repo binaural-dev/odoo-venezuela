@@ -9,6 +9,9 @@ patch(PosPayment.prototype, {
         if (!Number.isFinite(this.foreign_amount)) {
             this.foreign_amount = 0;
         }
+        if (!Number.isFinite(this.foreign_inverse_rate)) {
+            this.foreign_inverse_rate = 0;
+        }
     },
 
     init_from_JSON(json) {
@@ -17,6 +20,7 @@ patch(PosPayment.prototype, {
         }
         this.foreign_amount = json.foreign_amount ?? this.foreign_amount;
         this.foreign_rate = json.foreign_rate ?? this.foreign_rate;
+        this.foreign_inverse_rate = json.foreign_inverse_rate ?? this.foreign_inverse_rate;
     },
 
     export_as_JSON() {
@@ -27,16 +31,26 @@ patch(PosPayment.prototype, {
                 : typeof super.serializeForORM === "function"
                   ? super.serializeForORM(...arguments)
                   : {};
-        const order = this._getCurrentOrder();
+        const amount = Number(this.amount) || 0;
+        if (!this.foreign_amount && amount > 0) {
+            const { inverseRate } = this._get_foreign_rate_values();
+            this.foreign_amount = inverseRate > 0 ? amount / inverseRate : amount;
+        }
+        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
         res["foreign_amount"] = this.foreign_amount;
-        const { directRate } = this._get_foreign_rate_values();
-        res["foreign_rate"] = directRate || order?.get_conversion_rate?.() || 0;
+        res["foreign_rate"] = foreignRate || 0;
+        res["foreign_inverse_rate"] = inverseRate || 0;
         return res;
     },
 
     _recompute_foreign_amount() {
         const computed = this.getForeignAmount?.() ?? this.get_foreign_amount?.();
         this.foreign_amount = Number.isFinite(computed) ? computed : 0;
+        if (!this.foreign_amount && this.amount) {
+            const amount = Number(this.amount) || 0;
+            const { inverseRate } = this._get_foreign_rate_values();
+            this.foreign_amount = inverseRate > 0 ? amount / inverseRate : amount;
+        }
     },
 
     _getCurrentOrder() {
@@ -79,11 +93,8 @@ patch(PosPayment.prototype, {
 
     _convert_order_to_foreign(orderAmount = 0) {
         const amount = Number(orderAmount) || 0;
-        const { directRate, inverseRate } = this._get_foreign_rate_values();
+        const { inverseRate } = this._get_foreign_rate_values();
 
-        if (directRate > 0) {
-            return amount / directRate;
-        }
         if (inverseRate > 0) {
             return amount / inverseRate;
         }
@@ -92,11 +103,8 @@ patch(PosPayment.prototype, {
 
     _convert_foreign_to_order(foreignAmount = 0) {
         const amount = Number(foreignAmount) || 0;
-        const { directRate, inverseRate } = this._get_foreign_rate_values();
+        const { inverseRate } = this._get_foreign_rate_values();
 
-        if (directRate > 0) {
-            return amount / directRate;
-        }
         if (inverseRate > 0) {
             return amount * inverseRate;
         }
@@ -107,56 +115,51 @@ patch(PosPayment.prototype, {
         const currentOrder = this._getCurrentOrder();
 
         const config = currentOrder?.config || this.pos?.config || this.env?.pos?.config || {};
-        
-        let directRate =
-            this.pos?.foreign_currency?.rate ||
-            currentOrder?.get_conversion_rate?.() ||
-            config.foreign_rate ||
-            currentOrder?.get_display_rate?.() ||
-            this.foreign_rate ||
+
+        let foreignRate =
+            Number(currentOrder?.get_display_rate?.()) ||
+            Number(config.foreign_rate) ||
+            Number(this.pos?.config?.foreign_rate) ||
+            Number(this.foreign_rate) ||
+            Number(currentOrder?.get_conversion_rate?.()) ||
             0;
 
         let inverseRate =
-            this.pos?.foreign_currency?.inverse_rate ||
-            config.foreign_inverse_rate ||
-            currentOrder?.get_foreign_inverse_rate?.() ||
+            Number(currentOrder?.get_foreign_inverse_rate?.()) ||
+            Number(config.foreign_inverse_rate) ||
+            Number(this.foreign_inverse_rate) ||
+            Number(this.pos?.foreign_currency?.inverse_rate) ||
             0;
 
-        if ((!directRate || directRate <= 0) && inverseRate > 0) {
-            directRate = 1 / inverseRate;
+        if ((!inverseRate || inverseRate <= 0) && foreignRate > 0) {
+            inverseRate = 1 / foreignRate;
         }
-        if ((!inverseRate || inverseRate <= 0) && directRate > 0) {
-            inverseRate = 1 / directRate;
+        if ((!foreignRate || foreignRate <= 0) && inverseRate > 0) {
+            foreignRate = 1 / inverseRate;
         }
-        
-        return { directRate: directRate || 0, inverseRate: inverseRate || 0 };
+
+        return { foreignRate: foreignRate || 0, inverseRate: inverseRate || 0 };
     },
 
     getForeignAmount() {
-        const currentOrder = this._getCurrentOrder();
+        const { inverseRate } = this._get_foreign_rate_values();
+        const amount = (this.amount || 0) * (inverseRate > 0 ? inverseRate : 1);
 
-        const config = currentOrder?.config || this.pos?.config || this.env?.pos?.config || {};
-        
-        let directRate =
-            this.pos?.foreign_currency?.rate ||
-            currentOrder?.get_conversion_rate?.() ||
-            config.foreign_rate ||
-            currentOrder?.get_display_rate?.() ||
-            this.foreign_rate ||
-            0;
-        
-        const amount = (this.amount || 0) * (directRate > 0 ? 1 / directRate : 1);
-                
         return amount;
     },
 
     serializeForORM(opts = {}) {
         this._recompute_foreign_amount();
         const data = super.serializeForORM(opts);
-        const { directRate } = this._get_foreign_rate_values();
-        const order = this._getCurrentOrder();
+        const amount = Number(this.amount) || 0;
+        if (!this.foreign_amount && amount > 0) {
+            const { inverseRate } = this._get_foreign_rate_values();
+            this.foreign_amount = inverseRate > 0 ? amount / inverseRate : amount;
+        }
+        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
         data.foreign_amount = this.foreign_amount;
-        data.foreign_rate = directRate || order?.get_conversion_rate?.() || 0;
+        data.foreign_rate = foreignRate || 0;
+        data.foreign_inverse_rate = inverseRate || 0;
         return data;
     },
 
@@ -170,7 +173,12 @@ patch(PosPayment.prototype, {
         let res = super.setAmount(...arguments);
         if (!only) {
             if (isDue) {
-                this.setForeignAmount(this._getForeignDue(), true);
+                const foreignDue = this._getForeignDue();
+                if (foreignDue > 0 || !numericAmount) {
+                    this.setForeignAmount(foreignDue, true);
+                } else {
+                    this._recompute_foreign_amount();
+                }
                 return res;
             }
             this._recompute_foreign_amount();

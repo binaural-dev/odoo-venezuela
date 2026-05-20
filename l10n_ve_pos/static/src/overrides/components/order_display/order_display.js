@@ -4,6 +4,7 @@ import { OrderDisplay } from "@point_of_sale/app/components/order_display/order_
 import { patch } from "@web/core/utils/patch";
 import { onWillUpdateProps, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import { debounce } from "@web/core/utils/timing";
 patch(OrderDisplay, {
   props: {
     ...OrderDisplay.props,
@@ -23,12 +24,17 @@ patch(OrderDisplay.prototype, {
     this._lastReqId = 0;
     this.orm = useService("orm");
     this.state = useState({ foreignTotalOrderDisplay: 0 });
+
+    const debouncedSync = debounce(async (amount) => {
+      await this._syncForeignAmountDisplay(amount);
+    }, 300);
+
     onWillStart(async () => {
       await this._syncForeignAmountDisplay(this.props.order.get_total_with_tax());
     });
 
-    onWillUpdateProps(async (nextProps) => {
-      await this._syncForeignAmountDisplay(nextProps.order.get_total_with_tax());
+    onWillUpdateProps((nextProps) => {
+      debouncedSync(nextProps.order.get_total_with_tax());
     });
   },
 

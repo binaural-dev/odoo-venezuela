@@ -13,6 +13,7 @@ import {
 patch(PosPayment.prototype, {
   setup() {
     super.setup(...arguments);
+    this.include_igtf = this.include_igtf || false
     this.igtf_amount = this.igtf_amount || 0
     this.foreign_igtf_amount = this.foreign_igtf_amount || 0
     this.apply_igtf = this.payment_method_id.apply_igtf || false

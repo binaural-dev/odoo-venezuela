@@ -12,8 +12,6 @@ class PosOrder(models.Model):
     foreign_currency_rate = fields.Float(readonly=True, required=False)
     
     def _process_order(self, order, existing_order):
-        res = super()._process_order(order, existing_order)
-
         try:
             order["foreign_amount_total"] = float(order.get("foreign_amount_total", 0.0) or 0.0)
         except (TypeError, ValueError):
@@ -23,7 +21,8 @@ class PosOrder(models.Model):
             order["foreign_currency_rate"] = float(order.get("foreign_currency_rate", 0.0) or 0.0)
         except (TypeError, ValueError):
             order["foreign_currency_rate"] = 0.0
-        return res
+
+        return super()._process_order(order, existing_order)
        
 
     def _payment_fields(self, order, ui_paymentline):
@@ -32,6 +31,10 @@ class PosOrder(models.Model):
         # Be tolerant with payload variants sent by custom POS frontends.
         foreign_amount = ui_paymentline.get("foreign_amount", ui_paymentline.get("foreignAmount", 0.0))
         foreign_rate = ui_paymentline.get("foreign_rate", ui_paymentline.get("foreignRate", 0.0))
+        foreign_inverse_rate = ui_paymentline.get(
+            "foreign_inverse_rate",
+            ui_paymentline.get("foreignInverseRate", 0.0),
+        )
         amount = ui_paymentline.get("amount", 0.0)
 
         try:
@@ -45,15 +48,30 @@ class PosOrder(models.Model):
             foreign_rate = 0.0
 
         try:
+            foreign_inverse_rate = float(foreign_inverse_rate or 0.0)
+        except (TypeError, ValueError):
+            foreign_inverse_rate = 0.0
+
+        try:
             amount = float(amount or 0.0)
         except (TypeError, ValueError):
             amount = 0.0
 
-        if not foreign_amount and foreign_rate:
-            foreign_amount = amount / foreign_rate
+        if not foreign_inverse_rate and foreign_rate:
+            foreign_inverse_rate = 1 / foreign_rate if foreign_rate > 1 else foreign_rate
+
+        if not foreign_rate and foreign_inverse_rate:
+            foreign_rate = 1 / foreign_inverse_rate if foreign_inverse_rate else 0.0
+
+        if not foreign_amount:
+            if foreign_inverse_rate:
+                foreign_amount = amount * foreign_inverse_rate
+            elif foreign_rate:
+                foreign_amount = amount / foreign_rate if foreign_rate > 1 else amount * foreign_rate
 
         res["foreign_amount"] = foreign_amount
         res["foreign_rate"] = foreign_rate
+        res["foreign_inverse_rate"] = foreign_inverse_rate
         return res
 
     def _prepare_invoice_vals(self):
@@ -61,7 +79,7 @@ class PosOrder(models.Model):
         res = super()._prepare_invoice_vals()
         res.update(
             {
-                "foreign_rate": self.config_id.foreign_rate,
+                "foreign_rate": self.foreign_currency_rate or self.config_id.foreign_rate,
                 "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
                 "manually_set_rate": True,
             }
