@@ -3,6 +3,7 @@
 import { Widget } from "@web/views/widgets/widget";
 import { registry } from "@web/core/registry";
 import { DeviceController } from "@iot_base/device_controller";
+import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
 import { Component, onWillStart } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
@@ -25,6 +26,22 @@ function onIoTActionResult(data, notification) {
       type: "danger",
     });
   }
+}
+
+function onIoTError(error, notification) {
+  const message =
+    error?.data?.message ||
+    error?.message ||
+    error?.cause?.message ||
+    _t("Unknown IoT error");
+
+  console.error("IoT fiscal machine error", error);
+
+  if (!notification || typeof notification.add !== "function") return;
+  notification.add(message, {
+    title: _t("IoT communication error"),
+    type: "danger",
+  });
 }
 
 
@@ -74,6 +91,9 @@ export class IoTFiscalMachineComponent extends Component {
   // showFailedConnection() {
   //   this.dialog.add(IoTConnectionErrorDialog, { href: url });
   // }
+  showFailedConnection() {
+    onIoTError(new Error(_t("IoT device is not available")), this.notification);
+  }
   get iotDevice() {
     return this.device
   }
@@ -119,7 +139,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_data_to_payment_method", {
+    const request = await rpc("web/dataset/call_kw/iot.device/get_data_to_payment_method", {
       model: 'iot.device',
       method: 'get_data_to_payment_method',
       args: [device],
@@ -137,6 +157,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
 
   }
 
@@ -149,7 +170,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     this.iotDevice.addListener(({ value }) => {
       this.iotDevice.removeListener();
-      this.env.services.notification.add(value.message)
+      this.notification.add(value.message)
     });
 
     this.iotDevice.action({
@@ -159,6 +180,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
 
   }
 
@@ -170,7 +192,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_resume", {
+    const request = await rpc("web/dataset/call_kw/iot.device/get_range_resume", {
       model: 'iot.device',
       method: 'get_range_resume',
       args: [device],
@@ -188,6 +210,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
   }
 
   async reprint_type_date() {
@@ -198,7 +221,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
+    const request = await rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
       model: 'iot.device',
       method: 'get_range_reprint',
       args: [device],
@@ -216,6 +239,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
 
   }
   async reprint_type() {
@@ -226,7 +250,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
+    const request = await rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
       model: 'iot.device',
       method: 'get_range_reprint',
       args: [device],
@@ -244,6 +268,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
 
   }
   async configure_device() {
@@ -254,7 +279,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/configure_device", {
+    const request = await rpc("web/dataset/call_kw/iot.device/configure_device", {
       model: 'iot.device',
       method: 'configure_device',
       args: [device],
@@ -272,6 +297,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
   }
   async test() {
     if (!this.device) {
@@ -290,6 +316,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
 
   }
   async command() {
@@ -300,7 +327,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_command", {
+    const request = await rpc("web/dataset/call_kw/iot.device/get_command", {
       model: 'iot.device',
       method: 'get_command',
       args: [device],
@@ -318,6 +345,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
 
   }
   async generate_report_z() {
@@ -347,6 +375,7 @@ export class IoTFiscalMachineComponent extends Component {
     .then(data => {
       onIoTActionResult(data, this.notification)
     })
+    .catch(error => onIoTError(error, this.notification))
   }
 
   async generate_report_x() {
@@ -365,6 +394,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
   }
 
   async programacion() {
@@ -383,6 +413,7 @@ export class IoTFiscalMachineComponent extends Component {
       .then(data => {
         onIoTActionResult(data, this.notification)
       })
+      .catch(error => onIoTError(error, this.notification))
   }
 
   async print_out_invoice() {
@@ -443,13 +474,14 @@ export class IoTFiscalMachineComponent extends Component {
       }
 
     }catch(error){
-      onIoTError(error.data.message, this.notification)
+      console.log("Error al comunicarse con el dispositivo fiscal:", error);
+      onIoTError(error, this.notification)
     }
   }
 
   async call_model_method(model, method, args = [], kwargs = {}) {
     const endpoint = `web/dataset/call_kw/${model}/${method}`;
-    const response = this.env.services.rpc(endpoint, {
+    const response = rpc(endpoint, {
       model,
       method,
       args,
@@ -461,6 +493,7 @@ export class IoTFiscalMachineComponent extends Component {
 
   async device_response(action, data) {
     return new Promise((resolve, reject) => {
+      console.log("Enviando acción al dispositivo fiscal:", action, data);
       const listener = ({value}) => {
         this.iotDevice.removeListener(listener);
         resolve(value);

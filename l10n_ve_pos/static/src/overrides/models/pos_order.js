@@ -538,7 +538,7 @@ patch(PosOrder.prototype, {
       (sum, line) => {
         return sum + this.get_payment_foreign_amount(line);
       },
-      -round_pr(this.get_due(), rounding),
+      - round_pr(this.change, rounding),
     );
 
     return round_pr(Math.max(0, change), rounding);
@@ -551,13 +551,14 @@ patch(PosOrder.prototype, {
     const endIndex = lines.findIndex((line) => line === paymentline);
     const linesToSum = endIndex >= 0 ? lines.slice(0, endIndex + 1) : lines;
     const paidAmount = linesToSum.reduce(
-      (sum, line) => sum + (this.get_payment_foreign_amount(line) || 0),
+      (sum, line) => sum + round_pr(line.foreign_amount, rounding),
       0
     );
 
-    const due = this.get_foreign_total_with_taxes() - paidAmount;
+    const totalWithTaxes = this.get_foreign_total_with_taxes();
+    const due = round_pr((totalWithTaxes - paidAmount), rounding);
     console.log("DUE", due)
-    return round_pr(due, rounding);
+    return round_pr(due, rounding, "UP")
   },
 
   get_qty_products() {

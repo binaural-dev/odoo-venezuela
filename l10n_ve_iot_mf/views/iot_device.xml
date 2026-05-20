@@ -106,6 +106,7 @@
             </xpath>
 
             <xpath expr="//field[@name='identifier']" position="after">
+                <field name="iot_ip" invisible="1"/>
                 <field 
                     name="manufacturer_type"
                     invisible="type != 'fiscal_data_module'"/>

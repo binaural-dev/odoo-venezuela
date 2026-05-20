@@ -188,7 +188,7 @@ patch(PosOrder.prototype, {
     return round_pr(super.change, 0.01);
   },
 
-  _compute_line_igtf(amount, foreing_amount, percentage, remaining_base, remaining_foreign_base, is_return) {
+  _compute_line_igtf(amount, foreing_amount, percentage, is_return) {
 
     const rounding = this.pos?.currency?.rounding || 0.01;
     const foreignRounding = this.get_foreign_currency?.()?.rounding || 0.01;
@@ -215,8 +215,8 @@ patch(PosOrder.prototype, {
     );
 
     return {
-      base: amount_to_pay,
-      foreign_base: foreign_amount_to_pay,
+      base: round_pr(amount_to_pay, rounding),
+      foreign_base: round_pr(foreign_amount_to_pay, foreignRounding),
       tax: igtf_amount,
       foreign_tax: foreign_igtf_amount
     };
@@ -227,6 +227,8 @@ patch(PosOrder.prototype, {
   update_igtf() {
     const paymentlines = this._get_order_payment_lines();
     const is_return = this.get_total_without_igtf() < 0;
+    const rounding = this.pos?.currency?.rounding || 0.01;
+    const foreignRounding = this.get_foreign_currency?.()?.rounding || 0.01;
 
     // 1. Reiniciar contadores globales de la orden
     this.igtf_amount = 0;
@@ -244,68 +246,31 @@ patch(PosOrder.prototype, {
       return 0;
     }
 
-    // 2. Separar líneas: las que aplican IGTF vs las que no
-    // FIX: usar _get_payment_method_data() para resolver apply_igtf correctamente
-    let non_igtf_total = 0;
-    let non_foreign_igtf_total = 0;
-    const igtf_lines = [];
-
-    paymentlines.forEach((payment) => {
+    const has_igtf_line = paymentlines.some((payment) => {
       const paymentMethod = this._get_payment_method_data(payment);
-      const isChangePayment = this._is_change_payment(payment, is_return);
-
-      if (isChangePayment) {
-        payment.set_include_igtf(false);
-        payment.set_igtf_amount(0);
-        payment.set_foreign_igtf_amount(0);
-        return;
-      }
-
-      if (paymentMethod?.apply_igtf) {
-        igtf_lines.push({
-          payment,
-          percentage: typeof paymentMethod.igtf_percentage === "number"
-            ? paymentMethod.igtf_percentage
-            : this._get_order_igtf_percentage(),
-        });
-      } else {
-        payment.set_include_igtf(false);
-        payment.set_igtf_amount(0);
-        payment.set_foreign_igtf_amount(0);
-        non_igtf_total += round_pr(payment.amount || 0, 6);
-        non_foreign_igtf_total += round_pr(this._get_payment_foreign_amount(payment), 6);
-      }
+      return paymentMethod?.apply_igtf && !this._is_change_payment(payment, is_return);
     });
 
-    // Sin líneas IGTF no hay nada que calcular
-    if (igtf_lines.length === 0) {
+    if (!has_igtf_line) {
+      paymentlines.forEach((payment) => {
+        payment.set_include_igtf(false);
+        payment.set_igtf_amount(0);
+        payment.set_foreign_igtf_amount(0);
+      });
       return 0;
     }
 
-    const order_total = this.get_total_without_igtf();
-    const order_foreign_total = this.get_foreign_total_without_igtf();
-
-    // 3. Base disponible = Total factura − pagos exentos
-    // NIVEL 1: clamp para que remaining_base nunca supere el total de la orden
-    let remaining_base = this._normalize_remaining_amount(
-      order_total - non_igtf_total,
-      order_total,
-      is_return,
-    );
-    let remaining_foreign_base = this._normalize_remaining_amount(
-      order_foreign_total - non_foreign_igtf_total,
-      order_foreign_total,
-      is_return,
-    );
+    let remaining_base = round_pr(this.get_total_without_igtf(), rounding);
+    let remaining_foreign_base = round_pr(this.get_foreign_total_without_igtf(), foreignRounding);
+    let has_processed_igtf_line = false;
 
     let total_bi_igtf = 0;
     let total_foreign_bi_igtf = 0;
     let total_igtf_amount = 0;
     let total_foreign_igtf_amount = 0;
 
-    // 4. Calcular IGTF por línea (con capping de base y tope de 2 líneas activas)
-    igtf_lines.forEach(({ payment, percentage }) => {
-      // Vueltos no generan IGTF
+    paymentlines.forEach((payment) => {
+      const paymentMethod = this._get_payment_method_data(payment);
       if (this._is_change_payment(payment, is_return)) {
         payment.set_include_igtf(false);
         payment.set_igtf_amount(0);
@@ -313,51 +278,71 @@ patch(PosOrder.prototype, {
         return;
       }
 
+      const lineAmount = round_pr(payment.amount || 0, rounding);
+      const lineForeignAmount = round_pr(this._get_payment_foreign_amount(payment), foreignRounding);
+
+      if (!paymentMethod?.apply_igtf) {
+        payment.set_include_igtf(false);
+        payment.set_igtf_amount(0);
+        payment.set_foreign_igtf_amount(0);
+
+        if (!has_processed_igtf_line) {
+          remaining_base = round_pr(remaining_base - lineAmount, rounding);
+          remaining_foreign_base = round_pr(remaining_foreign_base - lineForeignAmount, foreignRounding);
+        }
+        return;
+      }
+
+      has_processed_igtf_line = true;
+
       payment.set_include_igtf(true);
 
-      const lineForeignBase = Number(this._get_payment_foreign_amount(payment) || 0);
+      const percentage =
+        typeof paymentMethod.igtf_percentage === "number"
+          ? paymentMethod.igtf_percentage
+          : this._get_order_igtf_percentage();
 
+      const taxable_base = is_return
+        ? Math.max(lineAmount, remaining_base)
+        : Math.min(lineAmount, remaining_base);
+      const taxable_foreign_base = is_return
+        ? Math.max(lineForeignAmount, remaining_foreign_base)
+        : Math.min(lineForeignAmount, remaining_foreign_base);
 
-      
-      // _compute_line_igtf extrae base del precio-con-IGTF incluido y aplica capping
       const computed = this._compute_line_igtf(
-        payment.amount,
-        lineForeignBase,
+        taxable_base,
+        taxable_foreign_base,
         percentage,
-        remaining_base,
-        remaining_foreign_base,
         is_return,
       );
 
       payment.set_igtf_amount(computed.tax);
       payment.set_foreign_igtf_amount(computed.foreign_tax);
 
-      total_bi_igtf += computed.base || 0;
-      total_foreign_bi_igtf += computed.foreign_base || 0;
-
-      total_igtf_amount += computed.tax;
-      total_foreign_igtf_amount += computed.foreign_tax;
-
-      // Consumir la base para la siguiente línea activa
-      remaining_base = this._normalize_remaining_amount(
-        remaining_base - computed.base,
-        order_total,
-        is_return,
+      total_bi_igtf = round_pr(total_bi_igtf + (computed.base || 0), rounding);
+      total_foreign_bi_igtf = round_pr(
+        total_foreign_bi_igtf + (computed.foreign_base || 0),
+        foreignRounding,
       );
 
-      remaining_foreign_base = this._normalize_remaining_amount(
-        remaining_foreign_base - computed.foreign_base,
-        order_foreign_total,
-        is_return,
+      total_igtf_amount = round_pr(total_igtf_amount + (computed.tax || 0), rounding);
+      total_foreign_igtf_amount = round_pr(
+        total_foreign_igtf_amount + (computed.foreign_tax || 0),
+        foreignRounding,
       );
 
+      remaining_base = round_pr(remaining_base - (computed.base || 0), rounding);
+      remaining_foreign_base = round_pr(
+        remaining_foreign_base - (computed.foreign_base || 0),
+        foreignRounding,
+      );
     });
 
     // 5. Guardar totales consolidados en la orden
-    this.bi_igtf = total_bi_igtf;
-    this.foreign_bi_igtf = total_foreign_bi_igtf;
-    this.igtf_amount = total_igtf_amount;
-    this.foreign_igtf_amount = total_foreign_igtf_amount;
+    this.bi_igtf = round_pr(total_bi_igtf, rounding);
+    this.foreign_bi_igtf = round_pr(total_foreign_bi_igtf, foreignRounding);
+    this.igtf_amount = round_pr(total_igtf_amount, rounding);
+    this.foreign_igtf_amount = round_pr(total_foreign_igtf_amount, foreignRounding);
 
     return this.igtf_amount;
   },
