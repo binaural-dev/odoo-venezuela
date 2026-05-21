@@ -1,6 +1,6 @@
 from odoo import api, models, fields, _, Command
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_is_zero , float_compare, float_repr, SQL
+from odoo.tools import float_is_zero , float_compare, float_repr, SQL , float_round
 
 import logging
 
@@ -431,37 +431,27 @@ class AccountPaymentAndIgtf(models.Model):
             return set(move_lines.mapped("move_id"))
 
     def _prepare_inbound_move_line_igtf_vals(self, vals, write_off_line_vals = False):
+        """ Adjusts the journal items values (`vals`) to inject the IGTF tax calculation,
+        ensuring proper multi-currency balance alignment and checking for total invoice closures.
+
+        This method recalculates the customer receivable line (`vals[1]`) by isolating the
+        proportional VEF/USD amount corresponding to the transaction's core payment vs its 
+        associated IGTF tax. It also provides a safeguard to force the receivable balance 
+        to match the total outstanding invoice residual value when the payment completely 
+        extinguishes the debt.
+
+        :param list vals: A list of dictionaries representing the `account.move.line` 
+                        values prepared by Odoo's payment creation wizard.
+                        - vals[0]: Liquidity/Bank line.
+                        - vals[1]: Counterpart/Receivable line.
+                        - vals[2]: (Optional) Write-off/Difference line.
+        :param list/bool write_off_line_vals: Optional list containing standard write-off 
+                                            line structures to absorb differences.
+
+        :return: None. Modifies the mutable `vals` list in-place and triggers the 
+                internal tax row generation via `_create_inbound_move_line_igtf_vals`.
         """
-            Adjusts account move line values to process the IGTF tax on inbound payments.
-
-            This method recalculates the balances and foreign currency amounts of the payment 
-            lines by deducting the IGTF amount (igtf_amount) from the main debit line and 
-            adjusting the accounting balance converted to the company's currency. It also 
-            handles specific reconciliation cases with origin invoices to prevent rounding 
-            differences during the reconciliation process.
-
-            :param list vals: A list of dictionaries containing the move line values generated 
-                by the standard payment process.
-                - vals[0]: Usually the bank/cash account line.
-                - vals[1]: Usually the counterpart (debt/payable) account line.
-            :param dict/bool write_off_line_vals: Optional. A dictionary containing values 
-                for write-off lines (exchange rate differences or discounts). 
-                If provided, adjustments are applied to vals[2].
-
-            :return: None. The method modifies the `vals` list in-place and triggers 
-                `_create_inbound_move_line_igtf_vals` at the end.
-
-            :logic:
-                1. Validates that the payment type is 'inbound'.
-                2. Converts the IGTF amount (`igtf_amount`) to the company's currency.
-                3. If origin invoices exist (`invoices_origin_ids`), it recalculates the 
-                balance using the signed residual amount and the IGTF percentage 
-                to ensure an exact match for reconciliation.
-                4. Updates `amount_currency` and `balance` in `vals[1]` by subtracting 
-                the tax value.
-                5. If `write_off_line_vals` is present, it applies the IGTF adjustment 
-                to the third line (`vals[2]`).
-            """
+        
         for rec in self:
             lines = [line for line in vals]
             if rec.payment_type == "inbound":
@@ -474,18 +464,18 @@ class AccountPaymentAndIgtf(models.Model):
                
                 
                 credit_amount = abs(lines[1]["balance"])
-
-                igtf_converted =  currency._convert(
-                    rec.igtf_amount, 
-                    rec.company_id.currency_id, 
-                    rec.company_id, 
-                    rec.date,
-                )
-                amount = credit_amount - igtf_converted
-                amount_new = False
-                if rec.invoices_origin_ids != False and rec.igtf_amount > 0.0: 
                 
-                    total_base_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
+                amount = credit_amount
+
+                precision_base = self.env.company.currency_id.rounding
+                if rec.invoices_origin_ids != False and rec.igtf_amount > 0.0: 
+                    
+                    porcion_igtf = float_round(rec.igtf_amount / abs(lines[0]["amount_currency"]), precision_rounding=precision)
+                    igtf_base = float_round((lines[0]["balance"] * porcion_igtf), precision_rounding=precision_base)
+
+                    amount = credit_amount - igtf_base
+                
+                    total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
                     total_base_residual_converted =  rec.company_id.currency_id._convert(
                         total_base_residual, 
                         currency, 
@@ -493,14 +483,11 @@ class AccountPaymentAndIgtf(models.Model):
                         rec.date,
                     )
 
-                    amount_new = total_base_residual + (total_base_residual * rec.igtf_percentage / 100)
-
-                    total_base_residual_converted_with_igtf = abs(total_base_residual_converted) + abs(rec.igtf_amount)
+                    total_base_residual_converted_with_igtf = float_round(abs(total_base_residual_converted) + abs(rec.igtf_amount), precision_rounding=precision)
                     if total_base_residual_converted_with_igtf == abs(lines[0]["amount_currency"]): 
+                        
                         if abs(credit_amount) > abs(total_base_residual):
-                            vals[0].update({"balance": abs(amount_new)})
                             amount  = abs(total_base_residual)
-
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
                         vals[1].update({"amount_currency": credit_line, "balance": -amount})
@@ -508,7 +495,7 @@ class AccountPaymentAndIgtf(models.Model):
                 if write_off_line_vals:
                     actual_value = vals[2]["amount_currency"] + rec.igtf_amount
                     balance =  currency._convert(
-                        rec.actual_value, 
+                        actual_value, 
                         rec.company_id.currency_id, 
                         rec.company_id, 
                         rec.date,
@@ -520,36 +507,25 @@ class AccountPaymentAndIgtf(models.Model):
                 rec._create_inbound_move_line_igtf_vals(vals)
                 
     def _prepare_outbound_move_line_igtf_vals(self, vals,write_off_line_vals =False):
-        """
-            Adjusts account move line values to process the IGTF tax on outbound payments.
+        """ Adjusts the journal items values (`vals`) to inject the IGTF tax calculation,
+        ensuring proper multi-currency balance alignment and checking for total invoice closures.
 
-            This method recalculates the balances and foreign currency amounts of the payment 
-            lines by deducting the IGTF amount (igtf_amount) from the main debit line and 
-            adjusting the accounting balance converted to the company's currency. It also 
-            handles specific reconciliation cases with origin invoices to prevent rounding 
-            differences during the reconciliation process.
+        This method recalculates the provider receivable line (`vals[1]`) by isolating the
+        proportional VEF/USD amount corresponding to the transaction's core payment vs its 
+        associated IGTF tax. It also provides a safeguard to force the receivable balance 
+        to match the total outstanding invoice residual value when the payment completely 
+        extinguishes the debt.
 
-            :param list vals: A list of dictionaries containing the move line values generated 
-                by the standard payment process.
-                - vals[0]: Usually the bank/cash account line.
-                - vals[1]: Usually the counterpart (debt/payable) account line.
-            :param dict/bool write_off_line_vals: Optional. A dictionary containing values 
-                for write-off lines (exchange rate differences or discounts). 
-                If provided, adjustments are applied to vals[2].
+        :param list vals: A list of dictionaries representing the `account.move.line` 
+                        values prepared by Odoo's payment creation wizard.
+                        - vals[0]: Liquidity/Bank line.
+                        - vals[1]: Counterpart/Receivable line.
+                        - vals[2]: (Optional) Write-off/Difference line.
+        :param list/bool write_off_line_vals: Optional list containing standard write-off 
+                                            line structures to absorb differences.
 
-            :return: None. The method modifies the `vals` list in-place and triggers 
-                `_create_outbound_move_line_igtf_vals` at the end.
-
-            :logic:
-                1. Validates that the payment type is 'outbound'.
-                2. Converts the IGTF amount (`igtf_amount`) to the company's currency.
-                3. If origin invoices exist (`invoices_origin_ids`), it recalculates the 
-                balance using the signed residual amount and the IGTF percentage 
-                to ensure an exact match for reconciliation.
-                4. Updates `amount_currency` and `balance` in `vals[1]` by subtracting 
-                the tax value.
-                5. If `write_off_line_vals` is present, it applies the IGTF adjustment 
-                to the third line (`vals[2]`).
+        :return: None. Modifies the mutable `vals` list in-place and triggers the 
+                internal tax row generation via `_create_inbound_move_line_igtf_vals`.
         """
 
         for rec in self:
@@ -565,17 +541,17 @@ class AccountPaymentAndIgtf(models.Model):
 
                 debit_amount = abs(lines[1]["balance"])
 
-                igtf_converted =  currency._convert(
-                    rec.igtf_amount, 
-                    rec.company_id.currency_id, 
-                    rec.company_id, 
-                    rec.date,
-                )
-                amount = debit_amount - igtf_converted
-                amount_new = False
+                amount = debit_amount
+                precision_base = self.env.company.currency_id.rounding
+
                 if rec.invoices_origin_ids != False and rec.igtf_amount > 0.0: 
+                    
+                    porcion_igtf = float_round(rec.igtf_amount / abs(lines[0]["amount_currency"]), precision_rounding=precision)
+                    igtf_base = float_round((lines[0]["balance"] * porcion_igtf), precision_rounding=precision_base)
+
+                    amount = debit_amount - igtf_base
                 
-                    total_base_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
+                    total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
                     total_base_residual_converted =  rec.company_id.currency_id._convert(
                         total_base_residual, 
                         currency, 
@@ -583,13 +559,12 @@ class AccountPaymentAndIgtf(models.Model):
                         rec.date,
                     )
 
-                    amount_new = total_base_residual + (total_base_residual * rec.igtf_percentage / 100)
-
-                    total_base_residual_converted_with_igtf = abs(total_base_residual_converted) + abs(rec.igtf_amount)
+                    total_base_residual_converted_with_igtf = float_round(abs(total_base_residual_converted) + abs(rec.igtf_amount), precision_rounding=precision)
                     if total_base_residual_converted_with_igtf == abs(lines[0]["amount_currency"]): 
+                        
                         if abs(debit_amount) > abs(total_base_residual):
-                            vals[0].update({"balance": abs(amount_new)})
                             amount  = abs(total_base_residual)
+
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
                          vals[1].update({"amount_currency": debit_line, "balance": amount})

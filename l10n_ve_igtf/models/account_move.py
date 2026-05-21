@@ -774,13 +774,13 @@ class AccountMove(models.Model):
                         bank_amount = abs(bank_line[0].amount_currency)
                         bank_amount_balance = abs(bank_line[0].balance)
                         if partial:
-                            partial_amount = sum(partial.mapped('amount'))
+                            partial_amount = abs(sum(partial.mapped('amount')))
                         
                         if igtf_line and partial:
                         
                             igtf_amount = abs(igtf_line[0].balance)
                             igtf_amount_currency = abs(igtf_line[0].amount_currency)
-                            partial_amount = sum(partial.mapped('amount'))
+                            partial_amount = abs(sum(partial.mapped('amount')))
                         
                         if not igtf_line and bank_line and partial:
                             igtf_top += partial_amount
@@ -832,8 +832,8 @@ class AccountMove(models.Model):
 
                     total_bi_igtf += amount_base_payment
 
-                    if total_bi_igtf > rec.amount_total_signed:
-                        total_bi_igtf = rec.amount_total_signed 
+                    if total_bi_igtf > abs(rec.amount_total_signed):
+                        total_bi_igtf = abs(rec.amount_total_signed)
 
                     foreign_bi_igtf += rec.company_id.currency_id._convert(
                         amount_base_payment, 
@@ -842,8 +842,8 @@ class AccountMove(models.Model):
                         date_conver,
                     )
 
-                    if foreign_bi_igtf > rec.amount_total:
-                        foreign_bi_igtf = rec.amount_total 
+                    if foreign_bi_igtf > abs(rec.amount_total):
+                        foreign_bi_igtf = abs(rec.amount_total)
 
 
                 apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
