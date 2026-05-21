@@ -222,7 +222,7 @@ class TestAccountRetentionSequence(TransactionCase):
 
         _logger.warning("Creating action_post retention for invoice %s", invoice.amount_total)
         _logger.warning("Creating retention for invoice %s", invoice.amount_untaxed)
-        with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":'islr'})) as retention_form:
+        with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":type_retention})) as retention_form:
             retention_form.partner_id = self.partner_a
             retention_form.date_accounting = today
 
@@ -241,6 +241,9 @@ class TestAccountRetentionSequence(TransactionCase):
         invoice = self._create_invoice_simple()
         invoice.action_post()
         retention = self._create_retention(invoice,'iva')
+        
+        # Forzando a no tener 14 numero exactamente
+        retention.number = "0123456789"
 
         with self.assertRaises(ValidationError) as e:
             retention.action_post()

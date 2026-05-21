@@ -351,11 +351,6 @@ msgstr "Tasas de Impuestos de Ventas Internacionales"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Sales Book"
-msgstr "Libro de Ventas"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
 msgid "Sales Tax Rates"
 msgstr "Tasas de Impuestos de Ventas"
 
@@ -406,19 +401,6 @@ msgid "Unique Tax"
 msgstr "Impuesto único"
 
 #. module: l10n_ve_tax
-#. odoo-javascript
-#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
-#: code:addons/l10n_ve_tax/static/src/components/tax_totals/tax_totals.xml:0
-#, python-format
-msgid "Total to pay"
-msgstr "Total a pagar"
-
-#. module: l10n_ve_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__unique_tax
-#: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__unique_tax
-msgid "Unique Tax"
-msgstr "Impuesto único"
-=======
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_purchase_international
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__exent_aliquot_purchase_international
 msgid "Exent Aliquot Purchase International"

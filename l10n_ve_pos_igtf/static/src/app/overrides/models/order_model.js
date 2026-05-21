@@ -4,9 +4,9 @@ import { Order, Payment } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import {
   formatFloat,
+  floatIsZero,
   roundDecimals as round_di,
   roundPrecision as round_pr,
-  floatIsZero,
 } from "@web/core/utils/numbers";
 
 // New orders are now associated with the current table, if any.
@@ -131,8 +131,8 @@ patch(Order.prototype, {
         return;
       }
 
-      bi_igtf += payment.amount;
-      foreign_bi_igtf += payment.get_foreign_amount();
+      bi_igtf += round_pr(payment.amount, rounding);
+      foreign_bi_igtf += round_pr(payment.get_foreign_amount(), rounding);
       repeat_same_method.push(payment.payment_method.id);
       bi_payments.push(payment.cid);
 
@@ -222,9 +222,10 @@ patch(Order.prototype, {
     }
     return this.igtf_amount;
   },
-  compute_igtf_amount(amount) {
-    var rounding = this.pos.currency.rounding;
-    return amount * (this.pos.config.igtf_percentage / 100);
+
+  compute_igtf_amount(amount, use_foreign_rounding = false) {
+    var rounding = use_foreign_rounding ? this.pos.foreign_currency.rounding : this.pos.currency.rounding;
+    return round_pr(amount * (this.pos.config.igtf_percentage / 100), rounding);
   },
 
   get_bi_igtf() {
@@ -281,7 +282,7 @@ patch(Order.prototype, {
   },
   get_max_total_with_igtf() {
     const result =
-      this.compute_igtf_amount(super.get_foreign_total_with_tax()) +
+      this.compute_igtf_amount(super.get_foreign_total_with_tax(), true) +
       this.props.order.get_foreign_rounding_applied();
     return result;
   },
@@ -302,8 +303,11 @@ patch(Order.prototype, {
       is_change = this.get_due() > 0;
     }
 
+    var rounding = this.pos.currency.rounding;
     if (
-      !payment_method.apply_igtf || this.get_due() <= this.get_igtf_amount() || is_change
+      !payment_method.apply_igtf ||
+      round_pr(this.get_due(), rounding) <= round_pr(this.get_igtf_amount(), rounding) ||
+      is_change
     ) {
       let res = super.add_paymentline(...arguments);
       this.update_igtf();
