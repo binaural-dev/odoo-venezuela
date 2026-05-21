@@ -17,7 +17,7 @@ patch(TicketScreen, {
 patch(PosStore.prototype, {
   open_cashbox() {
     if (this.useFiscalMachine() && this.config.has_cashbox) {
-      const fdm = this.useFiscalMachine();
+    const fdm = this.useFiscalMachine();
       fdm.action({
         action: `logger`,
         data: "0",
@@ -97,13 +97,24 @@ patch(PosStore.prototype, {
           return { "valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}` }
         }
         if (response.length > 0) {
+          const date = new Date(response[0].date_order);
+          const format_date = date.toLocaleDateString('es-ES');
+
           invoice["invoice_affected"] = {
             "number": response[0].mf_invoice_number,
             "serial_machine": response[0].fiscal_machine,
-            "date": response[0].date_order,
+            "date": format_date,
           }
         }
-      } catch (e) {
+      } catch (err) {
+        console.error("MF error: ", err)
+        if (!err.valid) { 
+          this.env.services.popup.add(ErrorPopup, {
+            title: _t("MF error"),
+            body: _t(err.message ? err.message : "Internal MF error"),
+          });
+          return err
+        }
       }
     }
 
@@ -157,68 +168,57 @@ patch(PosStore.prototype, {
 
     return noSpecialChars;
   },
-  
-  async print_out_invoice(data) {
-    
-    const fdm = this.useFiscalMachine();
 
-    if (!fdm) {
-      return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
-    }
-    const request_data = {
-      action: `print_${data.type}`,
-      data: data,
-    }
+  async print_document(print_type, data) {
+    try {
+      const deviceResponse = await this.device_response(print_type, data);
 
-    return new Promise(async (resolve, reject) => {
-
-      const listener = (data) => {
-
-        if (data.request_data.action === request_data.action) {          
-          if (data.status.status === "connected") {
-            if (data.value && data.value.message === "No se ha completado") {
-                return;
-            }
-            fdm.removeListener(listener);
-            return resolve(data);
-          } else {
-            fdm.removeListener(listener);
-            return reject(data);
-          }
-        }
-      };
-
-      fdm.addListener(listener);
-      
-      try {
-        const response = await fdm.action(request_data);
-
-        if (!response.result) {            
-          fdm.removeListener(listener);            
-          reject({  
-            valid: false,
-            message: _t("Error connecting to the fiscal machine, check if it is turned on or connected to the IoT"),
-            printer_connection: false
-          });
-        }
-      } catch (error) {
-
-        fdm.removeListener(listener);
-        reject({
-            valid: false,
-            message: error.statusText === "timeout" 
-                ? _t("The tax machine did not respond in time")
-                : _t("Error with the tax machine"),
-            printer_connection: false
-        });
+      if (print_type == "print_invoice" && !deviceResponse?.valid) {
+        return { "valid": false, "message": deviceResponse?.message || "Error al imprimir" }
       }
+      return deviceResponse;
+
+    } catch (err) {
+        console.error("MF error: ", err)
+        if (!err.valid) { 
+          this.env.services.popup.add(ErrorPopup, {
+            title: _t("MF error"),
+            body: _t(err.message ? err.message : "Internal MF error"),
+          });
+          return { valid: false, message: "Error interno al imprimir documento"};
+        }
+    }
+  },
+
+  async device_response(action, data) {
+    return new Promise((resolve, reject) => {
+      const fdm = this.useFiscalMachine();
+
+      if (!fdm) {
+        return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
+      }
+      const listener = ({value}) => {
+        fdm.removeListener(listener);
+        resolve(value);
+      };
+  
+      fdm.addListener(listener);
+  
+      fdm.action({
+        action: action,
+        data: data,
+      }).catch(reject);
     });
   },
 
-  set_data_from_fiscal_machine(order, data) {
-    order.fiscal_machine = data["serial_machine"] || false;
-    order.mf_invoice_number = data["sequence"] || false;
-    order.mf_reportz = data["mf_reportz"] || false;
+  set_data_from_fiscal_machine(order, values) {
+    const data = values?.data ?? {};
+    const sequence = data.sequence;
+    const serial_machine = data.serial_machine;
+    const mf_reportz = data.mf_reportz;
+    order.fiscal_machine = serial_machine || false;
+    order.mf_invoice_number = sequence || false;
+    order.mf_reportz = mf_reportz || false;
   },
 
   async pushToMF(order) {
@@ -228,14 +228,13 @@ patch(PosStore.prototype, {
         throw data["message"]
       }
 
-      const response = await this.print_out_invoice(data)
-      const { value } = response
-      
-      if (!value.valid) {
-        throw value
+      const response = await this.print_document(`print_${data.type}`, data)
+
+      if (!response?.valid) {
+        throw response
       }
 
-      this.set_data_from_fiscal_machine(order, value)
+      this.set_data_from_fiscal_machine(order, response)
       
       return {  
         valid: true,
@@ -244,30 +243,45 @@ patch(PosStore.prototype, {
       }
     
     } catch (err) {
-
+      console.error("MF error: ", err)
       if (!err.valid) { 
         this.env.services.popup.add(ErrorPopup, {
           title: _t("MF error"),
           body: _t(err.message ? err.message : "Internal MF error"),
         });
-        
         return err
-      
-      } else {
-        this.env.services.popup.add(ErrorPopup, {
-          title: _t("MF error"),
-          body: _t(err.status ? err.status : "Internal MF error"),
-        });
-        return err;
       }
     }
   },
   async push_single_order(order, opts) {
+    try {
+      const order_payload = [{
+        'data': order.export_as_JSON()
+      }];
+      
+      await this.orm.call("pos.order", "validate_order_dry_run", [order_payload]);
+      
+    } catch (error) {
+      let msg = _t("Error desconocido en Odoo");
+      if (error.data && error.data.message) {
+        msg = error.data.message;
+      } else if (error.message) {
+        msg = error.message;
+      }
+      
+      this.env.services.popup.add(ErrorPopup, {
+        title: _t("Validación Contable"),
+        body: msg,
+      });
+      
+      return;
+    }
+    
     if (this.useFiscalMachine() && !order.mf_invoice_number) {
       
       const response = await this.pushToMF(order)
 
-      if (response.printer_connection === false) {
+      if (response.printer_connection == false || !("printer_connection" in response)) {
         return
       }
 

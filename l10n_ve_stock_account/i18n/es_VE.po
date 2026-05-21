@@ -296,11 +296,6 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_res_config_settings_l10n_ve_stock_account
-msgid "Configuration Dispatch Guide"
-msgstr "Configuración de Guía de Despacho"
-
-#. module: l10n_ve_stock_account
 #: model:ir.actions.act_window,name:l10n_ve_stock_account.action_stock_move_line_consignation_report
 #: model:ir.ui.menu,name:l10n_ve_stock_account.menu_stock_report_consignation_report
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
@@ -473,6 +468,17 @@ msgstr "Dscto"
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__emited
 msgid "Emited"
 msgstr "Emitida"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__is_subcontracting
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__is_subcontracting
+msgid "Enable Maquila option in Reason for Transfer"
+msgstr "Habilitar opción Maquila en Motivo de Transferencia"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_res_config_settings_l10n_ve_stock_account
+msgid "Enable the Maquila option in the Reasons for Transfer"
+msgstr "Habilitar la opción Maquila en los Motivos de Transferencia"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
@@ -673,6 +679,11 @@ msgstr "Es Donación"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_return
 msgid "Is Return"
 msgstr "Es devolución"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__is_subcontracting
+msgid "Is Subcontracting"
+msgstr "Es Maquila"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -1021,6 +1032,16 @@ msgid "Show Create Vendor Credit"
 msgstr "Show Crear crédito de proveedor"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__show_is_subcontracting
+msgid "Show Is Subcontracting"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_other_causes_transfer_reason
+msgid "Show Other Causes Transfer Reason"
+msgstr "Mostrar otras causas Motivo de transferencia"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__show_document
 msgid "Show Document"
 msgstr ""
@@ -1043,14 +1064,16 @@ msgid "State guide dispatch"
 msgstr "Estado de Guía"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_res_config_settings_l10n_ve_stock_account
-msgid "Stock Account Configuration"
-msgstr "Configuración de guía de despacho"
-
-#. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_move
 msgid "Stock Move"
 msgstr "Movimiento de stock"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__is_subcontracting
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__is_subcontracting
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_res_config_settings_l10n_ve_stock_account
+msgid "Subcontracting"
+msgstr "Maquila"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__has_document
@@ -1096,6 +1119,19 @@ msgid ""
 msgstr ""
 "El producto %s no está disponible en la ubicación de consignación del "
 "cliente."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The product '%s' does not have a sales price defined in its product profile.\n"
+"\n"
+"Please set a sales price for this product to proceed with the operation."
+msgstr ""
+"El producto '%s' no tiene un precio de venta definido en su ficha de producto.\n"
+"\n"
+"Por favor, establezca un precio de venta para este producto para continuar con la operación."
 
 #. module: l10n_ve_stock_account
 #. odoo-python

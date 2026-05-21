@@ -1,6 +1,7 @@
 from odoo import models, _
 from odoo.tools.misc import formatLang
 from odoo.tools.float_utils import float_round, float_is_zero
+from odoo.exceptions import UserError
 
 
 import logging
@@ -82,24 +83,18 @@ class AccountTax(models.Model):
             foreign_base_igtf = res.get("foreign_amount_total", 0)
 
         if invoice.bi_igtf:
-            is_igtf_suggested = False
-            amount_to_igtf = (
-                self.process_payments_to_igtf(invoice)
-                if self._context.get("from_widget")
-                else invoice.bi_igtf if invoice.bi_igtf <= invoice.amount_total else invoice.amount_total
-            )
+            if invoice.company_currency_id != self.env.ref("base.VEF"):
+               
+                base_igtf = invoice.bi_igtf
+                foreign_base_igtf =invoice.foreign_bi_igtf
 
-            base_igtf = amount_to_igtf
-            foreign_base_igtf = base_igtf * rate
-            if invoice.bi_igtf == res.get("amount_total"):
-                foreign_base_igtf = res.get("foreign_amount_total")
+            else:
 
-        igtf_base_amount = float_round(
-            base_igtf or 0, precision_rounding=currency.rounding
-        )
-        igtf_foreign_base_amount = float_round(
-            foreign_base_igtf or 0, precision_rounding=foreign_currency.rounding
-        )
+                foreign_base_igtf = invoice.bi_igtf
+                base_igtf =  invoice.foreign_bi_igtf
+
+        igtf_base_amount = base_igtf 
+        igtf_foreign_base_amount = foreign_base_igtf 
 
         if (
             float_is_zero(igtf_base_amount, precision_rounding=currency.rounding)
@@ -107,40 +102,36 @@ class AccountTax(models.Model):
         ):
             apply_igtf = True
 
-        foreign_igtf_base_amount = float_round(
-            igtf_foreign_base_amount, precision_rounding=foreign_currency.rounding
-        )
+        foreign_igtf_base_amount = igtf_foreign_base_amount 
 
-        igtf_amount = float_round(
-            igtf_base_amount * igtf_percentage, precision_rounding=currency.rounding
-        )
-        foreign_igtf_amount = float_round(
-            foreign_igtf_base_amount * igtf_percentage,
-            precision_rounding=foreign_currency.rounding,
-        )
+        igtf_amount = igtf_base_amount * igtf_percentage
+
+        foreign_igtf_amount = igtf_foreign_base_amount * igtf_percentage
+            
 
         res["igtf"] = {}
         res["igtf"]["apply_igtf"] = apply_igtf
         res["igtf"]["name"] = f"{float_igtf_percentage} %"
 
         res["igtf"]["igtf_base_amount"] = igtf_base_amount
-        res["igtf"]["igtf_amount"] = igtf_amount
-
-        res["igtf"]["foreign_igtf_amount"] = foreign_igtf_amount
-        res["igtf"]["foreign_igtf_base_amount"] = foreign_igtf_base_amount
-
-        res["igtf"]["formatted_igtf_amount"] = formatLang(
-            self.env, igtf_amount, currency_obj=currency
-        )
         res["igtf"]["formatted_igtf_base_amount"] = formatLang(
             self.env, igtf_base_amount, currency_obj=currency
         )
-        res["igtf"]["formatted_foreign_igtf_amount"] = formatLang(
-            self.env, foreign_igtf_amount, currency_obj=foreign_currency
-        )
+        res["igtf"]["foreign_igtf_base_amount"] = foreign_igtf_base_amount
         res["igtf"]["formatted_foreign_igtf_base_amount"] = formatLang(
             self.env, foreign_igtf_base_amount, currency_obj=foreign_currency
         )
+
+        res["igtf"]["igtf_amount"] = igtf_amount
+        res["igtf"]["formatted_igtf_amount"] = formatLang(
+            self.env, igtf_amount, currency_obj=currency
+        )
+
+        res["igtf"]["foreign_igtf_amount"] = foreign_igtf_amount
+        res["igtf"]["formatted_foreign_igtf_amount"] = formatLang(
+            self.env, foreign_igtf_amount, currency_obj=foreign_currency
+        )
+        
 
         res["amount_total_igtf"] = float_round(
             res["amount_total"] + igtf_amount, precision_rounding=currency.rounding
@@ -161,7 +152,7 @@ class AccountTax(models.Model):
 
     def process_payments_to_igtf(self,invoice):
         invoice_payments_widget = invoice.invoice_payments_widget
-        content = invoice_payments_widget.get("content", False)
+        content = invoice_payments_widget.get("content", False) if invoice_payments_widget else False
 
         if not content:
             return 0
@@ -181,7 +172,6 @@ class AccountTax(models.Model):
             for payment in content
             if 'account_payment_id' in payment and payment['account_payment_id'] in payments_igtf.ids
         ]
-        total_amount_to_igtf = sum(amount_to_igtf)  # Calcular la suma de los montos
+        total_amount_to_igtf = sum(amount_to_igtf)  
 
         return total_amount_to_igtf
-

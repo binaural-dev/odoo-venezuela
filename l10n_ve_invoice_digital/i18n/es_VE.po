@@ -549,6 +549,11 @@ msgid "This is the currency code that is sent when scanning a document."
 msgstr "Este es el código de moneda que se envía al digitalizar un documento."
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_currency__code_tfhka
+msgid "This is the currency code that is sent when scanning a document."
+msgstr "Este es el código de moneda que se envía al digitalizar un documento."
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__token_auth_tfhka
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Token Auth"

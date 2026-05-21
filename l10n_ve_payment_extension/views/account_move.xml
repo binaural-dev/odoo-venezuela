@@ -16,11 +16,13 @@
                     <field name="base_currency_is_vef" invisible="1"/>
                     <field name="company_currency_id" invisible="1"/>
                     <field name="foreign_currency_id" invisible="1"/>
+                    <field name="not_edit_islr_retention_lines" invisible="1"/>
+                    <field name="not_edit_municipal_retention_lines" invisible="1"/>
                 </xpath>
 
                 <xpath expr="//notebook" position="inside">
                     <page name="iva_retention" string="IVA Retentions">
-                        <field name="retention_iva_line_ids" nolabel="1" readonly="1">
+                        <field name="retention_iva_line_ids" nolabel="1" readonly="1" context="{'type':'iva'}">
                             <tree editable='bottom'>
                                 <!-- Invisible Fields -->
                                 <field name="invoice_type" column_invisible="True"/>
@@ -89,13 +91,15 @@
                         <field
                             name="retention_islr_line_ids"
                             nolabel="1"
-                            readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'"
+                            readonly="move_type not in ('in_invoice', 'in_refund') or (state != 'draft' or not_edit_islr_retention_lines)"
+                            context="{'type':'islr'}"
                         >
                             <tree editable='bottom'>
                                 <!-- Invisible Fields -->
                                 <field name="invoice_type" column_invisible="True"/>
                                 <field name="company_currency_id" column_invisible="True"/>
                                 <field name="foreign_currency_id" column_invisible="True"/>
+                                <field name="code" column_invisible="1"/>
                                 <field name="name"/>
                                 <field name="payment_concept_id"/>
                                 <field
@@ -158,8 +162,8 @@
                         <field
                             name="retention_municipal_line_ids"
                             nolabel="1"
-                            readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'"
-                        >
+                            readonly="move_type not in ('in_invoice', 'in_refund') or (state != 'draft' or not_edit_municipal_retention_lines)"
+                            context="{'type':'municipal'}">
                             <tree editable='bottom'>
                                 <field name="name" force_save="1" readonly="1"/>
                                 <field name="economic_activity_id" force_save="1"/>

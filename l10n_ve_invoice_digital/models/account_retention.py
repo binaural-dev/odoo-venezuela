@@ -279,7 +279,7 @@ class AccountRetention(models.Model):
                 retention_data["totalRetenido"] = total_retention
                 retention_data["totalIVA"] = total_iva
             else:
-                retention_data["TotalISRL"] = total_iva
+                retention_data["TotalISRL"] = total_retention
 
             return retention_data    
 
@@ -294,7 +294,21 @@ class AccountRetention(models.Model):
         for record in self:
             for line in record.retention_line_ids:
                 tipo_documento = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
-                document_number_ret = str(line.move_id.sequence_number)
+                serie = line.move_id.name
+                document_series_ret = ''.join([c for c in serie if c.isalpha()])
+                document_number_ret = str(''.join([c for c in serie if c.isdigit()]))
+
+                if record.base_currency_is_vef:
+                    invoice_total = str(round(line.invoice_total, 2))
+                    invoice_amount = str(round(line.invoice_amount, 2))
+                    retention_amount = str(round(line.retention_amount, 2))
+                    iva_amount = str(round(line.iva_amount, 2))
+
+                else:
+                    invoice_total = str(round(line.foreign_invoice_total, 2))
+                    invoice_amount = str(round(line.foreign_invoice_amount, 2))
+                    retention_amount = str(round(line.foreign_retention_amount, 2))
+                    iva_amount = str(round(line.foreign_iva_amount, 2))
 
                 if record.base_currency_is_vef:
                     invoice_total = str(round(line.invoice_total, 2))
@@ -310,8 +324,9 @@ class AccountRetention(models.Model):
 
                 retention_data = {
                     "numeroLinea": str(counter), 
-                    "fechaDocumento": line.date_accounting.strftime("%d/%m/%Y"), 
+                    "fechaDocumento": line.move_id.invoice_date.strftime("%d/%m/%Y"), 
                     "tipoDocumento": tipo_documento,
+                    "serieDocumento": document_series_ret,
                     "numeroDocumento": document_number_ret,
                     "numeroControl": line.move_id.correlative,
                     "montoTotal": invoice_total,  
