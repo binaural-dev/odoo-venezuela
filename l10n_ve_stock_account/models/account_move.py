@@ -33,3 +33,21 @@ class AccountMove(models.Model):
             list_guide_number = [picking.guide_number for picking in record.picking_ids]
             record.guide_number = "/".join(list_guide_number)
 
+    def _get_tax_grouped_lines(self):
+        """
+        Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
+        Retorna un diccionario: { tuple(ids_impuestos): {'base': suma_base, 'taxes': recordset_impuestos} }
+        """
+        self.ensure_one()
+        tax_groups = {}
+        for line in self.invoice_line_ids:
+            tax_ids = line.tax_ids.ids
+            tax_key = tuple(sorted(tax_ids))
+
+            if tax_key not in tax_groups:
+                tax_groups[tax_key] = {
+                    'base_amount': 0.0,
+                    'taxes': line.tax_ids,
+                }
+            tax_groups[tax_key]['base_amount'] += line.price_subtotal
+        return tax_groups
