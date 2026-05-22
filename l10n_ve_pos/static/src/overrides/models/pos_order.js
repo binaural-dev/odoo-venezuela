@@ -20,7 +20,6 @@ patch(PosOrder.prototype, {
   setup() {
     this.get_foreign_total_tax()
     super.setup(...arguments);
-    //  this.setToInvoice(true) //TODO: hay que hacer esto por grupos de seguridad
   },
 
   get_foreign_currency() {
@@ -546,6 +545,26 @@ patch(PosOrder.prototype, {
     }
     return qty;
   },
+
+  addPaymentline(paymentMethod) {
+    const posStore = this._get_pos_store();
+    if (paymentMethod.is_foreign_currency) {
+        const newPaymentLine = this.models["pos.payment"].create({
+              pos_order_id: this,
+              payment_method_id: paymentMethod,
+          });
+        this.selectPaymentline(newPaymentLine);
+        if (
+            (paymentMethod.payment_terminal && !this.isRefund) ||
+            paymentMethod.payment_method_type === "qr_code"
+        ) {
+            newPaymentLine.setPaymentStatus("pending");
+        }
+        return { status: true, data: newPaymentLine };
+    }else{
+      return super.addPaymentline(...arguments);
+    }
+  }
 
 
 });

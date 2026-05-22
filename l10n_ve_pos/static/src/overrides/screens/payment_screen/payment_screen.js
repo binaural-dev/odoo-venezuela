@@ -48,9 +48,8 @@ patch(PaymentScreen.prototype, {
     return res_igtf;
   },
   
-  updateSelectedPaymentline(amount = false) {
+  updateSelectedPaymentline(amount) {
     return super.updateSelectedPaymentline(amount);
-
   },
   
   async validateOrder(isForceValidate) {

@@ -103,11 +103,8 @@ patch(PosPayment.prototype, {
 
     _convert_foreign_to_order(foreignAmount = 0) {
         const amount = Number(foreignAmount) || 0;
-        const { inverseRate } = this._get_foreign_rate_values();
-
-        if (inverseRate > 0) {
-            return amount * inverseRate;
-        }
+        console.log("amount", amount);
+        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
         return amount;
     },
 
@@ -169,6 +166,14 @@ patch(PosPayment.prototype, {
 
     setAmount(amount, only = false) {
         const numericAmount = Number(amount) || 0;
+        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
+        // Si el método es foráneo, lo tipeado es en dólares y se convierte a bolívares
+        if (this.payment_method_id && this.payment_method_id.is_foreign_currency) {
+                // El usuario ingresa dólares, convertimos a bolívares
+                this.setForeignAmount(numericAmount, true); // estos serán los dólares
+                return super.setAmount(numericAmount * foreignRate, true);
+            }
+        // Flujo estándar
         const isDue = Math.abs(numericAmount - this._getOrderDue()) <= 0.000001;
         let res = super.setAmount(...arguments);
         if (!only) {
@@ -189,7 +194,7 @@ patch(PosPayment.prototype, {
     setForeignAmount(amount, only = false) {
         const numericAmount = Number(amount);
         this.foreign_amount = Number.isFinite(numericAmount) ? numericAmount : 0;
-
+        
         if (!only) {
             const orderAmount = this._convert_foreign_to_order(this.foreign_amount);
             super.setAmount(orderAmount, true);

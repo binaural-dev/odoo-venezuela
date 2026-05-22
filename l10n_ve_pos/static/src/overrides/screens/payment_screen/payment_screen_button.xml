@@ -10,7 +10,6 @@
                     <t t-else="">Recibo</t> 
                     <!-- Las traducciones no funcionan con ese else, se debe ver porque-->
                 </span>
-                <!-- <i class="fa me-2" t-attf-class="{{ currentOrder.isToInvoice() ? 'fa-check-square text-action' : 'fa-square-o' }}" />  -->
             </button>
         </xpath>
     </t>

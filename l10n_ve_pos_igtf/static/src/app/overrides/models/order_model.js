@@ -184,10 +184,6 @@ patch(PosOrder.prototype, {
     return Math.min(orderTotal, Math.max(amount, 0));
   },
 
-  get change() {
-    return round_pr(super.change, 0.01);
-  },
-
   _compute_line_igtf(amount, foreing_amount, percentage, is_return) {
 
     const rounding = this.pos?.currency?.rounding || 0.01;
@@ -423,7 +419,7 @@ patch(PosOrder.prototype, {
     if (!has_igtf_payment) {
       return round_pr(res, rounding);
     }
-    return round_pr(res + this.get_igtf_amount(), rounding);
+    return super.totalDue + this.get_igtf_amount()
   },
 
   get priceIncl() {
