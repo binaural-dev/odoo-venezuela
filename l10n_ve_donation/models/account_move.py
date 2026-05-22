@@ -105,25 +105,6 @@ class AccountMove(models.Model):
 
         return super()._reverse_moves(default_values_list, cancel)
 
-    def _get_tax_grouped_lines(self):
-        """
-        Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
-        Retorna un diccionario: { tuple(ids_impuestos): {'base': suma_base, 'taxes': recordset_impuestos} }
-        """
-        self.ensure_one()
-        tax_groups = {}
-        for line in self.invoice_line_ids:
-            tax_ids = line.tax_ids.ids
-            tax_key = tuple(sorted(tax_ids))
-
-            if tax_key not in tax_groups:
-                tax_groups[tax_key] = {
-                    'base_amount': 0.0,
-                    'taxes': line.tax_ids,
-                }
-            tax_groups[tax_key]['base_amount'] += line.price_subtotal
-        return tax_groups
-
     def product_line_donation(self):
         """Adds the donation product lines to invoice_line_ids grouped by tax.
         Uses skip_invoice_sync=True to maintain consistency with manually 
