@@ -33,10 +33,6 @@ class AccountMove(models.Model):
             list_guide_number = [picking.guide_number for picking in record.picking_ids]
             record.guide_number = "/".join(list_guide_number)
 
-    def action_post(self):
-        res = super().action_post()
-        return res
-
     def _get_tax_grouped_lines(self):
         """
         Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.

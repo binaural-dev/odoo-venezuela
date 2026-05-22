@@ -161,11 +161,6 @@ class StockPicking(models.Model):
         compute="_compute_picking_type_domain",
     ) 
 
-    @api.onchange("partner_id")
-    def _onchange_partner_id(self):
-        pass
-        
-
     def _compute_picking_type_domain(self):
         native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
         for picking in self:
@@ -1028,32 +1023,6 @@ class StockPicking(models.Model):
             ):
                 picking.is_dispatch_guide = True
 
-    def _inverse_is_dispatch_guide(self):
-        """Permite editar manualmente is_dispatch_guide para traslados entre almacenes."""
-        for picking in self:
-            transfer_between_warehouses_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
-                raise_if_not_found=False,
-            )
-            if (
-                picking.operation_code == "internal"
-                and picking.transfer_reason_id == transfer_between_warehouses_reason
-            ):
-                continue
-            # Para otros casos, no permitir cambios manuales
-            # El compute se encarga de establecer el valor correcto
-
-    @api.depends("transfer_reason_id")
-    def _compute_is_transfer_between_warehouses(self):
-        transfer_between_warehouses_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
-            raise_if_not_found=False,
-        )
-        for picking in self:
-            picking.is_transfer_between_warehouses = (
-                transfer_between_warehouses_reason
-                and picking.transfer_reason_id == transfer_between_warehouses_reason
-            )
     @api.depends("is_dispatch_guide", "operation_code", "location_dest_id")
     def _compute_allowed_reason_ids(self):
         for picking in self:

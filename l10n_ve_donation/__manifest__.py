@@ -11,7 +11,6 @@
         "l10n_ve_invoice",
         "l10n_ve_sale",
         "l10n_ve_stock_account",
-        "account_asset",
     ],
     "data": [
         "data/donation_certificate_paperformat.xml",
