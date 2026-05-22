@@ -68,11 +68,10 @@ class AccountPaymentRegister(models.TransientModel):
         for payment in self:
             if not bool(payment.foreign_rate):
                 return
+            rate_date = payment.payment_date or fields.Date.today()
+            rate_values = Rate.compute_rate(payment.foreign_currency_id.id, rate_date)
+            payment.foreign_inverse_rate = rate_values.get("foreign_inverse_rate") or Rate.compute_inverse_rate(payment.foreign_rate)
 
-            payment.foreign_inverse_rate = Rate.compute_inverse_rate(
-                payment.foreign_rate
-            )
-            
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):
