@@ -81,20 +81,7 @@ class StockPicking(models.Model):
         compute="_compute_allowed_reason_ids",
     )
 
-    
-    is_donation = fields.Boolean(
-        string="Is Donation",
-        compute="_compute_is_donation",
-        readonly=False,
-        tracking=True,
-        store=True,
-    )
     pricelist_id = fields.Many2one(related="sale_id.pricelist_id", string="Pricelist")
-
-    @api.depends("sale_id.is_donation")
-    def _compute_is_donation(self):
-        for picking in self:
-            picking.is_donation = picking.sale_id.is_donation if picking.sale_id else False
 
     is_dispatch_guide = fields.Boolean(
         string="Is Dispatch Guide",
@@ -174,30 +161,10 @@ class StockPicking(models.Model):
         compute="_compute_picking_type_domain",
     ) 
 
-    @api.onchange("is_donation")
-    def _onchange_is_donation(self):
-        self_consumption = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
-        if self.is_donation:
-            contact_id = self.env.company.partner_id
-            self.partner_id = contact_id
-            self.is_dispatch_guide = False
-            self.transfer_reason_id = self_consumption
-
-    @api.onchange("partner_id")
-    def _onchange_partner_id(self):
-        if self.is_donation:
-            if self.partner_id != self.env.company.partner_id:
-                raise UserError(_("The partner must be the company itself for a donation"))
-        
-
-    @api.depends("is_donation")
     def _compute_picking_type_domain(self):
         native_domain = "[('code', 'in', ['internal', 'outgoing', 'incoming'])]"
         for picking in self:
-            if picking.is_donation:
-                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
-            else:
-                picking.picking_type_domain = native_domain
+            picking.picking_type_domain = native_domain
 
     def action_open_invoice_wizard(self):
         return {
@@ -324,7 +291,6 @@ class StockPicking(models.Model):
                         "invoice_line_ids": invoice_line_list,
                         "transfer_ids": self,
                         "from_picking": True,
-                        "is_donation":picking_id.is_donation,
                     }
                 # Reincorporar la lista de precios cuando el picking procede de una venta
                 if picking_id.sale_id and picking_id.sale_id.pricelist_id:
@@ -1057,36 +1023,7 @@ class StockPicking(models.Model):
             ):
                 picking.is_dispatch_guide = True
 
-    def _inverse_is_dispatch_guide(self):
-        """Permite editar manualmente is_dispatch_guide para traslados entre almacenes."""
-        for picking in self:
-            transfer_between_warehouses_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
-                raise_if_not_found=False,
-            )
-            if (
-                picking.operation_code == "internal"
-                and picking.transfer_reason_id == transfer_between_warehouses_reason
-            ):
-                continue
-            # Para otros casos, no permitir cambios manuales
-            # El compute se encarga de establecer el valor correcto
-
-    @api.depends("transfer_reason_id")
-    def _compute_is_transfer_between_warehouses(self):
-        transfer_between_warehouses_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
-            raise_if_not_found=False,
-        )
-        for picking in self:
-            picking.is_transfer_between_warehouses = (
-                transfer_between_warehouses_reason
-                and picking.transfer_reason_id == transfer_between_warehouses_reason
-            )
-
-    @api.depends(
-        "is_donation", "is_dispatch_guide", "operation_code", "location_dest_id"
-    )
+    @api.depends("is_dispatch_guide", "operation_code", "location_dest_id")
     def _compute_allowed_reason_ids(self):
         for picking in self:
             allowed_reason_ids = []
@@ -1113,24 +1050,15 @@ class StockPicking(models.Model):
 
             # Outgoing with sale
             if is_outgoing and has_sale:
-                donation_reason = reasons.get("donation")
                 sale_reason = reasons.get("sale")
                 export_reason = reasons.get("export")
-                self_consumption_reason = reasons.get("self_consumption")
 
-                # Donations
-                if picking.is_donation:
-                    allowed_reason_ids.append(self_consumption_reason.id)
-                    picking.transfer_reason_id = self_consumption_reason.id
-
-                # Without Donations
-                else:
-                    if sale_reason:
-                        allowed_reason_ids.append(sale_reason.id)
-                        if not picking.transfer_reason_id:
-                            picking.transfer_reason_id = sale_reason.id
-                    if export_reason:
-                        allowed_reason_ids.append(export_reason.id)
+                if sale_reason:
+                    allowed_reason_ids.append(sale_reason.id)
+                    if not picking.transfer_reason_id:
+                        picking.transfer_reason_id = sale_reason.id
+                if export_reason:
+                    allowed_reason_ids.append(export_reason.id)
 
             # Outgoing without sale
             elif is_outgoing and not has_sale:
