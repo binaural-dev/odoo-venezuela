@@ -35,11 +35,6 @@ msgstr ""
 "    "
 
 #. module: l10n_ve_stock_account
-#: model:ir.actions.report,print_report_name:l10n_ve_stock_account.action_donation_certificate_account_move
-msgid "\"Certificado de Donacion - \" + object.name"
-msgstr "\"Certificado de Donación - \" + object.name"
-
-#. module: l10n_ve_stock_account
 #: model:ir.actions.report,print_report_name:l10n_ve_stock_account.action_dispatch_guide
 msgid "\"Dispatch Guide \" + object.name"
 msgstr "\"Guía de Despacho \" + object.name"
@@ -48,70 +43,6 @@ msgstr "\"Guía de Despacho \" + object.name"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "(SIN DERECHO A CRÉDITO FISCAL)"
 msgstr "(SIN DERECHO A CRÉDITO FISCAL)"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-", la propiedad de los mencionados bienes.\n"
-"                                        Y nosotros _______________________________________________________________________________________, \n"
-"                                        venezolanos, mayores de edad, de este domicilio y titulares de las cédulas de identidad No. _________________________, respectivamente, \n"
-"                                        actuando en nuestro carácter de Representante Legal, y encontrándonos plenamente facultados, por medio del presente documento declaramos: que \n"
-"                                        aceptamos para nuestra representada la donación de los bienes antes descritos, en los términos expuestos."
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-", los siguientes \n"
-"                                        bienes: \n"
-"                                        <br/><br/>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-", sociedad \n"
-"                                        mercantil inscrita en el Registro Mercantil __________________________________________________, en fecha \n"
-"                                        ___/___/____, bajo el No. _______, Tomo _______, e inscrita en el Registro de Información \n"
-"                                        Fiscal (R.I.F) bajo el No."
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-", suficientemente facultado para este acto \n"
-"                                        según consta en ____________________________________________________________________________________________, \n"
-"                                        por el presente documento declaro que en nombre de mi representada doy en calidad de DONACIÓN, en forma pura y simple, perfecta e \n"
-"                                        irrevocable a"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-", y en el \n"
-"                                        Registro de Información Fiscal (RIF) bajo el No."
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-"<br/>\n"
-"                                            <span class=\"fw-bold\">Dirección Fiscal: </span>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-"<br/>\n"
-"                                            <span class=\"fw-bold\">RIF: </span>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-"<br/>\n"
-"                                            <span class=\"fw-bold\">Teléfono: </span>"
-msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
@@ -139,14 +70,6 @@ msgstr ""
 msgid ""
 "<br/>\n"
 "                            <span class=\"fw-bold\">RIF:</span>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-"<br/><br/>\n"
-"                                        todos estos bienes se encuentran valorados en la cantidad de ___________________________________, \n"
-"                                        y los mismos serán destinados a lograr los objetivos de dicha organización. Con el otorgamiento de este documento, mi representada transfiere a"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -210,11 +133,6 @@ msgid "<span class=\"fw-bold\">RIF:</span>"
 msgstr "<span class=\"fw-bold\">RIF:</span>"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "<span class=\"fw-bold\">Razón Social: </span>"
-msgstr "<span class=\"fw-bold\">Razón Social: </span>"
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Razón Social:</span>"
 msgstr "<span class=\"fw-bold\">Razón Social:</span>"
@@ -258,16 +176,6 @@ msgid "<strong>Número de Guía: </strong>"
 msgstr "<strong>Número de Guía: </strong>"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "<strong>Representante Legal del Beneficiario</strong>"
-msgstr "<strong>Representante Legal del Beneficiario</strong>"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "<strong>Representante Legal del Donante</strong>"
-msgstr "<strong>Representante Legal del Donante</strong>"
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
 msgid ""
 "<strong>When marked:</strong> The format of the dispatch guide will use the conversion rate based on the date done of the stock picking.\n"
@@ -286,11 +194,6 @@ msgstr "Un almacén de consignación debe tener un cliente asignado."
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
 msgid "Accept"
 msgstr "Aceptar"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
-msgid "Account to be used for donation flow."
-msgstr "Cuenta a utilizar para el flujo de donación."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
@@ -346,12 +249,6 @@ msgstr "No se puede vender más de lo disponible en el stock de consignación."
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Cant."
 msgstr "Cant."
-
-#. module: l10n_ve_stock_account
-#: model:ir.actions.report,name:l10n_ve_stock_account.action_donation_certificate_account_move
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "Certificado de Donación"
-msgstr "Certificado de Donación"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -475,20 +372,16 @@ msgid "Display Name"
 msgstr "Nombre para mostrar"
 
 #. module: l10n_ve_stock_account
-#: model:ir.actions.act_window,name:l10n_ve_stock_account.view_stock_scrap_action_donation
-#: model:ir.ui.menu,name:l10n_ve_stock_account.menu_stock_scrap_donation
-msgid "Donation"
-msgstr "Donación"
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__document
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__document
+msgid "Document"
+msgstr "Documento"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_scrap_form_inherit
-msgid "Donation Location"
-msgstr "Ubicación de Donación"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_scrap_form_inherit
-msgid "Donation Reason"
-msgstr "Motivo de Donación"
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_sale_order__document
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__document
+msgid "Document type for the sale order."
+msgstr "Tipo de documento para el pedido de venta."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__invoice_state__draft
@@ -506,11 +399,6 @@ msgid "Emited"
 msgstr "Emitida"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "En la ciudad de"
-msgstr "En la ciudad de"
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
 msgid "Exact time to generate the invoice"
 msgstr "Hora exacta para generar factura (ej: 18.5 = 18:30)"
@@ -519,11 +407,6 @@ msgstr "Hora exacta para generar factura (ej: 18.5 = 18:30)"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_account_move_form_view
 msgid "Free Form"
 msgstr "Imprimir Factura"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_account_move_form_view
-msgid "Generar Certificado de Donación"
-msgstr "Generar Certificado de Donación"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -668,11 +551,6 @@ msgid "Location"
 msgstr "Ubicación"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "Logo"
-msgstr "Logo"
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "Los datos del cliente no existen"
 msgstr "Los datos del cliente no existen"
@@ -711,11 +589,6 @@ msgstr ""
 "No se encontró un almacén predeterminado. \n"
 "Si desea configurar uno, por favor vaya a Inventario > Configuración > Almacenes \n"
 "y seleccione un almacén como 'Almacén Predeterminado'."
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "Nombre, Firma y Sello"
-msgstr "Nombre, Firma y Sello"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -933,12 +806,6 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-msgid "The partner must be the company itself for a donation"
-msgstr "El contacto debe ser la misma empresa para una donación"
-
-#. module: l10n_ve_stock_account
-#. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 msgid ""
 "The product %s is not available in the customer's consignation location."
@@ -1027,17 +894,6 @@ msgid "Warehouse"
 msgstr "Almacén"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid ""
-"Yo, ______________________________________________________________________, de nacionalidad venezolana, \n"
-"                                        mayor de edad, y titular de la Cédula de Identidad No. _________________________, actuando en \n"
-"                                        nombre y representación de"
-msgstr ""
-"Yo, ______________________________________________________________________, de nacionalidad venezolana, \n"
-"                                        mayor de edad, y titular de la Cédula de Identidad No. _________________________, actuando en \n"
-"                                        nombre y representación de"
-
-#. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid ""
@@ -1077,21 +933,6 @@ msgid ""
 msgstr ""
 "Tienes %(pickings_combined)s guías de despacho sin facturar al %(date)s. De "
 "facturarse en el siguiente periodo el Seniat será Notificado."
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "a los"
-msgstr "a los"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "de"
-msgstr "de"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.donation_certificate_template_account_move
-msgid "días del mes de"
-msgstr "días del mes de"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
