@@ -12,6 +12,7 @@ class ResPartner(models.Model):
 
     @api.depends("user_ids", "user_ids.all_group_ids")
     def _compute_pos_user_group_xml_ids(self):
+        """Computes the XML IDs of the POS user groups associated with the partner's users."""
         for partner in self:
             groups = partner.sudo().user_ids.all_group_ids
             external_ids = groups.get_external_id()

@@ -75,8 +75,8 @@ class PosSession(models.Model):
                 ],
             }
         }
-    #TODO fue comentado por Omar, por lo tanto necesito aclaratoria o analisis de AI
     def _get_pos_ui_product_product(self, params):
+        """:param params: a dictionary containing params of a search_read()"""
         self = self.with_context(**params["context"])
         products = []
         if not self.config_id.limited_products_loading:
