@@ -38,8 +38,8 @@ class SerialBaseFiscalDriver(SerialDriver):
         self._push_status()
 
     def test(self, data):
-        self._test()
-        self.data["value"] = {"valid": True, "message": "TEST"}
+        result = self._test()
+        self.data["value"] = result
         event_manager.device_changed(self)
 
     def serial_machine(self, data):
@@ -248,7 +248,7 @@ class SerialBaseFiscalDriver(SerialDriver):
     # --------------------------
 
     def _test(self):
-        return {"valid": False, "message": "No se ha implementado"}
+        return {"valid": True, "message": "Prueba no implementada para este dispositivo"}
 
     def _print_invoice(self, invoice, move_type):
         return {"valid": False, "message": "No se ha implementado"}

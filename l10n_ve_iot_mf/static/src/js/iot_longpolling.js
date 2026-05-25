@@ -1,9 +1,10 @@
 /** @odoo-module **/
 
 import { IoTLongpolling } from '@iot_base/network_utils/longpolling';
+import { post } from '@iot_base/network_utils/http';
 import { patch } from "@web/core/utils/patch";
 
-const PRIVATE_IP_HOST_RE = /^(\d+)-(\d+)-(\d+)-(\d+)(?:\..*)?$/;
+const PRIVATE_IP_HOST_RE = /^(\d+)\.(\d+)\.(\d+)\.(\d+)(?:\..*)?$/;
 const PRIVATE_IP_RE = /^(\d{1,3}\.){3}\d{1,3}$/;
 
 function isLocalIoTHost(host) {
@@ -28,10 +29,10 @@ function extractRawIp(host) {
 patch(IoTLongpolling.prototype, {
     setup() {
         super.setup(...arguments);
-        // Timeouts extendidos para máquinas fiscales en Venezuela (procesamiento lento)
+        // Timeouts extendidos (ms) para máquinas fiscales venezolanas (procesamiento lento)
         this.POLL_TIMEOUT = 3000000;
         this.ACTION_TIMEOUT = 1000000;
-        
+
         if (typeof odoo !== 'undefined' && 'use_lna' in odoo) {
             this.setLna(Boolean(odoo.use_lna));
         }
@@ -48,42 +49,38 @@ patch(IoTLongpolling.prototype, {
             device_identifier: device_identifier,
             data,
         };
+        console.log(`IoT Action: iot_ip=${iot_ip}, device_identifier=${device_identifier}, data=${JSON.stringify(data)}, route=${route}`);
         return this._rpcIoT(iot_ip, route || this.actionRoute, body, this.ACTION_TIMEOUT, fallback);
     },
 
     async _rpcIoT(iot_ip, route, params, timeout, fallback, headers) {
-        if (isLocalIoTHost(iot_ip) && window.location.protocol === "https:") {
-            const ip = extractRawIp(iot_ip);
+        // Para hosts locales, el Odoo del IoT Box escucha en puerto 8069
+        const isLocal = isLocalIoTHost(iot_ip);
+        const targetIp = isLocal ? `${extractRawIp(iot_ip)}` : iot_ip;
 
-            // 1) Try proxy through Odoo server (funciona si servidor e IoT red misma LAN)
+        if (isLocal && window.location.protocol === "https:") {
+            // Proxy a través del servidor Odoo (misma LAN)
+            // Usamos el proxy para TODAS las rutas (action y event).
+            // La conexión directa desde HTTPS a HTTP siempre da error CORS,
+            // por lo que no hacemos fallback directo.
             try {
-                const resp = await fetch("/l10n_ve_iot/action", {
+                const resp = await fetch("/l10n_ve_iot_mf/action", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
                     body: JSON.stringify({
-                        iot_ip: ip,
+                        iot_ip: extractRawIp(iot_ip),
                         route,
                         params,
                         timeout: Math.min((timeout || this.ACTION_TIMEOUT) / 1000, 120),
                     }),
                 });
                 const result = await resp.json();
+                console.log("Proxy result:", result);
                 if (result?.status !== "unreachable" && !result?.error) {
                     return result;
                 }
-            } catch (_) {}
-
-            // 2) Proxy falló. Intentar directo con LNA (targetAddressSpace:local)
-            //    No depende de que el post() de Odoo tenga soporte LNA.
-            try {
-                const url = `http://${ip}/${route}`;
-                const resp = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ params }),
-                    targetAddressSpace: "local",
-                });
-                return await resp.json();
+                // Proxy respondió con error -> propagamos para que el poll reintente
+                throw new Error(result?.error || "IoT proxy returned error");
             } catch (error) {
                 if (!fallback && error?.name !== "AbortError") {
                     this._doWarnFail(iot_ip);
@@ -92,13 +89,22 @@ patch(IoTLongpolling.prototype, {
             }
         }
 
-        // Direct connection (HTTP page or non-local IP)
+        // HTTP page o IP no-local: conectar directo
         const originalUseLna = this.useLna;
-        if (isLocalIoTHost(iot_ip)) {
+        if (isLocal) {
             this.useLna = true;
         }
         try {
-            return await super._rpcIoT(iot_ip, route, params, timeout, fallback, headers);
+            const abortController = new AbortController();
+            if (this._listeners[iot_ip] && route === this.pollRoute) {
+                this._listeners[iot_ip].abortController = abortController;
+            }
+            return await post(targetIp, route, params, timeout, headers, abortController.signal, this.useLna);
+        } catch (error) {
+            if (!fallback && error?.name !== "AbortError") {
+                this._doWarnFail(iot_ip);
+            }
+            throw new Error("Longpolling action failed");
         } finally {
             this.useLna = originalUseLna;
         }

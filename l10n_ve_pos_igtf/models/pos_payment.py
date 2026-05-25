@@ -9,9 +9,9 @@ _logger = logging.getLogger(__name__)
 class PosPayment(models.Model):
     _inherit = "pos.payment"
 
-    include_igtf = fields.Boolean()
-    igtf_amount = fields.Float()
-    foreign_igtf_amount = fields.Float()
+    include_igtf = fields.Boolean(string="Include IGTF")
+    igtf_amount = fields.Float(string="IGTF Amount")
+    foreign_igtf_amount = fields.Float(string="IGTF Amount in Foreign Currency")
 
     def _export_for_ui(self, payment):
         res = super()._export_for_ui(payment)

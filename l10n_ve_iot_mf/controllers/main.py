@@ -29,13 +29,14 @@ class ApiIoT(http.Controller):
     )
     def getFiscalPortsToBlock(self, **kw):
         iot_ids = request.env["iot.box"].sudo().search([("blacklist", "=", True)])
+        _logger.warning("IOT IDS TO BLOCK %s", iot_ids)
         response = {}
         for iot in iot_ids:
             response[iot.identifier] = iot.blacklist_port_ids.mapped(lambda x: x.name)
         return json.dumps(response)
 
     @http.route(
-        "/l10n_ve_iot/action", type="http", methods=["POST"], auth="user", csrf=False
+        "/l10n_ve_iot_mf/action", type="http", methods=["POST"], auth="user", csrf=False
     )
     def proxy_iot_action(self, **kwargs):
         """
@@ -43,6 +44,7 @@ class ApiIoT(http.Controller):
         El navegador llama a este endpoint cuando no puede conectar
         directamente al IoT Box (mixed content o diferencias de red).
         """
+        _logger.warning("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA Received proxy request with data: %s", request.httprequest.data) 
         try:
             data = json.loads(request.httprequest.data)
             iot_ip = data.get("iot_ip")
@@ -53,6 +55,7 @@ class ApiIoT(http.Controller):
             _logger.info(
                 "Proxying IoT action: http://%s/%s", iot_ip, route
             )
+            
             response = requests.post(
                 f"http://{iot_ip}/{route}",
                 json={"params": params},

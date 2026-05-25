@@ -115,7 +115,6 @@ FiscalProtocol = SerialProtocol(
 
 
 class SerialFiscalDriver(SerialDriver):
-    connection_type = "serial"
 
     _protocol = FiscalProtocol
     mdepura = False
@@ -133,7 +132,6 @@ class SerialFiscalDriver(SerialDriver):
     def supported(cls, device):
         try:
             condition = False
-
             if platform.system() == "Windows":
                 server = helpers.get_odoo_server_url()
                 urllib3.disable_warnings()
@@ -142,29 +140,31 @@ class SerialFiscalDriver(SerialDriver):
                     "GET",
                     server + "/iot_fiscal/ports",
                 )
-
                 b_body = waiting._body
                 body = json.loads(b_body.decode("utf-8"))
-
-                condition = device["identifier"] in body[helpers.get_mac_address()]
-
+                _logger.warning("El dispositivo es:  %s", device)
+                _logger.warning("IOT FISCAL PORTS %s", device["identifier"])
+                condition = device["identifier"] in body[helpers.get_identifier()]
+                _logger.warning(" se cumplen la Condition? %s", condition)
+            
             elif platform.system() == "Linux":
                 condition = device["identifier"].__contains__(DEVICE_NAME) or device[
                     "identifier"
                 ].__contains__(DEVICE_SHORT_NAME)
 
             if condition:
+                _logger.info("Probing device %s with protocol %s", device, cls._protocol.name)
                 try:
-                    protocol = cls._protocol
+                    cls._protocol
                     return True
                 except Exception:
                     _logger.exception(
                         "Error while probing %s with protocol %s" % (device, cls._protocol.name)
                     )
+                    cls._protocol.close()
                 return True
         except Exception as e:
-            _logger.error("Could not reach configured server")
-            _logger.error("A error encountered : %s " % e)
+            _logger.error("A error encountered 3 : %s " % e)
             return super().supported(device)
         return super().supported(device)
 
@@ -250,12 +250,22 @@ class SerialFiscalDriver(SerialDriver):
         self.device_name = name
 
     def test(self, data):
-        self.SendCmd("7")
-        self.SendCmd("800")
-        self.SendCmd("80$Binaural Test")
-        self.SendCmd("80!Documento de pruebas")
-        self.SendCmd("810")
-        self.data["value"] = {"status": "true"}
+        try:
+            status = self.ReadFpStatus(True)
+            self.data["value"] = {
+                "valid": status["valid"],
+                "message": (
+                    "Conexión exitosa con la impresora fiscal"
+                    if status["valid"]
+                    else "La impresora no respondió al comando de estado"
+                ),
+            }
+        except Exception as e:
+            _logger.exception("Error en test de impresora fiscal HKA")
+            self.data["value"] = {
+                "valid": False,
+                "message": f"Error de comunicación: {str(e)}",
+            }
         event_manager.device_changed(self)
 
     def logger(self, data):
