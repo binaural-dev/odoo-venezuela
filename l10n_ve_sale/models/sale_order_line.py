@@ -67,19 +67,25 @@ class SaleOrderLine(models.Model):
             else:
                 line.foreign_price = 0.0
 
-    @api.depends("product_uom_qty", "foreign_price", "discount")
     def _compute_foreign_subtotal(self):
-        
         for line in self:
-            if not line.product_uom_qty or not line.foreign_price:
-                line.foreign_subtotal = 0.0
-                continue
-            
             discount = line.discount if line.discount and not float_is_zero(line.discount, precision_digits=2) else 0.0
             
             price_with_discount = line.foreign_price * (1 - (discount / 100.0))
-            
-            line.foreign_subtotal = price_with_discount * line.product_uom_qty
+            foreign_subtotal_teoric = price_with_discount * line.product_uom_qty
+
+           
+            if foreign_subtotal_teoric > 0.0 and line.price_subtotal > 0.0:
+                line.foreign_subtotal = foreign_subtotal_teoric
+                
+                porcion_total_con_iva = line.price_total / line.price_subtotal
+                
+                if hasattr(line, 'foreign_price_total'):
+                    line.foreign_price_total = foreign_subtotal_teoric * porcion_total_con_iva
+            else:
+                line.foreign_subtotal = foreign_subtotal_teoric
+                if hasattr(line, 'foreign_price_total'):
+                    line.foreign_price_total = foreign_subtotal_teoric
             
     def _prepare_invoice_line(self, **optional_values):
        

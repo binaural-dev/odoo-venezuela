@@ -166,12 +166,30 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
-    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_foreign_amount_residual", currency_field="foreign_currency_id",readonly=False)
+    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
 
-    @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
-    def _compute_foreign_amount_residual(self):
-        for rec in self:
-            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+    @api.depends(
+        'line_ids.display_type',
+        'line_ids.foreign_balance',
+        'line_ids.foreign_amount_residual', 
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.foreign_amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.foreign_amount_residual',
+    )
+    def _compute_amount(self):
+        super()._compute_amount()
+        
+        for move in self:
+            total_residual_currency = 0.0
+            for line in move.line_ids:
+                if line.display_type == 'payment_term':
+                    total_residual_currency += line.foreign_amount_residual
+            
+            sign = move.direction_sign
+            
+            if move.is_invoice(include_receipts=True):
+                move.foreign_amount_residual = -sign * total_residual_currency
+            else:
+                move.foreign_amount_residual = abs(total_residual_currency)
             
          
 
@@ -274,44 +292,78 @@ class AccountMove(models.Model):
             container = {'records': moves}
             moves._sync_dynamic_lines(container)
 
-    @api.depends("invoice_line_ids", "tax_totals")
+    @api.depends("invoice_line_ids", "tax_totals", "amount_total", "amount_untaxed")
     def _compute_detailed_amounts(self):
         for record in self:
-            discount_amount = 0
+            # Reemplazamos el 'return' por asignación vacía para no romper el lote (multi-registro)
             if not record.tax_totals:
                 record.detailed_amounts = dict()
-                return
-            amount_taxed = record.tax_totals.get(
-                "amount_total", 0
-            ) - record.tax_totals.get("amount_untaxed", 0)
-            total = 0
+                continue
+
+            # 1. VALORES EN MONEDA BASE (Bs.)
+            # Extraemos el impuesto real directo de los campos oficiales de Odoo
+            amount_taxed_bs = record.amount_total - record.amount_untaxed
+            total_gross_bs = 0.0
+            discount_amount_bs = 0.0
+
+            # 2. VALORES EN MONEDA EXTRANJERA (USD)
+            total_gross_usd = 0.0
+            discount_amount_usd = 0.0
 
             for line in record.invoice_line_ids:
-                subtotal = line.price_unit * line.quantity
+                # Cálculos en Bolívares
+                subtotal_gross_bs = line.price_unit * line.quantity
+                total_gross_bs += subtotal_gross_bs
                 if line.discount > 0:
-                    discount_amount += subtotal - line.price_subtotal
-                total += subtotal
+                    discount_amount_bs += (subtotal_gross_bs - line.price_subtotal)
 
-            record.detailed_amounts = dict(
-                {
-                    "gross_amount": total,
-                    "formatted_gross_amount": formatLang(
-                        self.env, total, currency_obj=self.currency_id
-                    ),
-                    "discount_amount": discount_amount,
-                    "formatted_discount_amount": formatLang(
-                        self.env, discount_amount, currency_obj=self.currency_id
-                    ),
-                    "gross_discount_amount": total,
-                    "formatted_gross_discount_amount": formatLang(
-                        self.env, total - discount_amount, currency_obj=self.currency_id
-                    ),
-                    "taxes_amount": amount_taxed,
-                    "formatted_taxes_amount": formatLang(
-                        self.env, amount_taxed, currency_obj=self.currency_id
-                    ),
-                }
-            )
+                # Cálculos en Dólares (Usando el foreign_price que ya corregimos)
+                if hasattr(line, 'foreign_price'):
+                    subtotal_gross_usd = line.foreign_price * line.quantity
+                    total_gross_usd += subtotal_gross_usd
+                    if line.discount > 0:
+                        discount_amount_usd += (subtotal_gross_usd - getattr(line, 'foreign_subtotal', 0.0))
+
+            # 3. IMPUESTO EN DÓLARES POR PORCIÓN PURA
+            # Si en Bs. el impuesto representa una parte del neto, en USD debe ser exactamente igual
+            if record.amount_untaxed > 0.0:
+                porcion_impuesto = amount_taxed_bs / record.amount_untaxed
+                # El neto en USD es la suma de los subtotales de las líneas
+                amount_untaxed_usd = total_gross_usd - discount_amount_usd
+                amount_taxed_usd = amount_untaxed_usd * porcion_impuesto
+            else:
+                amount_taxed_usd = 0.0
+
+            # 4. CONSTRUCCIÓN DEL DICCIONARIO DETALLADO BIMONETARIO
+            # Mantenemos las claves originales en Bs para no romper lo existente,
+            # e inyectamos las nuevas claves con sufijo '_foreign' para tus reportes en USD.
+            record.detailed_amounts = {
+                # --- Montos en Moneda Base (Bs.) ---
+                "gross_amount": total_gross_bs,
+                "formatted_gross_amount": formatLang(self.env, total_gross_bs, currency_obj=record.currency_id),
+                
+                "discount_amount": discount_amount_bs,
+                "formatted_discount_amount": formatLang(self.env, discount_amount_bs, currency_obj=record.currency_id),
+                
+                "gross_discount_amount": total_gross_bs - discount_amount_bs,
+                "formatted_gross_discount_amount": formatLang(self.env, total_gross_bs - discount_amount_bs, currency_obj=record.currency_id),
+                
+                "taxes_amount": amount_taxed_bs,
+                "formatted_taxes_amount": formatLang(self.env, amount_taxed_bs, currency_obj=record.currency_id),
+
+                # --- Montos en Moneda Extranjera (USD) ---
+                "foreign_gross_amount": total_gross_usd,
+                "formatted_foreign_gross_amount": formatLang(self.env, total_gross_usd, currency_obj=record.foreign_currency_id),
+                
+                "foreign_discount_amount": discount_amount_usd,
+                "formatted_foreign_discount_amount": formatLang(self.env, discount_amount_usd, currency_obj=record.foreign_currency_id),
+                
+                "foreign_gross_discount_amount": total_gross_usd - discount_amount_usd,
+                "formatted_foreign_gross_discount_amount": formatLang(self.env, total_gross_usd - discount_amount_usd, currency_obj=record.foreign_currency_id),
+                
+                "foreign_taxes_amount": amount_taxed_usd,
+                "formatted_foreign_taxes_amount": formatLang(self.env, amount_taxed_usd, currency_obj=record.foreign_currency_id),
+            }
 
 
     @api.model
@@ -745,20 +797,30 @@ class AccountMove(models.Model):
             if move.is_invoice() and move.invoice_line_ids:
                 move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"]
 
-    @api.depends("tax_totals")
+    @api.depends("invoice_line_ids", "tax_totals", "invoice_line_ids.foreign_price_total")
     def _compute_foreign_total_billed(self):
         """
-        Compute the foreign total billed of the invoice
+        Compute the foreign total billed of the invoice.
+        Safeguarded against transient states during onchange loops.
         """
         for move in self:
-            move.foreign_total_billed = 0
+            move.foreign_total_billed = 0.0
             if not (
                 move.invoice_line_ids
                 and move.is_invoice(include_receipts=True)
-                and move.tax_totals
             ):
                 continue
-            move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
+            
+            # 1. Intentamos extraerlo de los tax_totals usando .get() seguro
+            tax_totals = move.tax_totals or {}
+            foreign_total = tax_totals.get("foreign_amount_total", None)
+
+            # 2. Si no existe la clave en el diccionario en este punto del Onchange,
+            # calculamos el respaldo real sumando las líneas para no romper la cadena
+            if foreign_total is None:
+                foreign_total = sum(line.foreign_price_total for line in move.invoice_line_ids)
+
+            move.foreign_total_billed = foreign_total
 
     @api.depends(
         "invoice_line_ids.currency_rate",
@@ -991,68 +1053,45 @@ class AccountMove(models.Model):
         return super().action_post()
 
     @api.depends(
-        "invoice_line_ids.compute_all_tax",
-        "invoice_line_ids.price_subtotal",
-        "foreign_inverse_rate",
-        "foreign_currency_id",
-        "foreign_rate",
+        'invoice_payment_term_id', 
+        'invoice_date', 
+        'currency_id', 
+        'amount_total_in_currency_signed', 
+        'invoice_date_due',
+        'foreign_rate',        
+        'foreign_currency_id'
     )
     def _compute_needed_terms(self):
         res = super()._compute_needed_terms()
 
         for invoice in self:
-            is_draft = invoice.id != invoice._origin.id
+            if not invoice.is_invoice(include_receipts=True) or not invoice.invoice_line_ids:
+                continue
+            if not invoice.foreign_currency_id:
+                continue
+            current_needed_terms = dict(invoice.needed_terms or {})
             sign = 1 if invoice.is_inbound(include_receipts=True) else -1
-            if invoice.is_invoice(True) and invoice.invoice_line_ids:
-                invoice._compute_tax_totals()
-                if invoice.invoice_payment_term_id:
-                    if is_draft:
-                        tax_amount_currency = 0.0
-                        untaxed_amount_currency = 0.0
-                        for line in invoice.invoice_line_ids:
-                            untaxed_amount_currency += line.foreign_subtotal
-                            tax_amount_currency += (
-                                line.foreign_price_total - line.foreign_subtotal
-                            )
-                        untaxed_amount = untaxed_amount_currency
-                        tax_amount = tax_amount_currency
+
+            if invoice.invoice_payment_term_id:
+                total_balance_base = abs(invoice.amount_total_signed)
+                for key, values in current_needed_terms.items():
+                    if total_balance_base > 0.0:
+                        porcion_cuota = abs(values.get('balance', 0.0)) / total_balance_base
+                        foreign_balance = (invoice.foreign_total_billed * porcion_cuota) * sign
                     else:
-                        tax_amount = (
-                            invoice.foreign_total_billed
-                            - invoice.foreign_taxable_income
-                        ) * sign
-                        untaxed_amount = (invoice.foreign_taxable_income) * sign
+                        foreign_balance = 0.0
 
-                    invoice_payment_terms = (
-                        invoice.invoice_payment_term_id._compute_terms(
-                            date_ref=invoice.invoice_date
-                            or invoice.date
-                            or fields.Date.context_today(invoice),
-                            currency=invoice.foreign_currency_id,
-                            tax_amount_currency=tax_amount,
-                            tax_amount=tax_amount,
-                            untaxed_amount_currency=untaxed_amount,
-                            untaxed_amount=untaxed_amount,
-                            company=invoice.company_id,
-                            sign=sign,
-                        )
-                    )
-
-                    for term in invoice_payment_terms["line_ids"]:
-                        for key in list(invoice.needed_terms.keys()):
-                            if key["date_maturity"] == fields.Date.to_date(
-                                term.get("date")
-                            ):
-                                invoice.needed_terms[key] = {
-                                    **invoice.needed_terms[key],
-                                    "foreign_balance": term["company_amount"],
-                                }
-                else:
-                    for key in list(invoice.needed_terms.keys()):
-                        invoice.needed_terms[key] = {
-                            **invoice.needed_terms[key],
-                            "foreign_balance": sign * invoice.foreign_total_billed,
-                        }
+                    current_needed_terms[key] = {
+                        **values,
+                        "foreign_balance": foreign_balance,
+                    }
+            else:
+                for key, values in current_needed_terms.items():
+                    current_needed_terms[key] = {
+                        **values,
+                        "foreign_balance": sign * invoice.foreign_total_billed,
+                    }
+            invoice.needed_terms = current_needed_terms
         return res
 
     def button_draft(self):
