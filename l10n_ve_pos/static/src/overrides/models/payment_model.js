@@ -37,7 +37,8 @@ patch(Payment.prototype, {
 				this.set_foreign_amount(this.order.get_foreign_due() + this.order.get_foreign_rounding_applied(), true);
 				return res;
 			}
-			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
+			this.foreign_amount = round_di(amount * this.pos.foreign_currency.rate, this.pos.dp["Foreign Product Price"]); 
+
 		}
 		return res;
 	},
@@ -46,7 +47,7 @@ patch(Payment.prototype, {
 		if (!only) {
 			if (this.pos.currency.name == "VEF") {
 				if (this.payment_method.is_foreign_currency) {
-					this.amount=this.foreign_amount / this.pos.foreign_currency.rate
+					this.amount = round_pr(this.foreign_amount * 1 / this.pos.foreign_currency.rate, this.pos.currency.rounding)
 					return;
 				}
 				this.amount = amount / this.order.get_conversion_rate();
@@ -54,12 +55,12 @@ patch(Payment.prototype, {
 			if (this.pos.currency.name == "USD") {
 				if (this.payment_method.is_foreign_currency) {
 					this.set_amount(
-						this.foreign_amount * this.pos.foreign_currency.inverse_rate,
+						this.foreign_amount * 1 / this.pos.foreign_currency.inverse_rate,
 					);
 					return;
 				}
 				this.set_amount(
-					this.foreign_amount * this.order.init_conversion_rate,
+					this.foreign_amount * 1 / this.order.init_conversion_rate,
 					true,
 				);
 			}
