@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 
 from lxml import etree
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import drop_index, float_compare, index_exists
 from odoo.tools.float_utils import float_round
@@ -1075,4 +1075,45 @@ class AccountMove(models.Model):
                     raise ValidationError(_("All added lines must indicate the product."))
                 
 
-  
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        """
+        Reverse moves and swap foreign adjustment fields by matching line indices
+        to ensure every line is processed correctly even if sequences are identical.
+        """
+        reverse_moves = super(AccountMove, self)._reverse_moves(
+            default_values_list=default_values_list, 
+            cancel=cancel
+        )
+
+        for move in reverse_moves:
+            original_move = move.reversed_entry_id
+            if not original_move:
+                continue
+
+            lines_to_update = []
+            
+            reversed_lines = move.line_ids.sorted('id')
+            original_lines = original_move.line_ids.sorted('id')
+
+            for rev_line, orig_line in zip(reversed_lines, original_lines):
+                # THE SWAP: Get values from the specific matching original line
+                f_debit_source = getattr(orig_line, 'foreign_debit_adjustment', 0.0)
+                f_credit_source = getattr(orig_line, 'foreign_credit_adjustment', 0.0)
+
+                if f_debit_source or f_credit_source:
+                    lines_to_update.append(Command.update(rev_line.id, {
+                        'foreign_debit_adjustment': f_credit_source,
+                        'foreign_credit_adjustment': f_debit_source,
+                    }))
+                else:
+                    lines_to_update.append(Command.update(rev_line.id, {
+                        'foreign_debit_adjustment': 0.0,
+                        'foreign_credit_adjustment': 0.0,
+                    }))
+
+            if lines_to_update:
+                move.with_context(skip_invoice_sync=True).write({
+                    'line_ids': lines_to_update
+                })
+
+        return reverse_moves
