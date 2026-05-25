@@ -4,8 +4,8 @@ from odoo import models, fields, api, _
 class PosOrder(models.Model):
     _inherit = "pos.order"
 
-    igtf_amount = fields.Float()
-    bi_igtf = fields.Float()
+    igtf_amount = fields.Float(string="IGTF Amount")
+    bi_igtf = fields.Float(string="BI IGTF")
 
     def _process_order(self, order, existing_order):
         try:

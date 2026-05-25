@@ -38,7 +38,6 @@ TAX = {
 
 
 class SerialPnPFiscalDriver(SerialBaseFiscalDriver):
-    connection_type = "serial"
     _protocol = FiscalProtocol
 
     def __init__(self, identifier, device):
@@ -55,20 +54,24 @@ class SerialPnPFiscalDriver(SerialBaseFiscalDriver):
                 connection.reset_input_buffer()
 
                 msj = _wrap_low_level_message_around("8|N")
+
                 write_message = msj.encode().replace(b"\xc2", b"")
                 connection.write(write_message)
                 _logger.info("Write: %s", write_message)
                 response = b""
                 sal = connection.read(100)
                 _logger.info("Read: %s", sal)
+                
                 response = (
                     response.replace(b"\x1c", b"\x7c")
                     .replace(b"\x02", b"\x7c")
                     .replace(b"\x03", b"\x7c")
                     .decode("latin-1")
                 )
+                
                 if response.startswith("|08|"):
                     return True
+                
                 return False
         except serial.serialutil.SerialTimeoutException:
             _logger.info("Serial timeout")
@@ -94,10 +97,20 @@ class SerialPnPFiscalDriver(SerialBaseFiscalDriver):
         self.device_name = name
 
     def _test(self):
-        _send_to_pnp("H", self._connection)
-        _send_to_pnp("I|Binaural Test", self._connection)
-        _send_to_pnp("J", self._connection)
-        return {"valid": True, "msg": "Test exitoso"}
+        if not self._connection:
+            return {"valid": False, "message": "No hay conexión serial activa con la impresora"}
+        try:
+            for cmd in ["H", "I|Binaural Test", "J"]:
+                rt = _send_to_pnp(cmd, self._connection)
+                if rt is False:
+                    return {
+                        "valid": False,
+                        "message": f"Error de comunicación al enviar comando: {cmd}",
+                    }
+            return {"valid": True, "message": "Test exitoso"}
+        except Exception as e:
+            _logger.exception("Error en test de impresora fiscal PnP")
+            return {"valid": False, "message": f"Error en test: {str(e)}"}
 
     def _print_report_x(self):
         _send_to_pnp("9|X", self._connection)

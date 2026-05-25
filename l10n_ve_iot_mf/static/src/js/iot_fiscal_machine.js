@@ -57,7 +57,13 @@ export class IoTFiscalMachineComponent extends Component {
 
     this.device = new DeviceController(
       useService("iot_longpolling"),
-      { iot_ip: device.iot_ip, identifier: device.identifier },
+      { 
+        iot_ip: device.iot_ip,
+        identifier: device.identifier,
+        iot_id: device.iot_id,
+        manual_measurement: device.manual_measurement,
+      },
+      console.log("DeviceController initialized with:", device),
       this.notification
     );
 
@@ -299,18 +305,49 @@ export class IoTFiscalMachineComponent extends Component {
       })
       .catch(error => onIoTError(error, this.notification))
   }
+  
   async test() {
     if (!this.device) {
       this.showFailedConnection();
       return;
     }
+
+    let testCompleted = false;
+
+    this.iotDevice.addListener((data) => {
+      // Ignorar eventos sin value (como {status: "unreachable"} del poll)
+      if (!data || !data.value) return;
+
+      testCompleted = true;
+      this.iotDevice.removeListener();
+      if (data.value.valid) {
+        this.notification.add(data.value.message || "Test exitoso");
+      } else {
+        this.notification.add(data.value.message || "Error en test", {
+          title: "Test fallido",
+          type: "danger",
+        });
+      }
+    });
+
     try {
-      const data = await this.device.action({ action: "test", data: true });
-      onIoTActionResult(data, this.notification);
+      await this.device.action({ action: "test", data: true });
+      // Timeout de seguridad: si el listener no se disparó en 30s
+      setTimeout(() => {
+        if (!testCompleted) {
+          this.iotDevice.removeListener();
+          this.notification.add("No se recibió respuesta de la impresora", {
+            title: "Test fallido",
+            type: "danger",
+          });
+        }
+      }, 30000);
     } catch (error) {
+      this.iotDevice.removeListener();
       onIoTError(error, this.notification);
     }
   }
+
   async command() {
     if (!this.device) {
       this.showFailedConnection()
@@ -449,7 +486,7 @@ export class IoTFiscalMachineComponent extends Component {
 
       this.device = new DeviceController(
         useService("iot_longpolling"),
-        { iot_ip: request.iot_ip, identifier: request.identifier }
+        { iot_ip: request.iot_ip, iot_id: request.iot_id, identifier: request.identifier }
       );
 
       const deviceResponse = await this.device_response(print_type, request);

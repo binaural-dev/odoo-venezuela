@@ -66,7 +66,8 @@ class AccountMoveInh(models.Model):
 
     def report_z(self, serial, response):
         data = response.get("data", False)
-
+        if not data:
+            return False
         if not response.get("valid", False):
             raise ValidationError(response.get("message", "No se pudo imprimir el reporte Z"))
 
@@ -122,6 +123,7 @@ class AccountMoveInh(models.Model):
         _data = {
             "identifier": data.iot_mf.identifier,
             "iot_ip": data.iot_box.ip,
+            "iot_id": {"id": data.iot_mf.iot_id.id, "name": data.iot_mf.iot_id.name},
             "type": data.move_type,
             "mf_number": data.mf_invoice_number,
             "is_debit_note": data.is_debit_journal
@@ -193,6 +195,7 @@ class AccountMoveInh(models.Model):
                 "flag_21": data.iot_mf.flag_21,
                 "identifier": data.iot_mf.identifier,
                 "iot_ip": data.iot_box.ip,
+                "iot_id": {"id": data.iot_mf.iot_id.id, "name": data.iot_mf.iot_id.name},
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
                     "name": self._normalize_product_name(data.partner_id.name),
@@ -298,6 +301,7 @@ class AccountMoveInh(models.Model):
                 "flag_21": data.iot_mf.flag_21,
                 "identifier": data.iot_mf.identifier,
                 "iot_ip": data.iot_box.ip,
+                "iot_id": {"id": data.iot_mf.iot_id.id, "name": data.iot_mf.iot_id.name},
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
                     "name": self._normalize_product_name(data.partner_id.name),
@@ -397,6 +401,7 @@ class AccountMoveInh(models.Model):
                 "flag_21": data.iot_mf.flag_21,
                 "identifier": data.iot_mf.identifier,
                 "iot_ip": data.iot_box.ip,
+                "iot_id": {"id": data.iot_mf.iot_id.id, "name": data.iot_mf.iot_id.name},
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
                     "name": self._normalize_product_name(data.partner_id.name),
