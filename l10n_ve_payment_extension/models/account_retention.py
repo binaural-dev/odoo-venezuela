@@ -11,6 +11,11 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
+class SimulationSuccess(Exception):
+    """Exception raised to rollback simulation savepoints when dry-run succeeds."""
+    pass
+
+
 class AccountRetention(models.Model):
     _name = "account.retention"
     _inherit = ["mail.thread", "mail.activity.mixin"]
@@ -484,6 +489,16 @@ class AccountRetention(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if not self.env.context.get("simulation"):
+            try:
+                with self.env.cr.savepoint():
+                    self.with_context(simulation=True).create(vals_list)
+                    raise SimulationSuccess()
+            except SimulationSuccess:
+                pass
+            except Exception as e:
+                raise e
+
         res = super().create(vals_list)
         res._set_sequence()
         return res
@@ -656,6 +671,16 @@ class AccountRetention(models.Model):
             self.payment_ids.action_draft()
 
     def action_post(self):
+        if not self.env.context.get("simulation"):
+            try:
+                with self.env.cr.savepoint():
+                    self.with_context(simulation=True).action_post()
+                    raise SimulationSuccess()
+            except SimulationSuccess:
+                pass
+            except Exception as e:
+                raise e
+
         today = datetime.now()
 
         self._create_payments_from_retention_lines()
@@ -740,14 +765,20 @@ class AccountRetention(models.Model):
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
             sequence_number = ""
-            if retention.type_retention == "iva":
-                sequence_number = retention.get_sequence_iva_retention().next_by_id()
-            elif retention.type_retention == "islr":
-                sequence_number = retention.get_sequence_islr_retention().next_by_id()
+            if self.env.context.get("simulation"):
+                if retention.type_retention == "iva":
+                    sequence_number = "99999999"
+                else:
+                    sequence_number = "99999"
             else:
-                sequence_number = (
-                    retention.get_sequence_municipal_retention().next_by_id()
-                )
+                if retention.type_retention == "iva":
+                    sequence_number = retention.get_sequence_iva_retention().next_by_id()
+                elif retention.type_retention == "islr":
+                    sequence_number = retention.get_sequence_islr_retention().next_by_id()
+                else:
+                    sequence_number = (
+                        retention.get_sequence_municipal_retention().next_by_id()
+                    )
             correlative = f"{retention.date_accounting.year}{retention.date_accounting.month:02d}{sequence_number}"
             retention.name = correlative
             retention.number = correlative
