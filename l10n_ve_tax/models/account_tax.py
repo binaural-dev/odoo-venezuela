@@ -23,13 +23,12 @@ class AccountTax(models.Model):
 
         currency = self.env.company.currency_foreign_id or currency
         move = self._get_move_from_base_lines(base_lines)
-        if not move or not hasattr(move, 'foreign_total_billed') or not move.foreign_total_billed:
-            return res
+        
+        has_foreign_fields = move and hasattr(move, 'foreign_total_billed') and move.foreign_total_billed
+        foreign_amount_total = move.foreign_total_billed if has_foreign_fields else 0.0
 
         amount_untaxed_bs = res.get('amount_untaxed', 0.0)
         amount_total_bs = res.get('amount_total', 0.0)
-        
-        foreign_amount_total = move.foreign_total_billed
 
         if amount_total_bs > 0.0:
             factor_neto = amount_untaxed_bs / amount_total_bs
@@ -71,7 +70,7 @@ class AccountTax(models.Model):
                 'formatted_amount': formatLang(self.env, foreign_sub_amount, currency_obj=currency),
             })
 
-        total_gross_bs = sum((line.price_unit * line.quantity) for line in move.invoice_line_ids)
+        total_gross_bs = sum((line.price_unit * line.quantity) for line in move.invoice_line_ids) if move else 0.0
         discount_amount_bs = total_gross_bs - amount_untaxed_bs if total_gross_bs > amount_untaxed_bs else 0.0
         
         if total_gross_bs > 0.0:
