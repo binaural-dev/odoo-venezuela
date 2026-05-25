@@ -549,7 +549,7 @@ class AccountPaymentAndIgtf(models.Model):
                     porcion_igtf = float_round(rec.igtf_amount / abs(lines[0]["amount_currency"]), precision_rounding=precision)
                     igtf_base = float_round((lines[0]["balance"] * porcion_igtf), precision_rounding=precision_base)
 
-                    amount = debit_amount - igtf_base
+                    amount = debit_amount - abs(igtf_base)
                 
                     total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
                     total_base_residual_converted =  rec.company_id.currency_id._convert(
