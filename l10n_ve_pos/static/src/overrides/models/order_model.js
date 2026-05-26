@@ -131,7 +131,7 @@ patch(Order.prototype, {
   },
   /* ---- Payment Status --- */
   get_foreign_subtotal() {
-    return round_di(
+    return round_pr(
       this.orderlines.reduce(function (sum, orderLine) {
         return sum + orderLine.get_display_foreign_price();
       }, 0),
@@ -142,7 +142,7 @@ patch(Order.prototype, {
     return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
   },
   get_foreign_total_without_tax() {
-    return round_di(
+    return round_pr(
       this.orderlines.reduce(function (sum, orderLine) {
         return sum + orderLine.get_foreign_price_without_tax();
       }, 0),
@@ -391,13 +391,14 @@ patch(Order.prototype, {
   },
 
   get_foreign_total_paid() {
-    return round_di(
-      this.paymentlines.reduce(function (sum, paymentLine) {
-        if (paymentLine.is_done()) {
-          sum += paymentLine.get_foreign_amount();
-        }
-        return sum;
-      }, 0),
+    const rawTotalPaid = this.paymentlines.reduce(function (sum, paymentLine) {
+      if (paymentLine.is_done()) {
+        sum += paymentLine.get_foreign_amount();
+      }
+      return sum;
+    }, 0);
+    return round_pr(
+      rawTotalPaid,
       this.pos.foreign_currency.rounding,
     );
   },

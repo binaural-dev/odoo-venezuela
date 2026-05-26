@@ -1,7 +1,7 @@
 from odoo import api, fields, models, _
 import logging
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_is_zero
+from odoo.tools import float_is_zero, float_round
 
 
 
@@ -60,10 +60,20 @@ class SaleOrderLine(models.Model):
 
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
+        precision = self.env["decimal.precision"].precision_get('Alternate cost')
         for line in self:
             if line.price_unit and line.foreign_inverse_rate:
-                
-                line.foreign_price = line.price_unit * line.order_id.foreign_inverse_rate
+                if line.foreign_currency_id.id == self.env.ref("base.VEF").id:
+                    foreign_inverse_rate = float_round(
+                        line.order_id.foreign_inverse_rate, 
+                        precision_digits=precision
+                    )
+                else:
+                    foreign_inverse_rate = line.order_id.foreign_inverse_rate
+                line.foreign_price = float_round(
+                    line.price_unit * foreign_inverse_rate,
+                    precision_digits=precision,
+                )
             else:
                 line.foreign_price = 0.0
 
