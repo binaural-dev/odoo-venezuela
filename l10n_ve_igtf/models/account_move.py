@@ -51,6 +51,7 @@ class AccountMove(models.Model):
         copy=False,
     )
     igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
+    alter_igtf_top_aply = fields.Float('Max Igtf amount to be apply alter', copy=False)
     alter_bi_igtf = fields.Float('Alter BI IGTF',copy=False)
 
     foreign_alter_bi_igtf = fields.Float('Foreign Alter BI IGTF',copy=False)
@@ -229,6 +230,7 @@ class AccountMove(models.Model):
             
             rec.write({
                 'igtf_top_aply': apply,
+                'alter_igtf_top_aply': alter_apply,
                 'alter_bi_igtf': alter_bi_igtf,
                 'foreign_alter_bi_igtf': foreign_alter_bi_igtf,
                 'foreign_bi_igtf': total_foreign_bi_igtf
