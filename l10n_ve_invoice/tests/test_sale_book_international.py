@@ -96,9 +96,40 @@ class TestSaleBook(TestCommonSaleInternational):
 
         line_fields = wizard._fields_sale_book_line(invoice, taxes)
 
-        self.assertIsNone(
-            line_fields,
-            "Para ventas internacionales sin el impuesto cero configurado, debe devolver None"
+        base_zero = line_fields["tax_base_zero_aliquot_international"]
+
+        tax_zero = line_fields["amount_zero_aliquot_international"]
+
+        self.assertEqual(
+            base_zero,
+            0.00,
+            "La base imponible general internacional debe ser 0 porque el impuesto de 0% no esta configurado"
+        )
+
+        self.assertEqual(
+            tax_zero,
+            base_zero * 0.00,
+            msg="El IVA general internacional no corresponde al 00% de la base"
+        )
+
+        self.assertEqual(
+            line_fields["tax_base_reduced_aliquot"], 0
+        )
+        self.assertEqual(
+            line_fields["tax_base_extend_aliquot"], 0
+        )
+        self.assertEqual(
+            line_fields["tax_base_general_aliquot"], 0
+        )
+
+        self.assertEqual(
+            line_fields["amount_reduced_aliquot"], 0
+        )
+        self.assertEqual(
+            line_fields["amount_extend_aliquot"], 0
+        )
+        self.assertEqual(
+            line_fields["amount_general_aliquot"], 0
         )
 
     def test_parse_sale_book_data_international(self):
@@ -169,7 +200,7 @@ class TestSaleBook(TestCommonSaleInternational):
             msg="Los totales no cuadran"
         )
 
-    def test_sale_book_line_fields_international_zero(self):
+    def test_sale_book_line_fields_international_zero_credit_note(self):
         self.test01_payment_from_invoice(self.product_zero_aliquot_sale_international,True)
         invoice = self.env['account.move'].search([('move_type','=','out_refund')], order="id desc", limit=1)
 

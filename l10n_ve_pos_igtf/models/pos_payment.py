@@ -57,10 +57,9 @@ class PosPayment(models.Model):
                 payment.payment_date,
             )
             amount_igtf = payment.igtf_amount
-            
+
             if payment.include_igtf:
                 if not (amounts["amount"] - amount_igtf == 0):
-                    amount_without_igtf = payment.foreign_amount - payment.foreign_igtf_amount
                     add_credit_line_vals = pos_session._credit_amounts(
                         {
                             "account_id": accounting_partner.with_company(
@@ -68,14 +67,6 @@ class PosPayment(models.Model):
                             ).property_account_receivable_id.id,
                             "partner_id": accounting_partner.id,
                             "move_id": payment_move.id,
-                            "not_foreign_recalculate": True,
-                            "foreign_debit": abs(amount_without_igtf)
-                            if amount_without_igtf < 0
-                            else 0,
-                            "foreign_credit": abs(amount_without_igtf)
-                            if amount_without_igtf > 0
-                            else 0,
-                            
                         },
                         amounts["amount"] - amount_igtf,
                         amounts["amount_converted"] - amount_igtf,
@@ -86,14 +77,6 @@ class PosPayment(models.Model):
                         "account_id": self.env.company.customer_account_igtf_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
-                        "not_foreign_recalculate": True,
-                        "foreign_debit": abs(payment.foreign_igtf_amount)
-                        if payment.foreign_igtf_amount < 0
-                        else 0,
-                        "foreign_credit": abs(payment.foreign_igtf_amount)
-                        if payment.foreign_igtf_amount > 0
-                        else 0,
-                        
                     },
                     amount_igtf,
                     amount_igtf,
@@ -103,16 +86,9 @@ class PosPayment(models.Model):
                     {
                         "account_id": accounting_partner.with_company(
                             order.company_id
-                        ).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
+                        ).property_account_receivable_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
-                        "not_foreign_recalculate": True,
-                        "foreign_debit": abs(payment.foreign_amount)
-                        if payment.foreign_amount < 0
-                        else 0,
-                        "foreign_credit": abs(payment.foreign_amount)
-                        if payment.foreign_amount > 0
-                        else 0,
                     },
                     amounts["amount"],
                     amounts["amount_converted"],
@@ -135,26 +111,34 @@ class PosPayment(models.Model):
                     "partner_id": accounting_partner.id
                     if is_split_transaction and is_reverse
                     else False,
-                    "not_foreign_recalculate": True,
-                    "foreign_debit": abs(payment.foreign_amount)
-                    if payment.foreign_amount > 0
-                    else 0,
-                    "foreign_credit": abs(payment.foreign_amount)
-                    if payment.foreign_amount < 0
-                    else 0,
-                    
                 },
                 amounts["amount"],
                 amounts["amount_converted"],
             )
 
             if add_credit_line_vals:
-                self.env["account.move.line"].with_context(check_move_validity=False).create(
+                receivable_line = self.env["account.move.line"].with_context(check_move_validity=False).create(
                     [add_credit_line_vals]
                 )
+                receivable_line.not_foreign_recalculate = True
+                receivable_line.foreign_credit = abs(payment.foreign_amount - payment.foreign_igtf_amount)
 
-            self.env["account.move.line"].with_context(check_move_validity=False).create(
+            other_lines = self.env["account.move.line"].with_context(check_move_validity=False).create(
                 [credit_line_vals, debit_line_vals]
             )
+            igtf_or_receivable_line = other_lines[0]
+            debit_line = other_lines[1]
+
+            # Setear Bs correctos en la línea de débito (CUENTA POR COBRAR POS)
+            debit_line.not_foreign_recalculate = True
+            debit_line.foreign_debit = abs(payment.foreign_amount)
+
+            # Setear Bs correctos en crédito IGTF o cuenta por cobrar (pago sin IGTF split)
+            igtf_or_receivable_line.not_foreign_recalculate = True
+            if payment.include_igtf:
+                igtf_or_receivable_line.foreign_credit = abs(payment.foreign_igtf_amount)
+            else:
+                igtf_or_receivable_line.foreign_credit = abs(payment.foreign_amount)
+
             payment_move._post()
         return result
