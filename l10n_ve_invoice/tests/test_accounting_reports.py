@@ -243,6 +243,8 @@ class TestAccountingReports(TransactionCase):
             "correlative": "CTRL-001",
             "declaration_unique_of_customs": False,
             "tax_totals": {},
+            "tax_base_for_international_purchase": 0.0,
+            "tax_amount_for_international_purchase": 0.0,
         }
         data.update(vals)
         return SimpleNamespace(**data)
