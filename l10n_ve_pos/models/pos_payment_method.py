@@ -16,6 +16,7 @@ class PosPaymentMethod(models.Model):
     )
 
     apply_one_cross_move = fields.Boolean(default=False)
+    enableb_cross_move = fields.Boolean(default=False)
 
     @api.constrains("apply_one_cross_move", "split_transactions")
     def _check_apply_one_cross_move(self):
