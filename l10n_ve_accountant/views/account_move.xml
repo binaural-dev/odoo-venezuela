@@ -89,13 +89,14 @@
             </xpath>
             <xpath expr="//page/field[@name='line_ids']/tree/field[@name='balance']"
                 position="after">
-                <field name="foreign_currency_id" column_invisible="True" />
+                <field name="foreign_currency_id" column_invisible="True" invisible="display_type in ('line_section', 'line_note')"/>
                 <field
                     name="foreign_debit"
                     optional="show"
                     sum="Total Foreign Debit"
                     readonly="1"
                     force_save="1"
+                    invisible="display_type in ('line_section', 'line_note')"
                 />
                 <field
                     name="foreign_credit"
@@ -103,17 +104,19 @@
                     sum="Total Foreign Credit"
                     readonly="1"
                     force_save="1"
+                    invisible="display_type in ('line_section', 'line_note')"
                 />
-                <field name="foreign_debit_adjustment" optional="hide" force_save="1"/>
-                <field name="foreign_credit_adjustment" optional="hide" force_save="1"/>
-                <field name="foreign_balance" optional="hide" groups="base.group_no_one" force_save="1"/>
-                <field name="foreign_rate" optional="hide" groups="base.group_no_one" force_save="1"/>
+                <field name="foreign_debit_adjustment" optional="hide" force_save="1" invisible="display_type in ('line_section', 'line_note')"/>
+                <field name="foreign_credit_adjustment" optional="hide" force_save="1" invisible="display_type in ('line_section', 'line_note')"/>
+                <field name="foreign_balance" optional="hide" groups="base.group_no_one" force_save="1" invisible="display_type in ('line_section', 'line_note')"/>
+                <field name="foreign_rate" optional="hide" groups="base.group_no_one" force_save="1" invisible="display_type in ('line_section', 'line_note')"/>
                 <field
                     name="foreign_inverse_rate"
                     groups="base.group_no_one"
                     optional="hide"
                     readonly="1"
                     force_save="1"
+                    invisible="display_type in ('line_section', 'line_note')"
                 />
             </xpath>
             <field name="payment_reference" position="after">

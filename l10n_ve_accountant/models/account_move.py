@@ -274,44 +274,35 @@ class AccountMove(models.Model):
             container = {'records': moves}
             moves._sync_dynamic_lines(container)
 
-    @api.depends("invoice_line_ids", "tax_totals")
+    @api.depends("invoice_line_ids.price_unit", "invoice_line_ids.quantity", "invoice_line_ids.discount", "tax_totals")
     def _compute_detailed_amounts(self):
         for record in self:
-            discount_amount = 0
-            if not record.tax_totals:
-                record.detailed_amounts = dict()
-                return
-            amount_taxed = record.tax_totals.get(
-                "amount_total", 0
-            ) - record.tax_totals.get("amount_untaxed", 0)
-            total = 0
+            # Inicializamos siempre para evitar errores si no entra en la lógica
+            total = 0.0
+            discount_amount = 0.0
+            amount_taxed = 0.0
+            
+            if record.tax_totals:
+                amount_taxed = record.tax_totals.get("amount_total", 0.0) - record.tax_totals.get("amount_untaxed", 0.0)
 
-            for line in record.invoice_line_ids:
+            # Calculamos sobre las líneas de factura de forma segura
+            for line in record.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
                 subtotal = line.price_unit * line.quantity
                 if line.discount > 0:
-                    discount_amount += subtotal - line.price_subtotal
+                    discount_amount += (subtotal - line.price_subtotal)
                 total += subtotal
 
-            record.detailed_amounts = dict(
-                {
-                    "gross_amount": total,
-                    "formatted_gross_amount": formatLang(
-                        self.env, total, currency_obj=self.currency_id
-                    ),
-                    "discount_amount": discount_amount,
-                    "formatted_discount_amount": formatLang(
-                        self.env, discount_amount, currency_obj=self.currency_id
-                    ),
-                    "gross_discount_amount": total,
-                    "formatted_gross_discount_amount": formatLang(
-                        self.env, total - discount_amount, currency_obj=self.currency_id
-                    ),
-                    "taxes_amount": amount_taxed,
-                    "formatted_taxes_amount": formatLang(
-                        self.env, amount_taxed, currency_obj=self.currency_id
-                    ),
-                }
-            )
+            # Asignamos el diccionario completo sin usar 'return' para no romper el bucle masivo
+            record.detailed_amounts = {
+                "gross_amount": total,
+                "formatted_gross_amount": formatLang(self.env, total, currency_obj=record.currency_id),
+                "discount_amount": discount_amount,
+                "formatted_discount_amount": formatLang(self.env, discount_amount, currency_obj=record.currency_id),
+                "gross_discount_amount": total - discount_amount, # Corregido: antes estaba 'total' a secas en dict original
+                "formatted_gross_discount_amount": formatLang(self.env, total - discount_amount, currency_obj=record.currency_id),
+                "taxes_amount": amount_taxed,
+                "formatted_taxes_amount": formatLang(self.env, amount_taxed, currency_obj=record.currency_id),
+            }
 
 
     @api.model
@@ -991,69 +982,47 @@ class AccountMove(models.Model):
         return super().action_post()
 
     @api.depends(
-        "invoice_line_ids.compute_all_tax",
-        "invoice_line_ids.price_subtotal",
-        "foreign_inverse_rate",
-        "foreign_currency_id",
-        "foreign_rate",
+        'invoice_payment_term_id', 
+        'invoice_date', 
+        'currency_id', 
+        'amount_total_in_currency_signed', 
+        'invoice_date_due',
+        'foreign_rate',        
+        'foreign_currency_id'
     )
     def _compute_needed_terms(self):
         res = super()._compute_needed_terms()
 
         for invoice in self:
-            is_draft = invoice.id != invoice._origin.id
+            if not invoice.is_invoice(include_receipts=True) or not invoice.invoice_line_ids:
+                continue
+            if not invoice.foreign_currency_id:
+                continue
+            current_needed_terms = dict(invoice.needed_terms or {})
             sign = 1 if invoice.is_inbound(include_receipts=True) else -1
-            if invoice.is_invoice(True) and invoice.invoice_line_ids:
-                invoice._compute_tax_totals()
-                if invoice.invoice_payment_term_id:
-                    if is_draft:
-                        tax_amount_currency = 0.0
-                        untaxed_amount_currency = 0.0
-                        for line in invoice.invoice_line_ids:
-                            untaxed_amount_currency += line.foreign_subtotal
-                            tax_amount_currency += (
-                                line.foreign_price_total - line.foreign_subtotal
-                            )
-                        untaxed_amount = untaxed_amount_currency
-                        tax_amount = tax_amount_currency
+
+            if invoice.invoice_payment_term_id:
+                total_balance_base = abs(invoice.amount_total_signed)
+                for key, values in current_needed_terms.items():
+                    if total_balance_base > 0.0:
+                        porcion_cuota = abs(values.get('balance', 0.0)) / total_balance_base
+                        foreign_balance = (invoice.foreign_total_billed * porcion_cuota) * sign
                     else:
-                        tax_amount = (
-                            invoice.foreign_total_billed
-                            - invoice.foreign_taxable_income
-                        ) * sign
-                        untaxed_amount = (invoice.foreign_taxable_income) * sign
+                        foreign_balance = 0.0
 
-                    invoice_payment_terms = (
-                        invoice.invoice_payment_term_id._compute_terms(
-                            date_ref=invoice.invoice_date
-                            or invoice.date
-                            or fields.Date.context_today(invoice),
-                            currency=invoice.foreign_currency_id,
-                            tax_amount_currency=tax_amount,
-                            tax_amount=tax_amount,
-                            untaxed_amount_currency=untaxed_amount,
-                            untaxed_amount=untaxed_amount,
-                            company=invoice.company_id,
-                            sign=sign,
-                        )
-                    )
-
-                    for term in invoice_payment_terms["line_ids"]:
-                        for key in list(invoice.needed_terms.keys()):
-                            if key["date_maturity"] == fields.Date.to_date(
-                                term.get("date")
-                            ):
-                                invoice.needed_terms[key] = {
-                                    **invoice.needed_terms[key],
-                                    "foreign_balance": term["company_amount"],
-                                }
-                else:
-                    for key in list(invoice.needed_terms.keys()):
-                        invoice.needed_terms[key] = {
-                            **invoice.needed_terms[key],
-                            "foreign_balance": sign * invoice.foreign_total_billed,
-                        }
+                    current_needed_terms[key] = {
+                        **values,
+                        "foreign_balance": foreign_balance,
+                    }
+            else:
+                for key, values in current_needed_terms.items():
+                    current_needed_terms[key] = {
+                        **values,
+                        "foreign_balance": sign * invoice.foreign_total_billed,
+                    }
+            invoice.needed_terms = current_needed_terms
         return res
+
 
     def button_draft(self):
         for rec in self:
@@ -1074,5 +1043,50 @@ class AccountMove(models.Model):
                 ):
                     raise ValidationError(_("All added lines must indicate the product."))
                 
+    
+    @api.depends(
+        'invoice_line_ids.price_unit',
+        'invoice_line_ids.quantity',
+        'invoice_line_ids.discount',
+        'invoice_line_ids.tax_ids',
+        'invoice_line_ids.foreign_subtotal', 
+    )
+    def _compute_tax_totals(self):
+        """
+        PUENTE DE CONTEXTO REAL:
+        Detecta si el origen del cambio fue manual analizando la masa de las líneas.
+        Si la masa fue alterada, inyecta el contexto directamente en la llamada del super.
+        """
+        for move in self:
+            is_manual_trigger = False
+            
+            # Validamos las líneas que tienen precio unitario y no son secciones/notas
+            valid_lines = move.invoice_line_ids.filtered(
+                lambda l: l.display_type not in ('line_section', 'line_note') and l.price_unit
+            )
+            
+            if valid_lines:
+                # 1. Obtenemos la tasa del documento
+                rate = valid_lines[0].foreign_inverse_rate or 1.0
+                
+                # 2. Sumamos lo que el usuario ve actualmente en la pantalla (Masa Viva)
+                total_foreign_subtotal_live = sum(getattr(l, 'foreign_subtotal', 0.0) for l in valid_lines)
+                
+                # 3. Calculamos cuál sería el subtotal teórico según la tasa estricta
+                total_native_subtotal = sum(l.price_subtotal for l in valid_lines)
+                theoretical_foreign_subtotal = total_native_subtotal * rate
+                
+                # 4. Si la masa actual en pantalla difiere del cálculo teórico por más de un centavo,
+                # significa que el usuario aplicó una Porción Real Manual.
+                if abs(total_foreign_subtotal_live - theoretical_foreign_subtotal) > 0.01:
+                    is_manual_trigger = True
+
+            # Ejecutamos el super pasando el contexto directamente en el registro (self) del llamado.
+            # Al hacerlo dentro del super, Odoo se ve obligado a transferir este contexto 
+            # cuando invoque internamente a 'account.tax'.
+            if is_manual_trigger:
+                super(AccountMove, move.with_context(real_portion_manual_edit=True))._compute_tax_totals()
+            else:
+                super(AccountMove, move)._compute_tax_totals()
 
   

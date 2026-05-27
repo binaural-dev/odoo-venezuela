@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-
+from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -100,6 +100,75 @@ class AccountPayment(models.Model):
                 payment.foreign_rate
             )
 
+    def _prepare_move_line_default_vals(
+        self, write_off_line_vals=None, force_balance=None
+    ):
+        """Override to adjust liquidity and counterpart balances using the Real Portion.
+
+        RATIONALE FOR OVERRIDING (REAL PORTION PAYMENT INTEGRATION):
+        Natively, Odoo 17 uses the '_convert' method to determine the 'liquidity_balance', 
+        which applies a division-based rate exchange standard. In dual-currency environments 
+        with highly fluctuated currencies (e.g., VES/VEF vs USD), rates are stored inversely 
+        in the system to preserve precision. Consequently, Odoo's native approach creates 
+        a mathematical mismatch by dividing when it should multiply, or vice versa, distorting 
+        the final journal entry amounts compared to what the user inputted in the payment form.
+
+        This method intercepts the prepared dictionary list from 'super()' and recalibrates 
+        the 'debit' and 'credit' balances dynamically. If the payment currency is the 
+        strong foreign control currency (USD), it multiplies by the inverse rate. If the 
+        payment currency is the weak local currency (VES/VEF) under a USD base company, 
+        it divides. This ensures total mathematical convergence and prevents phantom 
+        exchange rate discrepancies between the payment record and the journal entry lines.
+        """
+        line_vals_list = super(
+            AccountPayment, self
+        )._prepare_move_line_default_vals(
+            write_off_line_vals=write_off_line_vals,
+            force_balance=force_balance,
+        )
+
+        inverse_rate = (
+            self.foreign_inverse_rate
+            if hasattr(self, "foreign_inverse_rate") and self.foreign_inverse_rate
+            else 0.0
+        )
+        foreign_currency = self.company_id.currency_foreign_id
+
+        if (
+            inverse_rate > 0.0
+            and foreign_currency
+            and self.currency_id != self.company_id.currency_id
+        ):
+            for vals in line_vals_list:
+                amount_currency = abs(vals.get("amount_currency", 0.0))
+
+                if (
+                    self.company_id.currency_id != foreign_currency
+                    and self.currency_id == foreign_currency
+                ):
+                    real_balance = self.company_id.currency_id.round(
+                        amount_currency * inverse_rate
+                    )
+
+                elif (
+                    self.company_id.currency_id == foreign_currency
+                    and self.currency_id != foreign_currency
+                ):
+                    real_balance = self.company_id.currency_id.round(
+                        amount_currency / inverse_rate
+                    )
+
+                else:
+                    continue
+
+                if vals.get("debit", 0.0) > 0.0:
+                    vals["debit"] = real_balance
+                    vals["credit"] = 0.0
+                elif vals.get("credit", 0.0) > 0.0:
+                    vals["credit"] = real_balance
+                    vals["debit"] = 0.0
+
+        return line_vals_list
 
     def _create_payment_vals_from_wizard(self, batch_result):
         payment_vals = {

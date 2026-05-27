@@ -58,28 +58,73 @@ class SaleOrderLine(models.Model):
             if record.foreign_inverse_rate != valor_orden:
                 record.foreign_inverse_rate = valor_orden
 
-    @api.depends("price_unit", "foreign_inverse_rate")
+    @api.depends("price_unit", "order_id.foreign_inverse_rate", "order_id.currency_id")
     def _compute_foreign_price(self):
+        """
+        Computes the foreign price unit for the sale order line applying strict alternate logic.
+        Uses standard, English-compliant abstract variable names.
+        """
         for line in self:
-            if line.price_unit and line.foreign_inverse_rate:
+            # Initialize to prevent CacheMiss errors
+            line.foreign_price = 0.0
+            
+            # Skip non-product lines (sections, notes) or zero prices
+            if line.display_type or not line.price_unit:
+                continue
                 
-                line.foreign_price = line.price_unit * line.order_id.foreign_inverse_rate
+            order = line.order_id
+            foreign_currency = self.env.company.currency_foreign_id
+            
+            if not order or not foreign_currency:
+                continue
+
+            # Extract the alternate inverse rate from the header safely
+            inverse_rate = order.foreign_inverse_rate if hasattr(order, "foreign_inverse_rate") else 0.0
+            
+            # Fallback security: use day rate if current record rate is not yet set
+            if inverse_rate <= 0.0:
+                inverse_rate = foreign_currency._get_conversion_rate(
+                    self.env.company.currency_id,
+                    foreign_currency,
+                    self.env.company,
+                    order.date_order or fields.Date.today(),
+                ) or 1.0
+
+            # =========================================================================
+            # CORRECT CURRENCY CONVERSION MATRIX (Odoo Standard Convention)
+            # =========================================================================
+            company_currency = self.env.company.currency_id
+            document_currency = line.currency_id
+
+            if document_currency == company_currency:
+                # If the document is in Company Currency (e.g., Base), 
+                # we MULTIPLY by the inverse rate to get the alternate value.
+                line.foreign_price = foreign_currency.round(line.price_unit * inverse_rate)
             else:
-                line.foreign_price = 0.0
+                # If the document is already in Foreign/Alternate Currency,
+                # we DIVIDE by the inverse rate to bring it back to the company's base value.
+                line.foreign_price = foreign_currency.round(line.price_unit / inverse_rate) if inverse_rate else 0.0
 
     @api.depends("product_uom_qty", "foreign_price", "discount")
     def _compute_foreign_subtotal(self):
-        
         for line in self:
-            if not line.product_uom_qty or not line.foreign_price:
-                line.foreign_subtotal = 0.0
-                continue
-            
             discount = line.discount if line.discount and not float_is_zero(line.discount, precision_digits=2) else 0.0
-            
+
             price_with_discount = line.foreign_price * (1 - (discount / 100.0))
-            
-            line.foreign_subtotal = price_with_discount * line.product_uom_qty
+            foreign_subtotal_teoric = price_with_discount * line.product_uom_qty
+
+           
+            if foreign_subtotal_teoric > 0.0 and line.price_subtotal > 0.0:
+                line.foreign_subtotal = foreign_subtotal_teoric
+                
+                porcion_total_con_iva = line.price_total / line.price_subtotal
+                
+                if hasattr(line, 'foreign_price_total'):
+                    line.foreign_price_total = foreign_subtotal_teoric * porcion_total_con_iva
+            else:
+                line.foreign_subtotal = foreign_subtotal_teoric
+                if hasattr(line, 'foreign_price_total'):
+                    line.foreign_price_total = foreign_subtotal_teoric
             
     def _prepare_invoice_line(self, **optional_values):
        
