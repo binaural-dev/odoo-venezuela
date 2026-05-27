@@ -185,6 +185,7 @@ class AccountMoveInh(models.Model):
                         "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
                         "price_unit": price_vef,
                         "quantity": line.quantity,
+                        "discount": line.discount,
                         "code": False,
                         "name": f"[{line.product_id.default_code}] {self._normalize_product_name(line.product_id.name)}"
                         if line.product_id
