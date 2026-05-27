@@ -41,11 +41,11 @@ patch(Order.prototype, {
       return this.pos.config.foreign_inverse_rate;
     }
     if (this.pos.currency.name == "USD") {
-      return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
+      return round_di(this.pos.config.foreign_rate, this.pos.dp["Tasa"]);
     }
   },
   get_display_rate() {
-    return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
+    return parseFloat(this.pos.config.foreign_rate.toFixed(this.pos.dp["Tasa"]));
   },
 
   add_orderline(line) {
@@ -167,22 +167,22 @@ patch(Order.prototype, {
   },
   /* ---- Payment Status --- */
   get_foreign_subtotal() {
-    return round_di(
+    return round_pr(
       this.orderlines.reduce(function (sum, orderLine) {
         return sum + orderLine.get_display_foreign_price();
       }, 0),
-      4,
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_total_with_tax() {
     return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
   },
   get_foreign_total_without_tax() {
-    return round_di(
+    return round_pr(
       this.orderlines.reduce(function (sum, orderLine) {
         return sum + orderLine.get_foreign_price_without_tax();
       }, 0),
-      4,
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_total_discount() {
@@ -203,7 +203,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      4,
+      this.pos.foreign_currency.rounding,
     );
   },
   get_foreign_total_tax() {
@@ -213,7 +213,7 @@ patch(Order.prototype, {
       // 2. Round that result
       // 3. Sum all those rounded amounts
       var groupTaxes = {};
-      this.orderlines.forEach(function(line) {
+      this.orderlines.forEach(function (line) {
         var taxDetails = line.get_foreign_tax_details();
         var taxIds = Object.keys(taxDetails);
         for (var t = 0; t < taxIds.length; t++) {
@@ -233,11 +233,11 @@ patch(Order.prototype, {
       }
       return sum;
     } else {
-      return round_di(
+      return round_pr(
         this.orderlines.reduce(function (sum, orderLine) {
           return sum + orderLine.get_foreign_tax();
         }, 0),
-        4,
+        this.pos.foreign_currency.rounding,
       );
     }
   },
@@ -245,7 +245,7 @@ patch(Order.prototype, {
     var details = {};
     var fulldetails = [];
 
-    this.orderlines.forEach(function(line) {
+    this.orderlines.forEach(function (line) {
       var ldetails = line.get_foreign_tax_details();
       for (var id in ldetails) {
         if (Object.hasOwnProperty.call(ldetails, id)) {
@@ -427,7 +427,7 @@ patch(Order.prototype, {
   },
 
   get_foreign_total_paid() {
-    return round_di(
+    return round_pr(
       this.paymentlines.reduce(function (sum, paymentLine) {
         if (paymentLine.is_done()) {
           sum += paymentLine.get_foreign_amount();
