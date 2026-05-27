@@ -49,7 +49,6 @@ class SaleOrder(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
         store=True,
         readonly=False,
     )
