@@ -3096,3 +3096,40 @@ msgstr "Esta accion solo es validad para facturas de Clientes o Proveedores"
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 msgid "Invoice %s already has a posted ISLR retention. You cannot create another one."
 msgstr "La factura %s ya tiene una retención de ISLR publicada. No se puede crear otra."
+
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid ""
+"<strong>Update Tariff:</strong> %s<br/><strong>Tariff:</strong> "
+"%s<br/><strong>Value of the unit:</strong> %s<br/><strong>New subtracted "
+"value:</strong> %s"
+msgstr ""
+"<strong>Tarifa Actualizada:</strong> %s<br/><strong>Tarifa:</strong> "
+"%s<br/><strong>Nuevo valor:</strong> %s<br/><strong>Nuevo sustraendo "
+"value:</strong> %s"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid ""
+"<strong>Update Tax Unit:</strong> %s<br/><strong>Tariff:</strong> "
+"%s<br/><strong>Value of the unit:</strong> %s<br/><strong>New subtracted "
+"value:</strong> %s"
+msgstr ""
+"<strong>Unidad Tributaria Actualizada:</strong> %s<br/><strong>Tarifa:</strong> "
+"%s<br/><strong>Valor de la unidad:</strong> %s<br/><strong>Nuevo sustraendo "
+"value:</strong> %s"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid ""
+"<strong>Updating by new Active Tax Unit</strong><br/><strong>Unit:</strong> "
+"%s<br/><strong>New Value:</strong> %s<br/><strong>New Subtraction:</strong> "
+"%s"
+msgstr ""
+"<strong>Actualizando por nueva Unidad Tributaria Activa</strong><br/><strong>Unidad:</strong> "
+"%s<br/><strong>Valor Nuevo:</strong> %s<br/><strong>Sustraendo Nuevo:</strong> "
+"%s"
