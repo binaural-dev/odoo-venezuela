@@ -4,7 +4,7 @@ from odoo import http, _
 
 
 class BinauralNominaReportes(http.Controller):
-    @http.route("/web/binary/download_sales_book", type="http", auth="user")
+    @http.route("/web/binary/download_sales_book", type="http", auth="user", csrf=False)
     def download_sales_book(self, date_from, date_to):
         sales_book = http.request.env["wizard.sales.book"].search([])
         file = sales_book.generate_sales_book(

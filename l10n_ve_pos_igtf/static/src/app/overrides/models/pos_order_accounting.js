@@ -4,6 +4,11 @@ import { patch } from "@web/core/utils/patch";
 
 patch(PosOrderAccounting.prototype, {
 
+    setup(){
+        super.setup();
+        console.log("PosOrderAccounting patched setup");
+    },
+
     _toNumber(value, fallback = 0) {
         const numeric = Number(value);
         return Number.isFinite(numeric) ? numeric : fallback;
@@ -68,6 +73,10 @@ patch(PosOrderAccounting.prototype, {
             [];
 
         return Array.isArray(accountingLines) ? accountingLines : [];
+    },
+
+    get totalDue() {
+        return super.totalDue;
     },
 
     get amountPaid() {

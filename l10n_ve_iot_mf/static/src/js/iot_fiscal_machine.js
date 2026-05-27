@@ -1,13 +1,11 @@
 /** @odoo-module **/
 
-import { Widget } from "@web/views/widgets/widget";
 import { registry } from "@web/core/registry";
 import { DeviceController } from "@iot_base/device_controller";
 import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
-import { Component, onWillStart } from "@odoo/owl";
+import { Component, xml, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
-// import { IoTConnectionErrorDialog } from '@iot/iot_connection_error_dialog';
 
 const PRINT_ACTIONS = Object.freeze({
   OUT_INVOICE: "print_out_invoice",
@@ -45,8 +43,6 @@ function onIoTError(error, notification) {
 }
 
 
-const { xml, useState } = owl;
-
 export class IoTFiscalMachineComponent extends Component {
   setup() {
     super.setup();
@@ -54,17 +50,16 @@ export class IoTFiscalMachineComponent extends Component {
     this.orm = useService("orm")
     this.dialog = useService('dialog');
     this.notification = useService('notification');
+    this.iotLongpolling = useService("iot_longpolling");
 
     this.device = new DeviceController(
-      useService("iot_longpolling"),
-      { 
+      this.iotLongpolling,
+      {
         iot_ip: device.iot_ip,
         identifier: device.identifier,
         iot_id: device.iot_id,
         manual_measurement: device.manual_measurement,
-      },
-      console.log("DeviceController initialized with:", device),
-      this.notification
+      }
     );
 
 
@@ -462,7 +457,7 @@ export class IoTFiscalMachineComponent extends Component {
   }
 
   async print_document(print_type) {
-
+    const csrf_token = odoo.csrf_token || core.csrf_token;
     if (!this.device) {
       this.showFailedConnection()
       return
@@ -481,22 +476,21 @@ export class IoTFiscalMachineComponent extends Component {
       const request = await this.call_model_method(
         "account.move", 
         check_print_type,
-        [move_id]
+        [move_id],
       );
 
       this.device = new DeviceController(
-        useService("iot_longpolling"),
+        this.iotLongpolling,
         { iot_ip: request.iot_ip, iot_id: request.iot_id, identifier: request.identifier }
       );
 
       const deviceResponse = await this.device_response(print_type, request);
-
       if (print_type != "reprint") {
         
         await this.call_model_method(
           "account.move", 
           print_type,
-          [move_id, deviceResponse]
+          [move_id, deviceResponse],
         );
         
         window.location.reload()
@@ -509,15 +503,7 @@ export class IoTFiscalMachineComponent extends Component {
   }
 
   async call_model_method(model, method, args = [], kwargs = {}) {
-    const endpoint = `web/dataset/call_kw/${model}/${method}`;
-    const response = rpc(endpoint, {
-      model,
-      method,
-      args,
-      kwargs,
-    });
-
-    return response;
+    return await this.orm.call(model, method, args, kwargs);
   }
 
   async device_response(action, data) {

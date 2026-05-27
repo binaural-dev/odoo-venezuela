@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
-
+import logging
+_logger = logging.getLogger(__name__)
 
 class PosOrder(models.Model):
     _inherit = "pos.order"
@@ -31,3 +32,17 @@ class PosOrder(models.Model):
         res = super()._create_invoice(move_vals)
         res.write({"bi_igtf": abs(self.bi_igtf)})
         return res
+    
+    @api.model
+    def get_order_from_back(self, id):
+        # Si session_id es dict, extrae el id
+        _logger.warning("id: %s", id)
+            
+        order = self.env['pos.order'].search([
+            ('id', '=', id),
+        ], limit=1)
+
+        _logger.warning("XDDDDDDD %s", order.read([]))
+        return {
+            'amount_total': order.amount_total if order else 0.0,
+        }
