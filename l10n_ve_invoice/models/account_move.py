@@ -16,7 +16,6 @@ class AccountMove(models.Model):
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
-    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
@@ -40,6 +39,10 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
+    tax_base_for_international_purchase = fields.Float(string='Tax Base for International Purchase', help='Tax base for international purchase to show in purchase book')
+    
+    tax_amount_for_international_purchase = fields.Float(string='Tax Amount for International Purchase', help='Tax amount for international purchase to show in purchase book')
+
     @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
@@ -50,11 +53,10 @@ class AccountMove(models.Model):
         for move in self:
             move.entry_in_period = False
 
-            if move.state == "cancel":
+            if move.state in ["cancel", "draft"]:
                 continue
 
-
-            if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
+            if move.move_type == "out_refund" or move.move_type == "out_invoice":
                 if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
                     if taxpayer_type == "special" and move.invoice_date.day < 15 < period_limit.day:
                         move.entry_in_period = False

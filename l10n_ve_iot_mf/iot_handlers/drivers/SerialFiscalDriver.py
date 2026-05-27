@@ -690,7 +690,7 @@ class SerialFiscalDriver(SerialDriver):
                 result = self.send_command(command)
                 
                 if not result and command not in ["101","199"]:
-                    msg.append("Fallo al enviar comando: %s",command)
+                    msg.append(f"Fallo al enviar comando: {command}")
                     self.send_command("199")
                     return {"valid": False, "message": msg}
 
