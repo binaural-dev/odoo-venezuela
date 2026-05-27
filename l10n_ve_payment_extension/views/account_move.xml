@@ -15,7 +15,7 @@
                             type="object"
                             class="oe_stat_button"
                             context="{'retention_type': 'islr'}"
-                            invisible="count_islr_retention == 0"
+                            invisible="not count_islr_retention"
                             decoration-success="has_emited_islr_retention"
                             decoration-warning="not has_emited_islr_retention">
                         
@@ -39,7 +39,7 @@
                             type="object"
                             class="oe_stat_button"
                             context="{'retention_type': 'iva'}"
-                            invisible="has_emited_iva_retention == 0"
+                            invisible="not has_emited_iva_retention"
                             decoration-success="has_emited_iva_retention"
                             decoration-warning="not has_emited_iva_retention">
                         
@@ -63,7 +63,7 @@
                             type="object"
                             class="oe_stat_button"
                             context="{'retention_type': 'municipal'}"
-                            invisible="count_municipal_retention == 0"
+                            invisible="not count_municipal_retention"
                             decoration-success="has_emited_municipal_retention"
                             decoration-warning="not has_emited_municipal_retention">
                         

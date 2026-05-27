@@ -34,11 +34,12 @@ class TaxUnit(models.Model):
                 raise UserError(_("Already exists a record with the value  %s for the date %s.") 
                                 % (record.value, record.available_date))
 
-    @api.model
-    def create(self, vals):
-        record = super(TaxUnit, self).create(vals)
-        record._update_active_status()
-        return record
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super(TaxUnit, self).create(vals_list)
+        for record in records:
+            record._update_active_status()
+        return records
 
     def write(self, vals):
         for record in self:
@@ -58,18 +59,18 @@ class TaxUnit(models.Model):
                 ])
 
                 for ret in retentions:
-                    ret.tax_unit_ids = record.id 
+                    ret.tax_unit_ids = record.id
 
                     if hasattr(ret, '_compute_amount_subtract'):
                         ret._compute_amount_subtract()
 
                     
-                    message = Markup(
-                        "<strong>Actualización de Unidad Tributaria:</strong> %s<br/>"
-                        "<strong>Tarifa:</strong> %s<br/>"
-                        "<strong>Valor de la unidad:</strong> %s<br/>"
-                        "<strong>Nuevo sustraendo calculado:</strong> %s"
-                    ) % (
+                    message = Markup(_(
+                        "<strong>Update Tax Unit:</strong> %s<br/>"
+                        "<strong>Tariff:</strong> %s<br/>"
+                        "<strong>Value of the unit:</strong> %s<br/>"
+                        "<strong>New subtracted value:</strong> %s"
+                    )) % (
                         record.name, 
                         ret.name or '', 
                         record.value, 
@@ -77,12 +78,12 @@ class TaxUnit(models.Model):
                     )
                     self.message_post(body=message)
 
-                    message = Markup(
-                        "<strong>Actualización Tarifa:</strong> %s<br/>"
-                        "<strong>Tarifa:</strong> %s<br/>"
-                        "<strong>Valor de la unidad:</strong> %s<br/>"
-                        "<strong>Nuevo sustraendo calculado:</strong> %s"
-                    ) % (
+                    message = Markup(_(
+                        "<strong>Update Tariff:</strong> %s<br/>"
+                        "<strong>Tariff:</strong> %s<br/>"
+                        "<strong>Value of the unit:</strong> %s<br/>"
+                        "<strong>New subtracted value:</strong> %s"
+                    )) % (
                         record.name, 
                         ret.name or '', 
                         record.value, 
@@ -121,12 +122,12 @@ class TaxUnit(models.Model):
 
             if hasattr(ret, '_compute_amount_subtract'):
                 ret._compute_amount_subtract()
-            message = Markup(
-                "<strong>Actualización por Nueva Unidad Activa</strong><br/>"
-                "<strong>Unidad:</strong> %s<br/>"
-                "<strong>Nuevo Valor:</strong> %s<br/>"
-                "<strong>Nuevo Sustraendo:</strong> %s"
-            ) % (
+            message = Markup(_(
+                "<strong>Updating by new Active Tax Unit</strong><br/>"
+                "<strong>Unit:</strong> %s<br/>"
+                "<strong>New Value:</strong> %s<br/>"
+                "<strong>New Subtraction:</strong> %s"
+            )) % (
                 tax_unit_record.name,
                 tax_unit_record.value,
                 f"{ret.amount_subtract:,.2f}"
