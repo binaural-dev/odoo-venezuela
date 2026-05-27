@@ -1911,8 +1911,6 @@ msgstr "Concepto de Pago"
 
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_product__payment_concept
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_template__payment_concept
 msgid "Islr retention concept"
 msgstr "Concepto de Retencion de ISLR"
 

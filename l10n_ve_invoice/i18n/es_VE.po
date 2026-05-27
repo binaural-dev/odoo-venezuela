@@ -251,7 +251,7 @@ msgstr "Libro de Compras"
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #, python-format
 msgid "Check the move %s does not have an invoice date and its id is %s"
-msgstr "Verifique el asiento %s no tiene una fecha de factura"
+msgstr "Verifique el asiento %s no tiene una fecha de factura y su id es %s"
 
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_company
