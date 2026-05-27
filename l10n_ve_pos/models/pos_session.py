@@ -553,7 +553,7 @@ class PosSession(models.Model):
             if line.debit > 0 and amounts.get("foreign_amount", False):
                 line.not_foreign_recalculate = True
                 line.foreign_debit = abs(amounts["foreign_amount"])
-        if account_payment.pos_payment_method_id.split_transactions:
+        if account_payment.pos_payment_method_id.split_transactions and not account_payment.pos_payment_method_id.enableb_cross_move:
             self._create_cross_move_payment(res)
         return res
 
@@ -585,7 +585,7 @@ class PosSession(models.Model):
                 lambda line: line.account_id == partner_receivable
             )
 
-        if account_payment.pos_payment_method_id.split_transactions:
+        if account_payment.pos_payment_method_id.split_transactions and not account_payment.pos_payment_method_id.enableb_cross_move:
             self._create_cross_move_payment(res, amounts)
         return res
 
