@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
+from odoo.tools.safe_eval import safe_eval
 from collections import defaultdict
 import logging
 
@@ -109,16 +110,13 @@ class AccountMoveRetention(models.Model):
             islr = ret_all.filtered(lambda r: r.type_retention == 'islr')
             iva = ret_all.filtered(lambda r: r.type_retention == 'iva')
             muni = ret_all.filtered(lambda r: r.type_retention == 'municipal')
-            rec.write({
-                'count_islr_retention': len(islr),
-                'has_emited_islr_retention': any(r.state == 'emitted' for r in islr),
-                
-                'count_iva_retention': len(iva),
-                'has_emited_iva_retention': any(r.state == 'emitted' for r in iva),
-                
-                'count_municipal_retention': len(muni),
-                'has_emited_municipal_retention': any(r.state == 'emitted' for r in muni),
-            })
+            
+            rec.count_islr_retention = len(islr)
+            rec.has_emited_islr_retention = any(r.state == 'emitted' for r in islr)
+            rec.count_iva_retention = len(iva)
+            rec.has_emited_iva_retention = any(r.state == 'emitted' for r in iva)
+            rec.count_municipal_retention = len(muni)
+            rec.has_emited_municipal_retention = any(r.state == 'emitted' for r in muni)
 
     def action_view_retention(self):
         self.ensure_one()
@@ -319,7 +317,6 @@ class AccountMoveRetention(models.Model):
             if (
                 not move.islr_voucher_number and move.generate_islr_retention 
             ):
-                #move._validate_islr_retention()
                 move.auto_create_islr_retention()
 
             if move.move_type not in ("in_invoice", "in_refund"):
@@ -644,7 +641,7 @@ class AccountMoveRetention(models.Model):
 
 
             action = self.env.ref(xml_action_id).read()[0]
-            ctx = eval(action.get('context', '{}'))
+            ctx = safe_eval(action.get('context', '{}'))
             ctx.update({
                 'default_partner_id': self.partner_id.id,
                 'default_move_id': self.id,
@@ -691,6 +688,6 @@ class AccountMoveRetention(models.Model):
             }
             
             retention = self.env['account.retention'].with_context(ctx).create(vals)
-            #if not rec.company_id.create_retentions_of_suppliers_in_draft:
-                #retention.action_post()
+            if not rec.company_id.create_retentions_of_suppliers_in_draft:
+                retention.action_post()
             rec.islr_voucher_number = retention.number
