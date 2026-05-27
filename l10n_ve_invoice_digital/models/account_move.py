@@ -151,7 +151,7 @@ class AccountMove(models.Model):
             document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
             return document_number
 
-    def query_numbering(self, series):
+    def query_numbering(self, series=""):
         payload={
                 "serie": series,
                 "tipoDocumento": "",
@@ -161,26 +161,27 @@ class AccountMove(models.Model):
 
         if response:
             approves = False
+            found_series = False
             for numbering in response.get("numeraciones", []):
-                end_number = 0
-                start_number = 0
-                if series != "":
-                    if numbering.get("serie") == series:
-                        end_number = numbering.get("hasta")
-                        start_number = numbering.get("correlativo")
-                else:
-                    if numbering.get("serie") == "NO APLICA":
-                        end_number = numbering.get("hasta")
-                        start_number = numbering.get("correlativo")
+                serie_tfhka = numbering.get("serie", "")
+                if serie_tfhka != series and serie_tfhka != "NO APLICA":
+                    continue
+                
+                end_number = numbering.get("hasta")
+                start_number = numbering.get("correlativo")
+                found_series = True
 
                 if int(start_number) < int(end_number):
                     approves = True
                     break
+                
+            if not found_series:
+                raise UserError(_("The series '%(series)s' is not configured in The Factory HKA. Please contact the administrator.") % {'series': series})
+            
+            if not approves:
+                raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
-            if approves:
-                return
-
-            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
+            return
 
     def get_document_identification(self, document_type, document_number, series):
         for record in self:
@@ -629,12 +630,12 @@ class AccountMove(models.Model):
 
     def get_additional_information(self):
         additional_information = []
-        for record in self:
-            if record.guide_number:
-                additional_information.append({
-                    "campo": "numeroGuia",
-                    "valor": str(record.guide_number),
-                })
+        # for record in self:
+        #     if record.guide_number:
+        #         additional_information.append({
+        #             "campo": "numeroGuia",
+        #             "valor": str(record.guide_number),
+        #         })
 
         return additional_information
     
