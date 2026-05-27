@@ -39,3 +39,7 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.create_retentions_of_suppliers_in_draft",
         readonly=False,
     )
+
+    hide_issue_date_of_municipal_withholding_receipt = fields.Boolean('Hide issue date of municipal withholding receipt',
+        related='company_id.hide_issue_date_of_municipal_withholding_receipt', 
+        readonly=False)

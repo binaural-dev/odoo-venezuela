@@ -2,6 +2,7 @@ from . import models
 from . import wizard
 from . import report
 
+from odoo import SUPERUSER_ID, api
 old_module = "binaural_accountant"
 new_module = "l10n_ve_accountant"
 
@@ -40,3 +41,8 @@ def execute_script_sql_two(env, new_name, old_name):
         """,
         (new_module, new_name, old_name)
     )
+def set_main_company_currency_to_vef(env):
+    company = env.ref("base.main_company", raise_if_not_found=False)
+    vef = env.ref("base.VEF", raise_if_not_found=False)
+    if company and vef:
+        company.currency_id = vef.id

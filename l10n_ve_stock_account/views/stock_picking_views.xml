@@ -27,7 +27,13 @@
             </xpath>
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
                 <attribute name="required">partner_required or is_dispatch_guide</attribute> 
-                <attribute name="readonly">order_is_consignment or partner_required</attribute>
+                <attribute name="readonly">order_is_consignment or partner_required or is_donation</attribute>
+            </xpath>
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="before">
+                <field name="is_return" invisible="1"/>
+            </xpath>
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="attributes">
+                <attribute name="invisible">state != 'done' or is_return</attribute>
             </xpath>
             <xpath expr="//form//header" position="inside">
                 <field name="dispatch_guide_controls" invisible="1" />
@@ -53,7 +59,7 @@
                 <field name="show_other_causes_transfer_reason" invisible="1"/>
                 <field name="is_consignment" />
                 <field name="allowed_reason_ids" invisible="1" />
-                <field name="is_donation" invisible="1" />
+                <field name="is_donation" readonly="is_donation" force_save="1"/>
                 <field 
                     name="transfer_reason_id"
                     invisible="operation_code != 'outgoing'"
@@ -64,12 +70,12 @@
                     readonly="state == 'done' or is_consignment_readonly"
                     required="operation_code == 'outgoing' and show_other_causes_transfer_reason" />
                 <field name="allowed_reason_ids" invisible="1" />
-                <field name="is_donation" invisible="1" />
                 <field name="dispatch_guide_controls" invisible="1" />
                 <field 
                     name="guide_number"
                     readonly="1"
-                    invisible="not dispatch_guide_controls"/>
+                    invisible="not dispatch_guide_controls and is_donation"/>
+                <field name="is_return" readonly="1"/>
             </xpath>
             <xpath expr="//field[@name='picking_type_id']" position="after">
                 <field name="operation_code" invisible="1"/>
@@ -89,23 +95,13 @@
             </xpath>
             <xpath expr="//button[@name='action_cancel']" position="after">
                 <button 
-                    name="create_invoice" class="oe_highlight"
+                    name="action_create_invoice" class="oe_highlight"
                     string="Create Invoice" type="object"
                     groups="l10n_ve_stock_account.group_stock_account"
                     invisible="not show_create_invoice"/>
-                <button 
-                    name="create_bill" class="oe_highlight"
-                    string="Create Bill" type="object"
-                    groups="l10n_ve_stock_account.group_stock_account"
-                    invisible="not show_create_bill"/>
-                <button 
-                    name="create_customer_credit" class="oe_highlight"
-                    string="Create Credit Note" type="object"
-                    invisible="not show_create_customer_credit"/>
-                <button 
-                    name="create_vendor_credit" class="oe_highlight"
-                    string="Create Vendor Credit" type="object"
-                    invisible="not show_create_vendor_credit"/>
+            </xpath>
+            <xpath expr="//sheet[1]/group[1]/group[1]/field[@name='picking_type_id']" position="attributes">
+                <attribute name="domain">picking_type_domain</attribute>
             </xpath>
         </field>
     </record>

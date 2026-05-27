@@ -20,6 +20,7 @@ class StockLocation(models.Model):
         compute="_compute_is_consignation_warehouse",
     ) 
 
+
     @api.constrains("usage", "location_id", "partner_id")
     def _check_internal_location_only(self):
         for record in self:
@@ -41,17 +42,3 @@ class StockLocation(models.Model):
             record.is_consignation_warehouse = bool(
                 warehouse and warehouse.is_consignation_warehouse
             )
-
-    def get_warehouse(self):
-        if not self.id:
-            return False
-
-        warehouse = self.env["stock.warehouse"].search(
-            [
-                "|",
-                ("lot_stock_id", "=", self.id),
-                ("view_location_id", "parent_of", self.id),
-            ],
-            limit=1,
-        )
-        return warehouse
