@@ -2,13 +2,24 @@
 
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
 import { patch } from "@web/core/utils/patch";
+import { useService } from "@web/core/utils/hooks";
+import { useState } from "@odoo/owl";
 
 // New orders are now associated with the current table, if any.
 patch(PaymentScreen.prototype, {
 
-  setup() {
+  async setup() {
     super.setup(...arguments);
+    this.orm = useService("orm");
     this._getCurrentOrder()?.update_igtf();
+    this.state = useState({
+      total_paid_amount: 0,
+    })
+    const originalOrder = this.pos.selectedOrderData;
+    console.log(originalOrder)
+    if (this.currentOrder?.is_refund && originalOrder) {
+      await this.get_order_from_back(originalOrder.id);
+    }
   },
 
   async addNewPaymentLine(paymentMethod) {
@@ -82,4 +93,11 @@ patch(PaymentScreen.prototype, {
     const order = this._getCurrentOrder();
     return this.env.utils.formatForeignCurrency(order?.get_foreign_igtf_amount?.() || 0, "Product Price");
   },
+
+  async get_order_from_back(id) {
+    const orderData = await this.orm.call("pos.order", "get_order_from_back", [id],
+        { context: { id } });
+    this._getCurrentOrder()?.set_total_from_backend(orderData)
+    this.render()
+  }
 })

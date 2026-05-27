@@ -1,12 +1,12 @@
 <templates id="template" xml:space="preserve">
     <t t-name="binaural_pos_mf.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
         <!-- Inserción del botón de reimpresión fiscal -->
-        <xpath expr="//div[hasclass('control-buttons')]" position="inside">
+        <!-- <xpath expr="//div[hasclass('control-buttons')]" position="inside">
             <t t-if="getSelectedOrder()">
                 <t t-if="getSelectedOrder().get_total_with_tax() > 0">
                     <ReprintInvoiceButton order="getSelectedOrder()" />
                 </t>
             </t>
-        </xpath>
+        </xpath> -->
     </t>
 </templates>

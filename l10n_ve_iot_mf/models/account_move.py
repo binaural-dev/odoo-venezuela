@@ -129,10 +129,9 @@ class AccountMoveInh(models.Model):
             "is_debit_note": data.is_debit_journal
         }
         return _data
-
+    
     def check_print_out_invoice(self):
-        # if not self.journal_id.fiscal:
-        #     raise ValidationError(_("You cannot print an invoice with a non-fiscal journal"))
+        
         try:
             if self.mf_invoice_number:
                 raise ValidationError(_("The invoice has already been printed"))
@@ -212,7 +211,6 @@ class AccountMoveInh(models.Model):
             raise ValidationError(str(ae))
 
     def print_out_invoice(self, values):
-        _logger.info("VALUE %s", values)
         self.write(
             {
                 "mf_invoice_number": values["sequence"],

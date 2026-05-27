@@ -15,6 +15,7 @@ patch(PosOrder.prototype, {
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
     this.update_igtf();
+
   },
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
@@ -404,6 +405,15 @@ patch(PosOrder.prototype, {
     return subtotal + taxes;
   },
 
+  set_total_from_backend(data) {
+      if (data && typeof data === "object") {
+          if ("amount_total" in data) {
+              this.total_with_tax = data.amount_total;
+          }
+      }
+      return true;
+  },
+
   get totalDue() {
     const res = this.get_total_with_tax(...arguments);
     const rounding = 0.001
@@ -411,7 +421,6 @@ patch(PosOrder.prototype, {
     if (paymentlines.length === 0) {
       return round_pr(res, rounding);
     }
-
     const has_igtf_payment = paymentlines.some((payment) => {
       const paymentMethod = this._get_payment_method_data(payment);
       return paymentMethod?.apply_igtf;

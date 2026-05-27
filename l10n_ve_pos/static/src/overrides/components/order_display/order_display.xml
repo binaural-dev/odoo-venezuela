@@ -7,7 +7,7 @@
                 <!-- Left side -->
                 <div class="left-side" style="flex: 1;">
                     <div class="rate_bcv">
-                        Tasa BCV: <t t-out="(props.conversion_rate.toFixed(2) || 0) "/>
+                        Tasa BCV: <t t-out="(props?.conversion_rate?.toFixed(2) || 0) "/>
                     </div>
                     <div class="cant_prod">
                         Total de productos: <t t-out="quantity_products_display"/>

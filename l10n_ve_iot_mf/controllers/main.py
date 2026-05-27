@@ -44,7 +44,6 @@ class ApiIoT(http.Controller):
         El navegador llama a este endpoint cuando no puede conectar
         directamente al IoT Box (mixed content o diferencias de red).
         """
-        _logger.warning("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA Received proxy request with data: %s", request.httprequest.data) 
         try:
             data = json.loads(request.httprequest.data)
             iot_ip = data.get("iot_ip")

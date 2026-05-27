@@ -136,16 +136,18 @@ class SerialFiscalDriver(SerialDriver):
                 server = helpers.get_odoo_server_url()
                 urllib3.disable_warnings()
                 http = urllib3.PoolManager(cert_reqs="CERT_NONE")
+                _logger.warning("Probing device %s with protocol %s", device, cls._protocol.name)
                 waiting = http.request(
                     "GET",
                     server + "/iot_fiscal/ports",
                 )
                 b_body = waiting._body
                 body = json.loads(b_body.decode("utf-8"))
+                _logger.warning("BODY IS %s", body)
                 _logger.warning("El dispositivo es:  %s", device)
                 _logger.warning("IOT FISCAL PORTS %s", device["identifier"])
                 condition = device["identifier"] in body[helpers.get_identifier()]
-                _logger.warning(" se cumplen la Condition? %s", condition)
+                _logger.warning(" se cumplen la Condicion??? %s", condition)
             
             elif platform.system() == "Linux":
                 condition = device["identifier"].__contains__(DEVICE_NAME) or device[

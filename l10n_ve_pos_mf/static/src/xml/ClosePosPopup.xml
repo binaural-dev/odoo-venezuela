@@ -1,6 +1,6 @@
 <templates id="template" xml:space="preserve">
-    <!-- <t t-name="ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
-        <xpath expr="//footer" position="inside">
+    <t t-name="ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
+        <xpath expr="//Dialog[1]/t[2]" position="inside">
             <button 
                 class="button btn btn-lg btn-secondary" 
                 t-on-click="generate_report_z" 
@@ -10,5 +10,5 @@
                 t-on-click="generate_report_x" 
                 title="Generate report X">Report X</button>
         </xpath>
-    </t> -->
+    </t>
 </templates>

@@ -73,10 +73,11 @@ patch(PosOrder.prototype, {
       return this.lines
     }
 
-    let line = this.lines[0]
 
-    if (!line.refunded_orderline_id) {
-      return this.lines
+    let line = this.lines[0];
+    // Validación segura para evitar error si la línea no existe o no tiene la propiedad
+    if (!line?.refunded_orderline_id) {
+      return this.lines;
     }
 
     if (this.lock_toggle_receipt_invoice) {

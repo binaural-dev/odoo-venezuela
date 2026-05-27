@@ -9,7 +9,7 @@ patch(Navbar.prototype, {
     try {
       const fdm = this.pos.useFiscalMachine();
       let response = await fdm.action({
-        action: `test`,
+        action: `report_x`,
         data: true,
       })
       if (!response.result) {
