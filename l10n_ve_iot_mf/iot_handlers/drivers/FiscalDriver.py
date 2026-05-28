@@ -86,6 +86,7 @@ class SerialBaseFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return self.data["value"]
 
+        # TODO: Verificar si este comportamiento cambió en la versión 19
         self.data["value"] = self._print_invoice(invoice, "out_refund")
         event_manager.device_changed(self)
         return self.data["value"]
