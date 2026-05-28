@@ -14,31 +14,30 @@ from functools import reduce
 import traceback
 
 from odoo.exceptions import UserError
-from odoo.addons.hw_drivers.iot_handlers.sdk.ReportData import ReportData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S1PrinterData import S1PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S2PrinterData import S2PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S3PrinterData import S3PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S4PrinterData import S4PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S5PrinterData import S5PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S6PrinterData import S6PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S7PrinterData import S7PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S8EPrinterData import S8EPrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S8PPrinterData import S8PPrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.S25PrinterData import S25PrinterData
-from odoo.addons.hw_drivers.iot_handlers.sdk.AcumuladosX import AcumuladosX
+from odoo.addons.iot_drivers.iot_handlers.sdk.ReportData import ReportData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S1PrinterData import S1PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S2PrinterData import S2PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S3PrinterData import S3PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S4PrinterData import S4PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S5PrinterData import S5PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S6PrinterData import S6PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S7PrinterData import S7PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S8EPrinterData import S8EPrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S8PPrinterData import S8PPrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.S25PrinterData import S25PrinterData
+from odoo.addons.iot_drivers.iot_handlers.sdk.AcumuladosX import AcumuladosX
 
-from odoo import http, _
-from odoo.addons.hw_drivers.main import iot_devices
-from odoo.addons.hw_drivers.event_manager import event_manager
-from odoo.addons.hw_drivers.tools import helpers
+from odoo import _
+from odoo.addons.iot_drivers.main import iot_devices
+from odoo.addons.iot_drivers.event_manager import event_manager
+from odoo.addons.iot_drivers.tools import helpers
 
-from odoo.addons.hw_drivers.controllers.driver import DriverController
-
-from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
+from .serial_base_compat import (
     SerialDriver,
     SerialProtocol,
     serial_connection,
 )
+
 
 FLAG_21 = {
     "30": {
@@ -91,37 +90,6 @@ TAX = {
 }
 
 
-class BinauralDriverController(DriverController):
-    @http.route(
-        "/hw_drivers/event", type="json", auth="none", cors="*", csrf=False, save_session=False
-    )
-    def event(self, listener):
-        """
-        listener is a dict in witch there are a sessions_id and a dict of device_identifier to listen
-        """
-        req = event_manager.add_request(listener)
-        # Search for previous events and remove events older than 5 seconds
-        oldest_time = time.time() - 5
-        for event in list(event_manager.events):
-            if event["time"] < oldest_time:
-                del event_manager.events[0]
-                continue
-            if (
-                event["device_identifier"] in listener["devices"]
-                and event["time"] > listener["last_event"]
-            ):
-                event["session_id"] = req["session_id"]
-                _logger.info("EVENT %s", event)
-                return event
-
-        # Wait for new event
-        if req["event"].wait(50):
-            req["event"].clear()
-            req["result"]["session_id"] = req["session_id"]
-            _logger.info("EVENT %s", req["result"])
-            return req["result"]
-
-
 _logger = logging.getLogger(__name__)
 
 DEVICE_NAME = "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0"
@@ -147,7 +115,6 @@ FiscalProtocol = SerialProtocol(
 
 
 class SerialFiscalDriver(SerialDriver):
-    connection_type = "serial"
 
     _protocol = FiscalProtocol
     mdepura = False
@@ -165,38 +132,41 @@ class SerialFiscalDriver(SerialDriver):
     def supported(cls, device):
         try:
             condition = False
-
             if platform.system() == "Windows":
                 server = helpers.get_odoo_server_url()
                 urllib3.disable_warnings()
                 http = urllib3.PoolManager(cert_reqs="CERT_NONE")
+                _logger.warning("Probing device %s with protocol %s", device, cls._protocol.name)
                 waiting = http.request(
                     "GET",
                     server + "/iot_fiscal/ports",
                 )
-
                 b_body = waiting._body
                 body = json.loads(b_body.decode("utf-8"))
-
-                condition = device["identifier"] in body[helpers.get_mac_address()]
-
+                _logger.warning("BODY IS %s", body)
+                _logger.warning("El dispositivo es:  %s", device)
+                _logger.warning("IOT FISCAL PORTS %s", device["identifier"])
+                condition = device["identifier"] in body[helpers.get_identifier()]
+                _logger.warning(" se cumplen la Condicion??? %s", condition)
+            
             elif platform.system() == "Linux":
                 condition = device["identifier"].__contains__(DEVICE_NAME) or device[
                     "identifier"
                 ].__contains__(DEVICE_SHORT_NAME)
 
             if condition:
+                _logger.info("Probing device %s with protocol %s", device, cls._protocol.name)
                 try:
-                    protocol = cls._protocol
+                    cls._protocol
                     return True
                 except Exception:
                     _logger.exception(
                         "Error while probing %s with protocol %s" % (device, cls._protocol.name)
                     )
+                    cls._protocol.close()
                 return True
         except Exception as e:
-            _logger.error("Could not reach configured server")
-            _logger.error("A error encountered : %s " % e)
+            _logger.error("A error encountered 3 : %s " % e)
             return super().supported(device)
         return super().supported(device)
 
@@ -282,12 +252,22 @@ class SerialFiscalDriver(SerialDriver):
         self.device_name = name
 
     def test(self, data):
-        self.SendCmd("7")
-        self.SendCmd("800")
-        self.SendCmd("80$Binaural Test")
-        self.SendCmd("80!Documento de pruebas")
-        self.SendCmd("810")
-        self.data["value"] = {"status": "true"}
+        try:
+            status = self.ReadFpStatus(True)
+            self.data["value"] = {
+                "valid": status["valid"],
+                "message": (
+                    "Conexión exitosa con la impresora fiscal"
+                    if status["valid"]
+                    else "La impresora no respondió al comando de estado"
+                ),
+            }
+        except Exception as e:
+            _logger.exception("Error en test de impresora fiscal HKA")
+            self.data["value"] = {
+                "valid": False,
+                "message": f"Error de comunicación: {str(e)}",
+            }
         event_manager.device_changed(self)
 
     def logger(self, data):

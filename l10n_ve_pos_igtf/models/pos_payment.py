@@ -1,7 +1,6 @@
 from odoo import api, fields, models, _
-from odoo.tools import formatLang, float_is_zero, float_compare
+from odoo.tools import float_is_zero
 from odoo.tools.float_utils import float_round
-
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -10,9 +9,9 @@ _logger = logging.getLogger(__name__)
 class PosPayment(models.Model):
     _inherit = "pos.payment"
 
-    include_igtf = fields.Boolean()
-    igtf_amount = fields.Float()
-    foreign_igtf_amount = fields.Float()
+    include_igtf = fields.Boolean(string="Include IGTF")
+    igtf_amount = fields.Float(string="IGTF Amount")
+    foreign_igtf_amount = fields.Float(string="IGTF Amount in Foreign Currency")
 
     def _export_for_ui(self, payment):
         res = super()._export_for_ui(payment)
@@ -21,137 +20,335 @@ class PosPayment(models.Model):
         res["foreign_igtf_amount"] = payment.foreign_igtf_amount
         return res
 
+    def _convert_company_to_foreign_amount(self, payment, company_amount):
+        company_currency = payment.company_id.currency_id
+        foreign_currency = payment.company_id.foreign_currency_id
+        conversion_date = payment.payment_date or fields.Date.context_today(payment)
+
+        if not foreign_currency or foreign_currency == company_currency:
+            return float_round(
+                company_amount,
+                precision_rounding=company_currency.rounding,
+            )
+
+        foreign_amount = company_currency._convert(
+            company_amount,
+            foreign_currency,
+            payment.company_id,
+            conversion_date,
+        )
+        
+        return float_round(
+            foreign_amount,
+            precision_rounding=foreign_currency.rounding,
+        )
+
+    def _get_igtf_amounts_for_move(self, payment, amounts):
+        company_currency = payment.company_id.currency_id
+        foreign_currency = payment.company_id.foreign_currency_id or company_currency
+
+        company_igtf_amount = float_round(
+            payment.igtf_amount,
+            precision_rounding=company_currency.rounding,
+        )
+
+        payment_amount = amounts.get("amount", 0.0)
+        payment_amount_converted = amounts.get("amount_converted", 0.0)
+        foreign_payment_amount = self._get_payment_foreign_amount(payment)
+
+        if float_is_zero(payment_amount, precision_rounding=company_currency.rounding):
+            return 0.0, 0.0, 0.0
+
+        ratio = company_igtf_amount / payment_amount
+
+        # Converted IGTF con la misma proporcion del pago convertido
+        amount_igtf_converted = payment_amount_converted * ratio
+
+        # Alterno IGTF con la misma proporcion del alterno total del pago
+        foreign_igtf_amount = float_round(
+            foreign_payment_amount * ratio,
+            precision_rounding=foreign_currency.rounding,
+        )
+
+        return company_igtf_amount, amount_igtf_converted, foreign_igtf_amount
+    def _normalize_foreign_amount(self, payment, foreign_amount):
+        foreign_currency = payment.company_id.foreign_currency_id
+        precision_rounding = (
+            foreign_currency.rounding
+            if foreign_currency
+            else payment.company_id.currency_id.rounding
+        )
+        return float_round(
+            abs(foreign_amount or 0.0),
+            precision_rounding=precision_rounding,
+        )
+
+    def _align_foreign_with_line_side(self, line_vals, payment, foreign_amount):
+        normalized_foreign_amount = self._normalize_foreign_amount(
+            payment,
+            foreign_amount,
+        )
+        if normalized_foreign_amount == 0:
+            line_vals.update({"foreign_debit": 0.0, "foreign_credit": 0.0})
+            return line_vals
+
+        debit_amount = line_vals.get("debit", 0.0)
+        credit_amount = line_vals.get("credit", 0.0)
+
+        if debit_amount > 0:
+            line_vals.update(
+                {"foreign_debit": normalized_foreign_amount, "foreign_credit": 0.0}
+            )
+        elif credit_amount > 0:
+            line_vals.update(
+                {"foreign_debit": 0.0, "foreign_credit": normalized_foreign_amount}
+            )
+        else:
+            line_vals.update({"foreign_debit": 0.0, "foreign_credit": 0.0})
+        return line_vals
+
+    def _get_foreign_debit_credit_vals(self, foreign_amount):
+        return {
+            "foreign_debit": abs(foreign_amount) if foreign_amount < 0 else 0,
+            "foreign_credit": abs(foreign_amount) if foreign_amount > 0 else 0,
+        }
+
+    def _get_receivable_account_id(self, accounting_partner, order):
+        return accounting_partner.with_company(order.company_id).property_account_receivable_id.id
+
+    def _create_payment_move(self, payment, order, payment_method, journal):
+        rate, inverse_rate = self._get_payment_rate_values(payment)
+        payment_move = (
+            self.env["account.move"]
+            .with_context(default_journal_id=journal.id)
+            .create(
+                {
+                    "journal_id": journal.id,
+                    "date": fields.Date.context_today(order, order.date_order),
+                    "ref": _("Invoice payment for %s (%s) using %s")
+                    % (order.name, order.account_move.name, payment_method.name),
+                    "foreign_rate": rate,
+                    "foreign_inverse_rate": inverse_rate,
+                    "manually_set_rate": True,
+                    "pos_payment_ids": payment.ids,
+                }
+            )
+        )
+        payment.write({"account_move_id": payment_move.id})
+        return payment_move
+
+    def _build_credit_line_without_igtf(self, pos_session, payment_move, account_id, partner_id, amounts, payment):
+        foreign_amount = self._get_payment_foreign_amount(payment)
+        line_vals = pos_session._credit_amounts(
+            {
+                "account_id": account_id,
+                "partner_id": partner_id,
+                "move_id": payment_move.id,
+                "not_foreign_recalculate": True,
+            },
+            amounts["amount"],
+            amounts["amount_converted"],
+        )
+        return self._align_foreign_with_line_side(line_vals, payment, foreign_amount)
+
+    def _build_credit_line_igtf(
+        self,
+        pos_session,
+        payment_move,
+        partner_id,
+        payment,
+        amount_igtf,
+        amount_igtf_converted,
+        foreign_amount_igtf,
+    ):
+        line_vals = pos_session._credit_amounts(
+            {
+                "account_id": self.env.company.customer_account_igtf_id.id,
+                "partner_id": partner_id,
+                "move_id": payment_move.id,
+                "not_foreign_recalculate": True,
+            },
+            amount_igtf,
+            amount_igtf_converted,
+        )
+        return self._align_foreign_with_line_side(line_vals, payment, foreign_amount_igtf)
+
+    def _build_credit_line_igtf_base(
+        self,
+        pos_session,
+        payment_move,
+        account_id,
+        partner_id,
+        amounts,
+        amount_igtf,
+        amount_igtf_converted,
+        foreign_amount_igtf,
+        payment,
+    ):
+        foreign_amount = self._get_payment_foreign_amount(payment)
+        foreign_currency = payment.company_id.foreign_currency_id
+        foreign_rounding = (
+            foreign_currency.rounding
+            if foreign_currency
+            else payment.company_id.currency_id.rounding
+        )
+        amount_without_igtf = float_round(
+            foreign_amount - foreign_amount_igtf,
+            precision_rounding=foreign_rounding,
+        )
+        line_vals = pos_session._credit_amounts(
+            {
+                "account_id": account_id,
+                "partner_id": partner_id,
+                "move_id": payment_move.id,
+                "not_foreign_recalculate": True,
+            },
+            amounts["amount"] - amount_igtf,
+            amounts["amount_converted"] - amount_igtf_converted,
+        )
+        return self._align_foreign_with_line_side(line_vals, payment, amount_without_igtf)
+
+    def _get_reversed_move_receivable_account_id(self, payment, accounting_partner, order, is_reverse):
+        is_split_transaction = payment.payment_method_id.split_transactions
+        valid_types = ("asset_receivable", "liability_payable")
+
+        def _ensure_standard_account(account):
+            if account and account.account_type in valid_types:
+                return account
+            fallback = accounting_partner.with_company(order.company_id).property_account_receivable_id
+            if account:
+                _logger.warning(
+                    "POS payment account '%s' (%s) is not receivable/payable. Falling back to partner receivable '%s'.",
+                    account.display_name,
+                    account.account_type,
+                    fallback.display_name,
+                )
+            return fallback
+
+        if is_split_transaction and is_reverse:
+            account = accounting_partner.with_company(order.company_id).property_account_receivable_id
+        elif is_reverse:
+            account = (
+                payment.payment_method_id.receivable_account_id
+                or self.company_id.account_default_pos_receivable_account_id
+            )
+        else:
+            account = self.company_id.account_default_pos_receivable_account_id
+
+        account = _ensure_standard_account(account)
+        return account.id, is_split_transaction
+
+    def _build_debit_line(self, pos_session, payment_move, account_id, accounting_partner, is_split_transaction, is_reverse, amounts, payment):
+        foreign_amount = self._get_payment_foreign_amount(payment)
+        line_vals = pos_session._debit_amounts(
+            {
+                "account_id": account_id,
+                "move_id": payment_move.id,
+                "partner_id": accounting_partner.id
+                if is_split_transaction and is_reverse
+                else False,
+                "not_foreign_recalculate": True,
+            },
+            amounts["amount"],
+            amounts["amount_converted"],
+        )
+        return self._align_foreign_with_line_side(line_vals, payment, foreign_amount)
+
     def _create_payment_moves(self, is_reverse=False):
         result = self.env["account.move"]
+
         for payment in self:
             order = payment.pos_order_id
+            _logger.warning(
+                "POS payment move payload amount=%s foreign_amount=%s foreign_rate=%s foreign_inverse_rate=%s",
+                payment.amount,
+                payment.foreign_amount,
+                payment.foreign_rate,
+                payment.foreign_inverse_rate,
+            )
             add_credit_line_vals = False
             payment_method = payment.payment_method_id
+            
+
+
             if payment_method.type == "pay_later" or float_is_zero(
                 payment.amount, precision_rounding=order.currency_id.rounding
             ):
                 continue
+
             accounting_partner = self.env["res.partner"]._find_accounting_partner(
                 payment.partner_id
             )
             pos_session = order.session_id
             journal = pos_session.config_id.journal_id
-            payment_move = (
-                self.env["account.move"]
-                .with_context(default_journal_id=journal.id)
-                .create(
-                    {
-                        "journal_id": journal.id,
-                        "date": fields.Date.context_today(order, order.date_order),
-                        "ref": _("Invoice payment for %s (%s) using %s")
-                        % (order.name, order.account_move.name, payment_method.name),
-                        "pos_payment_ids": payment.ids,
-                    }
-                )
-            )
+            payment_move = self._create_payment_move(payment, order, payment_method, journal)
             result |= payment_move
-            payment.write({"account_move_id": payment_move.id})
+
             amounts = pos_session._update_amounts(
                 {"amount": 0, "amount_converted": 0},
                 {"amount": payment.amount},
                 payment.payment_date,
             )
-            amount_igtf = float_round(
-                payment.igtf_amount,
-                precision_rounding=payment.currency_id.rounding,
+
+            amount_igtf, amount_igtf_converted, foreign_amount_igtf = self._get_igtf_amounts_for_move(
+                payment,
+                amounts,
             )
+
+            receivable_account_id = self._get_receivable_account_id(accounting_partner, order)
+
             if payment.include_igtf:
-                if not (amounts["amount"] - amount_igtf == 0):
-                    amount_without_igtf = float_round(
-                        payment.foreign_amount - payment.foreign_igtf_amount,
-                        precision_rounding=payment.currency_id.rounding,
-                    )
-                    add_credit_line_vals = pos_session._credit_amounts(
-                        {
-                            "account_id": accounting_partner.with_company(
-                                order.company_id
-                            ).property_account_receivable_id.id,
-                            "partner_id": accounting_partner.id,
-                            "move_id": payment_move.id,
-                            "not_foreign_recalculate": True,
-                            "foreign_debit": abs(amount_without_igtf)
-                            if amount_without_igtf < 0
-                            else 0,
-                            "foreign_credit": abs(amount_without_igtf)
-                            if amount_without_igtf > 0
-                            else 0,
-                        },
-                        amounts["amount"] - amount_igtf,
-                        amounts["amount_converted"] - amount_igtf,
+                if not float_is_zero(
+                    amounts["amount"] - amount_igtf,
+                    precision_rounding=payment.company_id.currency_id.rounding,
+                ):
+                    add_credit_line_vals = self._build_credit_line_igtf_base(
+                        pos_session=pos_session,
+                        payment_move=payment_move,
+                        account_id=receivable_account_id,
+                        partner_id=accounting_partner.id,
+                        amounts=amounts,
+                        amount_igtf=amount_igtf,
+                        amount_igtf_converted=amount_igtf_converted,
+                        foreign_amount_igtf=foreign_amount_igtf,
+                        payment=payment,
                     )
 
-                credit_line_vals = pos_session._credit_amounts(
-                    {
-                        "account_id": self.env.company.customer_account_igtf_id.id,
-                        "partner_id": accounting_partner.id,
-                        "move_id": payment_move.id,
-                        "not_foreign_recalculate": True,
-                        "foreign_debit": abs(payment.foreign_igtf_amount)
-                        if payment.foreign_igtf_amount < 0
-                        else 0,
-                        "foreign_credit": abs(payment.foreign_igtf_amount)
-                        if payment.foreign_igtf_amount > 0
-                        else 0,
-                    },
-                    amount_igtf,
-                    amount_igtf,
+                credit_line_vals = self._build_credit_line_igtf(
+                    pos_session=pos_session,
+                    payment_move=payment_move,
+                    partner_id=accounting_partner.id,
+                    payment=payment,
+                    amount_igtf=amount_igtf,
+                    amount_igtf_converted=amount_igtf_converted,
+                    foreign_amount_igtf=foreign_amount_igtf,
                 )
             else:
-                credit_line_vals = pos_session._credit_amounts(
-                    {
-                        "account_id": accounting_partner.with_company(
-                            order.company_id
-                        ).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
-                        "partner_id": accounting_partner.id,
-                        "move_id": payment_move.id,
-                        "not_foreign_recalculate": True,
-                        "foreign_debit": abs(payment.foreign_amount)
-                        if payment.foreign_amount < 0
-                        else 0,
-                        "foreign_credit": abs(payment.foreign_amount)
-                        if payment.foreign_amount > 0
-                        else 0,
-                    },
-                    amounts["amount"],
-                    amounts["amount_converted"],
+                credit_line_vals = self._build_credit_line_without_igtf(
+                    pos_session=pos_session,
+                    payment_move=payment_move,
+                    account_id=receivable_account_id,
+                    partner_id=accounting_partner.id,
+                    amounts=amounts,
+                    payment=payment,
                 )
 
-            is_split_transaction = payment.payment_method_id.split_transactions
-            if is_split_transaction and is_reverse:
-                reversed_move_receivable_account_id = accounting_partner.with_company(
-                    order.company_id
-                ).property_account_receivable_id.id
-            elif is_reverse:
-                reversed_move_receivable_account_id = (
-                    payment.payment_method_id.receivable_account_id.id
-                    or self.company_id.account_default_pos_receivable_account_id.id
-                )
-            else:
-                reversed_move_receivable_account_id = (
-                    self.company_id.account_default_pos_receivable_account_id.id
-                )
-            debit_line_vals = pos_session._debit_amounts(
-                {
-                    "account_id": reversed_move_receivable_account_id,
-                    "move_id": payment_move.id,
-                    "partner_id": accounting_partner.id
-                    if is_split_transaction and is_reverse
-                    else False,
-                    "not_foreign_recalculate": True,
-                    "foreign_debit": abs(payment.foreign_amount)
-                    if payment.foreign_amount > 0
-                    else 0,
-                    "foreign_credit": abs(payment.foreign_amount)
-                    if payment.foreign_amount < 0
-                    else 0,
-                },
-                amounts["amount"],
-                amounts["amount_converted"],
+            reversed_move_receivable_account_id, is_split_transaction = self._get_reversed_move_receivable_account_id(
+                payment=payment,
+                accounting_partner=accounting_partner,
+                order=order,
+                is_reverse=is_reverse,
+            )
+
+            debit_line_vals = self._build_debit_line(
+                pos_session=pos_session,
+                payment_move=payment_move,
+                account_id=reversed_move_receivable_account_id,
+                accounting_partner=accounting_partner,
+                is_split_transaction=is_split_transaction,
+                is_reverse=is_reverse,
+                amounts=amounts,
+                payment=payment,
             )
 
             if add_credit_line_vals:

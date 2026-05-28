@@ -1,6 +1,8 @@
 <templates id="template" xml:space="preserve">
-    <!-- <t t-name="l10n_ve_pos.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
-        <xpath expr="//div[@class='buttons d-flex gap-2'][1]/button[@class='highlight btn btn-lg btn-primary']" position="replace">
+    <t t-name="l10n_ve_pos.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+        <!-- <xpath expr="//div[@class='buttons d-flex gap-2'][1]/button[@class='highlight btn btn-lg btn-primary']" position="after">
+        </xpath> -->
+        <!-- <xpath expr="//div[@class='buttons d-flex gap-2'][1]/button[@class='highlight btn btn-lg btn-primary']" position="replace">
         </xpath>
         <xpath expr="//OrderWidget" position="attributes">
             <attribute name="conversion_rate">_selectedSyncedOrder.get_conversion_rate()</attribute>
@@ -12,6 +14,6 @@
         </xpath>
         <xpath expr="//div[@class='control-buttons d-flex flex-wrap border-bottom overflow-hidden bg-300'][1]" position="inside">
              <FullRefundButton order="_selectedSyncedOrder" ticket_screen="this"/>
-        </xpath>
-    </t> -->
+        </xpath> -->
+    </t>
 </templates>

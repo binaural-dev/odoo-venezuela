@@ -3,6 +3,7 @@
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
+
 import {
   formatFloat,
   roundDecimals as round_di,
@@ -11,65 +12,51 @@ import {
 } from "@web/core/utils/numbers";
 
 
-// New orders are now associated with the current table, if any.
 patch(PosOrder.prototype, {
-  setup() {
-      super.setup(...arguments);
-//   this.set_to_invoice(true);
-//   if (props.json) {
-//     if (props.json.account_move === undefined) {
-//       this.set_to_invoice(true);
-//       this.lock_toggle_receipt_invoice = false;
-//     }
-//     this.reload_taxes();
-//   } else {
-//     let always_invoice = !this.pos.config.always_invoice;
-//     this.to_receipt = always_invoice;
-//   }
-},
-get_foreign_currency(){
-        return this.config.foreign_currency_id;
-    },
- get_display_rate() {
-    return this.env.pos.config.foreign_rate;
+  _get_pos_store() {
+    return this.pos || this.env?.services?.pos || this.env?.pos || null;
   },
 
-//   _isValidEmptyOrder() {
-//     let res = super._isValidEmptyOrder(...arguments);
-//     if (this.get_change() != 0) {
-//       return false;
-//     }
-//     return res;
-//   },
-//   assert_editable() {},
+  setup() {
+    this.get_foreign_total_tax()
+    super.setup(...arguments);
+  },
+
+  get_foreign_currency() {
+    return this.config.foreign_currency_id;
+  },
+
+  get_display_rate() {
+    const posStore = this._get_pos_store();
+    return posStore?.config?.foreign_rate || this.config?.foreign_rate || 1;
+  },
+
+  get_foreign_inverse_rate() {
+    const posStore = this._get_pos_store();
+    return posStore?.config?.foreign_inverse_rate || this.config?.foreign_inverse_rate || 1;
+  },
+
+  assert_editable() { },
 
   get init_conversion_rate() {
     if (this.currency.name == "VEF") {
-      return this.config.foreign_inverse_rate;
-    }
-    if (this.currency.name == "USD") {
+      const companyId = this.user;
       return this.config.foreign_rate;
     }
   },
- 
 
-//   add_orderline(line) {
-//     let res = super.add_orderline(...arguments);
-//     this.reload_taxes();
-//     return res;
-//   },
+  add_orderline(line) {
+    let res = super.add_orderline(...arguments);
+    this.reload_taxes();
+    return res;
+  },
+
   get_conversion_rate() {
-    const orderlines = this.currentOrder?.get_orderlines()?.length || [];
+    const orderlines = this.currentOrder?.get_orderlines() || [];
     if (orderlines.length != 0) {
       return orderlines[0].currency_rate_display();
     }
-    if (!this.init_conversion_rate) {
-      throw new Error(
-        "Conversion rate cannot be determined due to missing values.",
-      );
-    }
-
-    return this.init_conversion_rate;
+    return this.init_conversion_rate || this.config.foreign_rate || 1.0;
   },
 
   get_orderlines() {
@@ -86,413 +73,499 @@ get_foreign_currency(){
       return this.lines
     }
 
-    let line = this.lines[0]
 
-    if (!line.refunded_orderline_id) {
-      return this.lines
+    let line = this.lines[0];
+    // Validación segura para evitar error si la línea no existe o no tiene la propiedad
+    if (!line?.refunded_orderline_id) {
+      return this.lines;
     }
 
     if (this.lock_toggle_receipt_invoice) {
       return this.lines
     }
 
-    // this.pos.env.services.rpc({
-    //   model: 'pos.order.line',
-    //   method: 'search_read',
-    //   domain: [['id', '=', line.refunded_orderline_id]],
-    // }).then((el) => {
-    //   this.to_receipt = el[0].to_receipt
-    //   this.lock_toggle_receipt_invoice = true
-    // })
+    this.pos.env.services.rpc({
+      model: 'pos.order.line',
+      method: 'search_read',
+      domain: [['id', '=', line.refunded_orderline_id]],
+    }).then((el) => {
+      this.to_receipt = el[0].to_receipt
+      this.lock_toggle_receipt_invoice = true
+    })
     return this.lines;
   },
 
-//   reload_taxes() {
-//     this.orderlines.forEach((el) => {
-//       el.product.taxes_id = el.product.originalTaxes;
-//       el.tax_ids = el.product.taxes_id;
-//     });
-//   },
-//   toggle_receipt_invoice(to_receipt) {
-//     if (this.getHasRefundLines()) {
-//       return;
-//     }
-//     if (this.lock_toggle_receipt_invoice) {
-//       return;
-//     }
-//     this.assert_editable();
-//     this.to_receipt = to_receipt;
-//     this.reload_taxes();
-//   },
-//   export_as_JSON() {
-//     let json = super.export_as_JSON();
-//     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
-//     json["foreign_currency_rate"] = this.get_conversion_rate();
-//     json["to_receipt"] = this.is_to_receipt();
-//     return json;
-//   },
-//   is_to_receipt() {
-//     return this.to_receipt;
-//   },
-//   export_for_printing() {
-//     let res = super.export_for_printing(...arguments);
-//     let new_res = {
-//       ...res,
-//       foreign_amount_total: this.get_foreign_total_with_tax(),
-//       foreign_total_without_tax: this.get_foreign_total_without_tax(),
-//       foreign_amount_tax: this.get_foreign_total_tax(),
-//       foreign_total_paid: this.get_foreign_total_paid(),
-//     };
-//     return new_res;
-//   },
-//   set_orderline_options(orderline, options) {
-//     super.set_orderline_options(...arguments);
-//     if (options.foreign_price !== undefined) {
-//       orderline.set_foreign_unit_price(options.foreign_price);
-//     }
-//   },
+  toggle_receipt_invoice(to_receipt) {
+    console.log("toggle_receipt_invoice", !to_receipt)
+    if (this.getHasRefundLines()) {
+      return;
+    }
+    if (this.lock_toggle_receipt_invoice) {
+      return;
+    }
+    this.assert_editable();
+    this.to_receipt = to_receipt;
+    this.to_invoice = !to_receipt;
 
-//   calculate_foreign_base_amount(tax_ids_array, lines) {
-//     // Consider price_include taxes use case
-//     const has_taxes_included_in_price = tax_ids_array.filter(
-//       (tax_id) => this.pos.taxes_by_id[tax_id].price_include,
-//     ).length;
-
-//     const base_amount = lines.reduce(
-//       (sum, line) =>
-//         sum +
-//         line.get_foreign_price_without_tax() +
-//         (has_taxes_included_in_price
-//           ? line.get_foreign_total_taxes_included_in_price()
-//           : 0),
-//       0,
-//     );
-//     return base_amount;
-//   },
-//   /* ---- Payment Status --- */
-//   get_foreign_subtotal() {
-//     return round_pr(
-//       this.orderlines.reduce(function (sum, orderLine) {
-//         return sum + orderLine.get_display_foreign_price();
-//       }, 0),
-//       this.pos.foreign_currency.rounding,
-//     );
-//   },
-  get_foreign_total_with_tax() {
-    return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
   },
+  
+  export_as_JSON() {
+    let json = super.export_as_JSON();
+    json["foreign_amount_total"] = this.get_foreign_total_with_taxes();
+    json["foreign_currency_rate"] = this.get_conversion_rate?.() || this.get_display_rate?.() || 0;
+    json["to_receipt"] = this.is_to_receipt();
+    return json;
+  },
+
+  serializeForORM(opts = {}) {
+    const data = super.serializeForORM(opts);
+    data.foreign_amount_total = this.get_foreign_total_with_taxes();
+    data.foreign_currency_rate = this.get_conversion_rate?.() || this.get_display_rate?.() || 0;
+    return data;
+  },
+
+  is_to_receipt() {
+    return this.to_receipt;
+  },
+
+  export_for_printing() {
+    let res = super.export_for_printing(...arguments);
+    let new_res = {
+      ...res,
+      foreign_amount_total: this.get_foreign_total_with_taxes(),
+      foreign_total_without_tax: this.get_foreign_total_without_tax(),
+      foreign_amount_tax: this.get_foreign_total_tax(),
+      foreign_total_paid: this.get_foreign_total_paid(),
+    };
+    return new_res;
+  },
+  set_orderline_options(orderline, options) {
+    super.set_orderline_options(...arguments);
+    if (options.foreign_price !== undefined) {
+      orderline.set_foreign_unit_price(options.foreign_price);
+    }
+  },
+
+  calculate_foreign_base_amount(tax_ids_array, lines) {
+    // Consider price_include taxes use case
+    const has_taxes_included_in_price = tax_ids_array.filter(
+      (tax_id) => this.pos.taxes_by_id[tax_id].price_include,
+    ).length;
+
+    const base_amount = lines.reduce(
+      (sum, line) =>
+        sum +
+        line.get_foreign_price_without_tax() +
+        (has_taxes_included_in_price
+          ? line.get_foreign_total_taxes_included_in_price()
+          : 0),
+      0,
+    );
+    return base_amount;
+  },
+
+  /* ---- Payment Status --- */
+  get_foreign_subtotal() {
+    return round_pr(
+      this.orderlines.reduce(function (sum, orderLine) {
+        return sum + orderLine.get_display_foreign_price();
+      }, 0),
+      this.pos.foreign_currency.rounding,
+    );
+  },
+
+  get_foreign_total_with_taxes() {
+    const rounding = this.get_foreign_currency()?.rounding || 0.01;
+    return round_pr((this.get_foreign_total_without_tax() || 0) + (this.get_foreign_total_tax_per_line() || 0), rounding)
+  },
+
+  get foreign_total_with_taxes() {
+    return this.get_foreign_total_with_taxes()
+  },
+
   get_foreign_total_without_tax() {
     const lines = this.get_orderlines();
     const foreign_currency = this.get_foreign_currency();
-    const digits = foreign_currency ? foreign_currency.decimal_places : 2;
+
+    const total = lines.reduce((acumulador, line) => {
+      const linePrices = line.get_all_foreign_prices ? line.get_all_foreign_prices() : { priceWithoutTax: 0 };
+      return acumulador + (linePrices.priceWithoutTax || 0);
+    }, 0);
+    return total
+
+  },
+
+  get_foreign_total_discount() {
+    const ignored_product_ids = this._get_ignored_product_ids_total_discount();
     return round_pr(
-      lines.reduce(function (sum, orderLine) {
-        if (typeof orderLine.get_foreign_price_without_tax === "function") {
-            return sum + orderLine.get_foreign_price_without_tax();
-        } else {
-            console.warn("get_foreign_price_without_tax is not a function on orderLine", orderLine);
-            return sum;
+      this.orderlines.reduce((sum, orderLine) => {
+        if (!ignored_product_ids.includes(orderLine.product.id)) {
+          sum +=
+            orderLine.getForeignUnitDisplayPriceBeforeDiscount() *
+            (orderLine.get_discount() / 100) *
+            orderLine.getQuantity();
+          if (orderLine.display_discount_policy() === "without_discount") {
+            sum +=
+              (orderLine.get_taxed_lst_unit_foreign_price() -
+                orderLine.getForeignUnitDisplayPriceBeforeDiscount()) *
+              orderLine.getQuantity();
+          }
         }
+        return sum;
       }, 0),
-      foreign_currency.rounding,
+      this.pos.foreign_currency.rounding,
     );
   },
-//   get_foreign_total_discount() {
-//     const ignored_product_ids = this._get_ignored_product_ids_total_discount();
-//     return round_pr(
-//       this.orderlines.reduce((sum, orderLine) => {
-//         if (!ignored_product_ids.includes(orderLine.product.id)) {
-//           sum +=
-//             orderLine.getForeignUnitDisplayPriceBeforeDiscount() *
-//             (orderLine.get_discount() / 100) *
-//             orderLine.getQuantity();
-//           if (orderLine.display_discount_policy() === "without_discount") {
-//             sum +=
-//               (orderLine.get_taxed_lst_unit_foreign_price() -
-//                 orderLine.getForeignUnitDisplayPriceBeforeDiscount()) *
-//               orderLine.getQuantity();
-//           }
-//         }
-//         return sum;
-//       }, 0),
-//       this.pos.foreign_currency.rounding,
-//     );
-//   },
+
   get_foreign_total_tax() {
     const orderlines = this.get_orderlines();
+    const foreignCurrency = this.get_foreign_currency();
+    const rounding = foreignCurrency?.rounding || 0.01;
+    let totalTax = 0;
+
     if (this.company.tax_calculation_rounding_method === "round_globally") {
-      // As always, we need:
-      // 1. For each tax, sum their amount across all order lines
-      // 2. Round that result
-      // 3. Sum all those rounded amounts
-      
-      var groupTaxes = {};
-      orderlines.forEach(function (line) {
-        var taxDetails = line.get_foreign_tax_details();
-        var taxIds = Object.keys(taxDetails);
-        for (var t = 0; t < taxIds.length; t++) {
-          var taxId = taxIds[t];
-          if (!(taxId in groupTaxes)) {
-            groupTaxes[taxId] = 0;
-          }
-          groupTaxes[taxId] += taxDetails[taxId].amount;
+
+      const groupTaxes = orderlines.reduce((acc, line) => {
+
+        const taxDetails = line.get_foreign_tax_details?.() || {};
+        for (const [taxId, detail] of Object.entries(taxDetails)) {
+          acc[taxId] = (acc[taxId] || 0) + (detail.amount || 0);
         }
-      });
+        return acc;
+      }, {});
 
-      var sum = 0;
-      var taxIds = Object.keys(groupTaxes);
-      const foreign_currency = this.get_foreign_currency();
-      
-      for (var j = 0; j < taxIds.length; j++) {
-        var taxAmount = groupTaxes[taxIds[j]];
-        sum += round_pr(taxAmount, foreign_currency.rounding);
-      }
-      return sum;
-    } else {
-      return round_pr(
-        orderlines.reduce(function (sum, orderLine) {
-          if (typeof orderLine.get_foreign_tax === "function") {
-              return sum + orderLine.get_foreign_tax();
-          } else {
-              console.warn("get_foreign_tax is not a function on orderLine", orderLine);
-              return sum;
-          }
-        }, 0),
-        foreign_currency.rounding,
+      totalTax = Object.values(groupTaxes).reduce(
+        (sum, amount) => sum + amount,
+        0
       );
+    } else {
+      totalTax = orderlines.reduce((sum, line) => {
+        const lineTax = line.get_all_foreign_prices ? line.get_all_foreign_prices().tax : (line.get_foreign_tax?.() || line.get_foreign_total_tax?.() || 0);
+        return sum + lineTax;
+      }, 0);
     }
+    return totalTax;
   },
-//   get_foreign_tax_details() {
-//     var details = {};
-//     var fulldetails = [];
 
-//     this.orderlines.forEach(function (line) {
-//       var ldetails = line.get_foreign_tax_details();
-//       for (var id in ldetails) {
-//         if (Object.hasOwnProperty.call(ldetails, id)) {
-//           details[id] = {
-//             amount: (details[id]?.amount || 0) + ldetails[id].amount,
-//             base: (details[id]?.base || 0) + ldetails[id].base,
-//           };
-//         }
-//       }
-//     });
+  get_foreign_total_tax_per_line() {
+    const orderlines = this.get_orderlines();
+    const foreignCurrency = this.get_foreign_currency();
+    const rounding = foreignCurrency?.rounding || 0.01;
 
-//     for (var id in details) {
-//       if (Object.hasOwnProperty.call(details, id)) {
-//         fulldetails.push({
-//           amount: details[id].amount,
-//           base: details[id].base,
-//           tax: this.pos.taxes_by_id[id],
-//           name: this.pos.taxes_by_id[id].name,
-//         });
-//       }
-//     }
+    const totalTax = orderlines.reduce((sum, line) => {
+      const tax_amounts = line.get_all_foreign_prices ? line.get_all_foreign_prices() : { tax: 0 };
+      return sum + (tax_amounts.tax || 0);
+    }, 0);
 
-//     return fulldetails;
-//   },
-//   get_foreign_total_for_taxes(tax_id) {
-//     var total = 0;
+    return totalTax;
+  },
 
-//     if (!(tax_id instanceof Array)) {
-//       tax_id = [tax_id];
-//     }
+  get_foreign_tax_details() {
+    var details = {};
+    var fulldetails = [];
 
-//     var tax_set = {};
+    this.orderlines.forEach(function (line) {
+      var ldetails = line.get_foreign_tax_details();
+      for (var id in ldetails) {
+        if (Object.hasOwnProperty.call(ldetails, id)) {
+          details[id] = {
+            amount: (details[id]?.amount || 0) + ldetails[id].amount,
+            base: (details[id]?.base || 0) + ldetails[id].base,
+          };
+        }
+      }
+    });
 
-//     for (var i = 0; i < tax_id.length; i++) {
-//       tax_set[tax_id[i]] = true;
-//     }
+    for (var id in details) {
+      if (Object.hasOwnProperty.call(details, id)) {
+        fulldetails.push({
+          amount: details[id].amount,
+          base: details[id].base,
+          tax: this.pos.taxes_by_id[id],
+          name: this.pos.taxes_by_id[id].name,
+        });
+      }
+    }
 
-//     this.orderlines.forEach((line) => {
-//       var taxes_ids = this.tax_ids || line.getProduct().taxes_id;
-//       for (var i = 0; i < taxes_ids.length; i++) {
-//         if (tax_set[taxes_ids[i]]) {
-//           total += line.get_foreign_price_with_tax();
-//           return;
-//         }
-//       }
-//     });
+    return fulldetails;
+  },
 
-//     return total;
-//   },
-//   async pay() {
-//     let order = this.pos.get_order();
-//     let lines = order.get_orderlines();
+  get_foreign_total_for_taxes(tax_id) {
+    var total = 0;
 
-//     if (order.getHasRefundLines()) {
-//       return await super.pay();
-//     }
-//     await this.pos.update_products(order);
+    if (!(tax_id instanceof Array)) {
+      tax_id = [tax_id];
+    }
 
-//     if (this.pos.config.amount_to_zero) {
-//       let product_quantity_by_product = {};
-//       let products = [];
-//       for (let line of lines) {
-//         let prd = this.pos.db.getProduct_by_id(line.getProduct().id);
+    var tax_set = {};
 
-//         if (prd.type != "product") {
-//           continue;
-//         }
+    for (var i = 0; i < tax_id.length; i++) {
+      tax_set[tax_id[i]] = true;
+    }
 
-//         if (product_quantity_by_product[prd.id] == undefined) {
-//           product_quantity_by_product[prd.id] = 0;
-//         }
-//         product_quantity_by_product[prd.id] =
-//           product_quantity_by_product[prd.id] + line.quantity;
-//         if (
-//           product_quantity_by_product[prd.id] > prd.qty_available ||
-//           prd.qty_available <= 0
-//         ) {
-//           products.push(prd.display_name);
-//         }
-//       }
+    this.orderlines.forEach((line) => {
+      var taxes_ids = this.tax_ids || line.getProduct().taxes_id;
+      for (var i = 0; i < taxes_ids.length; i++) {
+        if (tax_set[taxes_ids[i]]) {
+          total += line.get_foreign_price_with_tax();
+          return;
+        }
+      }
+    });
 
-//       if (products.length > 0)
-//         return this.env.services.popup.add(ErrorPopup, {
-//           title: _t("Validate Product in Warehouse"),
-//           body: _t(
-//             "The product %s You do not have enough stock in the warehouse",
-//             products,
-//           ),
-//         });
-//     }
-//     return await super.pay(...arguments);
-//   },
-//   get_foreign_rounding_applied() {
-//     if (this.pos.config.cash_rounding) {
-//       const only_cash = this.pos.config.only_round_cash_method;
-//       const paymentlines = this.get_paymentlines();
-//       const last_line = paymentlines
-//         ? paymentlines[paymentlines.length - 1]
-//         : false;
-//       const last_line_is_cash = last_line
-//         ? last_line.payment_method.is_cash_count == true
-//         : false;
-//       if (!only_cash || (only_cash && last_line_is_cash)) {
-//         var rounding_method = this.pos.cash_rounding[0].rounding_method;
-//         var remaining =
-//           this.get_foreign_total_with_tax() - this.get_total_paid();
-//         var sign = this.get_foreign_total_with_tax() > 0 ? 1.0 : -1.0;
-//         if (
-//           ((this.get_foreign_total_with_tax() < 0 && remaining > 0) ||
-//             (this.get_foreign_total_with_tax() > 0 && remaining < 0)) &&
-//           rounding_method !== "HALF-UP"
-//         ) {
-//           rounding_method = rounding_method === "UP" ? "DOWN" : "UP";
-//         }
+    return total;
+  },
 
-//         remaining *= sign;
-//         var total = round_pr(remaining, this.pos.cash_rounding[0].rounding);
-//         var rounding_applied = total - remaining;
+  async pay() {
+    let order = this.pos.get_order();
+    let lines = order.get_orderlines();
+    console.log('LINEAS DE ORDEN', lines)
 
-//         // because floor and ceil doesn't include decimals in calculation, we reuse the value of the half-up and adapt it.
-//         if (
-//           floatIsZero(
-//             rounding_applied,
-//             this.pos.foreign_currency.decimal_places,
-//           )
-//         ) {
-//           // https://xkcd.com/217/
-//           return 0;
-//         } else if (
-//           Math.abs(this.get_foreign_total_with_tax()) <
-//           this.pos.cash_rounding[0].rounding
-//         ) {
-//           return 0;
-//         } else if (
-//           rounding_method === "UP" &&
-//           rounding_applied < 0 &&
-//           remaining > 0
-//         ) {
-//           rounding_applied += this.pos.cash_rounding[0].rounding;
-//         } else if (
-//           rounding_method === "UP" &&
-//           rounding_applied > 0 &&
-//           remaining < 0
-//         ) {
-//           rounding_applied -= this.pos.cash_rounding[0].rounding;
-//         } else if (
-//           rounding_method === "DOWN" &&
-//           rounding_applied > 0 &&
-//           remaining > 0
-//         ) {
-//           rounding_applied -= this.pos.cash_rounding[0].rounding;
-//         } else if (
-//           rounding_method === "DOWN" &&
-//           rounding_applied < 0 &&
-//           remaining < 0
-//         ) {
-//           rounding_applied += this.pos.cash_rounding[0].rounding;
-//         } else if (
-//           rounding_method === "HALF-UP" &&
-//           rounding_applied === this.pos.cash_rounding[0].rounding / -2
-//         ) {
-//           rounding_applied += this.pos.cash_rounding[0].rounding;
-//         }
-//         return sign * rounding_applied;
-//       } else {
-//         return 0;
-//       }
-//     }
-//     return 0;
-//   },
+    if (order.getHasRefundLines()) {
+      return await super.pay();
+    }
+    await this.pos.update_products(order);
 
-//   get_foreign_total_paid() {
-//     return round_pr(
-//       this.paymentlines.reduce(function (sum, paymentLine) {
-//         if (paymentLine.is_done()) {
-//           sum += paymentLine.get_foreign_amount();
-//         }
-//         return sum;
-//       }, 0),
-//       this.pos.foreign_currency.rounding,
-//     );
-//   },
-//   get_foreign_change(paymentline) {
-//     if (!paymentline) {
-//       var change =
-//         this.get_foreign_total_paid() -
-//         this.get_foreign_total_with_tax() -
-//         this.get_rounding_applied();
-//     } else {
-//       change = -this.get_foreign_total_with_tax();
-//       var lines = this.paymentlines;
-//       for (var i = 0; i < lines.length; i++) {
-//         change += lines[i].get_foreign_amount();
-//         if (lines[i] === paymentline) {
-//           break;
-//         }
-//       }
-//     }
-//     return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
-//   },
-//   get_foreign_due(paymentline) {
-//     if (!paymentline) {
-//       var due =
-//         this.get_foreign_total_with_tax() -
-//         this.get_foreign_total_paid() +
-//         this.get_rounding_applied();
-//     } else {
-//       due = this.get_foreign_total_with_tax();
-//       var lines = this.paymentlines;
-//       for (var i = 0; i < lines.length; i++) {
-//         if (lines[i] === paymentline) {
-//           break;
-//         } else {
-//           due -= lines[i].get_foreign_amount();
-//         }
-//       }
-//     }
-//     return round_pr(due, this.pos.foreign_currency.rounding);
-//   },
+    if (this.pos.config.amount_to_zero) {
+      let product_quantity_by_product = {};
+      let products = [];
+      for (let line of lines) {
+        let prd = this.pos.db.getProduct_by_id(line.getProduct().id);
+
+        if (prd.type != "product") {
+          continue;
+        }
+
+        if (product_quantity_by_product[prd.id] == undefined) {
+          product_quantity_by_product[prd.id] = 0;
+        }
+        product_quantity_by_product[prd.id] =
+          product_quantity_by_product[prd.id] + line.quantity;
+        if (
+          product_quantity_by_product[prd.id] > prd.qty_available ||
+          prd.qty_available <= 0
+        ) {
+          products.push(prd.display_name);
+        }
+      }
+
+      if (products.length > 0)
+        return this.env.services.popup.add(ErrorPopup, {
+          title: _t("Validate Product in Warehouse"),
+          body: _t(
+            "The product %s You do not have enough stock in the warehouse",
+            products,
+          ),
+        });
+    }
+    return await super.pay(...arguments);
+  },
+
+  get_foreign_rounding_applied() {
+    if (this.config.cash_rounding) {
+      const only_cash = this.config.only_round_cash_method;
+      const paymentlines = this.get_paymentlines();
+      const last_line = paymentlines
+        ? paymentlines[paymentlines.length - 1]
+        : false;
+      const last_line_is_cash = last_line
+        ? last_line.payment_method.is_cash_count == true
+        : false;
+      if (!only_cash || (only_cash && last_line_is_cash)) {
+        var rounding_method = this.pos.cash_rounding[0].rounding_method;
+        var remaining =
+          this.get_foreign_total_with_taxes() - this.get_total_paid();
+        var sign = this.get_foreign_total_with_taxes() > 0 ? 1.0 : -1.0;
+        if (
+          ((this.get_foreign_total_with_taxes() < 0 && remaining > 0) ||
+            (this.get_foreign_total_with_taxes() > 0 && remaining < 0)) &&
+          rounding_method !== "HALF-UP"
+        ) {
+          rounding_method = rounding_method === "UP" ? "DOWN" : "UP";
+        }
+
+        remaining *= sign;
+        var total = round_pr(remaining, this.pos.cash_rounding[0].rounding);
+        var rounding_applied = total - remaining;
+
+        // because floor and ceil doesn't include decimals in calculation, we reuse the value of the half-up and adapt it.
+        if (
+          floatIsZero(
+            rounding_applied,
+            this.pos.foreign_currency.decimal_places,
+          )
+        ) {
+          // https://xkcd.com/217/
+          return 0;
+        } else if (
+          Math.abs(this.get_foreign_total_with_taxes()) <
+          this.pos.cash_rounding[0].rounding
+        ) {
+          return 0;
+        } else if (
+          rounding_method === "UP" &&
+          rounding_applied < 0 &&
+          remaining > 0
+        ) {
+          rounding_applied += this.pos.cash_rounding[0].rounding;
+        } else if (
+          rounding_method === "UP" &&
+          rounding_applied > 0 &&
+          remaining < 0
+        ) {
+          rounding_applied -= this.pos.cash_rounding[0].rounding;
+        } else if (
+          rounding_method === "DOWN" &&
+          rounding_applied > 0 &&
+          remaining > 0
+        ) {
+          rounding_applied -= this.pos.cash_rounding[0].rounding;
+        } else if (
+          rounding_method === "DOWN" &&
+          rounding_applied < 0 &&
+          remaining < 0
+        ) {
+          rounding_applied += this.pos.cash_rounding[0].rounding;
+        } else if (
+          rounding_method === "HALF-UP" &&
+          rounding_applied === this.pos.cash_rounding[0].rounding / -2
+        ) {
+          rounding_applied += this.pos.cash_rounding[0].rounding;
+        }
+        return sign * rounding_applied;
+      } else {
+        return 0;
+      }
+    }
+    return 0;
+  },
+
+  get_rounding_applied() {
+    if (typeof super.get_rounding_applied === "function") {
+      const value = super.get_rounding_applied(...arguments);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    if (typeof this.getRoundingApplied === "function") {
+      const value = this.getRoundingApplied(...arguments);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    if (typeof this.appliedRounding === "number") {
+      return Number.isFinite(this.appliedRounding) ? this.appliedRounding : 0;
+    }
+
+    return 0;
+  },
+
+  get_foreign_rounding() {
+    return (
+      this.pos?.foreign_currency?.rounding ||
+      this.get_foreign_currency()?.rounding ||
+      0.01
+    );
+  },
+
+  get_order_payment_lines() {
+    return this.get_paymentlines?.() || this.paymentlines || this.payment_ids || [];
+  },
+
+  get_payment_foreign_amount(paymentLine) {
+    if (!paymentLine) {
+      return 0;
+    }
+
+    const foreignAmount =
+      (typeof paymentLine.get_foreign_amount === "function" && paymentLine.get_foreign_amount()) ??
+      paymentLine.foreign_amount;
+
+    return Number.isFinite(foreignAmount) ? foreignAmount : 0;
+  },
+
+  get_foreign_total_paid() {
+    const paymentlines = this.get_order_payment_lines();
+    return round_pr(
+      paymentlines.reduce((sum, paymentLine) => {
+        const isDone =
+          typeof paymentLine?.is_done === "function"
+            ? paymentLine.is_done()
+            : true;
+        return isDone ? sum + this.get_payment_foreign_amount(paymentLine) : sum;
+      }, 0),
+      this.get_foreign_rounding(),
+    );
+  },
+
+  get_foreign_change(paymentline) {
+    const rounding = this.get_foreign_rounding();
+
+    if (!paymentline) {
+      const change =
+        this.get_foreign_total_paid() -
+        this.get_foreign_total_with_taxes() -
+        this.get_rounding_applied();
+      return round_pr(Math.max(0, change), rounding);
+    }
+
+    const lines = this.get_order_payment_lines();
+
+    const endIndex = lines.findIndex((line) => line === paymentline);
+    const linesToSum = endIndex >= 0 ? lines.slice(0, endIndex + 1) : lines;
+    const change = linesToSum.reduce(
+      (sum, line) => {
+        return sum + this.get_payment_foreign_amount(line);
+      },
+      - round_pr(this.change, rounding),
+    );
+
+    return round_pr(Math.max(0, change), rounding);
+  },
+
+  get_foreign_due(paymentline) {
+    const rounding = this.get_foreign_rounding();
+    const lines = this.get_order_payment_lines();
+
+    const endIndex = lines.findIndex((line) => line === paymentline);
+    const linesToSum = endIndex >= 0 ? lines.slice(0, endIndex + 1) : lines;
+    const paidAmount = linesToSum.reduce(
+      (sum, line) => sum + round_pr(line.foreign_amount, rounding),
+      0
+    );
+
+    const totalWithTaxes = this.get_foreign_total_with_taxes();
+    const due = round_pr((totalWithTaxes - paidAmount), rounding);
+    console.log("DUE", due)
+    return round_pr(due, rounding, "UP")
+  },
 
   get_qty_products() {
     let qty = 0;
-    const lines  = this.get_orderlines();
+    const lines = this.get_orderlines();
     for (let i = 0; i < lines.length; i++) {
       qty += lines[i].qty;
     }
     return qty;
   },
+
+  addPaymentline(paymentMethod) {
+    const posStore = this._get_pos_store();
+    if (paymentMethod.is_foreign_currency) {
+        const newPaymentLine = this.models["pos.payment"].create({
+              pos_order_id: this,
+              payment_method_id: paymentMethod,
+          });
+        this.selectPaymentline(newPaymentLine);
+        if (
+            (paymentMethod.payment_terminal && !this.isRefund) ||
+            paymentMethod.payment_method_type === "qr_code"
+        ) {
+            newPaymentLine.setPaymentStatus("pending");
+        }
+        return { status: true, data: newPaymentLine };
+    }else{
+      return super.addPaymentline(...arguments);
+    }
+  }
+
+
 });

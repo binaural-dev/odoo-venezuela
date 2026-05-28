@@ -6,9 +6,18 @@ import { Component, useRef } from "@odoo/owl";
 export class FullRefundButton extends Component {
   static template = "l10n_ve_pos.FullRefundButton";
 
+  /**
+   * Component setup.
+   * Initializes services and hooks used in the component.
+   */
   setup() {
     this.numberBuffer = useService("number_buffer");
   }
+  /**
+   * Click handler for the full refund button.
+   * Resets the number buffer and sets the quantity to refund for all lines in the order,
+   * if they haven't been linked to a refund order yet and have refundable quantities.
+   */
   async click() {
     this.numberBuffer.reset(); // Reset numpad widget values to avoid inconsistency
     const order = this.props.order;

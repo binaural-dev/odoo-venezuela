@@ -1,12 +1,15 @@
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.PaymentScreenButtons" t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
         <xpath expr="//button[@t-on-click='toggleIsToInvoice']" position="replace">
-            <button 
-                class="button js_invoice btn btn-light py-3 text-start rounded-0 border-bottom" 
-                t-att-class="{ 'highlight text-bg-primary': currentOrder.useReceiptConfiguration  }" 
+            <button t-att-disabled="!groupChangeCanInvoice" class="button js_invoice btn btn-secondary btn-lg d-flex justify-content-between align-items-baseline w-100 w-md-50 lh-lg"
+                t-att-class="{ 'highlight active': currentOrder.isToInvoice(), 'opacity-50': !pos.config.canInvoice }"
                 t-on-click="toggleIsToInvoice">
-                    <i class="fa fa-file-text-o me-2" /> 
-                        Invoice
+                <span>
+                    <i class="fa fa-file-text-o me-2" />
+                    <t t-if="currentOrder.isToInvoice()">Invoice</t>
+                    <t t-else="">Recibo</t> 
+                    <!-- Las traducciones no funcionan con ese else, se debe ver porque-->
+                </span>
             </button>
         </xpath>
     </t>

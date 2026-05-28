@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.PaymentScreenDue" t-inherit="point_of_sale.PaymentScreenDue" t-inherit-mode="extension" owl="1">
+        <xpath expr="//section[1]" position="after">
+            <div class="payment-status-total-change text-center py-2 fs-3">
+                <span class="label pe-2">BI IGTF</span>
+                <span class="amount" t-esc="biAmount"/>
+                <br/>
+                <span class="label pe-2">IGTF:</span>
+                <span class="amount" t-esc="igtfAmount"/>
+                <br/>
+                <span class="label pe-2">Foreign IGTF:</span>
+                <span class="amount" t-esc="igtfForeignAmount"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

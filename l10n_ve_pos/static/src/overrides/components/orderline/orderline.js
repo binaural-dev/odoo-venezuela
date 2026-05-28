@@ -1,19 +1,23 @@
-
+import { patch } from "@web/core/utils/patch";
+import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
+import { onWillUpdateProps, onWillStart, useState } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 patch(Orderline.prototype, {
-  //DEPRECATED
-  // init_from_JSON(json) {
-  //   super.init_from_JSON(...arguments);
-  //   this.tax_ids =
-  //     json.tax_ids && json.tax_ids.length !== 0
-  //       ? json.tax_ids[0][2]
-  //       : undefined;
-  //   this.foreign_price = json.foreign_price || 0;
-  //   this.foreign_currency_rate = json.foreign_currency_rate || false;
-  //   this.foreign_currency_rate_display = false;
-  // },
   setup() {
-    super.setup();
+    super.setup(...arguments);
+    this.orm = useService("orm");
+    this.state = useState({ foreign_price_unit_display_server: 0 });
+    this._lastReqId = 0;
+
+    onWillStart(async () => {
+      await this._syncForeignPriceUnitDisplay(this.props?.line);
+    });
+
+    onWillUpdateProps(async (nextProps) => {
+      await this._syncForeignPriceUnitDisplay(nextProps?.line);
+    });
   },
+
   get_rate() {
     if (this.order._isRefundOrder() && this.get_refund_orderline()) {
       return this.get_refund_orderline().orderline.foreign_currency_rate;
@@ -30,6 +34,7 @@ patch(Orderline.prototype, {
   get currency_rate_display() {
     return this.order.get_display_rate;
   },
+  
   get_refund_orderline() {
     for (let id of Object.keys(this.pos.toRefundLines)) {
       if (this.refunded_orderline_id == id) {
@@ -38,15 +43,8 @@ patch(Orderline.prototype, {
     }
     return false;
   },
-  // export_as_JSON() {
-  //   let res = super.export_as_JSON(...arguments);
-  //   res["foreign_currency_rate"] = this.get_rate();
-  //   res["foreign_price"] = this.get_foreign_unit_price();
-  //   res["foreign_price_subtotal"] = this.get_foreign_price_without_tax();
-  //   res["foreign_price_subtotal_incl"] = this.get_foreign_price_with_tax();
-  //   return res;
-  // },
-  set_unit_price(price) {
+
+  set set_unit_price(price) {
     this.order.assert_editable();
     var parsed_price = !isNaN(price)
       ? price
@@ -57,10 +55,7 @@ patch(Orderline.prototype, {
       parsed_price || 0,
       this.pos.dp["Foreign Product Price"],
     );
-    this.foreign_price = round_di(
-      parsed_price * this.get_rate() || 0,
-      this.pos.dp["Foreign Product Price"],
-    );
+    this.foreign_price = parsed_price * this.get_rate() || 0;
   },
 
   set_foreign_unit_price(price) {
@@ -70,19 +65,12 @@ patch(Orderline.prototype, {
       : isNaN(parseFloat(price))
         ? 0
         : oParseFloat("" + price);
-    this.foreign_price = round_di(
-      parsed_price || 0,
-      this.pos.dp["Foreign Product Price"],
-    );
+    this.foreign_price = parsed_price * this.get_rate() || 0;
   },
 
-  
-
-  get_all_prices(qty = this.getQuantity()) {
-    return super.get_all_prices(qty);
+  getPriceWithOptions() {
+    return super.getPriceWithOptions();
   },
-
-  
 
   get_foreign_price_without_tax() {
     return this.get_all_foreign_prices().priceWithoutTax;
@@ -95,6 +83,10 @@ patch(Orderline.prototype, {
   },
   get_foreign_tax() {
     return this.get_all_foreign_prices().tax;
+  },
+
+  get foreign_price_unit_display() {
+    return this.state.foreign_price_unit_display_server;
   },
 
   get_display_foreign_price() {
@@ -169,22 +161,42 @@ patch(Orderline.prototype, {
     return "(G)";
   },
 
-  getDisplayData() {
-    let res = super.getDisplayData(...arguments);
-    res["foreignUnitPrice"] = this.env.utils.formatForeignCurrency(
-      this.get_unit_display_foreign_price(),
+
+  async _syncForeignPriceUnitDisplay(line) {
+
+    const amount = Number(
+      line?.price_unit_with_taxes ??
+      line?.get_price_with_tax?.() ??
+      line?.price_unit ??
+      0
     );
-    res["foreignPrice"] =
-      this.get_discount_str() === "100"
-        ? "free"
-        : this.env.utils.formatForeignCurrency(
-          this.get_display_foreign_price(),
-        );
-    res["aliquot_type"] = this.get_aliquot_type();
-    res["foreign_currency_rate"] = this.get_rate();
-    res["foreign_currency_rate_display"] = this.env.utils.formatForeignCurrency(
-      this.currency_rate_display(),
-    );
-    return res;
+
+    if (!Number.isFinite(amount)) {
+      this.state.foreign_price_unit_display_server = 0;
+      return;
+    }
+    const reqId = ++this._lastReqId;
+    try {
+      const converted = await this.orm.call(
+        "pos.order.line",
+        "convert_amount",
+        [amount],
+        { context: { amount } }
+      );
+      console.log("Converted amount from server:", converted);
+      if (reqId === this._lastReqId) {
+        const qty = Number(line?.qty ?? line?.qty ?? 1);
+        this.state.foreign_price_unit_display_server =
+          Number(converted || 0) * (Number.isFinite(qty) ? qty : 1);
+      }
+    } catch {
+      if (reqId === this._lastReqId) {
+        const rate = Number(this.pos?.foreign_currency?.rate || 1);
+        this.state.foreign_price_unit_display_server = amount * rate;
+      }
+    }
   },
+
+
+
 });

@@ -31,6 +31,8 @@ class AccountMoveInh(models.Model):
     def report_z(self, serial, response):
         res = super().report_z(serial, response)
         data = response.get("data", False)
+        if not data:
+            return res
         serial = data.get("_registeredMachineNumber")
         pos_order_ids = self.env["pos.order"].search(
             ["&", ("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]

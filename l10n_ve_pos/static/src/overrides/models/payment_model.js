@@ -1,67 +1,207 @@
-// /** @odoo-module */
+/** @odoo-module */
 
-// import { Payment } from "@point_of_sale/app/store/models";
-// import { patch } from "@web/core/utils/patch";
-// import {
-// 	formatFloat,
-// 	roundDecimals as round_di,
-// 	roundPrecision as round_pr,
-// 	floatIsZero,
-// } from "@web/core/utils/numbers";
+import { PosPayment } from "@point_of_sale/app/models/pos_payment";
+import { patch } from "@web/core/utils/patch";
 
-// // New orders are now associated with the current table, if any.
-// patch(Payment.prototype, {
-// 	setup(_defaultObj, options) {
-// 		super.setup(...arguments);
-// 	},
-// 	init_from_JSON(json) {
-// 		super.init_from_JSON(...arguments);
-// 		this.foreign_amount = json.foreign_amount || this.foreign_amount;
-// 		this.foreign_rate = json.foreign_rate || this.foreign_rate;
-// 	},
-// 	export_as_JSON() {
-// 		let res = super.export_as_JSON(...arguments);
-// 		res["foreign_amount"] = this.foreign_amount;
-// 		res["foreign_rate"] = this.order.get_conversion_rate();
-// 		return res;
-// 	},
-// 	get_foreign_amount() {
-// 		return this.foreign_amount || 0;
-// 	},
-// 	set_amount(amount, only = false) {
-// 		let is_due = amount == this.order.get_due();
-// 		let res = super.set_amount(...arguments);
-// 		if (!only) {
-// 			if (is_due) {
-// 				this.set_foreign_amount(this.order.get_foreign_due(), true);
-// 				return res;
-// 			}
-// 			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
-// 		}
-// 		return res;
-// 	},
-// 	set_foreign_amount(amount, only = false) {
-// 		this.foreign_amount = amount;
-// 		if (!only) {
-// 			if (this.pos.currency.name == "VEF") {
-// 				if (this.payment_method.is_foreign_currency) {
-// 					this.amount=this.foreign_amount / this.pos.foreign_currency.rate
-// 					return;
-// 				}
-// 				this.amount = amount / this.order.get_conversion_rate();
-// 			}
-// 			if (this.pos.currency.name == "USD") {
-// 				if (this.payment_method.is_foreign_currency) {
-// 					this.set_amount(
-// 						this.foreign_amount * this.pos.foreign_currency.inverse_rate,
-// 					);
-// 					return;
-// 				}
-// 				this.set_amount(
-// 					this.foreign_amount * this.order.init_conversion_rate,
-// 					true,
-// 				);
-// 			}
-// 		}
-// 	},
-// });
+patch(PosPayment.prototype, {
+    setup(options) {
+        super.setup(...arguments);
+        if (!Number.isFinite(this.foreign_amount)) {
+            this.foreign_amount = 0;
+        }
+        if (!Number.isFinite(this.foreign_inverse_rate)) {
+            this.foreign_inverse_rate = 0;
+        }
+    },
+
+    init_from_JSON(json) {
+        if (typeof super.init_from_JSON === "function") {
+            super.init_from_JSON(...arguments);
+        }
+        this.foreign_amount = json.foreign_amount ?? this.foreign_amount;
+        this.foreign_rate = json.foreign_rate ?? this.foreign_rate;
+        this.foreign_inverse_rate = json.foreign_inverse_rate ?? this.foreign_inverse_rate;
+    },
+
+    export_as_JSON() {
+        this._recompute_foreign_amount();
+        let res =
+            typeof super.export_as_JSON === "function"
+                ? super.export_as_JSON(...arguments)
+                : typeof super.serializeForORM === "function"
+                  ? super.serializeForORM(...arguments)
+                  : {};
+        const amount = Number(this.amount) || 0;
+        if (!this.foreign_amount && amount > 0) {
+            const { inverseRate } = this._get_foreign_rate_values();
+            this.foreign_amount = inverseRate > 0 ? amount / inverseRate : amount;
+        }
+        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
+        res["foreign_amount"] = this.foreign_amount;
+        res["foreign_rate"] = foreignRate || 0;
+        res["foreign_inverse_rate"] = inverseRate || 0;
+        return res;
+    },
+
+    _recompute_foreign_amount() {
+        const computed = this.getForeignAmount?.() ?? this.get_foreign_amount?.();
+        this.foreign_amount = Number.isFinite(computed) ? computed : 0;
+        if (!this.foreign_amount && this.amount) {
+            const amount = Number(this.amount) || 0;
+            const { inverseRate } = this._get_foreign_rate_values();
+            this.foreign_amount = inverseRate > 0 ? amount / inverseRate : amount;
+        }
+    },
+
+    _getCurrentOrder() {
+        return (
+            this.pos_order_id ||
+            this.order ||
+            this.pos?.getOrder?.() ||
+            this.pos?.get_order?.() ||
+            null
+        );
+    },
+
+    _getOrderDue() {
+        const order = this._getCurrentOrder();
+        if (!order) {
+            return 0;
+        }
+        if (typeof order.getDue === "function") {
+            return Number(order.getDue()) || 0;
+        }
+        if (typeof order.get_due === "function") {
+            return Number(order.get_due()) || 0;
+        }
+        return Number(order.remainingDue) || 0;
+    },
+
+    _getForeignDue() {
+        const order = this._getCurrentOrder();
+        if (!order) {
+            return 0;
+        }
+        if (typeof order.getForeignDue === "function") {
+            return Number(order.getForeignDue()) || 0;
+        }
+        if (typeof order.get_foreign_due === "function") {
+            return Number(order.get_foreign_due()) || 0;
+        }
+        return 0;
+    },
+
+    _convert_order_to_foreign(orderAmount = 0) {
+        const amount = Number(orderAmount) || 0;
+        const { inverseRate } = this._get_foreign_rate_values();
+
+        if (inverseRate > 0) {
+            return amount / inverseRate;
+        }
+        return amount;
+    },
+
+    _convert_foreign_to_order(foreignAmount = 0) {
+        const amount = Number(foreignAmount) || 0;
+        console.log("amount", amount);
+        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
+        return amount;
+    },
+
+    _get_foreign_rate_values() {
+        const currentOrder = this._getCurrentOrder();
+
+        const config = currentOrder?.config || this.pos?.config || this.env?.pos?.config || {};
+
+        let foreignRate =
+            Number(currentOrder?.get_display_rate?.()) ||
+            Number(config.foreign_rate) ||
+            Number(this.pos?.config?.foreign_rate) ||
+            Number(this.foreign_rate) ||
+            Number(currentOrder?.get_conversion_rate?.()) ||
+            0;
+
+        let inverseRate =
+            Number(currentOrder?.get_foreign_inverse_rate?.()) ||
+            Number(config.foreign_inverse_rate) ||
+            Number(this.foreign_inverse_rate) ||
+            Number(this.pos?.foreign_currency?.inverse_rate) ||
+            0;
+
+        if ((!inverseRate || inverseRate <= 0) && foreignRate > 0) {
+            inverseRate = 1 / foreignRate;
+        }
+        if ((!foreignRate || foreignRate <= 0) && inverseRate > 0) {
+            foreignRate = 1 / inverseRate;
+        }
+
+        return { foreignRate: foreignRate || 0, inverseRate: inverseRate || 0 };
+    },
+
+    getForeignAmount() {
+        const { inverseRate } = this._get_foreign_rate_values();
+        const amount = (this.amount || 0) * (inverseRate > 0 ? inverseRate : 1);
+
+        return amount;
+    },
+
+    serializeForORM(opts = {}) {
+        this._recompute_foreign_amount();
+        const data = super.serializeForORM(opts);
+        const amount = Number(this.amount) || 0;
+        if (!this.foreign_amount && amount > 0) {
+            const { inverseRate } = this._get_foreign_rate_values();
+            this.foreign_amount = inverseRate > 0 ? amount / inverseRate : amount;
+        }
+        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
+        data.foreign_amount = this.foreign_amount;
+        data.foreign_rate = foreignRate || 0;
+        data.foreign_inverse_rate = inverseRate || 0;
+        return data;
+    },
+
+    get_foreign_amount() {
+        return this.getForeignAmount();
+    },
+
+    setAmount(amount, only = false) {
+        const numericAmount = Number(amount) || 0;
+        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
+        // Si el método es foráneo, lo tipeado es en dólares y se convierte a bolívares
+        if (this.payment_method_id && this.payment_method_id.is_foreign_currency) {
+                // El usuario ingresa dólares, convertimos a bolívares
+                this.setForeignAmount(numericAmount, true); // estos serán los dólares
+                return super.setAmount(numericAmount * foreignRate, true);
+            }
+        // Flujo estándar
+        const isDue = Math.abs(numericAmount - this._getOrderDue()) <= 0.000001;
+        let res = super.setAmount(...arguments);
+        if (!only) {
+            if (isDue) {
+                const foreignDue = this._getForeignDue();
+                if (foreignDue > 0 || !numericAmount) {
+                    this.setForeignAmount(foreignDue, true);
+                } else {
+                    this._recompute_foreign_amount();
+                }
+                return res;
+            }
+            this._recompute_foreign_amount();
+        }
+        return res;
+    },
+
+    setForeignAmount(amount, only = false) {
+        const numericAmount = Number(amount);
+        this.foreign_amount = Number.isFinite(numericAmount) ? numericAmount : 0;
+        
+        if (!only) {
+            const orderAmount = this._convert_foreign_to_order(this.foreign_amount);
+            super.setAmount(orderAmount, true);
+        }
+    },
+
+    set_foreign_amount(amount, only = false) {
+        return this.setForeignAmount(amount, only);
+    },
+});

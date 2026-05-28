@@ -1,21 +1,16 @@
 import traceback
-from collections import namedtuple
 
 from odoo import _
-from odoo.addons.hw_drivers.event_manager import event_manager
-from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
+from odoo.addons.iot_drivers.event_manager import event_manager
+from .serial_base_compat import (
     SerialDriver,
+    SerialProtocol,
     serial_connection,
 )
 
 import logging
 
 _logger = logging.getLogger(__name__)
-
-SerialProtocol = namedtuple(
-    "SerialProtocol",
-    "name baudrate bytesize stopbits parity timeout writeTimeout commandDelay measureDelay",
-)
 
 
 class SerialBaseFiscalDriver(SerialDriver):
@@ -43,8 +38,8 @@ class SerialBaseFiscalDriver(SerialDriver):
         self._push_status()
 
     def test(self, data):
-        self._test()
-        self.data["value"] = {"valid": True, "message": "TEST"}
+        result = self._test()
+        self.data["value"] = result
         event_manager.device_changed(self)
 
     def serial_machine(self, data):
@@ -91,6 +86,7 @@ class SerialBaseFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return self.data["value"]
 
+        # TODO: Verificar si este comportamiento cambió en la versión 19
         self.data["value"] = self._print_invoice(invoice, "out_refund")
         event_manager.device_changed(self)
         return self.data["value"]
@@ -253,7 +249,7 @@ class SerialBaseFiscalDriver(SerialDriver):
     # --------------------------
 
     def _test(self):
-        return {"valid": False, "message": "No se ha implementado"}
+        return {"valid": True, "message": "Prueba no implementada para este dispositivo"}
 
     def _print_invoice(self, invoice, move_type):
         return {"valid": False, "message": "No se ha implementado"}
