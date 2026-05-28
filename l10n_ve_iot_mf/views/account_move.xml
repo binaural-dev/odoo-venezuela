@@ -7,10 +7,13 @@
         <field name="arch" type="xml">
             <button name="button_cancel" position="after">
                 <field name='print_type' invisible="1"/>
-                <widget name="iot-mf-button" action="print_out_invoice" invisible="0"/>                
+                <widget name="iot-mf-button" action="print_out_invoice" invisible="0"/>      
+                 <field name='mf_invoice_number' invisible="1" readonly="1"/>
+                    <field name='mf_serial' invisible="1" readonly="1"/>
+                    <field name="mf_reportz" invisible="1" readonly="1"/>          
                 <widget name="iot-mf-button" action="reprint_document" invisible="mf_invoice_number == False or print_type != 'fiscal' or correlative != False"/>
                 <widget name="iot-mf-button" action="print_out_refund" invisible="0"/>
-                <widget name="iot-mf-button" action="print_debit_note" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != True or print_type != 'fiscal' or correlative != False"/>
+                <widget name="iot-mf-button" action="print_debit_note" invisible="0"/>
 
             </button>
             <xpath expr="//field[@name='ref']" position="after">

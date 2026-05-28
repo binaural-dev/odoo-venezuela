@@ -1,3 +1,8 @@
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
 class S6PrinterData(object):
     _bit_Facturacion = ""
     _bit_Slip = ""
@@ -7,12 +12,18 @@ class S6PrinterData(object):
         if trama != None:
             if len(trama) > 0:
                 _arrayParameter = str(trama[1:-1]).split(chr(0x0A))
+                if _arrayParameter:
+                    _arrayParameter[-1] = _arrayParameter[-1].rstrip(chr(0x03))
                 if len(_arrayParameter) > 1:
                     try:
                         self._setBit_Facturacion(str(_arrayParameter[0][2:]))
                         self._setBit_Slip(_arrayParameter[1])
                         self._setBit_Validacion(_arrayParameter[2])
-                    except (ValueError):
+                    except (ValueError, IndexError) as e:
+                        _logger.warning(
+                            "S6PrinterData parse error: %s | tramalen=%s params=%s",
+                            e, len(trama), len(_arrayParameter) if '_arrayParameter' in dir() else '?'
+                        )
                         return
 
     def Bit_Facturacion(self):

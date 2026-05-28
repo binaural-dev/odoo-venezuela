@@ -1,4 +1,7 @@
+import logging
 from odoo.addons.iot_drivers.iot_handlers.sdk.Util import Util
+
+_logger = logging.getLogger(__name__)
 
 
 class S4PrinterData(object):
@@ -8,6 +11,8 @@ class S4PrinterData(object):
                 self._allMeansOfPayment = ""
                 try:
                     _arrayParameter = str(trama[1:-1]).split(chr(0x0A))
+                    if _arrayParameter:
+                        _arrayParameter[-1] = _arrayParameter[-1].rstrip(chr(0x03))
                     if len(_arrayParameter) > 1:
                         _numberOfMeansOfPayment = len(_arrayParameter) - 1
                         _iteration = 0
@@ -26,7 +31,11 @@ class S4PrinterData(object):
                             )
                             _iteration += 1
                         self._setAllMeansOfPayment(self._allMeansOfPayment)
-                except (ValueError):
+                except (ValueError, IndexError) as e:
+                    _logger.warning(
+                        "S4PrinterData parse error: %s | tramalen=%s params=%s",
+                        e, len(trama), len(_arrayParameter) if '_arrayParameter' in dir() else '?'
+                    )
                     return
 
     def AllMeansOfPayment(self):

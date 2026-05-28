@@ -1,4 +1,7 @@
+import logging
 from odoo.addons.iot_drivers.iot_handlers.sdk.Util import Util
+
+_logger = logging.getLogger(__name__)
 
 
 class S3PrinterData(object):
@@ -17,6 +20,8 @@ class S3PrinterData(object):
             if len(trama) > 0:
                 try:
                     _arrayParameter = str(trama[1:-1]).split(chr(0x0A))  # (0X0A))
+                    if _arrayParameter:
+                        _arrayParameter[-1] = _arrayParameter[-1].rstrip(chr(0x03))
                     if len(_arrayParameter) > 1:
 
                         self._setTypeTax1(_arrayParameter[0][2])
@@ -39,7 +44,11 @@ class S3PrinterData(object):
                             _index = _index + 2
                             _iteration += 1
                         self._setSystemFlags(self._systemFlags)
-                except (ValueError):
+                except (ValueError, IndexError) as e:
+                    _logger.warning(
+                        "S3PrinterData parse error: %s | tramalen=%s params=%s",
+                        e, len(trama), len(_arrayParameter) if '_arrayParameter' in dir() else '?'
+                    )
                     return
 
     def TypeTax1(self):

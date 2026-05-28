@@ -16,10 +16,10 @@ patch(TicketScreen, {
 });
 
 patch(PosStore.prototype, {
-  // setup(...args) {
-  //   // super.setup(...args);               // ← reenvía los args, evita el undefined
-  //   // this.dialog = this.env.services.dialog; // ← no uses useService aquí
-  // },
+  setup(...args) {
+    super.setup(...args);               // ← reenvía los args, evita el undefined
+    this.dialog = this.env.services.dialog; // ← no uses useService aquí
+  },
   open_cashbox() {
     if (this.useFiscalMachine() && this.config.has_cashbox) {
       const fdm = this.useFiscalMachine();
@@ -275,14 +275,12 @@ patch(PosStore.prototype, {
   },
 
   async push_single_order(order, opts) {
-    console.log("Pushing order to fiscal machine...")
-    // if (this.useFiscalMachine()) {
-    //   const response = await this.pushToMF(order)
-    //   if (response.printer_connection === false) {
-    //     return
-    //   }
-
-    // }
+    if (this.useFiscalMachine() && !order.mf_invoice_number) {
+      const response = await this.pushToMF(order)
+      if (response.printer_connection === false) {
+        return
+      }
+    }
     return await super.push_single_order.apply(this, [order, opts]);
   },
 
