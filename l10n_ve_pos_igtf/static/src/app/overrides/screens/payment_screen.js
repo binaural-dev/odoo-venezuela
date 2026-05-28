@@ -16,7 +16,6 @@ patch(PaymentScreen.prototype, {
       total_paid_amount: 0,
     })
     const originalOrder = this.pos.selectedOrderData;
-    console.log(originalOrder)
     if (this.currentOrder?.is_refund && originalOrder) {
       await this.get_order_from_back(originalOrder.id);
     }

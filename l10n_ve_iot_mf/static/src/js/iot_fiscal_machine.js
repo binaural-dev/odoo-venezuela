@@ -493,7 +493,7 @@ export class IoTFiscalMachineComponent extends Component {
           [move_id, deviceResponse],
         );
         
-        window.location.reload()
+        // window.location.reload()
       }
 
     }catch(error){

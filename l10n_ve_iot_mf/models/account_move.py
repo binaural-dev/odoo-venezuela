@@ -310,7 +310,7 @@ class AccountMoveInh(models.Model):
                 "invoice_affected": {
                     "number": data.reversed_entry_id.mf_invoice_number,
                     "serial_machine": data.reversed_entry_id.mf_serial,
-                    "date": data.reversed_entry_id.invoice_date_display.strftime("%d/%m/%Y"),
+                    "date": data.reversed_entry_id.invoice_date_display.strftime("%d/%m/%Y") if data.reversed_entry_id.invoice_date_display else "",
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,
@@ -322,7 +322,10 @@ class AccountMoveInh(models.Model):
             raise ValidationError(str(ae))
         
     def print_out_refund(self, values):
-        self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
+        self.write({
+            "mf_invoice_number": values.get("sequence", ""),
+            "mf_serial": values.get("serial_machine", "")
+        })
 
     def _get_reconciled_info_JSON_values(self):
         res = super()._get_reconciled_info_JSON_values()

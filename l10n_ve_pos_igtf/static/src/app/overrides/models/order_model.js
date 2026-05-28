@@ -411,6 +411,7 @@ patch(PosOrder.prototype, {
               this.total_with_tax = data.amount_total;
           }
       }
+      this.update_igtf();
       return true;
   },
 
