@@ -144,7 +144,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "correlative": "",
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
-            "total_sales_iva": amounts.get("amount_taxed", 0),
+            "total_sales_iva": amounts.get("amount_taxed", 0) - amounts.get("tax_base_exempt_aliquot", 0),
+            "total_sales": amounts.get("amount_taxed", 0),
             "total_sales_not_iva": amounts.get("tax_base_exempt_aliquot", 0),
             "amount_reduced_aliquot": amounts.get("amount_reduced_aliquot", 0),
             "amount_general_aliquot": amounts.get("amount_general_aliquot", 0),
@@ -278,4 +279,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                             range_last = move.mf_invoice_number
                             continue
                         range_last = move.mf_invoice_number
+        
+        sale_book_lines = sorted(
+                    sale_book_lines,
+                    key=lambda row: datetime.strptime(row['document_date'], "%d/%m/%Y")
+                )                       
         return sale_book_lines
