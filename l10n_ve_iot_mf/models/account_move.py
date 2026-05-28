@@ -294,7 +294,6 @@ class AccountMoveInh(models.Model):
                         else self._normalize_product_name(line.name),
                     }
                 )
-
             _data = {
                 "flag_21": data.iot_mf.flag_21,
                 "identifier": data.iot_mf.identifier,
@@ -308,9 +307,9 @@ class AccountMoveInh(models.Model):
                     "phone": data.partner_id.phone or False,
                 },
                 "invoice_affected": {
-                    "number": data.reversed_entry_id.mf_invoice_number,
-                    "serial_machine": data.reversed_entry_id.mf_serial,
-                    "date": data.reversed_entry_id.invoice_date_display.strftime("%d/%m/%Y") if data.reversed_entry_id.invoice_date_display else "",
+                    "number": data.mf_invoice_number,
+                    "serial_machine": data.mf_serial,
+                    "date": data.invoice_date_display.strftime("%d/%m/%Y") if data.invoice_date_display else "",
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,

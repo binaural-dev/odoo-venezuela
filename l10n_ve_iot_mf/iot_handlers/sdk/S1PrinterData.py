@@ -1,5 +1,8 @@
 import datetime
+import logging
 from odoo.addons.iot_drivers.iot_handlers.sdk.Util import Util
+
+_logger = logging.getLogger(__name__)
 
 
 class S1PrinterData(object):
@@ -23,9 +26,10 @@ class S1PrinterData(object):
 
     def __init__(self, trama):
         if trama != None:
-            if len(trama) > 100:  # and len(trama)<116): #116
+            if len(trama) > 10:
                 try:
                     _arrayParameter = str(trama[1:-1]).split(chr(0x0A))
+                    _arrayParameter[-1] = _arrayParameter[-1].rstrip(chr(0x03))
                     if len(_arrayParameter) <= 15:
                         self._setCashierNumber(_arrayParameter[0][2:])
                         self._setTotalDailySales(Util().DoValueDouble(_arrayParameter[1]))
@@ -82,7 +86,11 @@ class S1PrinterData(object):
 
                         self._setCurrentPrinterTime(_printerTime)
                         self._setCurrentPrinterDate(_printerDate)
-                except (ValueError):
+                except (ValueError, IndexError) as e:
+                    _logger.warning(
+                        "S1PrinterData parse error: %s | tramalen=%s params=%s",
+                        e, len(trama), len(_arrayParameter) if '_arrayParameter' in dir() else '?'
+                    )
                     return
 
     def CashierNumber(self):

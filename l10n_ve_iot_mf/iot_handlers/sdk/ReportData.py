@@ -1,5 +1,8 @@
 import datetime
+import logging
 from odoo.addons.iot_drivers.iot_handlers.sdk.Util import Util
+
+_logger = logging.getLogger(__name__)
 
 
 class ReportData(object):
@@ -51,6 +54,8 @@ class ReportData(object):
             if len(trama) > 100:
                 try:
                     _arrayParameter = str(trama[1:-1]).split(chr(0x0A))  # (0X0A))
+                    if _arrayParameter:
+                        _arrayParameter[-1] = _arrayParameter[-1].rstrip(chr(0x03))
                     if len(_arrayParameter) == 31:
 
                         self._numberOfLastZReport = int(_arrayParameter[0])
@@ -239,6 +244,10 @@ class ReportData(object):
                         self._igtfRateTaxDebit = Util().DoValueDouble(_arrayParameter[36])
                         self._igtfRateDevolution = Util().DoValueDouble(_arrayParameter[37])
                         self._igtfRateTaxDevolution = Util().DoValueDouble(_arrayParameter[38])
-                except (ValueError):
+                except (ValueError, IndexError) as e:
+                    _logger.warning(
+                        "ReportData parse error: %s | tramalen=%s params=%s",
+                        e, len(trama), len(_arrayParameter) if '_arrayParameter' in dir() else '?'
+                    )
                     return
 

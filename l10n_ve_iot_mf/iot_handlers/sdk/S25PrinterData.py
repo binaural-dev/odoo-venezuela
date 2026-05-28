@@ -1,5 +1,8 @@
 import datetime
+import logging
 from odoo.addons.iot_drivers.iot_handlers.sdk.Util import Util
+
+_logger = logging.getLogger(__name__)
 
 
 class S25PrinterData(object):
@@ -17,6 +20,8 @@ class S25PrinterData(object):
             if len(trama) > 69:
                 try:
                     _arrayParameter = str(trama[1:-1]).split(chr(0x0A))
+                    if _arrayParameter:
+                        _arrayParameter[-1] = _arrayParameter[-1].rstrip(chr(0x03))
                     if len(_arrayParameter) > 1:
                         self._setSubTotalBases(Util().DoValueDouble(_arrayParameter[0][3:]))
                         self._setSubTotalTax(Util().DoValueDouble(_arrayParameter[1][1:]))
@@ -25,7 +30,11 @@ class S25PrinterData(object):
                         self._setAmountPayable(Util().DoValueDouble(_arrayParameter[4][1:]))
                         self._setNumberPaymentsMade(int(_arrayParameter[5]))
                         self._setTypeDocument(int(_arrayParameter[6]))
-                except (ValueError):
+                except (ValueError, IndexError) as e:
+                    _logger.warning(
+                        "S25PrinterData parse error: %s | tramalen=%s params=%s",
+                        e, len(trama), len(_arrayParameter) if '_arrayParameter' in dir() else '?'
+                    )
                     return
 
     def SubTotalBases(self):

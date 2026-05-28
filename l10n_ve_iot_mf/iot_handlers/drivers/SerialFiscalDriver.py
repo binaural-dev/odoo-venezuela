@@ -305,6 +305,9 @@ class SerialFiscalDriver(SerialDriver):
         trama = self._States("S1")
         res = S1PrinterData(trama)
         machine_number = res.__dict__.get("_registeredMachineNumber", "")
+        _logger.warning("print_out_refound de la factura %s", invoice["data"]["invoice_affected"]["serial_machine"])
+
+        _logger.warning("print_out_refound numero de la maquina recibida %s", machine_number)
         
         if invoice["data"]["invoice_affected"]["serial_machine"] != machine_number:
             raise UserError(_(
@@ -429,23 +432,6 @@ class SerialFiscalDriver(SerialDriver):
                             + item["name"][0:127].strip().replace("Ñ", "N").replace("ñ", "n")
                         )
                     )
-                # else:
-                #     cmd.append(
-                #         str(
-                #             "GC+"
-                #             + str(item["tax"])
-                #             + amount_i.zfill(max_amount_int)
-                #             + ","
-                #             + amount_d.zfill(max_amount_decimal)
-                #             + "||"
-                #             + qty_i.zfill(max_qty_int)
-                #             + ","
-                #             + qty_d.zfill(max_qty_decimal)
-                #             + "||"
-                #             + code
-                #             + item["name"][0:127].replace("Ñ", "N").replace("ñ", "n")
-                #         )
-                #     )
 
                 if item.get("discount", 0) > 0:
                     amount_i, amount_d = self.split_amount(
@@ -1066,6 +1052,7 @@ class SerialFiscalDriver(SerialDriver):
             valid = False
 
         invoice_affected = invoice["invoice_affected"].keys()
+        _logger.info("invoice_affected XDDDDDDDDDDDDDDDDDDDDDDDDdddd %s", invoice_affected) 
         if not "number" in invoice_affected or invoice["invoice_affected"]["number"] == "":
             msg.append("No se recibio una factura afectada")
             valid = False
@@ -1349,7 +1336,7 @@ class SerialFiscalDriver(SerialDriver):
         connection = self._connection
         msj = connection.read(bytes)
         _logger.info("READ: %s", msj)
-        return msj.decode()
+        return msj.decode("latin-1")
 
     def _AssembleQueryToSend(self, linea):
         lrc = self._Lrc(linea + chr(0x03))

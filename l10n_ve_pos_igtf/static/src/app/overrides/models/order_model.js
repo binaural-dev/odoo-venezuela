@@ -408,7 +408,7 @@ patch(PosOrder.prototype, {
   set_total_from_backend(data) {
       if (data && typeof data === "object") {
           if ("amount_total" in data) {
-              this.total_with_tax = data.amount_total;
+              this.total_with_tax = -data.amount_total;
           }
       }
       this.update_igtf();

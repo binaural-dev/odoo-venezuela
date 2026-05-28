@@ -478,6 +478,7 @@ export class IoTFiscalMachineComponent extends Component {
         check_print_type,
         [move_id],
       );
+      console.log("Request para impresión fiscal", request)
 
       this.device = new DeviceController(
         this.iotLongpolling,
@@ -508,8 +509,22 @@ export class IoTFiscalMachineComponent extends Component {
 
   async device_response(action, data) {
     console.log("Enviando acción al dispositivo fiscal:", action, data);
-    const result = await this.device.action({ action, data });
-    return result;
+    return new Promise((resolve, reject) => {
+      this.iotDevice.addListener((response) => {
+        if (!response || !response.value) return;
+        this.iotDevice.removeListener();
+        resolve(response.value);
+      });
+
+      this.iotDevice.action({ action, data })
+        .then(result => {
+          onIoTActionResult(result, this.notification);
+        })
+        .catch(error => {
+          this.iotDevice.removeListener();
+          reject(error);
+        });
+    });
   }
 
   // doWarnFail(url) {
