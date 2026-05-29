@@ -521,6 +521,7 @@ class SerialFiscalDriver(SerialDriver):
         """Procesa e imprime la factura."""
         
         self.data = {"value": {"valid": False, "message": "No se ha completado"}}
+        result = self.data["value"]
         
         retorno = self._validate_invoice_parameter(invoice)
         
@@ -541,7 +542,7 @@ class SerialFiscalDriver(SerialDriver):
                 self.data["value"] = result
 
         event_manager.device_changed(self)
-        return result
+        return self.data["value"]
 
     def format_invoice_line(self, item, max_amount_decimal, max_qty_decimal, max_amount_int, max_qty_int):
         """Formatea una línea de la factura."""
@@ -575,7 +576,7 @@ class SerialFiscalDriver(SerialDriver):
         """
         grouped = defaultdict(float)
         for payment in payment_lines:
-            grouped[payment["payment_method"]] += payment["amount"]
+            grouped[payment.get("payment_method")] += payment.get("amount", 0)
 
         payment_lines = []
         change_lines = []
@@ -633,7 +634,8 @@ class SerialFiscalDriver(SerialDriver):
             payment_lines, change_lines = self.group_payments(invoice_data["payment_lines"])
 
             for item in change_lines:
-                method_code = str(item["payment_method"]).strip().zfill(2)
+                method_raw = item.get("payment_method")
+                method_code = str(method_raw).strip().zfill(2) if method_raw else "--"
                 amount_str = "{:.2f}".format(item["amount"])
                 cmd.append(f"i{next_index:02d}CAMBIO M{method_code}: {amount_str}")
                 next_index += 1
@@ -655,9 +657,14 @@ class SerialFiscalDriver(SerialDriver):
                 closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
  
             for item in payment_lines:
-                method_code = str(item["payment_method"]).strip().zfill(2)
-                if item["amount"] > 0 and method_code != closing_method:
-                    
+                method_raw = item.get("payment_method")
+                if not method_raw:
+                    return {"valid": False, "message": "Método de pago fiscal no configurado en una línea de pago."}
+
+                method_code = str(method_raw).strip().zfill(2)
+                # Enviar TODOS los montos positivos recibidos (incluido el método de cierre)
+                # para que la MF pueda calcular e imprimir CAMBIO cuando corresponda.
+                if item["amount"] > 0:
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     
