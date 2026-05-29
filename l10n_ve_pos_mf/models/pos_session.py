@@ -10,7 +10,14 @@ class PosSession(models.Model):
     report_z = fields.Char()
 
     def set_report_z(self, values):
-        self.write({"report_z": int(values["data"]["_dailyClosureCounter"]) + 1})
+        data = (values or {}).get("data") or {}
+        counter = data.get("_dailyClosureCounter", False)
+        if counter:
+            report_z = int(counter) + 1
+        else:
+            last_z = self.env["account.move"]._get_z_and_add_one(self.serial_machine)
+            report_z = int(last_z) + 1
+        self.write({"report_z": report_z})
 
     def _loader_params_pos_payment_method(self):
         res = super()._loader_params_pos_payment_method()
