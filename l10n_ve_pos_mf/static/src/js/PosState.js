@@ -120,7 +120,7 @@ patch(PosStore.prototype, {
 
     if (order.orderlines.length > 0) {
 
-      let vef_base = this.currency.name === "VEF"
+      let vef_base = this.currency.name === "VEF" || this.currency.name === "VES"
 
       invoice['invoice_lines'] = order.orderlines.map((el) => {
 
@@ -289,4 +289,3 @@ patch(PosStore.prototype, {
     return await super.push_single_order.apply(this, [order, opts]);
   },
 })
-
