@@ -67,6 +67,9 @@ class ResPartner(models.Model):
 
     @api.constrains("name")
     def _check_name_immutable(self):
+        if not self.env.company.validate_partner_name_immutable:
+            return
+
         model_checks = {
             "sale.order": [("partner_id", "=", "id")],
             "purchase.order": [("partner_id", "=", "id")],
