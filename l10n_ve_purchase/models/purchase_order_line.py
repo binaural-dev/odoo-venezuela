@@ -10,7 +10,8 @@ class PurchaseOrderLine(models.Model):
         This fix ensures proper rounding to avoid precision residues (example, 0.0005) 
         that cause unbalanced move errors.
         """
-        res = super()._prepare_account_move_line(move=move)
+        "Se comenta porq esto se solucion solventando la cantidad de digitos en la tasa inversa la cual estaba limitada y en ocaciones procia la diferenc"
+        """res = super()._prepare_account_move_line(move=move)
         if 'balance' not in res:
             total_wo_tax = self.price_total
             res['balance'] = self.currency_id._convert(
@@ -20,4 +21,4 @@ class PurchaseOrderLine(models.Model):
                 self.order_id.date_order or fields.Date.today(),
                 round=True,
             )
-        return res
+        return res"""
