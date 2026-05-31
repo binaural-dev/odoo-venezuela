@@ -15,15 +15,19 @@
                             type="object"
                             class="oe_stat_button"
                             context="{'retention_type': 'islr'}"
-                            invisible="not count_islr_retention"
+                            invisible="count_islr_retention == 0"
                             decoration-success="has_emited_islr_retention"
                             decoration-warning="not has_emited_islr_retention">
                         
                         <i class="fa fa-check-circle text-success" 
+                        title="Retencion islr"
+                        aria-label="Retención islr"
                         invisible="not has_emited_islr_retention" 
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
                         
                         <i class="fa fa-exclamation-circle text-warning" 
+                        title="Retención islr w"
+                        aria-label="Retencion islr w"
                         invisible="has_emited_islr_retention" 
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
 
@@ -39,16 +43,20 @@
                             type="object"
                             class="oe_stat_button"
                             context="{'retention_type': 'iva'}"
-                            invisible="not has_emited_iva_retention"
+                            invisible="count_iva_retention == 0"
                             decoration-success="has_emited_iva_retention"
                             decoration-warning="not has_emited_iva_retention">
                         
                         <i class="fa fa-check-circle text-success" 
                         invisible="not has_emited_iva_retention" 
+                        title="Retención iva"
+                        aria-label="Retención iva"
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
                         
                         <i class="fa fa-exclamation-circle text-warning" 
                         invisible="has_emited_iva_retention" 
+                        title="Retención iva w"
+                        aria-label="Retención iva w"
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
 
                         <div class="o_stat_info">
@@ -63,15 +71,19 @@
                             type="object"
                             class="oe_stat_button"
                             context="{'retention_type': 'municipal'}"
-                            invisible="not count_municipal_retention"
+                            invisible="count_municipal_retention == 0"
                             decoration-success="has_emited_municipal_retention"
                             decoration-warning="not has_emited_municipal_retention">
                         
                         <i class="fa fa-check-circle text-success" 
+                        title="Retención municipal"
+                        aria-label="Retención municipal"
                         invisible="not has_emited_municipal_retention" 
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
                         
                         <i class="fa fa-exclamation-circle text-warning" 
+                        title="Retención municipal w"
+                        aria-label="Retención municipal w"
                         invisible="has_emited_municipal_retention" 
                         style="font-size: 1.5em; margin-left: 10px; margin-right: 5px;"/>
 
@@ -103,8 +115,7 @@
                     <field name="not_edit_municipal_retention_lines" invisible="1"/>
 
                     <field
-                        name="generate_iva_retention"
-                        invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
+                        name="generate_iva_retention" readonly="state == 'posted'"
                     />
                     <field
                         name="is_isrl_retention_available" invisible="1" force_save="1"
@@ -115,7 +126,7 @@
                     <field
                         name="is_third_party_retention"
                         string="Third Party Billing"
-                        invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
+                        invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund')" readonly="state == 'posted'"
                     />
                     <field name="iva_voucher_number" readonly="1" invisible="not iva_voucher_number" force_save="1"/>
                     <field name="islr_voucher_number" readonly="1" invisible="not islr_voucher_number" force_save="1"/>

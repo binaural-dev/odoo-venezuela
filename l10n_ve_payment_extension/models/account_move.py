@@ -319,15 +319,18 @@ class AccountMoveRetention(models.Model):
         """
         res = super().action_post()
         for move in self:
-            if (
-                not move.islr_voucher_number and move.generate_islr_retention 
-            ):
+            if (not move.islr_voucher_number and move.generate_islr_retention ):
                 move.auto_create_islr_retention()
+
+            if (move.generate_iva_retention and not move.iva_voucher_number):
+                move._validate_iva_retention()
+                retention = move._create_retention("iva")
+                if not move.company_id.create_retentions_of_suppliers_in_draft and move.move_type in ['in_invoice']:
+                    retention.action_post()
+                move.iva_voucher_number = retention.number
 
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
-            company = move.company_id or self.env.company
-            
 
             if (
                 move.retention_municipal_line_ids
@@ -337,21 +340,11 @@ class AccountMoveRetention(models.Model):
                 )
             ):
                 move._validate_municipal_retention()
-                retention = move._create_supplier_retention("municipal")
-                if not company.create_retentions_of_suppliers_in_draft:
+                retention = move._create_retention("municipal")
+                if not move.company_id.create_retentions_of_suppliers_in_draft and move.move_type in ['in_invoice']:
                     retention.action_post()
 
-            if (
-                move.generate_iva_retention
-                and not move.retention_iva_line_ids.filtered(
-                    lambda l: l.state != "cancel"
-                )
-            ):
-                move._validate_iva_retention()
-                retention = move._create_supplier_retention("iva")
-                if not company.create_retentions_of_suppliers_in_draft:
-                    retention.action_post()
-                move.iva_voucher_number = retention.number
+            
         return res
 
     @api.model
@@ -371,11 +364,20 @@ class AccountMoveRetention(models.Model):
         Validate that the company has a journal for IVA supplier retention and that the invoice has
         at least one tax, in order for the IVA retention to be created.
         """
-        self.ensure_one()
-        if not self.env.company.iva_supplier_retention_journal_id:
-            raise UserError(
-                _("The company must have a journal for IVA supplier retention.")
-            )
+
+        is_supplier = self.move_type in ['in_invoice', 'in_refund']
+
+        if is_supplier:
+            if not self.env.company.iva_supplier_retention_journal_id:
+                raise UserError(
+                    _("The company must have a journal for IVA supplier retention.")
+                )
+        else:
+            if not self.env.company.iva_customer_retention_journal_id:
+                raise UserError(
+                    _("The company must have a journal for IVA customer retention.")
+                )
+            
         if not any(
             self.invoice_line_ids.mapped(
                 "tax_ids").filtered(lambda x: x.amount > 0)
@@ -393,102 +395,104 @@ class AccountMoveRetention(models.Model):
                 _("The company must have a journal for municipal supplier retention.")
             )
 
-    @api.model
-    def _create_supplier_retention(self, type_retention):
-        """
-        Calls the method to create the payment for the retention of the type specified in the
-        type_retention parameter.
+    
+    def _get_retention_context_data(self):
 
-        Params
-        ------
-        invoice_id: account.move
-            The invoice to which the retention will be applied.
-        type_retention: tuple[str, str]
-            The type of retention and the type of invoice.
+        is_supplier = self.move_type in ['in_invoice', 'in_refund']
+        partner_type = "supplier" if is_supplier else "customer"
+        
+        if is_supplier:
+            payment_type = "inbound" if self.move_type == "in_refund" else "outbound"
+        else:
+            payment_type = "outbound" if self.move_type == "out_refund" else "inbound"
+            
+        return is_supplier, partner_type, payment_type
 
-        Returns
-        -------
-        account.retention
-            The retention created.
-        """
-        self.ensure_one()
-        if type_retention == "iva" and not self.partner_id.withholding_type_id:
-            raise UserError(_("The partner has no withholding type."))
+    def _get_retention_journals(self, is_supplier):
+        if is_supplier:
+            return {
+                "iva": self.env.company.iva_supplier_retention_journal_id,
+                "municipal": self.env.company.municipal_supplier_retention_journal_id,
+            }
+        else:
+            return {
+                "iva": self.env.company.iva_customer_retention_journal_id,
+                "municipal": self.env.company.municipal_customer_retention_journal_id,
+            }
 
-        retention = self.env["account.retention"]
-        payment_type = "outbound"
-        if self.move_type == "in_refund":
-            payment_type = "inbound"
-
-        journals = {
-            "iva": self.env.company.iva_supplier_retention_journal_id,
-            "islr": self.env.company.islr_supplier_retention_journal_id,
-            "municipal": self.env.company.municipal_supplier_retention_journal_id,
-        }
-
-        Payment = self.env["account.payment"]
-        Retention = self.env["account.retention"]
+    def _prepare_retention_payment_vals(self, type_retention, partner_type, payment_type, journals):
         payment_vals = {
             "payment_type": payment_type,
-            "partner_type": "supplier",
+            "partner_type": partner_type,
             "partner_id": self.partner_id.id,
-            "journal_id": journals[type_retention].id,
+            "journal_id": journals[type_retention].id if journals.get(type_retention) else False,
             "payment_type_retention": type_retention,
-            "payment_method_id": self.env.ref(
-                "account.account_payment_method_manual_in"
-            ).id,
+            "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
             "is_retention": True,
             "foreign_rate": self.foreign_rate,
             "foreign_inverse_rate": self.foreign_inverse_rate,
             "currency_id": self.env.user.company_id.currency_id.id,
         }
+
         if 'subsidiary' in self.env.company._fields:
-                if self.env.company.subsidiary:
-                    payment_vals['account_analytic_id'] = self.account_analytic_id.id
-                else:
-                    payment_vals['account_analytic_id'] = False
-        if type_retention == "islr":
-            payment_vals["retention_line_ids"] = self.retention_islr_line_ids.filtered(
+            if self.env.company.subsidiary:
+                payment_vals['account_analytic_id'] = self.account_analytic_id.id
+            else:
+                payment_vals['account_analytic_id'] = False
+
+        if type_retention == "municipal":
+            payment_vals["retention_line_ids"] = self.retention_municipal_line_ids.filtered(
                 lambda rl: rl.state != "cancel"
             ).ids
-        elif type_retention == "municipal":
-            payment_vals["retention_line_ids"] = (
-                self.retention_municipal_line_ids.filtered(
-                    lambda rl: rl.state != "cancel"
-                ).ids
-            )
 
-        payment = Payment.create(payment_vals)
+        return payment_vals
+
+    def _prepare_retention_vals(self, type_retention, payment):
         retention_vals = {
             "payment_ids": [Command.link(payment.id)],
             "date_accounting": self.date,
-            "date": self.date if self.move_type == "in_invoice" else False,
+            "date": self.date if self.move_type in ["in_invoice", "out_invoice"] else False,
             "type_retention": type_retention,
-            "type": "in_invoice",
+            "type": self.move_type, 
             "partner_id": self.partner_id.id,
         }
 
         if type_retention == "iva":
-            retention_lines_data = Retention.compute_retention_lines_data(
-                self, payment)
+            retention_lines_data = self.env["account.retention"].compute_retention_lines_data(self, payment)
             retention_vals["retention_line_ids"] = [
                 Command.create(line) for line in retention_lines_data
             ]
         elif type_retention == "islr":
-            retention_vals["retention_line_ids"] = (
-                self.retention_islr_line_ids.filtered(
-                    lambda rl: rl.state != "cancel"
-                ).ids
-            )
+            retention_vals["retention_line_ids"] = self.retention_islr_line_ids.filtered(
+                lambda rl: rl.state != "cancel"
+            ).ids
         else:
-            retention_vals["retention_line_ids"] = (
-                self.retention_municipal_line_ids.filtered(
-                    lambda rl: rl.state != "cancel"
-                ).ids
-            )
+            retention_vals["retention_line_ids"] = self.retention_municipal_line_ids.filtered(
+                lambda rl: rl.state != "cancel"
+            ).ids
 
-        retention = Retention.create(retention_vals)
+        return retention_vals
+    
+    @api.model
+    def _create_retention(self, type_retention):
+        
+        self.ensure_one()
+
+        is_supplier, partner_type, payment_type = self._get_retention_context_data()
+
+        if type_retention == "iva" and not self.partner_id.withholding_type_id:
+            raise UserError(_("The partner has no withholding type."))
+
+        journals = self._get_retention_journals(is_supplier)
+
+        payment_vals = self._prepare_retention_payment_vals(type_retention, partner_type, payment_type, journals)
+        payment = self.env["account.payment"].create(payment_vals)
+
+        retention_vals = self._prepare_retention_vals(type_retention, payment)
+        retention = self.env["account.retention"].create(retention_vals)
+
         payment.compute_retention_amount_from_retention_lines()
+
         return retention
 
     def action_register_payment(self):
@@ -622,7 +626,6 @@ class AccountMoveRetention(models.Model):
                         ))
             return payment_concepts
         
-        
     def auto_create_islr_retention(self):
         for rec in self:
 
@@ -680,8 +683,8 @@ class AccountMoveRetention(models.Model):
     def validate_islr(self):
         all_retention_lines = self.env['account.retention.line'].search([
             ('move_id', 'in', self.ids),
-            ('retention_id.type_retention', '=', 'islr')
-            ("retention_id.state", "!=", "cancel")
+            ('retention_id.type_retention', '=', 'islr'),
+            ('retention_id.state', "!=", "cancel")
         ])
 
         availables_retention = self.env['account.retention']

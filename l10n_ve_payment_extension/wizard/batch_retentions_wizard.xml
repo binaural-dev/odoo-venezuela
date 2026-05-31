@@ -11,7 +11,7 @@
                     <field name="has_draft_cancel_invoices" invisible="1"/>
                     <field name="has_not_allow_retentions_islr_invoices" invisible="1"/>
 
-                    <div class="alert alert-warning" role="info"
+                    <div class="alert alert-warning" role="alert"
                        invisible="not has_payed_invoices">
                         Emited withholdings for paid invoices will remain as outstanding credits.
                     </div>
