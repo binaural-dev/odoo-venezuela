@@ -65,13 +65,8 @@ class AccountPaymentRegister(models.TransientModel):
         Onchange the foreign rate and compute the foreign inverse rate
         """
         Rate = self.env["res.currency.rate"]
-        for payment in self:
-            if not bool(payment.foreign_rate):
-                return
-
-            payment.foreign_inverse_rate = Rate.compute_inverse_rate(
-                payment.foreign_rate
-            )
+        rate_values = Rate.compute_rate(self.foreign_currency_id.id, self.payment_date)
+        self.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")  
             
 
     @api.onchange("payment_date")
