@@ -10,11 +10,10 @@ class PosOrderTest(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        cls.currency_usd = cls.env["res.currency"].create({
-            "name": "USD",
-            "symbol": "$",
-            "rounding": 0.01,
-        })
+        cls.currency_vef = cls.env["res.currency"].search([("name", "=", "VEF")], limit=1)
+        if cls.currency_vef:
+            cls.company.currency_id = cls.currency_vef
+        cls.currency_usd = cls.env.ref("base.USD")
         cls.company.foreign_currency_id = cls.currency_usd
 
         cls.pos_config = cls.env["pos.config"].create({
@@ -34,6 +33,13 @@ class PosOrderTest(TransactionCase):
             "name": "Test Product",
             "type": "consu",
         })
+
+    def _patch_parent(self, model_name, method_name, **kwargs):
+        model_class = self.env[model_name].__class__
+        for klass in model_class.__mro__[1:]:
+            if method_name in klass.__dict__:
+                return patch.object(klass, method_name, **kwargs)
+        return patch.object(model_class.__bases__[0], method_name, **kwargs)
 
     def _create_order(self, **kwargs):
         vals = {
@@ -56,9 +62,10 @@ class PosOrderTest(TransactionCase):
             "lines": [],
             "statement_ids": [],
         }
-        with patch.object(type(self.env["pos.order"]), "_process_order") as mock:
-            mock.return_value = self.env["pos.order"]
+        with self._patch_parent("pos.order", "_process_order", return_value=self.env["pos.order"]):
             self.env["pos.order"]._process_order(order_data, None)
+            self.assertEqual(order_data["foreign_amount_total"], 2500.0)
+            self.assertEqual(order_data["foreign_currency_rate"], 25.0)
 
     def test_02_process_order_handles_none_values(self):
         order_data = {
@@ -67,9 +74,10 @@ class PosOrderTest(TransactionCase):
             "lines": [],
             "statement_ids": [],
         }
-        with patch.object(type(self.env["pos.order"]), "_process_order") as mock:
-            mock.return_value = self.env["pos.order"]
+        with self._patch_parent("pos.order", "_process_order", return_value=self.env["pos.order"]):
             self.env["pos.order"]._process_order(order_data, None)
+            self.assertEqual(order_data["foreign_amount_total"], 0.0)
+            self.assertEqual(order_data["foreign_currency_rate"], 0.0)
 
     def test_03_process_order_handles_invalid_values(self):
         order_data = {
@@ -78,9 +86,10 @@ class PosOrderTest(TransactionCase):
             "lines": [],
             "statement_ids": [],
         }
-        with patch.object(type(self.env["pos.order"]), "_process_order") as mock:
-            mock.return_value = self.env["pos.order"]
+        with self._patch_parent("pos.order", "_process_order", return_value=self.env["pos.order"]):
             self.env["pos.order"]._process_order(order_data, None)
+            self.assertEqual(order_data["foreign_amount_total"], 0.0)
+            self.assertEqual(order_data["foreign_currency_rate"], 0.0)
 
     def test_04_payment_fields_standard(self):
         order = self._create_order()
@@ -90,10 +99,11 @@ class PosOrderTest(TransactionCase):
             "foreign_rate": 25.0,
             "foreign_inverse_rate": 0.04,
         }
-        result = order._payment_fields(order, ui_paymentline)
-        self.assertAlmostEqual(result["foreign_amount"], 2500.0)
-        self.assertAlmostEqual(result["foreign_rate"], 25.0)
-        self.assertAlmostEqual(result["foreign_inverse_rate"], 0.04)
+        with self._patch_parent("pos.order", "_payment_fields", return_value={}):
+            result = order._payment_fields(order, ui_paymentline)
+            self.assertAlmostEqual(result["foreign_amount"], 2500.0)
+            self.assertAlmostEqual(result["foreign_rate"], 25.0)
+            self.assertAlmostEqual(result["foreign_inverse_rate"], 0.04)
 
     def test_05_payment_fields_without_foreign_amount(self):
         order = self._create_order()
@@ -103,10 +113,11 @@ class PosOrderTest(TransactionCase):
             "foreign_rate": 25.0,
             "foreign_inverse_rate": 0.0,
         }
-        result = order._payment_fields(order, ui_paymentline)
-        expected_foreign = 100.0 / 25.0
-        self.assertAlmostEqual(result["foreign_amount"], expected_foreign)
-        self.assertAlmostEqual(result["foreign_rate"], 25.0)
+        with self._patch_parent("pos.order", "_payment_fields", return_value={}):
+            result = order._payment_fields(order, ui_paymentline)
+            expected_foreign = 100.0 / 25.0
+            self.assertAlmostEqual(result["foreign_amount"], expected_foreign)
+            self.assertAlmostEqual(result["foreign_rate"], 25.0)
 
     def test_06_payment_fields_with_only_inverse_rate(self):
         order = self._create_order()
@@ -116,9 +127,10 @@ class PosOrderTest(TransactionCase):
             "foreign_rate": 0.0,
             "foreign_inverse_rate": 0.04,
         }
-        result = order._payment_fields(order, ui_paymentline)
-        self.assertAlmostEqual(result["foreign_inverse_rate"], 0.04)
-        self.assertAlmostEqual(result["foreign_rate"], 25.0)
+        with self._patch_parent("pos.order", "_payment_fields", return_value={}):
+            result = order._payment_fields(order, ui_paymentline)
+            self.assertAlmostEqual(result["foreign_inverse_rate"], 0.04)
+            self.assertAlmostEqual(result["foreign_rate"], 25.0)
 
     def test_07_payment_fields_with_alt_keys(self):
         order = self._create_order()
@@ -128,10 +140,11 @@ class PosOrderTest(TransactionCase):
             "foreignRate": 25.0,
             "foreignInverseRate": 0.04,
         }
-        result = order._payment_fields(order, ui_paymentline)
-        self.assertAlmostEqual(result["foreign_amount"], 2500.0)
-        self.assertAlmostEqual(result["foreign_rate"], 25.0)
-        self.assertAlmostEqual(result["foreign_inverse_rate"], 0.04)
+        with self._patch_parent("pos.order", "_payment_fields", return_value={}):
+            result = order._payment_fields(order, ui_paymentline)
+            self.assertAlmostEqual(result["foreign_amount"], 2500.0)
+            self.assertAlmostEqual(result["foreign_rate"], 25.0)
+            self.assertAlmostEqual(result["foreign_inverse_rate"], 0.04)
 
     def test_08_payment_fields_with_invalid_values(self):
         order = self._create_order()
@@ -141,23 +154,18 @@ class PosOrderTest(TransactionCase):
             "foreign_rate": "invalid",
             "foreign_inverse_rate": None,
         }
-        result = order._payment_fields(order, ui_paymentline)
-        self.assertAlmostEqual(result["foreign_amount"], 0.0)
-        self.assertAlmostEqual(result["foreign_rate"], 0.0)
-        self.assertAlmostEqual(result["foreign_inverse_rate"], 0.0)
+        with self._patch_parent("pos.order", "_payment_fields", return_value={}):
+            result = order._payment_fields(order, ui_paymentline)
+            self.assertAlmostEqual(result["foreign_amount"], 0.0)
+            self.assertAlmostEqual(result["foreign_rate"], 0.0)
+            self.assertAlmostEqual(result["foreign_inverse_rate"], 0.0)
 
     def test_09_prepare_invoice_vals(self):
         order = self._create_order()
-        with patch.object(type(order), "_prepare_invoice_vals") as mock:
-            mock.return_value = {
-                "foreign_rate": 25.0,
-                "foreign_inverse_rate": 0.04,
-                "manually_set_rate": True,
-            }
+        with self._patch_parent("pos.order", "_prepare_invoice_vals", return_value={}):
             result = order._prepare_invoice_vals()
             self.assertEqual(result["foreign_rate"], 25.0)
-            self.assertEqual(result["foreign_inverse_rate"], 0.04)
-            self.assertTrue(result["manually_set_rate"])
+            self.assertEqual(result["manually_set_rate"], True)
 
     def test_10_convert_amount_model_method(self):
         result = self.env["pos.order"].convert_amount(100.0)

@@ -13,3 +13,7 @@ class ResConfigSettings(models.TransientModel):
     message_in_head = fields.Boolean(
         related="pos_config_id.message_in_head", readonly=False
     )
+
+    pos_mf_debug = fields.Boolean(
+        related="pos_config_id.mf_debug", readonly=False
+    )

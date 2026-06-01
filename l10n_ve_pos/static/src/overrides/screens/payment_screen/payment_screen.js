@@ -75,7 +75,8 @@ patch(PaymentScreen.prototype, {
     }
 
     let amounts = this.currentOrder.get_paymentlines().map((el) => el.amount)
-    if (!amounts.every((el) => el != 0 && this.currentOrder.get_total_with_tax() !== 0)) {
+    let hasEmptyPayment = amounts.some((el) => el == 0);
+    if (hasEmptyPayment && this.currentOrder.get_total_with_tax() !== 0) {
       this.dialog.add(AlertDialog, {
         title: _t('Empty Paymentline'),
         body: _t(
@@ -87,15 +88,15 @@ patch(PaymentScreen.prototype, {
   },
 
   async showPaymentsOrigin() {
-    let id = []
+    let ids = []
     if (Object.values(this.pos.toRefundLines).length == 0) {
       return
     }
     Object.values(this.pos.toRefundLines).forEach(el => {
-      id = el.orderline.orderBackendId
+      ids.push(el.orderline.orderBackendId)
     })
 
-    const payments = await this.orm.call('pos.order', 'get_payments_order_refund', [id]);
+    const payments = await this.orm.call('pos.order', 'get_payments_order_refund', [ids]);
 
     let payment_list = payments.map(el => {
       return {

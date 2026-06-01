@@ -11,7 +11,10 @@ class IgtfPosPaymentTest(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        cls.currency_usd = cls.env["res.currency"].create({
+        cls.currency_vef = cls.env["res.currency"].search([("name", "=", "VEF")], limit=1)
+        if cls.currency_vef:
+            cls.company.currency_id = cls.currency_vef
+        cls.currency_usd = cls.env["res.currency"].search([("name", "=", "USD")], limit=1) or cls.env["res.currency"].create({
             "name": "USD",
             "symbol": "$",
             "rounding": 0.01,
@@ -374,3 +377,18 @@ class IgtfPosPaymentTest(TransactionCase):
                                 mock_post.return_value = True
                                 result = payment._create_payment_moves()
                                 self.assertIsNotNone(result)
+
+    def test_23_create_payment_move_returns_move(self):
+        journal = self.env["account.journal"].create({
+            "name": "Bank Journal PM",
+            "code": "BNKJPM",
+            "type": "bank",
+            "company_id": self.company.id,
+        })
+        result = self.pos_payment._create_payment_move(
+            self.pos_payment, self.order, self.payment_method, journal
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result.journal_id, journal)
+        self.assertIn("foreign_rate", result)
+        self.assertIn("manually_set_rate", result)

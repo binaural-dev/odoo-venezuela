@@ -1044,25 +1044,24 @@ class SerialFiscalDriver(SerialDriver):
 
         partner = invoice["partner_id"].keys()
 
-        if not "vat" in partner or invoice["partner_id"]["vat"] == "":
+        if not "vat" in partner or not invoice["partner_id"].get("vat"):
             msg.append("El cliente no tiene cedula")
             valid = False
-        if not "name" in partner or invoice["partner_id"]["name"] == "":
+        if not "name" in partner or not invoice["partner_id"].get("name"):
             msg.append("El cliente no tiene nombre")
             valid = False
 
         invoice_affected = invoice["invoice_affected"].keys()
-        _logger.info("invoice_affected XDDDDDDDDDDDDDDDDDDDDDDDDdddd %s", invoice_affected) 
-        if not "number" in invoice_affected or invoice["invoice_affected"]["number"] == "":
+        if not "number" in invoice_affected or not invoice["invoice_affected"].get("number"):
             msg.append("No se recibio una factura afectada")
             valid = False
         if (
             not "serial_machine" in invoice_affected
-            or invoice["invoice_affected"]["serial_machine"] == ""
+            or not invoice["invoice_affected"].get("serial_machine")
         ):
             msg.append("No se recibio el serial de la maquina fiscal")
             valid = False
-        if not "date" in invoice_affected or invoice["invoice_affected"]["date"] == "":
+        if not "date" in invoice_affected or not invoice["invoice_affected"].get("date"):
             msg.append("No se recibio la fecha de la factura afectada")
             valid = False
 
@@ -1079,7 +1078,7 @@ class SerialFiscalDriver(SerialDriver):
             if not "quantity" in line_keys:
                 msg.append("No se encontro la cantidad del producto")
                 valid = False
-            if not "tax" in line_keys or int(line["tax"]) < 0 and int(line["tax"]) > 4:
+            if not "tax" in line_keys or int(line["tax"]) < 0 and int(line["tax"]) > 4:                
                 msg.append("El impuesto no es valido")
                 valid = False
             if not "name" in line_keys:
@@ -1099,7 +1098,7 @@ class SerialFiscalDriver(SerialDriver):
             if (
                 not "payment_method" in line_keys
                 or int(line["payment_method"]) < 1
-                and int(line["payment_method"]) > 24
+                or int(line["payment_method"]) > 24
             ):
                 msg.append("El metodo de pago no es aceptado o no se recibio")
                 valid = False
@@ -1125,10 +1124,10 @@ class SerialFiscalDriver(SerialDriver):
 
         partner = invoice["partner_id"].keys()
 
-        if not "vat" in partner or invoice["partner_id"]["vat"] == "":
+        if not "vat" in partner or not invoice["partner_id"].get("vat"):
             msg.append("El cliente no tiene cedula")
             valid = False
-        if not "name" in partner or invoice["partner_id"]["name"] == "":
+        if not "name" in partner or not invoice["partner_id"].get("name"):
             msg.append("El cliente no tiene nombre")
             valid = False
 
@@ -1146,6 +1145,7 @@ class SerialFiscalDriver(SerialDriver):
                 msg.append("No se encontro la cantidad del producto")
                 valid = False
             if not "tax" in line_keys or int(line["tax"]) < 0 and int(line["tax"]) > 4:
+                
                 msg.append("El impuesto no es valido")
                 valid = False
             if not "name" in line_keys:
@@ -1165,7 +1165,7 @@ class SerialFiscalDriver(SerialDriver):
             if (
                 not "payment_method" in line_keys
                 or int(line["payment_method"]) < 1
-                and int(line["payment_method"]) > 24
+                or int(line["payment_method"]) > 24
             ):
                 msg.append("El metodo de pago no es aceptado o no se recibio")
                 valid = False

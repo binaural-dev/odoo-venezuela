@@ -6,7 +6,6 @@ patch(PosOrderAccounting.prototype, {
 
     setup(){
         super.setup();
-        console.log("PosOrderAccounting patched setup");
     },
 
     _toNumber(value, fallback = 0) {
@@ -23,7 +22,6 @@ patch(PosOrderAccounting.prototype, {
                 typeof order?._get_payment_method_data === "function"
                     ? order._get_payment_method_data(line)
                     : line?.payment_method_id;
-            console.log(Boolean(method));
             return Boolean(method?.apply_igtf);
         });
     },
@@ -76,12 +74,15 @@ patch(PosOrderAccounting.prototype, {
     },
 
     get totalDue() {
-        return super.totalDue;
+        const value = super.totalDue;
+        console.log("totalDue recalculado", value);
+        return value;
     },
 
     get amountPaid() {
         return this._toNumber(super.amountPaid, 0);
     },
+
 
     get remainingDue() {
         return this._toNumber(super.remainingDue, 0);

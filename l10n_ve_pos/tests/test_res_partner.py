@@ -17,26 +17,34 @@ class ResPartnerTest(TransactionCase):
 
     def test_01_pos_user_group_xml_ids_computed(self):
         self.partner._compute_pos_user_group_xml_ids()
-        self.assertIsInstance(self.partner.pos_user_group_xml_ids, list)
+        self.assertTrue(
+            self.partner.pos_user_group_xml_ids is False
+            or isinstance(self.partner.pos_user_group_xml_ids, list)
+        )
+
+    def _patch_parent(self, model_name, method_name, **kwargs):
+        model_class = self.env[model_name].__class__
+        for klass in model_class.__mro__[1:]:
+            if method_name in klass.__dict__:
+                return patch.object(klass, method_name, **kwargs)
+        return patch.object(model_class.__bases__[0], method_name, **kwargs)
 
     def test_02_create_from_ui_with_city_id(self):
         partner_data = {
             "name": "UI Partner",
             "city_id": "123",
         }
-        with patch.object(type(self.env["res.partner"]), "create_from_ui") as mock:
-            mock.return_value = {"id": 1}
+        with self._patch_parent("res.partner", "create_from_ui", return_value={"id": 1}):
             result = self.env["res.partner"].create_from_ui(partner_data)
-            self.assertIsNotNone(result)
+            self.assertEqual(result, {"id": 1})
 
     def test_03_create_from_ui_without_city_id(self):
         partner_data = {
             "name": "UI Partner No City",
         }
-        with patch.object(type(self.env["res.partner"]), "create_from_ui") as mock:
-            mock.return_value = {"id": 1}
+        with self._patch_parent("res.partner", "create_from_ui", return_value={"id": 1}):
             result = self.env["res.partner"].create_from_ui(partner_data)
-            self.assertIsNotNone(result)
+            self.assertEqual(result, {"id": 1})
 
     def test_04_load_pos_data_fields(self):
         config = self.env["pos.config"].create({

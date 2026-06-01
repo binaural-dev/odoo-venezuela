@@ -11,11 +11,10 @@ class PosConfigTest(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        cls.currency_usd = cls.env["res.currency"].create({
-            "name": "USD",
-            "symbol": "$",
-            "rounding": 0.01,
-        })
+        cls.currency_vef = cls.env["res.currency"].search([("name", "=", "VEF")], limit=1)
+        if cls.currency_vef:
+            cls.company.currency_id = cls.currency_vef
+        cls.currency_usd = cls.env.ref("base.USD")
         cls.company.foreign_currency_id = cls.currency_usd
 
         cls.pos_config = cls.env["pos.config"].create({
@@ -23,6 +22,13 @@ class PosConfigTest(TransactionCase):
             "company_id": cls.company.id,
             "foreign_currency_id": cls.currency_usd.id,
         })
+
+    def _patch_parent(self, model_name, method_name, **kwargs):
+        model_class = self.env[model_name].__class__
+        for klass in model_class.__mro__[1:]:
+            if method_name in klass.__dict__:
+                return patch.object(klass, method_name, **kwargs)
+        return patch.object(model_class.__bases__[0], method_name, **kwargs)
 
     def test_01_foreign_currency_id_related(self):
         self.assertEqual(
@@ -35,8 +41,8 @@ class PosConfigTest(TransactionCase):
         with patch.object(rate_model.__class__, "compute_rate") as mock_compute:
             mock_compute.return_value = {"foreign_rate": 40.0, "foreign_inverse_rate": 0.025}
             self.pos_config._compute_rate()
-            self.pos_config.foreign_rate = 40.0
-            self.pos_config.foreign_inverse_rate = 0.025
+            self.assertAlmostEqual(self.pos_config.foreign_rate, 40.0)
+            self.assertAlmostEqual(self.pos_config.foreign_inverse_rate, 0.025)
 
     def test_03_related_fields(self):
         self.assertIsInstance(self.pos_config.pos_show_free_qty, bool)
@@ -55,8 +61,7 @@ class PosConfigTest(TransactionCase):
         self.pos_config.current_session_id = session
         session.foreign_currency_id = self.currency_usd
 
-        with patch.object(type(self.pos_config), "_action_to_open_ui") as mock:
-            mock.return_value = {}
+        with self._patch_parent("pos.config", "_action_to_open_ui", return_value={}):
             result = self.pos_config._action_to_open_ui()
             self.assertEqual(result, {})
 
@@ -66,7 +71,8 @@ class PosConfigTest(TransactionCase):
             "user_id": self.env.uid,
         })
         self.pos_config.current_session_id = session
-        session.foreign_currency_id = False
+        self.pos_config.current_session_id.foreign_currency_id = False
 
-        with self.assertRaises(ValidationError):
-            self.pos_config._action_to_open_ui()
+        with self._patch_parent("pos.config", "_action_to_open_ui", return_value={}):
+            with self.assertRaises(ValidationError):
+                self.pos_config._action_to_open_ui()

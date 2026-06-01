@@ -1,14 +1,13 @@
 <templates id="template" xml:space="preserve">
-    <t t-name="ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
-        <xpath expr="//Dialog[1]/t[2]" position="inside">
-            <button 
-                class="button btn btn-lg btn-secondary" 
-                t-on-click="generate_report_z" 
-                title="Generate report Z to close Report Z">Report Z</button>
-            <button 
-                class="button btn btn-lg btn-secondary" 
-                t-on-click="generate_report_x" 
-                title="Generate report X">Report X</button>
+    <t t-name="l10n_ve_pos_mf.ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
+        <!-- Insert next to the cash details button (stable anchor in v19 templates). -->
+        <xpath expr="//div[@class='w-100 d-flex flex-wrap justify-content-between gap-2'][1]" position="after">
+            <div class="button icon ClosePosPopup btn btn-secondary" t-on-click="generate_report_z" title="Generate report Z">
+                <i class="fa fa-print fa-2x" role="img" title="Report Z"/>
+            </div>
+            <div class="button icon ClosePosPopup btn btn-secondary" t-on-click="generate_report_x" title="Generate report X">
+                <i class="fa fa-print fa-2x" role="img" title="Report X"/>
+            </div>
         </xpath>
     </t>
 </templates>

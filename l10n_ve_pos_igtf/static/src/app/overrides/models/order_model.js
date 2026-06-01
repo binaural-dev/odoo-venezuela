@@ -17,6 +17,7 @@ patch(PosOrder.prototype, {
     this.update_igtf();
 
   },
+  
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
     this.igtf_amount = json.igtf_amount;
@@ -24,6 +25,7 @@ patch(PosOrder.prototype, {
     this.foreign_igtf_amount = json.foreign_igtf_amount;
     this.foreign_bi_igtf = json.foreign_bi_igtf;
   },
+
   export_as_JSON() {
     let json = super.export_as_JSON();
     json["igtf_amount"] = this.igtf_amount;
@@ -48,6 +50,7 @@ patch(PosOrder.prototype, {
     }
     return [];
   },
+
   _get_payment_method_data(payment) {
     if (!payment) {
       return null;
@@ -131,7 +134,7 @@ patch(PosOrder.prototype, {
   _get_default_payment_amounts(payment_method) {
     const rounding = this.pos?.currency?.rounding || 0.01;
     const foreignRounding = this.get_foreign_rounding?.() || this.get_foreign_currency?.()?.rounding || 0.01;
-    const orderDue = this.get_due?.() || 0;
+    const orderDue = this.get_due?.() ?? this.remainingDue ?? 0;
     const foreignDue = this.get_foreign_due?.() || 0;
 
     if (!this._is_invoice_order()) {
@@ -377,6 +380,14 @@ patch(PosOrder.prototype, {
     return round_pr(amount * igtfPercentage / 100, rounding);
   },
 
+  get_due() {
+    return Number(this.remainingDue) || 0;
+  },
+
+  getDue() {
+    return this.get_due();
+  },
+
   get_bi_igtf() {
     return this.bi_igtf;
   },
@@ -406,18 +417,44 @@ patch(PosOrder.prototype, {
   },
 
   set_total_from_backend(data) {
-      if (data && typeof data === "object") {
-          if ("amount_total" in data) {
-              this.total_with_tax = -data.amount_total;
-          }
+    if (data && typeof data === "object") {
+      const rounding = this.pos?.currency?.rounding || 0.01;
+      const originalTotal = Math.abs(Number(data.amount_total) || 0);
+      const originalIgtf = Math.abs(Number(data.igtf_amount) || 0);
+      const originalBi = Math.abs(Number(data.bi_igtf) || 0);
+      const refundBase = Math.abs(Number(super.totalDue) || 0);
+
+      if (this.is_refund && originalIgtf > 0 && refundBase > 0) {
+        const baseReference =
+          originalBi ||
+          Math.max(originalTotal - originalIgtf, 0) ||
+          originalTotal;
+        const ratio = baseReference > 0 ? Math.min(refundBase / baseReference, 1) : 1;
+        const proportionalIgtf = round_pr(originalIgtf * ratio, rounding);
+        const refundTotal = round_pr(refundBase + proportionalIgtf, rounding);
+
+        this.total_with_tax = -refundTotal;
+        this.igtf_amount = -proportionalIgtf;
+        this.bi_igtf = -round_pr(refundBase, rounding);
+      } else {
+        if ("amount_total" in data) {
+          this.total_with_tax = -(Number(data.amount_total) || 0);
+        }
+        if ("igtf_amount" in data) {
+          this.igtf_amount = -(Number(data.igtf_amount) || 0);
+        }
+        if ("bi_igtf" in data) {
+          this.bi_igtf = -(Number(data.bi_igtf) || 0);
+        }
       }
-      this.update_igtf();
-      return true;
+    }
+    return true;
   },
+
 
   get totalDue() {
     const res = this.get_total_with_tax(...arguments);
-    const rounding = 0.001
+    const rounding = this.pos?.currency?.rounding || 0.01;
     const paymentlines = this._get_order_payment_lines();
     if (paymentlines.length === 0) {
       return round_pr(res, rounding);
@@ -429,7 +466,7 @@ patch(PosOrder.prototype, {
     if (!has_igtf_payment) {
       return round_pr(res, rounding);
     }
-    return super.totalDue + this.get_igtf_amount()
+    return round_pr(super.totalDue + this.get_igtf_amount(), rounding);
   },
 
   get priceIncl() {
@@ -479,27 +516,54 @@ patch(PosOrder.prototype, {
     return this.foreign_igtf_amount;
   },
 
-  add_paymentline(payment_method) {
-    let is_change = false;
-    let is_return = this.get_total_without_igtf() < 0;
-    if (!is_return) {
-      is_change = this.get_due() < 0;
-    } else {
-      is_change = this.get_due() > 0;
+  addPaymentline(payment_method) {
+    const result = super.addPaymentline(...arguments);
+    if (!result?.status) {
+      return result;
     }
 
-    if (
-      !payment_method.apply_igtf ||
-      this.get_due() <= this.get_igtf_amount() ||
-      is_change
-    ) {
-      let res = super.add_paymentline(...arguments);
-      this.update_igtf();
-      return res;
-    }
-    let res_igtf = this.add_paymentline_without_igtf(...arguments);
     this.update_igtf();
-    return res_igtf;
+
+    if (!this.is_refund) {
+      return result;
+    }
+
+    const paymentLine = result.data;
+    const totalDue = Number(
+      typeof this.totalDue === "function" ? this.totalDue() : this.totalDue,
+    ) || 0;
+    const amountPaid = Number(
+      typeof this.amountPaid === "function" ? this.amountPaid() : this.amountPaid,
+    ) || 0;
+    const pendingDueRaw = totalDue - amountPaid;
+    const pendingDue =
+      typeof this?.currency?.round === "function"
+        ? this.currency.round(pendingDueRaw)
+        : pendingDueRaw;
+    if (!Number.isFinite(pendingDue) || Math.abs(pendingDue) <= 0.000001) {
+      return result;
+    }
+
+    const currentAmount = Number(paymentLine?.amount) || 0;
+    const targetAmount = currentAmount + pendingDue;
+    if (Math.abs(targetAmount - currentAmount) <= 0.000001) {
+      return result;
+    }
+
+    if (typeof paymentLine?.setAmount === "function") {
+      paymentLine.setAmount(targetAmount);
+    } else if (typeof paymentLine?.set_amount === "function") {
+      paymentLine.set_amount(targetAmount, true);
+    } else {
+      paymentLine.amount = targetAmount;
+    }
+
+    this.update_igtf();
+    return result;
+  },
+
+  add_paymentline(payment_method) {
+    return this.addPaymentline(...arguments);
   },
 
   add_paymentline_without_igtf(payment_method) {

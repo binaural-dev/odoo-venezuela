@@ -1,8 +1,7 @@
-/** @odoo-module */
+/** @odoo-module **/
 /* global posmodel */
 
-import { _t } from "@web/core/l10n/translation";
-import { IoTLongpolling, iotLongpollingService } from "@iot_base/network_utils/longpolling";
+import { IoTLongpolling } from "@iot_base/network_utils/longpolling";
 import { patch } from "@web/core/utils/patch";
 
 patch(IoTLongpolling.prototype, {

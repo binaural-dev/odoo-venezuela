@@ -10,6 +10,13 @@ class IgtfPosOrderTest(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
+        cls.account_igtf = cls.env["account.account"].create({
+            "name": "IGTF Account",
+            "code": "IGTFTEST",
+            "account_type": "asset_current",
+        })
+        cls.company.customer_account_igtf_id = cls.account_igtf
+        cls.company.igtf_percentage = 3.0
         cls.pos_config = cls.env["pos.config"].create({
             "name": "Test POS Config",
             "company_id": cls.company.id,
@@ -19,6 +26,13 @@ class IgtfPosOrderTest(TransactionCase):
             "user_id": cls.env.uid,
         })
         cls.partner = cls.env["res.partner"].create({"name": "Test Partner"})
+
+    def _patch_parent(self, model_name, method_name, **kwargs):
+        model_class = self.env[model_name].__class__
+        for klass in model_class.__mro__[1:]:
+            if method_name in klass.__dict__:
+                return patch.object(klass, method_name, **kwargs)
+        return patch.object(model_class.__bases__[0], method_name, **kwargs)
 
     def _create_order(self, **kwargs):
         vals = {
@@ -40,9 +54,10 @@ class IgtfPosOrderTest(TransactionCase):
             "lines": [],
             "statement_ids": [],
         }
-        with patch.object(type(self.env["pos.order"]), "_process_order") as mock:
-            mock.return_value = self.env["pos.order"]
+        with self._patch_parent("pos.order", "_process_order", return_value=self.env["pos.order"]):
             self.env["pos.order"]._process_order(order_data, None)
+            self.assertEqual(order_data["igtf_amount"], 3.0)
+            self.assertEqual(order_data["bi_igtf"], 100.0)
 
     def test_02_process_order_handles_none_values(self):
         order_data = {
@@ -51,9 +66,10 @@ class IgtfPosOrderTest(TransactionCase):
             "lines": [],
             "statement_ids": [],
         }
-        with patch.object(type(self.env["pos.order"]), "_process_order") as mock:
-            mock.return_value = self.env["pos.order"]
+        with self._patch_parent("pos.order", "_process_order", return_value=self.env["pos.order"]):
             self.env["pos.order"]._process_order(order_data, None)
+            self.assertEqual(order_data["igtf_amount"], 0.0)
+            self.assertEqual(order_data["bi_igtf"], 0.0)
 
     def test_03_process_order_handles_invalid_values(self):
         order_data = {
@@ -62,9 +78,10 @@ class IgtfPosOrderTest(TransactionCase):
             "lines": [],
             "statement_ids": [],
         }
-        with patch.object(type(self.env["pos.order"]), "_process_order") as mock:
-            mock.return_value = self.env["pos.order"]
+        with self._patch_parent("pos.order", "_process_order", return_value=self.env["pos.order"]):
             self.env["pos.order"]._process_order(order_data, None)
+            self.assertEqual(order_data["igtf_amount"], 0.0)
+            self.assertEqual(order_data["bi_igtf"], 0.0)
 
     def test_04_payment_fields_includes_igtf(self):
         order = self._create_order()
@@ -74,12 +91,7 @@ class IgtfPosOrderTest(TransactionCase):
             "igtf_amount": 3.0,
             "foreign_igtf_amount": 75.0,
         }
-        with patch.object(type(order), "_payment_fields") as mock:
-            mock.return_value = {
-                "include_igtf": True,
-                "igtf_amount": 3.0,
-                "foreign_igtf_amount": 75.0,
-            }
+        with self._patch_parent("pos.order", "_payment_fields", return_value={}):
             result = order._payment_fields(order, ui_paymentline)
             self.assertTrue(result["include_igtf"])
             self.assertAlmostEqual(result["igtf_amount"], 3.0)
@@ -87,39 +99,37 @@ class IgtfPosOrderTest(TransactionCase):
 
     def test_05_create_invoice_sets_bi_igtf(self):
         order = self._create_order()
-        with patch.object(type(order), "_create_invoice") as mock:
-            mock_invoice = self.env["account.move"].create({
-                "journal_id": self.env["account.journal"].create({
-                    "name": "Test Journal",
-                    "code": "TJT",
-                    "type": "general",
-                    "company_id": self.company.id,
-                }).id,
-                "state": "draft",
-                "line_ids": [
-                    (0, 0, {"account_id": self.env["account.account"].create({
-                        "name": "Test",
-                        "code": "TST",
-                        "account_type": "asset_current",
-                    }).id, "name": "l1", "debit": 100}),
-                    (0, 0, {"account_id": self.env["account.account"].create({
-                        "name": "Test2",
-                        "code": "TST2",
-                        "account_type": "liability_current",
-                    }).id, "name": "l2", "credit": 100}),
-                ],
-            })
-            mock_invoice.bi_igtf = 0.0
-            mock.return_value = mock_invoice
+        mock_invoice = self.env["account.move"].create({
+            "journal_id": self.env["account.journal"].create({
+                "name": "Test Journal",
+                "code": "TJT",
+                "type": "general",
+                "company_id": self.company.id,
+            }).id,
+            "state": "draft",
+            "line_ids": [
+                (0, 0, {"account_id": self.env["account.account"].create({
+                    "name": "Test",
+                    "code": "TST",
+                    "account_type": "asset_current",
+                }).id, "name": "l1", "debit": 100}),
+                (0, 0, {"account_id": self.env["account.account"].create({
+                    "name": "Test2",
+                    "code": "TST2",
+                    "account_type": "liability_current",
+                }).id, "name": "l2", "credit": 100}),
+            ],
+        })
+        with self._patch_parent("pos.order", "_create_invoice", return_value=mock_invoice):
             result = order._create_invoice({"move_id": mock_invoice.id})
             self.assertEqual(result.bi_igtf, 100.0)
 
     def test_06_get_order_from_back(self):
         order = self._create_order()
-        with patch.object(type(self.env["pos.order"]), "get_order_from_back") as mock:
-            mock.return_value = 100.0
-            result = self.env["pos.order"].get_order_from_back(order.display_name)
-            self.assertEqual(result, 100.0)
+        result = self.env["pos.order"].get_order_from_back(order.id)
+        self.assertIsInstance(result, dict)
+        self.assertAlmostEqual(result["igtf_amount"], 3.0)
+        self.assertAlmostEqual(result["bi_igtf"], 100.0)
 
     def test_07_new_order_has_igtf_fields(self):
         order = self._create_order()

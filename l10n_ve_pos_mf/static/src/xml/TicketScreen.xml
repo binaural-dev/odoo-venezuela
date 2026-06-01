@@ -4,7 +4,6 @@
         <!-- <xpath expr="//div[hasclass('control-buttons')]" position="inside">
             <t t-if="getSelectedOrder()">
                 <t t-if="getSelectedOrder().get_total_with_tax() > 0">
-                    <ReprintInvoiceButton order="getSelectedOrder()" />
                 </t>
             </t>
         </xpath> -->

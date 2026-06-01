@@ -18,7 +18,6 @@ patch(PosOrder.prototype, {
   },
 
   setup() {
-    this.get_foreign_total_tax()
     super.setup(...arguments);
   },
 
@@ -89,8 +88,13 @@ patch(PosOrder.prototype, {
       method: 'search_read',
       domain: [['id', '=', line.refunded_orderline_id]],
     }).then((el) => {
-      this.to_receipt = el[0].to_receipt
+      if (el?.length) {
+        this.to_receipt = el[0].to_receipt
+      }
       this.lock_toggle_receipt_invoice = true
+    }).catch((error) => {
+      console.error("Failed to fetch refunded orderline:", error);
+      this.lock_toggle_receipt_invoice = true;
     })
     return this.lines;
   },
@@ -533,6 +537,23 @@ patch(PosOrder.prototype, {
     );
 
     const totalWithTaxes = this.get_foreign_total_with_taxes();
+    const due = round_pr((totalWithTaxes - paidAmount), rounding);
+    console.log("DUE", due)
+    return round_pr(due, rounding, "UP")
+  },
+
+  get_due_due(paymentline) {
+    const rounding = this.get_foreign_rounding();
+    const lines = this.get_order_payment_lines();
+
+    const endIndex = lines.findIndex((line) => line === paymentline);
+    const linesToSum = endIndex >= 0 ? lines.slice(0, endIndex + 1) : lines;
+    const paidAmount = linesToSum.reduce(
+      (sum, line) => sum + round_pr(line.amount, rounding),
+      0
+    );
+
+    const totalWithTaxes = this.priceIncl();
     const due = round_pr((totalWithTaxes - paidAmount), rounding);
     console.log("DUE", due)
     return round_pr(due, rounding, "UP")

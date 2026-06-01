@@ -50,7 +50,7 @@ patch(Orderline.prototype, {
       ? price
       : isNaN(parseFloat(price))
         ? 0
-        : oParseFloat("" + price);
+        : parseFloat("" + price);
     this.price = round_di(
       parsed_price || 0,
       this.pos.dp["Foreign Product Price"],
@@ -64,7 +64,7 @@ patch(Orderline.prototype, {
       ? price
       : isNaN(parseFloat(price))
         ? 0
-        : oParseFloat("" + price);
+        : parseFloat("" + price);
     this.foreign_price = parsed_price * this.get_rate() || 0;
   },
 

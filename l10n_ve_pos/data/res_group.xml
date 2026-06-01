@@ -3,7 +3,7 @@
     <data noupdate="1">
         <record id="group_authorized_discount_pos" model="res.groups">
             <field name="name">Authorized discount POS</field>
-            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="privilege_id" ref="l10n_ve_accountant.res_groups_privilege_category_hidden"/>
         </record>
     </data>
 </odoo>

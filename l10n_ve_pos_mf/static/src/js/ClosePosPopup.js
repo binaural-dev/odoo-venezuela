@@ -26,6 +26,7 @@ patch(ClosePosPopup.prototype, {
     if (!fdm) return
     const promise = new Promise(async (resolve, reject) => {
       fdm.addListener(data => data.status.status === "connected" ? resolve(data) : reject(data));
+      
       await fdm.action({
         action: 'report_z',
         data: {},

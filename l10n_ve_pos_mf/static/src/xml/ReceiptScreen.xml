@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="binaural_pos_mf.ReceiptScreen" t-inherit="point_of_sale.ReceiptScreen" t-inherit-mode="extension">
-        <xpath expr="//div[hasclass('pos-receipt-container')]" position="before">
+        <xpath expr="//OrderReceipt[1]" position="before">
             <div t-if="currentOrder.mf_invoice_number" class="d-flex flex-column m-4 mb-0 alert alert-info">
                 <p class="mb-1"><strong>Nro Factura:</strong> <t t-out="currentOrder.mf_invoice_number"/></p>
                 <p t-if="currentOrder.fiscal_machine" class="mb-1">

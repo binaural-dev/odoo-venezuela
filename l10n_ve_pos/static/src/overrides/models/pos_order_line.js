@@ -12,7 +12,6 @@ import {
 patch(PosOrderline.prototype, {
 
   setup() {
-    this.get_all_foreign_prices()
     super.setup(...arguments);
   },
 

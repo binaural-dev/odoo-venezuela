@@ -1,7 +1,7 @@
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
 from odoo.exceptions import ValidationError
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 @tagged("post_install", "-at_install", "pos_session")
@@ -11,17 +11,12 @@ class PosSessionTest(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        cls.currency_usd = cls.env["res.currency"].create({
-            "name": "USD",
-            "symbol": "$",
-            "rounding": 0.01,
-        })
+        cls.currency_vef = cls.env["res.currency"].search([("name", "=", "VEF")], limit=1)
+        if cls.currency_vef:
+            cls.company.currency_id = cls.currency_vef
+        cls.currency_usd = cls.env.ref("base.USD")
         cls.company.foreign_currency_id = cls.currency_usd
-        cls.currency_eur = cls.env["res.currency"].create({
-            "name": "EUR",
-            "symbol": "\u20ac",
-            "rounding": 0.01,
-        })
+        cls.currency_eur = cls.env.ref("base.EUR")
 
         cls.pos_config = cls.env["pos.config"].create({
             "name": "Test POS Config",
@@ -68,11 +63,18 @@ class PosSessionTest(TransactionCase):
             "foreign_inverse_rate": 0.04,
         })
 
+    def _patch_parent(self, model_name, method_name, **kwargs):
+        model_class = self.env[model_name].__class__
+        for klass in model_class.__mro__[1:]:
+            if method_name in klass.__dict__:
+                return patch.object(klass, method_name, **kwargs)
+        return patch.object(model_class.__bases__[0], method_name, **kwargs)
+
     def test_01_load_pos_data_includes_prefix_vats(self):
-        with patch.object(type(self.pos_session), "load_pos_data") as mock:
-            mock.return_value = {"prefix_vats": []}
+        with self._patch_parent("pos.session", "load_pos_data", return_value={}):
             result = self.pos_session.load_pos_data()
             self.assertIn("prefix_vats", result)
+            self.assertEqual(result["prefix_vats"], self.env["res.partner"]._fields["prefix_vat"].selection)
 
     def test_02_loader_params_pos_payment(self):
         params = self.pos_session._loader_params_pos_payment()
@@ -105,27 +107,19 @@ class PosSessionTest(TransactionCase):
         self.assertIn("currency_id", params["search_params"]["fields"])
 
     def test_09_pos_ui_models_to_load_includes_city(self):
-        with patch.object(type(self.pos_session), "_pos_ui_models_to_load") as mock:
-            mock.return_value = ["res.country.city"]
+        with self._patch_parent("pos.session", "_pos_ui_models_to_load", return_value=[]):
             result = self.pos_session._pos_ui_models_to_load()
             self.assertIn("res.country.city", result)
 
     def test_10_get_pos_ui_res_country_city(self):
         params = {"search_params": {"domain": [], "fields": ["name", "id"]}}
-        with patch.object(type(self.pos_session), "_get_pos_ui_res_country_city") as mock:
-            mock.return_value = []
-            result = self.pos_session._get_pos_ui_res_country_city(params)
-            self.assertEqual(result, [])
+        result = self.pos_session._get_pos_ui_res_country_city(params)
+        self.assertIsInstance(result, list)
 
     def test_11_get_pos_ui_res_currency_returns_ordered(self):
         params = {"search_params": {"domain": [("id", "in", [self.company.currency_id.id, self.currency_usd.id])], "fields": ["name", "id"]}}
-        with patch.object(type(self.pos_session), "_get_pos_ui_res_currency") as mock:
-            mock.return_value = [
-                {"id": self.company.currency_id.id, "name": self.company.currency_id.name},
-                {"id": self.currency_usd.id, "name": self.currency_usd.name},
-            ]
-            result = self.pos_session._get_pos_ui_res_currency(params)
-            self.assertEqual(len(result), 2)
+        result = self.pos_session._get_pos_ui_res_currency(params)
+        self.assertEqual(len(result), 2)
 
     def test_12_is_user_authorized(self):
         result = self.pos_session.is_user_authorized()
@@ -142,10 +136,8 @@ class PosSessionTest(TransactionCase):
 
     def test_15_get_pos_ui_product_category(self):
         params = {"search_params": {"domain": [], "fields": ["id", "name", "parent_id"]}}
-        with patch.object(type(self.pos_session), "_get_pos_ui_product_category") as mock:
-            mock.return_value = [{"id": self.product_category.id, "name": "Test", "parent_id": None}]
-            result = self.pos_session._get_pos_ui_product_category(params)
-            self.assertEqual(len(result), 1)
+        result = self.pos_session._get_pos_ui_product_category(params)
+        self.assertIsInstance(result, list)
 
     def test_16_process_pos_ui_product_product(self):
         products = [{
@@ -227,8 +219,7 @@ class PosSessionTest(TransactionCase):
         self.assertTrue(len(lines) > 0)
 
     def test_20_validate_cross_move(self):
-        with patch.object(type(self.pos_session), "_validate_cross_move") as mock:
-            mock.return_value = None
+        with self._patch_parent("pos.session", "_validate_cross_move", return_value=None):
             result = self.pos_session._validate_cross_move()
             self.assertIsNone(result)
 
@@ -259,8 +250,7 @@ class PosSessionTest(TransactionCase):
         self.assertEqual(move.state, "draft")
 
     def test_22_action_pos_session_close(self):
-        with patch.object(type(self.pos_session), "action_pos_session_close") as mock:
-            mock.return_value = {}
+        with self._patch_parent("pos.session", "action_pos_session_close", return_value={}):
             result = self.pos_session.action_pos_session_close()
             self.assertIsNotNone(result)
 
@@ -279,8 +269,7 @@ class PosSessionTest(TransactionCase):
             "is_foreign_currency": False,
         })
         amounts = {"amount": 100.0, "amount_converted": 100.0}
-        with patch.object(type(self.pos_session), "_create_combine_account_payment") as mock:
-            mock.return_value = self.env["account.payment"]
+        with self._patch_parent("pos.session", "_create_combine_account_payment", return_value=self.env["account.payment"]):
             result = self.pos_session._create_combine_account_payment(
                 payment_method, amounts, 0.0
             )
@@ -357,7 +346,55 @@ class PosSessionTest(TransactionCase):
             "combine_invoice_receivables": {},
             "split_invoice_receivables": {},
         }
-        with patch.object(type(self.pos_session), "_accumulate_amounts") as mock:
-            mock.return_value = data
+        with self._patch_parent("pos.session", "_accumulate_amounts", return_value=data):
             result = self.pos_session._accumulate_amounts(data)
             self.assertIn("split_receivables_cash", result)
+
+    def test_29_set_foreign_amount_in_line_sets_counterpart(self):
+        account_type = self.env["account.account"].create({
+            "name": "Test Acc CP",
+            "code": "TSTACCCP",
+            "account_type": "asset_current",
+        })
+        move = self.env["account.move"].create({
+            "journal_id": self.env["account.journal"].search([], limit=1).id,
+            "state": "draft",
+            "line_ids": [
+                (0, 0, {"account_id": account_type.id, "name": "l1", "credit": 100.0}),
+                (0, 0, {"account_id": account_type.id, "name": "l2", "debit": 100.0}),
+            ],
+        })
+        credit_line = move.line_ids.filtered(lambda l: l.credit > 0)[0]
+        debit_line = move.line_ids.filtered(lambda l: l.debit > 0)[0]
+        self.pos_session.config_id.foreign_rate = 25.0
+        self.pos_session.config_id.foreign_inverse_rate = 0.04
+        self.pos_session.set_foreign_amount_in_line(credit_line, 2500.0, 100.0)
+        self.assertEqual(credit_line.foreign_credit, 2500.0)
+        self.assertEqual(debit_line.foreign_debit, 2500.0)
+
+    def test_30_handle_refund_skips_lines_without_igtf(self):
+        order_line = self.env["pos.order.line"].create({
+            "order_id": self.order.id,
+            "product_id": self.product.id,
+            "price_unit": 100.0,
+            "qty": 1,
+            "price_subtotal": 100.0,
+            "price_subtotal_incl": 100.0,
+        })
+        original_subtotal = order_line.price_subtotal
+        self.pos_session._handle_refund(self.order)
+        self.assertEqual(order_line.price_subtotal, original_subtotal)
+
+    def test_31_create_account_move_writes_rates(self):
+        self.pos_session.config_id.foreign_rate = 25.0
+        self.pos_session.config_id.foreign_inverse_rate = 0.04
+        with self._patch_parent("pos.session", "_create_account_move", return_value=self.env["account.move"]):
+            result = self.pos_session._create_account_move()
+            self.assertIsNotNone(result)
+
+    def test_32_get_pos_ui_product_product_by_params(self):
+        params = {"domain": [("id", "in", [self.product.id])], "fields": ["id", "name", "lst_price"]}
+        result = self.pos_session.get_pos_ui_product_product_by_params(params)
+        self.assertIsInstance(result, list)
+        if result:
+            self.assertIn("categ", result[0])
