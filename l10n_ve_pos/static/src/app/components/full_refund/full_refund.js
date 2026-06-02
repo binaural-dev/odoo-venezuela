@@ -19,17 +19,14 @@ export class FullRefundButton extends Component {
    * if they haven't been linked to a refund order yet and have refundable quantities.
    */
   async click() {
-    this.numberBuffer.reset(); // Reset numpad widget values to avoid inconsistency
+    this.numberBuffer.reset();
     const order = this.props.order;
     if (!order) return;
     for (const orderline of order.orderlines) {
       if (!orderline) continue;
-      const toRefundDetail =
-        this.props.ticket_screen._getToRefundDetail(orderline);
-      // When already linked to an order, do not modify the to refund quantity.
-      if (toRefundDetail.destinationOrderUid) continue;
-      const refundableQty =
-        toRefundDetail.orderline.qty - toRefundDetail.orderline.refundedQty;
+      const toRefundDetail = this.props.ticket_screen.getToRefundDetail(orderline);
+      if (toRefundDetail.destination_order_uuid) continue;
+      const refundableQty = toRefundDetail.maxQty;
       if (refundableQty <= 0) continue;
       toRefundDetail.qty = refundableQty;
     }

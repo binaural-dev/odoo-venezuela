@@ -207,62 +207,6 @@ patch(PosStore.prototype, {
     return response;
   },
 
-  // _print_via_hardware_proxy(fdm, data) {
-  //   const request_data = {
-  //     action: `print_${data.type}`,
-  //     data: data,
-  //   }
-
-  //   this._mfLog("info", "_print_via_hardware_proxy: sending", request_data);
-
-  //   return new Promise((resolve, reject) => {
-  //     const listener = (event) => {
-  //       if (event?.request_data?.action === request_data.action) {
-  //         this._mfLog("info", "_print_via_hardware_proxy: event", {
-  //           status: event?.status?.status,
-  //           value: event?.value,
-  //         });
-  //       }
-  //       if (event.request_data.action === request_data.action) {
-  //         if (event.status.status === "connected") {
-  //           if (event.value && event.value.message === "No se ha completado") {
-  //             return;
-  //           }
-  //           fdm.removeListener(listener);
-  //           return resolve(event);
-  //         } else {
-  //           fdm.removeListener(listener);
-  //           return reject(event);
-  //         }
-  //       }
-  //     };
-
-  //     fdm.addListener(listener);
-
-  //     fdm.action(request_data).then(response => {
-  //       this._mfLog("info", "_print_via_hardware_proxy: action response", response);
-  //       if (!response.result) {
-  //         fdm.removeListener(listener);
-  //         reject({
-  //           valid: false,
-  //           message: _t("Error connecting to the fiscal machine, check if it is turned on or connected to the IoT"),
-  //           printer_connection: false,
-  //         });
-  //       }
-  //     }).catch(error => {
-  //       this._mfLog("warn", "_print_via_hardware_proxy: action error", error);
-  //       fdm.removeListener(listener);
-  //       reject({
-  //         valid: false,
-  //         message: error.statusText === "timeout"
-  //           ? _t("The tax machine did not respond in time")
-  //           : _t("Error with the tax machine"),
-  //         printer_connection: false,
-  //       });
-  //     });
-  //   });
-  // },
-
   async _print_via_server_proxy(data) {
     const iot_ip = data.iot_ip || this.config.iot_ip;
     if (!iot_ip) {
@@ -277,17 +221,19 @@ patch(PosStore.prototype, {
         iot_ip,
         action,
       });
-
+      console.log('this.config', this.config)
+      data.config_id = this.config.id;
       const response = await this.orm.call(
         "pos.session",
         "proxy_fiscal_action",
-        [this.pos_session.id, action, data]
+        [action, data]
       );
 
       this._mfLog("info", "_print_via_server_proxy: orm.call response", response);
       return response;
     } catch (e) {
       this._mfLog("warn", "_print_via_server_proxy: exception", e);
+      console.log("EEERROROROOR", e)
       return { value: { valid: false, message: _t("Error de conexion con el proxy del servidor") } };
     }
   },

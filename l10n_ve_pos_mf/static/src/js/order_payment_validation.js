@@ -4,52 +4,35 @@ import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 
 patch(OrderPaymentValidation.prototype, {
+    
+    shouldDownloadInvoice() {
+        if (this.pos.useFiscalMachine()) return false;
+        return super.shouldDownloadInvoice();
+    },
+
     async isOrderValid(isForceValidate) {
         const fdm = this.pos.useFiscalMachine();
         if (!fdm) {
             alert('No se ha detectado una máquina fiscal. Por favor, asegúrese de que esté conectada y configurada correctamente.');
             return false;
         }
-        if (!this.order.is_refund) {
-            try {
-                const data = await this.get_data_invoice(this.order);
-                data.iot_ip = data.iot_ip || this.pos.config.iot_ip;
-                const response = await this._print_via_hardware(data);
-                console.log('MF response:', response);
-            } catch (err) {
-                console.error('MF error:', err);
-            }
-            return super.isOrderValid(isForceValidate);
-        }else{
-            //PARA NOTAS DE CREDITO
-        }
-        console.log('Es una orden de devolución, genera nota de credito.');
+        this._try_print_invoice(this.order);
+        return super.isOrderValid(isForceValidate);
     },
 
-    async _print_via_hardware(data) {
-        const fdm = this.pos.useFiscalMachine();
-        if (!fdm) throw new Error("MF no disponible");
+    async _try_print_invoice(order) {
+        try {
+            const data = await this.get_data_invoice(order);
+            data.iot_ip = data.iot_ip || this.pos.config.iot_ip;
 
-        const request_data = {
-            action: `print_${data.type || 'out_invoice'}`,
-            data: data,
-        };
-
-        return new Promise((resolve, reject) => {
-            fdm.action(request_data).then(response => {
-                console.log('MF action response:', response);
-                resolve(response);
-            }).catch(error => {
-                console.log('MF action error:', error);
-                reject({
-                    valid: false,
-                    message: error.statusText === "timeout"
-                        ? "The tax machine did not respond in time"
-                        : "Error with the tax machine",
-                    printer_connection: false,
-                });
+            this.pos._print_via_server_proxy(data).then(response => {
+                console.log('MF proxy response:', response);
+            }).catch(err => {
+                console.error('MF proxy error:', err);
             });
-        });
+        } catch (err) {
+            console.error('MF error building data:', err);
+        }
     },
 
     async get_data_invoice(order) {

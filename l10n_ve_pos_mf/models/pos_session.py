@@ -1,4 +1,5 @@
 import logging
+import threading
 
 import requests
 
@@ -25,7 +26,6 @@ class PosSession(models.Model):
 
     def _loader_params_pos_config(self):
         res = super()._loader_params_pos_config()
-        # Ensure our config flags are available in the POS frontend.
         res["search_params"]["fields"].extend(
             [
                 "access_button_mf",
@@ -48,17 +48,27 @@ class PosSession(models.Model):
         res["search_params"]["fields"].append("fiscal_code")
         return res
 
+    @api.model
     def proxy_fiscal_action(self, action, payload):
-        """Proxy fiscal print actions through the Odoo server.
+        """Proxy fiscal print actions through the Odoo server asynchronously.
 
-        This is called from POS frontend with ``this.orm.call`` so each print
-        request goes server -> IoT Box, avoiding browser network restrictions.
+        The print request is dispatched in a background thread so the Odoo
+        worker returns immediately, avoiding blocking the worker pool during
+        slow serial communication with the fiscal printer.
         """
-        self.ensure_one()
         payload = payload or {}
-        _logger.warning('payload %s', payload)
 
-        iot_ip = payload.get("iot_ip") or self.config_id.iot_ip
+        config_id = payload.get("config_id")
+        config = self.env["pos.config"].browse(config_id) if config_id else self.env["pos.config"]
+        if not config.exists():
+            return {
+                "value": {
+                    "valid": False,
+                    "message": _("No se encontro la configuracion POS"),
+                }
+            }
+
+        iot_ip = payload.get("iot_ip") or config.iot_ip
         if not iot_ip:
             return {
                 "value": {
@@ -69,54 +79,53 @@ class PosSession(models.Model):
 
         iot_host = iot_ip if ":" in iot_ip else f"{iot_ip}:8069"
 
-        # Buscar el identifier del dispositivo fiscal
-        device_id = self.config_id.iface_fiscal_data_module.identifier if self.config_id.iface_fiscal_data_module else False
-        if not device_id:
-            device_id = "fiscal_data_module"
+        device_id = config.iface_fiscal_data_module.identifier if config.iface_fiscal_data_module else "fiscal_data_module"
 
         _logger.info(
-            "POS MF proxy_fiscal_action: session=%s device=%s action=%s iot=%s",
-            self.id,
+            "POS MF proxy_fiscal_action: config=%s device=%s action=%s iot=%s",
+            config.id,
             device_id,
             action,
             iot_host,
         )
 
-        try:
-            response = requests.post(
-                f"http://{iot_host}/iot_drivers/action",
-                json={
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "method": "call",
-                    "params": {
-                        "session_id": self.id,
-                        "device_identifier": device_id,
-                        "data": {
-                            "action": action.replace("print_", ""),
-                            "data": payload,
+        def _do_action():
+            try:
+                response = requests.post(
+                    f"http://{iot_host}/iot_drivers/action",
+                    json={
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "call",
+                        "params": {
+                            "session_id": config.id,
+                            "device_identifier": device_id,
+                            "data": {
+                                "action": action,
+                                "data": payload,
+                            },
                         },
                     },
-                },
-                timeout=120,
-                headers={"Content-Type": "application/json"},
-            )
-            response.raise_for_status()
-            result = response.json()
-
-            if isinstance(result, dict) and result.get("result"):
+                    timeout=300,
+                    headers={"Content-Type": "application/json"},
+                )
+                response.raise_for_status()
                 _logger.info(
-                    "POS MF proxy_fiscal_action: success action=%s",
+                    "POS MF proxy_fiscal_action: async OK action=%s",
                     action,
                 )
-                return {"value": {"valid": True, "message": "Accion enviada a la MF"}}
+            except Exception as exc:
+                _logger.error(
+                    "POS MF proxy_fiscal_action: async FAILED action=%s error=%s",
+                    action,
+                    exc,
+                )
 
-            return {"value": {"valid": False, "message": "Error al enviar a la MF"}}
+        thread = threading.Thread(target=_do_action, daemon=True)
+        thread.start()
 
-        except Exception as exc:
-            _logger.warning(
-                "POS EEEEEEEEEEEEEEEEEEEEEEEEEEEEERRRRRRor MF proxy_fiscal_action: action=%s failed: %s",
-                action,
-                exc,
-            )
-            return {"value": {"valid": False, "message": str(exc)}}
+        _logger.info(
+            "POS MF proxy_fiscal_action: dispatched async action=%s",
+            action,
+        )
+        return {"value": {"valid": True, "message": "Impresion fiscal despachada"}}

@@ -59,58 +59,16 @@ patch(PosOrder.prototype, {
   },
 
   get_orderlines() {
-    if (!this.cid || !this.cid) {
-      return this.lines
-    }
-
-    if (this.cid != this.cid) {
-      return this.lines;
-    }
-
-    if (this.lines.length < 1) {
-      this.lock_toggle_receipt_invoice = false
-      return this.lines
-    }
-
-
-    let line = this.lines[0];
-    // Validación segura para evitar error si la línea no existe o no tiene la propiedad
-    if (!line?.refunded_orderline_id) {
-      return this.lines;
-    }
-
-    if (this.lock_toggle_receipt_invoice) {
-      return this.lines
-    }
-
-    this.pos.env.services.rpc({
-      model: 'pos.order.line',
-      method: 'search_read',
-      domain: [['id', '=', line.refunded_orderline_id]],
-    }).then((el) => {
-      if (el?.length) {
-        this.to_receipt = el[0].to_receipt
-      }
-      this.lock_toggle_receipt_invoice = true
-    }).catch((error) => {
-      console.error("Failed to fetch refunded orderline:", error);
-      this.lock_toggle_receipt_invoice = true;
-    })
     return this.lines;
   },
 
   toggle_receipt_invoice(to_receipt) {
-    console.log("toggle_receipt_invoice", !to_receipt)
     if (this.getHasRefundLines()) {
-      return;
-    }
-    if (this.lock_toggle_receipt_invoice) {
       return;
     }
     this.assert_editable();
     this.to_receipt = to_receipt;
     this.to_invoice = !to_receipt;
-
   },
   
   export_as_JSON() {

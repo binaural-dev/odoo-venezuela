@@ -21,9 +21,9 @@ patch(PaymentScreen.prototype, {
     return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_taxes())
   },
 
-  shouldDownloadInvoice() {
-    return true;
-  },
+  // shouldDownloadInvoice() {
+  //   return true;
+  // },
 
   add_paymentline(payment_method) {
     let is_change = false;
@@ -88,14 +88,10 @@ patch(PaymentScreen.prototype, {
   },
 
   async showPaymentsOrigin() {
-    let ids = []
-    if (Object.values(this.pos.toRefundLines).length == 0) {
-      return
-    }
-    Object.values(this.pos.toRefundLines).forEach(el => {
-      ids.push(el.orderline.orderBackendId)
-    })
+    const originalOrder = this.currentOrder.refunded_order_id;
+    if (!originalOrder) return;
 
+    const ids = [originalOrder.id];
     const payments = await this.orm.call('pos.order', 'get_payments_order_refund', [ids]);
 
     let payment_list = payments.map(el => {
