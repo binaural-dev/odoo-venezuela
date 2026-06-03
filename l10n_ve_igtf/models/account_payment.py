@@ -341,21 +341,7 @@ class AccountPaymentAndIgtf(models.Model):
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
-        """
-        Appends the IGTF (Financial Transaction Tax) move line values to the 
-        existing list of line values for inbound payments.
-
-        This method identifies the appropriate IGTF account from the partner's 
-        configuration, calculates the tax amount in both transaction and 
-        company currency, and appends a new dictionary to 'vals'.
-
-        :param vals: List of dictionaries representing the move lines to be created.
-        
-        :raises UserError: If the IGTF account is not configured on the Partner's 
-                        advance account fields.
-
-        :return: The updated 'vals' list including the new IGTF line dictionary.
-        """
+      
         """
         Appends the IGTF (Financial Transaction Tax) move line values to the 
         existing list of line values for inbound payments.
