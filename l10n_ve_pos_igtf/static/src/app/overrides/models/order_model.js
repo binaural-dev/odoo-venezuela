@@ -114,6 +114,17 @@ patch(PosOrder.prototype, {
 
   },
 
+  _get_total_quantity() {
+    const linesSource =
+      (typeof this.get_orderlines === "function" && this.get_orderlines()) ||
+      (typeof this.getOrderlines === "function" && this.getOrderlines()) ||
+      this.orderlines ||
+      this.lines ||
+      [];
+    const lines = Array.isArray(linesSource) ? linesSource : Array.from(linesSource || []);
+    return lines.reduce((sum, line) => sum + Math.abs(Number(line?.qty) || 0), 0);
+  },
+
   _is_invoice_order() {
     if (typeof this.is_to_receipt === "function") {
       return !this.is_to_receipt();
@@ -515,46 +526,65 @@ patch(PosOrder.prototype, {
     if (data && typeof data === "object") {
       this.order_refund = data || {};
       const rounding = this.pos?.currency?.rounding || 0.01;
-      const refundBase = Math.abs(Number(super.totalDue) || 0);
-      const originalIgtf = Math.abs(Number(data.igtf_amount) || 0);
-      const originalBi = Math.abs(Number(data.bi_igtf) || 0);
+      const foreignRounding =
+        this.get_foreign_currency?.()?.rounding || this.get_foreign_rounding?.() || 0.01;
       const isRefundOrder = Boolean(this.is_refund || this.isRefund);
 
-      if (isRefundOrder && refundBase > 0) {
-        let baseIgtfRefund = 0;
-        let igtfRefund = 0;
+      if (isRefundOrder) {
+        const refundBase = Math.abs(Number(super.totalDue) || 0);
+        const originalQty = Math.abs(Number(data.total_qty) || 0);
+        const refundQty = Math.abs(Number(this._get_total_quantity()) || 0);
+        const originalIgtf = Math.abs(Number(data.igtf_amount) || 0);
+        const originalBi = Math.abs(Number(data.bi_igtf) || 0);
+        const originalForeignIgtf = Math.abs(Number(data.foreign_igtf_amount) || 0);
+        const originalForeignBi = Math.abs(
+          Number(data.foreign_bi_igtf ?? data.foreign_igtf_amount) || 0,
+        );
 
-        if (originalIgtf > 0) {
-          if (originalBi > 0) {
-            baseIgtfRefund = round_pr(Math.min(refundBase, originalBi), rounding);
-            const ratio = Math.min(baseIgtfRefund / originalBi, 1);
-            igtfRefund = round_pr(originalIgtf * ratio, rounding);
-          } else {
-            baseIgtfRefund = round_pr(refundBase, rounding);
-            igtfRefund = round_pr(originalIgtf, rounding);
-          }
+        if (refundBase > 0 && originalQty > 0 && refundQty > 0) {
+          const ratio = Math.min(refundQty / originalQty, 1);
+          const baseIgtfRefund = originalIgtf > 0 ? round_pr(originalBi * ratio, rounding) : 0;
+          const igtfRefund = originalIgtf > 0 ? round_pr(originalIgtf * ratio, rounding) : 0;
+          const foreignBaseIgtfRefund =
+            originalIgtf > 0 ? round_pr(originalForeignBi * ratio, foreignRounding) : 0;
+          const foreignIgtfRefund =
+            originalIgtf > 0 ? round_pr(originalForeignIgtf * ratio, foreignRounding) : 0;
+
+          this.total_with_tax = -round_pr(refundBase + igtfRefund, rounding);
+          this.igtf_amount = -igtfRefund;
+          this.bi_igtf = -baseIgtfRefund;
+          this.foreign_igtf_amount = -foreignIgtfRefund;
+          this.foreign_bi_igtf = -foreignBaseIgtfRefund;
+
+          console.log("[IGTF][DEBUG] set_totals_from_backend:refund_calculation", {
+            uid: this.uid,
+            is_refund: isRefundOrder,
+            refundBase,
+            originalQty,
+            refundQty,
+            ratio,
+            originalIgtf,
+            originalBi,
+            baseIgtfRefund,
+            igtfRefund,
+            foreignBaseIgtfRefund,
+            foreignIgtfRefund,
+            total_with_tax: this.total_with_tax,
+          });
+        } else if (refundBase > 0) {
+          this.total_with_tax = -round_pr(refundBase, rounding);
+          this.igtf_amount = 0;
+          this.bi_igtf = 0;
+          this.foreign_igtf_amount = 0;
+          this.foreign_bi_igtf = 0;
+        } else if ("amount_total" in data) {
+          const backendTotal = Number(data.amount_total) || 0;
+          this.total_with_tax = -Math.abs(backendTotal);
         }
-
-        this.total_with_tax = -round_pr(refundBase + igtfRefund, rounding);
-        this.igtf_amount = -igtfRefund;
-        this.bi_igtf = -baseIgtfRefund;
-        this.foreign_igtf_amount = 0;
-        this.foreign_bi_igtf = 0;
-
-        console.log("[IGTF][DEBUG] set_totals_from_backend:refund_calculation", {
-          uid: this.uid,
-          is_refund: isRefundOrder,
-          refundBase,
-          originalIgtf,
-          originalBi,
-          baseIgtfRefund,
-          igtfRefund,
-          total_with_tax: this.total_with_tax,
-        });
       } else {
         if ("amount_total" in data) {
           const backendTotal = Number(data.amount_total) || 0;
-          this.total_with_tax = isRefundOrder ? -Math.abs(backendTotal) : backendTotal;
+          this.total_with_tax = backendTotal;
         }
       }
       this._debug_financial_snapshot("set_totals_from_backend");

@@ -44,15 +44,30 @@ class PosOrder(models.Model):
         if not order:
             return {
                 'amount_total': 0.0,
+                'amount_paid': 0.0,
                 'igtf_amount': 0.0,
                 'bi_igtf': 0.0,
+                'total_qty': 0,
+                'foreign_igtf_amount': 0.0,
+                'foreign_bi_igtf': 0.0,
             }
+
+        total_qty = sum(line.qty for line in order.lines)
+        foreign_igtf_amount = sum(
+            payment.foreign_igtf_amount
+            for payment in order.payment_ids
+            if payment.foreign_igtf_amount
+        )
 
         return {
             'amount_total': order.amount_total,
             'amount_paid': order.amount_paid,
             'igtf_amount': order.igtf_amount,
             'bi_igtf': order.bi_igtf,
+            'total_qty': total_qty,
+            'foreign_igtf_amount': foreign_igtf_amount,
+            # No persisted foreign BI at order level; keep a view-friendly proxy value.
+            'foreign_bi_igtf': foreign_igtf_amount,
         }
     
     def action_pos_order_paid(self):

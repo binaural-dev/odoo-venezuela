@@ -51,11 +51,7 @@ patch(PosOrder.prototype, {
   },
 
   get_conversion_rate() {
-    const orderlines = this.currentOrder?.get_orderlines() || [];
-    if (orderlines.length != 0) {
-      return orderlines[0].currency_rate_display();
-    }
-    return this.init_conversion_rate || this.config.foreign_rate || 1.0;
+    return this.get_display_rate?.() || this.init_conversion_rate || this.config.foreign_rate || 1.0;
   },
 
   get_orderlines() {

@@ -12,7 +12,7 @@
     "depends": ["account", "account_invoice_pricelist", "l10n_ve_sale"],
     "data": [
         "security/pricelist_security.xml",
-        # "views/account_invoice_view.xml",
+        "views/account_invoice_view.xml",
         "views/sale_order.xml",
         "views/product_template_view.xml",
     ],
