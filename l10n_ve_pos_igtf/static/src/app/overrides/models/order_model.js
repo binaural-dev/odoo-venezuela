@@ -15,6 +15,7 @@ patch(PosOrder.prototype, {
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
     this.order_refund = {}
+    this._skip_igtf = false;
     this.update_igtf();
 
   },
@@ -281,6 +282,9 @@ patch(PosOrder.prototype, {
   },
 
   _has_refund_igtf_payload() {
+    if (this._skip_igtf) {
+      return false;
+    }
     const isRefundOrder = Boolean(this.is_refund || this.isRefund);
     return Boolean(isRefundOrder && Math.abs(Number(this.igtf_amount) || 0) > 0.000001);
   },
@@ -315,6 +319,20 @@ patch(PosOrder.prototype, {
     const is_return = this.get_total_without_igtf() < 0;
     const rounding = this.pos?.currency?.rounding || 0.01;
     const foreignRounding = this.get_foreign_currency?.()?.rounding || 0.01;
+
+    if (this._skip_igtf) {
+      paymentlines.forEach((payment) => {
+        payment.set_include_igtf(false);
+        payment.set_igtf_amount(0);
+        payment.set_foreign_igtf_amount(0);
+      });
+      this.igtf_amount = 0;
+      this.foreign_igtf_amount = 0;
+      this.bi_igtf = 0;
+      this.foreign_bi_igtf = 0;
+      this._debug_financial_snapshot("update_igtf:skip_refund_igtf");
+      return 0;
+    }
 
     if (this._has_refund_igtf_payload()) {
       this._syncRefundIgtfPaymentLines();
@@ -535,6 +553,7 @@ patch(PosOrder.prototype, {
         const originalQty = Math.abs(Number(data.total_qty) || 0);
         const refundQty = Math.abs(Number(this._get_total_quantity()) || 0);
         const originalIgtf = Math.abs(Number(data.igtf_amount) || 0);
+        this._skip_igtf = originalIgtf <= 0.000001;
         const originalBi = Math.abs(Number(data.bi_igtf) || 0);
         const originalForeignIgtf = Math.abs(Number(data.foreign_igtf_amount) || 0);
         const originalForeignBi = Math.abs(
@@ -582,6 +601,7 @@ patch(PosOrder.prototype, {
           this.total_with_tax = -Math.abs(backendTotal);
         }
       } else {
+        this._skip_igtf = false;
         if ("amount_total" in data) {
           const backendTotal = Number(data.amount_total) || 0;
           this.total_with_tax = backendTotal;

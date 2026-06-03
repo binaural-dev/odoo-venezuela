@@ -21,10 +21,6 @@ patch(PaymentScreen.prototype, {
     return this.utils.formatForeignCurrency(this.currentOrder.get_foreign_total_with_taxes())
   },
 
-  // shouldDownloadInvoice() {
-  //   return true;
-  // },
-
   add_paymentline(payment_method) {
     let is_change = false;
     let is_return = this.get_total_without_igtf() < 0;
