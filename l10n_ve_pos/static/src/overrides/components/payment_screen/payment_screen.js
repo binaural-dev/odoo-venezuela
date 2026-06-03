@@ -64,7 +64,7 @@ patch(PaymentScreen.prototype, {
             } catch (err) {
                 console.log("Error converting total amount:", err);
                 if (reqId === this._lastReqId) {
-                    const rate = Number(this.pos?.foreing_rate || 1);
+                    const rate = Number(this.pos?.foreign_rate || 1);
                     return this.state.foreignDueTotalWithTaxes = amount * rate;
                 }
         }

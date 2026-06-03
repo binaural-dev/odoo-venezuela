@@ -22,6 +22,12 @@ class PosOrderInherit(models.Model):
         """
         return self.env["pos.order"].search_read([("pos_reference", "ilike", uid)])
 
+    def _process_order(self, order, existing_order):
+        order["fiscal_machine"] = order.get("fiscal_machine", False)
+        order["mf_invoice_number"] = order.get("mf_invoice_number", False)
+        order["mf_reportz"] = order.get("mf_reportz", False)
+        return super()._process_order(order, existing_order)
+
     @api.model
     def _order_fields(self, ui_order):
         # TODO: this method it's deprecated

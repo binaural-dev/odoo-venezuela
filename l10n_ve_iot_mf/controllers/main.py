@@ -52,17 +52,36 @@ class ApiIoT(http.Controller):
             timeout = data.get("timeout", 120)
 
             _logger.info(
+                "IoT proxy request: iot_ip=%s route=%s action=%s",
+                iot_ip,
+                route,
+                (params or {}).get("action"),
+            )
+
+            # Most IoT boxes expose the hw_proxy server on port 8069.
+            # Allow passing an explicit port as part of iot_ip (e.g. "10.0.0.2:8069").
+            iot_host = iot_ip
+            if iot_host and ":" not in iot_host:
+                iot_host = f"{iot_host}:8069"
+
+            _logger.info(
                 "Proxying IoT action: http://%s/%s", iot_ip, route
             )
             
             response = requests.post(
-                f"http://{iot_ip}/{route}",
+                f"http://{iot_host}/{route}",
                 json={"params": params},
                 timeout=timeout,
                 headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()
             result = response.json()
+            _logger.info(
+                "IoT proxy response: iot_ip=%s route=%s status=%s",
+                iot_host,
+                route,
+                "ok",
+            )
             _logger.info("IoT proxy response: %s", result)
             return json.dumps(result)
         except requests.exceptions.Timeout:

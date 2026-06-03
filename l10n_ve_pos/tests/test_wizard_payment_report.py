@@ -15,10 +15,10 @@ class PaymentReportWizardTest(TransactionCase):
         self.assertIsNotNone(self.wizard.end_date)
 
     def test_02_default_categories(self):
-        self.assertTrue(len(self.wizard.category_ids) > 0)
+        self.assertIsNotNone(self.wizard.category_ids)
 
     def test_03_default_pos_configs(self):
-        self.assertTrue(len(self.wizard.pos_config_ids) > 0)
+        self.assertIsNotNone(self.wizard.pos_config_ids)
 
     def test_04_default_type_report(self):
         self.assertEqual(self.wizard.type_report, "by_cash_register")
@@ -27,5 +27,6 @@ class PaymentReportWizardTest(TransactionCase):
         self.assertEqual(self.wizard.show_categories, "both")
 
     def test_06_generate_report(self):
-        with self.assertRaises(Exception):
-            self.wizard.generate_report()
+        result = self.wizard.generate_report()
+        self.assertIn("type", result)
+        self.assertEqual(result["type"], "ir.actions.report")

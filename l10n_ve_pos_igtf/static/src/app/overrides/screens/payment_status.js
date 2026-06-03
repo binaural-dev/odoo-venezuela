@@ -80,7 +80,6 @@ patch(PaymentScreenStatus.prototype, {
   get totalDueTextWithIGTF() {
 
     let payment_lines = this.props.order.get_paymentlines();
-
     if (payment_lines.length > 0) {
       return this.env.utils.formatCurrency(
         (this.props.order.get_total_with_tax()));

@@ -19,10 +19,9 @@ patch(Orderline.prototype, {
   },
 
   get_rate() {
-    if (this.order._isRefundOrder() && this.get_refund_orderline()) {
-      return this.get_refund_orderline().orderline.foreign_currency_rate;
+    if (this.order.isRefund && this.refunded_orderline_id) {
+      return this.refunded_orderline_id.foreign_currency_rate;
     }
-
     if (
       this.foreign_currency_rate &&
       this.foreign_currency_rate != this.order.init_conversion_rate
@@ -31,18 +30,7 @@ patch(Orderline.prototype, {
 
     return this.order.init_conversion_rate;
   },
-  get currency_rate_display() {
-    return this.order.get_display_rate;
-  },
-  
-  get_refund_orderline() {
-    for (let id of Object.keys(this.pos.toRefundLines)) {
-      if (this.refunded_orderline_id == id) {
-        return this.pos.toRefundLines[id];
-      }
-    }
-    return false;
-  },
+
 
   set set_unit_price(price) {
     this.order.assert_editable();
@@ -50,7 +38,7 @@ patch(Orderline.prototype, {
       ? price
       : isNaN(parseFloat(price))
         ? 0
-        : oParseFloat("" + price);
+        : parseFloat("" + price);
     this.price = round_di(
       parsed_price || 0,
       this.pos.dp["Foreign Product Price"],
@@ -64,7 +52,7 @@ patch(Orderline.prototype, {
       ? price
       : isNaN(parseFloat(price))
         ? 0
-        : oParseFloat("" + price);
+        : parseFloat("" + price);
     this.foreign_price = parsed_price * this.get_rate() || 0;
   },
 

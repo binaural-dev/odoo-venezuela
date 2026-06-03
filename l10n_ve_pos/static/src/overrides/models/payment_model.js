@@ -103,8 +103,10 @@ patch(PosPayment.prototype, {
 
     _convert_foreign_to_order(foreignAmount = 0) {
         const amount = Number(foreignAmount) || 0;
-        console.log("amount", amount);
-        const { foreignRate, inverseRate } = this._get_foreign_rate_values();
+        const { foreignRate } = this._get_foreign_rate_values();
+        if (foreignRate > 0) {
+            return amount * foreignRate;
+        }
         return amount;
     },
 

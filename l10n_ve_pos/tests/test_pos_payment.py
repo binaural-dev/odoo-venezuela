@@ -10,11 +10,10 @@ class PosPaymentTest(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        cls.currency_usd = cls.env["res.currency"].create({
-            "name": "USD",
-            "symbol": "$",
-            "rounding": 0.01,
-        })
+        cls.currency_vef = cls.env["res.currency"].search([("name", "=", "VEF")], limit=1)
+        if cls.currency_vef:
+            cls.company.currency_id = cls.currency_vef
+        cls.currency_usd = cls.env.ref("base.USD")
         cls.company.foreign_currency_id = cls.currency_usd
 
         cls.pos_config = cls.env["pos.config"].create({

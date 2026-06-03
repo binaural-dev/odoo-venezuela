@@ -9,19 +9,14 @@ class ResCurrencyTest(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        cls.currency_usd = cls.env["res.currency"].create({
-            "name": "USD",
-            "symbol": "$",
-            "rounding": 0.01,
-        })
-        cls.currency_eur = cls.env["res.currency"].create({
-            "name": "EUR",
-            "symbol": "\u20ac",
-            "rounding": 0.01,
-        })
+        cls.currency_vef = cls.env["res.currency"].search([("name", "=", "VEF")], limit=1)
+        if cls.currency_vef:
+            cls.company.currency_id = cls.currency_vef
+        cls.currency_usd = cls.env.ref("base.USD")
+        cls.currency_eur = cls.env.ref("base.EUR")
+        cls.company.foreign_currency_id = cls.currency_usd
 
     def test_01_load_pos_data_domain_with_foreign_currency(self):
-        self.company.foreign_currency_id = self.currency_usd
         data = {
             "company_id": str(self.company.id),
             "currency_id": str(self.company.currency_id.id),

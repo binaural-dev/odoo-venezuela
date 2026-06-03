@@ -59,6 +59,18 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_mf_debug">
+                    <div class="o_setting_left_pane">
+                        <field name="pos_mf_debug"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="pos_mf_debug"/>
+                        <div class="text-muted">
+                            Enable verbose fiscal-machine debug logs in the POS frontend.
+                        </div>
+                    </div>
+                </div>
                 <separator string="IoT - Fiscal Machine" />
                 <setting string="IoT Box" help="Connect devices using an IoT Box">
                     <field name="pos_is_posbox"/>

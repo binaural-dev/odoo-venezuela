@@ -12,7 +12,6 @@ import {
 patch(PosOrderline.prototype, {
 
   setup() {
-    this.get_all_foreign_prices()
     super.setup(...arguments);
   },
 
@@ -57,8 +56,10 @@ patch(PosOrderline.prototype, {
   },
 
   get_rate(currency) {
-    const inverse_rate = currency.rate;
-    return inverse_rate;
+    if (this.refunded_orderline_id && this.refunded_orderline_id.foreign_currency_rate) {
+      return this.refunded_orderline_id.foreign_currency_rate;
+    }
+    return currency.rate;
   },
 
   get_foreign_unit_price() {

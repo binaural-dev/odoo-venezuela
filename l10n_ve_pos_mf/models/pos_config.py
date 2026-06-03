@@ -20,8 +20,14 @@ class PosConfigInherit(models.Model):
     )
     has_cashbox = fields.Boolean(
         related="iface_fiscal_data_module.has_cashbox")
+    iot_ip = fields.Char(
+        related="iface_fiscal_data_module.iot_ip")
     access_button_mf = fields.Boolean()
     message_in_head = fields.Boolean()
+    mf_debug = fields.Boolean(
+        string="MF Debug",
+        help="Enable verbose fiscal-machine debug logs in the POS frontend.",
+    )
 
     def _compute_iot_device_ids(self):
         super()._compute_iot_device_ids()

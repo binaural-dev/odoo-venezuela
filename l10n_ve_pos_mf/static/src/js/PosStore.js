@@ -4,21 +4,28 @@ import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { patch } from "@web/core/utils/patch";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
-import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
-import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
 
 
-patch(TicketScreen, {
-  components: {
-    ...TicketScreen.components,
-    ReprintInvoiceButton
-  },
-});
 
 patch(PosStore.prototype, {
-  setup(...args) {
-    super.setup(...args);               // ← reenvía los args, evita el undefined
-    this.dialog = this.env.services.dialog; // ← no uses useService aquí
+  async setup(...args) {
+    await super.setup(...args);
+    this.dialog = this.env.services.dialog;
+    this.notification = this.env.services.notification;
+    this.orm = this.env.services.orm;
+  },
+
+  _mfDebugEnabled() {
+    return Boolean(this.config && this.config.mf_debug);
+  },
+
+  _mfLog(level, message, payload) {
+    if (!this._mfDebugEnabled()) {
+      return;
+    }
+    const prefix = "[l10n_ve_pos_mf]";
+    const fn = console[level] || console.log;
+    fn(`${prefix} ${message}`, payload ?? "");
   },
   open_cashbox() {
     if (this.useFiscalMachine() && this.config.has_cashbox) {
@@ -40,12 +47,10 @@ patch(PosStore.prototype, {
     return this.get_order();
   },
 
-
-
   aditionalInfo() {
     let res = []
-    res.push(`OPERADOR: ${this.get_cashier().name}`)
-    res.push(`PEDIDO: ${this.get_order().uid}`)
+    res.push(`OPERADOR: ${this.getCashier().name}`)
+    res.push(`PEDIDO: ${this.getOrder().uuid}`)
     return res
   },
   get get_flag_21() {
@@ -150,6 +155,17 @@ patch(PosStore.prototype, {
       })
     }
     invoice["valid"] = true
+    invoice["iot_ip"] = this.config.iot_ip || false
+
+    this._mfLog("info", "get_data_invoice: built payload", {
+      uid: order?.uid,
+      type: invoice.type,
+      iot_ip: invoice.iot_ip,
+      partner_vat: invoice.partner_id?.vat,
+      lines: invoice.invoice_lines?.length || 0,
+      payments: invoice.payment_lines?.length || 0,
+      total: order?.get_total_with_tax?.(),
+    });
     return invoice
   },
 
@@ -167,62 +183,58 @@ patch(PosStore.prototype, {
   },
 
   async print_out_invoice(data) {
-    const csrf_token = odoo.csrf_token || core.csrf_token;
-    const fdm = this.useFiscalMachine();
-
-    if (!fdm) {
-      return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
-    }
-
-    const request_data = {
-      action: `print_${data.type}`,
-      data: data,
-      csrf_token: csrf_token,
-    }
-
-    return new Promise(async (resolve, reject) => {
-
-      const listener = (data) => {
-
-        if (data.request_data.action === request_data.action) {
-          if (data.status.status === "connected") {
-            if (data.value && data.value.message === "No se ha completado") {
-              return;
-            }
-            fdm.removeListener(listener);
-            return resolve(data);
-          } else {
-            fdm.removeListener(listener);
-            return reject(data);
-          }
-        }
-      };
-
-      fdm.addListener(listener);
-
-      try {
-        const response = await fdm.action(request_data);
-
-        if (!response.result) {
-          fdm.removeListener(listener);
-          reject({
-            valid: false,
-            message: _t("Error connecting to the fiscal machine, check if it is turned on or connected to the IoT"),
-            printer_connection: false
-          });
-        }
-      } catch (error) {
-
-        fdm.removeListener(listener);
-        reject({
-          valid: false,
-          message: error.statusText === "timeout"
-            ? _t("The tax machine did not respond in time")
-            : _t("Error with the tax machine"),
-          printer_connection: false
-        });
-      }
+    this._mfLog("info", "print_out_invoice: start", {
+      uid: this.get_order()?.uid,
+      type: data?.type,
+      action: `print_${data?.type}`,
+      has_fdm: Boolean(this.useFiscalMachine()),
+      iot_ip: data?.iot_ip || this.config?.iot_ip,
     });
+
+    // In v19 we route every print request through ORM to the server side.
+    // The server then calls the IoT Box, avoiding browser-network constraints.
+    const response = await this._print_via_server_proxy(data);
+    if (!response || !response.value) {
+      return {
+        value: {
+          valid: false,
+          message: _t("Respuesta invalida del proxy del servidor"),
+        },
+      };
+    }
+    return response;
+  },
+
+
+  async _print_via_server_proxy(data) {
+    const iot_ip = data.iot_ip || this.config.iot_ip;
+    if (!iot_ip) {
+      this._mfLog("warn", "_print_via_server_proxy: missing iot_ip", { data, config: this.config });
+      return { value: { valid: false, message: _t("No se pudo determinar la IP del IoT Box") } };
+    }
+
+    try {
+      const action = `print_${data.type}`;
+      this._mfLog("info", "_print_via_server_proxy: orm.call", {
+        session_id: this.pos_session?.id,
+        iot_ip,
+        action,
+      });
+      data.config_id = this.config.id;
+      data.order_uuid = data.order_uuid || this.get_order()?.uuid || this.get_order()?.uid || false;
+      const response = await this.orm.call(
+        "pos.session",
+        "proxy_fiscal_action",
+        [action, data]
+      );
+
+      this._mfLog("info", "_print_via_server_proxy: orm.call response", response);
+      return response;
+    } catch (e) {
+      this._mfLog("warn", "_print_via_server_proxy: exception", e);
+      console.log("EEERROROROOR", e)
+      return { value: { valid: false, message: _t("Error de conexion con el proxy del servidor") } };
+    }
   },
 
   set_data_from_fiscal_machine(order, data) {
@@ -231,58 +243,4 @@ patch(PosStore.prototype, {
     order.mf_reportz = data["mf_reportz"] || false;
   },
 
-  async pushToMF(order) {
-    try {
-      let data = await this.get_data_invoice(order)
-
-      if (!data["valid"]) {
-        throw data["message"]
-      }
-
-      const response = await this.print_out_invoice(data)
-      const { value } = response
-
-      if (!value.valid) {
-        throw value
-      }
-
-      this.set_data_from_fiscal_machine(order, value)
-
-      return {
-        valid: true,
-        message: "",
-        printer_connection: true
-      }
-
-    } catch (err) {
-
-      if (!err.valid) {
-        this.dialog.add(AlertDialog, {
-          title: _t("MF error"),
-          body: _t(err.message ? err.message : "Internal MF error"),
-        });
-
-        return err
-
-      } else {
-        this.dialog.add(AlertDialog, {
-          title: _t("MF error"),
-          body: _t(err.status ? err.status : "Internal MF error"),
-        });
-        return err;
-      }
-    }
-  },
-
-  async push_single_order(order, opts) {
-    if (this.useFiscalMachine() && !order.mf_invoice_number) {
-      const response = await this.pushToMF(order)
-      if (response.printer_connection === false) {
-        return
-      }
-    }
-    return await super.push_single_order.apply(this, [order, opts]);
-  },
-
 })
-

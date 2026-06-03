@@ -11,11 +11,10 @@ class IgtfPosSessionTest(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        cls.currency_usd = cls.env["res.currency"].create({
-            "name": "USD",
-            "symbol": "$",
-            "rounding": 0.01,
-        })
+        cls.currency_vef = cls.env["res.currency"].search([("name", "=", "VEF")], limit=1)
+        if cls.currency_vef:
+            cls.company.currency_id = cls.currency_vef
+        cls.currency_usd = cls.env.ref("base.USD")
         cls.company.foreign_currency_id = cls.currency_usd
 
         cls.pos_config = cls.env["pos.config"].create({
@@ -35,6 +34,13 @@ class IgtfPosSessionTest(TransactionCase):
         cls.company.customer_account_igtf_id = cls.account_igtf
         cls.company.igtf_percentage = 3.0
 
+    def _patch_parent(self, model_name, method_name, **kwargs):
+        model_class = self.env[model_name].__class__
+        for klass in model_class.__mro__[1:]:
+            if method_name in klass.__dict__:
+                return patch.object(klass, method_name, **kwargs)
+        return patch.object(model_class.__bases__[0], method_name, **kwargs)
+
     def test_01_load_pos_data_fills_missing_apply_igtf(self):
         payment_method = self.env["pos.payment.method"].create({
             "name": "IGTF PM",
@@ -45,16 +51,16 @@ class IgtfPosSessionTest(TransactionCase):
                 {"id": payment_method.id},
             ]
         }
-        with patch.object(type(self.pos_session), "load_pos_data") as mock:
-            mock.return_value = data
+        with self._patch_parent("pos.session", "load_pos_data", return_value=data):
             result = self.pos_session.load_pos_data()
             self.assertIn("pos.payment.method", result)
+            pm_data = result["pos.payment.method"][0]
+            self.assertEqual(pm_data["apply_igtf"], True)
 
     def test_02_action_pos_session_open_success(self):
-        with patch.object(type(self.pos_session), "action_pos_session_open") as mock:
-            mock.return_value = {}
+        with self._patch_parent("pos.session", "action_pos_session_open", return_value={}):
             result = self.pos_session.action_pos_session_open()
-            self.assertIsNotNone(result)
+            self.assertEqual(result, {})
 
     def test_03_action_pos_session_open_fails_without_igtf_account(self):
         self.company.customer_account_igtf_id = False
@@ -63,7 +69,6 @@ class IgtfPosSessionTest(TransactionCase):
 
     def test_04_action_pos_session_open_succeeds_with_igtf_account(self):
         self.company.customer_account_igtf_id = self.account_igtf
-        with patch.object(type(self.pos_session), "action_pos_session_open") as mock:
-            mock.return_value = {}
+        with self._patch_parent("pos.session", "action_pos_session_open", return_value={}):
             result = self.pos_session.action_pos_session_open()
-            self.assertIsNotNone(result)
+            self.assertEqual(result, {})

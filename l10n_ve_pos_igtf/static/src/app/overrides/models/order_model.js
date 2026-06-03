@@ -14,9 +14,11 @@ patch(PosOrder.prototype, {
     this.foreign_igtf_amount = 0;
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
+    this.order_refund = {}
     this.update_igtf();
 
   },
+  
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
     this.igtf_amount = json.igtf_amount;
@@ -24,6 +26,7 @@ patch(PosOrder.prototype, {
     this.foreign_igtf_amount = json.foreign_igtf_amount;
     this.foreign_bi_igtf = json.foreign_bi_igtf;
   },
+
   export_as_JSON() {
     let json = super.export_as_JSON();
     json["igtf_amount"] = this.igtf_amount;
@@ -48,6 +51,7 @@ patch(PosOrder.prototype, {
     }
     return [];
   },
+
   _get_payment_method_data(payment) {
     if (!payment) {
       return null;
@@ -131,7 +135,7 @@ patch(PosOrder.prototype, {
   _get_default_payment_amounts(payment_method) {
     const rounding = this.pos?.currency?.rounding || 0.01;
     const foreignRounding = this.get_foreign_rounding?.() || this.get_foreign_currency?.()?.rounding || 0.01;
-    const orderDue = this.get_due?.() || 0;
+    const orderDue = this.get_due?.() ?? this.remainingDue ?? 0;
     const foreignDue = this.get_foreign_due?.() || 0;
 
     if (!this._is_invoice_order()) {
@@ -221,11 +225,91 @@ patch(PosOrder.prototype, {
 
   // --- FIN MÉTODOS AUXILIARES ---
 
+  _debug_financial_snapshot(tag = "") {
+    const paymentlines = this._get_order_payment_lines();
+    const totalDue = Number(
+      typeof this.totalDue === "function" ? this.totalDue() : this.totalDue,
+    ) || 0;
+    const amountPaid = Number(
+      typeof this.amountPaid === "function" ? this.amountPaid() : this.amountPaid,
+    ) || 0;
+    const remainingDue = Number(this.remainingDue) || 0;
+    const pendingFromTotal = totalDue - amountPaid;
+    const isPaid =
+      typeof this.isPaid === "function"
+        ? Boolean(this.isPaid())
+        : null;
+    const dueGetter =
+      typeof this.get_due === "function"
+        ? Number(this.get_due()) || 0
+        : null;
+
+    console.log("[IGTF][DEBUG]", tag, {
+      uid: this.uid,
+      is_refund: Boolean(this.is_refund || this.isRefund),
+      isPaid,
+      total_with_tax: this.get_total_with_tax?.(),
+      total_without_igtf: this.get_total_without_igtf?.(),
+      igtf_amount: this.get_igtf_amount?.(),
+      bi_igtf: this.get_bi_igtf?.(),
+      totalDue,
+      amountPaid,
+      remainingDue,
+      dueGetter,
+      pendingFromTotal,
+      paymentlines: paymentlines.map((line) => {
+        const method = this._get_payment_method_data(line);
+        return {
+          amount: Number(line?.amount) || 0,
+          foreign_amount: Number(this._get_payment_foreign_amount(line)) || 0,
+          apply_igtf: Boolean(method?.apply_igtf),
+          method: method?.name || method?.display_name || null,
+        };
+      }),
+    });
+  },
+
+  _has_refund_igtf_payload() {
+    const isRefundOrder = Boolean(this.is_refund || this.isRefund);
+    return Boolean(isRefundOrder && Math.abs(Number(this.igtf_amount) || 0) > 0.000001);
+  },
+
+  _syncRefundIgtfPaymentLines() {
+    if (!this._has_refund_igtf_payload()) {
+      return;
+    }
+
+    const paymentlines = this._get_order_payment_lines();
+    const editableLines = paymentlines.filter(
+      (line) => !line?.is_change && !(typeof line?.isChange === "function" && line.isChange()),
+    );
+    if (!editableLines.length) {
+      return;
+    }
+
+    editableLines.forEach((line) => {
+      line.set_include_igtf(false);
+      line.set_igtf_amount(0);
+      line.set_foreign_igtf_amount(0);
+    });
+
+    const paymentLine = editableLines[0];
+    paymentLine.set_include_igtf(true);
+    paymentLine.set_igtf_amount(Number(this.igtf_amount) || 0);
+    paymentLine.set_foreign_igtf_amount(Number(this.foreign_igtf_amount) || 0);
+  },
+
   update_igtf() {
     const paymentlines = this._get_order_payment_lines();
     const is_return = this.get_total_without_igtf() < 0;
     const rounding = this.pos?.currency?.rounding || 0.01;
     const foreignRounding = this.get_foreign_currency?.()?.rounding || 0.01;
+
+    if (this._has_refund_igtf_payload()) {
+      this._syncRefundIgtfPaymentLines();
+      this._debug_financial_snapshot("update_igtf:refund_payload");
+      return this.igtf_amount;
+    }
 
     // 1. Reiniciar contadores globales de la orden
     this.igtf_amount = 0;
@@ -349,6 +433,8 @@ patch(PosOrder.prototype, {
     this.igtf_amount = round_pr(total_igtf_amount, rounding);
     this.foreign_igtf_amount = round_pr(total_foreign_igtf_amount, foreignRounding);
 
+    this._debug_financial_snapshot("update_igtf:end");
+
     return this.igtf_amount;
   },
 
@@ -377,6 +463,14 @@ patch(PosOrder.prototype, {
     return round_pr(amount * igtfPercentage / 100, rounding);
   },
 
+  get_due() {
+    return Number(this.remainingDue) || 0;
+  },
+
+  getDue() {
+    return this.get_due();
+  },
+
   get_bi_igtf() {
     return this.bi_igtf;
   },
@@ -395,7 +489,7 @@ patch(PosOrder.prototype, {
 
   get_total_without_igtf() {
     const rounding = 0.01
-    const res = this.get_total_with_tax(...arguments);
+    const res = this.get_total_with_tax(...arguments) - this.get_igtf_amount();
     return round_pr(res, rounding);
   },
 
@@ -405,19 +499,76 @@ patch(PosOrder.prototype, {
     return subtotal + taxes;
   },
 
-  set_total_from_backend(data) {
-      if (data && typeof data === "object") {
-          if ("amount_total" in data) {
-              this.total_with_tax = -data.amount_total;
-          }
+  set_mf_info_from_backend(data) {
+    if (data && typeof data === "object") {
+      if ("mf_serie" in data) {
+        this.fiscal_machine = data?.fiscal_machine || null;
       }
-      this.update_igtf();
-      return true;
+      if ("mf_number" in data) {
+        this.mf_invoice_number = data?.mf_invoice_number || null;
+      }
+    }
+    return true;
   },
+
+  set_totals_from_backend(data) {
+    if (data && typeof data === "object") {
+      this.order_refund = data || {};
+      const rounding = this.pos?.currency?.rounding || 0.01;
+      const refundBase = Math.abs(Number(super.totalDue) || 0);
+      const originalIgtf = Math.abs(Number(data.igtf_amount) || 0);
+      const originalBi = Math.abs(Number(data.bi_igtf) || 0);
+      const isRefundOrder = Boolean(this.is_refund || this.isRefund);
+
+      if (isRefundOrder && refundBase > 0) {
+        let baseIgtfRefund = 0;
+        let igtfRefund = 0;
+
+        if (originalIgtf > 0) {
+          if (originalBi > 0) {
+            baseIgtfRefund = round_pr(Math.min(refundBase, originalBi), rounding);
+            const ratio = Math.min(baseIgtfRefund / originalBi, 1);
+            igtfRefund = round_pr(originalIgtf * ratio, rounding);
+          } else {
+            baseIgtfRefund = round_pr(refundBase, rounding);
+            igtfRefund = round_pr(originalIgtf, rounding);
+          }
+        }
+
+        this.total_with_tax = -round_pr(refundBase + igtfRefund, rounding);
+        this.igtf_amount = -igtfRefund;
+        this.bi_igtf = -baseIgtfRefund;
+        this.foreign_igtf_amount = 0;
+        this.foreign_bi_igtf = 0;
+
+        console.log("[IGTF][DEBUG] set_totals_from_backend:refund_calculation", {
+          uid: this.uid,
+          is_refund: isRefundOrder,
+          refundBase,
+          originalIgtf,
+          originalBi,
+          baseIgtfRefund,
+          igtfRefund,
+          total_with_tax: this.total_with_tax,
+        });
+      } else {
+        if ("amount_total" in data) {
+          const backendTotal = Number(data.amount_total) || 0;
+          this.total_with_tax = isRefundOrder ? -Math.abs(backendTotal) : backendTotal;
+        }
+      }
+      this._debug_financial_snapshot("set_totals_from_backend");
+    }
+    return true;
+  },
+
 
   get totalDue() {
     const res = this.get_total_with_tax(...arguments);
-    const rounding = 0.001
+    const rounding = this.pos?.currency?.rounding || 0.01;
+    if (this._has_refund_igtf_payload()) {
+      return round_pr(res, rounding);
+    }
     const paymentlines = this._get_order_payment_lines();
     if (paymentlines.length === 0) {
       return round_pr(res, rounding);
@@ -429,12 +580,15 @@ patch(PosOrder.prototype, {
     if (!has_igtf_payment) {
       return round_pr(res, rounding);
     }
-    return super.totalDue + this.get_igtf_amount()
+    return round_pr(super.totalDue + this.get_igtf_amount(), rounding);
   },
 
   get priceIncl() {
     const base = super.priceIncl;
     const rounding = 0.01
+    if (this._has_refund_igtf_payload()) {
+      return round_pr(base, rounding);
+    }
     const paymentlines = this._get_order_payment_lines();
     if (paymentlines.length === 0) {
       return round_pr(base, rounding);
@@ -479,27 +633,85 @@ patch(PosOrder.prototype, {
     return this.foreign_igtf_amount;
   },
 
-  add_paymentline(payment_method) {
-    let is_change = false;
-    let is_return = this.get_total_without_igtf() < 0;
-    if (!is_return) {
-      is_change = this.get_due() < 0;
-    } else {
-      is_change = this.get_due() > 0;
+  _syncPaymentLineToPendingDue(paymentLine) {
+    if (!paymentLine) {
+      return false;
     }
 
-    if (
-      !payment_method.apply_igtf ||
-      this.get_due() <= this.get_igtf_amount() ||
-      is_change
-    ) {
-      let res = super.add_paymentline(...arguments);
-      this.update_igtf();
-      return res;
+    const totalDue = Number(
+      typeof this.totalDue === "function" ? this.totalDue() : this.totalDue,
+    ) || 0;
+    const amountPaid = Number(
+      typeof this.amountPaid === "function" ? this.amountPaid() : this.amountPaid,
+    ) || 0;
+    const pendingDueRaw = totalDue - amountPaid;
+    const rounding = this.pos?.currency?.rounding || 0.01;
+    const pendingDue = round_pr(pendingDueRaw, rounding);
+
+    console.log("[IGTF][DEBUG] _syncPaymentLineToPendingDue:before", {
+      uid: this.uid,
+      lineAmount: Number(paymentLine?.amount) || 0,
+      totalDue,
+      amountPaid,
+      pendingDueRaw,
+      pendingDue,
+    });
+
+    if (!Number.isFinite(pendingDue) || Math.abs(pendingDue) <= 0.000001) {
+      return false;
     }
-    let res_igtf = this.add_paymentline_without_igtf(...arguments);
+
+    const currentAmount = Number(paymentLine?.amount) || 0;
+    const targetAmount = currentAmount + pendingDue;
+    if (Math.abs(targetAmount - currentAmount) <= 0.000001) {
+      return false;
+    }
+
+    if (typeof paymentLine?.setAmount === "function") {
+      paymentLine.setAmount(targetAmount);
+    } else if (typeof paymentLine?.set_amount === "function") {
+      paymentLine.set_amount(targetAmount, true);
+    } else {
+      paymentLine.amount = targetAmount;
+    }
+
+    console.log("[IGTF][DEBUG] _syncPaymentLineToPendingDue:after", {
+      uid: this.uid,
+      previousAmount: currentAmount,
+      targetAmount,
+      totalDue,
+      amountPaid,
+    });
+
+    this._syncRefundIgtfPaymentLines();
+
+    return true;
+  },
+
+  addPaymentline(payment_method) {
+    const result = super.addPaymentline(...arguments);
+    if (!result?.status) {
+      return result;
+    }
+
     this.update_igtf();
-    return res_igtf;
+
+    if (!this.is_refund) {
+      return result;
+    }
+
+    const paymentLine = result.data;
+    const synced = this._syncPaymentLineToPendingDue(paymentLine);
+    if (!synced) {
+      return result;
+    }
+
+    this.update_igtf();
+    return result;
+  },
+
+  add_paymentline(payment_method) {
+    return this.addPaymentline(...arguments);
   },
 
   add_paymentline_without_igtf(payment_method) {
@@ -524,6 +736,13 @@ patch(PosOrder.prototype, {
         true,
       );
       newPaymentline.set_amount(defaultAmounts.orderAmount, true);
+
+      if (this.is_refund) {
+        this.update_igtf();
+        if (this._syncPaymentLineToPendingDue(newPaymentline)) {
+          this.update_igtf();
+        }
+      }
 
       if (payment_method.payment_terminal) {
         newPaymentline.set_payment_status("pending");

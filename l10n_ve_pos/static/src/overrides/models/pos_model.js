@@ -14,14 +14,14 @@ patch(PosStore.prototype, {
         this.prefix_vats = loadedData["prefix_vats"];
     },
 
-    async push_orders(order, opts) {
-        let res = await super.push_orders(order, opts);
+    async pushOrders(order, opts) {
+        let res = await super.pushOrders(order, opts);
         await this.update_products(order)
         return res
     },
 
-    async push_single_order(order, opts) {
-        let res = await super.push_single_order(...arguments);
+    async pushSingleOrder(order, opts) {
+        let res = await super.pushSingleOrder(...arguments);
         await this.update_products(order)
         return res
     },

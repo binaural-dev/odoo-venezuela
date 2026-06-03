@@ -1,10 +1,14 @@
 /** @odoo-module **/
 
 import { useService } from "@web/core/utils/hooks";
-import { Component, useRef } from "@odoo/owl";
+import { Component } from "@odoo/owl";
 
 export class FullRefundButton extends Component {
   static template = "l10n_ve_pos.FullRefundButton";
+  static props = {
+    order: { type: Object, optional: true },
+    ticket_screen: { type: Object },
+  };
 
   /**
    * Component setup.
@@ -19,17 +23,20 @@ export class FullRefundButton extends Component {
    * if they haven't been linked to a refund order yet and have refundable quantities.
    */
   async click() {
-    this.numberBuffer.reset(); // Reset numpad widget values to avoid inconsistency
+    this.numberBuffer.reset();
     const order = this.props.order;
-    if (!order) return;
-    for (const orderline of order.orderlines) {
+    const ticketScreen = this.props.ticket_screen;
+    if (!order || !ticketScreen) {
+      return;
+    }
+
+    const orderlines = order.getOrderlines?.() || order.lines || [];
+    for (const orderline of orderlines) {
       if (!orderline) continue;
-      const toRefundDetail =
-        this.props.ticket_screen._getToRefundDetail(orderline);
-      // When already linked to an order, do not modify the to refund quantity.
-      if (toRefundDetail.destinationOrderUid) continue;
-      const refundableQty =
-        toRefundDetail.orderline.qty - toRefundDetail.orderline.refundedQty;
+      const toRefundDetail = ticketScreen.getToRefundDetail(orderline);
+      if (toRefundDetail.destinationOrder) continue;
+      const line = toRefundDetail.line;
+      const refundableQty = line ? (line.qty || 0) - (line.refundedQty || 0) : 0;
       if (refundableQty <= 0) continue;
       toRefundDetail.qty = refundableQty;
     }

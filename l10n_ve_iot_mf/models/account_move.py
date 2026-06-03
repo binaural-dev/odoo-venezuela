@@ -1,5 +1,5 @@
 from odoo import fields, models, api, _
-from odoo.exceptions import ValidationError,UserError
+from odoo.exceptions import UserError, ValidationError
 import re
 import unicodedata
 
@@ -40,6 +40,14 @@ class AccountMoveInh(models.Model):
         related='company_id.invoice_print_type',
         store=True
     )
+
+    def action_print_pdf(self):
+        if self.iot_mf:
+            raise UserError(_(
+                "Esta factura es emitida por máquina fiscal. "
+                "No se genera un PDF del documento fiscal."
+            ))
+        return super().action_print_pdf()
 
     def has_printed(self, invoice_number):
         """

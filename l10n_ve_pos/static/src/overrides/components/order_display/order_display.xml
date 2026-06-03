@@ -10,7 +10,7 @@
                         Tasa BCV: <t t-out="(props?.conversion_rate?.toFixed(2) || 0) "/>
                     </div>
                     <div class="cant_prod">
-                        Total de productos: <t t-out="quantity_products_display"/>
+                        Total de productos: <t t-out="props.quantity_products"/>
                     </div>
                 </div>
 
