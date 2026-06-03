@@ -121,8 +121,8 @@ class TestIgtfInternationalException(TransactionCase):
             "taxpayer_type": "special",
             "property_account_payable_id": cls.payable_account.id,
             "property_account_receivable_id": cls.receivable_account.id,
-            "supplier_account_igtf_id": cls.igtf_account.id,
-            "customer_account_igtf_id": cls.igtf_account_customer.id,
+            "default_advance_supplier_account_id": cls.igtf_account.id,
+            "default_advance_customer_account_id": cls.igtf_account_customer.id,
         })
 
         # ── Producto de prueba ───────────────────────────────────────────────
