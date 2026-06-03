@@ -578,10 +578,14 @@ class SerialFiscalDriver(SerialDriver):
         for payment in payment_lines:
             grouped[payment.get("payment_method")] += payment.get("amount", 0)
 
-        grouped_payments = defaultdict(float)
-        for payment in payment_lines:
-            grouped_payments[payment["payment_method"]] += payment["amount"]
-        return [{"payment_method": method, "amount": abs(amount)} for method, amount in grouped_payments.items()]
+        payment_lines = []
+        change_lines = []
+        for method, amount in grouped.items():
+            if amount > 0:
+                payment_lines.append({"payment_method": method, "amount": amount})
+            elif amount < 0:
+                change_lines.append({"payment_method": method, "amount": abs(amount)})
+        return payment_lines, change_lines
 
     def prepare_invoice_data(self, invoice):
         """
@@ -646,8 +650,6 @@ class SerialFiscalDriver(SerialDriver):
                 cmd.append(line_cmd)            
             
             cmd.append("3")
-            
-            payment_lines = self.group_payments(invoice_data["payment_lines"])
             
             closing_method = "01"
             if payment_lines:
@@ -717,7 +719,7 @@ class SerialFiscalDriver(SerialDriver):
             for command in cmd:
                 result = self.send_command(command)
                 
-                if not result and command not in ["101","199"]:
+                if not result and not (command.startswith("1") and len(command) == 3):
                     msg.append(f"Fallo al enviar comando: {command}")
                     self.send_command("199")
                     return {"valid": False, "message": msg}
@@ -1125,7 +1127,7 @@ class SerialFiscalDriver(SerialDriver):
                 if formatted_line:
                     product_lines.append(formatted_line)          
 
-            payment_lines = self.group_payments(invoice.get("payment_lines", []))
+            payment_lines, _change_lines = self.group_payments(invoice.get("payment_lines", []))
             payment_commands = []
             
             closing_method = "01"
