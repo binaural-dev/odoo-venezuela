@@ -308,13 +308,7 @@ patch(PosOrder.prototype, {
       }
 
       if (products.length > 0)
-        return this.env.services.popup.add(ErrorPopup, {
-          title: _t("Validate Product in Warehouse"),
-          body: _t(
-            "The product %s You do not have enough stock in the warehouse",
-            products,
-          ),
-        });
+        return { "valid": false, "message": "Validate Product in Warehouse" }
     }
     return await super.pay(...arguments);
   },
