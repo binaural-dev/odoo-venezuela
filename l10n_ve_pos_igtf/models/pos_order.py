@@ -72,6 +72,11 @@ class PosOrder(models.Model):
                 )
                 raise
 
+        order_igtf_amount = abs(self.igtf_amount or 0.0)
+        if float_is_zero(order_igtf_amount, precision_rounding=self.currency_id.rounding):
+            # Refund without IGTF should keep core behavior unchanged.
+            return super().action_pos_order_paid()
+
         # For refunds, validate against a compensated paid amount when IGTF is already
         # embedded in payment lines, to avoid rejecting valid IGTF-inclusive refunds.
         if not self.config_id.cash_rounding \
@@ -90,8 +95,7 @@ class PosOrder(models.Model):
             for payment in self.payment_ids
             if payment.include_igtf and payment.igtf_amount
         )
-        order_igtf_amount = abs(self.igtf_amount or 0.0)
-        refund_igtf_for_validation = order_igtf_amount or payment_igtf_amount
+        refund_igtf_for_validation = order_igtf_amount
 
         adjusted_paid = self.amount_paid
         if refund_igtf_for_validation:
