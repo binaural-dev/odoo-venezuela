@@ -120,7 +120,7 @@ patch(PosStore.prototype, {
 
     if (order.orderlines.length > 0) {
 
-      let vef_base = this.currency.name === "VEF"
+      let vef_base = this.currency.name === "VEF" || this.currency.name === "VES"
 
       invoice['invoice_lines'] = order.orderlines.map((el) => {
 
@@ -264,16 +264,38 @@ patch(PosStore.prototype, {
     }
   },
   async push_single_order(order, opts) {
+    try {
+      const order_payload = [{
+        'data': order.export_as_JSON()
+      }];
+      
+      await this.orm.call("pos.order", "validate_order_dry_run", [order_payload]);
+      
+    } catch (error) {
+      let msg = _t("Error desconocido en Odoo");
+      if (error.data && error.data.message) {
+        msg = error.data.message;
+      } else if (error.message) {
+        msg = error.message;
+      }
+      
+      this.env.services.popup.add(ErrorPopup, {
+        title: _t("Validación Contable"),
+        body: msg,
+      });
+      
+      return;
+    }
+    
     if (this.useFiscalMachine() && !order.mf_invoice_number) {
       
       const response = await this.pushToMF(order)
 
-    if (response.printer_connection == false || !("printer_connection" in response)) {
-      return
-    }
+      if (response.printer_connection == false || !("printer_connection" in response)) {
+        return
+      }
 
     }
     return await super.push_single_order.apply(this, [order, opts]);
   },
 })
-

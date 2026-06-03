@@ -168,7 +168,10 @@ class WizardAccountingReports(models.TransientModel):
 
         domain = self._get_retention_domain()
         retention_ids = retention.search(domain)
-        moves = retention_ids.mapped("retention_line_ids.move_id")
+        allowed_states = ["posted"] if self.report == "purchase" else ["posted", "cancel"]
+        moves = retention_ids.mapped("retention_line_ids.move_id").filtered(
+            lambda m: m.state in allowed_states and m.correlative not in ['/', False]
+        )
         res_moves |= moves
 
         return res_moves

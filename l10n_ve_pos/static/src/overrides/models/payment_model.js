@@ -45,9 +45,9 @@ patch(Payment.prototype, {
 	set_foreign_amount(amount, only = false) {
 		this.foreign_amount = amount;
 		if (!only) {
-			if (this.pos.currency.name == "VEF") {
+			if (this.pos.currency.name == "VEF" || this.pos.currency.name == "VES") {
 				if (this.payment_method.is_foreign_currency) {
-					this.amount=this.foreign_amount / this.pos.foreign_currency.rate
+					this.amount = round_pr(this.foreign_amount * 1 / this.pos.foreign_currency.rate, this.pos.currency.rounding)
 					return;
 				}
 				this.amount = amount / this.order.get_conversion_rate();
@@ -55,12 +55,12 @@ patch(Payment.prototype, {
 			if (this.pos.currency.name == "USD") {
 				if (this.payment_method.is_foreign_currency) {
 					this.set_amount(
-						this.foreign_amount * this.pos.foreign_currency.inverse_rate,
+						this.foreign_amount * 1 / this.pos.foreign_currency.inverse_rate,
 					);
 					return;
 				}
 				this.set_amount(
-					this.foreign_amount * this.order.init_conversion_rate,
+					this.foreign_amount * 1 / this.order.init_conversion_rate,
 					true,
 				);
 			}
