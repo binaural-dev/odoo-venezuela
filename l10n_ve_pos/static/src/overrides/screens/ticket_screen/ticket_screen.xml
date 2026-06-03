@@ -3,5 +3,12 @@
         <xpath expr="//div[hasclass('control-buttons')]" position="inside">
             <FullRefundButton order="_selectedSyncedOrder" ticket_screen="this"/>
         </xpath>
+        <xpath expr="//OrderDisplay" position="attributes">
+            <attribute name="conversion_rate">_selectedSyncedOrder.get_conversion_rate()</attribute>
+            <attribute name="quantity_products">_selectedSyncedOrder.get_qty_products()</attribute>
+            <attribute name="foreign_tax_total">_selectedSyncedOrder.get_foreign_total_tax_per_line()</attribute>
+            <attribute name="foreign_total_tax">_selectedSyncedOrder.get_foreign_total_tax_per_line()</attribute>
+            <attribute name="foreign_total_with_taxes">_selectedSyncedOrder.get_foreign_total_with_taxes()</attribute>
+        </xpath>
     </t>
 </templates>
