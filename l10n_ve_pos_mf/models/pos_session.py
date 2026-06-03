@@ -1,9 +1,10 @@
 import logging
 import threading
+import time
 
 import requests
 
-from odoo import models, fields, api, _
+from odoo import SUPERUSER_ID, api, fields, models, _
 
 
 _logger = logging.getLogger(__name__)
@@ -48,6 +49,58 @@ class PosSession(models.Model):
         res["search_params"]["fields"].append("fiscal_code")
         return res
 
+    @staticmethod
+    def _find_nested_value(payload, keys):
+        if isinstance(payload, dict):
+            for key in keys:
+                value = payload.get(key)
+                if value not in (None, False, ""):
+                    return value
+            for value in payload.values():
+                found = PosSession._find_nested_value(value, keys)
+                if found not in (None, False, ""):
+                    return found
+        elif isinstance(payload, list):
+            for value in payload:
+                found = PosSession._find_nested_value(value, keys)
+                if found not in (None, False, ""):
+                    return found
+        return False
+
+    def _persist_fiscal_data(self, order_uuid, serial_machine, invoice_number, report_z):
+        if not order_uuid:
+            return
+
+        values = {}
+        if serial_machine:
+            values["fiscal_machine"] = str(serial_machine)
+        if invoice_number:
+            values["mf_invoice_number"] = str(invoice_number)
+        if report_z:
+            values["mf_reportz"] = str(report_z)
+        if not values:
+            return
+
+        for _ in range(10):
+            with api.Environment.manage():
+                with self.env.registry.cursor() as cr:
+                    env = api.Environment(cr, SUPERUSER_ID, {})
+                    order = env["pos.order"].search([("uuid", "=", order_uuid)], limit=1)
+                    if order:
+                        order.write(values)
+                        _logger.info(
+                            "POS MF proxy_fiscal_action: saved fiscal data uuid=%s values=%s",
+                            order_uuid,
+                            values,
+                        )
+                        return
+            time.sleep(0.5)
+
+        _logger.warning(
+            "POS MF proxy_fiscal_action: order not found for uuid=%s while saving fiscal data",
+            order_uuid,
+        )
+
     @api.model
     def proxy_fiscal_action(self, action, payload):
         """Proxy fiscal print actions through the Odoo server asynchronously.
@@ -89,6 +142,8 @@ class PosSession(models.Model):
             iot_host,
         )
 
+        order_uuid = payload.get("order_uuid")
+
         def _do_action():
             try:
                 response = requests.post(
@@ -110,9 +165,41 @@ class PosSession(models.Model):
                     headers={"Content-Type": "application/json"},
                 )
                 response.raise_for_status()
+
+                response_data = {}
+                try:
+                    response_data = response.json()
+                except ValueError:
+                    _logger.warning(
+                        "POS MF proxy_fiscal_action: non-JSON response action=%s",
+                        action,
+                    )
+
+                serial_machine = self._find_nested_value(
+                    response_data,
+                    ["serial_machine", "fiscal_machine", "mf_serial", "serial"],
+                )
+                invoice_number = self._find_nested_value(
+                    response_data,
+                    ["mf_invoice_number", "invoice_number", "sequence", "number"],
+                )
+                report_z = self._find_nested_value(
+                    response_data,
+                    ["mf_reportz", "report_z"],
+                )
+
+                if order_uuid:
+                    self._persist_fiscal_data(
+                        order_uuid,
+                        serial_machine,
+                        invoice_number,
+                        report_z,
+                    )
+
                 _logger.info(
-                    "POS MF proxy_fiscal_action: async OK action=%s",
+                    "POS MF proxy_fiscal_action: async OK action=%s order_uuid=%s",
                     action,
+                    order_uuid,
                 )
             except Exception as exc:
                 _logger.error(

@@ -89,6 +89,29 @@ patch(PosOrderAccounting.prototype, {
     },
 
     isPaid() {
-        return Boolean(super.isPaid?.(...arguments));
+        const paid = Boolean(super.isPaid?.(...arguments));
+        if (paid) {
+            return true;
+        }
+
+        const order = this._getOrder?.() || null;
+        const totalDue = this._toNumber(this.totalDue, 0);
+        const amountPaid = this._toNumber(this.amountPaid, 0);
+        const remainingDue = this._toNumber(this.remainingDue, 0);
+        const dueGetter =
+            typeof order?.get_due === "function"
+                ? this._toNumber(order.get_due(), 0)
+                : null;
+
+        console.log("[IGTF][DEBUG] accounting:isPaid:false", {
+            uid: order?.uid || null,
+            totalDue,
+            amountPaid,
+            remainingDue,
+            pendingFromTotal: totalDue - amountPaid,
+            dueGetter,
+            igtf: typeof order?.get_igtf_amount === "function" ? this._toNumber(order.get_igtf_amount(), 0) : null,
+        });
+        return false;
     },
 });

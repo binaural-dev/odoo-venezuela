@@ -74,6 +74,36 @@ patch(PaymentScreen.prototype, {
       return res
     }
 
+    this.currentOrder?._debug_financial_snapshot?.("l10n_ve_pos:_isOrderValid:afterSuper");
+    if (!res) {
+      const order = this.currentOrder;
+      const totalDue = Number(
+        typeof order.totalDue === "function" ? order.totalDue() : order.totalDue,
+      ) || 0;
+      const amountPaid = Number(
+        typeof order.amountPaid === "function" ? order.amountPaid() : order.amountPaid,
+      ) || 0;
+      const remainingDue = Number(order.remainingDue) || 0;
+      console.log("[IGTF][DEBUG] l10n_ve_pos:_isOrderValid:failed", {
+        uid: order.uid,
+        isPaid: typeof order.isPaid === "function" ? Boolean(order.isPaid()) : null,
+        totalDue,
+        amountPaid,
+        remainingDue,
+        dueGetter: typeof order.get_due === "function" ? Number(order.get_due()) || 0 : null,
+        foreignDue: typeof order.get_foreign_due === "function" ? Number(order.get_foreign_due()) || 0 : null,
+        pendingFromTotal: totalDue - amountPaid,
+        paymentlines: (order.get_paymentlines?.() || order.paymentlines || order.payment_ids || []).map((line) => ({
+          amount: Number(line?.amount) || 0,
+          foreign_amount: Number(line?.foreign_amount) || 0,
+          is_done: typeof line?.is_done === "function" ? line.is_done() : null,
+          payment_status: line?.payment_status || null,
+          apply_igtf: Boolean(line?.payment_method?.apply_igtf),
+          method: line?.payment_method?.name || null,
+        })),
+      });
+    }
+
     let amounts = this.currentOrder.get_paymentlines().map((el) => el.amount)
     let hasEmptyPayment = amounts.some((el) => el == 0);
     if (hasEmptyPayment && this.currentOrder.get_total_with_tax() !== 0) {

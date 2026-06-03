@@ -23,8 +23,14 @@ patch(OrderPaymentValidation.prototype, {
     async _try_print_invoice(order) {
         try {
             const data = await this.get_data_invoice(order);
+            if (!data?.valid) {
+                this.pos.dialog.add(AlertDialog, {
+                    title: _t("MF error"),
+                    body: _t(data?.message || "No se pudo construir la factura fiscal"),
+                });
+                return;
+            }
             data.iot_ip = data.iot_ip || this.pos.config.iot_ip;
-
             this.pos._print_via_server_proxy(data).then(response => {
                 console.log('MF proxy response:', response);
             }).catch(err => {
@@ -57,49 +63,51 @@ patch(OrderPaymentValidation.prototype, {
         }
 
         invoice["info"] = this.pos.aditionalInfo()
-
-        let uid = order.uid
-        const values = Object.values(this.pos.toRefundLines || {})
-        let lines = []
-        for (let i = 0; i < values.length; i++) {
-            if (values[i].destinationOrderUid == uid) {
-                lines.push(values[i])
-            }
-        }
+        invoice["order_uuid"] = order?.uuid || order?.uid || false
 
         invoice['type'] = 'out_invoice'
-        if (order.get_total_with_tax() < 0) {
+        if (order.is_refund || order.get_total_with_tax() < 0) {
             invoice['type'] = 'out_refund'
-        }
-        if (lines.length > 0 && invoice['type'] == 'out_refund') {
             try {
-                const orderUid = lines?.[0]?.orderline?.orderUid
-                if (!orderUid) {
-                    return { "valid": false, "message": "No se encontró la orden de origen para la devolución." }
-                }
-                const response = await this.pos.orm.call("pos.order", "get_order_by_uid", [[], orderUid])
-                if (response.length > 0 && !this.pos.is_same_mf(response[0].fiscal_machine)) {
-                    return { "valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}` }
-                }
-                if (response.length > 0) {
-                    const date = new Date(response[0].date_order);
-                    const format_date = date.toLocaleDateString('es-ES');
+                const originalOrder = this.pos.selectedOrderData;
 
-                    invoice["invoice_affected"] = {
-                        "number": response[0].mf_invoice_number,
-                        "serial_machine": response[0].fiscal_machine,
-                        "date": format_date,
+                let serialMachine = originalOrder?.fiscal_machine;
+                let invoiceNumber = originalOrder?.mf_invoice_number;
+                let orderDate = originalOrder?.date_order;
+                console.log("Original order data for refund:", { serialMachine, invoiceNumber, orderDate });
+                if ((!serialMachine || !invoiceNumber) && originalOrder?.id) {
+                    const response = await this.pos.orm.call("pos.order", "search_read", [
+                        [["id", "=", originalOrder.id]],
+                        ["fiscal_machine", "mf_invoice_number", "date_order"],
+                    ]);
+                    if (response.length > 0) {
+                        serialMachine = response[0].fiscal_machine;
+                        invoiceNumber = response[0].mf_invoice_number;
+                        orderDate = response[0].date_order;
                     }
+                }
+                
+                if (!serialMachine || !invoiceNumber) {
+                    return { "valid": false, "message": "No se encontró la orden fiscal original para la devolución." }
+                }
+
+                if (!this.pos.is_same_mf(serialMachine)) {
+                    return { "valid": false, "message": `El documento fue impreso desde la Maquina ${serialMachine}` }
+                }
+
+                const date = orderDate ? new Date(orderDate) : new Date();
+                const formattedDate = Number.isNaN(date.getTime())
+                    ? new Date().toLocaleDateString('es-ES')
+                    : date.toLocaleDateString('es-ES');
+
+                invoice["invoice_affected"] = {
+                    "number": invoiceNumber,
+                    "serial_machine": serialMachine,
+                    "date": formattedDate,
                 }
             } catch (err) {
                 console.error("MF error: ", err)
-                if (!err.valid) {
-                    this.pos.dialog.add(AlertDialog, {
-                        title: _t("MF error"),
-                        body: _t(err.message ? err.message : "Internal MF error"),
-                    });
-                    return err
-                }
+                return { "valid": false, "message": err?.message || "Internal MF error" }
             }
         }
         if (order.lines.length > 0) {

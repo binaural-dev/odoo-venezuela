@@ -47,8 +47,6 @@ patch(PosStore.prototype, {
     return this.get_order();
   },
 
-
-
   aditionalInfo() {
     let res = []
     res.push(`OPERADOR: ${this.getCashier().name}`)
@@ -207,6 +205,7 @@ patch(PosStore.prototype, {
     return response;
   },
 
+
   async _print_via_server_proxy(data) {
     const iot_ip = data.iot_ip || this.config.iot_ip;
     if (!iot_ip) {
@@ -221,8 +220,8 @@ patch(PosStore.prototype, {
         iot_ip,
         action,
       });
-      console.log('this.config', this.config)
       data.config_id = this.config.id;
+      data.order_uuid = data.order_uuid || this.get_order()?.uuid || this.get_order()?.uid || false;
       const response = await this.orm.call(
         "pos.session",
         "proxy_fiscal_action",
@@ -243,83 +242,5 @@ patch(PosStore.prototype, {
     order.mf_invoice_number = data["sequence"] || false;
     order.mf_reportz = data["mf_reportz"] || false;
   },
-
-  // async pushToMF(order) {
-  //   try {
-  //     this._mfLog("info", "pushToMF: start", { uid: order?.uid, mf_invoice_number: order?.mf_invoice_number });
-  //     let data = await this.get_data_invoice(order)
-
-  //     if (!data["valid"]) {
-  //       throw data["message"]
-  //     }
-
-  //     const response = await this.print_out_invoice(data)
-  //     const { value } = response
-
-  //     this._mfLog("info", "pushToMF: print_out_invoice returned", { value });
-
-  //     if (!value.valid) {
-  //       throw value
-  //     }
-
-  //     this.set_data_from_fiscal_machine(order, value)
-
-  //     this._mfLog("info", "pushToMF: stored MF values", {
-  //       uid: order?.uid,
-  //       fiscal_machine: order?.fiscal_machine,
-  //       mf_invoice_number: order?.mf_invoice_number,
-  //       mf_reportz: order?.mf_reportz,
-  //     });
-
-  //     return {
-  //       valid: true,
-  //       message: "",
-  //       printer_connection: true
-  //     }
-
-  //   } catch (err) {
-
-  //     this._mfLog("warn", "pushToMF: error", err);
-
-  //     if (!err.valid) {
-  //       this.dialog.add(AlertDialog, {
-  //         title: _t("MF error"),
-  //         body: _t(err.message ? err.message : "Internal MF error"),
-  //       });
-
-  //       return err
-
-  //     } else {
-  //       this.dialog.add(AlertDialog, {
-  //         title: _t("MF error"),
-  //         body: _t(err.status ? err.status : "Internal MF error"),
-  //       });
-  //       return err;
-  //     }
-  //   }
-  // },
-
-  // //   generate_report_x() {
-  // //   const fdm = this.useFiscalMachine();
-  // //   if (!fdm) return
-  // //   new Promise(async (resolve, reject) => {
-  // //     await fdm.action({
-  // //       action: 'print_out_invoice',
-  // //       data: {},
-  // //     })
-  // //   });
-  // // },
-
-  // async pushSingleOrder(order, opts) {
-  //   const hasMF = Boolean(this.useFiscalMachine()) || Boolean(this.config?.iot_ip);
-  //   if (hasMF && !order.mf_invoice_number) {
-  //     const response = await this.pushToMF(order)
-  //     if (response.printer_connection === false) {
-  //       console.warn("Fiscal machine not connected, syncing order without fiscal print", response)
-  //     }
-  //   }
-  //   this._mfLog("info", "pushSingleOrder: calling super", { uid: order?.uid });
-  //   return await super.pushSingleOrder.apply(this, [order, opts]);
-  // },
 
 })

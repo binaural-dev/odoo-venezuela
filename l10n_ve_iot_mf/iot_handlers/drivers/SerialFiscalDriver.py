@@ -305,8 +305,6 @@ class SerialFiscalDriver(SerialDriver):
         trama = self._States("S1")
         res = S1PrinterData(trama)
         machine_number = res.__dict__.get("_registeredMachineNumber", "")
-        _logger.warning("print_out_refound de la factura %s", invoice["data"]["invoice_affected"]["serial_machine"])
-
         _logger.warning("print_out_refound numero de la maquina recibida %s", machine_number)
         
         if invoice["data"]["invoice_affected"]["serial_machine"] != machine_number:

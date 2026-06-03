@@ -219,13 +219,11 @@ class SerialBaseFiscalDriver(SerialDriver):
                 msg.append("No se encontro la cantidad del producto")
                 valid = False
             if not "tax" in line_keys or int(line["tax"]) < 0 and int(line["tax"]) > 4:
-                _logger.warning("TaAAAAAAAAAAAAAAAAAAAAAAax no valido: %s", line.get("tax"))
                 msg.append("El impuesto no es valido")
                 valid = False
             if not "name" in line_keys:
                 msg.append("No se encontro el nombre del producto")
                 valid = False
-            _logger.warning("TaAAAAAAAAAAAAAAAAAAAAAAax no valido: %s", line.get("tax"))
 
         if not "payment_lines" in invoice_keys or len(invoice["payment_lines"]) == 0:
             msg.append("No se recibio informacion de los pagos")
