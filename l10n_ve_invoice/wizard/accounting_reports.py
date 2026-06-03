@@ -1524,27 +1524,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         row_resume, 5, total_f_formula,cell_formats.get("number")
                     )
 
-            start_col_formula = 6
-                
-            column_bi_range = (
-                f"C{row_resume + 1}:{utility.xl_col_to_name(total_line - 1)}{row_resume + 1}"
-            )
-            column_df_range = (
-                f"D{row_resume + 1}:{utility.xl_col_to_name(total_line)}{row_resume + 1}"
-            )
-            imposed_formula = (
-                f"=SUMPRODUCT(--({column_bi_range}), --(MOD(COLUMN({column_bi_range}), 2)=1))"
-            )
-            debit_formula = (
-                f"=SUMPRODUCT(--({column_df_range}), --(MOD(COLUMN({column_df_range}), 2)=0))"
-            )
+            values = resume.get("values", [0, 0, 0, 0])
+            base_total_neto = (values[0] if len(values) > 0 else 0) + (values[2] if len(values) > 2 else 0)
+            debit_total_neto = (values[1] if len(values) > 1 else 0) + (values[3] if len(values) > 3 else 0)
 
-            worksheet.write_formula(
-                row_resume, start_col_formula, imposed_formula, cell_formats.get("number")
+            worksheet.write(
+                row_resume, 6, base_total_neto, cell_formats.get("number")
             )
-            worksheet.write_formula(
-                row_resume, start_col_formula + 1, debit_formula, cell_formats.get("number")
-                    )
+            worksheet.write(
+                row_resume, 7, debit_total_neto, cell_formats.get("number")
+            )
 
     def _get_sale_book_field_groups(self):
         company = self.company_id
