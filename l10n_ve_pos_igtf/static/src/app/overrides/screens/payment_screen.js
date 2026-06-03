@@ -200,24 +200,23 @@ patch(PaymentScreen.prototype, {
 
   get totalDueText() {
     const order = this._getCurrentOrder();
-    return this.env.utils.formatCurrency(order?.get_total_without_igtf?.() || 0);
+    const totalDue = Number(
+      typeof order?.totalDue === "function" ? order.totalDue() : order?.totalDue,
+    ) || 0;
+    return this.env.utils.formatCurrency(totalDue);
   },
 
   get suggestedIgtf() {
     const order = this._getCurrentOrder();
-    const percentage = order?._get_order_igtf_percentage?.() || this.config.igtf_percentage || 0;
-    const base = order?.get_total_with_tax?.() || 0;
-    const result = base * (percentage / 100)
-    return this.env.utils.formatCurrency(result);
+    return this.env.utils.formatCurrency(order?.get_igtf_amount?.() || 0);
   },
 
   get totalDueTextWithIGTFDisplay() {
     const order = this._getCurrentOrder();
-
-    const percentage = order?._get_order_igtf_percentage?.() || this.config.igtf_percentage || 0;
-
-    const base = order?.get_total_with_tax?.() || 0;
-    return this.env.utils.formatCurrency(base + (base * (percentage / 100)));
+    const totalDue = Number(
+      typeof order?.totalDue === "function" ? order.totalDue() : order?.totalDue,
+    ) || 0;
+    return this.env.utils.formatCurrency(totalDue);
   },
 
   get biAmount() {

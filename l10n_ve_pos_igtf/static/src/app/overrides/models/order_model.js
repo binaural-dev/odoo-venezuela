@@ -667,7 +667,21 @@ patch(PosOrder.prototype, {
       return false;
     }
 
-    if (typeof paymentLine?.setAmount === "function") {
+    const paymentMethod = this._get_payment_method_data(paymentLine);
+    if (paymentMethod?.is_foreign_currency) {
+      const { foreignRate } = paymentLine._get_foreign_rate_values?.() || {};
+      const rate = Number.isFinite(foreignRate) && foreignRate > 0 ? foreignRate : 1;
+      const foreignTargetAmount = targetAmount / rate;
+
+      if (typeof paymentLine?.setAmount === "function") {
+        paymentLine.setAmount(foreignTargetAmount);
+      } else if (typeof paymentLine?.set_amount === "function") {
+        paymentLine.set_amount(foreignTargetAmount, true);
+      } else {
+        paymentLine.amount = targetAmount;
+        paymentLine.foreign_amount = foreignTargetAmount;
+      }
+    } else if (typeof paymentLine?.setAmount === "function") {
       paymentLine.setAmount(targetAmount);
     } else if (typeof paymentLine?.set_amount === "function") {
       paymentLine.set_amount(targetAmount, true);
