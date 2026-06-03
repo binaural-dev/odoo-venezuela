@@ -100,9 +100,6 @@ patch(PaymentScreen.prototype, {
 
   _recomputeOrderPaymentState(order = this._getCurrentOrder()) {
     order?.update_igtf();
-    if (this._isRefundOrder(order)) {
-      this._syncRefundAutoPaymentLine(order);
-    }
     order?._debug_financial_snapshot?.("payment_screen:_recomputeOrderPaymentState");
   },
 
@@ -167,6 +164,7 @@ patch(PaymentScreen.prototype, {
     const res = await super.addNewPaymentLine(...arguments);
     if (res) {
       this._recomputeOrderPaymentState(order);
+      this._syncRefundAutoPaymentLine(order);
     }
 
     this.render();
@@ -184,6 +182,7 @@ patch(PaymentScreen.prototype, {
     super.deletePaymentLine(...arguments);
     const order = this._getCurrentOrder();
     this._recomputeOrderPaymentState(order);
+    this._syncRefundAutoPaymentLine(order);
     this.render();
   },
 
