@@ -3389,3 +3389,28 @@ msgstr ""
 "<strong>Actualizando por nueva Unidad Tributaria Activa</strong><br/><strong>Unidad:</strong> "
 "%s<br/><strong>Valor Nuevo:</strong> %s<br/><strong>Sustraendo Nuevo:</strong> "
 "%s"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "No company partner associated with this invoice."
+msgstr "La compañia no tiene un contacto asociado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "The Company '%s' does not have an ISLR 'Type of Person' configured."
+msgstr "La compañía '%s' no tiene un 'Tipo de Persona' de ISLR configurado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"The Partner/Vendor '%s' does not have an ISLR 'Type of Person' configured."
+msgstr "El Cliente/Proveedor '%s' no tiene un 'Tipo de Persona' de ISLR configurado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "No partner/vendor associated with this invoice."
+msgstr "El cliente/proveedor no tiene un contacto asociado con esta factura."
