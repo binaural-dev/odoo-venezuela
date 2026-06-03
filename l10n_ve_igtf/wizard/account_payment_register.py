@@ -149,7 +149,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     wizard.show_payment_difference = True
 
 
-    @api.onchange("igtf_to_show")
+    @api.onchange("igtf_to_show","is_igtf")
     def _compute_amount_without_difference(self):
         for rec in self:
             
@@ -534,7 +534,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             list: account.payment
         """
         
-        payments = super()._create_payments()
+        payments = super(AccountPaymentRegisterIgtf, self.with_context(skip_account_move_reversal=True))._create_payments()
         
         ignore_gtf = self.env.context.get("ignore_igtf", False)
 
@@ -593,6 +593,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         Returns:
             account.move: Move object
         """
+        
         advance_account_id = (
             payment.partner_id.default_advance_customer_account_id.id
             if payment.partner_type == "customer"
@@ -605,7 +606,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             else payment.partner_id.property_account_payable_id.id
         )
 
-        amount_currency = diff
+        reconcile = payment.move_id.line_ids.filtered(lambda line: line.account_id.id == partner_account_id)
+     
+        amount_currency = abs(reconcile.amount_residual_currency)
+        amount_bs = abs(reconcile.amount_residual)
         currency = payment.currency_id
        
 
@@ -617,7 +621,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         "account_id": advance_account_id,
                         "amount_currency": -amount_currency,
                         "payment_id_advance": payment.id,
-                        "currency_id":currency.id
+                        "currency_id":currency.id,
+                        "debit": amount_bs if amount_bs < 0 else 0.0,
+                        "credit": abs(amount_bs) if amount_bs > 0 else 0.0,
                     },
                 ),
                 Command.create(
@@ -625,7 +631,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         "account_id": partner_account_id,
                         "amount_currency": amount_currency,
                         "payment_id_advance": payment.id,
-                        "currency_id":currency.id
+                        "currency_id":currency.id,
+                        "debit": amount_bs if amount_bs > 0 else 0.0,
+                        "credit": abs(amount_bs) if amount_bs < 0 else 0.0,
                     },
                 ),
             ]
