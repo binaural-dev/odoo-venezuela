@@ -1068,8 +1068,8 @@ class SerialFiscalDriver(SerialDriver):
                 number_invoice_formateado = number_invoice.zfill(8)
                 cmd_number_invoice_affected = f"iF*{number_invoice_formateado}"
             else:
-                _logger.error("Fecha de factura afectada no encontrada en la nota de crédito.")
-                return {"valid": False, "message": "No se encontró la fecha de la factura afectada."}
+                _logger.error("Numero de factura afectada no encontrada en la nota de crédito.")
+                return {"valid": False, "message": "No se encontró el numero de la factura afectada."}
                         
             fecha_afectada = invoice.get('invoice_affected', {}).get('date', '')
             
