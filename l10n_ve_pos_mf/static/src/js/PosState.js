@@ -150,7 +150,7 @@ patch(PosStore.prototype, {
         .map((el) => {
           return {
             payment_method: el.payment_method?.code_fiscal_printer || false,
-            amount: vef_base ? el.amount : el.get_foreign_amount(),
+            amount: el.payment_method.is_foreign_currency ? el.get_foreign_amount() : el.amount,
           }
         })
         .filter((line) => {
