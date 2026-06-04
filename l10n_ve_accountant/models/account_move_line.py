@@ -162,6 +162,10 @@ class AccountMoveLine(models.Model):
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
+            if line.move_id.journal_id == line.company_id.currency_exchange_journal_id:
+                line.foreign_debit = 0.0
+                line.foreign_credit = 0.0
+                continue
             if line.not_foreign_recalculate:
                 if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                     self._calculate_from_adjustment(line)
@@ -251,10 +255,10 @@ class AccountMoveLine(models.Model):
             if foreign_currency:
                 rate_date = line.date
                 rate = foreign_currency._get_conversion_rate(
-                    line.company_id.currency_id, 
-                    foreign_currency,          
-                    line.company_id,           
-                    line.date           
+                    line.company_id.currency_id,
+                    foreign_currency,
+                    line.company_id,
+                    rate_date
                 )
 
                 inverse_rate_to_use = rate if inverse_rate_to_use == 0.0 else rate
@@ -272,9 +276,9 @@ class AccountMoveLine(models.Model):
         line.foreign_debit_no_format = line.debit * inverse_rate_to_use
         line.foreign_credit_no_format = line.credit * inverse_rate_to_use
         
-        if line.foreign_debit != new_foreign_debit:
+        if new_foreign_debit:
             line.foreign_debit = new_foreign_debit
-        if line.foreign_credit != new_foreign_credit:
+        if new_foreign_credit:
             line.foreign_credit = new_foreign_credit
 
     def _calculate_from_product(self, line):
@@ -654,28 +658,40 @@ class AccountMoveLine(models.Model):
         if not res.get('partial_values'):
             return res
 
+        partial_vals = res['partial_values']
+        amount_company = partial_vals['amount']  # Monto conciliado en moneda base (Bs)
+
+        def get_foreign_partial_amount(aml, amount_to_reconcile_bs):
+            f_currency = aml.company_id.currency_foreign_id # Usar la de la compañía
+            if not f_currency or aml.currency_id == f_currency:
+                # Si la línea ya está en la moneda foránea, Odoo ya tiene amount_currency
+                return abs(aml.amount_currency)
+            
+            # Si el balance en Bs es 0 (evitar división por cero)
+            if not aml.balance:
+                return 0.0
+
+            # CALCULAMOS LA PROPORCIÓN
+            # Si estoy conciliando 50 Bs de una factura de 100 Bs, 
+            # debo conciliar el 50% del balance foráneo.
+            total_bs = abs(aml.balance)
+            total_foreign = abs(aml.foreign_balance)
+            
+            # Regla de 3: (Monto Conciliado Bs * Total Foráneo) / Total Bs
+            ratio = amount_to_reconcile_bs / total_bs
+            partial_foreign = total_foreign * ratio
+            
+            return f_currency.round(partial_foreign)
+
         debit_aml = debit_values['aml']
         credit_aml = credit_values['aml']
-        partial_vals = res['partial_values']
-        
-        amount_company = partial_vals['amount']
 
+        # Calculamos cuánto aporta cada lado a la conciliación en moneda foránea
+        foreign_debit_amount = get_foreign_partial_amount(debit_aml, amount_company)
+        foreign_credit_amount = get_foreign_partial_amount(credit_aml, amount_company)
 
-        def get_foreign_partial_amount(aml):
-            f_currency = aml.foreign_currency_id
-            if not f_currency:
-                return 0.0
-           
-            total_foreign = abs(aml.foreign_balance) 
-
-            
-            return total_foreign
-
-   
-        foreign_debit_amount = get_foreign_partial_amount(debit_aml)
-        foreign_credit_amount = get_foreign_partial_amount(credit_aml)
-
-
+        # El monto de la conciliación parcial foránea es el mínimo de ambos lados proporcionalmente
+        # pero usualmente en una conciliación parcial, el 'amount' de la partial es único.
         res['partial_values'].update({
             'foreign_amount': min(foreign_debit_amount, foreign_credit_amount),
             'debit_foreign_amount_currency': foreign_debit_amount,
@@ -764,11 +780,12 @@ class AccountMoveLine(models.Model):
             
             line.amount_residual = residual
             line.amount_residual_currency = residual_currency
+            # Para determinar si está conciliado, usamos una tolerancia mínima 
+            # en lugar de un cero absoluto, o comparamos directamente.
             line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
 
             line.foreign_amount_residual = line.foreign_balance - debit_foreign + credit_foreign
             line.foreign_amount_residual_currency = line.foreign_amount_residual
-
 
     @api.onchange('amount_currency', 'currency_id','foreign_inverse_rate')
     def _inverse_amount_currency(self):
@@ -781,3 +798,12 @@ class AccountMoveLine(models.Model):
                 and not self.env.is_protected(self._fields['balance'], line)
             ):
                 line.balance = line.amount_currency / line.currency_rate
+
+
+    @api.depends('currency_rate', 'balance')
+    def _compute_amount_currency(self):
+        for line in self:
+            if line.amount_currency is False:
+                line.amount_currency = line.balance * line.currency_rate
+            if line.currency_id == line.company_id.currency_id:
+                line.amount_currency = line.balance

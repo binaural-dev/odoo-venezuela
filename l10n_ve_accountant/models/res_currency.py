@@ -15,25 +15,3 @@ class ResCurrency(models.Model):
                     "l10n_ve_accountant.group_fiscal_config_support"
                 )
             )
-
-    def _convert(self, from_amount, to_currency, company=None, date=None, round=False):  
-        """Returns the converted amount of ``from_amount``` from the currency
-           ``self`` to the currency ``to_currency`` for the given ``date`` and
-           company.
-
-           :param company: The company from which we retrieve the convertion rate
-           :param date: The nearest date from which we retriev the conversion rate.
-           :param round: Round the result or not
-        """
-        
-        self, to_currency = self or to_currency, to_currency or self
-        assert self, "convert amount from unknown currency"
-        assert to_currency, "convert amount to unknown currency"
-        # apply conversion rate
-        if from_amount:
-            to_amount = from_amount * self._get_conversion_rate(self, to_currency, company, date)
-        else:
-            return 0.0
-
-        # apply rounding
-        return to_currency.round(to_amount) if round else to_amount
