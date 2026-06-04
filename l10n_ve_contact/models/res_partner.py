@@ -99,7 +99,7 @@ class ResPartner(models.Model):
 
     def check_duplicate_vat(self, prefix_vat, vat, company_id=None):
         error_message = ""
-        merge_partner_ids = self.env.context.get("active_ids") or []
+        merge_partner_ids = self.env.context.get("l10n_ve_merge_partner_ids") or []
         if isinstance(merge_partner_ids, int):
             merge_partner_ids = [merge_partner_ids]
 
@@ -109,7 +109,7 @@ class ResPartner(models.Model):
             ("id", "!=", self.id if self else False),
         ]
 
-        if merge_partner_ids and self.env.context.get("active_model") == "res.partner":
+        if self.env.context.get("l10n_ve_partner_merge_validation") and merge_partner_ids:
             domain.append(("id", "not in", merge_partner_ids))
 
         if prefix_vat and vat:
