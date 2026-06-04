@@ -521,6 +521,7 @@ class SerialFiscalDriver(SerialDriver):
         """Procesa e imprime la factura."""
         
         self.data = {"value": {"valid": False, "message": "No se ha completado"}}
+        result = self.data["value"]
         
         retorno = self._validate_invoice_parameter(invoice)
         
@@ -541,7 +542,7 @@ class SerialFiscalDriver(SerialDriver):
                 self.data["value"] = result
 
         event_manager.device_changed(self)
-        return result
+        return self.data["value"]
 
     def format_invoice_line(self, item, max_amount_decimal, max_qty_decimal, max_amount_int, max_qty_int):
         """Formatea una línea de la factura."""
@@ -568,12 +569,23 @@ class SerialFiscalDriver(SerialDriver):
         return formatted_line, None
 
     def group_payments(self, payment_lines):
-        """Agrupa los pagos por método y suma los montos."""
-
-        grouped_payments = defaultdict(float)
+        """Agrupa los pagos por método.
+        Retorna dos colecciones:
+        - payment_lines: montos positivos agrupados por método (para comandos de pago)
+        - change_lines: montos negativos convertidos a positivos agrupados por método (para mostrar como cambio)
+        """
+        grouped = defaultdict(float)
         for payment in payment_lines:
-            grouped_payments[payment["payment_method"]] += payment["amount"]
-        return [{"payment_method": method, "amount": abs(amount)} for method, amount in grouped_payments.items()]
+            grouped[payment.get("payment_method")] += payment.get("amount", 0)
+
+        payment_lines = []
+        change_lines = []
+        for method, amount in grouped.items():
+            if amount > 0:
+                payment_lines.append({"payment_method": method, "amount": amount})
+            elif amount < 0:
+                change_lines.append({"payment_method": method, "amount": abs(amount)})
+        return payment_lines, change_lines
 
     def prepare_invoice_data(self, invoice):
         """
@@ -619,6 +631,15 @@ class SerialFiscalDriver(SerialDriver):
                 cmd.append(f"i{next_index:02d}{info}")
                 next_index += 1
 
+            payment_lines, change_lines = self.group_payments(invoice_data["payment_lines"])
+
+            for item in change_lines:
+                method_raw = item.get("payment_method")
+                method_code = str(method_raw).strip().zfill(2) if method_raw else "--"
+                amount_str = "{:.2f}".format(item["amount"])
+                cmd.append(f"i{next_index:02d}CAMBIO M{method_code}: {amount_str}")
+                next_index += 1
+
             discount = 0
             
             for item in invoice_data["invoice_lines"]:
@@ -630,17 +651,20 @@ class SerialFiscalDriver(SerialDriver):
             
             cmd.append("3")
             
-            payment_lines = self.group_payments(invoice_data["payment_lines"])
-            
             closing_method = "01"
             if payment_lines:
                 closing_payment = max(payment_lines, key=lambda x: x["amount"])
                 closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
  
             for item in payment_lines:
-                method_code = str(item["payment_method"]).strip().zfill(2)
-                if item["amount"] > 0 and method_code != closing_method:
-                    
+                method_raw = item.get("payment_method")
+                if not method_raw:
+                    return {"valid": False, "message": "Método de pago fiscal no configurado en una línea de pago."}
+
+                method_code = str(method_raw).strip().zfill(2)
+                # Enviar TODOS los montos positivos recibidos (incluido el método de cierre)
+                # para que la MF pueda calcular e imprimir CAMBIO cuando corresponda.
+                if item["amount"] > 0:
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     
@@ -1103,7 +1127,7 @@ class SerialFiscalDriver(SerialDriver):
                 if formatted_line:
                     product_lines.append(formatted_line)          
 
-            payment_lines = self.group_payments(invoice.get("payment_lines", []))
+            payment_lines, _change_lines = self.group_payments(invoice.get("payment_lines", []))
             payment_commands = []
             
             closing_method = "01"
