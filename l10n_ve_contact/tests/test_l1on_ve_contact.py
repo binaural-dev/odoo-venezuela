@@ -48,6 +48,37 @@ class TestResPartner(TransactionCase):
         # Should not raise
         self.partner._check_vat()
 
+    def test_duplicate_vat_with_active_ids_context_still_fails(self):
+        partner_2 = self.env["res.partner"].create({
+            "name": "Context Partner",
+            "prefix_vat": "V",
+            "vat": "99887766",
+            "email": "context@example.com",
+            "country_id": self.env.ref("base.ve").id,
+        })
+
+        with self.assertRaises(ValidationError):
+            partner_2.with_context(
+                active_model="res.partner",
+                active_ids=[self.partner.id, partner_2.id],
+            ).write({"prefix_vat": "V", "vat": self.partner.vat})
+
+    def test_duplicate_vat_with_explicit_merge_context_is_allowed(self):
+        partner_2 = self.env["res.partner"].create({
+            "name": "Merge Partner",
+            "prefix_vat": "V",
+            "vat": "11223344",
+            "email": "merge@example.com",
+            "country_id": self.env.ref("base.ve").id,
+        })
+
+        partner_2.with_context(
+            l10n_ve_partner_merge_validation=True,
+            l10n_ve_merge_partner_ids=[self.partner.id, partner_2.id],
+        ).write({"prefix_vat": "V", "vat": self.partner.vat})
+
+        self.assertEqual(partner_2.vat, self.partner.vat)
+
     def _create_partner_transaction(self, partner):
         """Create at least one related transaction for the partner when possible.
 
