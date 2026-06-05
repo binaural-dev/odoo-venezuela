@@ -1141,6 +1141,11 @@ class SerialFiscalDriver(SerialDriver):
                 if remaining:
                     aditional_lines.append(f"i02{remaining}")
 
+            next_index = 1 + len(aditional_lines)
+            for info in invoice.get("info", []):
+                aditional_lines.append(f"i{next_index:02d}{info}")
+                next_index += 1
+
             invoice_lines = invoice.get('invoice_lines', [])
             product_lines = []
             for line in invoice_lines:
