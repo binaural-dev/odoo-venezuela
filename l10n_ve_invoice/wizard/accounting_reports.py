@@ -143,7 +143,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "extend_aliquot": 0.31,
             "general_aliquot": 0.16,
             "total_purchases": amount_taxed,
-            "total_purchases_iva": amount_taxed - (tax_base_exempt_aliquot ,0) ,    
+            "total_purchases_iva": (amount_taxed or 0) - (tax_base_exempt_aliquot or 0), ,    
             "total_purchases_not_iva": tax_base_exempt_aliquot ,
             "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot",0) ,    
             "amount_general_aliquot": taxes.get("amount_general_aliquot",0) ,    
