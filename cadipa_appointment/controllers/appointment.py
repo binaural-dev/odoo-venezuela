@@ -274,8 +274,7 @@ class AppointmentControllerMulti(AppointmentController):
             appointment_type = request.env['appointment.type'].sudo().browse(appointment_type_id)
 
             first_slot_start = ranges[0][0]
-            self._check_appointment_frequency_limit(customer, appointment_type, first_slot_start)
-
+            
             staff_user = None
             first_slot_params = slots[0][2]
             resource_id = None
@@ -291,14 +290,15 @@ class AppointmentControllerMulti(AppointmentController):
                 if resource_ids_str:
                     try:
                         resource_id_list = json.loads(resource_ids_str)
+                        if resource_id_list:
+                            first_resource_id = resource_id_list[0] 
+                            resource = request.env['appointment.resource'].sudo().browse(first_resource_id)
+                            resource_id = resource.id if resource else None            
                     except json.JSONDecodeError:
                         _logger.error("Error decoding JSON for available_resource_ids: %s", resource_ids_str)
                         return
-                    
-                    if resource_id_list:
-                        first_resource_id = resource_id_list[0] 
-                        resource = request.env['appointment.resource'].sudo().browse(first_resource_id)
-                        resource_id = resource.id if resource else None            
+
+            self._check_appointment_frequency_limit(customer, appointment_type, first_slot_start, resource_id=resource_id)
             
             product_id = post.get('product_id')
             created_ev = request.env['calendar.event']
@@ -444,39 +444,59 @@ class AppointmentControllerMulti(AppointmentController):
         customer.appointments_count += 1
         return event
     
-    def _check_appointment_frequency_limit(self, customer, appointment_type, target_datetime):
+    def _check_appointment_frequency_limit(self, customer, appointment_type, target_datetime, resource_id=None):
         """
-        Valida frecuencia basada en configuración de EMPRESA, pero aplicada por TIPO.
+        Valida frecuencia basada en configuración de EMPRESA, pero aplicada por TIPO o RECURSO.
         """
-
         company = request.env.company
-        _logger.info("AJJJJJJJJJJJJJJJJJG company %s", company )
-        
+
+        tz_name = request.session.get('timezone') or appointment_type.appointment_tz or request.env.user.tz or 'UTC'
+        tz = pytz.timezone(tz_name)
+
+        target_utc = tz.localize(target_datetime).astimezone(pytz.utc).replace(tzinfo=None)
+
+        local_date = target_datetime.date()
+        local_start = tz.localize(datetime.combine(local_date, time.min))
+        local_end = tz.localize(datetime.combine(local_date, time.max))
+
+        start_of_day_utc = local_start.astimezone(pytz.utc).replace(tzinfo=None)
+        end_of_day_utc = local_end.astimezone(pytz.utc).replace(tzinfo=None)
+
         restrict_appointment_to_members = company.restrict_appointment_to_members
-        restricted_days = company.appointment_lead_time_days 
-        
-        if not restrict_appointment_to_members:
-            return
+        restricted_days = company.appointment_lead_time_days
 
-        if not restricted_days or restricted_days <= 0:
-            return
+        if restrict_appointment_to_members and restricted_days and restricted_days > 0:
+            start_bound = target_utc - relativedelta(days=restricted_days)
+            end_bound = target_utc + relativedelta(days=restricted_days)
 
-        start_bound = target_datetime - relativedelta(days=restricted_days)
-        end_bound = target_datetime + relativedelta(days=restricted_days)
+            domain = [
+                ('partner_ids', 'in', [customer.id]),
+                ('appointment_booker_id', '=', customer.id),
+                ('appointment_type_id', '=', appointment_type.id),
+                ('start', '>=', start_bound),
+                ('start', '<=', end_bound),
+            ]
 
+            existing_count = request.env['calendar.event'].sudo().search_count(domain)
 
-        domain = [
-            ('partner_ids', 'in', [customer.id]),
-            ('appointment_booker_id', '=', customer.id),
-            ('appointment_type_id', '=', appointment_type.id),
-            ('start', '>=', start_bound),
-            ('start', '<=', end_bound),
-        ]
+            if existing_count > 0:
+                raise ValidationError(
+                    _("Due to company policy, you cannot schedule another appointment of this type (%s) within a %s-day period.")
+                    % (appointment_type.name, restricted_days)
+                )
 
-        existing_count = request.env['calendar.event'].sudo().search_count(domain)
-
-        if existing_count > 0:
-            raise ValidationError(
-                _("Due to company policy, you cannot schedule another appointment of this type (%s) within a %s-day period.")
-                % (appointment_type.name, restricted_days)
-            )
+        if resource_id:
+            resource = request.env['appointment.resource'].sudo().browse(resource_id)
+            same_day_domain = [
+                ('partner_ids', 'in', [customer.id]),
+                ('appointment_booker_id', '=', customer.id),
+                ('start', '>=', start_of_day_utc),
+                ('start', '<=', end_of_day_utc),
+                ('appointment_resource_ids', 'in', [resource_id]),
+            ]
+            existing_same_day = request.env['calendar.event'].sudo().search_count(same_day_domain)
+            if existing_same_day > 0:
+                raise ValidationError(
+                    _("Due to company policy, it is not possible to reserve the same type of space (%s) more than once a day.")
+                    % (resource.name)
+                )
