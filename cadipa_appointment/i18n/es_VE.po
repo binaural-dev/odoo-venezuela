@@ -194,11 +194,9 @@ msgstr "Días de demora antes de la suspensión"
 #: code:addons/cadipa_appointment/controllers/appointment.py:0
 #, python-format
 msgid ""
-"Due to company policy, you cannot schedule another appointment of this type "
-"(%s) within a %s-day period."
+"Due to company policy, you cannot schedule another appointment of this type (%(appointment_type_name)s) within a %(restricted_days)s-day period."
 msgstr ""
-"Debido a la política de la empresa, no puede programar otra cita en este "
-"espacio (%s) dentro de un período de %s días."
+"Debido a la política de la empresa, no puede programar otra cita en este espacio (%(appointment_type_name)s) dentro de un período de %(restricted_days)s días."
 
 #. module: cadipa_appointment
 #. odoo-javascript
@@ -343,8 +341,8 @@ msgstr ""
 #. odoo-python
 #: code:addons/cadipa_appointment/controllers/appointment.py:0
 #, python-format
-msgid "Due to company policy, it is not possible to reserve the same type of space (%s) more than once a day."
-msgstr "Debido a políticas de la empresa, no es posible reservar el mismo tipo de espacio (%s) más de una vez al día."
+msgid "Due to company policy, it is not possible to reserve the same type of space (%(resource_name)s) more than once a day."
+msgstr "Debido a políticas de la empresa, no es posible reservar el mismo tipo de espacio (%(resource_name)s) más de una vez al día."
 
 #. module: cadipa_appointment
 #. odoo-python

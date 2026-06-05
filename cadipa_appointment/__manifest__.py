@@ -29,15 +29,9 @@
     ],
     "assets": {
         "web.assets_frontend": [
-            "cadipa_appointment/static/src/xml/appointment_slots.xml",
-            "cadipa_appointment/static/src/js/appointment_slot.js",
+            "cadipa_appointment/static/src/js/guest_form.js",
         ],
     },
     "application": True,
     "auto_install": True,
-    "assets": {
-        "web.assets_frontend": [
-            "cadipa_appointment/static/src/js/guest_form.js",
-        ],
-    },
 }

@@ -6,7 +6,6 @@ from odoo.exceptions import ValidationError
 
 from urllib.parse import parse_qs, unquote_plus
 from odoo.http import route, request
-from odoo import fields
 from dateutil.relativedelta import relativedelta
 import json, pytz, logging
 from babel.dates import format_datetime
@@ -481,8 +480,11 @@ class AppointmentControllerMulti(AppointmentController):
 
             if existing_count > 0:
                 raise ValidationError(
-                    _("Due to company policy, you cannot schedule another appointment of this type (%s) within a %s-day period.")
-                    % (appointment_type.name, restricted_days)
+                    _("Due to company policy, you cannot schedule another appointment of this type (%(appointment_type_name)s) within a %(restricted_days)s-day period.")
+                    % {
+                        'appointment_type_name': appointment_type.name,
+                        'restricted_days': restricted_days,
+                    }
                 )
 
         if resource_id:
@@ -497,6 +499,8 @@ class AppointmentControllerMulti(AppointmentController):
             existing_same_day = request.env['calendar.event'].sudo().search_count(same_day_domain)
             if existing_same_day > 0:
                 raise ValidationError(
-                    _("Due to company policy, it is not possible to reserve the same type of space (%s) more than once a day.")
-                    % (resource.name)
+                    _("Due to company policy, it is not possible to reserve the same type of space (%(resource_name)s) more than once a day.")
+                    % {
+                        'resource_name': resource.name,
+                    }
                 )
