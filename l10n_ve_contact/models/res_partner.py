@@ -126,8 +126,12 @@ class ResPartner(models.Model):
                 error_message = _(
                     "A partner with the same VAT number already exists for this company."
                 )
+            else:
+                error_message = _(
+                    "A partner with the same VAT number already exists."
+                )
 
-            existing_partner = self.env["res.partner"].search(domain)
+            existing_partner = self.env["res.partner"].search(domain, limit=1)
             if existing_partner:
                 raise ValidationError(error_message)
 
@@ -183,7 +187,7 @@ class ResPartner(models.Model):
                     if not flag:
                         continue
                     vals["name"] = name
-            if "vat" and "prefix_vat" in vals:
+            if "vat" in vals and "prefix_vat" in vals:
                 self.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
             if "email" in vals:
                 self.check_duplicate_email(vals.get("email"))
@@ -191,9 +195,12 @@ class ResPartner(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        if "prefix_vat" and "vat" in vals:
+        if "vat" in vals or "prefix_vat" in vals:
             for record in self:
-                record.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
+                record.check_duplicate_vat(
+                    vals.get("prefix_vat", record.prefix_vat),
+                    vals.get("vat", record.vat),
+                )
         if "email" in vals:
             for record in self:
                 record.check_duplicate_email(vals.get("email"))
