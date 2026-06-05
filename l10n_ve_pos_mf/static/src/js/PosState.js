@@ -152,15 +152,20 @@ patch(PosStore.prototype, {
       })
       // Solo enviar pagos positivos a la MF.
       // Las líneas negativas corresponden a cambio y no deben enviarse como método de pago.
+      const isRefund = invoice['type'] === 'out_refund'
       invoice['payment_lines'] = order.paymentlines
         .map((el) => {
-          let amount = vef_base ? el.amount : el.get_foreign_amount()
           return {
             payment_method: el.payment_method?.code_fiscal_printer || false,
-            amount: amount,
+            amount: vef_base ? el.amount : el.get_foreign_amount(),
           }
         })
-        .filter((line) => line.amount > 0 && !!line.payment_method)
+        .filter((line) => {
+          if (!line.payment_method) {
+            return false
+          }
+          return isRefund ? line.amount < 0 : line.amount > 0
+        })
 
       if (!invoice['payment_lines'].length) {
         return {
