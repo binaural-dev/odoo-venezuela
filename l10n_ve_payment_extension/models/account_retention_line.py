@@ -70,7 +70,7 @@ class AccountRetentionLine(models.Model):
     
     code = fields.Char(
         string='Code',
-        compute='_compute_code',
+        compute='_compute_concep_code',
         store=True, 
         readonly=False
     )
@@ -135,18 +135,19 @@ class AccountRetentionLine(models.Model):
     foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate")
 
-    @api.depends("payment_concept_id")
-    def _compute_code(self):
-        for rec in self:
-            if rec.retention_id.partner_id and rec.payment_concept_id:
-                codes = rec.payment_concept_id.line_payment_concept_ids.filtered(
-                    lambda l: l.type_person_id == rec.retention_id.partner_id.type_person_id
-                ).mapped('code')
-
-                rec.code = codes[0] if codes else ''
-            else:
-                rec.code = ''
-
+    @api.depends("payment_concept_id", "move_id", "move_id.partner_id.type_person_id")
+    def _compute_concep_code(self):
+        for record in self:
+            record.code = False
+            if not record.payment_concept_id or not record.move_id:
+                continue
+            partner_type = record.move_id.partner_id.type_person_id
+            if not partner_type:
+                continue
+            matching_line = record.payment_concept_id.line_payment_concept_ids.filtered(
+                lambda l: l.type_person_id == partner_type
+            )
+            record.code = matching_line[0].code if matching_line else False
 
     @api.onchange("move_id")
     def _onchange_move_id(self):
@@ -336,17 +337,17 @@ class AccountRetentionLine(models.Model):
             if not foreign_rate:
                 foreign_rate = 1
             if not base_currency_is_vef:
-                record.retention_amount = (
+                record.retention_amount = abs((
                     record.invoice_amount
                     * (record.related_percentage_tax_base / 100)
                     * (record.related_percentage_fees / 100)
-                ) - record.related_amount_subtract_fees / foreign_rate
+                ) - record.related_amount_subtract_fees / foreign_rate)
             else:
-                record.retention_amount = (
+                record.retention_amount = abs((
                     record.invoice_amount
                     * (record.related_percentage_tax_base / 100)
                     * (record.related_percentage_fees / 100)
-                ) - record.related_amount_subtract_fees
+                ) - record.related_amount_subtract_fees)
 
             record.foreign_retention_amount = abs((
                 record.foreign_invoice_amount

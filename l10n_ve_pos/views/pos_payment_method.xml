@@ -13,7 +13,7 @@
                 <field name="cross_account_journal" />
                 <field name="cross_journal" />
                 <field name="apply_one_cross_move" invisible="split_transactions"/>
-
+                <field name="enableb_cross_move" invisible="not split_transactions"/>
             </xpath>
         </field>
     </record>

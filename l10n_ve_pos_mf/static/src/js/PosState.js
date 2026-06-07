@@ -121,7 +121,7 @@ patch(PosStore.prototype, {
 
     if (order.orderlines.length > 0) {
 
-      let vef_base = this.currency.name === "VEF"
+      let vef_base = this.currency.name === "VEF" || this.currency.name === "VES"
 
       invoice['invoice_lines'] = order.orderlines.map((el) => {
 
@@ -150,18 +150,29 @@ patch(PosStore.prototype, {
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
       })
+      // Solo enviar pagos positivos a la MF.
+      // Las líneas negativas corresponden a cambio y no deben enviarse como método de pago.
+      const isRefund = invoice['type'] === 'out_refund'
       invoice['payment_lines'] = order.paymentlines
-        .filter((el) => {
-          let amount = vef_base ? el.amount : el.get_foreign_amount()
-          return Math.abs(amount) > 0
-        })
         .map((el) => {
-          let amount = vef_base ? el.amount : el.get_foreign_amount()
           return {
-            payment_method: el.payment_method.code_fiscal_printer,
-            amount: Math.abs(amount),
+            payment_method: el.payment_method?.code_fiscal_printer || false,
+            amount: vef_base ? el.amount : el.get_foreign_amount(),
           }
         })
+        .filter((line) => {
+          if (!line.payment_method) {
+            return false
+          }
+          return isRefund ? line.amount < 0 : line.amount > 0
+        })
+
+      if (!invoice['payment_lines'].length) {
+        return {
+          valid: false,
+          message: "No hay líneas de pago válidas para enviar a la máquina fiscal",
+        }
+      }
     }
     invoice["valid"] = true
     return invoice
@@ -265,13 +276,36 @@ patch(PosStore.prototype, {
     }
   },
   async push_single_order(order, opts) {
+    try {
+      const order_payload = [{
+        'data': order.export_as_JSON()
+      }];
+      
+      await this.orm.call("pos.order", "validate_order_dry_run", [order_payload]);
+      
+    } catch (error) {
+      let msg = _t("Error desconocido en Odoo");
+      if (error.data && error.data.message) {
+        msg = error.data.message;
+      } else if (error.message) {
+        msg = error.message;
+      }
+      
+      this.env.services.popup.add(ErrorPopup, {
+        title: _t("Validación Contable"),
+        body: msg,
+      });
+      
+      return;
+    }
+    
     if (this.useFiscalMachine() && !order.mf_invoice_number) {
       
       const response = await this.pushToMF(order)
 
-    if (response.printer_connection == false || !("printer_connection" in response)) {
-      return
-    }
+      if (response.printer_connection == false || !("printer_connection" in response)) {
+        return
+      }
 
     }
     return await super.push_single_order.apply(this, [order, opts]);
