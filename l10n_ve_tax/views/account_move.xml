@@ -12,6 +12,15 @@
                 <field name="not_deductible_tax" optional="hide" 
                 invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax"/>
             </xpath>
+            <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
+                <field name="is_purchase_international" invisible="1"/>
+            </xpath>
+            <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']"
+                position="after">
+                <field name="international_purchase_exempt_product" 
+                    column_invisible="parent.is_purchase_international == False" 
+                    optional="show"/>
+            </xpath>
         </field>
     </record>
 

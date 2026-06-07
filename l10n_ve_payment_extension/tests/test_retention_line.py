@@ -90,6 +90,7 @@ class TestRetentionFlows(TransactionCase):
 
         retention_line = self.env["account.retention.line"].new({
             "move_id": invoice.id,
+            "invoice_amount": 200,
             "aliquot": self.economic_activity.aliquot,
             "economic_activity_id": self.economic_activity.id,
         })
