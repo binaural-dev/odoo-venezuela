@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "19.0.2.0.7",
+    "version": "19.0.2.0.12",
     "depends": [
         "base",
         "account",
@@ -59,6 +59,7 @@
         "wizard/municipal_retention_patent_report.xml",
         "wizard/wizard_retention_islr.xml",
         "wizard/wizard_retention_iva.xml",
+        "wizard/batch_retentions_wizard.xml",
         "views/menu.xml",
     ],
     "images": ["static/description/icon.png"],

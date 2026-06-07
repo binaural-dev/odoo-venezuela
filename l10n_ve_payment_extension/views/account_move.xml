@@ -31,7 +31,7 @@
                             <span class="o_stat_value">
                                 <field name="count_islr_retention"/>
                             </span>
-                            <span class="o_stat_text">ISLR Retention</span>
+                            <span class="o_stat_text">Retencion ISLR</span>
                         </div>
                     </button>
 
@@ -55,7 +55,7 @@
                             <span class="o_stat_value">
                                 <field name="count_iva_retention"/>
                             </span>
-                            <span class="o_stat_text">IVA Retention</span>
+                            <span class="o_stat_text">Retencion IVA</span>
                         </div>
                     </button>
 
@@ -79,13 +79,29 @@
                             <span class="o_stat_value">
                                 <field name="count_municipal_retention"/>
                             </span>
-                            <span class="o_stat_text">Municipal Retention</span>
+                            <span class="o_stat_text">Retencion Municipal</span>
                         </div>
                     </button>
 
                 </xpath>
 
+                <xpath expr="//header" position="after">
+                    <field name="count_islr_retention" invisible="1"/>
+                    <field name="has_emited_islr_retention" invisible="1"/>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="(count_islr_retention > 0 and has_emited_islr_retention) or count_islr_retention == 0">
+                        Warning: You have ISLR retentions to aproved
+                    </div>
+                </xpath>
+
                 <xpath expr="//field[@name='partner_shipping_id']" position="after">
+
+                    <field name="base_currency_is_vef" invisible="1"/>
+                    <field name="company_currency_id" invisible="1"/>
+                    <field name="foreign_currency_id" invisible="1"/>
+                    <field name="not_edit_islr_retention_lines" invisible="1"/>
+                    <field name="not_edit_municipal_retention_lines" invisible="1"/>
+
                     <field
                         name="generate_iva_retention"
                         invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
@@ -101,14 +117,10 @@
                         string="Third Party Billing"
                         invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
                     />
-                    <field name="iva_voucher_number" readonly="1" invisible="move_type in ('entry')"/>
-                    <field name="islr_voucher_number" readonly="1" invisible="move_type in ('entry')"/>
-                    <field name="municipal_voucher_number" readonly="1" invisible="move_type in ('entry')"/>
-                    <field name="base_currency_is_vef" invisible="1"/>
-                    <field name="company_currency_id" invisible="1"/>
-                    <field name="foreign_currency_id" invisible="1"/>
-                    <field name="not_edit_islr_retention_lines" invisible="1"/>
-                    <field name="not_edit_municipal_retention_lines" invisible="1"/>
+                    <field name="iva_voucher_number" readonly="1" invisible="not iva_voucher_number" force_save="1"/>
+                    <field name="islr_voucher_number" readonly="1" invisible="not islr_voucher_number" force_save="1"/>
+                    <field name="municipal_voucher_number" readonly="1" invisible="not municipal_voucher_number" force_save="1"/>
+
                 </xpath>
 
                 <xpath expr="//div[@name='button_box']" position="inside">
