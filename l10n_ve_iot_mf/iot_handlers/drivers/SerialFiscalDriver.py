@@ -694,7 +694,7 @@ class SerialFiscalDriver(SerialDriver):
                 method_code = str(method_raw).strip().zfill(2)
                 # El método de cierre se envía con comando 1XX, no con 2XX.
                 # Enviar en 2XX solo métodos distintos al de cierre.
-                if item["amount"] > 0 and method_code != closing_method:
+                if item["amount"] > 0:
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     
