@@ -3,7 +3,7 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import _, api, exceptions, fields, models, Command
+from odoo import _, api, exceptions, fields, models , Command
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import float_is_zero
 
@@ -367,76 +367,22 @@ class AccountFiscalyearClosing(models.Model):
             company.sudo().fiscalyear_lock_date = closing.date_end
         return super().button_post()
 
-    def _get_dest_account(self):
-        return self.env["account.account"].sudo().search([
-            ("account_type", "=", "equity_unaffected"),
-            ("company_ids", "in", [self.company_id.id, False]),
-        ], limit=1)
-
-    def _aggregate_balances(self, raw_balances):
-        aggregated = {}
-        for bal in raw_balances:
-            aid = bal["account_id"]
-            if isinstance(aid, (list, tuple)):
-                aid = aid[0]
-            if aid not in aggregated:
-                aggregated[aid] = dict(bal)
-                aggregated[aid]["balance"] = 0.0
-                aggregated[aid]["foreign_balance"] = 0.0
-            aggregated[aid]["balance"] += bal.get("balance", 0.0)
-            aggregated[aid]["foreign_balance"] += bal.get("foreign_balance", 0.0)
-        return list(aggregated.values())
-
-    def _split_into_groups(self, aggregated):
-        groups = {}
-        for bal in aggregated:
-            c = bal["config"]
-            if self.closing_grouping == "single":
-                gk = "__single__"
-            elif self.closing_grouping == "config":
-                gk = c.id
-            else:
-                aid = bal["account_id"]
-                if isinstance(aid, (list, tuple)):
-                    aid = aid[0]
-                gk = aid
-            groups.setdefault(gk, []).append(bal)
-
-        result = {}
-        for gk, lines in groups.items():
-            ref_c = lines[0]["config"]
-            if self.closing_grouping == "single":
-                name = _("Closing - %s") % ref_c.name
-                date = self.single_date or self.date_end
-                jid = self.single_journal_id.id if self.single_journal_id else ref_c.journal_id.id
-            elif self.closing_grouping == "config":
-                name = ref_c.name
-                date = self.date_end
-                jid = ref_c.journal_id.id
-            else:
-                name = _("%s - %s") % (ref_c.name, lines[0].get("account_name", _("Account")))
-                date = self.date_end
-                jid = ref_c.journal_id.id
-
-            result[gk] = {
-                "lines": lines,
-                "move_type": "closing",
-                "date": date,
-                "journal_id": jid,
-                "name": name,
-            }
-        return result
-
-    def _prepare_move_vals_from_group(self, group, all_lines):
-        return {
-            "ref": group["name"],
-            "date": group["date"],
-            "fyc_id": self.id,
-            "move_type": "entry",
-            "closing_type": group["move_type"],
-            "journal_id": group["journal_id"],
-            "manually_set_rate": True,
-            "line_ids": all_lines,
+    # Todo el registro de las cuentas esta en esta funcion
+    def calculate(self):
+        dest_account = (
+            self.env["account.account"]
+            .sudo()
+            .search(
+                [
+                    ("account_type", "=", "equity_unaffected"),
+                    ("company_ids", "in", [self.company_id.id, False]),
+                ],
+                limit=1,
+            )
+        )
+        currencies = {
+            "bsd_id": self.env.company.currency_id,
+            "foreign_currency": self.env.company.foreign_currency_id,
         }
 
     def _create_move_from_group(self, group):
@@ -527,44 +473,16 @@ class AccountFiscalyearClosing(models.Model):
 
             enabled_configs = closing.move_config_ids.filtered("enabled")
             if not enabled_configs:
-                raise UserError(_("No enabled closing configurations found. "
-                                  "Please check the 'Moves Configuration' tab."))
+                raise UserError(_("No existen configuraciones de asientos de cierre habilitadas. "
+                                    "Por favor, verifique la pestaña 'Configuración de Movimientos'."))
+    
+            for config in enabled_configs:
+                balances = self._get_balances(config)
 
-            reverse_configs = enabled_configs.filtered("inverse_config_id")
-            regular_configs = enabled_configs - reverse_configs
-
-            if regular_configs:
-                raw = []
-                for config in regular_configs:
-                    balances = self._get_balances(config)
-                    if not balances:
-                        raise UserError(_("No balances found for source accounts defined in configuration '%s'. "
-                                          "Please verify there are moves in the selected period.") % config.name)
-                    for bal in balances:
-                        bal["config"] = config
-                        raw.append(bal)
-
-                aggregated = closing._aggregate_balances(raw)
-                groups = closing._split_into_groups(aggregated)
-
-                for group in groups.values():
-                    closing._create_move_from_group(group)
-
-            for config in reverse_configs:
-                source_move = config.inverse_config_id.move_id
-                if source_move and source_move.state not in ('cancel',):
-                    move_ids = source_move._reverse_moves([{
-                        'date': config.date or closing.date_opening,
-                        'journal_id': config.journal_id.id,
-                    }])
-                    if move_ids:
-                        move = self.env['account.move'].browse(move_ids[0])
-                        move.write({
-                            'ref': config.name,
-                            'closing_type': 'opening',
-                            'fyc_id': closing.id,
-                        })
-                        config.move_id = move.id
+                if not balances:
+                    raise UserError(_("No se encontraron saldos para las cuentas de origen definidas en la configuración '%s'. "
+                                        "Por favor, verifique que existan movimientos en el período seleccionado y que las cuentas de origen estén correctamente configuradas.") % config.name)
+                self._create_closing_moves(config, balances, dest_account, currencies)
 
         return True
     
@@ -593,6 +511,48 @@ class AccountFiscalyearClosing(models.Model):
         )
         return balances
 
+    def _create_closing_moves(self, config, balances, dest_account, currencies):
+        for balance_dict in balances:
+            balance = balance_dict.get("balance", 0.0)
+
+            # --- FILTRO: Solo moneda nativa ---
+            if balance == 0:
+                continue
+
+   
+            line_vals_list = []
+
+            line_vals_list.append(Command.create({
+                 
+                    "account_id": balance_dict["account_id"][0],
+                    "currency_id": self.env.company.currency_id.id,
+                    "amount_currency": -balance,
+                    "name": config.name,
+                    "date": config.date,
+                
+            }))
+
+            line_vals_list.append(Command.create({
+                 
+                    "currency_id": self.env.company.currency_id.id,
+                    "account_id": dest_account.id,
+                    "amount_currency": balance,
+                    "name": _("Result"),
+                    "date": config.date,
+            }))
+
+            self.env["account.move"].create({
+                "ref": config.name,
+                "date": config.date,
+                "fyc_id": self.id,
+                "move_type": 'entry',
+                "closing_type": config.move_type,
+                "journal_id": config.journal_id.id,
+                "manually_set_rate": False,
+                "line_ids": line_vals_list,
+            })
+
+          
 
 class AccountFiscalyearClosingMapping(models.Model):
     _inherit = "account.fiscalyear.closing.mapping"
