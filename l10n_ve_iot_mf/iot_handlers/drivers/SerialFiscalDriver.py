@@ -692,9 +692,11 @@ class SerialFiscalDriver(SerialDriver):
                     return {"valid": False, "message": "Método de pago fiscal no configurado en una línea de pago."}
 
                 method_code = str(method_raw).strip().zfill(2)
-                # Enviar TODOS los montos positivos recibidos (incluido el método de cierre)
-                # para que la MF pueda calcular e imprimir CAMBIO cuando corresponda.
-                if item["amount"] > 0:
+                # Para facturas con cambio, la MF necesita el monto entregado
+                # del método de cierre también en 2XX para calcular/imprimir CAMBIO.
+                # Sin cambio, evitamos duplicar el método de cierre.
+                send_closing_as_2xx = bool(change_lines)
+                if item["amount"] > 0 and (method_code != closing_method or send_closing_as_2xx):
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     
@@ -1162,12 +1164,46 @@ class SerialFiscalDriver(SerialDriver):
                 fallback_lines=change_lines,
             )
 
-            for item in payment_lines:
-                _logger.info("ITEM : %s", item)
+            # En NC, si no hay pagos positivos (caso común), usar change_lines
+            # para conservar métodos mixtos en comandos fiscales.
+            payment_lines_to_send = payment_lines or change_lines
+
+            _logger.warning(
+                "[NC_TRACE] raw_payment_lines=%s grouped_payment_lines=%s change_lines=%s closing_method=%s lines_to_send=%s",
+                invoice.get("payment_lines", []),
+                payment_lines,
+                change_lines,
+                closing_method,
+                payment_lines_to_send,
+            )
+
+            # Balance entre robustez de comandos y visibilidad en ticket:
+            # mantenemos 2XX sin duplicar método de cierre (evita fallos 10X),
+            # y agregamos líneas informativas por método para que en NC mixta
+            # queden visibles todos los métodos involucrados.
+            for item in payment_lines_to_send:
+                method_code = str(item.get("payment_method", "")).strip().zfill(2)
+                if not method_code:
+                    continue
+                amount_str = "{:.2f}".format(abs(item.get("amount", 0.0) or 0.0))
+                info_idx = len(aditional_lines) + 1
+                aditional_lines.append(f"i{info_idx:02d}PAGO M{method_code}: {amount_str}")
+
+            for item in payment_lines_to_send:
+                _logger.warning("[NC_TRACE] item=%s", item)
                 method_code = str(item["payment_method"]).strip().zfill(2)
-                if item["amount"] > 0 and method_code != closing_method:
-                    amount_i, amount_d = self.split_amount(item["amount"], dec=2)  
-                    amount_i_filled = amount_i.zfill(10)  
+                # Balance fix for NC mixta:
+                # - Keep old behavior for transfer/mobile closing (07, etc.) to avoid
+                #   reintroducing known 10X closing issues.
+                # - If closing is cash-like (01/02) and there are mixed methods,
+                #   also send closing method in 2XX so both methods are reflected.
+                send_closing_as_2xx = (
+                    len(payment_lines_to_send) > 1
+                    and closing_method in ("01", "02")
+                )
+                if item["amount"] > 0 and (method_code != closing_method or send_closing_as_2xx):
+                    amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
+                    amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     payment_command = f"2{method_code}{amount_i_filled}{amount_d}"
                     payment_commands.append(payment_command)
 
@@ -1179,6 +1215,8 @@ class SerialFiscalDriver(SerialDriver):
                     cmd_vat,
                     cmd_name
                 ] + aditional_lines + product_lines + ['3'] + payment_commands + [str("1" + closing_method), '199']
+
+            _logger.warning("[NC_TRACE] final_commands=%s", cmd2)
             
             status = self.ReadFpStatus(True)
             if status["data"]["error"]["code"] != "0":
@@ -1188,6 +1226,7 @@ class SerialFiscalDriver(SerialDriver):
 
             for command in cmd2:
                 result = self.send_command(command) 
+                _logger.warning("[NC_TRACE] sent_command=%s result=%s", command, result)
                 
                 if not result:
                     _logger.error("Fallo al enviar comando: %s", command)
