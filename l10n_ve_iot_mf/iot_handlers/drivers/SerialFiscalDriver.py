@@ -686,20 +686,43 @@ class SerialFiscalDriver(SerialDriver):
                 fallback_lines=change_lines,
             )
  
+            # Construimos comandos 2XX con pagos + métodos de cambio (si son distintos
+            # al método de cierre), para que en casos mixtos (ej. 02 con cambio 07)
+            # la MF refleje ambos métodos en el reporte.
+            payment_amounts_by_method = defaultdict(float)
+
             for item in payment_lines:
                 method_raw = item.get("payment_method")
                 if not method_raw:
                     return {"valid": False, "message": "Método de pago fiscal no configurado en una línea de pago."}
-
                 method_code = str(method_raw).strip().zfill(2)
+                payment_amounts_by_method[method_code] += float(item.get("amount", 0.0) or 0.0)
+
+            for item in change_lines:
+                method_raw = item.get("payment_method")
+                if not method_raw:
+                    continue
+                method_code = str(method_raw).strip().zfill(2)
+                if method_code != closing_method:
+                    payment_amounts_by_method[method_code] += float(item.get("amount", 0.0) or 0.0)
+
+            _logger.warning(
+                "[INV_TRACE] payment_lines=%s change_lines=%s closing_method=%s payment_amounts_by_method=%s",
+                payment_lines,
+                change_lines,
+                closing_method,
+                dict(payment_amounts_by_method),
+            )
+
+            for method_code, amount in payment_amounts_by_method.items():
                 # Para facturas con cambio, la MF necesita el monto entregado
                 # del método de cierre también en 2XX para calcular/imprimir CAMBIO.
                 # Sin cambio, evitamos duplicar el método de cierre.
                 send_closing_as_2xx = bool(change_lines)
-                if item["amount"] > 0 and (method_code != closing_method or send_closing_as_2xx):
-                    amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
+                if amount > 0 and (method_code != closing_method or send_closing_as_2xx):
+                    amount_i, amount_d = self.split_amount(amount, dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
-                    
+
                     payment_command = str(
                         "2"
                         + method_code
