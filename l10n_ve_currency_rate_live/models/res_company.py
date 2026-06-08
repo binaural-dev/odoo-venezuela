@@ -1,5 +1,24 @@
 from odoo import api, fields, models, _
-from ...tools import binaural_bcv_query
+from urllib3.exceptions import InsecureRequestWarning
+from urllib3 import disable_warnings
+from datetime import datetime
+import pytz
+import requests
+from bs4 import BeautifulSoup
+
+BCV_URL = "https://www.bcv.org.ve/"
+BCV_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
+}
+BCV_WINDOW_START_HOUR = 8
+BCV_WINDOW_END_HOUR = 18
+BCV_TIMEZONE = "America/Caracas"
+VEF_CURRENCY_CODE = "VEF"
+
 
 class ResCompany(models.Model):
     _inherit = "res.company"
@@ -11,18 +30,90 @@ class ResCompany(models.Model):
     can_update_habil_days = fields.Boolean(default=True)
 
     @api.model
-    def _parse_bcv_data(self, availible_currencies):
-        companies = self.env['res.company'].search([])
-        for company in companies:
-            can_update_habil_days = company.can_update_habil_days
-            current_date = fields.Date.context_today(self)
-            day = current_date.isoweekday()
-            is_habil_day = day <= 5
-            invalid_update_in_habil_day = not is_habil_day and can_update_habil_days
-            if invalid_update_in_habil_day:
-                return
-            usd_rate_bcv = binaural_bcv_query.get_usd_rate_of_the_day_bcv(self)
-            is_valid_update_date = str(usd_rate_bcv[1]) == str(current_date)
-            if not is_valid_update_date:
-                return
-            return {"USD": (1, usd_rate_bcv[1]), "VEF": usd_rate_bcv}
+    def _parse_bcv_data(self, available_currencies):
+        current_date = fields.Date.context_today(self)
+        result = {"USD": (1.0, current_date)}
+
+        rate_value, published_date = self._scrape_bcv_rate()
+        if not rate_value or not published_date:
+            return result
+
+        if published_date < current_date:
+            return result
+
+        if published_date > current_date:
+            if not bool(self[:1].can_update_habil_days):
+                return result
+
+        result["VEF"] = (rate_value, current_date)
+        return result
+
+    @api.model
+    def _scrape_bcv_rate(self):
+        disable_warnings(InsecureRequestWarning)
+        try:
+            response = requests.get(
+                BCV_URL, verify=False, timeout=30, headers=BCV_HEADERS,
+            )
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            # Extracting the USD value from the specific HTML ID used by BCV
+            usd_container = soup.find(id="dolar")
+            if not usd_container:
+                return (None, None)
+
+            usd_value = (
+                usd_container.text.replace("\n", "")
+                .replace("USD", "")
+                .replace(",", ".")
+                .strip()
+            )
+            rate = float(usd_value)
+
+            published_date = None
+            date_node = soup.find("span", class_="date-display-single")
+            if date_node and date_node.get("content"):
+                published_date = fields.Date.from_string(
+                    date_node["content"][:10]
+                )
+            return (rate, published_date)
+        except Exception:
+            return (None, None)
+
+    @api.model
+    def get_usd_rate_of_the_day_bcv(self):
+        rate, date = self._scrape_bcv_rate()
+        return (rate if rate is not None else 1, date or False)
+
+    @api.model
+    def run_update_bcv_currency(self):
+        try:
+            tz = pytz.timezone(BCV_TIMEZONE)
+        except Exception:
+            tz = pytz.UTC
+        now_local = datetime.now(tz)
+        if not (BCV_WINDOW_START_HOUR <= now_local.hour < BCV_WINDOW_END_HOUR):
+            return
+
+        today = fields.Date.today()
+        Rate = self.env["res.currency.rate"]
+        vef = self.env["res.currency"].with_context(active_test=False).search(
+            [("name", "=", VEF_CURRENCY_CODE)], limit=1,
+        )
+        if not vef:
+            return
+
+        bcv_companies = self.search([
+            ("currency_provider", "=", "bcv"),
+            ("parent_id", "=", False),
+        ])
+        for company in bcv_companies:
+            already_today = Rate.search_count([
+                ("company_id", "=", company.id),
+                ("currency_id", "=", vef.id),
+                ("name", "=", today),
+            ])
+            if already_today:
+                continue
+            company.with_context(suppress_errors=True).update_currency_rates()
