@@ -1162,12 +1162,22 @@ class SerialFiscalDriver(SerialDriver):
                 fallback_lines=change_lines,
             )
 
-            for item in payment_lines:
+            # En NC, si no hay pagos positivos (caso común), usar change_lines
+            # para conservar métodos mixtos en comandos fiscales.
+            payment_lines_to_send = payment_lines or change_lines
+
+            for item in payment_lines_to_send:
                 _logger.info("ITEM : %s", item)
                 method_code = str(item["payment_method"]).strip().zfill(2)
-                if item["amount"] > 0 and method_code != closing_method:
-                    amount_i, amount_d = self.split_amount(item["amount"], dec=2)  
-                    amount_i_filled = amount_i.zfill(10)  
+                # Para NC mixta con cierre en efectivo (01/02), enviar también
+                # el método de cierre en 2XX para que la MF refleje ambos métodos.
+                send_closing_as_2xx = (
+                    len(payment_lines_to_send) > 1
+                    and closing_method in ("01", "02")
+                )
+                if item["amount"] > 0 and (method_code != closing_method or send_closing_as_2xx):
+                    amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
+                    amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     payment_command = f"2{method_code}{amount_i_filled}{amount_d}"
                     payment_commands.append(payment_command)
 
