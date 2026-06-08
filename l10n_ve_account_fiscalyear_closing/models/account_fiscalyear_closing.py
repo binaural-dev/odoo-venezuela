@@ -13,7 +13,7 @@ class AccountFiscalyearClosingConfig(models.Model):
     _inherit = "account.fiscalyear.closing.config"
 
     l_map = fields.Boolean(string="Load Accounts")
-    
+
     @api.onchange("l_map")
     def onchange_l_map(self):
         accounts = (
@@ -145,6 +145,21 @@ class AccountFiscalyearClosingConfig(models.Model):
 class AccountFiscalyearClosing(models.Model):
     _inherit = "account.fiscalyear.closing"
 
+    @api.constrains('date_start', 'date_end')
+    def _check_year_dates_consistency(self):
+        for record in self:
+            if record.year and record.date_start and record.date_end:
+                start_year = record.date_start.year
+                end_year = record.date_end.year
+                
+                if start_year != record.year or end_year != record.year:
+                    raise ValidationError(_(
+                        "Las fechas de inicio (%s) y fin (%s) deben pertenecer al año fiscal %s."
+                    ) % (start_year, end_year, record.year))
+                
+                if record.date_start > record.date_end:
+                    raise ValidationError(_("La fecha de inicio no puede ser posterior a la fecha de fin."))
+
     def draft_moves_check(self):
         for closing in self:
             draft_moves = self.env["account.move"].search(
@@ -236,45 +251,52 @@ class AccountFiscalyearClosing(models.Model):
         return balances
 
     def _create_closing_moves(self, config, balances, dest_account, currencies):
+        """ Itera los balances y coordina la creación de los asientos. """
         for balance_dict in balances:
             balance = balance_dict.get("balance", 0.0)
 
-            # --- FILTRO: Solo moneda nativa ---
             if balance == 0:
                 continue
 
-   
-            line_vals_list = []
+            move_vals = self._prepare_closing_move_vals(config, balance_dict, dest_account)
+            
+            move = self.env["account.move"].create(move_vals)
 
-            line_vals_list.append(Command.create({
-                 
-                    "account_id": balance_dict["account_id"][0],
-                    "currency_id": self.env.company.currency_id.id,
-                    "amount_currency": -balance,
-                    "name": config.name,
-                    "date": config.date,
-                
-            }))
+            move.write({"manually_set_rate": True})
 
-            line_vals_list.append(Command.create({
-                 
-                    "currency_id": self.env.company.currency_id.id,
-                    "account_id": dest_account.id,
-                    "amount_currency": balance,
-                    "name": _("Result"),
-                    "date": config.date,
-            }))
 
-            self.env["account.move"].create({
-                "ref": config.name,
+    def _prepare_closing_move_vals(self, config, balance_dict, dest_account):
+        balance = balance_dict.get("balance", 0.0)
+        acc_id_raw = balance_dict.get("account_id")
+        account_id = acc_id_raw[0] if isinstance(acc_id_raw, (list, tuple)) else acc_id_raw
+
+        line_vals = [
+            Command.create({
+                "account_id": account_id,
+                "currency_id": self.env.company.currency_id.id,
+                "amount_currency": -balance,
+                "name": config.name,
                 "date": config.date,
-                "fyc_id": self.id,
-                "move_type": 'entry',
-                "closing_type": config.move_type,
-                "journal_id": config.journal_id.id,
-                "manually_set_rate": False,
-                "line_ids": line_vals_list,
+            }),
+            Command.create({
+                "account_id": dest_account.id,
+                "currency_id": self.env.company.currency_id.id,
+                "amount_currency": balance,
+                "name": _("Result"),
+                "date": config.date,
             })
+        ]
+
+        return {
+            "ref": config.name,
+            "date": config.date,
+            "fyc_id": self.id,
+            "move_type": 'entry',
+            "closing_type": config.move_type,
+            "journal_id": config.journal_id.id,
+            "manually_set_rate": False,
+            "line_ids": line_vals,
+        }
 
           
 
