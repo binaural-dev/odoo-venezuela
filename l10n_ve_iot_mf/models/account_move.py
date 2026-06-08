@@ -155,44 +155,24 @@ class AccountMoveInh(models.Model):
                 return {"valid": False, "message": "La factura no tiene lineas"}
 
             payment_lines = []
+            payments = data.invoice_payments_widget
 
-            # En NC de PoS, usar pagos reales de la orden para mantener
-            # separación por método fiscal (invoice_payments_widget puede agrupar).
-            pos_order = self.env["pos.order"].search(
-                [("account_move", "=", data.id)], limit=1
-            )
-            if pos_order and pos_order.payment_ids:
-                for payment in pos_order.payment_ids:
-                    fiscal_method = (
-                        payment.payment_method_id.code_fiscal_printer
-                        or payment.payment_method_id.journal_id.payment_method
-                        or "01"
-                    )
-                    payment_lines.append(
-                        {
-                            "amount": abs(payment.amount or 0.0),
-                            "payment_method": fiscal_method,
-                        }
-                    )
+            if not payments:
+                payment_lines.append({"amount": 0, "payment_method": "01"})
             else:
-                payments = data.invoice_payments_widget
+                payments = payments["content"]
+                for payment in payments:
+                    journal_id = self.env["account.journal"].search(
+                        [("name", "=", payment["journal_name"])], limit=1
+                    )
+                    new_payment = {
+                        "amount": payment["amount"],
+                        "payment_method": journal_id["payment_method"] or "01",
+                    }
+                    if payment["currency_id"] != data.env.ref("base.VEF").id:
+                        new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
 
-                if not payments:
-                    payment_lines.append({"amount": 0, "payment_method": "01"})
-                else:
-                    payments = payments["content"]
-                    for payment in payments:
-                        journal_id = self.env["account.journal"].search(
-                            [("name", "=", payment["journal_name"])], limit=1
-                        )
-                        new_payment = {
-                            "amount": abs(payment["amount"]),
-                            "payment_method": journal_id["payment_method"] or "01",
-                        }
-                        if payment["currency_id"] != data.env.ref("base.VEF").id:
-                            new_payment["amount"] = abs(payment["amount"]) * data.foreign_inverse_rate
-
-                        payment_lines.append(new_payment)
+                    payment_lines.append(new_payment)
 
             _invoice_lines = []
 
