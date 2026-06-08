@@ -2,8 +2,8 @@ import logging
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import _, api, exceptions, fields, models
-from odoo.exceptions import ValidationError
+from odoo import _, api, exceptions, fields, models , Command
+from odoo.exceptions import ValidationError, UserError
 from odoo.tools import float_is_zero
 
 _logger = logging.getLogger(__name__)
@@ -186,7 +186,7 @@ class AccountFiscalyearClosing(models.Model):
             )
         )
         currencies = {
-            "bsd_id": self.env.ref("base.VEF"),
+            "bsd_id": self.env.company.currency_id,
             "foreign_currency": self.env.company.foreign_currency_id,
         }
 
@@ -195,11 +195,21 @@ class AccountFiscalyearClosing(models.Model):
             if closing.check_draft_moves:
                 closing.draft_moves_check()
 
-            for config in closing.move_config_ids.filtered("enabled"):
+            enabled_configs = closing.move_config_ids.filtered("enabled")
+            if not enabled_configs:
+                raise UserError(_("No existen configuraciones de asientos de cierre habilitadas. "
+                                    "Por favor, verifique la pestaña 'Configuración de Movimientos'."))
+    
+            for config in enabled_configs:
                 balances = self._get_balances(config)
+
+                if not balances:
+                    raise UserError(_("No se encontraron saldos para las cuentas de origen definidas en la configuración '%s'. "
+                                        "Por favor, verifique que existan movimientos en el período seleccionado y que las cuentas de origen estén correctamente configuradas.") % config.name)
                 self._create_closing_moves(config, balances, dest_account, currencies)
 
         return True
+    
 
     def _get_balances(self, config):
         src_accounts = self.env["account.account"].search(
@@ -226,60 +236,47 @@ class AccountFiscalyearClosing(models.Model):
         return balances
 
     def _create_closing_moves(self, config, balances, dest_account, currencies):
-        vals = []
-
         for balance_dict in balances:
-            balance = balance_dict.get("balance", 0)
-            foreign_balance = balance_dict.get("foreign_balance", 0)
-            if (currencies["bsd_id"] == currencies["foreign_currency"] and balance == 0) or (
-                currencies["bsd_id"] != currencies["foreign_currency"] and foreign_balance == 0
-            ):
+            balance = balance_dict.get("balance", 0.0)
+
+            # --- FILTRO: Solo moneda nativa ---
+            if balance == 0:
                 continue
 
-            rate = abs(
-                foreign_balance / balance
-                if currencies["bsd_id"] == currencies["foreign_currency"]
-                else balance / foreign_balance
-            )
+   
+            line_vals_list = []
 
-            vals.append(
-                {
-                    "ref": config.name,
+            line_vals_list.append(Command.create({
+                 
+                    "account_id": balance_dict["account_id"][0],
+                    "currency_id": self.env.company.currency_id.id,
+                    "amount_currency": -balance,
+                    "name": config.name,
                     "date": config.date,
-                    "fyc_id": self.id,
-                    "closing_type": config.move_type,
-                    "journal_id": config.journal_id.id,
-                    "manually_set_rate": True,
-                    "foreign_rate": rate,
-                    "foreign_inverse_rate": (
-                        rate if currencies["bsd_id"] == currencies["foreign_currency"] else 1 / rate
-                    ),
-                    "line_ids": [
-                        (
-                            0,
-                            0,
-                            {
-                                "account_id": balance_dict["account_id"][0],
-                                "balance": -balance,
-                                "name": config.name,
-                                "date": config.date,
-                            },
-                        ),
-                        (
-                            0,
-                            0,
-                            {
-                                "account_id": dest_account.id,
-                                "balance": balance,
-                                "name": _("Result"),
-                                "date": config.date,
-                            },
-                        ),
-                    ],
-                }
-            )
-        self.env["account.move"].create(vals)
+                
+            }))
 
+            line_vals_list.append(Command.create({
+                 
+                    "currency_id": self.env.company.currency_id.id,
+                    "account_id": dest_account.id,
+                    "amount_currency": balance,
+                    "name": _("Result"),
+                    "date": config.date,
+            }))
+
+            self.env["account.move"].create({
+                "ref": config.name,
+                "date": config.date,
+                "fyc_id": self.id,
+                "move_type": 'entry',
+                "closing_type": config.move_type,
+                "journal_id": config.journal_id.id,
+                "manually_set_rate": False,
+                "line_ids": line_vals_list,
+            })
+
+          
 
 class AccountFiscalyearClosingMapping(models.Model):
     _inherit = "account.fiscalyear.closing.mapping"
@@ -303,11 +300,7 @@ class AccountFiscalyearClosingMapping(models.Model):
 
             balance = debits - credits
             foreign_balance = foreign_debits - foreign_credits
-            # balance = sum(account_lines.mapped("debit")) - sum(account_lines.mapped("credit"))
 
-            # foreign_balance = sum(account_lines.mapped("foreign_debit")) - sum(
-            #     account_lines.mapped("foreign_credit")
-            # )
             foreign_currency = account_lines[0].foreign_currency_id
             if not float_is_zero(balance, precision_digits=precision):
                 rate = (
@@ -315,18 +308,7 @@ class AccountFiscalyearClosingMapping(models.Model):
                     if balance > foreign_balance
                     else balance / foreign_balance
                 )
-                # for line in account_lines:
-                # _logger.warning("NO ENTIENDO")
-                #
-                # line.move_id.write(
-                #     {
-                #         "manually_set_rate": True,
-                #         "foreign_inverse_rate": rate
-                #         if bsd_id == foreign_currency.id
-                #         else 1 / rate,
-                #         "foreign_rate": rate,
-                #     }
-                # )
+               
                 move_line = {
                     "account_id": account.id,
                     "debit": balance < 0 and -balance,
