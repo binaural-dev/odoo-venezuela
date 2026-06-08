@@ -1,6 +1,7 @@
 import logging
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -36,30 +37,57 @@ class TestAccountant(TransactionCase):
             }
         )
 
+        # --- Cuenta de banco para default_account_id ---
+        self.manual_in = self.env.ref("account.account_payment_method_manual_in")
+        self.manual_out = self.env.ref("account.account_payment_method_manual_out")
+        self.account_bank = self.env["account.account"].create(
+            {
+                "name": "BANCO PRUEBA USD",
+                "code": "100000",
+                "account_type": "asset_cash",
+                "company_ids": [(6, 0, [self.company.id])],
+                "reconcile": True,
+            }
+        )
+
+        self.pm_line_in = self.env["account.payment.method.line"].create({
+            "name": "Manual Inbound",
+            "payment_method_id": self.manual_in.id,
+            "payment_type": "inbound",
+            "payment_account_id": self.account_bank.id,
+        })
+
+        self.pm_line_out = self.env["account.payment.method.line"].create({
+            "name": "Manual Outbound",
+            "payment_method_id": self.manual_out.id,
+            "payment_type": "outbound",
+            "payment_account_id": self.account_bank.id,
+        })
+
         # --- Journal bancario en USD (o se reutiliza uno existente) ---
-        self.bank_journal_usd = self.env["account.journal"].search(
-            [
-                ("type", "=", "bank"),
-                ("currency_id", "=", self.currency_usd.id),
-                ("company_id", "=", self.company.id),
-            ],
-            limit=1,
-        ) or self.env["account.journal"].create(
+        self.bank_journal_usd = self.env["account.journal"].create(
             {
                 "name": "Banco USD",
                 "code": "BNKUS",
                 "type": "bank",
                 "currency_id": self.currency_usd.id,
                 "company_id": self.company.id,
+                "default_account_id": self.account_bank.id,
+                "inbound_payment_method_line_ids": [(6, 0, self.pm_line_in.ids)],
+                "outbound_payment_method_line_ids": [(6, 0, self.pm_line_out.ids)],
             }
         )
 
-        # --- Payment Method Manual inbound (reusar, no crear) ---
+        # --- Payment Method Manual inbound/outbound (reusar, no crear) ---
         self.payment_method = self.env["account.payment.method"].search(
             [("code", "=", "manual"), ("payment_type", "=", "inbound")], limit=1
         ) or self.env.ref("account.account_payment_method_manual_in")
 
-        # --- Payment Method Line en el journal de BANCO (no en ventas) ---
+        self.payment_method_out = self.env["account.payment.method"].search(
+            [("code", "=", "manual"), ("payment_type", "=", "outbound")], limit=1
+        ) or self.env.ref("account.account_payment_method_manual_out")
+
+        # --- Payment Method Lines en el journal de BANCO ---
         self.pm_line_in_usd = self.env["account.payment.method.line"].search(
             [
                 ("journal_id", "=", self.bank_journal_usd.id),
@@ -70,8 +98,35 @@ class TestAccountant(TransactionCase):
             {
                 "journal_id": self.bank_journal_usd.id,
                 "payment_method_id": self.payment_method.id,
+                "payment_type": "inbound",
+                "payment_account_id": self.account_bank.id,
             }
         )
+
+        self.pm_line_out_usd = self.env["account.payment.method.line"].search(
+            [
+                ("journal_id", "=", self.bank_journal_usd.id),
+                ("payment_method_id", "=", self.payment_method_out.id),
+            ],
+            limit=1,
+        ) or self.env["account.payment.method.line"].create(
+            {
+                "journal_id": self.bank_journal_usd.id,
+                "payment_method_id": self.payment_method_out.id,
+                "payment_type": "outbound",
+                "payment_account_id": self.account_bank.id,
+            }
+        )
+
+        # --- Vincular las líneas de pago al journal si no lo están ---
+        if self.pm_line_in_usd not in self.bank_journal_usd.inbound_payment_method_line_ids:
+            self.bank_journal_usd.write({
+                "inbound_payment_method_line_ids": [(4, self.pm_line_in_usd.id)],
+            })
+        if self.pm_line_out_usd not in self.bank_journal_usd.outbound_payment_method_line_ids:
+            self.bank_journal_usd.write({
+                "outbound_payment_method_line_ids": [(4, self.pm_line_out_usd.id)],
+            })
 
         # --- Grupo de Impuesto ---
         self.tax_group = self.env['account.tax.group'].create({

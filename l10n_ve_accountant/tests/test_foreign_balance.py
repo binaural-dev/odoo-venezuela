@@ -106,6 +106,33 @@ class TestForeignBalance(TransactionCase):
             "tax_group_id": self.test_tax_group.id,
         })
 
+        self.account_bank = self.env['account.account'].search([('code', '=', '100100'), ('company_ids', 'in', self.company.id)], limit=1)
+        if not self.account_bank:
+            self.account_bank = self.env['account.account'].create({
+                'name': 'Bank Account',
+                'code': '100100',
+                'account_type': 'asset_cash',
+                'company_ids': [(6, 0, [self.company.id])],
+                'reconcile': True,
+            })
+
+        self.manual_in = self.env.ref("account.account_payment_method_manual_in")
+        self.manual_out = self.env.ref("account.account_payment_method_manual_out")
+
+        self.pm_line_in = self.env["account.payment.method.line"].create({
+            "name": "Manual Inbound",
+            "payment_method_id": self.manual_in.id,
+            "payment_type": "inbound",
+            "payment_account_id": self.account_bank.id,
+        })
+
+        self.pm_line_out = self.env["account.payment.method.line"].create({
+            "name": "Manual Outbound",
+            "payment_method_id": self.manual_out.id,
+            "payment_type": "outbound",
+            "payment_account_id": self.account_bank.id,
+        })
+
         self.sale_journal = self.env["account.journal"].search(
             [("type", "=", "sale"), ("company_id", "=", self.company.id)], limit=1
         ) or self.env["account.journal"].sudo().create(
@@ -362,6 +389,9 @@ class TestForeignBalance(TransactionCase):
                 'code': 'BNKUSD',
                 'currency_id': self.currency_usd.id,
                 'company_id': self.company.id,
+                'default_account_id': self.account_bank.id,
+                'inbound_payment_method_line_ids': [(6, 0, self.pm_line_in.ids)],
+                'outbound_payment_method_line_ids': [(6, 0, self.pm_line_out.ids)],
             })
 
         # Create invoice in USD
@@ -461,6 +491,9 @@ class TestForeignBalance(TransactionCase):
                 'code': 'BNKVEF',
                 'currency_id': self.currency_vef.id,
                 'company_id': self.company.id,
+                'default_account_id': self.account_bank.id,
+                'inbound_payment_method_line_ids': [(6, 0, self.pm_line_in.ids)],
+                'outbound_payment_method_line_ids': [(6, 0, self.pm_line_out.ids)],
             })
 
         # Create invoice in USD
@@ -564,6 +597,9 @@ class TestForeignBalance(TransactionCase):
                 'code': 'BNKEUR',
                 'currency_id': self.currency_eur.id,
                 'company_id': self.company.id,
+                'default_account_id': self.account_bank.id,
+                'inbound_payment_method_line_ids': [(6, 0, self.pm_line_in.ids)],
+                'outbound_payment_method_line_ids': [(6, 0, self.pm_line_out.ids)],
             })
 
         # Create invoice in USD
@@ -804,7 +840,7 @@ class TestForeignBalance(TransactionCase):
                             "quantity": 1.0,
                             "price_unit": 56200.0,
                             "account_id": self.account_income.id,
-                            "tax_ids": [(5, 0, 0)],
+                            "tax_ids": [(6, 0, [self.test_tax.id])],
                         }
                     ),
                 ],
@@ -813,10 +849,9 @@ class TestForeignBalance(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(invoice.state, "posted", "La factura no se publicó")
 
-        # Total VEF: 23.200 + 56.200 + 3.712 (IVA) = 83.112,00
         self.assertAlmostEqual(
-            invoice.amount_total, 83112.0, places=2,
-            msg="Total factura VEF debe ser 83.112,00",
+            invoice.amount_total, 92104.0, places=2,
+            msg="Total factura VEF debe ser 92104.0",
         )
 
         # Cuadre exacto (este assert detecta el bug de $0,01)
@@ -824,8 +859,7 @@ class TestForeignBalance(TransactionCase):
             invoice.line_ids, "invoice_two_products_rate_402"
         )
 
-        # Total USD esperado: 83.112 / 402,3343 ≈ 206,57
-        expected_usd = 83112.0 / RATE
+        expected_usd = 228.92
         self.assertAlmostEqual(
             fd, expected_usd, delta=0.02,
             msg=f"Total USD debe ser ≈ {expected_usd:.2f}",
@@ -938,7 +972,7 @@ class TestForeignBalance(TransactionCase):
                             "quantity": 1.0,
                             "price_unit": 56200.0, 
                             "account_id": self.account_income.id,
-                            "tax_ids": [(5, 0, 0)],
+                            "tax_ids": [(6, 0, [self.test_tax.id])],
                         }
                     ),
                 ],
