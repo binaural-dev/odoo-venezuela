@@ -544,14 +544,14 @@ class SerialFiscalDriver(SerialDriver):
         event_manager.device_changed(self)
         return self.data["value"]
 
-    def format_invoice_line(self, item, max_amount_decimal, max_qty_decimal, max_amount_int, max_qty_int):
+    def format_invoice_line(self, item, max_amount_decimal, max_qty_decimal, max_amount_int, max_qty_int, disc_decimal=2):
         """Formatea una línea de la factura."""
         tax_value = TAX.get(str(item.get("tax", "")), "")
         
         # Manejo de descuento (precio negativo)
         price_unit = item.get("price_unit", 0)
         if price_unit < 0:
-            return None, abs(price_unit)
+            return None, None, abs(price_unit)
         
         code = f'|{item["default_code"]}|' if item.get("default_code") else ""
         
@@ -566,7 +566,14 @@ class SerialFiscalDriver(SerialDriver):
             f"{item.get('name', '')[:127].strip().replace('Ñ', 'N').replace('ñ', 'n')}"
         )
         
-        return formatted_line, None
+        p_cmd = None
+        if item.get("discount", 0) > 0:
+            amount_i, amount_d = self.split_amount(
+                round(item["discount"], disc_decimal), dec=disc_decimal
+            )
+            p_cmd = f"p-{amount_i.zfill(2)}{amount_d.zfill(2)}"
+        
+        return formatted_line, p_cmd, None
 
     def group_payments(self, payment_lines):
         """Agrupa los pagos por método.
@@ -670,16 +677,27 @@ class SerialFiscalDriver(SerialDriver):
                 cmd.append(f"i{next_index:02d}CAMBIO M{method_code}: {amount_str}")
                 next_index += 1
 
-            discount = 0
+            discount_amount = 0
             
             for item in invoice_data["invoice_lines"]:
-                line_cmd, line_discount = self.format_invoice_line(
-                    item, max_amount_decimal, max_qty_decimal, max_amount_int, max_qty_int
+                line_cmd, p_cmd, line_discount = self.format_invoice_line(
+                    item, max_amount_decimal, max_qty_decimal, max_amount_int, max_qty_int,
+                    disc_decimal=disc_decimal
                 )
-                
-                cmd.append(line_cmd)            
+                if line_cmd:
+                    cmd.append(line_cmd)
+                if p_cmd:
+                    cmd.append(p_cmd)
+                if line_discount:
+                    discount_amount += line_discount
             
             cmd.append("3")
+            
+            if discount_amount > 0:
+                amount_i, amount_d = self.split_amount(
+                    round(discount_amount, disc_decimal), dec=disc_decimal
+                )
+                cmd.append("q-" + amount_i.zfill(disc_int) + amount_d.zfill(disc_decimal))
             
             closing_method = self.get_closing_method(
                 payment_lines=payment_lines,
@@ -722,7 +740,7 @@ class SerialFiscalDriver(SerialDriver):
             return {
                 "valid": True,
                 "cmd": cmd,
-                "discount": discount,
+                "discount": discount_amount,
                 "payment_lines": payment_lines,
             }
 
@@ -1046,20 +1064,18 @@ class SerialFiscalDriver(SerialDriver):
 
         return response
 
-    def format_refund_line(self, item, max_amount_int, max_amount_decimal, max_qty_int, max_qty_decimal):
+    def format_refund_line(self, item, max_amount_int, max_amount_decimal, max_qty_int, max_qty_decimal, disc_decimal=2):
         """
         Formatea una línea de nota de crédito (refund) para impresión fiscal.
         """
-        TAX = {}
-
         price_unit = item.get("price_unit", 0)
         if price_unit < 0:
-            return None, abs(price_unit)
+            return None, None, abs(price_unit)
 
         code = f'|{item["default_code"]}|' if item.get("default_code") else ""
 
         tax_code = str(item.get("tax", ""))
-        tax_value = TAX.get(tax_code, tax_code)
+        tax_value = tax_code if tax_code else "0"
 
         amount_i, amount_d = self.split_amount(round(price_unit, max_amount_decimal), max_amount_decimal)
         qty_i, qty_d = self.split_amount(item.get("quantity", 0), max_qty_decimal)
@@ -1071,7 +1087,15 @@ class SerialFiscalDriver(SerialDriver):
             f"{code}"
             f"{item.get('name', '')[:127].strip().replace('Ñ', 'N').replace('ñ', 'n')}"
         )
-        return formatted_line, None
+
+        p_cmd = None
+        if item.get("discount", 0) > 0:
+            amount_i, amount_d = self.split_amount(
+                round(item["discount"], disc_decimal), dec=disc_decimal
+            )
+            p_cmd = f"p-{amount_i.zfill(2)}{amount_d.zfill(2)}"
+
+        return formatted_line, p_cmd, None
 
     def _print_out_refund(self, invoice):
         """
@@ -1148,16 +1172,22 @@ class SerialFiscalDriver(SerialDriver):
 
             invoice_lines = invoice.get('invoice_lines', [])
             product_lines = []
+            discount_amount = 0
             for line in invoice_lines:
-                formatted_line, discount = self.format_refund_line(
+                formatted_line, p_cmd, line_discount = self.format_refund_line(
                     line,
                     max_amount_int,
                     max_amount_decimal,
                     max_qty_int,
-                    max_qty_decimal
+                    max_qty_decimal,
+                    disc_decimal=disc_decimal
                 )
                 if formatted_line:
-                    product_lines.append(formatted_line)          
+                    product_lines.append(formatted_line)
+                if p_cmd:
+                    product_lines.append(p_cmd)
+                if line_discount:
+                    discount_amount += line_discount
 
             payment_lines, change_lines = self.group_payments(invoice.get("payment_lines", []))
             payment_commands = []
@@ -1180,6 +1210,13 @@ class SerialFiscalDriver(SerialDriver):
                     payment_command = f"2{method_code}{amount_i_filled}{amount_d}"
                     payment_commands.append(payment_command)
 
+            discount_cmd = []
+            if discount_amount > 0:
+                amount_i, amount_d = self.split_amount(
+                    round(discount_amount, disc_decimal), dec=disc_decimal
+                )
+                discount_cmd.append("q-" + amount_i.zfill(disc_int) + amount_d.zfill(disc_decimal))
+
             cmd2 = [
                     'PH01Encabezado 1',
                     cmd_number_invoice_affected,
@@ -1187,7 +1224,7 @@ class SerialFiscalDriver(SerialDriver):
                     cmd_serial,
                     cmd_vat,
                     cmd_name
-                ] + aditional_lines + product_lines + ['3'] + payment_commands + [str("1" + closing_method), '199']
+                ] + aditional_lines + product_lines + discount_cmd + ['3'] + payment_commands + [str("1" + closing_method), '199']
             
             status = self.ReadFpStatus(True)
             if status["data"]["error"]["code"] != "0":
