@@ -1,7 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -72,6 +71,9 @@ class AccountMoveLine(models.Model):
         store=True,
     )
 
+    international_purchase_exent_product = fields.Boolean(string="International Purchase Exent Product")
+    is_purchase_international = fields.Boolean(related="move_id.journal_id.is_purchase_international")
+
     @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
     def _compute_price_unit_ves(self):
         for line in self:
@@ -100,6 +102,17 @@ class AccountMoveLine(models.Model):
     config_deductible_tax = fields.Boolean(related='company_id.config_deductible_tax')
 
     not_deductible_tax = fields.Boolean(default=False)
+
+    @api.depends('international_purchase_exent_product')
+    def _compute_tax_ids(self):
+        super()._compute_tax_ids()
+
+    def _get_computed_taxes(self):
+        res = super()._get_computed_taxes()
+        if self.international_purchase_exent_product and self.company_id.exent_aliquot_purchase_international:
+            res = self.company_id.exent_aliquot_purchase_international
+        return res
+    
 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
@@ -508,3 +521,5 @@ class AccountMoveLine(models.Model):
     def _onchange_price_unit(self):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
+
+    

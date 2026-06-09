@@ -1,8 +1,6 @@
 from . import res_company
 from . import account_move_line
 from . import account_move
-from . import purchase_order_line
-from . import sale_order_line
 from . import account_tax
 from . import account_partial_reconcile
 from . import account_payment
@@ -14,3 +12,4 @@ from . import tax_unit
 from . import res_currency
 from . import res_config_settings
 from . import account_journal
+from . import product_template

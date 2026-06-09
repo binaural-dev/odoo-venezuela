@@ -8,6 +8,7 @@ _logger = logging.getLogger(__name__)
 class FeesRetention(models.Model):
     _name = "fees.retention"
     _description = "Fees"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
 
     name = fields.Char(string="Description", required=True, store=True)
     percentage = fields.Float(string="Fees percentage", store=True)
@@ -17,9 +18,9 @@ class FeesRetention(models.Model):
     )
     apply_subtracting = fields.Boolean(string="Subtract apply?", default=False, store=True)
     accumulated_rate = fields.Boolean(string="Rate accumulated?", default=False, store=True)
-    status = fields.Boolean(default=True, string="Is active?")
+    status = fields.Boolean(default=True, string="Is active?", tracking=True)
     tax_unit_ids = fields.Many2one(
-        "tax.unit", string="Tax Unit", required=True, domain=[("status", "=", True)]
+        "tax.unit", string="Tax Unit", required=True, domain=[("status", "=", True)],tracking=True
     )
     accumulated_rate_ids = fields.One2many(
         comodel_name="accumulated.fees", inverse_name="fees_id", string="Accumulated fees"

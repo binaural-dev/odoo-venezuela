@@ -19,6 +19,7 @@ class AccountMove(models.Model):
     _inherit = "account.move"
     
     invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.today)
+    is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
 
     @api.depends('invoice_date_display')
     def _compute_date(self):
@@ -145,6 +146,12 @@ class AccountMove(models.Model):
     def _onchange_move_type(self):
         self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
         self.invoice_date_display = False if self.move_type == "entry" else fields.Date.today()
+
+    @api.onchange("journal_id")
+    def _onchange_journal_id_reset_international_exempt(self):
+        for move in self:
+            if not move.journal_id.is_purchase_international:
+                move.invoice_line_ids.update({"international_purchase_exent_product": False})
 
     def default_rate(self):
         """
@@ -1549,3 +1556,9 @@ class AccountMove(models.Model):
             self.env['account.move.line'].browse(to_delete).with_context(dynamic_unlink=True).unlink()
         if to_create:
             self.env['account.move.line'].create(to_create)
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_posted_or_was_posted(self):
+        for move in self:
+            if move.posted_before and not self._context.get('force_delete'):
+                raise UserError(_("You cannot delete a journal item that is posted, cancelled, or has been previously posted."))

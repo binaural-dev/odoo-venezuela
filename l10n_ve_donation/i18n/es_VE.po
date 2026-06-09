@@ -1,0 +1,467 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_donation
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260318\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-01 11:08+0000\n"
+"PO-Revision-Date: 2026-04-01 11:08+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_donation
+#: model:ir.actions.report,print_report_name:l10n_ve_donation.action_donation_certificate_account_move
+msgid "\"Donation Certificate - \" + object.name"
+msgstr "\"Certificado de Donación - \" + object.name"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+", la propiedad de los mencionados bienes.\n"
+"                                        Y nosotros _______________________________________________________________________________________, \n"
+"                                        venezolanos, mayores de edad, de este domicilio y titulares de las cédulas de identidad No. _________________________, respectivamente, \n"
+"                                        actuando en nuestro carácter de Representante Legal, y encontrándonos plenamente facultados, por medio del presente documento declaramos: que \n"
+"                                        aceptamos para nuestra representada la donación de los bienes antes descritos, en los términos expuestos."
+msgstr ""
+", la propiedad de los mencionados bienes.\n"
+"                                        Y nosotros _______________________________________________________________________________________, \n"
+"                                        venezolanos, mayores de edad, de este domicilio y titulares de las cédulas de identidad No. _________________________, respectivamente, \n"
+"                                        actuando en nuestro carácter de Representante Legal, y encontrándonos plenamente facultados, por medio del presente documento declaramos: que \n"
+"                                        aceptamos para nuestra representada la donación de los bienes antes descritos, en los términos expuestos."
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+", los siguientes \n"
+"                                        bienes: \n"
+"                                        <br/><br/>"
+msgstr ""
+", los siguientes \n"
+"                                        bienes: \n"
+"                                        <br/><br/>"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+", sociedad \n"
+"                                        mercantil inscrita en el Registro Mercantil __________________________________________________, en fecha \n"
+"                                        ___/___/____, bajo el No. _______, Tomo _______, e inscrita en el Registro de Información \n"
+"                                        Fiscal (R.I.F) bajo el No."
+msgstr ""
+", sociedad \n"
+"                                        mercantil inscrita en el Registro Mercantil __________________________________________________, en fecha \n"
+"                                        ___/___/____, bajo el No. _______, Tomo _______, e inscrita en el Registro de Información \n"
+"                                        Fiscal (R.I.F) bajo el No."
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+", suficientemente facultado para este acto \n"
+"                                        según consta en ____________________________________________________________________________________________, \n"
+"                                        por el presente documento declaro que en nombre de mi representada doy en calidad de DONACIÓN, en forma pura y simple, perfecta e \n"
+"                                        irrevocable a"
+msgstr ""
+", suficientemente facultado para este acto \n"
+"                                        según consta en ____________________________________________________________________________________________, \n"
+"                                        por el presente documento declaro que en nombre de mi representada doy en calidad de DONACIÓN, en forma pura y simple, perfecta e \n"
+"                                        irrevocable a"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+", y en el \n"
+"                                        Registro de Información Fiscal (RIF) bajo el No."
+msgstr ""
+", y en el \n"
+"                                        Registro de Información Fiscal (RIF) bajo el No."
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+"<br/>\n"
+"                                            <span class=\"fw-bold\">Dirección Fiscal: </span>"
+msgstr ""
+"<br/>\n"
+"                                            <span class=\"fw-bold\">Dirección Fiscal: </span>"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+"<br/>\n"
+"                                            <span class=\"fw-bold\">RIF: </span>"
+msgstr ""
+"<br/>\n"
+"                                            <span class=\"fw-bold\">RIF: </span>"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+"<br/>\n"
+"                                            <span class=\"fw-bold\">Teléfono: </span>"
+msgstr ""
+"<br/>\n"
+"                                            <span class=\"fw-bold\">Teléfono: </span>"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+"<br/><br/>\n"
+"                                        todos estos bienes se encuentran valorados en la cantidad de ___________________________________, \n"
+"                                        y los mismos serán destinados a lograr los objetivos de dicha organización. Con el otorgamiento de este documento, mi representada transfiere a"
+msgstr ""
+"<br/><br/>\n"
+"                                        todos estos bienes se encuentran valorados en la cantidad de ___________________________________, \n"
+"                                        y los mismos serán destinados a lograr los objetivos de dicha organización. Con el otorgamiento de este documento, mi representada transfiere a"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "<span class=\"fw-bold\">Razón Social: </span>"
+msgstr "<span class=\"fw-bold\">Razón Social: </span>"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "<strong>Representante Legal del Beneficiario</strong>"
+msgstr "<strong>Representante Legal del Beneficiario</strong>"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "<strong>Representante Legal del Donante</strong>"
+msgstr "<strong>Representante Legal del Donante</strong>"
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move_line.py:0
+msgid "Account %s is of payable type, but is used in a sale operation."
+msgstr "La cuenta %s es de tipo por pagar, pero se está usando en una operación de venta."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move_line.py:0
+msgid "Account %s is of receivable type, but is used in a purchase operation."
+msgstr "La cuenta %s es de tipo por cobrar, pero se está usando en una operación de compra."
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.l10n_ve_donation_inherit_l10n_ve_stock_account
+msgid "Account to be used for donation flow."
+msgstr "Cuenta a utilizar para el flujo de donación."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move_line.py:0
+msgid ""
+"Any journal item on a payable account must have a due date and vice versa."
+msgstr ""
+"Cualquier apunte contable en una cuenta por pagar debe tener una fecha de vencimiento y viceversa."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move_line.py:0
+msgid ""
+"Any journal item on a receivable account must have a due date and vice "
+"versa."
+msgstr ""
+"Cualquier apunte contable en una cuenta por cobrar debe tener una fecha de vencimiento y viceversa."
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "Certificado de Donación"
+msgstr "Certificado de Donación"
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_res_company
+msgid "Companies"
+msgstr "Empresas"
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_product_template__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_sale_order__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_location__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_picking_type__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_scrap__display_name
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_warehouse__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: l10n_ve_donation
+#: model:ir.actions.act_window,name:l10n_ve_donation.view_stock_scrap_action_donation
+#: model:ir.ui.menu,name:l10n_ve_donation.menu_stock_scrap_donation
+msgid "Donation"
+msgstr "Donación"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_company__donation_account_id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_config_settings__donation_account_id
+msgid "Donation Account"
+msgstr "Cuenta de Donación"
+
+#. module: l10n_ve_donation
+#: model:ir.actions.report,name:l10n_ve_donation.action_donation_certificate_account_move
+msgid "Donation Certificate"
+msgstr "Certificado de Donación"
+
+#. module: l10n_ve_donation
+#: model:res.groups,name:l10n_ve_donation.group_donation_manager
+msgid "Donation Manager"
+msgstr "Gestor de Donaciones"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.view_stock_scrap_form_inherit
+msgid "Donation Location"
+msgstr "Ubicación de Donación"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_picking_type__is_donation_picking_type
+msgid "Donation Picking Type"
+msgstr "Tipo de Operación de Donación"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.view_stock_scrap_form_inherit
+msgid "Donation Reason"
+msgstr "Motivo de Donación"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_location__is_donation_warehouse
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_warehouse__is_donation_warehouse
+msgid "Donation Warehouse"
+msgstr "Almacén de Donación"
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_picking_type.py:0
+msgid "Donation picking type must be outgoing"
+msgstr "El tipo de operación de donación debe ser de salida"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "En la ciudad de"
+msgstr "En la ciudad de"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.l10n_ve_donation_account_move_form_view
+msgid "Generar Certificado de Donación"
+msgstr "Generar Certificado de Donación"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_account_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_product_template__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_res_config_settings__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_sale_order__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_location__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_move__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_picking_type__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_scrap__id
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_warehouse__id
+msgid "ID"
+msgstr "ID"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,help:l10n_ve_donation.field_stock_warehouse__is_donation_warehouse
+msgid "Indicates if this warehouse is used for donation purposes."
+msgstr "Indica si este almacén se utiliza para fines de donación."
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_stock_location
+msgid "Inventory Locations"
+msgstr "Ubicaciones de inventario"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_account_bank_statement_line__is_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_account_move__is_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_sale_order__is_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_scrap__is_donation
+msgid "Is Donation"
+msgstr "Es Donación"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_product_product__is_donation_product
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_product_template__is_donation_product
+msgid "Is Donation Product"
+msgstr "Es Producto de Donación"
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "Logo"
+msgstr "Logo"
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_scrap.py:0
+msgid "New"
+msgstr "Nuevo"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "Nombre, Firma y Sello"
+msgstr "Nombre, Firma y Sello"
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_stock_picking_type
+msgid "Picking Type"
+msgstr "Tipo de recolección"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_scrap__scrap_location_domain
+msgid "Picking Type Domain"
+msgstr "Dominio del Tipo de Recolección"
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid "Please configure a donation account in the company settings."
+msgstr "Por favor configure una cuenta de donación en los ajustes de la empresa."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid "Please configure a donation product in the company settings. The product is type to service."
+msgstr "Por favor configure un producto de donación en los ajustes de la empresa. El producto es de tipo servicio."
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_product_template
+msgid "Product"
+msgstr "Producto"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_warehouse__readonly_is_donation_warehouse
+msgid "Readonly Donation Warehouse"
+msgstr "Almacén de Donación de Solo Lectura"
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_sale_order
+msgid "Sales Order"
+msgstr "Orden de venta"
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_stock_scrap
+msgid "Scrap"
+msgstr "Desechar"
+
+#. module: l10n_ve_donation
+#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_scrap__scrap_location_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.view_stock_scrap_form_inherit
+msgid "Scrap Location"
+msgstr "Ubicación de desecho"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.view_stock_scrap_form_inherit
+msgid "Scrap Reason"
+msgstr "Motivo de Desecho"
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_stock_move
+msgid "Stock Move"
+msgstr "Movimiento de stock"
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/sale_order.py:0
+msgid "The Contact/Customer cannot be changed when it is a donation."
+msgstr "El Contacto/Cliente no puede cambiarse cuando es una donación."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid ""
+"The contact on move '%(line)s' must be the company partner "
+"('%(expected)s') when the entry is a donation. "
+"Found: '%(found)s'."
+msgstr ""
+"El contacto en el asiento '%(line)s' debe ser el contacto de la empresa "
+"('%(expected)s') cuando el asiento es una donación. "
+"Encontrado: '%(found)s'."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/account_move.py:0
+msgid ""
+"The contact on journal item '%(line)s' must be the company partner "
+"('%(expected)s') when the entry is a donation. "
+"Found: '%(found)s'."
+msgstr ""
+"El contacto en el apunte contable '%(line)s' debe ser el contacto de la empresa "
+"('%(expected)s') cuando el asiento es una donación. "
+"Encontrado: '%(found)s'."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/sale_order.py:0
+msgid ""
+"The field 'Is Donation' cannot be modified on a confirmed or completed "
+"order."
+msgstr ""
+"El campo 'Es Donación' no puede modificarse en una orden confirmada o completada."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/product_template.py:0
+msgid ""
+"There is already a donation product. Please deactivate the previous one "
+"before creating a new one."
+msgstr ""
+"Ya existe un producto de donación. Por favor desactive el anterior antes de "
+"crear uno nuevo."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_warehouse.py:0
+msgid "There can only be one donation warehouse."
+msgstr "Solo puede haber un almacén de donación."
+
+#. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_stock_warehouse
+msgid "Warehouse"
+msgstr "Almacén"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid ""
+"Yo, ______________________________________________________________________, de nacionalidad venezolana, \n"
+"                                        mayor de edad, y titular de la Cédula de Identidad No. _________________________, actuando en \n"
+"                                        nombre y representación de"
+msgstr ""
+"Yo, ______________________________________________________________________, de nacionalidad venezolana, \n"
+"                                        mayor de edad, y titular de la Cédula de Identidad No. _________________________, actuando en \n"
+"                                        nombre y representación de"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "a los"
+msgstr "a los"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "de"
+msgstr "de"
+
+#. module: l10n_ve_donation
+#: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
+msgid "días del mes de"
+msgstr "días del mes de"
