@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20260105\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251016\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-09 14:33+0000\n"
-"PO-Revision-Date: 2026-01-09 14:33+0000\n"
+"POT-Creation-Date: 2026-06-04 14:24+0000\n"
+"PO-Revision-Date: 2026-06-04 14:24+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,8 +17,6 @@ msgstr ""
 
 #. module: cadipa_appointment
 #. odoo-javascript
-#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
-#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #, python-format
@@ -174,15 +172,12 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
 #: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
-#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
-#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
 #, python-format
 msgid "Confirmar selección ("
 msgstr ""
 
 #. module: cadipa_appointment
 #. odoo-javascript
-#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #, python-format
 msgid "Create"
@@ -199,11 +194,16 @@ msgstr "Días de demora antes de la suspensión"
 #: code:addons/cadipa_appointment/controllers/appointment.py:0
 #, python-format
 msgid ""
-"Due to company policy, you cannot schedule another appointment of this type "
-"(%s) within a %s-day period."
+"Due to company policy, you cannot schedule another appointment of this type (%(appointment_type_name)s) within a %(restricted_days)s-day period."
 msgstr ""
-"Debido a la política de la empresa, no puede programar otra cita en este "
-"espacio (%s) dentro de un período de %s días."
+"Debido a la política de la empresa, no puede programar otra cita en este espacio (%(appointment_type_name)s) dentro de un período de %(restricted_days)s días."
+
+#. module: cadipa_appointment
+#. odoo-javascript
+#: code:addons/cadipa_appointment/static/src/js/guest_form.js:0
+#, python-format
+msgid "El niño debe tener al menos ${minAge} años"
+msgstr ""
 
 #. module: cadipa_appointment
 #: model:ir.model.fields,field_description:cadipa_appointment.field_res_company__membership_auto_suspend
@@ -224,6 +224,20 @@ msgstr "Asistiré a la reserva"
 #. module: cadipa_appointment
 #: model_terms:ir.ui.view,arch_db:cadipa_appointment.view_calendar_event_form_inherit_guests
 msgid "Invitados del evento"
+msgstr ""
+
+#. module: cadipa_appointment
+#. odoo-javascript
+#: code:addons/cadipa_appointment/static/src/js/guest_form.js:0
+#, python-format
+msgid "La edad máxima para un niño es de ${maxAge} años"
+msgstr ""
+
+#. module: cadipa_appointment
+#. odoo-javascript
+#: code:addons/cadipa_appointment/static/src/js/guest_form.js:0
+#, python-format
+msgid "La fecha de nacimiento no puede ser en el futuro"
 msgstr ""
 
 #. module: cadipa_appointment
@@ -278,7 +292,6 @@ msgstr "Membresia de Beneficiario"
 #. module: cadipa_appointment
 #. odoo-javascript
 #: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
-#: code:addons/cadipa_appointment/static/src/xml/web_gantt.xml:0
 #, python-format
 msgid "Plan existing"
 msgstr "Plan existen"
@@ -302,7 +315,6 @@ msgstr "Configuración de secuencia"
 #. module: cadipa_appointment
 #. odoo-javascript
 #: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
-#: code:addons/cadipa_appointment/static/src/xml/appointment_slots.xml:0
 #, python-format
 msgid "Selecciona uno o más horarios disponibles"
 msgstr ""
@@ -324,6 +336,13 @@ msgstr ""
 "La hora de apertura afectará la vista Gantt del evento del calendario para "
 "mostrar solo las horas desde este valor de Hora de apertura de cita hasta la"
 " Hora de cierre de cita."
+
+#. module: cadipa_appointment
+#. odoo-python
+#: code:addons/cadipa_appointment/controllers/appointment.py:0
+#, python-format
+msgid "Due to company policy, it is not possible to reserve the same type of space (%(resource_name)s) more than once a day."
+msgstr "Debido a políticas de la empresa, no es posible reservar el mismo tipo de espacio (%(resource_name)s) más de una vez al día."
 
 #. module: cadipa_appointment
 #. odoo-python
