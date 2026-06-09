@@ -6,8 +6,10 @@
             <field name="type">list</field>
             <field name="arch" type="xml">
                 <list string="Retention Lines">
-                    <field name="name" required="1"/>
-                    <field name="payment_id" />
+                    <field name="name"/>
+                    <field name="move_id" options="{'no_open': True}"/>
+                    <field name="payment_concept_id" options="{'no_open': True}"/>
+                    <field name="invoice_amount"/>
                 </list>
             </field>
         </record>
