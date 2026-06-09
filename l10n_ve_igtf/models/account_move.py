@@ -96,6 +96,21 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self:
+            # IGTF base only applies to invoice/refund documents.
+            # Payment/accounting entries (move_type=entry) must not go through
+            # this computation path, otherwise posting can crash when
+            # foreign_inverse_rate is not relevant for that entry.
+            if rec.move_type not in ["out_invoice", "out_refund", "in_invoice", "in_refund"]:
+                rec.write({
+                    'igtf_top_aply': 0.0,
+                    'alter_igtf_top_aply': 0.0,
+                    'alter_bi_igtf': 0.0,
+                    'foreign_alter_bi_igtf': 0.0,
+                    'foreign_bi_igtf': 0.0,
+                    'bi_igtf': 0.0
+                })
+                continue
+
             if rec.journal_id.is_purchase_international:
                 rec.write({
                     'igtf_top_aply': 0.0,
