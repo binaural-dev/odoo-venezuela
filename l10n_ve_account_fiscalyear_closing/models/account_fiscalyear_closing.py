@@ -96,7 +96,7 @@ class AccountFiscalyearClosingConfig(models.Model):
         if not src:
             src_accounts = self.env["account.account"].search(
                 [
-                    ("company_id", "=", self.fyc_id.company_id.id),
+                    ("company_ids", "in", [self.fyc_id.company_id.id]),
                     ("code", "=ilike", account_map.src_accounts),
                 ],
                 order="code ASC",
@@ -107,7 +107,7 @@ class AccountFiscalyearClosingConfig(models.Model):
                 .sudo()
                 .search(
                     [
-                        ("company_id", "=", self.fyc_id.company_id.id),
+                        ("company_ids", "in", [self.fyc_id.company_id.id]),
                         ("code", "=ilike", src),
                     ]
                 )
@@ -180,7 +180,7 @@ class AccountFiscalyearClosing(models.Model):
             .search(
                 [
                     ("account_type", "=", "equity_unaffected"),
-                    ("company_id", "in", [self.company_id.id, False]),
+                    ("company_ids", "in", [self.company_id.id, False]),
                 ],
                 limit=1,
             )
@@ -204,7 +204,7 @@ class AccountFiscalyearClosing(models.Model):
     def _get_balances(self, config):
         src_accounts = self.env["account.account"].search(
             [
-                ("company_id", "=", self.company_id.id),
+                ("company_ids", "in", [self.company_id.id]),
                 ("code", "in", config.mapping_ids.mapped("src_accounts")),
             ],
             order="code ASC",
