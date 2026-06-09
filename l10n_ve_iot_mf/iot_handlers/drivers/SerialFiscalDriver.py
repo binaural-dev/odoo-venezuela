@@ -692,8 +692,8 @@ class SerialFiscalDriver(SerialDriver):
                     return {"valid": False, "message": "Método de pago fiscal no configurado en una línea de pago."}
 
                 method_code = str(method_raw).strip().zfill(2)
-                # Enviar TODOS los montos positivos recibidos (incluido el método de cierre)
-                # para que la MF pueda calcular e imprimir CAMBIO cuando corresponda.
+                # El método de cierre se envía con comando 1XX, no con 2XX.
+                # Enviar en 2XX solo métodos distintos al de cierre.
                 if item["amount"] > 0:
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
@@ -1162,12 +1162,16 @@ class SerialFiscalDriver(SerialDriver):
                 fallback_lines=change_lines,
             )
 
-            for item in payment_lines:
+            # En NC, si no hay pagos positivos (caso común), usar change_lines
+            # para conservar métodos mixtos en comandos fiscales.
+            payment_lines_to_send = payment_lines or change_lines
+
+            for item in payment_lines_to_send:
                 _logger.info("ITEM : %s", item)
                 method_code = str(item["payment_method"]).strip().zfill(2)
                 if item["amount"] > 0 and method_code != closing_method:
-                    amount_i, amount_d = self.split_amount(item["amount"], dec=2)  
-                    amount_i_filled = amount_i.zfill(10)  
+                    amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
+                    amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     payment_command = f"2{method_code}{amount_i_filled}{amount_d}"
                     payment_commands.append(payment_command)
 
