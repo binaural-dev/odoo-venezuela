@@ -367,3 +367,13 @@ class AccountMoveRetention(models.Model):
                 move.foreign_rate = move.payment_id.foreign_rate
                 move.foreign_inverse_rate = move.payment_id.foreign_rate
         return res
+
+    def unlink(self):
+        for record in self:
+            if record.retention_iva_line_ids.filtered(lambda l: l.state == "emitted") or record.retention_islr_line_ids.filtered(lambda l: l.state == "emitted") or record.retention_municipal_line_ids.filtered(lambda l: l.state == "emitted"):
+                raise UserError(
+                    _(
+                        "You cannot delete an invoice with an emitted retention. Please cancel the retention first."
+                    )
+                )
+        return super().unlink()

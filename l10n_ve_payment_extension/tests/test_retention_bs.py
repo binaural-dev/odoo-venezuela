@@ -170,41 +170,34 @@ class TestAccountRetentionSequence(TransactionCase):
 
         _logger.warning("Creating retention for invoice %s", invoice.amount_total)
         _logger.warning("Creating retention for invoice %s", invoice.amount_untaxed)
-        return self.env["account.retention"].create(
-            {
-                "type_retention": "iva",
-                "type": "in_invoice",
-                "company_id": self.company.id,
-                "partner_id": self.partner_a.id,
-                "date": today,
-                "date_accounting": today,
-                "retention_line_ids": [
-                    Command.create(
-                        {
-                            "move_id": invoice.id,
-                            "name": "Test Retention Line",
-                            "invoice_total": invoice.amount_total,
-                            "invoice_amount": invoice.amount_untaxed,
-                            "retention_amount": float_round(
-                                invoice.amount_untaxed * 0.16, precision_rounding=0.01
-                            ),
-                            "foreign_retention_amount": float_round(
-                                invoice.amount_untaxed * 0.16, precision_rounding=0.01
-                            ),
-                            "foreign_invoice_amount": invoice.amount_untaxed,
-                            "payment_concept_id": payment_concept.id,
-                        }
-                    )
-                ],
-            }
-        )
+        with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":type_retention})) as retention_form:
+            retention_form.partner_id = self.partner_a
+            retention_form.date_accounting = today
+
+        retention = retention_form.save()
+
+        with Form(retention) as retention_form_edit:
+            with retention_form_edit.retention_line_ids.new() as line:
+                line.move_id = invoice
+                line.payment_concept_id = self.payment_concept
+
+        retention = retention_form_edit.save()
+
+        return retention
 
     def test_01_sequence_created_on_create_iva(self):
         invoice = self._create_invoice_simple()
         invoice.action_post()
+<<<<<<< HEAD
         retention = self._create_retention(invoice)
         retention.number = "0123456789"
         retention.type_retention = "iva"
+=======
+        retention = self._create_retention(invoice,'iva')
+        
+        # Forzando a no tener 14 numero exactamente
+        retention.number = "0123456789"
+>>>>>>> origin/maintenance-17.0.1
 
         with self.assertRaises(ValidationError) as e:
             retention.action_post()

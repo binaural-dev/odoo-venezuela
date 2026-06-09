@@ -148,25 +148,27 @@ class StockPicking(models.Model):
 
         if response:
             approves = False
+            found_series = False
             for numbering in response.get("numeraciones", []):
-                current_series = (numbering.get("serie") or "").upper()
-                if series != "":
-                    if current_series == series.upper():
-                        end_number = numbering.get("hasta")
-                        start_number = numbering.get("correlativo")
-                else:
-                    if current_series == "NO APLICA":
-                        end_number = numbering.get("hasta")
-                        start_number = numbering.get("correlativo")
+                serie_tfhka = numbering.get("serie", "")
+                if serie_tfhka != series and serie_tfhka != "NO APLICA":
+                    continue
                 
+                end_number = numbering.get("hasta")
+                start_number = numbering.get("correlativo")
+                found_series = True
+
                 if int(start_number) < int(end_number):
                     approves = True
                     break
+                
+            if not found_series:
+                raise UserError(_("The series '%(series)s' is not configured in The Factory HKA. Please contact the administrator.") % {'series': series})
+            
+            if not approves:
+                raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
-            if approves:
-                return
-
-            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
+            return
 
     def get_document_identification(self, document_type, document_number):
         for record in self:

@@ -255,10 +255,10 @@ class AccountMoveLine(models.Model):
             if foreign_currency:
                 rate_date = line.date
                 rate = foreign_currency._get_conversion_rate(
-                    line.company_id.currency_id, 
-                    foreign_currency,          
-                    line.company_id,           
-                    line.date           
+                    line.company_id.currency_id,
+                    foreign_currency,
+                    line.company_id,
+                    rate_date
                 )
 
                 inverse_rate_to_use = rate if inverse_rate_to_use == 0.0 else rate

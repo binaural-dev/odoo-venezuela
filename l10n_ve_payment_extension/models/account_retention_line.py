@@ -70,7 +70,7 @@ class AccountRetentionLine(models.Model):
     
     code = fields.Char(
         string='Code',
-        compute='_compute_code',
+        compute='_compute_concep_code',
         store=True, 
         readonly=False
     )
@@ -135,18 +135,19 @@ class AccountRetentionLine(models.Model):
     foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate")
 
-    @api.depends("payment_concept_id")
-    def _compute_code(self):
-        for rec in self:
-            if rec.retention_id.partner_id and rec.payment_concept_id:
-                codes = rec.payment_concept_id.line_payment_concept_ids.filtered(
-                    lambda l: l.type_person_id == rec.retention_id.partner_id.type_person_id
-                ).mapped('code')
-
-                rec.code = codes[0] if codes else ''
-            else:
-                rec.code = ''
-
+    @api.depends("payment_concept_id", "move_id", "move_id.partner_id.type_person_id")
+    def _compute_concep_code(self):
+        for record in self:
+            record.code = False
+            if not record.payment_concept_id or not record.move_id:
+                continue
+            partner_type = record.move_id.partner_id.type_person_id
+            if not partner_type:
+                continue
+            matching_line = record.payment_concept_id.line_payment_concept_ids.filtered(
+                lambda l: l.type_person_id == partner_type
+            )
+            record.code = matching_line[0].code if matching_line else False
 
     @api.onchange("move_id")
     def _onchange_move_id(self):
