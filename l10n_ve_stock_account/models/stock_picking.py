@@ -212,7 +212,7 @@ class StockPicking(models.Model):
                     "padding": 5,
                 }
             )
-        return guide_number.next_by_id(guide_number.id)
+        return guide_number.next_by_id()
 
     # === MAIN FUNCTIONS ===#
 
@@ -1376,7 +1376,7 @@ class StockPicking(models.Model):
         """
         for picking in self:
             if (
-                self.operation_code == "internal"
+                picking.operation_code == "internal"
                 and picking.transfer_reason_id.id
                 == self.env.ref(
                     "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses"
