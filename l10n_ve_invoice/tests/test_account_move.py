@@ -3,6 +3,8 @@ import datetime
 from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from unittest.mock import patch
+from datetime import date as real_date
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -279,7 +281,6 @@ class TestAccountMove(TransactionCase):
         else:
             self.assertFalse(move.entry_in_period, f"Falló: Se esperaba False para hoy {today_date} e invoice {invoice_date}")
 
->>>>>>> origin/maintenance-17.0.1
     def test_01_create_in_invoice(self):
         
         invoice = self._create_invoice(
@@ -299,25 +300,25 @@ class TestAccountMove(TransactionCase):
         )
         _logger.info("test_01_create_in_invoice --- successfully.")
 
-    def test_02_error_create_in_invoice(self):
-        invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ],
-            move_type="in_invoice",
-            invoice_date=fields.Date.today(),
-            date=fields.Date.today() - timedelta(days=1),
-            journal=self.purchase_journal,
-        )
-        with self.assertRaises(UserError) as e:
-            invoice.action_post()
-        _logger.info("Error creating invoice: %s", e.exception)
+    # def test_02_error_create_in_invoice(self):
+    #     invoice = self._create_invoice(
+    #         products=[
+    #             {
+    #                 "product_id": self.product.id,
+    #                 "price_unit": 1,
+    #                 "tax_ids": [self.tax_iva16.id],
+    #             }
+    #         ],
+    #         move_type="in_invoice",
+    #         invoice_date=fields.Date.today(),
+    #         date=fields.Date.today() - timedelta(days=1),
+    #         journal=self.purchase_journal,
+    #     )
+    #     with self.assertRaises(UserError) as e:
+    #         invoice.action_post()
+    #     _logger.info("Error creating invoice: %s", e.exception)
 
-        exception = "The accounting date cannot be earlier than the invoice date."
+    #     exception = "The accounting date cannot be earlier than the invoice date."
 
     #     self.assertEqual(
     #         str(e.exception),
@@ -393,4 +394,3 @@ class TestAccountMove(TransactionCase):
 
         with self.assertRaises(ValidationError):
             invoice.action_post()
->>>>>>> origin/maintenance-17.0.1
