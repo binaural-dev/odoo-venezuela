@@ -14,6 +14,7 @@
         "l10n_ve_accountant",
         "l10n_ve_contact",
         "l10n_ve_tax",
+        "l10n_ve_filter_partner",
         "od_journal_sequence",
         "account_debit_note",
     ],
