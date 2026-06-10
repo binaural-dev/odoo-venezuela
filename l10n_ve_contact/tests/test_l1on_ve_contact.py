@@ -112,3 +112,52 @@ class TestResPartner(TransactionCase):
         self.partner.vat = "123456"
         # Should not raise
         self.partner._check_vat()
+
+    def _create_partner_transaction(self, partner):
+        """Create at least one related transaction for the partner when possible.
+
+        The name immutability constraint checks different models depending on what is
+        installed in the database. This helper tries the safest options and returns
+        True when a record was created.
+        """
+        if "sale.order" in self.env.registry.models:
+            self.env["sale.order"].create({"partner_id": partner.id})
+            return True
+
+        if "purchase.order" in self.env.registry.models:
+            self.env["purchase.order"].create({"partner_id": partner.id})
+            return True
+
+        return False
+
+    def test_name_change_allowed_without_transactions(self):
+        self.company.write({"validate_partner_name_immutable": True})
+
+        self.partner.write({"name": "Renamed Partner"})
+        self.assertEqual(self.partner.name, "Renamed Partner")
+
+    def test_name_change_blocked_with_transactions_when_enabled(self):
+        self.company.write({"validate_partner_name_immutable": True})
+
+        created = self._create_partner_transaction(self.partner)
+        if not created:
+            self.skipTest(
+                "No transaction model available in this test environment "
+                "(sale.order/purchase.order)."
+            )
+
+        with self.assertRaises(ValidationError):
+            self.partner.write({"name": "Should Fail"})
+
+    def test_name_change_allowed_with_transactions_when_disabled(self):
+        created = self._create_partner_transaction(self.partner)
+        if not created:
+            self.skipTest(
+                "No transaction model available in this test environment "
+                "(sale.order/purchase.order)."
+            )
+
+        self.company.write({"validate_partner_name_immutable": False})
+        self.partner.write({"name": "Allowed Rename"})
+
+        self.assertEqual(self.partner.name, "Allowed Rename")
