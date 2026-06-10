@@ -98,6 +98,8 @@
                     sum="Total Foreign Debit"
                     readonly="1"
                     force_save="1"
+                    widget="monetary"
+                    options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"
                 />
                 <field
                     name="foreign_credit"
@@ -105,10 +107,12 @@
                     sum="Total Foreign Credit"
                     readonly="1"
                     force_save="1"
+                    widget="monetary"
+                    options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"
                 />
                 <field name="foreign_debit_adjustment" optional="hide" force_save="1"/>
                 <field name="foreign_credit_adjustment" optional="hide" force_save="1"/>
-                <field name="foreign_balance" optional="hide" groups="base.group_no_one" force_save="1"/>
+                <field name="foreign_balance" optional="hide" groups="base.group_no_one" force_save="1" widget="monetary" options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"/>
                 <field name="foreign_rate" optional="hide" groups="base.group_no_one" force_save="1"/>
                 <field
                     name="foreign_inverse_rate"
