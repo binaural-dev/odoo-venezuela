@@ -765,13 +765,6 @@ msgstr "Referencia"
 msgid "Result"
 msgstr "Resultado"
 
-#. module: l10n_ve_account_fiscalyear_closing
-#. odoo-python
-#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
-#, python-format
-msgid "Se encontraron uno o más movimientos sin asentar: \n"
-msgstr ""
-
 #. module: account_fiscal_year_closing
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_config__sequence
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_config_abstract__sequence
@@ -900,3 +893,130 @@ msgid "You can't remove any closing that is not in draft or cancelled state."
 msgstr ""
 "No puede eliminar ningún cierre que no se encuentre en borrador o estado "
 "cancelado."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields.selection,name:l10n_ve_account_fiscalyear_closing.selection__account_fiscalyear_closing__closing_grouping__single
+msgid "1 entry per type (consolidates accounts)"
+msgstr "1 asiento por tipo (consolida cuentas)"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields.selection,name:l10n_ve_account_fiscalyear_closing.selection__account_fiscalyear_closing__closing_grouping__config
+msgid "1 entry per configuration"
+msgstr "1 asiento por configuración"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields.selection,name:l10n_ve_account_fiscalyear_closing.selection__account_fiscalyear_closing__closing_grouping__account
+msgid "1 entry per account"
+msgstr "1 asiento por cuenta"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "Closing - %s"
+msgstr "Cierre - %s"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "Config date '%s' for '%s' is outside the fiscal year closing date range (%s - %s)."
+msgstr "La fecha '%s' de la configuración '%s' está fuera del rango de fechas del cierre fiscal (%s - %s)."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__closing_grouping
+msgid "Closing grouping"
+msgstr "Agrupación de cierre"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "Configurations '%s' and '%s' share source accounts: %s. They cannot have overlapping source accounts."
+msgstr "Las configuraciones '%s' y '%s' comparten cuentas de origen: %s. No pueden tener cuentas de origen solapadas."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "No balances found for source accounts defined in configuration '%s'. Please verify there are moves in the selected period."
+msgstr "No se encontraron saldos para las cuentas de origen definidas en la configuración '%s'. Por favor, verifique que existan movimientos en el período seleccionado."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "No enabled closing configurations found. Please check the 'Moves Configuration' tab."
+msgstr "No existen configuraciones de asientos de cierre habilitadas. Por favor, verifique la pestaña 'Configuración de Movimientos'."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "One or more unposted moves found: \n"
+msgstr "Se encontraron uno o más movimientos sin asentar: \n"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__single_date
+msgid "Single entry date"
+msgstr "Fecha asiento único"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__single_journal_id
+msgid "Single entry journal"
+msgstr "Diario asiento único"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "Start date cannot be later than end date."
+msgstr "La fecha de inicio no puede ser posterior a la fecha de fin."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "Opening date must be the day after end date."
+msgstr "La fecha de apertura debe ser el día siguiente a la fecha de fin."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "End date must be %s-%s-%s based on company's fiscal year configuration."
+msgstr "La fecha de fin debe ser %s-%s-%s según la configuración del año fiscal de la empresa."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "Fiscal year end month and day must be set on the company. Go to Accounting > Configuration > Settings."
+msgstr "El mes y día de fin del año fiscal deben estar configurados en la empresa. Vaya a Contabilidad > Configuración > Ajustes."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "Fiscal year end (month/day) must be configured on the company before creating a fiscal year closing."
+msgstr "El mes/día de fin del año fiscal debe estar configurado en la empresa antes de crear un cierre fiscal."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config__inverse_config_id
+msgid "Reverse entry from"
+msgstr "Invertir asiento de"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "Opening entries (Reverse entry from) are only allowed when closing grouping is set to '1 entry per configuration'."
+msgstr "Los asientos de apertura (Invertir asiento de) solo están permitidos cuando la agrupación de cierre está configurada como '1 asiento por configuración'."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
+msgid "A configuration with 'Reverse entry from' must not be of type 'closing'."
+msgstr "Una configuración con 'Invertir asiento de' no debe ser de tipo 'closing'."
+
