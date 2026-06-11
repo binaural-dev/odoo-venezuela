@@ -3389,3 +3389,35 @@ msgstr ""
 "<strong>Actualizando por nueva Unidad Tributaria Activa</strong><br/><strong>Unidad:</strong> "
 "%s<br/><strong>Valor Nuevo:</strong> %s<br/><strong>Sustraendo Nuevo:</strong> "
 "%s"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "No company partner associated with this invoice."
+msgstr "La compañia no tiene un contacto asociado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "The Company '%s' does not have an ISLR 'Type of Person' configured."
+msgstr "La compañía '%s' no tiene un 'Tipo de Persona' de ISLR configurado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"The Partner/Vendor '%s' does not have an ISLR 'Type of Person' configured."
+msgstr "El Cliente/Proveedor '%s' no tiene un 'Tipo de Persona' de ISLR configurado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "No partner/vendor associated with this invoice."
+msgstr "El cliente/proveedor no tiene un contacto asociado con esta factura."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__auto_fill_retention_amount_iva
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__auto_fill_retention_amount_iva
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Auto-fill IVA Client Retention Amount"
+msgstr "Autocompletar Monto de Retención de IVA para Clientes"

@@ -202,8 +202,12 @@ class AccountRetentionLine(models.Model):
                 record.foreign_invoice_total = invoice_id.tax_totals["total_amount_foreign_currency"]
 
                 if invoice_id.move_type == "out_invoice":
-                    record.retention_amount = 0.0
-                    record.foreign_retention_amount = 0.0
+                    if self.env.company.auto_fill_retention_amount_iva:
+                        record.retention_amount = retention_amount
+                        record.foreign_retention_amount = record.foreign_iva_amount * (withholding_amount / 100)
+                    else:
+                        record.retention_amount = 0.0
+                        record.foreign_retention_amount = 0.0
                 else:
                     record.retention_amount = retention_amount
                     record.foreign_retention_amount = record.foreign_iva_amount * (withholding_amount / 100)

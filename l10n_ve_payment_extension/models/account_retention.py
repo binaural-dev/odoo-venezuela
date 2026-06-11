@@ -789,7 +789,7 @@ class AccountRetention(models.Model):
             if not taxes:
                 continue
             tax = taxes[0]
-            retention_amount = tax_group["tax_amount"] * (withholding_amount / 100)
+            retention_amount = abs(tax_group["tax_amount"] * (withholding_amount / 100))
             line_data = {
                 "name": _("Iva Retention"),
                 "invoice_type": invoice_id.move_type,
@@ -806,15 +806,17 @@ class AccountRetention(models.Model):
                 "foreign_invoice_total": invoice_id.tax_totals["total_amount_foreign_currency"],
             }
             if invoice_id.move_type == "out_invoice":
-                line_data["retention_amount"] = 0.0
-                line_data["foreign_retention_amount"] = 0.0
+                if self.env.company.auto_fill_retention_amount_iva:
+                    line_data["retention_amount"] = retention_amount
+                    line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (withholding_amount / 100)
+                        
+                else:
+                    line_data["retention_amount"] = 0.0
+                    line_data["foreign_retention_amount"] = 0.0
             else:
                 line_data["retention_amount"] = retention_amount
-                line_data["foreign_retention_amount"] = float_round(
-                    (line_data["foreign_iva_amount"] * (withholding_amount / 100)),
-                    precision_digits=invoice_id.company_id.foreign_currency_id.decimal_places,
-                    rounding_method='HALF-UP'
-                ) #Acá siempre que la tercera posición decimal sea 5 o mayor se redondea hacia arriba. ATT DANIELA
+                line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (withholding_amount / 100)
+                     #Acá siempre que la tercera posición decimal sea 5 o mayor se redondea hacia arriba. ATT DANIELA
             lines_data.append(line_data)
         return lines_data
 

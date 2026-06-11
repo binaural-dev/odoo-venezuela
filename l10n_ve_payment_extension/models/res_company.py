@@ -60,3 +60,7 @@ class ResCompany(models.Model):
         string="Header 2 for voucher of municipal retention", 
         default="Industria, Comercio, Servicios o de Índole Similar en el Municipio Libertador del Distrito Capital, publicada en la Gaceta Municipal N° 5030 del 08/02/2024."
     )
+
+    auto_fill_retention_amount_iva = fields.Boolean(
+        string="Auto-fill IVA Client Retention Amount", default=False
+    )
