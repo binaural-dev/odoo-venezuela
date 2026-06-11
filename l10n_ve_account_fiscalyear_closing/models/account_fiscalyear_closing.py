@@ -3,7 +3,7 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import _, api, exceptions, fields, models , Command
+from odoo import _, api, exceptions, fields, models, Command
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import float_is_zero
 
@@ -14,6 +14,50 @@ class AccountFiscalyearClosingConfig(models.Model):
     _inherit = "account.fiscalyear.closing.config"
 
     l_map = fields.Boolean(string="Load Accounts")
+
+    journal_id = fields.Many2one(
+        'account.journal',
+        domain=lambda self: [('type', '=', 'general')],
+    )
+
+    inverse_config_id = fields.Many2one(
+        "account.fiscalyear.closing.config",
+        string="Reverse entry from",
+        domain=lambda self: [
+            ('fyc_id', '=', self.fyc_id.id),
+            ('id', '!=', self.id),
+            ('move_type', '=', 'closing'),
+            ('state', '=', 'posted'),
+        ] if self.fyc_id else [],
+    )
+
+    @api.onchange('inverse_config_id')
+    def _onchange_inverse_config_id(self):
+        if self.inverse_config_id:
+            self.move_type = 'opening'
+        else:
+            self.move_type = 'closing'
+
+    @api.onchange('move_type')
+    def _check_inverse_config_move_type(self):
+        for config in self:
+            if config.inverse_config_id and config.move_type == 'closing':
+                raise UserError(_(
+                    "A configuration with 'Reverse entry from' must not be of type 'closing'."
+                ))
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if 'move_type' in fields_list and not res.get('move_type'):
+            res['move_type'] = 'closing'
+        if res.get('move_type') == 'closing' and 'date' in fields_list and not res.get('date'):
+            fyc_id = self.env.context.get('default_fyc_id') or self.env.context.get('active_id')
+            if fyc_id:
+                fyc = self.env['account.fiscalyear.closing'].browse(fyc_id)
+                if fyc.exists():
+                    res['date'] = fyc.date_end
+        return res
 
     @api.onchange("l_map")
     def onchange_l_map(self):
@@ -146,20 +190,141 @@ class AccountFiscalyearClosingConfig(models.Model):
 class AccountFiscalyearClosing(models.Model):
     _inherit = "account.fiscalyear.closing"
 
-    @api.constrains('date_start', 'date_end')
-    def _check_year_dates_consistency(self):
+    closing_grouping = fields.Selection([
+        ("single", "1 entry per type (consolidates accounts)"),
+        ("config", "1 entry per configuration"),
+        ("account", "1 entry per account"),
+    ], default="account", required=True)
+
+    single_date = fields.Date(string="Single entry date")
+    single_journal_id = fields.Many2one("account.journal", string="Single entry journal")
+
+    @api.constrains('closing_grouping', 'move_config_ids')
+    def _check_single_grouping(self):
+        for closing in self:
+            if closing.closing_grouping == 'single' and len(closing.move_config_ids.filtered("enabled")) <= 1:
+                raise ValidationError(_(
+                    "The '1 entry per type' option requires more than one "
+                    "enabled configuration in the moves configuration tab."
+                ))
+
+    @api.constrains('closing_grouping', 'move_config_ids')
+    def _check_inverse_config_grouping(self):
+        for closing in self:
+            if closing.closing_grouping != 'config':
+                for config in closing.move_config_ids:
+                    if config.inverse_config_id:
+                        raise ValidationError(_(
+                            "Opening entries (Reverse entry from) are only allowed "
+                            "when closing grouping is set to '1 entry per configuration'."
+                        ))
+
+    @api.constrains('year', 'company_id', 'state')
+    def _check_unique_year_company(self):
         for record in self:
-            if record.year and record.date_start and record.date_end:
-                start_year = record.date_start.year
-                end_year = record.date_end.year
-                
-                if start_year != record.year or end_year != record.year:
+            if record.year and record.company_id:
+                dup = self.search([
+                    ('year', '=', record.year),
+                    ('company_id', '=', record.company_id.id),
+                    ('state', '=', 'posted'),
+                    ('id', '!=', record.id),
+                ])
+                if dup:
                     raise ValidationError(_(
-                        "Las fechas de inicio (%s) y fin (%s) deben pertenecer al año fiscal %s."
-                    ) % (start_year, end_year, record.year))
-                
+                        "There should be only one fiscal year closing "
+                        "for that year and company!"
+                    ))
+
+    @api.constrains('date_start', 'date_end', 'date_opening', 'company_id')
+    def _check_dates_consistency(self):
+        for record in self:
+            if not record.company_id.fiscalyear_last_month or not record.company_id.fiscalyear_last_day:
+                raise ValidationError(_(
+                    "Fiscal year end (month/day) must be configured on the company "
+                    "before creating a fiscal year closing."
+                ))
+            lm = int(record.company_id.fiscalyear_last_month)
+            ld = int(record.company_id.fiscalyear_last_day)
+            if record.date_start and record.date_end:
                 if record.date_start > record.date_end:
-                    raise ValidationError(_("La fecha de inicio no puede ser posterior a la fecha de fin."))
+                    raise ValidationError(_("Start date cannot be later than end date."))
+            if record.date_end and record.date_opening:
+                if record.date_opening != record.date_end + relativedelta(days=1):
+                    raise ValidationError(_("Opening date must be the day after end date."))
+            if record.date_end and record.year and record.year != record.date_end.year:
+                raise ValidationError(_(
+                    "The fiscal year (%s) must match the end date year (%s)."
+                ) % (record.year, record.date_end.year))
+            if record.date_end:
+                expected_end = date(record.date_end.year, lm, ld)
+                if record.date_end != expected_end:
+                    raise ValidationError(_(
+                        "End date must be %s-%s-%s based on company's fiscal year configuration."
+                    ) % (record.date_end.year, lm, ld))
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        needs = any(f in fields_list for f in ['date_start', 'date_end', 'date_opening', 'year'])
+        if not needs or (res.get('year') and res.get('date_start') and res.get('date_end')):
+            return res
+        company = self.env.company
+        if not res.get('year'):
+            prev = self.search([
+                ('company_id', '=', company.id),
+                ('state', '=', 'posted'),
+            ], order='date_end desc', limit=1)
+            if prev:
+                res['year'] = prev.year + 1
+            else:
+                lm = int(company.fiscalyear_last_month or 12)
+                ld = int(company.fiscalyear_last_day or 31)
+                today = fields.Date.today()
+                fy_start = date(today.year - 1 if today.month < lm or (today.month == lm and today.day < ld) else today.year, lm, ld) + relativedelta(days=1)
+                if today >= fy_start:
+                    res['year'] = today.year
+                else:
+                    res['year'] = today.year
+        if not res.get('date_end') and res.get('year'):
+            res['date_end'] = date(res['year'], int(company.fiscalyear_last_month or 12),
+                                   int(company.fiscalyear_last_day or 31))
+        if not res.get('date_start'):
+            if prev:
+                res['date_start'] = prev.date_opening
+            else:
+                lm = int(company.fiscalyear_last_month or 12)
+                ld = int(company.fiscalyear_last_day or 31)
+                res['date_start'] = date(res['year'] - 1, lm, ld) + relativedelta(days=1)
+        if res.get('date_end') and not res.get('date_opening'):
+            res['date_opening'] = res['date_end'] + relativedelta(days=1)
+        return res
+
+    @api.onchange('year')
+    def _onchange_year(self):
+        if self.year and self.company_id:
+            company = self.company_id
+            if not company.fiscalyear_last_month or not company.fiscalyear_last_day:
+                raise ValidationError(_(
+                    "Fiscal year end month and day must be set on the company. "
+                    "Go to Accounting > Configuration > Settings."
+                ))
+            lm = int(company.fiscalyear_last_month)
+            ld = int(company.fiscalyear_last_day)
+            self.date_start = date(self.year - 1, lm, ld) + relativedelta(days=1)
+            self.date_end = date(self.year, lm, ld)
+            self.date_opening = self.date_end + relativedelta(days=1)
+
+    @api.onchange('date_start')
+    def _onchange_date_start(self):
+        if self.date_start and self.company_id:
+            company = self.company_id
+            lm = int(company.fiscalyear_last_month or 12)
+            ld = int(company.fiscalyear_last_day or 31)
+            if (self.date_start.month < lm) or (self.date_start.month == lm and self.date_start.day <= ld):
+                self.date_end = date(self.date_start.year, lm, ld)
+            else:
+                self.date_end = date(self.date_start.year + 1, lm, ld)
+            self.date_opening = self.date_end + relativedelta(days=1)
 
     def draft_moves_check(self):
         for closing in self:
@@ -201,22 +366,76 @@ class AccountFiscalyearClosing(models.Model):
             company.sudo().fiscalyear_lock_date = closing.date_end
         return super().button_post()
 
-    # Todo el registro de las cuentas esta en esta funcion
-    def calculate(self):
-        dest_account = (
-            self.env["account.account"]
-            .sudo()
-            .search(
-                [
-                    ("account_type", "=", "equity_unaffected"),
-                    ("company_ids", "in", [self.company_id.id, False]),
-                ],
-                limit=1,
-            )
-        )
-        currencies = {
-            "bsd_id": self.env.company.currency_id,
-            "foreign_currency": self.env.company.foreign_currency_id,
+    def _get_dest_account(self):
+        return self.env["account.account"].sudo().search([
+            ("account_type", "=", "equity_unaffected"),
+            ("company_ids", "in", [self.company_id.id, False]),
+        ], limit=1)
+
+    def _aggregate_balances(self, raw_balances):
+        aggregated = {}
+        for bal in raw_balances:
+            aid = bal["account_id"]
+            if isinstance(aid, (list, tuple)):
+                aid = aid[0]
+            if aid not in aggregated:
+                aggregated[aid] = dict(bal)
+                aggregated[aid]["balance"] = 0.0
+                aggregated[aid]["foreign_balance"] = 0.0
+            aggregated[aid]["balance"] += bal.get("balance", 0.0)
+            aggregated[aid]["foreign_balance"] += bal.get("foreign_balance", 0.0)
+        return list(aggregated.values())
+
+    def _split_into_groups(self, aggregated):
+        groups = {}
+        for bal in aggregated:
+            c = bal["config"]
+            if self.closing_grouping == "single":
+                gk = "__single__"
+            elif self.closing_grouping == "config":
+                gk = c.id
+            else:
+                aid = bal["account_id"]
+                if isinstance(aid, (list, tuple)):
+                    aid = aid[0]
+                gk = aid
+            groups.setdefault(gk, []).append(bal)
+
+        result = {}
+        for gk, lines in groups.items():
+            ref_c = lines[0]["config"]
+            if self.closing_grouping == "single":
+                name = _("Closing - %s") % ref_c.name
+                date = self.single_date or self.date_end
+                jid = self.single_journal_id.id if self.single_journal_id else ref_c.journal_id.id
+            elif self.closing_grouping == "config":
+                name = ref_c.name
+                date = self.date_end
+                jid = ref_c.journal_id.id
+            else:
+                name = _("%s - %s") % (ref_c.name, lines[0].get("account_name", _("Account")))
+                date = self.date_end
+                jid = ref_c.journal_id.id
+
+            result[gk] = {
+                "lines": lines,
+                "move_type": "closing",
+                "date": date,
+                "journal_id": jid,
+                "name": name,
+            }
+        return result
+
+    def _prepare_move_vals_from_group(self, group, all_lines):
+        return {
+            "ref": group["name"],
+            "date": group["date"],
+            "fyc_id": self.id,
+            "move_type": "entry",
+            "closing_type": group["move_type"],
+            "journal_id": group["journal_id"],
+            "manually_set_rate": True,
+            "line_ids": all_lines,
         }
 
     def _create_move_from_group(self, group):
@@ -307,16 +526,44 @@ class AccountFiscalyearClosing(models.Model):
 
             enabled_configs = closing.move_config_ids.filtered("enabled")
             if not enabled_configs:
-                raise UserError(_("No existen configuraciones de asientos de cierre habilitadas. "
-                                    "Por favor, verifique la pestaña 'Configuración de Movimientos'."))
-    
-            for config in enabled_configs:
-                balances = self._get_balances(config)
+                raise UserError(_("No enabled closing configurations found. "
+                                  "Please check the 'Moves Configuration' tab."))
 
-                if not balances:
-                    raise UserError(_("No se encontraron saldos para las cuentas de origen definidas en la configuración '%s'. "
-                                        "Por favor, verifique que existan movimientos en el período seleccionado y que las cuentas de origen estén correctamente configuradas.") % config.name)
-                self._create_closing_moves(config, balances, dest_account, currencies)
+            reverse_configs = enabled_configs.filtered("inverse_config_id")
+            regular_configs = enabled_configs - reverse_configs
+
+            if regular_configs:
+                raw = []
+                for config in regular_configs:
+                    balances = self._get_balances(config)
+                    if not balances:
+                        raise UserError(_("No balances found for source accounts defined in configuration '%s'. "
+                                          "Please verify there are moves in the selected period.") % config.name)
+                    for bal in balances:
+                        bal["config"] = config
+                        raw.append(bal)
+
+                aggregated = closing._aggregate_balances(raw)
+                groups = closing._split_into_groups(aggregated)
+
+                for group in groups.values():
+                    closing._create_move_from_group(group)
+
+            for config in reverse_configs:
+                source_move = config.inverse_config_id.move_id
+                if source_move and source_move.state not in ('cancel',):
+                    move_ids = source_move._reverse_moves([{
+                        'date': config.date or closing.date_opening,
+                        'journal_id': config.journal_id.id,
+                    }])
+                    if move_ids:
+                        move = self.env['account.move'].browse(move_ids[0])
+                        move.write({
+                            'ref': config.name,
+                            'closing_type': 'opening',
+                            'fyc_id': closing.id,
+                        })
+                        config.move_id = move.id
 
         return True
     
@@ -345,55 +592,6 @@ class AccountFiscalyearClosing(models.Model):
         )
         return balances
 
-    def _create_closing_moves(self, config, balances, dest_account, currencies):
-        """ Itera los balances y coordina la creación de los asientos. """
-        for balance_dict in balances:
-            balance = balance_dict.get("balance", 0.0)
-
-            if balance == 0:
-                continue
-
-            move_vals = self._prepare_closing_move_vals(config, balance_dict, dest_account)
-            
-            move = self.env["account.move"].create(move_vals)
-
-            move.write({"manually_set_rate": True})
-
-
-    def _prepare_closing_move_vals(self, config, balance_dict, dest_account):
-        balance = balance_dict.get("balance", 0.0)
-        acc_id_raw = balance_dict.get("account_id")
-        account_id = acc_id_raw[0] if isinstance(acc_id_raw, (list, tuple)) else acc_id_raw
-
-        line_vals = [
-            Command.create({
-                "account_id": account_id,
-                "currency_id": self.env.company.currency_id.id,
-                "amount_currency": -balance,
-                "name": config.name,
-                "date": config.date,
-            }),
-            Command.create({
-                "account_id": dest_account.id,
-                "currency_id": self.env.company.currency_id.id,
-                "amount_currency": balance,
-                "name": _("Result"),
-                "date": config.date,
-            })
-        ]
-
-        return {
-            "ref": config.name,
-            "date": config.date,
-            "fyc_id": self.id,
-            "move_type": 'entry',
-            "closing_type": config.move_type,
-            "journal_id": config.journal_id.id,
-            "manually_set_rate": False,
-            "line_ids": line_vals,
-        }
-
-          
 
 class AccountFiscalyearClosingMapping(models.Model):
     _inherit = "account.fiscalyear.closing.mapping"

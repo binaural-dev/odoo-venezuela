@@ -1020,13 +1020,3 @@ msgstr "Los asientos de apertura (Invertir asiento de) solo están permitidos cu
 msgid "A configuration with 'Reverse entry from' must not be of type 'closing'."
 msgstr "Una configuración con 'Invertir asiento de' no debe ser de tipo 'closing'."
 
-#. module: l10n_ve_account_fiscalyear_closing
-#. odoo-python
-#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
-msgid ""
-"The '1 entry per type' option requires more than one enabled configuration "
-"in the moves configuration tab."
-msgstr ""
-"La opción '1 asiento por tipo' requiere más de una configuración habilitada "
-"en la pestaña de configuración de asientos."
-
