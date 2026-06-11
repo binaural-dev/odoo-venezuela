@@ -21,6 +21,13 @@
                     </group>
                 </page>
             </notebook>
+
+            <xpath expr="//field[@name='color']" position="after">
+                <field name="condition_withholding_id"/>
+            </xpath>
+            
         </field>
+
+      
     </record>
 </odoo>

@@ -2579,7 +2579,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__condition_withholding_id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__condition_withholding_id
 msgid "The condition of this taxpayer requires the withholding of"
-msgstr "La condición de este contribuyente requiere la retención del "
+msgstr "Tipo de retencion requerida para este contribuyente"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -3419,3 +3419,12 @@ msgstr "El cliente/proveedor no tiene un contacto asociado con esta factura."
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
 msgid "Auto-fill IVA Client Retention Amount"
 msgstr "Autocompletar Monto de Retención de IVA para Clientes"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid ""
+"When this option is enabled, the IVA client retention amount will be auto-"
+"filled."
+msgstr ""
+"Cuando esta opción está habilitada, el monto de la retención de IVA para"
+"clientes se autocompletará."

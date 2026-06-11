@@ -64,3 +64,13 @@ class ResCompany(models.Model):
     auto_fill_retention_amount_iva = fields.Boolean(
         string="Auto-fill IVA Client Retention Amount", default=False
     )
+
+    @api.onchange('condition_withholding_id')
+    def _onchange_condition_withholding_id(self):
+        for rec in self:
+            if rec.condition_withholding_id:
+                rec.partner_id.withholding_type_id = rec.condition_withholding_id
+            else:   
+                rec.partner_id.withholding_type_id = False
+
+    
