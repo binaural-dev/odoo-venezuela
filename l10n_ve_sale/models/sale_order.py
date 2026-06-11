@@ -49,7 +49,6 @@ class SaleOrder(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
         store=True,
         readonly=False,
     )
@@ -272,6 +271,9 @@ class SaleOrder(models.Model):
        
         invoices = self.env["account.move"]
         for order in self:
+            if order._context.get("ignore_while", False):
+                invoices |= super()._create_invoices(grouped, final, date)
+                continue
             invoiceable_lines = order._get_invoiceable_lines(final)
             while len(invoiceable_lines) != 0:
                 invoices |= super()._create_invoices(grouped, final, date)
@@ -456,24 +458,35 @@ class SaleOrder(models.Model):
         res = super().action_confirm()
         product_limit = self.env.company.limit_product_qty_out
         for sale in self:
-            picking = sale.picking_ids
             if product_limit > 0:
-                picking_moves = picking.move_ids_without_package
-                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
-                picking_vals = {
-                    key: (value[0] if isinstance(value, tuple) else value)
-                    for key, value in picking_vals[0].items()
-                }
-                picking_vals['origin'] = picking.origin
-                picking_vals['partner_id'] = picking.partner_id.id
-                picking_vals['user_id'] = picking.user_id.id
-                
-                list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
-                picking.move_ids_without_package = list_pickings_moves[0]
-                
-                for list_moves in list_pickings_moves[1:]:
-                    picking_vals["move_ids_without_package"] = list_moves
-                    new_picking = self.env['stock.picking'].create(picking_vals)
+                for picking in sale.picking_ids:
+                    picking_moves = picking.move_ids_without_package
+                    if not picking_moves:
+                        continue
+
+                    list_pickings_moves = [
+                        picking_moves[i : i + product_limit]
+                        for i in range(0, len(picking_moves), product_limit)
+                    ]
+                    if len(list_pickings_moves) <= 1:
+                        continue
+
+                    picking_vals = picking.read(
+                        ["location_dest_id", "location_id", "move_type", "picking_type_id"]
+                    )
+                    picking_vals = {
+                        key: (value[0] if isinstance(value, tuple) else value)
+                        for key, value in picking_vals[0].items()
+                    }
+                    picking_vals["origin"] = picking.origin
+                    picking_vals["partner_id"] = picking.partner_id.id
+                    picking_vals["user_id"] = picking.user_id.id
+
+                    picking.move_ids_without_package = list_pickings_moves[0]
+
+                    for list_moves in list_pickings_moves[1:]:
+                        picking_vals["move_ids_without_package"] = list_moves
+                        self.env["stock.picking"].create(picking_vals)
                 
 
                 
