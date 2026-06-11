@@ -3412,3 +3412,10 @@ msgstr "El Cliente/Proveedor '%s' no tiene un 'Tipo de Persona' de ISLR configur
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 msgid "No partner/vendor associated with this invoice."
 msgstr "El cliente/proveedor no tiene un contacto asociado con esta factura."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__auto_fill_retention_amount_iva
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__auto_fill_retention_amount_iva
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Auto-fill IVA Client Retention Amount"
+msgstr "Autocompletar Monto de Retención de IVA para Clientes"

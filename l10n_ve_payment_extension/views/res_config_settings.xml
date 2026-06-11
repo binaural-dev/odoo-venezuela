@@ -28,6 +28,17 @@
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane">
+                                <field name="auto_fill_retention_amount_iva"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="auto_fill_retention_amount_iva" string="Auto-fill IVA Client Retention Amount" />
+                                <div class="text-muted">
+                                    <p>When this option is enabled, the IVA client retention amount will be auto-filled.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
                                 <field name="hide_issue_date_of_municipal_withholding_receipt"/>
                             </div>
                             <div class="o_setting_right_pane">

@@ -43,3 +43,7 @@ class ResConfigSettings(models.TransientModel):
     hide_issue_date_of_municipal_withholding_receipt = fields.Boolean('Hide issue date of municipal withholding receipt',
         related='company_id.hide_issue_date_of_municipal_withholding_receipt', 
         readonly=False)
+
+    auto_fill_retention_amount_iva = fields.Boolean(
+        related="company_id.auto_fill_retention_amount_iva", readonly=False
+    )
