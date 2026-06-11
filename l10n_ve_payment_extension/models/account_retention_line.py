@@ -618,7 +618,7 @@ class AccountRetentionLine(models.Model):
                 is_vef_the_base_currency
                 and is_client_retention
                 and record.move_id.payment_state not in ("in_payment", "paid")
-                and abs(record.retention_amount) > abs(record.move_id.amount_residual)
+                and abs(record.retention_amount) > abs(record.move_id.amount_residual_signed)
             ):
                 raise ValidationError(
                     _(
