@@ -72,7 +72,8 @@ class AccountMove(models.Model):
 
                 else:
                     move.amount_to_pay_igtf = move.tax_totals["igtf"]["foreign_igtf_amount"] - move.amount_paid
-                    
+            if move.journal_id.is_purchase_international:
+                move.amount_to_pay_igtf = 0.0
 
     @api.depends(
         "amount_total", "amount_residual", "amount_residual_igtf", "amount_to_pay_igtf", "bi_igtf"

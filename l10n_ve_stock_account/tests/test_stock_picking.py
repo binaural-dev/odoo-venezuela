@@ -116,9 +116,32 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-    def create_sale_order(self):
+        # Referencia al grupo de seguridad
+        self.group_not_dispatch = self.env.ref('l10n_ve_stock_account.group_not_dispatch_guide')
+        
+        # Grupo de Ventas: Mostrar todos los documentos (para evitar AccessError de Record Rules)
+        group_sales_all = self.env.ref('sales_team.group_sale_salesman_all_leads')
+        group_internal_user = self.env.ref('base.group_user')
+
+        # Crear usuarios con permisos suficientes para ver SOs de otros
+        self.user_standard = self.env['res.users'].create({
+            'name': 'Usuario Estándar',
+            'login': 'user_std',
+            'email': 'std@test.com',
+            'groups_id': [(6, 0, [group_internal_user.id, group_sales_all.id])]
+        })
+
+        self.user_restricted = self.env['res.users'].create({
+            'name': 'Usuario Restringido',
+            'login': 'user_res',
+            'email': 'res@test.com',
+            'groups_id': [(6, 0, [group_internal_user.id, group_sales_all.id, self.group_not_dispatch.id])]
+        })
+
+    def create_sale_order(self, user=None):
+        env = self.env if user is None else self.env(user=user)
         rate = 5.0
-        order = self.env["sale.order"].create(
+        order = env["sale.order"].create(
             {
                 "partner_id": self.partner.id,
                 "manually_set_rate": True,
@@ -128,7 +151,7 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-        order_line_01 = self.env["sale.order.line"].create(
+        order_line_01 = env["sale.order.line"].create(
             {
                 "product_id": self.product.id,
                 "product_uom_qty": 2,
@@ -143,7 +166,7 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-        order_line_02 = self.env["sale.order.line"].create(
+        order_line_02 = env["sale.order.line"].create(
             {
                 "product_id": False,
                 "product_uom_qty": 0,
@@ -158,7 +181,7 @@ class TestStockPickingInvoice(TransactionCase):
             }
         )
 
-        order_line_03 = self.env["sale.order.line"].create(
+        order_line_03 = env["sale.order.line"].create(
             {
                 "product_id": False,
                 "product_uom_qty": 0,
@@ -180,22 +203,38 @@ class TestStockPickingInvoice(TransactionCase):
         )
         return order
 
-    def create_picking(self, trasfer_reason_code='external_storage'):
-        reason_sale = self.env['transfer.reason'].search([('code', '=', trasfer_reason_code)], limit=1)
+    def create_picking(self, trasfer_reason_id=None, operation_code='outgoing'):
+        if isinstance(trasfer_reason_id, str):
+            trasfer_reason_id = self.env['transfer.reason'].search([('code', '=', trasfer_reason_id)], limit=1)
 
         warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
+        
+        # Búsqueda del tipo de operación (outgoing, internal, etc)
         picking_type = self.env['stock.picking.type'].search([
-            ('code', '=', 'outgoing'), 
+            ('code', '=', operation_code), 
             ('warehouse_id', '=', warehouse.id)
         ], limit=1)
+        
+        if not picking_type:
+            # Creación automática si no existe en DB limpia
+            picking_type = self.env['stock.picking.type'].create({
+                'name': f'Test {operation_code}',
+                'code': operation_code,
+                'warehouse_id': warehouse.id,
+                'sequence_code': 'TEST',
+                'reservation_method': 'at_confirm',
+            })
+
+        loc_id = picking_type.default_location_src_id.id or warehouse.lot_stock_id.id
+        loc_dest_id = picking_type.default_location_dest_id.id or (self.env.ref('stock.stock_location_customers').id if operation_code == 'outgoing' else warehouse.lot_stock_id.id)
 
         picking = self.env['stock.picking'].create({
             'partner_id': self.partner.id,
             'picking_type_id': picking_type.id,
-            'location_id': picking_type.default_location_src_id.id,
-            'location_dest_id': self.env.ref('stock.stock_location_customers').id,
+            'location_id': loc_id,
+            'location_dest_id': loc_dest_id,
             'origin': 'Manual Test Picking',
-            'transfer_reason_id': reason_sale.id if reason_sale else False,
+            'transfer_reason_id': trasfer_reason_id.id if trasfer_reason_id else False,
             'is_dispatch_guide': True,
         })
 
@@ -297,3 +336,65 @@ class TestStockPickingInvoice(TransactionCase):
         )
         
         _logger.info("test_04_transfer_reason_subcontracting_config --- successfully.")
+
+    def test_05_compute_document_logic(self):
+        """Verificar que el documento se fuerce a 'invoice' si el usuario tiene el grupo restringido."""
+        order_1 = self.create_sale_order(self.user_standard)
+
+        order_1.write({
+            'document': 'dispatch_guide',
+        })
+
+        order_1.with_user(self.user_standard).action_confirm()
+        order_1.with_user(self.user_standard)._compute_document()
+
+        self.assertEqual(order_1.compute_document, 'invoice')
+        self.assertEqual(order_1.document, 'dispatch_guide', "Un usuario normal debería poder elegir Guía de Despacho")
+
+        order_2 = self.create_sale_order(self.user_restricted)
+
+        order_2.with_user(self.user_restricted).write({
+            'document': 'dispatch_guide',
+        })
+        order_2.with_user(self.user_restricted).action_confirm()
+        order_2.with_user(self.user_restricted)._compute_document()
+
+        self.assertEqual(order_2.document, 'invoice', "El usuario con el grupo especial debe ser forzado a tener 'invoice'")
+
+    def test_06_compute_show_document_visibility(self):
+        """Probar la visibilidad del campo según el estado de la orden y el grupo del usuario."""
+        
+        order_std = self.create_sale_order().with_user(self.user_standard)
+        order_std.write({'state': 'draft'})
+        self.assertFalse(order_std.show_document, "Usuario estándar no debería ver el documento")
+
+        order_res = self.create_sale_order().with_user(self.user_restricted)
+        order_res.write({'state': 'draft'})
+        self.assertTrue(order_res.show_document, "Usuario restringido debería ver el documento en borrador")
+
+        order_res.action_confirm()
+        self.assertFalse(order_res.show_document, "No se debe mostrar el documento si la orden no está en borrador")
+
+    def test_07_batch_validate_pickings(self):
+        """Verificar que validar múltiples pickings en lote no lance error de singleton."""
+        reason_transfer = self.env.ref("l10n_ve_stock_account.transfer_reason_transfer_between_warehouses")
+        
+        # Se crean dos pickings con motivo de transferencia entre almacenes e internos
+        picking_1 = self.create_picking(reason_transfer, operation_code="internal")
+        picking_2 = self.create_picking(reason_transfer, operation_code="internal")
+        
+        pickings = picking_1 | picking_2
+        
+        for move in pickings.move_ids_without_package:
+            move.quantity = move.product_uom_qty
+            
+        # Esto llamará a button_validate() en el recordset de 2 pickings
+        pickings.button_validate()
+        
+        self.assertEqual(picking_1.state, "done")
+        self.assertEqual(picking_2.state, "done")
+        
+        # Verificar que la lógica de state_guide_dispatch = 'emited' se aplicó a ambos
+        self.assertEqual(picking_1.state_guide_dispatch, "emited")
+        self.assertEqual(picking_2.state_guide_dispatch, "emited")
+        _logger.info("test_07_batch_validate_pickings --- successfully.")
