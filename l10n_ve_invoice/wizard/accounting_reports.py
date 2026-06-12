@@ -602,7 +602,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
         
-        """ International Purchase Fields """
         
         if not self.company_id.not_show_general_aliquot_purchase_international:
             fields_info = [
@@ -640,7 +639,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
 
-        """ Fin international purchase fields """
         
         if self.company_id.config_deductible_tax:
             purchase_fields = self.not_deductible_purchase_book_fields(purchase_fields)
