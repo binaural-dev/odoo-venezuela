@@ -1202,6 +1202,7 @@ msgstr "Cuenta de Retención de ISLR"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
 #: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_islr_client
 #: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_islr_supplier
@@ -1981,8 +1982,6 @@ msgstr "Tipo de Pago de Retención"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_concept_id
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_form_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_search_l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_product__payment_concept
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_template__payment_concept
 msgid "Payment concept"
 msgstr "Concepto de Pago"
 
@@ -2241,6 +2240,7 @@ msgid "Retention reference"
 msgstr "Nro de Comprobante"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__count_islr_retention
 #: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__retention_line_ids
 msgid "Retentions"
 msgstr "Retenciones"
@@ -2597,8 +2597,8 @@ msgstr "La factura %s no tiene impuesto"
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
-msgid "The invoice has no tax."
-msgstr "La factura no tiene impuesto"
+msgid "The invoice has no applicable taxes. IVA Retention cannot be generated."
+msgstr "La factura no tiene impuestos aplicables. No se puede generar la retención de IVA."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -3034,3 +3034,381 @@ msgstr "Estado"
 msgid "tax incurred"
 msgstr "Impuesto retenido"
 
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid "Already exists a record with the value  %s for the date %s."
+msgstr "Ya existe un registro con el valor %s para la fecha %s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid "There cannot be two tax units with the same date (%s)."
+msgstr "No pueden existir dos unidades tributarias con la misma fecha (%s)."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__available_date
+msgid "Publish Date"
+msgstr "Fecha Gaceta Oficial"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid "You cannot edit a tax unit that is not active."
+msgstr "No puedes editar una unidad tributaria que no esté activa."
+
+
+
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "Invoice %s must be in 'Posted' state to generate a retention."
+msgstr "La factura %s debe estar en estado 'Publicado' para poder generar una retención."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"No services with a configured 'Payment Concept' were found in the lines of "
+"invoice %s."
+msgstr ""
+"No se encontraron servicios con 'Concepto de Pago' configurado en las líneas "
+"de la factura %s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "This action is only valid for customer or vendor invoices."
+msgstr "Esta accion solo es validad para facturas de Clientes o Proveedores"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "Invoice %s already has a posted ISLR retention. You cannot create another one."
+msgstr "La factura %s ya tiene una retención de ISLR publicada. No se puede crear otra."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Warning: You have ISLR retentions to aproved"
+msgstr "Advertencia: Tiene retenciones del ISLR por aprobar"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__generate_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__generate_islr_retention
+msgid "¿Generate ISLR Retention?"
+msgstr "¿Generar retencion ISLR?"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+#: model:ir.actions.server,name:l10n_ve_payment_extension.action_generar_retencion_islr
+msgid "Generate ISLR Retention"
+msgstr "Generar Retencion ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__has_emited_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__has_emited_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__has_emited_islr_retention
+msgid "has emited islr_retention"
+msgstr "Tiene retenciones ISLR emitidas"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__has_emited_iva_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__has_emited_iva_retention
+msgid "has emited iva retention"
+msgstr "Tiene retenciones de IVA emitida"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__has_emited_municipal_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__has_emited_municipal_retention
+msgid "has emited municipal retention"
+msgstr "Tiene Retencion municipal Emitida"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__has_not_allow_retentions_islr_invoices
+msgid "has not allow retentions islr invoices"
+msgstr "No Existen facturas validas para emitir retencion ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__has_draft_cancel_invoices
+msgid "hast draft and cancel invoices"
+msgstr "Existen facturas en estado Borrador/Cancelado"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__count_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_islr_retention
+msgid "count islr retention"
+msgstr "Cantidad de retenciones ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__count_iva_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__count_municipal_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_iva_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_municipal_retention
+msgid "count iva retention"
+msgstr "Cantidad de retenciones de IVa"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__is_isrl_retention_available
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__is_isrl_retention_available
+msgid "¿Is retention islr Available?"
+msgstr "¿Es valido para retencion ISLR?"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__partner_id
+msgid "partner"
+msgstr "Razon social"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__valid_line_ids
+msgid "Valid Invoices"
+msgstr "Facturas Validas"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Valid invoices for retentions"
+msgstr "Facturas validas para generar retencion"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/wizard/batch_retentions_wizard.py:0
+msgid "There are not valid retentions to Process"
+msgstr "No existen Facturas validas para procesar"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "There are some invoices that are not allow ISLR Retention"
+msgstr "Existen algunas facturas que no aplican Retenciones ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__type_retention
+msgid "Retention Type"
+msgstr "Tipo de retencion"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Process Retentions"
+msgstr "Crear retenciones"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Not valid invoices for retentions"
+msgstr "Facturas no validas"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__line_ids
+msgid "Invoices to Process"
+msgstr "Facturas a Procesar"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__invalid_line_ids
+msgid "Invalid Invoices"
+msgstr "Facturas Invalidas"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__move_id
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__group_retentions
+msgid "Grouped Retentions by partner"
+msgstr "Agrupar retenciones por Razon social"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard__has_payed_invoices
+msgid "Has payed invoices"
+msgstr "Tiene facturas pagadas"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_batch_retentions_wizard__group_retentions
+msgid "Generate retentions grouped Invoices by partner"
+msgstr "Generar retencion agrupada por Razon social"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Draft or cancel moves will not be considerer in this operation."
+msgstr "Facturas en estado Borrador/Cancelado no seran consideradas en esta operacion."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__post_retention
+msgid "Post"
+msgstr "Emitir automaticamente"
+
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid ""
+"Emited withholdings for paid invoices will remain as outstanding credits."
+msgstr ""
+"Las retenciones emitidas para facturas 'Pagadas' permaneceran como creditos pendientes"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__payment_state
+msgid "Invoice Payment status"
+msgstr "Estado de Pago Factura"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__state
+msgid "Invoice Status"
+msgstr "Estado de Factura"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_payment_view_form_l10n_ve_payment_extension
+msgid ""
+"<small class=\"text-muted d-block\" style=\"font-size: "
+"0.75rem;\">Retained</small>"
+msgstr ""
+"<small class=\"text-muted d-block\" style=\"font-size: "
+"0.75rem;\">Retenido</small>"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension
+msgid "<span>Show</span>"
+msgstr "<span>Ver</span>"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_batch_retentions_wizard_lines__is_isrl_retention_available
+msgid "Available"
+msgstr "Disponible"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_batch_retentions_wizard_form
+msgid "Batch Retentions"
+msgstr "Retenciones por Lotes"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__allowed_payment_concept_ids
+msgid "Filter payment concept for domain"
+msgstr "Dominio para filtrar conceptos de pago"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "No payments found for reconciliation."
+msgstr "No se encontraron pagos para la conciliación."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
+msgid "The invoice has no tax."
+msgstr "La factura no tiene impuestos."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The retention amount (%s) cannot be greater than the invoice total signed "
+"amount (%s) for invoice %s."
+msgstr ""
+"El monto de la retención (%s) no puede ser mayor que el monto total registrado"
+"(%s) para la factura %s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "Unknown partner type '%s' for payment reconciliation."
+msgstr "Tipo de cliente desconocido '%s' para la conciliación de pagos."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+#: code:addons/l10n_ve_payment_extension/models/account_payment.py:0
+msgid ""
+"You cannot cancel this payment because it is a retention linked to voucher "
+"%s. You must void or cancel the retention document first."
+msgstr ""
+"No puedes cancelar este pago porque es una retención vinculada al comprobante "
+"%s. Debes anular o cancelar el documento de retención primero."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_payment.py:0
+msgid ""
+"You cannot reset this payment to draft because it is a retention linked to "
+"voucher %s. You must void or cancel the retention document first."
+msgstr ""
+"No puedes regresar este pago a borrador porque es una retención vinculada al "
+"comprobante %s. Debes anular o cancelar el documento de retención primero."
+
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"You cannot unreconcile a payment that is linked to a retention. Please "
+"cancel the retention document if you want to unreconcile this payment."
+msgstr ""
+"No puedes desconciliar un pago que está vinculado a una retención. Por favor "
+"cancela el documento de retención si deseas desconciliar este pago."
+
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/payment_concept_line.py:0
+msgid "the percentage may not exceed 100% on the payment concept line"
+msgstr "el porcentaje no puede exceder 100% en la línea de concepto de pago"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid ""
+"<strong>Update Tariff:</strong> %s<br/><strong>Tariff:</strong> "
+"%s<br/><strong>Value of the unit:</strong> %s<br/><strong>New subtracted "
+"value:</strong> %s"
+msgstr ""
+"<strong>Tarifa Actualizada:</strong> %s<br/><strong>Tarifa:</strong> "
+"%s<br/><strong>Nuevo valor:</strong> %s<br/><strong>Nuevo sustraendo "
+"value:</strong> %s"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid ""
+"<strong>Update Tax Unit:</strong> %s<br/><strong>Tariff:</strong> "
+"%s<br/><strong>Value of the unit:</strong> %s<br/><strong>New subtracted "
+"value:</strong> %s"
+msgstr ""
+"<strong>Unidad Tributaria Actualizada:</strong> %s<br/><strong>Tarifa:</strong> "
+"%s<br/><strong>Valor de la unidad:</strong> %s<br/><strong>Nuevo sustraendo "
+"value:</strong> %s"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/tax_unit.py:0
+msgid ""
+"<strong>Updating by new Active Tax Unit</strong><br/><strong>Unit:</strong> "
+"%s<br/><strong>New Value:</strong> %s<br/><strong>New Subtraction:</strong> "
+"%s"
+msgstr ""
+"<strong>Actualizando por nueva Unidad Tributaria Activa</strong><br/><strong>Unidad:</strong> "
+"%s<br/><strong>Valor Nuevo:</strong> %s<br/><strong>Sustraendo Nuevo:</strong> "
+"%s"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "No company partner associated with this invoice."
+msgstr "La compañia no tiene un contacto asociado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "The Company '%s' does not have an ISLR 'Type of Person' configured."
+msgstr "La compañía '%s' no tiene un 'Tipo de Persona' de ISLR configurado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"The Partner/Vendor '%s' does not have an ISLR 'Type of Person' configured."
+msgstr "El Cliente/Proveedor '%s' no tiene un 'Tipo de Persona' de ISLR configurado."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "No partner/vendor associated with this invoice."
+msgstr "El cliente/proveedor no tiene un contacto asociado con esta factura."

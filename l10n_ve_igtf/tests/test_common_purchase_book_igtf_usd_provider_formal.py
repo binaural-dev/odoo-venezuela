@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo.tests.common import TransactionCase
-from odoo.tests.common import Form
+from odoo.tests import tagged , Form ,TransactionCase
+
 from odoo.tools import float_compare
 
 from odoo import fields, Command
