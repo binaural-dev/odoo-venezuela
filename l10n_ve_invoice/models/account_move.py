@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _name = "account.move"
-    _inherit = "account.move"
+    _inherit = ["account.move", "filter.partner.mixin"]
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
