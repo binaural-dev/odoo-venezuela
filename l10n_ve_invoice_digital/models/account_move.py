@@ -480,14 +480,14 @@ class AccountMove(models.Model):
 
                 if record.company_id.currency_id.name == "VEF":
                     unit_price = round(line.price_unit, 2)
-                    unit_price_discount = round(line.price_unit * (line.discount / 10), 2)
+                    unit_price_discount = round(line.price_unit * (line.discount / 100), 2)
                     discount_amount = round((line.price_unit * (line.discount / 100)) * line.quantity, 2)
                     item_price = round(line.price_subtotal, 2)
                     price_before_discount = round(line.price_unit * line.quantity, 2)
 
                 else:
                         unit_price = round(line.foreign_price, 2)
-                        unit_price_discount = round(line.foreign_price * (line.discount / 10), 2)
+                        unit_price_discount = round(line.foreign_price * (line.discount / 100), 2)
                         discount_amount = round((line.foreign_price * (line.discount / 100)) * line.quantity, 2)
                         item_price = round(line.foreign_subtotal, 2)
                         price_before_discount = round(line.foreign_price * line.quantity, 2)
