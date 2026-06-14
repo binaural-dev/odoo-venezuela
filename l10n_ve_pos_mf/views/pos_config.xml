@@ -1,20 +1,10 @@
 <odoo>
-    <record id="pos_config_view_form_inherit" model="ir.ui.view">
-        <field name="name">pos.config.form.inherit</field>
-        <field name="model">pos.config</field>
-        <field name="inherit_id" ref="pos_iot.pos_iot_config_view_form" />
-        <field name="arch" type="xml">
-            <xpath expr="//div[@class='row'][1]/label[@class='col-lg-4 o_light_label'][1]"
-                position="replace">
-            </xpath>
-            <xpath expr="//div[@class='row'][2]" position="replace"></xpath>
-            <xpath expr="//div[@name='row_scale']" position="after">
-                <div class="row">
-                    <label string="Fiscal Data Module" for="iface_fiscal_data_module"
-                        class="col-lg-4 o_light_label" />
-                    <field name="iface_fiscal_data_module" />
-                </div>
-            </xpath>
-        </field>
-    </record>
+    <!-- 
+        DEPRECATED: Este archivo heredaba de pos_iot.pos_iot_config_view_form
+        Como ya no usamos IoT Box (Web Serial API), este archivo queda vacío.
+        Se mantiene para compatibilidad pero sin contenido funcional.
+        
+        La configuración de la máquina fiscal ahora se hace 100% desde el navegador.
+        No se requiere ninguna configuración en el POS Config relacionada con IoT.
+    -->
 </odoo>

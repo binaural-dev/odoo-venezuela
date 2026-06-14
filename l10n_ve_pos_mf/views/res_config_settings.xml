@@ -1,35 +1,10 @@
 <odoo>
-    <record id="l10n_ve_pos_mf_res_config_settings_view_form_inherit_pos_iot" model="ir.ui.view">
-        <field name="name">l10n.ve.pos.mf.res.config.settings.view.form.inherit.pos.iot</field>
-        <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="pos_iot.res_config_view_form_inherit_pos_iot" />
-        <field name="arch" type="xml">
-            <xpath expr="//div[hasclass('pos_iot_config')]" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-           
-            <xpath expr="//setting[@id='is_order_printer'][1]" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-        </field>
-    </record>
-    <!-- <record id="res_config_view_form_inherit_pos_iot_custom" model="ir.ui.view">
-        <field name="name">res.config.form.inherit.pos.iot.custom</field>
-        <field name="model">res.config.settings</field>
-        <field name="priority" eval="1"/>
-        <field name="inherit_id" ref="pos_iot.res_config_view_form_inherit_pos_iot"/>
+    <!-- 
+        DEPRECATED: Este bloque heredaba de pos_iot.res_config_view_form_inherit_pos_iot
+        Como ya no usamos IoT Box (Web Serial API), se elimina esta herencia.
         
-        <field name="arch" type="xml">
-            
-            <xpath expr="//field[@name='pos_iface_printer_id']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-            
-            <xpath expr="//div[@class='row'][2]" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-        </field>
-    </record> -->
+        La configuración de la máquina fiscal ahora se hace 100% desde el navegador.
+    -->
     <record id="view_res_config_settings_pos_mf" model="ir.ui.view">
         <field name="name">view.res.config.setting.pos.mf</field>
         <field name="model">res.config.settings</field>
@@ -59,31 +34,10 @@
                         </div>
                     </div>
                 </div>
-                <separator string="IoT - Fiscal Machine" />
-                <setting string="IoT Box" help="Connect devices using an IoT Box">
-                    <field name="pos_is_posbox"/>
-                    <div class="content-group pos_iot_config" invisible="not pos_is_posbox">
-                        <div class="row">
-                            <label string="Fiscal Data Module" for="iface_fiscal_data_module" class="col-lg-4 o_light_label"/>
-                            <field name="iface_fiscal_data_module"/>
-                        </div>
-                        <div class="row">
-                            <label string="Customer Display" for="pos_iface_display_id" class="col-lg-4 o_light_label"/>
-                            <field name="pos_iface_display_id"/>
-                        </div>
-                        <div class="row iot_barcode_scanner">
-                            <label string="Barcode Scanners/Card Readers" for="pos_iface_scanner_ids" class="col-lg-4 o_light_label"/>
-                            <field name="pos_iface_scanner_ids" widget="many2many_tags"/>
-                        </div>
-                        <div class="row" name="row_scale">
-                            <label string="Electronic Scale" for="pos_iface_scale_id" class="col-lg-4 o_light_label"/>
-                            <field name="pos_iface_scale_id"/>
-                        </div>
-                        <div>
-                            <button name="%(iot.iot_device_action)d" icon="oi-arrow-right" type="action" string="IoT Devices" class="btn-link mt8"/>
-                        </div>
-                    </div>
-                </setting>
+                <!-- 
+                    DEPRECATED: Sección de IoT Box eliminada
+                    La máquina fiscal ahora se conecta directamente desde el navegador (Web Serial API)
+                -->
             </xpath>
         </field>
     </record>
