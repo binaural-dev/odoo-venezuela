@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    
+    <t t-name="l10n_ve_pos_mf.FiscalDebuggerPopup">
+        <div class="popup fiscal-debugger-popup">
+            <header class="fiscal-debugger-header">
+                <h2>🛠️ Fiscalizador - Debugger de Máquina Fiscal</h2>
+                <button class="btn btn-sm btn-secondary" t-on-click="close">
+                    <i class="fa fa-times"/> Cerrar
+                </button>
+            </header>
+
+            <!-- Tabs -->
+            <nav class="fiscal-debugger-tabs">
+                <button 
+                    t-att-class="state.activeTab === 'monitor' ? 'active' : ''"
+                    t-on-click="() => this.switchTab('monitor')">
+                    📊 Monitor de Tramas
+                </button>
+                <button 
+                    t-att-class="state.activeTab === 'status' ? 'active' : ''"
+                    t-on-click="() => this.switchTab('status')">
+                    🚦 Status Parser
+                </button>
+                <button 
+                    t-att-class="state.activeTab === 'console' ? 'active' : ''"
+                    t-on-click="() => this.switchTab('console')">
+                    💻 Consola Raw
+                </button>
+                <button 
+                    t-att-class="state.activeTab === 'flags' ? 'active' : ''"
+                    t-on-click="() => this.switchTab('flags')">
+                    🏴 Flags
+                </button>
+            </nav>
+
+            <!-- Tab Content -->
+            <div class="fiscal-debugger-content">
+
+                <!-- TAB: Monitor de Tramas -->
+                <div t-if="state.activeTab === 'monitor'" class="tab-panel">
+                    <div class="monitor-controls">
+                        <button class="btn btn-sm btn-primary" t-on-click="clearLog">
+                            <i class="fa fa-trash"/> Limpiar Log
+                        </button>
+                        <button class="btn btn-sm btn-success" t-on-click="exportLog">
+                            <i class="fa fa-download"/> Exportar Log
+                        </button>
+                        <label class="auto-scroll-toggle">
+                            <input 
+                                type="checkbox" 
+                                t-model="state.autoScroll"/>
+                            Auto-scroll
+                        </label>
+                    </div>
+
+                    <div class="fiscal-debugger-log">
+                        <t t-if="state.commandLog.length === 0">
+                            <p class="text-muted">No hay comandos registrados aún.</p>
+                        </t>
+                        <t t-else="">
+                            <t t-foreach="state.commandLog" t-as="entry" t-key="entry_index">
+                                <div t-att-class="'log-entry log-' + (entry.direction || entry.type)">
+                                    <span class="log-timestamp" t-esc="entry.timestamp"/>
+                                    
+                                    <t t-if="entry.direction === 'sent'">
+                                        <span class="log-direction">⬆️ SENT:</span>
+                                        <span class="log-command" t-esc="entry.command"/>
+                                    </t>
+                                    
+                                    <t t-elif="entry.direction === 'received'">
+                                        <span class="log-direction">⬇️ RECEIVED:</span>
+                                        <span t-att-class="entry.success ? 'log-success' : 'log-error'">
+                                            <t t-if="entry.success">
+                                                <span t-esc="entry.data"/> 
+                                                <small class="log-duration">(<t t-esc="entry.duration"/>ms)</small>
+                                            </t>
+                                            <t t-else="">
+                                                <span t-esc="entry.error"/>
+                                            </t>
+                                        </span>
+                                    </t>
+                                    
+                                    <t t-else="">
+                                        <span t-att-class="'log-message log-' + entry.type" t-esc="entry.message"/>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- TAB: Status Parser -->
+                <div t-if="state.activeTab === 'status'" class="tab-panel">
+                    <div class="status-controls">
+                        <button class="btn btn-sm btn-primary" t-on-click="refreshStatus">
+                            <i class="fa fa-refresh"/> Refrescar Status
+                        </button>
+                        <label class="auto-refresh-toggle">
+                            <input 
+                                type="checkbox" 
+                                t-model="state.autoRefresh"
+                                t-on-change="toggleAutoRefresh"/>
+                            Auto-refresh (2s)
+                        </label>
+                    </div>
+
+                    <t t-if="!hasConnection">
+                        <div class="alert alert-warning">
+                            ⚠️ No hay conexión con la impresora fiscal.
+                        </div>
+                    </t>
+
+                    <t t-elif="state.currentStatus">
+                        <div class="status-display">
+                            <!-- Status General -->
+                            <div class="status-card">
+                                <h4>Estado General</h4>
+                                <div class="status-badge" t-att-style="'background-color: ' + statusIndicators.overall.color">
+                                    <t t-esc="statusIndicators.overall.icon"/>
+                                    <t t-esc="state.currentStatus.statusText"/>
+                                </div>
+                                <p class="status-raw">
+                                    <strong>STS1:</strong> 0x<t t-esc="state.currentStatus.rawHex.sts1"/> | 
+                                    <strong>STS2:</strong> 0x<t t-esc="state.currentStatus.rawHex.sts2"/>
+                                </p>
+                            </div>
+
+                            <!-- Indicadores Individuales -->
+                            <div class="status-indicators">
+                                <div class="status-indicator" t-att-style="'border-left-color: ' + statusIndicators.fiscalMode.color">
+                                    <span class="indicator-icon" t-esc="statusIndicators.fiscalMode.icon"/>
+                                    <span class="indicator-text" t-esc="statusIndicators.fiscalMode.text"/>
+                                </div>
+                                
+                                <div class="status-indicator" t-att-style="'border-left-color: ' + statusIndicators.paper.color">
+                                    <span class="indicator-icon" t-esc="statusIndicators.paper.icon"/>
+                                    <span class="indicator-text" t-esc="statusIndicators.paper.text"/>
+                                </div>
+                                
+                                <div class="status-indicator" t-att-style="'border-left-color: ' + statusIndicators.drawer.color">
+                                    <span class="indicator-icon" t-esc="statusIndicators.drawer.icon"/>
+                                    <span class="indicator-text" t-esc="statusIndicators.drawer.text"/>
+                                </div>
+                                
+                                <div class="status-indicator" t-att-style="'border-left-color: ' + statusIndicators.memory.color">
+                                    <span class="indicator-icon" t-esc="statusIndicators.memory.icon"/>
+                                    <span class="indicator-text" t-esc="statusIndicators.memory.text"/>
+                                </div>
+                                
+                                <div class="status-indicator" t-att-style="'border-left-color: ' + statusIndicators.printer.color">
+                                    <span class="indicator-icon" t-esc="statusIndicators.printer.icon"/>
+                                    <span class="indicator-text" t-esc="statusIndicators.printer.text"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                    
+                    <t t-else="">
+                        <p class="text-muted">Presiona "Refrescar Status" para obtener el estado de la impresora.</p>
+                    </t>
+                </div>
+
+                <!-- TAB: Consola Raw -->
+                <div t-if="state.activeTab === 'console'" class="tab-panel">
+                    <div class="console-panel">
+                        <div class="alert alert-info">
+                            <strong>⚠️ Modo Avanzado:</strong> Envía comandos crudos directamente a la impresora.
+                            <br/>
+                            Ejemplos: <code>I0X</code> (Reporte X), <code>I0Z</code> (Reporte Z), <code>0</code> (Abrir Gaveta)
+                        </div>
+
+                        <div class="console-input-group">
+                            <label>Comando:</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                t-model="state.rawCommand"
+                                placeholder="Ej: I0X"/>
+                            <button class="btn btn-primary" t-on-click="sendRawCommand">
+                                <i class="fa fa-paper-plane"/> Enviar
+                            </button>
+                        </div>
+
+                        <div class="console-output">
+                            <label>Respuesta:</label>
+                            <textarea 
+                                class="form-control" 
+                                rows="10" 
+                                readonly="readonly"
+                                t-att-value="state.rawResponse"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Flags -->
+                <div t-if="state.activeTab === 'flags'" class="tab-panel">
+                    <div class="flags-panel">
+                        <div class="alert alert-warning">
+                            <strong>⚠️ Configuración Avanzada:</strong> Las banderas (flags) configuran el comportamiento de la impresora.
+                            <br/>
+                            Consulta el Manual TFHKA antes de modificar. <strong>Cambios incorrectos pueden afectar la fiscalización.</strong>
+                        </div>
+
+                        <div class="flag-form">
+                            <div class="form-group">
+                                <label>Número de Flag (00-99):</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    maxlength="2"
+                                    t-model="state.flagNumber"
+                                    placeholder="Ej: 01"/>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Valor (00-99):</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    maxlength="2"
+                                    t-model="state.flagValue"
+                                    placeholder="Ej: 02"/>
+                            </div>
+
+                            <button class="btn btn-warning" t-on-click="sendFlag">
+                                <i class="fa fa-flag"/> Enviar Flag
+                            </button>
+                        </div>
+
+                        <div class="flags-reference">
+                            <h5>Referencia Rápida de Flags Comunes:</h5>
+                            <ul>
+                                <li><strong>Flag 01:</strong> Configuración de Caracteres por Línea</li>
+                                <li><strong>Flag 04:</strong> Apertura Automática de Gaveta</li>
+                                <li><strong>Flag 21:</strong> Impresión de Logo/Header</li>
+                                <li><strong>Flag 24:</strong> Control de Gaveta</li>
+                            </ul>
+                            <p class="text-muted">
+                                <small>Consulta el Manual TFHKA v8.4.2 para la lista completa de flags disponibles según tu modelo de impresora.</small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </t>
+
+</templates>

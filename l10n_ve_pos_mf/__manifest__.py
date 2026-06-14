@@ -42,6 +42,10 @@
             "l10n_ve_pos_mf/static/src/xml/*.xml",
             "l10n_ve_pos_mf/static/src/css/*.css",
         ],
+        "web.qunit_suite_tests": [
+            # Tests QUnit para el driver TFHKA
+            "l10n_ve_pos_mf/static/src/tests/*.js",
+        ],
     },
     "images": ["static/description/icon.png"],
     "installable": True,

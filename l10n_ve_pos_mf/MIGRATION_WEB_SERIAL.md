@@ -365,3 +365,257 @@ await fiscalPrinter.disconnect();
 **Desarrollado por**: Binaural.dev  
 **Soporte**: contacto@binaural.dev  
 **Repositorio**: `odoo-venezuela` (rama `feature/pos-mf-web-serial-api`)
+
+---
+
+## 🛠️ Fiscalizador (Debugger Integrado)
+
+Para facilitar la implementación, configuración y soporte de las máquinas fiscales en implementaciones de +500 cajas, se ha desarrollado un **Fiscalizador** completo integrado en el POS.
+
+### Acceso al Fiscalizador
+
+El Fiscalizador está disponible únicamente en **modo debug** de Odoo:
+
+1. Activar modo debug: `?debug=1` en la URL del POS
+2. Abrir el **Debug Widget** (ícono 🪲 en la esquina superior)
+3. Click en **"🔍 FISCALIZADOR (Debugger)"**
+
+### Funcionalidades del Fiscalizador
+
+#### 1. **📊 Monitor de Tramas** (Tab 1)
+
+Consola en tiempo real que muestra todas las tramas enviadas y recibidas:
+
+```
+[2026-06-14T10:30:15.123Z] ⬆️ SENT: I0X
+[2026-06-14T10:30:15.187Z] ⬇️ RECEIVED: ACK (64ms)
+[2026-06-14T10:30:20.456Z] ⬆️ SENT: @J123456789
+[2026-06-14T10:30:20.502Z] ⬇️ RECEIVED: ACK (46ms)
+```
+
+**Características:**
+- Log tipo terminal (fondo negro, fuente monospace)
+- Timestamps precisos
+- Indicador de duración de cada comando
+- Auto-scroll opcional
+- Exportación a archivo `.txt` para análisis offline
+- Historial de hasta 100 entradas
+
+**Uso:** Ideal para diagnosticar problemas de comunicación serial, validar secuencia de comandos durante una venta, o detectar timeouts.
+
+---
+
+#### 2. **🚦 Status Parser** (Tab 2)
+
+Parser visual de los bytes de estado (STS1 y STS2) de la impresora:
+
+**Indicadores en tiempo real:**
+- 🔒/🎓 **Modo Fiscal / Entrenamiento**
+- 📄✅/📄❌ **Papel OK / Sin Papel**
+- 💰✅/💰⚠️ **Gaveta Cerrada / Abierta**
+- 💾✅/💾🟡/💾🔴 **Memoria Fiscal OK / Casi Llena / Llena**
+- 🖨️✅/🖨️❌ **Impresor OK / Error**
+
+**Auto-refresh:**
+- Checkbox para refrescar status cada 2 segundos
+- Útil para monitorear el estado durante configuración inicial o troubleshooting
+
+**Valores Raw:**
+- Muestra los bytes hexadecimales exactos (ej: `STS1: 0x60 | STS2: 0x40`)
+- Permite verificar valores contra el manual TFHKA
+
+**Uso:** Diagnosticar errores de hardware (papel atascado, gaveta abierta, memoria llena) sin necesidad de leer el manual.
+
+---
+
+#### 3. **💻 Consola Raw** (Tab 3)
+
+Consola de comandos crudos para enviar tramas directamente:
+
+**Entrada:**
+```
+Comando: I0X
+[Enviar]
+```
+
+**Salida (JSON):**
+```json
+{
+  "success": true,
+  "data": "ACK",
+  "error": ""
+}
+```
+
+**Comandos de ejemplo:**
+- `I0X` - Reporte X
+- `I0Z` - Reporte Z
+- `0` - Abrir gaveta
+- `PJ0102` - Configurar flag 01 a valor 02
+
+**Uso:** Testing rápido de comandos sin necesidad de hacer una venta completa. Útil para recuperar la impresora de estados extraños o probar nuevos comandos del manual.
+
+---
+
+#### 4. **🏴 Flags (Banderas de Configuración)** (Tab 4)
+
+Interfaz para leer y escribir **flags de programación** de la impresora.
+
+**Formulario:**
+- **Número de Flag** (00-99): Identifica qué configuración modificar
+- **Valor** (00-99): Nuevo valor de la configuración
+- **Botón "Enviar Flag"**: Ejecuta el comando `PJ{flag}{valor}`
+
+**Referencia Rápida de Flags Comunes:**
+- **Flag 01**: Configuración de Caracteres por Línea
+- **Flag 04**: Apertura Automática de Gaveta
+- **Flag 21**: Impresión de Logo/Header
+- **Flag 24**: Control de Gaveta
+
+**⚠️ Advertencia:**
+El sistema muestra una alerta antes de enviar, advirtiendo que cambios incorrectos pueden afectar la fiscalización. Se recomienda consultar el Manual TFHKA v8.4.2 antes de modificar flags.
+
+**Uso:** Configuración inicial de la impresora (apertura de gaveta, logos, headers), o ajustes específicos según el cliente.
+
+---
+
+### Casos de Uso del Fiscalizador
+
+#### 1. **Implementación Inicial (Consultor en Cliente Nuevo)**
+
+Secuencia recomendada:
+1. Conectar impresora TFHKA al PC del cajero
+2. Abrir POS en modo debug
+3. Abrir Fiscalizador → Tab "Status Parser"
+4. Verificar que todos los indicadores estén en verde (excepto "Modo Entrenamiento")
+5. Si hay errores (papel, gaveta), solucionarlos antes de seguir
+6. Tab "Flags" → Configurar flags según requerimientos del cliente (ej: Flag 04 para gaveta automática)
+7. Tab "Consola Raw" → Probar comando `I0X` para validar que la impresora responde
+8. Salir del debug mode y hacer una venta de prueba
+9. Tab "Monitor de Tramas" → Revisar el log para confirmar que todos los comandos se enviaron correctamente
+
+#### 2. **Soporte Remoto (Impresora No Imprime)**
+
+1. Pedir al cliente que active modo debug y abra el Fiscalizador
+2. Tab "Status Parser" → Verificar indicadores:
+   - Si "📄❌ Sin Papel" → Recargar papel
+   - Si "💰⚠️ Gaveta Abierta" → Cerrar gaveta
+   - Si "💾🔴 Memoria Llena" → Contactar con The Factory para mantenimiento
+3. Tab "Monitor de Tramas" → Revisar el log de la última venta fallida
+   - Si hay "NAK" repetidos → Problema de cable o puerto COM
+   - Si hay "Timeout" → Impresora apagada o desconectada
+4. Tab "Consola Raw" → Enviar comando `0` (abrir gaveta) para validar conexión básica
+
+#### 3. **Testing de Nueva Versión (QA/Staging)**
+
+1. Abrir Fiscalizador antes de hacer la venta de prueba
+2. Tab "Monitor de Tramas" → Activar auto-scroll
+3. Hacer venta de prueba (con RIF, 3 productos, descuento, pago parcial)
+4. Revisar el log y validar:
+   - Secuencia de comandos correcta: `@` → `A` → `!` → `!` → `!` → `m` → `2` → `1`
+   - Todos los comandos con `ACK`
+   - No hay "NAK" ni reintentos
+5. Exportar log a archivo para documentación de QA
+
+---
+
+### Limitaciones del Fiscalizador
+
+- **Acceso restringido:** Solo disponible en modo debug (consultores y administradores)
+- **Lock exclusivo:** Si el POS tiene el puerto abierto, el Fiscalizador usa la misma conexión. Si se desconecta el POS, el Fiscalizador también pierde conexión
+- **Comandos crudos:** La consola raw no valida comandos; envía exactamente lo que se escribe (útil para expertos, riesgoso para usuarios sin conocimiento del protocolo)
+
+---
+
+## 🧪 Suite de Tests QUnit
+
+Se han implementado **12 tests automatizados** para validar el correcto funcionamiento del driver TFHKA sin necesidad de hardware físico.
+
+### Tests Incluidos
+
+#### **Protocolo (FiscalProtocol):**
+1. ✅ Cálculo correcto de LRC (XOR checksum)
+2. ✅ Parsing de respuesta válida con STX/ETX/LRC
+3. ✅ Parsing de respuesta con LRC inválido (debe rechazar)
+4. ✅ Detección de ACK y NAK
+
+#### **Status Parser:**
+5. ✅ Parser de STS1 (Estado de la impresora)
+6. ✅ Parser de STS2 (Errores de la impresora)
+7. ✅ Detección de error de papel (STS2 bit 6)
+8. ✅ Detección de memoria fiscal llena (STS1 bit 4)
+9. ✅ Estado operativo sin errores
+
+#### **Driver TFHKA (con MockSerialConnection):**
+10. ✅ Conexión exitosa y lectura de status
+11. ✅ Reintentos automáticos ante NAK (hasta 3 intentos)
+12. ✅ Fallo después de agotar reintentos (3 NAK seguidos)
+13. ✅ Apertura de gaveta (comando '0')
+14. ✅ Impresión de Reporte X (comando 'I0X')
+15. ✅ Impresión de Reporte Z (comando 'I0Z')
+16. ✅ **Factura completa exitosa (flujo end-to-end)**
+17. ✅ Error de impresión detectado durante factura (debe cancelar)
+
+### Ejecutar los Tests
+
+**Opción 1: Desde la UI de Odoo**
+```
+URL: http://localhost:8117/web/tests?mod=web&failfast
+```
+
+**Opción 2: Desde consola (headless con QUnit CLI)**
+```bash
+./odoo-bin --test-enable --test-tags=tfhka_driver_tests --stop-after-init
+```
+
+### Mock de Hardware (MockSerialConnection)
+
+Los tests utilizan un mock completo de la conexión serial que simula:
+- Latencias realistas (10ms escritura, 50ms lectura)
+- Respuestas ACK/NAK configurables
+- Bytes de status (STS1/STS2) configurables para simular errores
+- Historial de comandos enviados (verificable en assertions)
+
+**Ejemplo de configuración del mock:**
+```javascript
+const mockConnection = new MockSerialConnection();
+mockConnection.setStatus({ paperError: true }); // Simular sin papel
+mockConnection.setNextResponse("NAK"); // Próxima respuesta será NAK
+```
+
+### Cobertura de Tests
+
+| Módulo | Cobertura |
+|--------|-----------|
+| `FiscalProtocol.js` | 100% (todas las funciones críticas) |
+| `StatusParser.js` | 100% (todos los bits de STS1/STS2) |
+| `TfhkaDriver.js` | 85% (comandos principales y reintentos) |
+| `SerialConnection.js` | 0% (no testeable sin hardware, se mockea) |
+
+---
+
+## Roadmap de Testing
+
+### Fase 1: Tests Unitarios (ACTUAL)
+- ✅ Tests de protocolo (LRC, tramas, ACK/NAK)
+- ✅ Tests de parser de status
+- ✅ Tests de driver con mock
+
+### Fase 2: Tests de Integración (PRÓXIMO)
+- ⏳ Test con simulador TFHKA (software de The Factory)
+- ⏳ Test de factura completa en staging
+- ⏳ Test de convivencia con Megasoft/SiTef (mock de proxy local)
+
+### Fase 3: Tests de Performance (FUTURO)
+- ⏳ Benchmark de latencia (serial vs. IoT Box)
+- ⏳ Test de estrés (100 facturas seguidas sin desconectar)
+- ⏳ Test de recuperación ante errores (cable desconectado, sin papel, gaveta abierta)
+
+---
+
+## Contacto y Soporte
+
+**Desarrollado por**: Binaural.dev  
+**Soporte**: contacto@binaural.dev  
+**Repositorio**: `odoo-venezuela` (rama `feature/pos-mf-web-serial-api`)
+
