@@ -5,7 +5,7 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='iot_mf']" position="after">
+            <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name='cashbox_id' readonly="1"/>
             </xpath>
         </field>
