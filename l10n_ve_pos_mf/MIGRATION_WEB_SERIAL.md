@@ -613,6 +613,217 @@ mockConnection.setNextResponse("NAK"); // Próxima respuesta será NAK
 
 ---
 
+## Migración desde Producción (IoT Box → Web Serial API)
+
+Esta sección documenta el proceso para **migrar clientes en producción** que actualmente usan `l10n_ve_iot_mf` (con IoT Box) a la nueva versión con Web Serial API.
+
+### ⚠️ Consideraciones Importantes
+
+**ANTES DE MIGRAR:**
+
+1. **Backup obligatorio**: Haz un backup completo de la base de datos antes de actualizar.
+2. **Prueba en staging**: Si es posible, replica la base de datos en un ambiente de pruebas primero.
+3. **Planifica el downtime**: La actualización requiere reiniciar el servidor Odoo (2-5 minutos).
+4. **Hardware requerido**: Asegúrate de tener cables USB-Serial para conectar las impresoras directamente a las PCs de caja (si actualmente usas IoT Box remoto).
+
+---
+
+### 🔄 Proceso de Migración Paso a Paso
+
+#### Paso 1: Actualizar el código del módulo
+
+```bash
+cd /ruta/a/odoo-venezuela-17
+git fetch origin
+git checkout feature/pos-mf-web-serial-api
+git pull origin feature/pos-mf-web-serial-api
+```
+
+#### Paso 2: Reiniciar el servidor Odoo
+
+```bash
+sudo systemctl restart odoo
+# O si usas docker:
+docker-compose restart odoo
+```
+
+#### Paso 3: Actualizar el módulo desde Odoo
+
+1. Activar **Modo Desarrollador**: Ajustes → Activar modo desarrollador
+2. Ir a **Aplicaciones** → Quitar el filtro "Apps" → Buscar `l10n_ve_pos_mf`
+3. Hacer clic en **Actualizar**
+4. **Esperar a que termine** (puede tomar 1-2 minutos)
+
+#### Paso 4: Revisar el log de migración
+
+Los scripts de migración (`pre-migrate.py` y `post-migrate.py`) generarán un reporte en el log de Odoo. Busca líneas como:
+
+```
+PRE-MIGRATION: l10n_ve_pos_mf to version 17.0.2.0.0
+✓ Migración desde l10n_ve_iot_mf detectada
+✓ Encontrados 3 pos.config con datos de máquina fiscal
+✓ Encontrados 5 impuestos con fiscal_code configurado
+✓ Encontrados 4 métodos de pago con code_fiscal_printer
+```
+
+Si ves errores, **NO continúes** y contacta a soporte técnico.
+
+---
+
+### 📋 Datos que se Preservan Automáticamente
+
+El script de migración **preserva** los siguientes datos de configuración:
+
+| Modelo               | Campo                  | Descripción                                    |
+|----------------------|------------------------|------------------------------------------------|
+| `account.tax`        | `fiscal_code`          | Código de impuesto para la máquina fiscal     |
+| `pos.payment.method` | `code_fiscal_printer`  | Código de método de pago (01-24)              |
+| `pos.config`         | `serial_machine`       | Número de serie de la impresora fiscal        |
+| `pos.config`         | `flag_21`              | Activar flag 21 (gaveta automática)           |
+| `pos.config`         | `traditional_line`     | Activar línea tradicional de impresión        |
+| `pos.config`         | `has_cashbox`          | Indica si tiene gaveta de dinero conectada    |
+
+**IMPORTANTE**: Estos campos **NO se pierden** durante la migración. El módulo `l10n_ve_pos_mf` ahora es el propietario de estos campos (antes eran de `l10n_ve_iot_mf`).
+
+---
+
+### 🔌 Paso 5: Configurar Hardware (Post-Migración)
+
+Después de actualizar el módulo, debes conectar las impresoras fiscales directamente a las PCs de caja:
+
+#### Opción A: Ya tenías la impresora conectada localmente al IoT Box
+
+- Desconecta el cable USB del Raspberry Pi (IoT Box)
+- Conéctalo directamente a la PC de caja (puerto USB)
+- En Chrome, ve al POS → Haz clic en el botón de conexión (ícono de impresora)
+- Selecciona el puerto serial (`/dev/ttyUSB0` en Linux, `COM3` en Windows)
+
+#### Opción B: Tenías la impresora conectada remotamente (otro cuarto/oficina)
+
+- Necesitarás un **cable USB-Serial** lo suficientemente largo para llegar desde la PC de caja hasta la impresora
+- Recomendado: Cable activo con repetidor USB (hasta 10 metros) o extensión USB + adaptador serial
+- Si la distancia es muy grande, considera usar un extensor USB sobre Ethernet (Cat5e/Cat6)
+
+---
+
+### 🧹 Paso 6: (Opcional) Desinstalar `l10n_ve_iot_mf`
+
+Si **YA NO USAS** el IoT Box para ninguna otra función (balanzas, lectores de código de barras, etc.), puedes desinstalar el módulo viejo:
+
+1. Ir a **Aplicaciones** → Buscar `l10n_ve_iot_mf`
+2. Hacer clic en **Desinstalar**
+3. Confirmar la desinstalación
+
+**⚠️ NO desinstales `l10n_ve_iot_mf` si:**
+- Usas el IoT Box para otros dispositivos (balanzas, scanners, displays de cliente)
+- Tienes cajas que todavía NO has migrado a Web Serial API
+- Necesitas mantener compatibilidad con versiones antiguas
+
+---
+
+### ✅ Paso 7: Validar la Migración
+
+Después de migrar, verifica que todo funciona:
+
+1. **Abrir el POS** en una caja con máquina fiscal
+2. **Conectar a la impresora**: Botón de conexión (arriba derecha) → Seleccionar puerto serial
+3. **Probar comando de status**: Abrir Fiscalizador (ícono de bug) → Pestaña "Consola Raw" → Enviar comando `0`
+   - Deberías ver la respuesta con STX, STS1, STS2, ETX, LRC
+4. **Imprimir reporte X**: Desde el Fiscalizador → Pestaña "Consola Raw" → Comando `I0X`
+5. **Vender un producto de prueba** y fiscalizar la factura
+
+Si todos estos pasos funcionan, **la migración fue exitosa**.
+
+---
+
+### 🆘 Troubleshooting: Problemas Comunes
+
+#### Problema 1: "Campo 'fiscal_code' no existe en account.tax"
+
+**Causa**: El script de migración no se ejecutó correctamente.
+
+**Solución**:
+```bash
+# Forzar actualización del módulo
+odoo-bin -c odoo.conf -u l10n_ve_pos_mf --stop-after-init
+```
+
+#### Problema 2: "Los impuestos no tienen fiscal_code configurado"
+
+**Causa**: En la base de datos vieja, los impuestos nunca se configuraron.
+
+**Solución**:
+1. Ir a **Contabilidad → Configuración → Impuestos**
+2. Para cada impuesto, editar y configurar el campo **Código Fiscal (MF)**:
+   - `0` = Exento
+   - `1` = IVA General (16%)
+   - `2` = IVA Reducido (8%)
+   - `3` = IVA Adicional
+
+#### Problema 3: "Navigator.serial is undefined"
+
+**Causa**: El navegador no soporta Web Serial API.
+
+**Solución**:
+- Usar **Google Chrome** o **Microsoft Edge** (versión 89 o superior)
+- Safari y Firefox **NO soportan** Web Serial API
+
+#### Problema 4: "El puerto serial no aparece en la lista"
+
+**Causa**: El driver del cable USB-Serial no está instalado.
+
+**Solución (Windows)**:
+```powershell
+# Descargar e instalar driver FTDI desde:
+https://ftdichip.com/drivers/vcp-drivers/
+```
+
+**Solución (Linux)**:
+```bash
+# Verificar que el usuario tiene permisos para acceder al puerto serial
+sudo usermod -a -G dialout $USER
+# Cerrar sesión y volver a entrar
+```
+
+---
+
+### 📊 Checklist de Migración
+
+Usa este checklist para validar cada cliente migrado:
+
+- [ ] Backup de base de datos realizado
+- [ ] Código actualizado a `feature/pos-mf-web-serial-api`
+- [ ] Módulo `l10n_ve_pos_mf` actualizado desde Odoo
+- [ ] Log de migración revisado (sin errores)
+- [ ] Impresora fiscal conectada por USB a la PC de caja
+- [ ] Driver USB-Serial instalado (si es necesario)
+- [ ] Navegador Chrome/Edge instalado en la PC de caja
+- [ ] Campo `fiscal_code` configurado en todos los impuestos
+- [ ] Campo `code_fiscal_printer` configurado en métodos de pago
+- [ ] Campo `serial_machine` configurado en pos.config
+- [ ] Prueba de conexión exitosa (botón verde en POS)
+- [ ] Prueba de comando de status (respuesta STS1/STS2)
+- [ ] Prueba de reporte X exitosa
+- [ ] Prueba de factura completa exitosa
+- [ ] (Opcional) Módulo `l10n_ve_iot_mf` desinstalado
+
+---
+
+### 📞 Soporte para Migraciones
+
+Si tienes problemas durante la migración de un cliente en producción:
+
+1. **Revisa el log** de Odoo (`/var/log/odoo/odoo.log`)
+2. **Busca las líneas** que empiezan con `PRE-MIGRATION` y `POST-MIGRATION`
+3. **Captura el error** completo (con traceback si existe)
+4. **Contacta a soporte** enviando:
+   - Log completo de la migración
+   - Versión de Odoo (`odoo-bin --version`)
+   - Versión del módulo (`l10n_ve_pos_mf.__manifest__.py`)
+   - Descripción del problema
+
+---
+
 ## Contacto y Soporte
 
 **Desarrollado por**: Binaural.dev  

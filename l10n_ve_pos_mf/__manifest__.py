@@ -21,6 +21,7 @@
         "views/pos_order.xml",
         "views/pos_session.xml",
         "views/account_move.xml",
+        "views/account_tax.xml",
         "views/pos_payment_method.xml",
         "wizard/wizard_sales_book.xml",
         "views/res_config_settings.xml",
