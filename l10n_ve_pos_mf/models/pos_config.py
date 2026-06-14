@@ -1,37 +1,14 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
-
 
 class PosConfigInherit(models.Model):
     _inherit = "pos.config"
 
-    iface_fiscal_data_module = fields.Many2one(
-        "iot.device",
-        domain=(
-            "[('type', '=', 'fiscal_data_module'), '|', ('company_id', '=', False),"
-            "('company_id', '=', company_id)]"
-        ),
-    )
-    serial_machine = fields.Char(
-        related="iface_fiscal_data_module.serial_machine")
-    flag_21 = fields.Selection(related="iface_fiscal_data_module.flag_21")
-    traditional_line = fields.Boolean(
-        related="iface_fiscal_data_module.traditional_line"
-    )
-    has_cashbox = fields.Boolean(
-        related="iface_fiscal_data_module.has_cashbox")
+    # Campos de configuración legacy que antes estaban en iot.device
+    # Ahora son campos directos en pos.config (no related)
+    serial_machine = fields.Char(string="Serial de Máquina Fiscal")
+    flag_21 = fields.Selection([('1', 'Activado'), ('0', 'Desactivado')], string="Flag 21")
+    traditional_line = fields.Boolean(string="Línea Tradicional")
+    has_cashbox = fields.Boolean(string="Tiene Caja de Efectivo")
+    
     access_button_mf = fields.Boolean()
     message_in_head = fields.Boolean()
-
-    def _compute_iot_device_ids(self):
-        super()._compute_iot_device_ids()
-        for config in self:
-            if config.is_posbox:
-                config.iot_device_ids += config.iface_fiscal_data_module
-
-    def open_ui(self):
-        if not self.is_posbox or not self.iface_fiscal_data_module:
-            raise UserError(
-                _("Necesitas activar el IOT en la caja y asignarle una máquina fiscal.")
-            )
-        return super().open_ui()

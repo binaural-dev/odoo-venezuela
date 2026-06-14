@@ -42,7 +42,8 @@ class PosOrderInherit(models.Model):
         res["mf_serial"] = self.fiscal_machine
         res["mf_invoice_number"] = self.mf_invoice_number
         res["mf_reportz"] = self.mf_reportz
-        res["iot_mf"] = self.config_id.iface_fiscal_data_module.id
+        # DEPRECATED: res["iot_mf"] = self.config_id.iface_fiscal_data_module.id
+        # Ya no usamos IoT Box, la máquina fiscal se conecta vía Web Serial API
         return res
 
     @api.model
