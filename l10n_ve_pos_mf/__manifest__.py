@@ -11,8 +11,9 @@
     "depends": [
         "point_of_sale",
         "l10n_ve_pos",
-        "pos_iot",
-        "l10n_ve_iot_mf",
+        # DEPRECATED: Eliminamos dependencias del IoT Box (ahora usamos Web Serial API)
+        # "pos_iot",
+        # "l10n_ve_iot_mf",
     ],
     "data": [
         "security/ir.model.access.csv",
@@ -26,7 +27,18 @@
     ],
     "assets": {
         "point_of_sale._assets_pos": [
-            "l10n_ve_pos_mf/static/src/js/*.js",
+            # Nueva arquitectura Web Serial API
+            "l10n_ve_pos_mf/static/src/core/*.js",
+            "l10n_ve_pos_mf/static/src/drivers/*.js",
+            "l10n_ve_pos_mf/static/src/overrides/*.js",
+            "l10n_ve_pos_mf/static/src/components/**/*.js",
+            
+            # Archivos legacy (mantenemos temporalmente por compatibilidad)
+            "l10n_ve_pos_mf/static/src/js/ReprintInvoiceButton.js",
+            "l10n_ve_pos_mf/static/src/js/DebugWidget.js",
+            "l10n_ve_pos_mf/static/src/js/OrderState.js",
+            
+            # Templates y CSS
             "l10n_ve_pos_mf/static/src/xml/*.xml",
             "l10n_ve_pos_mf/static/src/css/*.css",
         ],

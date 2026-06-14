@@ -1,0 +1,112 @@
+/* Estilos para el botón de estado de la máquina fiscal */
+
+.fiscal-printer-action {
+    padding: 8px 12px;
+    margin: 4px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.fiscal-printer-disconnected {
+    background-color: #6c757d;
+    color: white;
+}
+
+.fiscal-printer-disconnected:hover {
+    background-color: #5a6268;
+}
+
+.fiscal-printer-connecting {
+    background-color: #ffc107;
+    color: black;
+    animation: pulse 1.5s infinite;
+}
+
+.fiscal-printer-connected {
+    background-color: #28a745;
+    color: white;
+}
+
+.fiscal-printer-connected:hover {
+    background-color: #218838;
+}
+
+.fiscal-printer-error {
+    background-color: #dc3545;
+    color: white;
+    animation: shake 0.5s;
+}
+
+.fiscal-printer-error:hover {
+    background-color: #c82333;
+}
+
+/* Animación de pulso para estado "connecting" */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Animación de shake para estado "error" */
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/* Estilos para el componente de Reportes Fiscales */
+.fiscal-reports-container {
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+.fiscal-reports-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.fiscal-reports-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fiscal-report-btn {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.fiscal-report-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fiscal-report-btn:active {
+    transform: translateY(0);
+}
+
+.fiscal-report-btn i {
+    margin-right: 8px;
+}
