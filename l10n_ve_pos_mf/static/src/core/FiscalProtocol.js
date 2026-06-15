@@ -1,5 +1,7 @@
 /** @odoo-module */
 
+import { StatusParser } from "./StatusParser";
+
 /**
  * FiscalProtocol - Capa de protocolo para impresoras fiscales TFHKA
  * 
@@ -150,7 +152,50 @@ export class FiscalProtocol {
      * @param {Uint8Array} response
      * @returns {Object} - { fiscal_memory_ok, paper_ok, drawer_closed, ... }
      */
+    /**
+     * Parsea la respuesta de ENQ (consulta de estado)
+     * Formato: STX(0x02) | STS1 | STS2 | ETX(0x03) | LRC
+     * LRC = STS1 ^ STS2 ^ ETX
+     * @param {Uint8Array} response - 5 bytes
+     * @returns {Object} - Status parseado o error
+     */
+    static parseStatusENQ(response) {
+        if (!response || response.length < 5) {
+            console.error("FiscalProtocol:: Respuesta ENQ incompleta, esperaba 5 bytes, recibió:", response ? response.length : 0);
+            return null;
+        }
+
+        const stx = response[0];
+        const sts1 = response[1];
+        const sts2 = response[2];
+        const etx = response[3];
+        const lrc = response[4];
+
+        // Verificar STX y ETX
+        if (stx !== FiscalProtocol.STX) {
+            console.error("FiscalProtocol:: STX inválido en respuesta ENQ:", stx);
+        }
+        if (etx !== FiscalProtocol.ETX) {
+            console.error("FiscalProtocol:: ETX inválido en respuesta ENQ:", etx);
+        }
+
+        // Verificar LRC: STS1 ^ STS2 ^ ETX
+        const expectedLRC = sts1 ^ sts2 ^ etx;
+        if (lrc !== expectedLRC) {
+            console.error("FiscalProtocol:: LRC inválido en respuesta ENQ. Esperado:", expectedLRC, "Recibido:", lrc);
+            return null;
+        }
+
+        console.log("FiscalProtocol:: ENQ parseado correctamente - STS1:", sts1.toString(16), "STS2:", sts2.toString(16));
+
+        // Parsear usando StatusParser (que ya tiene toda la lógica de bits)
+        // Construir un mock frame para StatusParser: STX|STS1|STS2|ETX|LRC
+        const mockFrame = new Uint8Array([FiscalProtocol.STX, sts1, sts2, FiscalProtocol.ETX, lrc]);
+        return StatusParser.parse(mockFrame);
+    }
+
     static parseStatus(response) {
+        // DEPRECATED: Usar parseStatusENQ() en su lugar
         const parsed = FiscalProtocol.parseResponse(response);
         if (!parsed.valid) {
             return { error: parsed.error };

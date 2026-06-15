@@ -171,15 +171,28 @@ export class TfhkaDriver {
      */
     async getStatus() {
         try {
+            // Limpiar buffer antes de enviar ENQ
+            await this.connection.flushBuffer();
+            
             const enqFrame = new Uint8Array([FiscalProtocol.ENQ]);
+            console.log("TfhkaDriver:: Enviando ENQ (0x05)");
             await this.connection.write(enqFrame);
             
-            const response = await this.connection.read(3000);
+            // Esperar 50ms como hace el SDK Python
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Leer exactamente 5 bytes (formato ENQ: STX|STS1|STS2|ETX|LRC)
+            const response = await this.connection.read(500); // Timeout corto para ENQ
             if (!response) {
+                console.error("TfhkaDriver:: No se recibió respuesta al ENQ");
                 return null;
             }
 
-            const status = FiscalProtocol.parseStatus(response);
+            console.log("TfhkaDriver:: Respuesta ENQ recibida:", response.length, "bytes:", 
+                Array.from(response).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+
+            // Parsear respuesta ENQ (formato especial, no es un frame normal)
+            const status = FiscalProtocol.parseStatusENQ(response);
             this.lastStatus = status;
             return status;
         } catch (error) {
