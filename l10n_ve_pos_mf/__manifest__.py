@@ -37,7 +37,7 @@
             
             # Archivos legacy (mantenemos temporalmente por compatibilidad)
             "l10n_ve_pos_mf/static/src/js/ReprintInvoiceButton.js",
-            "l10n_ve_pos_mf/static/src/js/DebugWidget.js",
+            # "l10n_ve_pos_mf/static/src/js/DebugWidget.js", # DEPRECATED: Consolidado en overrides/DebugWidget.js
             "l10n_ve_pos_mf/static/src/js/OrderState.js",
             
             # Templates y CSS

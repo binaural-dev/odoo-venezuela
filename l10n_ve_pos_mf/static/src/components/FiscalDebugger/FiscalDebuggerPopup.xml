@@ -164,10 +164,29 @@
                 <!-- TAB: Consola Raw -->
                 <div t-if="state.activeTab === 'console'" class="tab-panel">
                     <div class="console-panel">
-                        <div class="alert alert-info">
+                        <!-- Accesos Rápidos -->
+                        <div class="quick-actions">
+                            <h5>⚡ Accesos Rápidos</h5>
+                            <div class="quick-actions-buttons">
+                                <button class="btn btn-info" t-on-click="() => this.quickCommand('PJ')">
+                                    <i class="fa fa-file-text-o"/> Programación
+                                </button>
+                                <button class="btn btn-success" t-on-click="() => this.quickCommand('I0X')">
+                                    <i class="fa fa-bar-chart"/> Reporte X
+                                </button>
+                                <button class="btn btn-warning" t-on-click="() => this.quickCommand('I0Z')">
+                                    <i class="fa fa-calendar-check-o"/> Reporte Z
+                                </button>
+                                <button class="btn btn-secondary" t-on-click="() => this.quickCommand('0')">
+                                    <i class="fa fa-inbox"/> Abrir Gaveta
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
                             <strong>⚠️ Modo Avanzado:</strong> Envía comandos crudos directamente a la impresora.
                             <br/>
-                            Ejemplos: <code>I0X</code> (Reporte X), <code>I0Z</code> (Reporte Z), <code>0</code> (Abrir Gaveta)
+                            Ejemplos: <code>I0X</code> (Reporte X), <code>I0Z</code> (Reporte Z), <code>0</code> (Abrir Gaveta), <code>PJ</code> (Programación)
                         </div>
 
                         <div class="console-input-group">

@@ -256,6 +256,15 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
     }
 
     /**
+     * Ejecuta un comando de acceso rápido
+     * @param {string} command - Comando a ejecutar (PJ, I0X, I0Z, 0, etc.)
+     */
+    async quickCommand(command) {
+        this.state.rawCommand = command;
+        await this.sendRawCommand();
+    }
+
+    /**
      * Envía un flag (bandera de configuración)
      */
     async sendFlag() {

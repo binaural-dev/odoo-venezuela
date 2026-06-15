@@ -331,6 +331,41 @@
     max-width: 800px;
 }
 
+.quick-actions {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.quick-actions h5 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #495057;
+}
+
+.quick-actions-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.quick-actions-buttons .btn {
+    padding: 12px 16px;
+    font-weight: 500;
+    transition: transform 0.2s;
+}
+
+.quick-actions-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.quick-actions-buttons .btn i {
+    margin-right: 8px;
+}
+
 .console-input-group {
     display: flex;
     gap: 12px;
