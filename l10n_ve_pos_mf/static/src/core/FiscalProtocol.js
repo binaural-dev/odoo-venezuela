@@ -26,6 +26,7 @@ export class FiscalProtocol {
 
     /**
      * Construye una trama completa para enviar a la impresora fiscal
+     * Basado en sdk_tfhka: LRC = XOR(command + ETX), sin incluir STX
      * @param {string} command - Comando ASCII (ej: "I01", "U0X", etc.)
      * @returns {Uint8Array} - Trama binaria lista para enviar por serial
      */
@@ -33,18 +34,20 @@ export class FiscalProtocol {
         const encoder = new TextEncoder();
         const commandBytes = encoder.encode(command);
         
-        // Construir: STX + COMMAND + ETX
-        const frameWithoutLRC = new Uint8Array(1 + commandBytes.length + 1);
-        frameWithoutLRC[0] = FiscalProtocol.STX;
-        frameWithoutLRC.set(commandBytes, 1);
-        frameWithoutLRC[frameWithoutLRC.length - 1] = FiscalProtocol.ETX;
+        // Construir array para LRC: COMMAND + ETX (sin STX)
+        const dataForLRC = new Uint8Array(commandBytes.length + 1);
+        dataForLRC.set(commandBytes, 0);
+        dataForLRC[dataForLRC.length - 1] = FiscalProtocol.ETX;
         
-        // Calcular LRC (XOR de todos los bytes, incluyendo STX y ETX)
-        const lrc = FiscalProtocol.calculateLRC(frameWithoutLRC);
+        // Calcular LRC sobre COMMAND + ETX (sin STX)
+        // Ref: sdk_tfhka/Tfhka.py línea 239-242
+        const lrc = FiscalProtocol.calculateLRC(dataForLRC);
         
         // Trama final: STX + COMMAND + ETX + LRC
-        const frame = new Uint8Array(frameWithoutLRC.length + 1);
-        frame.set(frameWithoutLRC, 0);
+        const frame = new Uint8Array(1 + commandBytes.length + 1 + 1);
+        frame[0] = FiscalProtocol.STX;
+        frame.set(commandBytes, 1);
+        frame[1 + commandBytes.length] = FiscalProtocol.ETX;
         frame[frame.length - 1] = lrc;
         
         return frame;
@@ -52,8 +55,9 @@ export class FiscalProtocol {
 
     /**
      * Calcula el LRC (Longitudinal Redundancy Check) usando XOR
-     * @param {Uint8Array} data - Bytes desde STX hasta ETX (inclusive)
-     * @returns {number} - Byte de LRC
+     * IMPORTANTE: LRC se calcula sobre COMMAND + ETX, sin incluir STX
+     * @param {Uint8Array} data - Bytes a incluir en el cálculo
+     * @returns {number} - Byte de LRC (0-255)
      */
     static calculateLRC(data) {
         let lrc = 0;
