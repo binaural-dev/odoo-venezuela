@@ -4,7 +4,6 @@ import { Chrome } from "@point_of_sale/app/pos_app";
 import { patch } from "@web/core/utils/patch";
 import { onMounted } from "@odoo/owl";
 import { TfhkaDriver } from "../drivers/TfhkaDriver";
-import { FiscalDebuggerPopup } from "../components/FiscalDebugger/FiscalDebuggerPopup";
 import { useService } from "@web/core/utils/hooks";
 import { LocalOrderBuffer } from "../utils/LocalOrderBuffer";
 
@@ -23,7 +22,6 @@ patch(Chrome.prototype, {
 
     async _onMountedFiscalPrinter() {
         this._createFiscalPrinterButton();
-        this._createFiscalizadorButton();
         await this._initFiscalPrinter();
         
         // Intentar sincronizar pedidos offline pendientes
@@ -35,28 +33,6 @@ patch(Chrome.prototype, {
         $(".status-buttons").prepend(this.fiscalPrinterBtn);
         this.fiscalPrinterBtn.on('click', this._handleFiscalPrinterClick.bind(this));
         this._updateFiscalPrinterButtonStatus("disconnected");
-    },
-
-    /**
-     * Crea el botón del Fiscalizador junto al botón de conexión
-     */
-    _createFiscalizadorButton() {
-        const btn = $("<button class='fiscal-debugger-action fa fa-bug' title='Fiscalizador - Debugger de Máquina Fiscal'/>");
-        this.fiscalPrinterBtn.after(btn);
-        btn.on('click', this._openFiscalizador.bind(this));
-    },
-
-    /**
-     * Abre el popup del Fiscalizador
-     */
-    async _openFiscalizador() {
-        try {
-            await this.env.services.popup.add(FiscalDebuggerPopup, {
-                title: "Fiscalizador - Debugger de Máquina Fiscal",
-            });
-        } catch (error) {
-            console.error("Fiscalizador:: Error al abrir", error);
-        }
     },
 
     /**
