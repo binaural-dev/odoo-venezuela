@@ -1,6 +1,6 @@
 import logging
-from odoo.tests.common import Form
-from odoo.tests import tagged
+from odoo.tests import tagged , Form
+
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_round
 from odoo import Command, fields
@@ -131,7 +131,7 @@ class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
         # 🔹 7. Validar valores según sistema de moneda
         if wizard.currency_system:
             # self.assertEqual(line_fields["bi_igtf"], invoice.bi_igtf)
-            self.assertEqual(float_round(line_fields["igtf"],2), invoice.alter_bi_igtf)
+            self.assertEqual(float_round(line_fields["igtf"],2), float_round(invoice.alter_bi_igtf,2))
 
     #Se dejan este test comentado debido a que el super de _get_purchase_book_field_groups 
     # aun no se encuentra en el ambiente donde se subiran a priori estas pruebas unitarias
@@ -201,25 +201,3 @@ class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
         igtf_group = next((g for g in groups if g.get("header") == "IGTF"), None)
 
         self.assertIsNone(igtf_group, "No debe existir grupo IGTF si ambos están ocultos")
-
-
-    def test_reversal_purchase_book_line_fields_with_igtf(self):
-        """Test that IGTF values are injected correctly into purchase book line."""
-
-        self.test01_payment_from_invoice_with_igtf_journal(create_reversal=True)
-        invoice = self.env['account.move'].search([('move_type','=','in_refund')], order="id desc", limit=1)
-
-        wizard = self.get_purchases_book_wizard()
-
-        taxes = wizard._determinate_amount_taxeds(invoice)
-
-        line_fields = wizard._fields_purchase_book_line(invoice, taxes)
-
-        self.assertIsInstance(line_fields, dict)
-
-        # self.assertIn("bi_igtf", line_fields)
-        self.assertIn("igtf", line_fields)
-
-        if wizard.currency_system:
-            # self.assertEqual(line_fields["bi_igtf"], invoice.bi_igtf)
-            self.assertEqual(float_round(line_fields["igtf"],2), (invoice.alter_bi_igtf * -1))

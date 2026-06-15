@@ -5,3 +5,5 @@ from . import municipal_retention_patent_report
 from . import municipal_retention_xlsx_report
 from . import wizard_retention_islr
 from . import wizard_retention_iva
+from . import batch_retentions_wizard
+from . import batch_retentions_wizard_lines
