@@ -59,7 +59,7 @@ class SaleOrderLine(models.Model):
 
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
-        precision = self.env["decimal.precision"].precision_get('Alternate cost')
+        precision = self.env["decimal.precision"].precision_get('Tasa')
         for line in self:
             if line.price_unit and line.foreign_inverse_rate:
                 if line.foreign_currency_id.id == self.env.ref("base.VEF").id:
