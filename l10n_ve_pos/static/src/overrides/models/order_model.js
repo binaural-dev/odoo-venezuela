@@ -40,11 +40,14 @@ patch(Order.prototype, {
     if (this.pos.currency.name == "VEF" || this.pos.currency.name == "VES") {
       // IMPORTANT: do not round inverse rate for Bolivar base.
       // Small values (e.g. 0.0018...) rounded to 2 decimals become 0.00.
-      return this.pos.config.foreign_inverse_rate;
+      return this.pos.config.foreign_inverse_rate || 1;
     }
     if (this.pos.currency.name == "USD") {
-      return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
+      const decimal_places = this.pos.foreign_currency ? this.pos.foreign_currency.decimal_places : 2;
+      return round_di(this.pos.config.foreign_rate || 1, decimal_places);
     }
+    // Fallback for other currencies or unconfigured rates
+    return this.pos.config.foreign_rate || this.pos.config.foreign_inverse_rate || 1;
   },
   get_display_rate() {
     return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
@@ -59,13 +62,7 @@ patch(Order.prototype, {
     if (this.orderlines.length != 0) {
       return this.orderlines[0].currency_rate_display();
     }
-    if (!this.init_conversion_rate) {
-      throw new Error(
-        "Conversion rate cannot be determined due to missing values.",
-      );
-    }
-
-    return this.init_conversion_rate;
+    return this.init_conversion_rate || 1;
   },
 
   reload_taxes() {
