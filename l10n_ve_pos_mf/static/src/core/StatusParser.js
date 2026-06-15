@@ -39,8 +39,11 @@ export class StatusParser {
             // STS1 - Estado de la impresora
             state: StatusParser.parseSTS1(sts1),
             
-            // STS2 - Errores activos
-            errors: StatusParser.parseSTS2(sts2),
+            // STS2 - Errores activos (flags booleanos)
+            errorFlags: StatusParser.parseSTS2(sts2),
+            
+            // Lista de errores legibles
+            errors: StatusParser.getErrorList(sts1, sts2),
             
             // Helpers
             isOperational: StatusParser.isOperational(sts1, sts2),
@@ -170,6 +173,42 @@ export class StatusParser {
         if (state.isTrainingMode) return "🎓 Modo Entrenamiento";
 
         return "🟢 Operativa";
+    }
+
+    /**
+     * Genera una lista de errores activos en formato legible
+     * @param {number} sts1
+     * @param {number} sts2
+     * @returns {Array<string>} Lista de mensajes de error
+     */
+    static getErrorList(sts1, sts2) {
+        const errors = [];
+        const state = StatusParser.parseSTS1(sts1);
+        const errorFlags = StatusParser.parseSTS2(sts2);
+
+        // Errores críticos primero
+        if (errorFlags.criticalError) {
+            errors.push("Error crítico de hardware");
+        }
+        if (errorFlags.paperError) {
+            errors.push("Sin papel o papel atascado");
+        }
+        if (errorFlags.printerError) {
+            errors.push("Error en el mecanismo de impresión");
+        }
+        if (errorFlags.drawerError) {
+            errors.push("Gaveta abierta o con fallo");
+        }
+
+        // Warnings
+        if (state.fiscalMemoryFull) {
+            errors.push("Memoria fiscal llena");
+        }
+        if (state.fiscalMemoryNearFull) {
+            errors.push("Memoria fiscal casi llena");
+        }
+
+        return errors;
     }
 
     /**

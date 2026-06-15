@@ -67,11 +67,33 @@ export class TfhkaDriver {
      * Envía un comando y espera respuesta (con reintentos en caso de NAK)
      * @param {string} command - Comando ASCII
      * @param {number} timeout - Timeout en ms
+     * @param {boolean} checkStatus - Verificar status antes de enviar (default: true)
      * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
      */
-    async sendCommand(command, timeout = null) {
+    async sendCommand(command, timeout = null, checkStatus = true) {
         if (!this.isConnected) {
             return { success: false, data: "", error: "Impresora no conectada" };
+        }
+
+        // Verificar status de la impresora antes de enviar (excepto para ENQ)
+        if (checkStatus && command !== 'ENQ') {
+            const status = await this.getStatus();
+            if (!status) {
+                return { success: false, data: "", error: "No se pudo leer el estado de la impresora" };
+            }
+
+            // Verificar errores críticos
+            if (status.errors && status.errors.length > 0) {
+                const errorMsg = status.errors.join(', ');
+                console.error("TfhkaDriver:: Impresora tiene errores:", errorMsg);
+                return { success: false, data: "", error: `Error de impresora: ${errorMsg}` };
+            }
+
+            // Verificar si está ocupada
+            if (status.raw && status.raw.working) {
+                console.warn("TfhkaDriver:: Impresora ocupada, esperando...");
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
         }
 
         // Auto-ajustar timeout según el tipo de comando

@@ -243,16 +243,47 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
         }
 
         try {
+            this.state.rawResponse = "Enviando comando...";
+            
             const result = await this.fiscalPrinter.sendCommand(this.state.rawCommand.trim());
             
-            this.state.rawResponse = JSON.stringify({
-                success: result.success,
-                data: result.data,
-                error: result.error
-            }, null, 2);
+            if (result.success) {
+                this.state.rawResponse = JSON.stringify({
+                    success: true,
+                    data: result.data,
+                    message: "Comando ejecutado correctamente"
+                }, null, 2);
+            } else {
+                // Mostrar error con formato claro
+                this.state.rawResponse = JSON.stringify({
+                    success: false,
+                    error: result.error,
+                    help: this._getErrorHelp(result.error)
+                }, null, 2);
+            }
         } catch (error) {
             this.state.rawResponse = `Error: ${error.message}`;
         }
+    }
+
+    /**
+     * Devuelve ayuda contextual según el error
+     * @private
+     */
+    _getErrorHelp(error) {
+        if (error.includes("Sin papel") || error.includes("paper")) {
+            return "Verifica que haya papel en la impresora y que esté bien insertado.";
+        }
+        if (error.includes("Tapa abierta") || error.includes("cover")) {
+            return "Cierra la tapa de la impresora correctamente.";
+        }
+        if (error.includes("Memoria fiscal llena")) {
+            return "La memoria fiscal está llena. Contacta al servicio técnico.";
+        }
+        if (error.includes("Error de hardware")) {
+            return "Apaga y enciende la impresora. Si persiste, contacta servicio técnico.";
+        }
+        return "Revisa el manual de la impresora o contacta soporte técnico.";
     }
 
     /**
