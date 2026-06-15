@@ -86,30 +86,50 @@ export class StatusParser {
 
     /**
      * Parsea el byte STS2 (Errores de la impresora)
+     * Basado en sdk_tfhka/Tfhka.py líneas 389-482
+     * 
+     * IMPORTANTE: STS2 no usa máscara de bits simples. Los valores son códigos específicos.
+     * 0x40 = SIN ERRORES (no significa error de papel!)
+     * 
      * @param {number} sts2
      * @returns {Object}
      */
     static parseSTS2(sts2) {
+        // Estados basados en valores exactos del SDK Python
+        const isNoError = (sts2 === 0x40);
+        const isPaperEnd = (sts2 === 0x41);           // Fin de papel
+        const isPaperMechError = (sts2 === 0x42);     // Error mecánico de papel
+        const isPaperBothError = (sts2 === 0x43);     // Ambos errores
+        
         return {
-            // Bit 2: Error crítico
-            criticalError: Boolean(sts2 & 0x04),
+            // Error crítico (valores específicos del SDK)
+            criticalError: (sts2 === 0x64 || sts2 === 0x60 || sts2 === 0x6C),
             
-            // Bit 3: Error de gaveta (abierta o con fallo)
+            // Error de gaveta
             drawerError: Boolean(sts2 & 0x08),
             
-            // Bit 4: Error del impresor (mecanismo)
-            printerError: Boolean(sts2 & 0x10),
+            // Error del impresor (mecanismo)
+            printerError: isPaperMechError || isPaperBothError,
             
-            // Bit 5: Error en impresora (general)
-            printerGeneralError: Boolean(sts2 & 0x20),
+            // Error en impresora (general)
+            printerGeneralError: (sts2 >= 0x50), // Valores 0x50-0x6C son errores generales
             
-            // Bit 6: Error de papel (sin papel o atascado)
-            paperError: Boolean(sts2 & 0x40),
+            // Error de papel: solo si es 0x41, 0x42 o 0x43
+            paperError: isPaperEnd || isPaperMechError || isPaperBothError,
             
             // Estados comunes
-            noErrors: (sts2 === 0x40), // Sin errores
-            hasPaperIssue: (sts2 === 0x41 || Boolean(sts2 & 0x40)),
-            hasDrawerIssue: (sts2 === 0x48 || Boolean(sts2 & 0x08)),
+            noErrors: isNoError,
+            hasPaperIssue: isPaperEnd || isPaperMechError || isPaperBothError,
+            hasDrawerIssue: Boolean(sts2 & 0x08),
+            
+            // Códigos específicos del SDK
+            memoryFull: (sts2 === 0x6C),        // Memoria fiscal llena
+            fiscalError: (sts2 === 0x60),       // Error fiscal
+            memoryError: (sts2 === 0x64),       // Error en memoria fiscal
+            invalidCommand: (sts2 === 0x5C),    // Comando inválido
+            noDirectives: (sts2 === 0x58),      // No hay directivas asignadas
+            invalidRate: (sts2 === 0x54),       // Tasa inválida
+            invalidValue: (sts2 === 0x50),      // Valor inválido
         };
     }
 
@@ -156,12 +176,18 @@ export class StatusParser {
         const errors = StatusParser.parseSTS2(sts2);
 
         // Prioridad 1: Errores críticos
+        if (errors.memoryFull) return "🔴 Memoria Fiscal Llena";
+        if (errors.memoryError) return "❌ Error en Memoria Fiscal";
+        if (errors.fiscalError) return "❌ Error Fiscal";
         if (errors.criticalError) return "❌ Error Crítico";
+        if (errors.invalidCommand) return "⚠️ Comando Inválido";
+        if (errors.invalidRate) return "⚠️ Tasa Inválida";
+        if (errors.invalidValue) return "⚠️ Valor Inválido";
         if (errors.paperError) return "📄 Sin Papel";
         if (errors.printerError) return "⚠️ Error del Impresor";
         if (errors.drawerError) return "💰 Error de Gaveta";
 
-        // Prioridad 2: Warnings
+        // Prioridad 2: Warnings de STS1
         if (state.fiscalMemoryFull) return "🔴 Memoria Fiscal Llena";
         if (state.fiscalMemoryNearFull) return "🟡 Memoria Fiscal Casi Llena";
         if (state.bufferFull) return "⏳ Buffer Lleno";
@@ -186,7 +212,21 @@ export class StatusParser {
         const state = StatusParser.parseSTS1(sts1);
         const errorFlags = StatusParser.parseSTS2(sts2);
 
+        // Sin errores
+        if (errorFlags.noErrors && !state.fiscalMemoryFull && !state.fiscalMemoryNearFull) {
+            return errors; // Array vacío
+        }
+
         // Errores críticos primero
+        if (errorFlags.memoryFull) {
+            errors.push("Memoria fiscal llena");
+        }
+        if (errorFlags.memoryError) {
+            errors.push("Error en memoria fiscal");
+        }
+        if (errorFlags.fiscalError) {
+            errors.push("Error fiscal");
+        }
         if (errorFlags.criticalError) {
             errors.push("Error crítico de hardware");
         }

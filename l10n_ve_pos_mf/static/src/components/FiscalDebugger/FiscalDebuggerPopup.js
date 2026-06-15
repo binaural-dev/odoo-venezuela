@@ -188,22 +188,11 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
         }
 
         try {
-            const rawStatus = await this.fiscalPrinter.getStatus();
+            // getStatus() ya retorna el objeto parseado por StatusParser
+            const status = await this.fiscalPrinter.getStatus();
             
-            if (rawStatus) {
-                // Construir respuesta binaria simulada para el parser
-                const sts1 = rawStatus.raw ? parseInt(rawStatus.raw.substring(0, 2), 16) : 0x60;
-                const sts2 = rawStatus.raw ? parseInt(rawStatus.raw.substring(2, 4), 16) : 0x40;
-                
-                const mockResponse = new Uint8Array([
-                    FiscalProtocol.STX,
-                    sts1,
-                    sts2,
-                    FiscalProtocol.ETX,
-                    0x00 // LRC (no importa para el parser)
-                ]);
-                
-                this.state.currentStatus = StatusParser.parse(mockResponse);
+            if (status) {
+                this.state.currentStatus = status;
             }
         } catch (error) {
             console.error("FiscalDebugger:: Error al leer status", error);
