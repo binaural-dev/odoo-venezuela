@@ -91,7 +91,11 @@ class AccountMove(models.Model):
             """ if invoices and record.move_type in ["out_invoice","out_refund"]:
                 raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
             if record.invoice_date and record.date and record.date < record.invoice_date:
-                raise ValidationError(_("The accounting date cannot be earlier than the invoice date.")) """
+                raise UserError(_("The accounting date cannot be earlier than the invoice date."))
+            if record.invoice_date:
+                today = fields.Date.context_today(record)
+                if record.invoice_date > today:
+                    raise ValidationError(_("It is not possible to confirm with a date posterior to the current one. Please verify the document date before proceeding."))
         return super().action_post()
 
     @api.model_create_multi

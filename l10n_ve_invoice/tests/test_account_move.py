@@ -101,6 +101,28 @@ class TestAccountMove(TransactionCase):
             }
         )
 
+        self.debit_journal = self.env["account.journal"].create(
+            {
+                "name": "Diario de Débito",
+                "code": "DEB",
+                "type": "sale",
+                "is_debit": True,
+                "sequence_id": sequence.id,
+                "company_id": self.env.company.id,
+            }
+        )
+
+        self.other_sales_journal = self.env["account.journal"].create(
+            {
+                "name": "Diario de Ventas Otra Compañía",
+                "code": "OVN",
+                "type": "sale",
+                "sequence_id": other_sequence.id,
+                "refund_sequence_id": other_refund_sequence.id,
+                "company_id": self.other_company.id,
+            }
+        )
+
     def _create_invoice(
         self,
         products,
@@ -286,3 +308,79 @@ class TestAccountMove(TransactionCase):
         today_date = today
         
         self._assert_entry_in_period(invoice_date, today_date, False, False)
+
+    def test_07_action_post_raises_when_sale_move_has_same_correlative(self):
+        expected_correlative = "00011"
+        self._get_or_create_invoice_correlative_sequence(number_next_actual=11)
+
+        self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            move_type="out_invoice",
+            journal=self.sales_journal,
+            correlative=expected_correlative,
+        )
+
+        invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            move_type="out_invoice",
+            journal=self.sales_journal,
+        )
+
+        with self.assertRaises(ValidationError):
+            invoice.action_post()
+
+    def test_08_action_post_future_invoice_date_validation(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_invoice",
+            invoice_date=fields.Date.today() + timedelta(days=1),
+            date=fields.Date.today() + timedelta(days=1),
+            journal=self.sales_journal,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            invoice.action_post()
+        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))
+
+        original_invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_invoice",
+            invoice_date=fields.Date.today(),
+            date=fields.Date.today(),
+            journal=self.sales_journal,
+        )
+        original_invoice.action_post()
+        credit_note = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_refund",
+            reversed_entry_id=original_invoice,
+            invoice_date=fields.Date.today() + timedelta(days=1),
+            date=fields.Date.today() + timedelta(days=1),
+            journal=self.sales_journal,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            credit_note.action_post()
+        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))
+
+        debit_note = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_invoice",
+            debit_origin_id=original_invoice,
+            invoice_date=fields.Date.today() + timedelta(days=1),
+            date=fields.Date.today() + timedelta(days=1),
+            journal=self.debit_journal,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            debit_note.action_post()
+        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))
