@@ -6,7 +6,7 @@
     "category": "Accounting",
     "summary": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Invoice",
     "description": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Invoice",
-    "sequence": "1",
+    "sequence": "1.1",
     "author": "Odoo Developers",
     "support": "developersodoo@gmail.com",
     "live_test_url": "https://www.youtube.com/watch?v=z-xZwCah7wM",
