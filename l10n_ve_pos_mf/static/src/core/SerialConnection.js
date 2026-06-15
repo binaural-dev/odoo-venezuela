@@ -22,13 +22,14 @@ export class SerialConnection {
         this.writeLock = false;
         this.isConnected = false;
         
-        // Configuración por defecto para TFHKA (RS232: 9600 8N1)
+        // Configuración por defecto para TFHKA (RS232: 9600 8E1)
+        // IMPORTANTE: TFHKA usa paridad PAR (even), no none
         this.config = {
             baudRate: 9600,
             dataBits: 8,
             stopBits: 1,
-            parity: "none",
-            flowControl: "none"
+            parity: "even",      // ⚠️ CRÍTICO: TFHKA requiere paridad PAR
+            flowControl: "none"  // Manual RTS/CTS se maneja por separado
         };
     }
 
@@ -221,6 +222,7 @@ export class SerialConnection {
 
     /**
      * Limpia el buffer de lectura (descarta datos residuales)
+     * Equivalente a pySerial: flushInput() + flushOutput()
      * @returns {Promise<void>}
      */
     async flushBuffer() {
@@ -229,38 +231,88 @@ export class SerialConnection {
         }
 
         // Esperar si hay locks activos
-        while (this.readLock || this.writeLock) {
+        let waitCount = 0;
+        while ((this.readLock || this.writeLock) && waitCount < 50) {
             await new Promise(resolve => setTimeout(resolve, 10));
+            waitCount++;
         }
 
+        if (waitCount >= 50) {
+            console.warn("SerialConnection:: Timeout esperando locks para flush");
+            return;
+        }
+
+        let bytesDiscarded = 0;
+
         try {
+            // PASO 1: Limpiar input buffer (lectura)
             this.readLock = true;
             const reader = this.port.readable.getReader();
             
-            // Intentar leer cualquier dato residual (con timeout corto)
-            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 100));
+            // Intentar leer datos disponibles con timeout de 50ms
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Flush timeout")), 50)
+            );
             
             const flushPromise = (async () => {
                 try {
-                    while (true) {
-                        const { value, done } = await reader.read();
-                        if (done || !value || value.length === 0) {
+                    // Leer hasta que no haya más datos inmediatamente disponibles
+                    for (let i = 0; i < 10; i++) {
+                        const readPromise = reader.read();
+                        const shortTimeout = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error("No more data")), 10)
+                        );
+                        
+                        try {
+                            const { value, done } = await Promise.race([readPromise, shortTimeout]);
+                            if (done || !value || value.length === 0) {
+                                break;
+                            }
+                            bytesDiscarded += value.length;
+                        } catch (e) {
+                            // No más datos disponibles
                             break;
                         }
-                        console.log("SerialConnection:: Buffer limpiado, descartados", value.length, "bytes");
                     }
                 } catch (e) {
-                    // Timeout o error, no pasa nada
+                    // Ignorar errores de lectura durante flush
                 }
             })();
 
-            await Promise.race([flushPromise, timeoutPromise]);
+            try {
+                await Promise.race([flushPromise, timeoutPromise]);
+            } catch (e) {
+                // Timeout es normal, significa que no hay datos
+            }
+            
+            // Cancelar cualquier lectura pendiente
+            try {
+                await reader.cancel();
+            } catch (e) {
+                // Ignorar error de cancel
+            }
             
             reader.releaseLock();
             this.readLock = false;
+
+            if (bytesDiscarded > 0) {
+                console.log(`SerialConnection:: Buffer limpiado: ${bytesDiscarded} bytes descartados`);
+            }
+
         } catch (error) {
-            console.warn("SerialConnection:: Error al limpiar buffer", error);
+            console.warn("SerialConnection:: Error al limpiar buffer de lectura", error);
             this.readLock = false;
+        }
+
+        // PASO 2: Limpiar output buffer (escritura)
+        // En Web Serial API no hay equivalente directo a flushOutput(),
+        // pero podemos esperar a que el write lock esté liberado
+        try {
+            while (this.writeLock) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+        } catch (error) {
+            console.warn("SerialConnection:: Error esperando write lock", error);
         }
     }
 
