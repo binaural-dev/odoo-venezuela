@@ -91,8 +91,8 @@ def migrate(cr, version):
     cr.execute("""
         SELECT 
             COUNT(*) as total,
-            COUNT(CASE WHEN code_fiscal_printer IS NOT NULL THEN 1 END) as configured,
-            COUNT(CASE WHEN code_fiscal_printer IS NULL THEN 1 END) as not_configured
+            COUNT(CASE WHEN code_fiscal_printer IS NOT NULL AND code_fiscal_printer != '' THEN 1 END) as configured,
+            COUNT(CASE WHEN code_fiscal_printer IS NULL OR code_fiscal_printer = '' THEN 1 END) as not_configured
         FROM pos_payment_method
     """)
     payment_stats = cr.fetchone()
@@ -102,10 +102,35 @@ def migrate(cr, version):
         _logger.info(f"  ✓ Configurados: {payment_stats[1]}")
         _logger.info(f"  ⚠ Sin configurar: {payment_stats[2]}")
         
+        # Mostrar detalle de métodos configurados
+        if payment_stats[1] > 0:
+            cr.execute("""
+                SELECT pm.id, pm.name, pm.code_fiscal_printer, aj.name as journal_name
+                FROM pos_payment_method pm
+                LEFT JOIN account_journal aj ON pm.journal_id = aj.id
+                WHERE pm.code_fiscal_printer IS NOT NULL AND pm.code_fiscal_printer != ''
+                ORDER BY pm.id
+                LIMIT 10
+            """)
+            configured_methods = cr.fetchall()
+            
+            if configured_methods:
+                _logger.info("\n  Métodos de pago configurados (primeros 10):")
+                for pm in configured_methods:
+                    journal_info = f" - Diario: {pm[3]}" if pm[3] else ""
+                    _logger.info(f"    • {pm[1]}: código {pm[2]}{journal_info}")
+        
         if payment_stats[2] > 0:
-            _logger.warning("\n  ACCIÓN REQUERIDA:")
-            _logger.warning("  Debes configurar 'Code fiscal printer' (01-24) en los métodos")
-            _logger.warning("  de pago sin configurar.")
+            _logger.warning("\n  ⚠ ACCIÓN REQUERIDA:")
+            _logger.warning("  Debes configurar 'Código Fiscal Printer' (01-24) en los métodos de pago sin configurar.")
+            _logger.warning("  Valores sugeridos:")
+            _logger.warning("    01 = Efectivo")
+            _logger.warning("    02 = Cheque")
+            _logger.warning("    03 = Tarjeta de Crédito")
+            _logger.warning("    04 = Tarjeta de Débito")
+            _logger.warning("    05 = Vale de Alimentos")
+            _logger.warning("    06 = Transferencia Bancaria")
+            _logger.warning("    08 = Pago Móvil")
 
     # 4. Reporte de pos.config con máquinas fiscales
     _logger.info("\n[4/4] Reporte de puntos de venta con máquina fiscal...")

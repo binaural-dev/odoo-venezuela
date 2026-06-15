@@ -134,15 +134,58 @@ def migrate(cr, version):
     else:
         _logger.info("  ℹ Campo fiscal_code no existe aún (se creará en post-migrate)")
 
-    # 3. Verificar datos de pos.payment.method (code_fiscal_printer)
-    _logger.info("\n[3/3] Verificando code_fiscal_printer en pos.payment.method...")
+    # 3. Migrar payment_method desde account.journal a pos.payment.method
+    _logger.info("\n[3/3] Migrando payment_method (account.journal) → code_fiscal_printer (pos.payment.method)...")
+    
+    # Verificar si existe el campo payment_method en account.journal (módulo viejo)
+    cr.execute("""
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'account_journal' AND column_name = 'payment_method'
+    """)
+    old_payment_method_exists = cr.fetchone()
+    
+    # Verificar si existe el campo code_fiscal_printer en pos.payment.method (módulo nuevo)
     cr.execute("""
         SELECT column_name FROM information_schema.columns
         WHERE table_name = 'pos_payment_method' AND column_name = 'code_fiscal_printer'
     """)
     code_fiscal_printer_exists = cr.fetchone()
 
-    if code_fiscal_printer_exists:
+    if old_payment_method_exists and code_fiscal_printer_exists:
+        # Copiar valores desde account.journal.payment_method a pos.payment.method.code_fiscal_printer
+        _logger.info("  Copiando valores desde account.journal.payment_method...")
+        
+        cr.execute("""
+            UPDATE pos_payment_method pm
+            SET code_fiscal_printer = aj.payment_method
+            FROM account_journal aj
+            WHERE pm.journal_id = aj.id
+              AND aj.payment_method IS NOT NULL
+              AND aj.payment_method != ''
+              AND (pm.code_fiscal_printer IS NULL OR pm.code_fiscal_printer = '01')
+        """)
+        rows_updated = cr.rowcount
+        
+        if rows_updated > 0:
+            _logger.info(f"  ✓ {rows_updated} métodos de pago actualizados con valores desde account.journal")
+            
+            # Mostrar resultado
+            cr.execute("""
+                SELECT pm.id, pm.name, pm.code_fiscal_printer, aj.name as journal_name
+                FROM pos_payment_method pm
+                JOIN account_journal aj ON pm.journal_id = aj.id
+                WHERE pm.code_fiscal_printer IS NOT NULL
+                ORDER BY pm.id
+            """)
+            payment_methods = cr.fetchall()
+            
+            for pm in payment_methods:
+                _logger.info(f"    - Payment Method ID {pm[0]} ({pm[1]}): code_fiscal_printer={pm[2]} (desde diario: {pm[3]})")
+        else:
+            _logger.info("  ℹ No se encontraron valores para copiar (ya estaban configurados o no existen)")
+    
+    elif code_fiscal_printer_exists:
+        # El campo nuevo existe pero el viejo no (instalación limpia o ya migrado)
         cr.execute("""
             SELECT id, name, code_fiscal_printer 
             FROM pos_payment_method 
@@ -156,7 +199,8 @@ def migrate(cr, version):
             for pm in payment_methods:
                 _logger.info(f"    - Payment Method ID {pm[0]} ({pm[1]}): code_fiscal_printer={pm[2]}")
         else:
-            _logger.info("  ⚠ No se encontraron métodos de pago con code_fiscal_printer")
+            _logger.info("  ⚠ No se encontraron métodos de pago con code_fiscal_printer configurado")
+    
     else:
         _logger.info("  ℹ Campo code_fiscal_printer no existe aún (se creará en post-migrate)")
 
