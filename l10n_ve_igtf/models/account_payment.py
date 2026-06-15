@@ -165,6 +165,8 @@ class AccountPaymentAndIgtf(models.Model):
                     )
                     if not is_international:
                         rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
+                elif write_off_line_vals and rec.invoices_origin_ids:
+                    rec._fix_writeoff_balance(vals, write_off_line_vals)
 
             return vals
     
@@ -210,6 +212,64 @@ class AccountPaymentAndIgtf(models.Model):
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
                         payment._prepare_outbound_move_line_igtf_vals(vals,write_off_line_vals)
+
+    def _fix_writeoff_balance(self, vals, write_off_line_vals):
+        """Force counterpart line to match the invoices' actual residual
+        in company currency, and adjust the write-off to keep the entry
+        balanced. Mirrors the residual-based adjustment in
+        _prepare_inbound_move_line_igtf_vals for the non-IGTF case,
+        preventing descuadres between individual conversion in the
+        wizard and aggregate _convert in the payment lines.
+        """
+         
+        for rec in self:
+            if not write_off_line_vals or len(vals) < 3:
+                continue
+            comp_curr = rec.company_id.currency_id
+            currency = rec.currency_id
+
+            # Current counterpart balance and its direction
+            cpart = vals[1]
+            current = cpart.get('balance', 0) or (cpart.get('debit', 0) - cpart.get('credit', 0))
+            is_debit = cpart.get('debit', 0) > 0
+
+            # Actual residual in company currency from the invoices
+            invoice_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
+            residual_abs = abs(invoice_residual) if invoice_residual else 0.0
+
+            # Preserve the sign of the current counterpart line
+            expected = residual_abs if is_debit else -residual_abs
+
+            diff = expected - current
+            if comp_curr.is_zero(diff):
+                return
+
+            # Force counterpart to match the invoice residual
+            cpart['balance'] = expected
+            if is_debit:
+                cpart.update({'debit': expected, 'credit': 0.0})
+            else:
+                cpart.update({'debit': 0.0, 'credit': expected})
+            # Recalculate amount_currency from the forced balance
+            # Preserve sign: debit > 0 → amount_currency > 0, credit > 0 → amount_currency < 0
+            amt = comp_curr._convert(
+                abs(expected), currency, rec.company_id, rec.date,
+            )
+            cpart['amount_currency'] = -amt if not is_debit else amt
+
+            # Absorb the difference in the write-off line to keep total = 0
+            w_off = vals[2]
+            w_off['balance'] = w_off.get('balance', 0) - diff
+            if w_off['balance'] > 0:
+                w_off.update({'debit': w_off['balance'], 'credit': 0.0})
+            else:
+                w_off.update({'debit': 0.0, 'credit': -w_off['balance']})
+            # Recalculate write-off amount_currency with correct sign
+            w_is_debit = w_off.get('debit', 0) > 0
+            w_amt = comp_curr._convert(
+                abs(w_off['balance']), currency, rec.company_id, rec.date,
+            )
+            w_off['amount_currency'] = -w_amt if not w_is_debit else w_amt
 
     def _create_inbound_move_line_igtf_vals(self, vals):
         """
