@@ -19,7 +19,11 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
+<<<<<<< HEAD
     "version": "19.0.1.2.5",
+=======
+    "version": "19.0.1.2.10",
+>>>>>>> c6874b905 ([FIX] l10n_ve_accountant, l10n_ve_igtf, l10n_ve_sale, l10n_ve_rate, binaural_purchase:)
 
     "depends": [
         "base",

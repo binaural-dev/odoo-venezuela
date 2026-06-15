@@ -159,7 +159,7 @@ class AccountPaymentAndIgtf(models.Model):
                 if rec.igtf_percentage and rec.igtf_amount > 0.0:
                     # Check if any of the related invoices belongs to an
                     # international purchase journal — in that case, skip IGTF.
-                    move_ids = rec.get_moves()
+                    move_ids = rec.invoices_origin_ids
                     is_international = any(
                         m.journal_id.is_purchase_international for m in move_ids
                     )
@@ -168,101 +168,26 @@ class AccountPaymentAndIgtf(models.Model):
 
             return vals
     
-    def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, payment_date, base = False):
-        
-        currency = invoice.currency_id
-        precision = currency.rounding
-        date_conver = False
-        if payment_date <= invoice.invoice_date:
-            date_conver = invoice.invoice_date
-        else:
-            date_conver = payment_date
-
-        due_currency_id = invoice.currency_id
-        due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,date_conver, currency)
-
-        payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,date_conver, currency)
-        principal_debt = due_amount
-
-        principal_amount = min(payment_amount, principal_debt)
-        
-        igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
-
-        igtf_top =  invoice.igtf_top_aply
-
-        alter_bi_igtf = invoice.alter_bi_igtf
-
-        igtf= igtf_unrounded
-
-        invoice_residual = due_amount
-
-    
-        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
-            
-            return 0.0
-        
-
-        residual_igtf = igtf_top - alter_bi_igtf
-
-        if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
-            return 0.0
-        
-        if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
-            
-            igtf = residual_igtf
-
-        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
-            
-            return 0.0 
-                
-        if not base:
-            return self.convert_to_external_currency(payment_currency, igtf, date_conver)
-        else:
-            return igtf
-    
-    def convert_to_company_currency(self, from_currency,amount,date =False,invoice_currency= False):
-        """
-        Convierte un monto desde una moneda específica a la moneda base de la compañía.
-        """
-        self.ensure_one()
-        company_currency = self.company_id.currency_id
-        
-        if from_currency == company_currency and invoice_currency == company_currency:
-            return amount
-        
-        elif from_currency == company_currency and invoice_currency != company_currency:
-            converted_amount = invoice_currency._convert(
-                amount, 
-                company_currency, 
-                self.company_id, 
-                date or fields.Date.today()
-            )
-            return converted_amount
-        
-        else:
-
-            converted_amount = from_currency._convert(
-                amount, 
-                company_currency, 
-                self.company_id, 
-                date or fields.Date.today()
-            )
-            
-            return converted_amount
-    
-    def convert_to_external_currency(self, from_currency,amount,date =False):
-     
-        self.ensure_one()
-        company_currency = self.company_id.currency_id
-   
-        converted_amount = company_currency._convert(
-            amount, 
-            from_currency, 
-            self.company_id, 
-            date or fields.Date.today()
+    def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, payment_date, base=False):
+        return self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
+            invoice, amount_payment, payment_currency, payment_date,
+            company=self.company_id, base=base,
         )
-        
-        return converted_amount
+
+    def convert_to_company_currency(self, from_currency, amount, date=False, invoice_currency=False):
+        self.ensure_one()
+        return self.env["l10n_ve_igtf.utils"]._convert_to_company_currency(
+            from_currency, amount, date, self.company_id, invoice_currency=invoice_currency,
+        )
+
+    def convert_to_external_currency(self, from_currency, amount, date=False):
+        self.ensure_one()
+        return self.env["l10n_ve_igtf.utils"]._convert_to_external_currency(
+            from_currency, amount, date, self.company_id,
+        )
+
+    def get_moves(self):
+        return self.env["l10n_ve_igtf.utils"].get_moves_from_context()
         
     def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
         

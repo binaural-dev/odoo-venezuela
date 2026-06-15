@@ -131,6 +131,51 @@ class AccountPaymentRegister(models.TransientModel):
         )
         return payment_vals
 
-    
+    def _convert_to_wizard_currency(self, installments):
+        """Override: convierte cada cuota individualmente.
 
-    
+        El método original agrupa cuotas por moneda y convierte el
+        agregado con _convert. Esto introduce error de agregación:
+
+            _convert(Σ amount_i, company_currency)
+                ≠ Σ _convert(amount_i, company_currency)
+
+        Nuestro override convierte cada cuota individualmente usando el
+        amount_residual (que ya está en moneda compañía y refleja los
+        ajustes de porción real), eliminando el error de agregación.
+
+        Esto es especialmente importante para pagos agrupados
+        (group_payment=True) donde múltiples facturas se pagan juntas.
+        """
+        self.ensure_one()
+        wizard_curr = self.currency_id
+        comp_curr = self.company_currency_id
+        total_amount = 0.0
+
+        for installment in installments:
+            line = installment['line']
+            curr = line.currency_id
+
+            if curr == wizard_curr:
+                total_amount += installment['amount_residual_currency']
+
+            elif curr != comp_curr and wizard_curr == comp_curr:
+                total_amount += installment['amount_residual']
+
+            elif curr == comp_curr and wizard_curr != comp_curr:
+                total_amount += comp_curr._convert(
+                    installment['amount_residual'],
+                    wizard_curr,
+                    self.company_id,
+                    self.payment_date,
+                )
+
+            else:
+                total_amount += curr._convert(
+                    installment['amount_residual_currency'],
+                    wizard_curr,
+                    self.company_id,
+                    self.payment_date,
+                )
+
+        return total_amount
