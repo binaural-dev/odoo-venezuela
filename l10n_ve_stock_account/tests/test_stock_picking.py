@@ -398,3 +398,15 @@ class TestStockPickingInvoice(TransactionCase):
         self.assertEqual(picking_1.state_guide_dispatch, "emited")
         self.assertEqual(picking_2.state_guide_dispatch, "emited")
         _logger.info("test_07_batch_validate_pickings --- successfully.")
+
+    def test_08_return_picking_no_guide_number(self):
+        """Verificar que un picking de devolución (is_return=True) no genere correlativo de guía."""
+        picking = self.create_picking()
+        picking.is_return = True
+        
+        for move in picking.move_ids_without_package:
+            move.quantity = move.product_uom_qty
+        picking.button_validate()
+
+        self.assertFalse(picking.guide_number, "Un picking de devolución no debería generar número de guía.")
+        _logger.info("test_08_return_picking_no_guide_number --- successfully.")
