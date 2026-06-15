@@ -154,14 +154,26 @@ export class SerialConnection {
                 while (true) {
                     const { value, done } = await this.reader.read();
                     if (done) {
+                        console.log("SerialConnection:: Stream cerrado");
                         break;
                     }
                     
+                    console.log("SerialConnection:: Recibidos", value.length, "bytes:", 
+                        Array.from(value).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+                    
                     chunks.push(value);
+                    
+                    // Si recibimos ACK (0x06) o NAK (0x15), retornar inmediatamente
+                    if (value.length === 1 && (value[0] === 0x06 || value[0] === 0x15)) {
+                        console.log(`SerialConnection:: Recibido ${value[0] === 0x06 ? 'ACK' : 'NAK'}`);
+                        break;
+                    }
+                    
                     buffer += decoder.decode(value, { stream: true });
                     
                     // Salir si encontramos el delimitador
                     if (buffer.includes(delimiter)) {
+                        console.log("SerialConnection:: Delimitador encontrado");
                         break;
                     }
                 }
@@ -194,6 +206,51 @@ export class SerialConnection {
             }
             this.readLock = false;
             return null;
+        }
+    }
+
+    /**
+     * Limpia el buffer de lectura (descarta datos residuales)
+     * @returns {Promise<void>}
+     */
+    async flushBuffer() {
+        if (!this.isConnected || !this.port) {
+            return;
+        }
+
+        // Esperar si hay locks activos
+        while (this.readLock || this.writeLock) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+
+        try {
+            this.readLock = true;
+            const reader = this.port.readable.getReader();
+            
+            // Intentar leer cualquier dato residual (con timeout corto)
+            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 100));
+            
+            const flushPromise = (async () => {
+                try {
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done || !value || value.length === 0) {
+                            break;
+                        }
+                        console.log("SerialConnection:: Buffer limpiado, descartados", value.length, "bytes");
+                    }
+                } catch (e) {
+                    // Timeout o error, no pasa nada
+                }
+            })();
+
+            await Promise.race([flushPromise, timeoutPromise]);
+            
+            reader.releaseLock();
+            this.readLock = false;
+        } catch (error) {
+            console.warn("SerialConnection:: Error al limpiar buffer", error);
+            this.readLock = false;
         }
     }
 

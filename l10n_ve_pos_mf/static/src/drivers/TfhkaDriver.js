@@ -69,13 +69,29 @@ export class TfhkaDriver {
      * @param {number} timeout - Timeout en ms
      * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
      */
-    async sendCommand(command, timeout = 5000) {
+    async sendCommand(command, timeout = null) {
         if (!this.isConnected) {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
 
+        // Auto-ajustar timeout según el tipo de comando
+        if (timeout === null) {
+            if (command.startsWith('PJ')) {
+                timeout = 60000; // 60s para programación (imprime varias páginas)
+            } else if (command.startsWith('I0X') || command.startsWith('I0Z')) {
+                timeout = 30000; // 30s para reportes X/Z
+            } else {
+                timeout = 5000; // 5s para comandos normales
+            }
+        }
+
         for (let attempt = 0; attempt < this.retryAttempts; attempt++) {
             try {
+                // Limpiar buffer antes de enviar (solo en el primer intento)
+                if (attempt === 0) {
+                    await this.connection.flushBuffer();
+                }
+                
                 // Construir trama
                 const frame = FiscalProtocol.buildFrame(command);
                 
