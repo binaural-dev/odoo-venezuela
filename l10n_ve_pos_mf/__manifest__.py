@@ -41,6 +41,7 @@
             
             # Templates y CSS
             "l10n_ve_pos_mf/static/src/xml/*.xml",
+            "l10n_ve_pos_mf/static/src/components/**/*.xml",
             "l10n_ve_pos_mf/static/src/css/*.css",
         ],
         "web.qunit_suite_tests": [

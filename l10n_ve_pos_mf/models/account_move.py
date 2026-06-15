@@ -14,6 +14,15 @@ class AccountMoveInh(models.Model):
         compute="_compute_sales_book_type",
         default="01-REG",
     )
+    mf_serial = fields.Char(
+        string="Fiscal machine serial", default=False, copy=False, tracking=True
+    )
+    mf_invoice_number = fields.Char(
+        string="Sequence number", default=False, copy=False, tracking=True
+    )
+    mf_reportz = fields.Char(
+        string="Report number Z", default=False, copy=False, tracking=True
+    )
 
     @api.depends("sales_book_type")
     def _compute_sales_book_type(self):

@@ -1,4 +1,15 @@
 .fdm-reports {
     display: flex;
-    /* flex-flow: column; */
 }
+
+/* ---- Botón Fiscalizador (🐞) en la barra de estado ---- */
+.fiscal-debugger-action {
+    margin-left: 4px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.fiscal-debugger-action:hover {
+    opacity: 1;
+}
+

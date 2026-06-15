@@ -4,37 +4,53 @@ import { Chrome } from "@point_of_sale/app/pos_app";
 import { patch } from "@web/core/utils/patch";
 import { onMounted } from "@odoo/owl";
 import { TfhkaDriver } from "../drivers/TfhkaDriver";
+import { FiscalDebuggerPopup } from "../components/FiscalDebugger/FiscalDebuggerPopup";
 
 /**
  * Override del componente principal del POS para inicializar el driver de la máquina fiscal
- * Basado en om_datalogic/static/src/overrides/pos_app.js
  */
 patch(Chrome.prototype, {
     
     setup() {
         super.setup(...arguments);
         this.fiscalPrinter = null;
-        this.fiscalPrinterStatus = "disconnected"; // disconnected, connecting, connected, error
+        this.fiscalPrinterStatus = "disconnected";
         onMounted(this._onMountedFiscalPrinter);
     },
 
     async _onMountedFiscalPrinter() {
-        // Crear botón de conexión en la UI
         this._createFiscalPrinterButton();
-        
-        // Intentar conexión automática si hay configuración guardada
+        this._createFiscalizadorButton();
         await this._initFiscalPrinter();
     },
 
-    /**
-     * Crea el botón de status de la máquina fiscal en la barra de estado
-     * @private
-     */
     _createFiscalPrinterButton() {
-        this.fiscalPrinterBtn = $("<button class='fiscal-printer-action fa fa-print' title='Máquina Fiscal'/>")
+        this.fiscalPrinterBtn = $("<button class='fiscal-printer-action fa fa-print' title='Máquina Fiscal'/>");
         $(".status-buttons").prepend(this.fiscalPrinterBtn);
         this.fiscalPrinterBtn.on('click', this._handleFiscalPrinterClick.bind(this));
         this._updateFiscalPrinterButtonStatus("disconnected");
+    },
+
+    /**
+     * Crea el botón del Fiscalizador junto al botón de conexión
+     */
+    _createFiscalizadorButton() {
+        const btn = $("<button class='fiscal-debugger-action fa fa-bug' title='Fiscalizador - Debugger de Máquina Fiscal'/>");
+        this.fiscalPrinterBtn.after(btn);
+        btn.on('click', this._openFiscalizador.bind(this));
+    },
+
+    /**
+     * Abre el popup del Fiscalizador
+     */
+    async _openFiscalizador() {
+        try {
+            await this.env.services.popup.add(FiscalDebuggerPopup, {
+                title: "Fiscalizador - Debugger de Máquina Fiscal",
+            });
+        } catch (error) {
+            console.error("Fiscalizador:: Error al abrir", error);
+        }
     },
 
     /**

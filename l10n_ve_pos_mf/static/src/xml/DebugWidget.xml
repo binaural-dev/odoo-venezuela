@@ -8,13 +8,6 @@
                 <li class="button" t-on-click="get_order">GET ACTUAL ORDER</li>
                 <li class="button" t-on-click="logger">LOGGER THIS</li>
             </ul>
-            
-            <p class="category">🛠️ Máquina Fiscal (Web Serial)</p>
-            <ul>
-                <li class="button fiscal-debugger-button" t-on-click="openFiscalDebugger">
-                    🔍 FISCALIZADOR (Debugger)
-                </li>
-            </ul>
         </xpath>
     </t>
 </templates>
