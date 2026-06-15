@@ -267,8 +267,8 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='checked']" position="after">
-                <field name="porcion_real_amount" string="Porción Real"
-                       invisible="porcion_real_count == 0"/>
+                <field name="real_portion_count" invisible="1"/>
+                <field name="real_portion_amount" invisible="1"/>
             </xpath>
         </field>
     </record>
