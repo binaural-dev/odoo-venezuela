@@ -1,6 +1,6 @@
-from odoo import api, fields, models, Command
+from odoo import api, fields, models, Command, _
 from odoo.tools.float_utils import float_round
-
+from odoo.exceptions import UserError
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
@@ -87,9 +87,6 @@ class AccountPayment(models.Model):
 
             vals_to_change = {"name": move_name, "is_manually_modified": True}
             move.write(vals_to_change)
-            #Se comenta la siguiente linea para evitar errores al modificar las lineas
-            # Hablando con jesus el problema puede tener otra raiz
-            #move.line_ids.write(vals_to_change)
         return res
 
     def unlink(self):
@@ -121,3 +118,31 @@ class AccountPayment(models.Model):
                     )
                 )
             )
+
+    def action_draft(self):
+
+        if self.env.context.get('bypass_retention_lock'):
+            return super().action_draft()
+        
+        for payment in self:
+            
+            if payment.is_retention and payment.state != 'cancel':
+                raise UserError(_(
+                    "You cannot reset this payment to draft because it is a retention linked to voucher %s. "
+                    "You must void or cancel the retention document first."
+                ) % payment.retention_id.display_name)
+        return super().action_draft()
+
+    def action_cancel(self):
+
+        if self.env.context.get('bypass_retention_lock'):
+            return super().action_cancel()
+        
+        for payment in self:
+            
+            if payment.is_retention and payment.state != 'cancel':
+                raise UserError(_(
+                    "You cannot cancel this payment because it is a retention linked to voucher %s. "
+                    "You must void or cancel the retention document first."
+                ) % payment.retention_id.display_name)
+        return super().action_cancel()
