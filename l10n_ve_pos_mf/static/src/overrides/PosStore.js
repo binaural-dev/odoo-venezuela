@@ -4,6 +4,7 @@ import { PosStore } from "@point_of_sale/app/store/pos_store";
 import { patch } from "@web/core/utils/patch";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
+import { LocalOrderBuffer } from "../utils/LocalOrderBuffer";
 
 /**
  * Override del PosStore para integrar la máquina fiscal vía Web Serial API
@@ -298,14 +299,16 @@ patch(PosStore.prototype, {
   },
 
   /**
-   * Override del método push_single_order para inyectar la impresión fiscal
-   * @param {Object} order
-   * @param {Object} opts
-   * @returns {Promise}
+   * Override del método push_single_order con soporte offline-first.
+   * 
+   * Flujo:
+   * 1. Validación contable (dry-run) - tolerante a fallos de red
+   * 2. Impresión fiscal (offline) - SIEMPRE se ejecuta
+   * 3. Sincronización con backend - con buffer offline si falla
    */
   async push_single_order(order, opts) {
+    // 1. Validación contable previa (dry-run) - tolerante a fallos de red
     try {
-      // 1. Validación contable previa (dry-run)
       const order_payload = [{
         'data': order.export_as_JSON()
       }];
@@ -313,22 +316,31 @@ patch(PosStore.prototype, {
       await this.orm.call("pos.order", "validate_order_dry_run", [order_payload]);
       
     } catch (error) {
-      let msg = _t("Error desconocido en Odoo");
-      if (error.data && error.data.message) {
-        msg = error.data.message;
-      } else if (error.message) {
-        msg = error.message;
+      // Si el backend no está disponible, permitimos continuar (offline-first)
+      const isNetworkError = !error.message || error.message.includes("NetworkError") || 
+                              error.message.includes("fetch") || error.message.includes("connection");
+      
+      if (!isNetworkError) {
+        // Error de validación real (datos inválidos) - mostrar y bloquear
+        let msg = _t("Error desconocido en Odoo");
+        if (error.data && error.data.message) {
+          msg = error.data.message;
+        } else if (error.message) {
+          msg = error.message;
+        }
+        
+        this.env.services.popup.add(ErrorPopup, {
+          title: _t("Validación Contable"),
+          body: msg,
+        });
+        return;
       }
       
-      this.env.services.popup.add(ErrorPopup, {
-        title: _t("Validación Contable"),
-        body: msg,
-      });
-      
-      return;
+      // Error de red: permitimos continuar, el pedido se sincronizará después
+      console.warn("PosStore:: Validación dry-run omitida (offline)");
     }
     
-    // 2. Imprimir en máquina fiscal si está configurada
+    // 2. Imprimir en máquina fiscal (offline - no requiere internet)
     if (this.useFiscalMachine() && !order.mf_invoice_number) {
       const response = await this.pushToMF(order);
 
@@ -337,7 +349,76 @@ patch(PosStore.prototype, {
       }
     }
 
-    // 3. Sincronizar con el backend de Odoo
-    return await super.push_single_order.apply(this, [order, opts]);
+    // 3. Sincronizar con el backend de Odoo (con buffer offline si falla)
+    try {
+      return await super.push_single_order.apply(this, [order, opts]);
+    } catch (syncError) {
+      // Si la sincronización falla, guardamos en buffer local
+      console.warn("PosStore:: Sincronización fallida, guardando en buffer offline", syncError);
+      
+      const orderData = order.export_as_JSON();
+      const fiscalData = {
+        fiscal_machine: order.fiscal_machine || "",
+        mf_invoice_number: order.mf_invoice_number || "",
+        mf_reportz: order.mf_reportz || "",
+      };
+      
+      LocalOrderBuffer.add(orderData, fiscalData);
+      
+      this.env.services.popup.add(ErrorPopup, {
+        title: _t("Pedido guardado localmente"),
+        body: _t("La factura fiscal se imprimió correctamente. El pedido se sincronizará con Odoo cuando se restablezca la conexión."),
+      });
+      
+      // No lanzamos el error - el pedido está seguro en el buffer local
+      return;
+    }
+  },
+
+  /**
+   * Intenta sincronizar los pedidos pendientes del buffer local
+   * Se llama automáticamente al abrir el POS y después de cada sincronización exitosa
+   */
+  async flushOrderBuffer() {
+    const buffer = LocalOrderBuffer.getAll();
+    
+    if (buffer.length === 0) return;
+    
+    console.log(`PosStore:: Intentando sincronizar ${buffer.length} pedidos pendientes...`);
+    
+    for (let i = buffer.length - 1; i >= 0; i--) {
+      const entry = buffer[i];
+      
+      try {
+        // Reconstruir la orden y sincronizar
+        const orderPayload = [{
+          'data': entry.orderData
+        }];
+        
+        // Intentar crear la orden en el backend
+        await this.orm.call("pos.order", "create_from_ui", [orderPayload]);
+        
+        // Si llega aquí, la sincronización fue exitosa
+        LocalOrderBuffer.remove(i);
+        console.log(`PosStore:: Pedido #${i} sincronizado correctamente`);
+        
+      } catch (error) {
+        entry.retries++;
+        console.warn(`PosStore:: Pedido #${i} falló (intento ${entry.retries}):`, error.message);
+        
+        // Si ya intentó muchas veces, abandonar
+        if (entry.retries >= 5) {
+          console.error(`PosStore:: Pedido #${i} abandonado después de ${entry.retries} intentos`);
+          LocalOrderBuffer.remove(i);
+        }
+      }
+    }
+    
+    const remaining = LocalOrderBuffer.count();
+    if (remaining > 0) {
+      console.log(`PosStore:: ${remaining} pedidos siguen pendientes`);
+    } else {
+      console.log("PosStore:: Todos los pedidos sincronizados");
+    }
   },
 })

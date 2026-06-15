@@ -5,6 +5,8 @@ import { patch } from "@web/core/utils/patch";
 import { onMounted } from "@odoo/owl";
 import { TfhkaDriver } from "../drivers/TfhkaDriver";
 import { FiscalDebuggerPopup } from "../components/FiscalDebugger/FiscalDebuggerPopup";
+import { useService } from "@web/core/utils/hooks";
+import { LocalOrderBuffer } from "../utils/LocalOrderBuffer";
 
 /**
  * Override del componente principal del POS para inicializar el driver de la máquina fiscal
@@ -15,6 +17,7 @@ patch(Chrome.prototype, {
         super.setup(...arguments);
         this.fiscalPrinter = null;
         this.fiscalPrinterStatus = "disconnected";
+        this.orm = useService("orm");
         onMounted(this._onMountedFiscalPrinter);
     },
 
@@ -22,6 +25,9 @@ patch(Chrome.prototype, {
         this._createFiscalPrinterButton();
         this._createFiscalizadorButton();
         await this._initFiscalPrinter();
+        
+        // Intentar sincronizar pedidos offline pendientes
+        await this._flushPendingOrders();
     },
 
     _createFiscalPrinterButton() {
@@ -163,5 +169,43 @@ patch(Chrome.prototype, {
         } catch (error) {
             console.error("FiscalPrinter:: Error al desconectar", error);
         }
-    }
+    },
+
+    /**
+     * Intenta sincronizar pedidos pendientes del buffer offline
+     */
+    async _flushPendingOrders() {
+        const buffer = LocalOrderBuffer.getAll();
+        
+        if (buffer.length === 0) return;
+        
+        console.log(`FiscalPrinter:: Intentando sincronizar ${buffer.length} pedidos offline...`);
+        
+        for (let i = buffer.length - 1; i >= 0; i--) {
+            const entry = buffer[i];
+            
+            try {
+                await this.orm.call("pos.order", "create_from_ui", [[{
+                    'data': entry.orderData
+                }]]);
+                
+                LocalOrderBuffer.remove(i);
+                console.log(`FiscalPrinter:: Pedido offline #${i} sincronizado`);
+                
+            } catch (error) {
+                entry.retries = (entry.retries || 0) + 1;
+                console.warn(`FiscalPrinter:: Pedido offline #${i} falló (intento ${entry.retries}):`, error.message);
+                
+                if (entry.retries >= 5) {
+                    LocalOrderBuffer.remove(i);
+                    console.error(`FiscalPrinter:: Pedido offline #${i} abandonado`);
+                }
+            }
+        }
+        
+        const remaining = LocalOrderBuffer.count();
+        if (remaining === 0) {
+            console.log("FiscalPrinter:: Todos los pedidos offline sincronizados");
+        }
+    },
 });
