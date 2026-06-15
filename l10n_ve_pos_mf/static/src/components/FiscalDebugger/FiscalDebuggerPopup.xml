@@ -168,6 +168,9 @@
                         <div class="quick-actions">
                             <h5>⚡ Accesos Rápidos</h5>
                             <div class="quick-actions-buttons">
+                                <button class="btn btn-primary" t-on-click="testConnection">
+                                    <i class="fa fa-plug"/> Test Conexión
+                                </button>
                                 <button class="btn btn-info" t-on-click="() => this.quickCommand('PJ')">
                                     <i class="fa fa-file-text-o"/> Programación
                                 </button>

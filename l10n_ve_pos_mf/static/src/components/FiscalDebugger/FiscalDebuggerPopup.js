@@ -296,6 +296,60 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
     }
 
     /**
+     * Test de conexión básico - envía ENQ y verifica respuesta
+     */
+    async testConnection() {
+        if (!this.fiscalPrinter || !this.fiscalPrinter.isConnected) {
+            this.state.rawResponse = "Error: Impresora no conectada";
+            return;
+        }
+
+        try {
+            this.state.rawResponse = "🔍 Probando conexión serial...\n\n";
+            
+            // Test 1: Verificar que el puerto está abierto
+            this.state.rawResponse += "✓ Puerto serial abierto\n";
+            
+            // Test 2: Enviar ENQ (comando más simple)
+            this.state.rawResponse += "📡 Enviando ENQ (consulta de status)...\n";
+            const status = await this.fiscalPrinter.getStatus();
+            
+            if (status) {
+                this.state.rawResponse += "✓ Respuesta recibida!\n\n";
+                this.state.rawResponse += `Status: ${status.statusText}\n`;
+                this.state.rawResponse += `STS1: 0x${status.rawHex.sts1}\n`;
+                this.state.rawResponse += `STS2: 0x${status.rawHex.sts2}\n\n`;
+                
+                if (status.errors.length > 0) {
+                    this.state.rawResponse += "⚠️ ERRORES DETECTADOS:\n";
+                    status.errors.forEach(err => {
+                        this.state.rawResponse += `  - ${err}\n`;
+                    });
+                } else {
+                    this.state.rawResponse += "✅ SIN ERRORES - Impresora lista\n";
+                }
+                
+                this.state.rawResponse += "\n🎉 CONEXIÓN EXITOSA - La impresora responde correctamente";
+            } else {
+                this.state.rawResponse += "❌ NO SE RECIBIÓ RESPUESTA\n\n";
+                this.state.rawResponse += "Posibles causas:\n";
+                this.state.rawResponse += "1. Cable USB desconectado o dañado\n";
+                this.state.rawResponse += "2. Baudrate incorrecto (debe ser 9600)\n";
+                this.state.rawResponse += "3. Impresora apagada\n";
+                this.state.rawResponse += "4. Hub USB con problemas (prueba conexión directa)\n";
+                this.state.rawResponse += "5. Puerto serial incorrecto\n\n";
+                this.state.rawResponse += "💡 Revisa el cable y prueba conectar directamente sin hub USB";
+            }
+        } catch (error) {
+            this.state.rawResponse = `❌ ERROR AL PROBAR CONEXIÓN:\n\n${error.message}\n\n`;
+            this.state.rawResponse += "Verifica:\n";
+            this.state.rawResponse += "- Cable USB conectado\n";
+            this.state.rawResponse += "- Impresora encendida\n";
+            this.state.rawResponse += "- Puerto serial correcto\n";
+        }
+    }
+
+    /**
      * Envía un flag (bandera de configuración)
      */
     async sendFlag() {

@@ -44,13 +44,23 @@ export class SerialConnection {
             }
 
             this.port = await navigator.serial.requestPort();
+            
+            // Obtener info del puerto (útil para debug)
+            const info = this.port.getInfo();
+            console.log("SerialConnection:: Puerto seleccionado:", {
+                usbVendorId: info.usbVendorId ? `0x${info.usbVendorId.toString(16)}` : 'N/A',
+                usbProductId: info.usbProductId ? `0x${info.usbProductId.toString(16)}` : 'N/A',
+            });
+            
             await this.port.open(this.config);
             this.isConnected = true;
             
             // Guardar la configuración en localStorage para reconexión automática
             this._savePortConfig();
             
-            console.log("SerialConnection:: Puerto serial conectado", this.config);
+            console.log("SerialConnection:: Puerto serial conectado con config:", this.config);
+            console.log("SerialConnection:: TIP: Si tienes timeouts, prueba conectar la impresora directamente (sin hub USB)");
+            
             return true;
         } catch (error) {
             console.error("SerialConnection:: Error al conectar puerto serial", error);
