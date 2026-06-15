@@ -97,14 +97,8 @@ class SaleOrderLine(models.Model):
             elif line.currency_id.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
             else:
-                price_in_company = line.currency_id._convert(
+                line.foreign_price = line.currency_id._convert(
                     line.price_unit,
-                    company_currency,
-                    line.company_id,
-                    order_date,
-                )
-                line.foreign_price = company_currency._convert(
-                    price_in_company,
                     foreign_currency,
                     line.company_id,
                     order_date,

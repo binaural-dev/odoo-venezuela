@@ -163,22 +163,7 @@ class AccountMove(models.Model):
             The rate of the payment
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.ref("base.VEF").id,
-            fields.Date.today(),
-        )
-        return rate_values.get("foreign_rate", 0)
-
-    def default_rate(self):
-        """
-        This method is used to get the rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.ref("base.VEF").id,
+            self.currency_id.id or self.env.company.currency_id.id,
             fields.Date.today(),
         )
         return rate_values.get("foreign_rate", 0)
@@ -203,7 +188,7 @@ class AccountMove(models.Model):
             The inverse rate of the payment
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
-            self.currency_id.id or self.env.ref("base.VEF").id,
+            self.currency_id.id or self.env.company.currency_id.id,
             fields.Date.today(),
         )
         return rate_values.get("foreign_inverse_rate", 0)
@@ -280,6 +265,22 @@ class AccountMove(models.Model):
                                             compute='_compute_foreign_untaxed_total' )
     amount = fields.Float(tracking=True)
 
+    real_portion_amount = fields.Monetary(
+        string=_("Real Portion"),
+        currency_field='company_currency_id',
+        help=_("Accumulated remainder from cross-currency rounding."),
+    )
+    real_portion_count = fields.Integer(
+        string=_("Real Portion Adjustments"),
+        default=0,
+    )
+    # Stored to avoid KeyError in trigger tree when
+    # account.move.line.company_currency_id (stored related)
+    # forces the dependency move_id.company_currency_id
+    company_currency_id = fields.Many2one(
+        related='company_id.currency_id', readonly=True, store=True,
+    )
+
     amount_residual_company = fields.Monetary(
         string='residual amount',
         compute='_compute_amount',
@@ -322,11 +323,6 @@ class AccountMove(models.Model):
                 move.invoice_date = move.invoice_date_display
 
 
-    @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
-        context = self.with_context(active_test=False)
-        return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
-
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
     @api.model
@@ -334,7 +330,7 @@ class AccountMove(models.Model):
         context = self.with_context(active_test=False)
         return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
     
-    @api.depends('tax_totals')
+    @api.depends("tax_totals", "currency_id", "invoice_date", "amount_untaxed")
     def _compute_foreign_untaxed_total(self):
         """
         Compute the foreign total untaxed of the invoice using the tax_totals
@@ -347,9 +343,22 @@ class AccountMove(models.Model):
                 and move.tax_totals
             ):
                 continue
-            move.foreign_untaxed_total = move.tax_totals.get(
-                "base_amount_foreign_currency", 0
-            )
+            fc = move.company_id.foreign_currency_id
+            if (
+                move.currency_id
+                and move.currency_id != move.company_id.currency_id
+                and move.currency_id != fc
+            ):
+                move.foreign_untaxed_total = move.currency_id._convert(
+                    move.amount_untaxed,
+                    fc,
+                    move.company_id,
+                    move.invoice_date or fields.Date.today(),
+                )
+            else:
+                move.foreign_untaxed_total = move.tax_totals.get(
+                    "base_amount_foreign_currency", 0
+                )
          
     @api.depends('currency_id', 'invoice_date')
     def _compute_move_currency_to_company_currency_rate(self):
@@ -371,11 +380,27 @@ class AccountMove(models.Model):
                     date=move._get_invoice_currency_rate_date(),
                 )
 
-    @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
+    @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit", "currency_id", "amount_total", "invoice_date")
     def _compute_total_debit_credit(self):
         for move in self:
-            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
-            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
+            fc = move.company_id.foreign_currency_id
+            if (
+                move.is_invoice(include_receipts=True)
+                and move.currency_id
+                and move.currency_id != move.company_id.currency_id
+                and move.currency_id != fc
+            ):
+                total = move.currency_id._convert(
+                    move.amount_total,
+                    fc,
+                    move.company_id,
+                    move.invoice_date or fields.Date.today(),
+                )
+                move.foreign_debit = total
+                move.foreign_credit = total
+            else:
+                move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
+                move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
             move.foreign_balance = move.foreign_debit - move.foreign_credit
 
     @api.depends("invoice_line_ids", "tax_totals")
@@ -531,12 +556,7 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
-        # move_currency_to_company_currency_rate = vals.get('move_currency_to_company_currency_rate', False)
-        # if move_currency_to_company_currency_rate:
-        #     for move in self:
-        #         vals.update({"last_foreign_rate": move.foreign_rate})
-        #         vals.update({"foreign_rate": move_currency_to_company_currency_rate})
-        #A REALIZAR PARA INTEGRA FLEXIBLE
+        # TODO: To be done for flexible integration
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
@@ -862,11 +882,8 @@ class AccountMove(models.Model):
             if move.is_invoice() and move.invoice_line_ids:
                 move.foreign_taxable_income = move.tax_totals["base_amount_foreign_currency"]
 
-    @api.depends("tax_totals")
+    @api.depends("tax_totals", "currency_id", "invoice_date", "amount_total")
     def _compute_foreign_total_billed(self):
-        """
-        Compute the foreign total billed of the invoice
-        """
         for move in self:
             move.foreign_total_billed = 0
             if not (
@@ -875,7 +892,22 @@ class AccountMove(models.Model):
                 and move.tax_totals
             ):
                 continue
-            move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
+            fc = move.company_id.foreign_currency_id
+            if (
+                move.currency_id
+                and move.currency_id != move.company_id.currency_id
+                and move.currency_id != fc
+            ):
+                move.foreign_total_billed = move.currency_id._convert(
+                    move.amount_total,
+                    fc,
+                    move.company_id,
+                    move.invoice_date or fields.Date.today(),
+                )
+            else:
+                move.foreign_total_billed = move.tax_totals.get(
+                    "total_amount_foreign_currency", 0
+                )
 
     #override of base 
     @api.depends(
@@ -890,7 +922,7 @@ class AccountMove(models.Model):
         'foreign_rate',
     )
     def _compute_tax_totals(self):
-        # Adaptar el contexto para que el método de impuestos pueda recuperar el registro de factura
+        # Adapt context so tax method can retrieve invoice record
         for move in self:
             ctx = self.env.context.copy()
             ctx.update({'active_id': move.id, 'active_model': move._name})
@@ -1206,8 +1238,8 @@ class AccountMove(models.Model):
                     and line.display_type == "product"
                 ):
                     raise ValidationError(_("All added lines must indicate the product."))
-    #TODO:Funciones duplicadas de la logica de negocio de Odoo para el manejo de moneda foranea.
-    #FUNCIONES FORANEAS
+    # TODO: Functions duplicated from Odoo business logic for foreign currency handling.
+    # FOREIGN FUNCTIONS
     def _get_rounded_foreign_base_and_tax_lines(self, round_from_tax_lines=True):
         """ Small helper to extract the base and tax lines for the taxes computation from the current move.
         This is a duplicate of Odoo's logic for handling foreign currency.
@@ -1278,7 +1310,6 @@ class AccountMove(models.Model):
             special_mode=False if is_invoice else 'total_excluded',
         )
 
-    #TODO:FOREIGN
     def _prepare_epd_foreign_base_line_for_taxes_computation(self, epd_line):
         """ Convert an account.move.line having display_type='epd' into a base line for the taxes computation.
         This is a duplicate of Odoo's logic for handling foreign currency.
@@ -1289,10 +1320,17 @@ class AccountMove(models.Model):
         self.ensure_one()
         sign = self.direction_sign
         rate = self.foreign_rate
+        rate_date = self.invoice_date if self.is_invoice(include_receipts=True) else self.date
+        price_unit = sign * epd_line.currency_id._convert(
+            epd_line.amount_currency,
+            self.company_id.foreign_currency_id,
+            self.company_id,
+            rate_date or fields.Date.context_today(self),
+        )
 
         return self.env['account.tax']._prepare_base_line_for_taxes_computation(
             epd_line,
-            price_unit=epd_line.foreign_price,
+            price_unit=price_unit,
             quantity=1.0,
             sign=sign,
             special_mode='total_excluded',
@@ -1301,7 +1339,7 @@ class AccountMove(models.Model):
             is_refund=self.move_type in ('out_refund', 'in_refund'),
             rate=rate,
         )
-    #foreign function
+
     def _prepare_cash_rounding_foreign_base_line_for_taxes_computation(self, cash_rounding_line):
         """ Convert an account.move.line having display_type='rounding' into a base line for the taxes computation.
         This is a duplicate of Odoo's logic for handling foreign currency.
@@ -1312,10 +1350,17 @@ class AccountMove(models.Model):
         self.ensure_one()
         sign = self.direction_sign
         rate = self.foreign_rate
+        rate_date = self.invoice_date if self.is_invoice(include_receipts=True) else self.date
+        price_unit = sign * cash_rounding_line.currency_id._convert(
+            cash_rounding_line.amount_currency,
+            self.company_id.foreign_currency_id,
+            self.company_id,
+            rate_date or fields.Date.context_today(self),
+        )
 
         return self.env['account.tax']._prepare_base_line_for_taxes_computation(
             cash_rounding_line,
-            price_unit=cash_rounding_line.foreign_price,
+            price_unit=price_unit,
             quantity=1.0,
             sign=sign,
             special_mode='total_excluded',
@@ -1324,7 +1369,6 @@ class AccountMove(models.Model):
             is_refund=self.move_type in ('out_refund', 'in_refund'),
             rate=rate,
         )
-    #FIN DE FUNCIONES FORANEAS
 # Unbalanced Lines Synchronization
     @contextmanager
     def _sync_tax_lines(self, container):
@@ -1371,6 +1415,67 @@ class AccountMove(models.Model):
                 for fname in values
             )
 
+        # ── Helpers ──────────────────────────────────────────────────
+        def _snapshot(moves, line_fn, fields_fn):
+            return {
+                move: {
+                    line: {field: get_value(line, field) for field in fields_fn(line)}
+                    for line in line_fn(move)
+                }
+                for move in moves
+            }
+
+        def _round_mode(move, vals_before, base_before, tax_before, base_lines, tax_lines):
+            if move.is_invoice(include_receipts=True) and (
+                field_has_changed(vals_before, move, 'currency_id')
+                or field_has_changed(vals_before, move, 'move_type')
+            ):
+                return False
+            changed = list(get_changed_lines(base_before, base_lines))
+            if changed:
+                rftl = (
+                    all(not line.tax_ids and not base_before.get(line, {}).get('tax_ids') for line in changed)
+                    or (list(tax_before) != list(tax_lines)
+                        or any(self.env.is_protected(line._fields[fname], line)
+                               for line in tax_lines for fname in tax_before[line]))
+                )
+                if rftl and any(line[field] for line in changed for field in ('amount_currency', 'balance')):
+                    return None
+                return rftl
+            if any(get_changed_lines(base_before, base_lines, fields=['tax_ids'])):
+                return any_field_has_changed(tax_before, tax_lines)
+            if any(line not in base_lines for line, values in base_before.items() if values['tax_ids']):
+                return any_field_has_changed(tax_before, tax_lines)
+            return None
+
+        def _find_foreign_update(record_id, foreign_section):
+            for item in foreign_section:
+                if item[0]['record'].id == record_id:
+                    return item[-1].get('amount_currency', 0)
+            return None
+
+        def _find_foreign_add(rep_line_id, account_id, foreign_section):
+            for item in foreign_section:
+                if item.get('tax_repartition_line_id') == rep_line_id and item.get('account_id') == account_id:
+                    return item.get('amount_currency', 0)
+            return None
+
+        def _foreign_fallback(balance):
+            rate_date = move.invoice_date if move.is_invoice(include_receipts=True) else move.date
+            return move.company_id.currency_id._convert(
+                balance, move.foreign_currency_id, move.company_id,
+                rate_date or fields.Date.context_today(move),
+            )
+
+        def _write_line(line, to_update):
+            if is_write_needed(line, to_update):
+                line.write(to_update)
+            else:
+                fb = to_update.get('foreign_balance')
+                if fb is not None and getattr(line, 'foreign_balance', None) != fb:
+                    line.write({'foreign_balance': fb})
+        # ── End helpers ──────────────────────────────────────────────
+
         moves_values_before = {
             move: {
                 field: get_value(move, field)
@@ -1379,26 +1484,8 @@ class AccountMove(models.Model):
             for move in container['records']
             if move.state == 'draft'
         }
-        base_lines_values_before = {
-            move: {
-                line: {
-                    field: get_value(line, field)
-                    for field in get_base_line_tracked_fields(line)
-                }
-                for line in get_base_lines(move)
-            }
-            for move in container['records']
-        }
-        tax_lines_values_before = {
-            move: {
-                line: {
-                    field: get_value(line, field)
-                    for field in get_tax_line_tracked_fields(line)
-                }
-                for line in get_tax_lines(move)
-            }
-            for move in container['records']
-        }
+        base_lines_values_before = _snapshot(container['records'], get_base_lines, get_base_line_tracked_fields)
+        tax_lines_values_before = _snapshot(container['records'], get_tax_lines, get_tax_line_tracked_fields)
         yield
 
         to_delete = []
@@ -1409,153 +1496,334 @@ class AccountMove(models.Model):
 
             tax_lines = get_tax_lines(move)
             base_lines = get_base_lines(move)
-            move_tax_lines_values_before = tax_lines_values_before.get(move, {})
-            move_base_lines_values_before = base_lines_values_before.get(move, {})
-            if (
-                move.is_invoice(include_receipts=True)
-                and (
-                    field_has_changed(moves_values_before, move, 'currency_id')
-                    or field_has_changed(moves_values_before, move, 'move_type')
-                )
-            ):
-                # Changing the type of an invoice using 'switch to refund' feature or just changing the currency.
-                round_from_tax_lines = False
-            elif changed_lines := list(get_changed_lines(move_base_lines_values_before, base_lines)):
-                # A base line has been modified.
-                round_from_tax_lines = (
-                    # The changed lines don't affect the taxes.
-                    all(
-                        not line.tax_ids and not move_base_lines_values_before.get(line, {}).get('tax_ids')
-                        for line in changed_lines
-                    )
-                    # Keep the tax lines amounts if an amount has been manually computed.
-                    or (
-                        list(move_tax_lines_values_before) != list(tax_lines)
-                        or any(
-                            self.env.is_protected(line._fields[fname], line)
-                            for line in tax_lines
-                            for fname in move_tax_lines_values_before[line]
-                        )
-                    )
-                )
+            move_tax_before = tax_lines_values_before.get(move, {})
+            move_base_before = base_lines_values_before.get(move, {})
 
-                # If the move has been created with all lines including the tax ones and the balance/amount_currency are provided on
-                # base lines, we don't need to recompute anything.
-                if (
-                    round_from_tax_lines                             
-                    and any(line[field] for line in changed_lines for field in ('amount_currency', 'balance'))
-                ):
-                    continue
-            elif any_line := get_changed_lines(move_base_lines_values_before, base_lines, fields=['tax_ids']):
-                any_line = any(any_line)
-                round_from_tax_lines = any_field_has_changed(move_tax_lines_values_before, tax_lines)
-            elif any(line not in base_lines for line, values in move_base_lines_values_before.items() if values['tax_ids']):
-                # Removed a base line affecting the taxes.
-                round_from_tax_lines = any_field_has_changed(move_tax_lines_values_before, tax_lines)
-            else:
+            round_mode = _round_mode(move, moves_values_before, move_base_before, move_tax_before, base_lines, tax_lines)
+            if round_mode is None:
                 continue
 
-            base_lines_values, tax_lines_values = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_from_tax_lines)
-            foreign_lines_values, foreign_tax_lines_values = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=False)
-            AccountTax._add_accounting_data_in_base_lines_tax_details(base_lines_values, move.company_id, include_caba_tags=move.always_tax_exigible)
-            AccountTax._add_accounting_data_in_base_lines_tax_details(foreign_lines_values, move.company_id, include_caba_tags=move.always_tax_exigible)
-            tax_results = AccountTax._prepare_tax_lines(base_lines_values, move.company_id, tax_lines=tax_lines_values)
-            foreign_tax_results = AccountTax._prepare_tax_lines(foreign_lines_values, move.company_id, tax_lines=foreign_tax_lines_values)
+            blv, tlv = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_mode)
+            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=False)
+            AccountTax._add_accounting_data_in_base_lines_tax_details(blv, move.company_id, include_caba_tags=move.always_tax_exigible)
+            AccountTax._add_accounting_data_in_base_lines_tax_details(flv, move.company_id, include_caba_tags=move.always_tax_exigible)
+            tax_results = AccountTax._prepare_tax_lines(blv, move.company_id, tax_lines=tlv)
+            foreign_tax_results = AccountTax._prepare_tax_lines(flv, move.company_id, tax_lines=ftlv)
+
+            # ── Fix multi-currency rounding ──────────────────────────
+            if move.is_invoice(include_receipts=True) and move.currency_id != move.company_id.currency_id:
+                rate = move.invoice_currency_rate
+                if rate:
+                    cc = move.company_id.currency_id
+                    for vals in tax_results['tax_lines_to_add']:
+                        vals['balance'] = cc.round(vals['amount_currency'] / rate)
+                    for (_line, _key, to_update) in tax_results['tax_lines_to_update']:
+                        to_update['balance'] = cc.round(to_update['amount_currency'] / rate)
+                    for (_base_line, to_update) in tax_results['base_lines_to_update']:
+                        to_update['balance'] = cc.round(to_update['amount_currency'] / rate)
+
+            # ── Base lines ───────────────────────────────────────────
             for base_line, to_update in tax_results['base_lines_to_update']:
                 line = base_line['record']
-                foreign_base_update = None
-                for f_base_line, f_to_update in foreign_tax_results.get('base_lines_to_update', []):
-                    if f_base_line['record'].id == line.id:
-                        foreign_base_update = f_to_update
-                        break
-                if foreign_base_update:
-                    to_update['foreign_balance'] = foreign_base_update.get('amount_currency', 0)
-                else:
-                    # Fallback: convert company currency balance to foreign currency.
-                    # Use invoice_date for invoices, date for journal entries.
-                    rate_date = move.invoice_date if move.is_invoice(include_receipts=True) else move.date
-                    to_update['foreign_balance'] = move.company_id.currency_id._convert(
-                        to_update.get('balance', 0),
-                        move.foreign_currency_id,
-                        move.company_id,
-                        rate_date or fields.Date.context_today(move),
-                    )
-                if is_write_needed(line, to_update):
-                    line.write(to_update)
-                else:
-                    foreign_balance_new = to_update.get('foreign_balance')
-                    if foreign_balance_new is not None and getattr(line, 'foreign_balance', None) != foreign_balance_new:
-                        line.write({'foreign_balance': foreign_balance_new})
+                fb = _find_foreign_update(line.id, foreign_tax_results.get('base_lines_to_update', []))
+                if fb is None:
+                    fb = _foreign_fallback(to_update.get('balance', 0))
+                to_update['foreign_balance'] = fb
+                _write_line(line, to_update)
+
+            # ── Delete stale tax lines ───────────────────────────────
             for tax_line_vals in tax_results['tax_lines_to_delete']:
                 to_delete.append(tax_line_vals['record'].id)
 
+            # ── New tax lines ────────────────────────────────────────
             for tax_line_vals in tax_results['tax_lines_to_add']:
-                # Default: convert company currency balance to foreign currency via _convert.
-                # Use invoice_date for invoices, date for journal entries.
-                rate_date = move.invoice_date if move.is_invoice(include_receipts=True) else move.date
-                foreign_balance = move.company_id.currency_id._convert(
-                    tax_line_vals.get('balance', 0),
-                    move.foreign_currency_id,
-                    move.company_id,
-                    rate_date or fields.Date.context_today(move),
+                fb = _find_foreign_add(
+                    tax_line_vals.get('tax_repartition_line_id'),
+                    tax_line_vals.get('account_id'),
+                    foreign_tax_results.get('tax_lines_to_add', []),
                 )
-                for f_tax_line_vals in foreign_tax_results.get('tax_lines_to_add', []):
-                    if (
-                        f_tax_line_vals.get('tax_repartition_line_id') == tax_line_vals.get('tax_repartition_line_id') and
-                        f_tax_line_vals.get('account_id')  == tax_line_vals.get('account_id')
-                    ):
-                        foreign_balance = f_tax_line_vals.get('amount_currency', foreign_balance)
-                        break
+                if fb is None:
+                    fb = _foreign_fallback(tax_line_vals.get('balance', 0))
                 to_create.append({
-                    **tax_line_vals,
-                    'display_type': 'tax',
-                    'move_id': move.id, 
-                    'foreign_balance': foreign_balance,
+                    **tax_line_vals, 'display_type': 'tax', 'move_id': move.id,
+                    'foreign_balance': fb,
                 })
 
+            # ── Existing tax lines ───────────────────────────────────
             for tax_line_vals, grouping_key, to_update in tax_results['tax_lines_to_update']:
                 line = tax_line_vals['record']
-                foreign_tax_update = None
-                for f_tax_line_vals, f_grouping_key, f_to_update in foreign_tax_results.get('tax_lines_to_update', []):
-                    if f_tax_line_vals['record'].id == line.id:
-                        foreign_tax_update = f_to_update
-                        break
-
-                if not foreign_tax_update:
-                    for f_tax_line_vals in foreign_tax_results.get('tax_lines_to_add', []):
-                        if (
-                            f_tax_line_vals.get('tax_repartition_line_id') == tax_line_vals.get('tax_repartition_line_id').id and
-                            f_tax_line_vals.get('account_id') == tax_line_vals.get('account_id').id
-                        ):
-                            foreign_tax_update = f_tax_line_vals
-                            break
-
-                if foreign_tax_update:
-                    to_update['foreign_balance'] = foreign_tax_update.get('amount_currency', 0)
-                else:
-                    # Fallback: convert company currency balance to foreign currency via _convert.
-                    # Using amount_currency is wrong for company-currency invoices because
-                    # amount_currency is in VEF, not in the foreign currency (USD).
-                    # Use invoice_date for invoices, date for journal entries.
-                    rate_date = move.invoice_date if move.is_invoice(include_receipts=True) else move.date
-                    to_update['foreign_balance'] = move.company_id.currency_id._convert(
-                        to_update.get('balance', 0),
-                        move.foreign_currency_id,
-                        move.company_id,
-                        rate_date or fields.Date.context_today(move),
+                fb = _find_foreign_update(line.id, foreign_tax_results.get('tax_lines_to_update', []))
+                if fb is None:
+                    fb = _find_foreign_add(
+                        tax_line_vals.get('tax_repartition_line_id').id if tax_line_vals.get('tax_repartition_line_id') else 0,
+                        tax_line_vals.get('account_id').id if tax_line_vals.get('account_id') else 0,
+                        foreign_tax_results.get('tax_lines_to_add', []),
                     )
-                if is_write_needed(line, to_update):
-                    line.write(to_update)
-                else:
-                    # Si solo foreign_balance cambió, igual lo escribimos
-                    foreign_balance_new = to_update.get('foreign_balance')
-                    if foreign_balance_new is not None and getattr(line, 'foreign_balance', None) != foreign_balance_new:
-                        line.write({'foreign_balance': foreign_balance_new})
+                if fb is None:
+                    fb = _foreign_fallback(to_update.get('balance', 0))
+                to_update['foreign_balance'] = fb
+                _write_line(line, to_update)
 
         if to_delete:
             self.env['account.move.line'].browse(to_delete).with_context(dynamic_unlink=True).unlink()
         if to_create:
             self.env['account.move.line'].create(to_create)
+
+    # ── Sync dynamic lines: distribute foreign in PT ─────────────────────
+    @contextmanager
+    def _sync_dynamic_lines(self, container):
+        with super()._sync_dynamic_lines(container):
+            yield
+        self._distribute_foreign_pt_residual(container['records'])
+        self._distribute_final_real_portion(container['records'])
+        self._distribute_foreign_pt_residual(container['records'])
+        self._fix_company_currency_rounding(container['records'])
+
+    def _distribute_foreign_pt_residual(self, moves):
+        """Distributes foreign_debit/foreign_credit across payment term lines
+        proportionally to the native balance, forcing the total sum
+        of foreign_debit = total sum of foreign_credit of the entry.
+
+        Runs at the end of _sync_dynamic_lines (initial distribution)
+        and also from the write hook of AccountMoveLine when the real
+        portion adjusts the native balances of PT lines.
+        """
+        for move in moves:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            lines = move.line_ids
+            pt_lines = lines.filtered(
+                lambda l: l.display_type == "payment_term"
+            )
+            if not pt_lines:
+                continue
+            other = lines.filtered(
+                lambda l: l.display_type != "payment_term"
+            )
+            fc = move.company_id.foreign_currency_id
+
+            # For third currency use aggregate (total conversion),
+            # for base/alternate currency use line-by-line sum
+            if move.currency_id not in (move.company_id.currency_id, fc):
+                aggregate = move.currency_id._convert(
+                    abs(move.amount_total),
+                    fc,
+                    move.company_id,
+                    move.invoice_date or fields.Date.today(),
+                )
+                total_debit = aggregate
+                total_credit = aggregate
+            else:
+                total_debit = sum(other.mapped("foreign_debit"))
+                total_credit = sum(other.mapped("foreign_credit"))
+
+            sorted_pt = pt_lines.sorted("id")
+            n = len(sorted_pt)
+            total_balance = sum(abs(l.balance) for l in sorted_pt)
+
+            for i, pt in enumerate(sorted_pt):
+                is_credit_side = pt.credit > 0
+                foreign_total = total_debit if is_credit_side else total_credit
+
+                if n == 1:
+                    my_foreign = foreign_total
+                elif i < n - 1:
+                    ratio = abs(pt.balance) / total_balance if total_balance else 0.0
+                    my_foreign = fc.round(ratio * foreign_total)
+                else:
+                    assigned = sum(
+                        fc.round(abs(l.balance) / total_balance * foreign_total)
+                        if total_balance else 0.0
+                        for l in list(sorted_pt)[:-1]
+                    )
+                    my_foreign = foreign_total - assigned
+
+                new_fd = my_foreign if not is_credit_side else 0.0
+                new_fc = my_foreign if is_credit_side else 0.0
+                if not fc.is_zero(pt.foreign_debit - new_fd) or not fc.is_zero(pt.foreign_credit - new_fc):
+                    pt.write({
+                        'foreign_debit': new_fd,
+                        'foreign_credit': new_fc,
+                        'not_foreign_recalculate': True,
+                    })
+
+            # Adjust a non-PT line to absorb the rounding
+            # difference between the aggregate and the line-by-line sum,
+            # keeping the entry balanced to the correct value.
+            if move.currency_id not in (move.company_id.currency_id, fc):
+                side_total = sum(other.mapped("foreign_credit")) if move.is_inbound() else sum(other.mapped("foreign_debit"))
+                diff = aggregate - side_total
+                if not fc.is_zero(diff):
+                    target_key = "foreign_credit" if move.is_inbound() else "foreign_debit"
+                    target = other.filtered(lambda l: l[target_key] > 0).sorted(key=lambda l: -l[target_key])[:1]
+                    if target:
+                        target.write({
+                            target_key: target[0][target_key] + diff,
+                            'not_foreign_recalculate': True,
+                        })
+
+    # ── Real Portion ────────────────────────────────────────────
+
+    def _distribute_final_real_portion(self, moves):
+        for move in moves:
+            if move.state != 'draft':
+                continue
+            if move.currency_id == move.company_currency_id:
+                continue
+            key = ('_real_portion_distributed', move.id)
+            if self.env.cr.cache.get(key):
+                continue
+            self.env.cr.cache[key] = True
+            cc = move.company_currency_id
+            if move.is_invoice(include_receipts=True):
+                self._distribute_invoice_real_portion(move, cc)
+            else:
+                self._distribute_entry_real_portion(move, cc)
+
+    def _distribute_invoice_real_portion(self, move, cc):
+        rate = move.invoice_currency_rate
+        if not rate:
+            return
+
+        tax_lines = move.line_ids.filtered('tax_repartition_line_id')
+        for tax_line in tax_lines:
+            correct_balance = cc.round(tax_line.amount_currency / rate)
+            if not cc.is_zero(correct_balance - tax_line.balance):
+                tax_line.balance = correct_balance
+
+        non_pt = move.line_ids.filtered(
+            lambda l: l.display_type != 'payment_term'
+        )
+        if not non_pt:
+            return
+
+        total_currency = sum(non_pt.mapped('amount_currency'))
+        expected_total = cc.round(total_currency / rate)
+        actual_non_pt = sum(non_pt.mapped('balance'))
+
+        total_balance = sum(move.line_ids.mapped('balance'))
+        if cc.is_zero(total_balance):
+            return
+
+        pt_lines = move.line_ids.filtered(
+            lambda l: l.display_type == 'payment_term'
+        )
+        if pt_lines:
+            remaining = cc.round(
+                expected_total - actual_non_pt - (move.real_portion_amount or 0.0)
+            )
+            if cc.is_zero(remaining):
+                return
+            self._distribute_to_lines(pt_lines, remaining, cc)
+            move.real_portion_amount = cc.round(
+                (move.real_portion_amount or 0.0) + remaining
+            )
+            move.real_portion_count += 1
+        else:
+            remaining = cc.round(expected_total - actual_non_pt)
+            if cc.is_zero(remaining):
+                return
+            target_lines = move.line_ids.filtered(
+                lambda l: not l.tax_repartition_line_id
+            )
+            self._distribute_to_lines(target_lines, remaining, cc)
+            move.real_portion_amount = 0.0
+            move.real_portion_count += 1
+
+    def _distribute_entry_real_portion(self, move, cc):
+        amount = cc.round(move.real_portion_amount or 0.0)
+        if cc.is_zero(amount):
+            return
+
+        counterpart = move.line_ids.filtered(
+            lambda l: not l.tax_repartition_line_id
+            and l.account_id.account_type not in ('asset_cash', 'liability_credit_card')
+        )
+        if counterpart:
+            self._distribute_to_lines(counterpart, amount, cc)
+            move.real_portion_amount = cc.round(
+                (move.real_portion_amount or 0.0) - amount
+            )
+            move.real_portion_count += 1
+
+    def _fix_company_currency_rounding(self, moves):
+        """Corrects the rounding difference between the line-by-line sum
+        of VEF (balance) and the aggregate conversion of the document
+        currency total to the company currency.
+
+        Adjusts a non-tax non-PT line and compensates with PT lines
+        to keep the entry balanced.
+        """
+        for move in moves:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            if move.currency_id == move.company_currency_id:
+                continue
+            cc = move.company_currency_id
+            pt_lines = move.line_ids.filtered(
+                lambda l: l.display_type == 'payment_term'
+            )
+            if not pt_lines:
+                continue
+            non_pt = move.line_ids - pt_lines
+            if not non_pt:
+                continue
+
+            expected = move.currency_id._convert(
+                abs(move.amount_total),
+                cc,
+                move.company_id,
+                move.invoice_date or fields.Date.today(),
+            )
+            actual = sum(non_pt.mapped('balance'))
+            if actual < 0:
+                expected = -expected
+
+            diff = expected - actual
+            if cc.is_zero(diff):
+                continue
+
+            target_lines = non_pt.filtered(
+                lambda l: not l.tax_repartition_line_id
+            )
+            if not target_lines:
+                continue
+
+            self._distribute_to_lines(target_lines, diff, cc)
+            self._distribute_to_lines(pt_lines, -diff, cc)
+
+    @api.model
+    def _distribute_to_lines(self, lines, amount, currency):
+        if currency.is_zero(amount) or not lines:
+            return
+
+        sign = 1 if amount > 0 else -1
+        abs_amount = abs(amount)
+        bal_map = {line.id: line.balance for line in lines}
+        total_abs = sum(abs(b) for b in bal_map.values())
+
+        if currency.is_zero(total_abs):
+            return
+
+        sorted_ids = sorted(lines.ids, key=lambda lid: -abs(bal_map[lid]))
+        remaining_units = round(abs_amount / currency.rounding)
+        n = len(sorted_ids)
+
+        for i, line_id in enumerate(sorted_ids):
+            if remaining_units <= 0:
+                break
+            cur_bal = bal_map[line_id]
+            if i < n - 1:
+                ratio = abs(cur_bal) / total_abs
+                share = currency.round(ratio * abs_amount)
+                units = round(share / currency.rounding)
+                if units > remaining_units:
+                    units = remaining_units
+            else:
+                units = remaining_units
+            new_balance = currency.round(cur_bal + sign * units * currency.rounding)
+            lines.browse(line_id).balance = new_balance
+            remaining_units -= units
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_posted_or_was_posted(self):

@@ -24,8 +24,8 @@ class AccountTax(models.Model):
             base_lines, currency, company, cash_rounding
         )
 
-        #only ves currency
-        ves_currency = self.env.ref('base.VEF')
+
+        ves_currency = self.env.company.currency_id
         
         active_model = self.env.context.get('active_model')
         active_id = self.env.context.get('active_id')
@@ -130,7 +130,7 @@ class AccountTax(models.Model):
         )
         #amounts in foreign currency
         res['foreign_currency_id'] = foreign_res['currency_id']
-        res['ves_currency_id'] = self.env.ref('base.VEF').id
+        res['ves_currency_id'] = self.env.company.currency_id.id
         res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
         res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
         res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
