@@ -613,7 +613,7 @@ class SaleOrder(models.Model):
         for sale in self:
             picking = sale.picking_ids
             if product_limit > 0:
-                picking_moves = picking.move_ids_without_package
+                picking_moves = picking.move_ids
                 picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
                 picking_vals = {
                     key: (value[0] if isinstance(value, tuple) else value)
@@ -624,10 +624,10 @@ class SaleOrder(models.Model):
                 picking_vals['user_id'] = picking.user_id.id
                 
                 list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
-                picking.move_ids_without_package = list_pickings_moves[0]
+                picking.move_ids = list_pickings_moves[0]
                 
                 for list_moves in list_pickings_moves[1:]:
-                    picking_vals["move_ids_without_package"] = list_moves
+                    picking_vals["move_ids"] = list_moves
                     new_picking = self.env['stock.picking'].create(picking_vals)
                 
 
