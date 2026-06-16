@@ -290,11 +290,29 @@ patch(PosStore.prototype, {
    * @returns {Object}
    */
   _convertOrderForDriver(order, invoiceData) {
+    // Mapear líneas de productos con nombres de campos correctos
+    const lines = (invoiceData.invoice_lines || []).map(line => ({
+      product_name: line.name,
+      product_code: line.code || line.default_code,
+      price_unit: line.price_unit,
+      quantity: line.quantity,
+      fiscal_code: line.tax,  // 0=Exento, 1=General, 2=Reducido, 3=Adicional
+      discount: line.discount || 0
+    }));
+
+    // Mapear líneas de pago con nombres de campos correctos
+    const payment_lines = (invoiceData.payment_lines || []).map(payment => ({
+      payment_method_code: payment.payment_method,
+      amount: payment.amount
+    }));
+
     return {
       partner: invoiceData.partner_id || null,
-      lines: invoiceData.invoice_lines || [],
-      payment_ids: invoiceData.payment_lines || [],
-      total_discount: order.get_total_discount() || 0,
+      lines: lines,
+      payment_lines: payment_lines,
+      has_cashbox: invoiceData.has_cashbox || false,
+      additional_lines: invoiceData.info || [],
+      invoice_affected: invoiceData.invoice_affected || null
     };
   },
 
