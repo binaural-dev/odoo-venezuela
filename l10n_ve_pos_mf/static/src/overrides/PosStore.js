@@ -310,6 +310,7 @@ patch(PosStore.prototype, {
       partner: invoiceData.partner_id || null,
       lines: lines,
       payment_lines: payment_lines,
+      flag_21: invoiceData.flag_21 || this.get_flag_21 || "00",
       has_cashbox: invoiceData.has_cashbox || false,
       additional_lines: invoiceData.info || [],
       invoice_affected: invoiceData.invoice_affected || null

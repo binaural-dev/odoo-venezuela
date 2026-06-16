@@ -93,24 +93,42 @@ export class TfhkaDriver {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
 
-        // Verificar status de la impresora antes de enviar (excepto para ENQ)
-        if (checkStatus && command !== 'ENQ') {
+        // Verificar status de la impresora antes de enviar (excepto para ENQ y 199)
+        // Los comandos de control de transacción (9, 199) se saltan la verificación
+        const skipStatusCheck = ['9', '199', 'w'].includes(command);
+        if (checkStatus && command !== 'ENQ' && !skipStatusCheck) {
             const status = await this.getStatus();
             if (!status) {
                 return { success: false, data: "", error: "No se pudo leer el estado de la impresora" };
             }
 
-            // Verificar errores críticos
+            // Verificar errores críticos (STS2)
             if (status.errors && status.errors.length > 0) {
                 const errorMsg = status.errors.join(', ');
                 console.error("TfhkaDriver:: Impresora tiene errores:", errorMsg);
                 return { success: false, data: "", error: `Error de impresora: ${errorMsg}` };
             }
 
-            // Verificar si está ocupada
-            if (status.raw && status.raw.working) {
-                console.warn("TfhkaDriver:: Impresora ocupada, esperando...");
-                await new Promise(resolve => setTimeout(resolve, 1000));
+            // Verificar que la impresora esté en estado "esperando" (STS1)
+            // Equivalente al check del SDK Python: status["code"] not in ["1", "4"]
+            // 0x40 = Test mode, waiting (code 1)
+            // 0x60 = Fiscal mode, waiting (code 4)
+            const sts1 = status.raw?.sts1;
+            const isWaiting = (sts1 === 0x40 || sts1 === 0x60);
+            const isInTransaction = (sts1 === 0x41 || sts1 === 0x61 || sts1 === 0x65 || sts1 === 0x62 || sts1 === 0x42);
+
+            if (isInTransaction) {
+                console.warn("TfhkaDriver:: Impresora tiene transacción abierta (STS1:", sts1?.toString(16), "). Intentando abortar...");
+                const aborted = await this.abortTransaction();
+                if (!aborted) {
+                    return {
+                        success: false,
+                        data: "",
+                        error: `Impresora ocupada (STS1=0x${sts1?.toString(16)}). Transacción previa no pudo ser cancelada. Reinicia la impresora.`
+                    };
+                }
+            } else if (!isWaiting && sts1 !== undefined) {
+                console.warn("TfhkaDriver:: Estado inesperado STS1:", sts1?.toString(16), "- continuando de todas formas");
             }
         }
 
@@ -181,6 +199,61 @@ export class TfhkaDriver {
         }
 
         return { success: false, data: "", error: "Máximo de reintentos alcanzado" };
+    }
+
+    /**
+     * Aborta una transacción fiscal que quedó abierta
+     * Se usa para recuperar la impresora cuando un intento anterior falló a mitad
+     * @returns {Promise<boolean>} - true si se abortó exitosamente
+     */
+    async abortTransaction() {
+        try {
+            console.log("TfhkaDriver:: Intentando abortar transacción colgada...");
+            
+            await this.connection.flushBuffer();
+
+            // Intentar cancelar el documento actual con "9" (Anular Documento)
+            const frame9 = FiscalProtocol.buildFrame("9");
+            await this.connection.write(frame9);
+            const response9 = await this.connection.read(3000);
+            
+            if (response9 && FiscalProtocol.isACK(response9)) {
+                console.log("TfhkaDriver:: Transacción cancelada con comando 9");
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return true;
+            }
+
+            // Si "9" no funcionó, intentar con "199" (Fin de Documento)
+            console.warn("TfhkaDriver:: Comando 9 no respondió, intentando 199...");
+            const frame199 = FiscalProtocol.buildFrame("199");
+            await this.connection.write(frame199);
+            const response199 = await this.connection.read(3000);
+
+            if (response199 && FiscalProtocol.isACK(response199)) {
+                console.log("TfhkaDriver:: Transacción cancelada con comando 199");
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return true;
+            }
+
+            // Verificar si la impresora ya está en reposo después de los intentos
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const statusCheck = await this.getStatus();
+            if (statusCheck) {
+                const sts1 = statusCheck.raw?.sts1;
+                const isNowWaiting = (sts1 === 0x40 || sts1 === 0x60);
+                if (isNowWaiting) {
+                    console.log("TfhkaDriver:: Impresora en reposo tras intentos de abort");
+                    return true;
+                }
+            }
+
+            console.error("TfhkaDriver:: No se pudo abortar la transacción");
+            return false;
+
+        } catch (error) {
+            console.error("TfhkaDriver:: Error al abortar transacción:", error);
+            return false;
+        }
     }
 
     /**
@@ -439,28 +512,48 @@ export class TfhkaDriver {
     }
 
     /**
-     * Imprime una factura fiscal (comando I01 + secuencia de items)
+     * Imprime una factura fiscal (secuencia completa TFHKA)
      * @param {Object} orderData - Datos de la orden del POS
+     * @param {Object} flag21Config - Configuración de formato numérico según flag 21
      * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
      */
-    async printInvoice(orderData) {
+    async printInvoice(orderData, flag21Config = null) {
         if (!this.isConnected) {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
 
+        // Paso 0: Verificar que la impresora esté libre antes de empezar
+        const statusBefore = await this.getStatus();
+        if (!statusBefore) {
+            return { success: false, data: "", error: "No se puede leer el estado de la impresora" };
+        }
+
+        const sts1Before = statusBefore.raw?.sts1;
+        const isWaiting = (sts1Before === 0x40 || sts1Before === 0x60);
+        if (!isWaiting) {
+            console.warn("TfhkaDriver:: Impresora no está en reposo (STS1=0x" + sts1Before?.toString(16) + "), intentando abortar...");
+            const aborted = await this.abortTransaction();
+            if (!aborted) {
+                return {
+                    success: false,
+                    data: "",
+                    error: "La impresora tiene una transacción previa abierta. Reiníciala y vuelve a intentarlo."
+                };
+            }
+        }
+
         try {
             const commands = [];
-            
-            // Determinar formato de números según flag 21 de la impresora
-            // Por ahora usamos el formato más común (flag_21 = "00")
-            const config = {
-                max_amount_int: 8,
-                max_amount_decimal: 2,
-                max_qty_int: 5,
-                max_qty_decimal: 3,
-                max_payment_amount_int: 10,
-                max_payment_amount_decimal: 2
+
+            // Formato de números según flag 21 (default: "00" = estándar)
+            const FLAG21_CONFIGS = {
+                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2 },
             };
+            const flag21Key = String(orderData.flag_21 || "00");
+            const config = flag21Config || FLAG21_CONFIGS[flag21Key] || FLAG21_CONFIGS["00"];
 
             // 1. RIF del cliente
             const vat = orderData.partner?.vat || "V00000000";
@@ -477,7 +570,6 @@ export class TfhkaDriver {
                 const firstLine = addr.substring(0, 30);
                 commands.push(`i${String(infoIndex).padStart(2, '0')}Direccion:${firstLine}`);
                 infoIndex++;
-                
                 const secondLine = addr.substring(30, 70);
                 if (secondLine) {
                     commands.push(`i${String(infoIndex).padStart(2, '0')}${secondLine}`);
@@ -492,68 +584,53 @@ export class TfhkaDriver {
 
             // 4. Items de la orden
             for (const line of orderData.lines || []) {
-                if (line.price_unit <= 0) {
-                    continue; // Saltar descuentos negativos (se manejan aparte)
-                }
+                if (line.price_unit <= 0) continue; // Descuentos negativos se manejan aparte
 
                 const taxChar = this._getTaxCharacter(line.fiscal_code || "1");
-                const price = this._formatAmount(
-                    line.price_unit, 
-                    config.max_amount_int, 
-                    config.max_amount_decimal
-                );
-                const qty = this._formatAmount(
-                    line.quantity || 1, 
-                    config.max_qty_int, 
-                    config.max_qty_decimal
-                );
-                const code = line.product_code ? `|${line.product_code}|` : "";
-                const description = (line.product_name || "PRODUCTO")
+                const price = this._formatAmount(line.price_unit, config.max_amount_int, config.max_amount_decimal);
+                const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
+                const code  = line.product_code ? `|${line.product_code}|` : "";
+                const desc  = (line.product_name || "PRODUCTO")
                     .substring(0, 127)
                     .replace(/Ñ/g, 'N')
-                    .replace(/ñ/g, 'n');
+                    .replace(/ñ/g, 'n')
+                    .trim();
 
-                commands.push(`${taxChar}${price}${qty}${code}${description}`);
+                commands.push(`${taxChar}${price}${qty}${code}${desc}`);
             }
 
             // 5. Subtotal
             commands.push("3");
 
-            // 6. Pagos parciales (si hay más de uno)
+            // 6. Pagos (parciales 2XX + cierre 1XX)
             const payments = orderData.payment_lines || [];
             let closingMethod = "01"; // Por defecto efectivo
 
             if (payments.length > 0) {
-                // Encontrar el pago principal (el de mayor monto)
-                const mainPayment = payments.reduce((prev, current) => 
-                    (current.amount > prev.amount) ? current : prev
-                );
+                // El método de cierre es el de mayor monto
+                const mainPayment = payments.reduce((prev, cur) => cur.amount > prev.amount ? cur : prev);
                 closingMethod = String(mainPayment.payment_method_code || "01").padStart(2, '0');
 
-                // Enviar todos los pagos como parciales
+                // Enviar todos los pagos como parciales (2 + código + monto)
                 for (const payment of payments) {
                     if (payment.amount > 0) {
                         const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
-                        const amount = this._formatAmount(
-                            payment.amount,
-                            config.max_payment_amount_int,
-                            config.max_payment_amount_decimal
-                        );
+                        const amount = this._formatAmount(payment.amount, config.max_payment_amount_int, config.max_payment_amount_decimal);
                         commands.push(`2${methodCode}${amount}`);
                     }
                 }
             }
 
-            // 7. Abrir gaveta (si está configurado)
+            // 7. Abrir gaveta (si está configurado y pago es en efectivo)
             if (orderData.has_cashbox) {
                 commands.push("w");
             }
 
-            // 8. Cierre de documento con método de pago principal
+            // 8. Cierre de documento (1 + código método principal)
             commands.push(`1${closingMethod}`);
 
-            // 9. Líneas adicionales finales (opcional)
-            if (orderData.additional_lines && orderData.additional_lines.length > 0) {
+            // 9. Líneas adicionales al pie (operador, número de pedido, etc.)
+            if (orderData.additional_lines?.length > 0) {
                 for (let i = 0; i < orderData.additional_lines.length; i++) {
                     commands.push(`i${String(i).padStart(2, '0')}${orderData.additional_lines[i]}`);
                 }
@@ -562,40 +639,40 @@ export class TfhkaDriver {
             // 10. Fin de documento
             commands.push("199");
 
-            // Enviar todos los comandos secuencialmente
-            console.log("TfhkaDriver:: Enviando factura con", commands.length, "comandos");
-            
+            // Enviar comandos secuencialmente — sin checkStatus (ya lo hicimos arriba)
+            console.log("TfhkaDriver:: Enviando factura con", commands.length, "comandos:", commands);
+
             for (const cmd of commands) {
-                const result = await this.sendCommand(cmd);
-                
-                // Si el comando falla, cancelar factura
+                // Los comandos de datos (iR*, iS*, items, etc.) se envían sin checkStatus
+                // porque la impresora estará en medio de una transacción (STS1=0x61)
+                const result = await this.sendCommand(cmd, null, false);
+
                 if (!result.success) {
                     console.error("TfhkaDriver:: Comando falló:", cmd, result.error);
-                    
-                    // Intentar cancelar la factura enviando 199
-                    await this.sendCommand("199");
-                    
-                    return { 
-                        success: false, 
-                        data: "", 
-                        error: `Error en comando: ${cmd} - ${result.error}` 
+                    // Intentar cancelar con 9 y luego 199
+                    await this.abortTransaction();
+                    return {
+                        success: false,
+                        data: "",
+                        error: `Error en comando [${cmd}]: ${result.error}`
                     };
                 }
             }
 
-            // Leer el número de factura del status
+            // Leer número de factura del status S1
             const status = await this.getStatus();
-            // TODO: Parsear número de factura desde status S1
-            
-            return { 
-                success: true, 
+            console.log("TfhkaDriver:: Factura impresa correctamente. Status:", status?.statusText);
+
+            return {
+                success: true,
                 data: "Factura impresa correctamente",
-                invoice_number: status ? "Pendiente" : "N/A",
-                error: "" 
+                invoice_number: "Pendiente",  // TODO: leer de S1
+                error: ""
             };
 
         } catch (error) {
             console.error("TfhkaDriver:: Error al imprimir factura", error);
+            await this.abortTransaction();
             return { success: false, data: "", error: error.message };
         }
     }
