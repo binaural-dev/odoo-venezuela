@@ -37,3 +37,4 @@
     "auto_install": False,
     "binaural": True,
 }
+

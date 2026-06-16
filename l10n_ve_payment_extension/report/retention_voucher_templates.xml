@@ -15,13 +15,8 @@
                 <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8" style="text-align: left;">
                     <h6>COMPROBANTE DE RETENCIÓN DEL IMPUESTO AL VALOR AGREGADO</h6>
-                    <p>"Decreto con Rango, Valor y Fuerza de Ley de Reforma de la Ley del Impuesto al Valor agregado
-                        Nro 1.436 del 17 de Noviembre del 2014"
-                        Articulo 11: La Administracion Tributaria podra Designar como Responsable del Pago del
-                        Impuesto, en calidad de Agentes de Retencion a quienes por sus
-                        Funciones Publicas o por Razón de sus Actividades Privadas intervengan en operaciones
-                        Gravadas con el Impuesto Establecido en este Decreto con Rango,
-                        Valor y Fuerza de Ley.
+                    <p>"Este comprobante se emite según lo establecido en el artículo Nº 16 de la Providencia Administrativa Nº 
+                        SNAT/2025/000054 de fecha 02/07/2025, publicado en Gaceta oficial Nº 43.171 de fecha 16 de julio de 2025"
                     </p>
                 </div>
             </div>
@@ -121,33 +116,19 @@
         </div>
 
         <style>
-        .ret-table { width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; box-sizing:border-box; font-family:sans-serif; -webkit-print-color-adjust:exact; -webkit-font-smoothing:antialiased; }
-        .ret-table col { box-sizing:border-box; }
-        .ret-table th, .ret-table td { border:none !important; padding:4px 6px; vertical-align:middle; font-size:10px; }
-        .ret-left { text-align:left; }
-        .ret-num { text-align:right; }
-        .no-wrap { white-space:nowrap; }
-        .ret-num span { display:inline-block; }
-        .sep-cell { padding:0; }
+            .ret-table { width:100%; table-layout:auto; border-collapse:separate; border-spacing:0; box-sizing:border-box; font-family:sans-serif; -webkit-print-color-adjust:exact; -webkit-font-smoothing:antialiased; }
+            .ret-table col { box-sizing:border-box; }
+            .ret-table th, .ret-table td { border:none !important; padding:4px 6px; vertical-align:middle; font-size:10px; }
+            .ret-left { text-align:left; }
+            .ret-num { text-align:right; }
+            .no-wrap { white-space:nowrap; }
+            .ret-num span { display:inline-block; }
+            .sep-cell { padding:0; }
         </style>
 
         <table class="ret-table" role="presentation" aria-hidden="true">
             <colgroup>
-                <col style="width:60px"/>   <!-- 1 Fecha Factura -->
-                <col style="width:60px"/>   <!-- 2 Número de Factura -->
-                <col style="width:70px"/>   <!-- 3 Nro de Control Factura -->
-                <col style="width:70px"/>   <!-- 4 Nota de Débito -->
-                <col style="width:70px"/>   <!-- 5 Nota de Crédito -->
-                <col style="width:80px"/>   <!-- 6 Tipo de Transacción -->
-                <col style="width:90px"/>   <!-- 7 Factura afectada -->
-                <col style="width:110px"/>  <!-- 8 Total Compras Incluyendo el IVA -->
-                <col style="width:100px"/>  <!-- 9 Compras sin derecho a Crédito IVA -->
-                <col style="width:100px"/>  <!-- 10 Base Imponible -->
-                <col style="width:60px"/>   <!-- 11 % Alic -->
-                <col style="width:60px"/>   <!-- 12 % Ret -->
-                <col style="width:90px"/>   <!-- 13 Impuesto IVA -->
-                <col style="width:110px"/>  <!-- 14 IVA Retenido -->
-            </colgroup>
+                <col style="width: 7%"/>   <col style="width: 11%"/>  <col style="width: 11%"/>  <col style="width: 6%"/>   <col style="width: 6%"/>   <col style="width: 7%"/>   <col style="width: 7%"/>   <col style="width: 9%"/>   <col style="width: 8%"/>   <col style="width: 9%"/>   <col style="width: 4%"/>   <col style="width: 4%"/>   <col style="width: 8%"/>   <col style="width: 10%"/>  </colgroup>
 
             <thead style="font-size:12px;">
                 <tr>
@@ -188,13 +169,14 @@
                     <tr>
                         <!-- 1 Fecha Factura -->
                         <td class="ret-left">
+
                             <t t-if="line.move_id.invoice_date"><span t-esc="line.move_id.invoice_date.strftime('%d/%m/%Y')"/></t><t t-else="">--</t>
                         </td>
 
                         <!-- 2 Número de Factura -->
                         <td class="ret-num">
                             <t t-if="line.move_id.move_type in ['out_invoice','out_contingence','in_invoice'] and not line.move_id.journal_id.is_debit">
-                                <span t-esc="line.move_id.name"/>
+                                <span t-esc="line.move_id.name"/> 
                             </t>
                             <t t-else="">--</t>
                         </td>
@@ -530,7 +512,7 @@
 
         <!-- Tabla de retenciones -->
         <style>
-            .ret-table { width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; box-sizing:border-box; font-family:sans-serif; -webkit-print-color-adjust:exact; -webkit-font-smoothing:antialiased; }
+            .ret-table { width:100%; table-layout:auto; border-collapse:separate; border-spacing:0; box-sizing:border-box; font-family:sans-serif; -webkit-print-color-adjust:exact; -webkit-font-smoothing:antialiased; }
             .ret-table col { box-sizing:border-box; }
             .ret-table th, .ret-table td { border:none !important; padding:4px 6px; vertical-align:middle; font-size:10px; }
             .ret-left { text-align:left; }
@@ -547,17 +529,7 @@
 
         <table class="ret-table" role="presentation" aria-hidden="true">
             <colgroup>
-                <col style="width:60px"/>   <!-- TD -->
-                <col style="width:60px"/>   <!-- Fact Nro -->
-                <col style="width:70px"/>   <!-- Nro de Control -->
-                <col style="width:70px"/>   <!-- Fecha -->
-                <col style="width:260px"/>  <!-- Concepto -->
-                <col style="width:90px"/>   <!-- Total Factura -->
-                <col style="width:90px"/>   <!-- Base de Retención -->
-                <col style="width:70px"/>   <!-- Tarifa Ret -->
-                <col style="width:80px"/>   <!-- Sustraendo -->
-                <col style="width:110px"/>  <!-- Imp Retenido -->
-            </colgroup>
+                <col style="width: 7%"/>   <col style="width: 11%"/>  <col style="width: 11%"/>  <col style="width: 6%"/>   <col style="width: 6%"/>   <col style="width: 7%"/>   <col style="width: 7%"/>   <col style="width: 9%"/>   <col style="width: 8%"/>   <col style="width: 9%"/>   <col style="width: 4%"/>   <col style="width: 4%"/>   <col style="width: 8%"/>   <col style="width: 10%"/>  </colgroup>
 
             <thead>
                 <tr>

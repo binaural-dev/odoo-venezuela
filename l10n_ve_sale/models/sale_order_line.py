@@ -1,6 +1,7 @@
 from odoo import api, fields, models, _
 import logging
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_is_zero
 
 
 
@@ -20,12 +21,11 @@ class SaleOrderLine(models.Model):
         store=True
     )
 
-    foreign_price = fields.Float(
+    foreign_price = fields.Monetary(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
-        digits="Foreign Product Price",
+        currency_field="foreign_currency_id",
         store=True,
-        readonly=False
     )
     foreign_subtotal = fields.Monetary(
         help="Foreign Subtotal of the line",

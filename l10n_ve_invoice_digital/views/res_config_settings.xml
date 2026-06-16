@@ -28,6 +28,23 @@
                                     <field name="url_tfhka" class="w-100"/>
                                 </div>
                             </div>
+                            <br/>
+                            <div class="o_setting_box">
+                                <div class="o_setting_left_pane">
+                                    <field name="invoice_digital_tfhka"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="invoice_digital_tfhka"/>
+                                </div>
+                            </div>
+                            <div class="o_setting_box" invisible="not invoice_digital_tfhka">
+                                <div class="o_setting_left_pane">
+                                    <field name="dispatch_guide_digital_tfhka"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="dispatch_guide_digital_tfhka"/>
+                                </div>
+                            </div>
                             <div class="o_setting_left_pane">
                                 <field name="sequence_validation_tfhka"/>
                             </div>
@@ -35,11 +52,6 @@
                                 <label for="sequence_validation_tfhka"/>
                                 <div class="text-muted">
                                     Validation of sequences between Odoo and The Factory
-                                </div>
-                                <div class="content-group">
-                                    <div class="mt16" invisible="not use_main_warehouse">
-                                        <field name="main_warehouse_id" class="oe_inline" required="use_main_warehouse"/>
-                                    </div>
                                 </div>
                             </div>
                             <div class="o_setting_left_pane">
@@ -66,15 +78,6 @@
                                 />
                             </div>
                         </div>
-                    </div>
-                </div>
-            </xpath>
-            <xpath expr="//div[@id='l10n_ve_iot_mf_invoice_print_type']" position="after">
-                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_iot_mf_new_column">
-                    <div class="o_setting_left_pane"/>
-                    <div class="o_setting_right_pane">
-                        <label for="invoice_digital_tfhka" class="col-lg-6 o_light_label"/>
-                        <field name="invoice_digital_tfhka"/>
                     </div>
                 </div>
             </xpath>

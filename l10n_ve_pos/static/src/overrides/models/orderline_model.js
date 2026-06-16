@@ -102,7 +102,7 @@ patch(Orderline.prototype, {
 
     var all_taxes = this.compute_all(
       product_taxes,
-      price_unit,
+      round_pr(price_unit, this.pos.foreign_currency.rounding),
       qty,
       this.pos.foreign_currency.rounding,
     );
@@ -112,6 +112,7 @@ patch(Orderline.prototype, {
       qty,
       this.pos.foreign_currency.rounding,
     );
+
     all_taxes.taxes.forEach(function (tax) {
       taxtotal += tax.amount;
       taxdetail[tax.id] = {
@@ -119,9 +120,6 @@ patch(Orderline.prototype, {
         base: tax.base,
       };
     });
-    console.log("pricewithtax", all_taxes.total_included)
-    console.log("price without tax", all_taxes.total_excluded)
-    console.log("taxdetails", taxdetail)
     return {
       priceWithTax: all_taxes.total_included,
       priceWithoutTax: all_taxes.total_excluded,

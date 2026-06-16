@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 import logging
 
@@ -46,20 +47,33 @@ class PosOrderInherit(models.Model):
 
     @api.model
     def validate_order_dry_run(self, orders):
-        """Prevalida órdenes POS sin ejecutar side-effects de creación real.
+        session_id = False
+        if orders and isinstance(orders, list):
+            session_id = orders[0].get('data', {}).get('pos_session_id')
 
-        Este endpoint se usa antes del push definitivo desde UI y, en esta
-        versión, funciona como chequeo liviano de estructura (sin forzar
-        validaciones fiscales estrictas ni llamar ``create_from_ui``).
+        sequence = False
+        last_next_number = False
 
-        :param list orders: lista de órdenes en formato payload POS.
-        :return bool: ``True`` cuando la validación preliminar pasa.
-        """
-        # IMPORTANTE:
-        # Este endpoint es una validación previa desde UI. No debe ejecutar
-        # create_from_ui() porque dispara flujo real (factura/IO/impresión)
-        # y puede dejar la UI en "cargando" bajo contención.
-        if not orders or not isinstance(orders, list):
-            return True
+        if session_id:
+            session = self.env['pos.session'].browse(session_id)
+            
+            sequence = session.config_id.sequence_id
 
+        if sequence:
+            last_next_number = sequence.number_next_actual
+
+        self.env.cr.execute('SAVEPOINT pos_dry_run')
+        
+        try:
+            self.create_from_ui(orders)
+        except Exception as e:
+            self.env.cr.execute('ROLLBACK TO SAVEPOINT pos_dry_run')
+            if sequence and last_next_number:
+                sequence.sudo().write({'number_next_actual': last_next_number})
+            raise e
+                
+        self.env.cr.execute('ROLLBACK TO SAVEPOINT pos_dry_run')
+        if sequence and last_next_number:
+            sequence.sudo().write({'number_next_actual': last_next_number})
+                
         return True
