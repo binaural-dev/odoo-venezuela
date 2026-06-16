@@ -104,7 +104,7 @@ class AccountMove(models.Model):
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
             if invoices and record.move_type in ["out_invoice","out_refund"]:
-                raise ValidationError(_("An invoice already exists with the Control Number: %s") % correlative)
+                raise ValidationError(_("An invoice already exists with the Control Number: %s", correlative))
             if record.invoice_date and record.date and record.date < record.invoice_date:
                 raise UserError(_("The accounting date cannot be earlier than the invoice date."))
             if record.invoice_date:
@@ -207,7 +207,7 @@ class AccountMove(models.Model):
             max_product_invoice = self.company_id.max_product_invoice
             if len(self.invoice_line_ids) > max_product_invoice:
                 raise ValidationError(
-                    _("You can not add more than %s products to the invoice.") % max_product_invoice
+                    _("You can not add more than %s products to the invoice.", max_product_invoice)
                 )
 
     @api.depends("payment_term_details")
