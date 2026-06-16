@@ -359,7 +359,7 @@ class SaleOrder(models.Model):
                 not self.env.company.update_sale_order_rate_using_date_order
                 and not float_is_zero(
                     sale.foreign_rate,
-                    precision_rounding=self.env.company.currency_id.rounding,
+                    precision_rounding=sale.company_id.currency_id.rounding,
                 )
             ):
                 continue
