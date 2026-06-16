@@ -9,11 +9,29 @@ import { FiscalProtocol } from "../core/FiscalProtocol";
  * Implementa los comandos específicos del protocolo TFHKA basados en:
  * Manual de Protocolos y Comandos v8.4.2 - Venezuela
  * 
- * Comandos principales:
- * - Facturación: I01 (factura), I02 (nota de crédito), I03 (nota de débito)
- * - Reportes: I0X (Reporte X), I0Z (Reporte Z)
- * - Estado: ENQ (consultar estado)
- * - Gaveta: 0 (abrir gaveta)
+ * TIPOS DE COMANDOS:
+ * 
+ * 1. Comandos de IMPRESIÓN (esperan ACK, imprimen asincrónicamente):
+ *    - D: Imprimir Programación (tasas, flags, cajeros, firmware)
+ *    - I0X: Reporte X (consulta sin cerrar día)
+ *    - I0Z: Reporte Z (cierre fiscal del día)
+ *    - 0: Abrir gaveta
+ *    - I01, I02, I03: Facturas y notas
+ * 
+ * 2. Comandos de DATOS (esperan trama con datos):
+ *    - S1: Identificación de impresora
+ *    - S2: Totales del documento actual
+ *    - S3: Tasas de impuesto y flags
+ *    - S4: Medios de pago
+ *    - S5-S8P: Otros datos de status
+ *    - U0X, U0Z: Extracción de reportes (datos, no impresión)
+ * 
+ * 3. Comandos de CONFIGURACIÓN (esperan ACK):
+ *    - PJnnvv: Escribir flag (nn=número flag 00-99, vv=valor 00-99)
+ *    - Otros comandos de setup
+ * 
+ * 4. Comando de STATUS (formato especial):
+ *    - ENQ (0x05): Consulta estado (responde con 5 bytes: STX|STS1|STS2|ETX|LRC)
  */
 
 export class TfhkaDriver {

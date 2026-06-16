@@ -171,7 +171,7 @@
                                 <button class="btn btn-primary" t-on-click="testConnection">
                                     <i class="fa fa-plug"/> Test Conexión
                                 </button>
-                                <button class="btn btn-info" t-on-click="() => this.quickCommand('PJ')">
+                                <button class="btn btn-info" t-on-click="() => this.quickCommand('D')">
                                     <i class="fa fa-file-text-o"/> Programación
                                 </button>
                                 <button class="btn btn-success" t-on-click="() => this.quickCommand('I0X')">
@@ -189,7 +189,9 @@
                         <div class="alert alert-info mt-3">
                             <strong>⚠️ Modo Avanzado:</strong> Envía comandos crudos directamente a la impresora.
                             <br/>
-                            Ejemplos: <code>I0X</code> (Reporte X), <code>I0Z</code> (Reporte Z), <code>0</code> (Abrir Gaveta), <code>PJ</code> (Programación)
+                            <strong>Comandos de impresión:</strong> <code>D</code> (Programación), <code>I0X</code> (Reporte X), <code>I0Z</code> (Reporte Z), <code>0</code> (Abrir Gaveta)
+                            <br/>
+                            <strong>Configurar flags:</strong> <code>PJnnvv</code> (ej: <code>PJ0102</code> = flag 01, valor 02)
                         </div>
 
                         <div class="console-input-group">
