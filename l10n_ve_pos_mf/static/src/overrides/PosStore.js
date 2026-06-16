@@ -116,9 +116,16 @@ patch(PosStore.prototype, {
       }
     }
 
-    invoice['type'] = 'out_invoice'
-    if (order.get_total_with_tax() < 0) {
-      invoice['type'] = 'out_refund'
+    // Determinar tipo de documento fiscal
+    const total = order.get_total_with_tax();
+    const hasRefundLines = lines.length > 0; // líneas de devolución detectadas arriba
+
+    if (total >= 0 && !hasRefundLines) {
+      invoice['type'] = 'out_invoice';  // Factura normal
+    } else if (total < 0 || hasRefundLines) {
+      invoice['type'] = 'out_refund';   // Nota de crédito (devolución)
+    } else {
+      invoice['type'] = 'out_invoice';  // Por defecto factura
     }
 
     if (lines.length > 0 && invoice['type'] == 'out_refund') {
@@ -244,12 +251,16 @@ patch(PosStore.prototype, {
       // Convertir formato de Odoo a formato del driver
       const driverOrder = this._convertOrderForDriver(order, data);
 
-      // Enviar a imprimir
+      // Enviar a imprimir según tipo de documento
       let response;
       if (data.type === 'out_invoice') {
         response = await fiscalPrinter.printInvoice(driverOrder);
       } else if (data.type === 'out_refund') {
         response = await fiscalPrinter.printCreditNote(driverOrder);
+      } else if (data.type === 'out_debit') {
+        response = await fiscalPrinter.printDebitNote(driverOrder);
+      } else {
+        response = { success: false, error: `Tipo de documento no soportado: ${data.type}` };
       }
 
       if (!response.success) {

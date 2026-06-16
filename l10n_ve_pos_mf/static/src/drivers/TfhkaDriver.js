@@ -678,32 +678,341 @@ export class TfhkaDriver {
     }
 
     /**
-     * Imprime una nota de crédito fiscal (devolución)
+     * Imprime una nota de crédito fiscal (devolución/NC)
+     * 
+     * Diferencias con factura:
+     * - Items usan prefijo "d" + código_fiscal_numérico (no "!" / '"' / "#")
+     * - Requiere datos de la factura afectada: número, fecha, serial MF
+     * - Lleva "PH01..." como primer comando (encabezado)
+     * 
      * @param {Object} orderData - Datos de la orden
      * @returns {Promise<Object>}
      */
     async printCreditNote(orderData) {
-        // TODO: Implementar secuencia de nota de crédito
-        // Similar a factura pero con comandos específicos para NC
-        return { 
-            success: false, 
-            data: "", 
-            error: "printCreditNote() no implementado aún" 
-        };
+        if (!this.isConnected) {
+            return { success: false, data: "", error: "Impresora no conectada" };
+        }
+
+        // Validar que tenga factura afectada
+        const affected = orderData.invoice_affected;
+        if (!affected?.number) {
+            return { success: false, data: "", error: "Nota de crédito requiere número de factura afectada" };
+        }
+        if (!affected?.date) {
+            return { success: false, data: "", error: "Nota de crédito requiere fecha de factura afectada" };
+        }
+        if (!affected?.serial_machine) {
+            return { success: false, data: "", error: "Nota de crédito requiere serial de máquina fiscal de la factura afectada" };
+        }
+
+        // Verificar estado de la impresora
+        const statusBefore = await this.getStatus();
+        if (!statusBefore) {
+            return { success: false, data: "", error: "No se puede leer el estado de la impresora" };
+        }
+        const sts1 = statusBefore.raw?.sts1;
+        if (sts1 !== 0x40 && sts1 !== 0x60) {
+            const aborted = await this.abortTransaction();
+            if (!aborted) {
+                return { success: false, data: "", error: "La impresora tiene una transacción previa abierta. Reiníciala." };
+            }
+        }
+
+        try {
+            const commands = [];
+
+            const FLAG21_CONFIGS = {
+                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2 },
+            };
+            const config = FLAG21_CONFIGS[String(orderData.flag_21 || "00")] || FLAG21_CONFIGS["00"];
+
+            // 1. Encabezado de nota de crédito
+            commands.push("PH01Encabezado 1");
+
+            // 2. Número de factura afectada (8 dígitos con cero a la izquierda)
+            const invoiceNumber = String(affected.number).padStart(8, '0');
+            commands.push(`iF*${invoiceNumber}`);
+
+            // 3. Fecha de factura afectada (formato DD/MM/YYYY)
+            commands.push(`iD*${affected.date}`);
+
+            // 4. Serial de la máquina fiscal de la factura afectada
+            commands.push(`iI*${affected.serial_machine}`);
+
+            // 5. RIF del cliente
+            const vat = orderData.partner?.vat || "V00000000";
+            commands.push(`iR*${vat}`);
+
+            // 6. Razón social del cliente
+            const name = (orderData.partner?.name || "CLIENTE GENERICO").substring(0, 127);
+            commands.push(`iS*${name}`);
+
+            // 7. Dirección del cliente (opcional)
+            if (orderData.partner?.address) {
+                const addr = orderData.partner.address;
+                commands.push(`i01Direccion:${addr.substring(0, 30)}`);
+                if (addr.length > 30) {
+                    commands.push(`i02${addr.substring(30, 70)}`);
+                }
+            }
+
+            // 8. Items de la devolución
+            // NC usa "d" + código_fiscal_numérico + precio + qty + desc
+            for (const line of orderData.lines || []) {
+                if (line.price_unit <= 0) continue;
+
+                const fiscalCode = String(line.fiscal_code || "1");
+                const price = this._formatAmount(line.price_unit, config.max_amount_int, config.max_amount_decimal);
+                const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
+                const code  = line.product_code ? `|${line.product_code}|` : "";
+                const desc  = (line.product_name || "PRODUCTO")
+                    .substring(0, 127)
+                    .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
+                    .trim();
+
+                // NC: prefijo "d" + código fiscal numérico (no carácter especial)
+                commands.push(`d${fiscalCode}${price}${qty}${code}${desc}`);
+            }
+
+            // 9. Subtotal
+            commands.push("3");
+
+            // 10. Pagos
+            const payments = orderData.payment_lines || [];
+            let closingMethod = "01";
+
+            if (payments.length > 0) {
+                const mainPayment = payments.reduce((prev, cur) => cur.amount > prev.amount ? cur : prev);
+                closingMethod = String(mainPayment.payment_method_code || "01").padStart(2, '0');
+
+                for (const payment of payments) {
+                    const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
+                    // Enviar solo los pagos que NO sean el método principal (parciales)
+                    if (payment.amount > 0 && methodCode !== closingMethod) {
+                        const amount = this._formatAmount(payment.amount, config.max_payment_amount_int, config.max_payment_amount_decimal);
+                        commands.push(`2${methodCode}${amount}`);
+                    }
+                }
+            }
+
+            // 11. Gaveta (si aplica)
+            if (orderData.has_cashbox) {
+                commands.push("w");
+            }
+
+            // 12. Cierre
+            commands.push(`1${closingMethod}`);
+
+            // 13. Líneas adicionales
+            if (orderData.additional_lines?.length > 0) {
+                for (let i = 0; i < orderData.additional_lines.length; i++) {
+                    commands.push(`i${String(i).padStart(2, '0')}${orderData.additional_lines[i]}`);
+                }
+            }
+
+            // 14. Fin de documento
+            commands.push("199");
+
+            console.log("TfhkaDriver:: Enviando nota de crédito con", commands.length, "comandos:", commands);
+
+            for (const cmd of commands) {
+                const result = await this.sendCommand(cmd, null, false);
+                if (!result.success) {
+                    console.error("TfhkaDriver:: NC - Comando falló:", cmd, result.error);
+                    await this.abortTransaction();
+                    return { success: false, data: "", error: `Error en comando [${cmd}]: ${result.error}` };
+                }
+            }
+
+            console.log("TfhkaDriver:: Nota de crédito impresa correctamente");
+            return { success: true, data: "Nota de crédito impresa correctamente", error: "" };
+
+        } catch (error) {
+            console.error("TfhkaDriver:: Error al imprimir nota de crédito", error);
+            await this.abortTransaction();
+            return { success: false, data: "", error: error.message };
+        }
     }
 
     /**
-     * Imprime una nota de débito fiscal
+     * Imprime una nota de débito fiscal (ND)
+     * 
+     * Diferencias con factura:
+     * - Items usan prefijo backtick (`) + código_fiscal_texto + precio + qty + desc
+     * - Requiere datos de la factura afectada: número, fecha, serial MF
+     * 
      * @param {Object} orderData - Datos de la orden
      * @returns {Promise<Object>}
      */
     async printDebitNote(orderData) {
-        // TODO: Implementar secuencia de nota de débito
-        // Requiere: factura original, motivo, datos del cliente
-        return { 
-            success: false, 
-            data: "", 
-            error: "printDebitNote() no implementado aún" 
-        };
+        if (!this.isConnected) {
+            return { success: false, data: "", error: "Impresora no conectada" };
+        }
+
+        // Validar factura afectada
+        const affected = orderData.invoice_affected;
+        if (!affected?.number) {
+            return { success: false, data: "", error: "Nota de débito requiere número de factura afectada" };
+        }
+        if (!affected?.date) {
+            return { success: false, data: "", error: "Nota de débito requiere fecha de factura afectada" };
+        }
+        if (!affected?.serial_machine) {
+            return { success: false, data: "", error: "Nota de débito requiere serial de máquina fiscal de la factura afectada" };
+        }
+
+        // Verificar estado de la impresora
+        const statusBefore = await this.getStatus();
+        if (!statusBefore) {
+            return { success: false, data: "", error: "No se puede leer el estado de la impresora" };
+        }
+        const sts1 = statusBefore.raw?.sts1;
+        if (sts1 !== 0x40 && sts1 !== 0x60) {
+            const aborted = await this.abortTransaction();
+            if (!aborted) {
+                return { success: false, data: "", error: "La impresora tiene una transacción previa abierta. Reiníciala." };
+            }
+        }
+
+        try {
+            const commands = [];
+
+            const FLAG21_CONFIGS = {
+                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
+                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2 },
+            };
+            const config = FLAG21_CONFIGS[String(orderData.flag_21 || "00")] || FLAG21_CONFIGS["00"];
+
+            // 1. RIF del cliente (ND: va primero, antes de la factura afectada)
+            const vat = orderData.partner?.vat || "V00000000";
+            commands.push(`iR*${vat}`);
+
+            // 2. Razón social del cliente
+            const name = (orderData.partner?.name || "CLIENTE GENERICO").substring(0, 127);
+            commands.push(`iS*${name}`);
+
+            // 3. Número de factura afectada
+            const invoiceNumber = String(affected.number).padStart(8, '0');
+            commands.push(`iF*${invoiceNumber}`);
+
+            // 4. Serial de la máquina fiscal afectada
+            commands.push(`iI*${affected.serial_machine}`);
+
+            // 5. Fecha de factura afectada
+            commands.push(`iD*${affected.date}`);
+
+            // 6. Dirección del cliente (opcional)
+            let infoIndex = 0;
+            if (orderData.partner?.address) {
+                const addr = orderData.partner.address;
+                commands.push(`i${String(infoIndex).padStart(2, '0')}Direccion:${addr.substring(0, 30)}`);
+                infoIndex++;
+                if (addr.length > 30) {
+                    commands.push(`i${String(infoIndex).padStart(2, '0')}${addr.substring(30, 70)}`);
+                    infoIndex++;
+                }
+            }
+
+            if (orderData.partner?.phone) {
+                commands.push(`i${String(infoIndex).padStart(2, '0')}Telefono:${orderData.partner.phone}`);
+                infoIndex++;
+            }
+
+            // 7. Información adicional
+            if (orderData.additional_info?.length > 0) {
+                for (const info of orderData.additional_info) {
+                    commands.push(`i${String(infoIndex).padStart(2, '0')}${info}`);
+                    infoIndex++;
+                }
+            }
+
+            // 8. Items de la nota de débito
+            // ND usa backtick (`) + código_fiscal_texto + precio + qty + desc
+            for (const line of orderData.lines || []) {
+                if (line.price_unit < 0) continue;
+
+                const fiscalCode = String(line.fiscal_code || "1");
+                const price = this._formatAmount(Math.abs(line.price_unit), config.max_amount_int, config.max_amount_decimal);
+                const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
+                const code  = line.product_code ? `|${line.product_code}|` : "";
+                const desc  = (line.product_name || "PRODUCTO")
+                    .substring(0, 127)
+                    .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
+                    .trim();
+
+                // ND: backtick + código fiscal texto + precio + qty + desc
+                commands.push(`\`${fiscalCode}${price}${qty}${code}${desc}`);
+            }
+
+            // 9. Subtotal
+            commands.push("3");
+
+            // 10. Pagos
+            const payments = orderData.payment_lines || [];
+            let closingMethod = "01";
+
+            // Agrupar pagos por método (sumar montos del mismo método)
+            const groupedPayments = {};
+            for (const p of payments) {
+                const key = String(p.payment_method_code || "01").padStart(2, '0');
+                groupedPayments[key] = (groupedPayments[key] || 0) + Math.abs(p.amount);
+            }
+
+            // Método de cierre = el de mayor monto
+            if (Object.keys(groupedPayments).length > 0) {
+                closingMethod = Object.entries(groupedPayments)
+                    .reduce((a, b) => b[1] > a[1] ? b : a)[0];
+            }
+
+            // Enviar pagos parciales (los que no son el de cierre)
+            for (const [methodCode, amount] of Object.entries(groupedPayments)) {
+                if (amount > 0 && methodCode !== closingMethod) {
+                    const amountStr = this._formatAmount(amount, config.max_payment_amount_int, config.max_payment_amount_decimal);
+                    commands.push(`2${methodCode}${amountStr}`);
+                }
+            }
+
+            // 11. Gaveta
+            if (orderData.has_cashbox) {
+                commands.push("w");
+            }
+
+            // 12. Cierre
+            commands.push(`1${closingMethod}`);
+
+            // 13. Líneas adicionales al pie
+            if (orderData.additional_lines?.length > 0) {
+                for (let i = 0; i < orderData.additional_lines.length; i++) {
+                    commands.push(`i${String(i).padStart(2, '0')}${orderData.additional_lines[i]}`);
+                }
+            }
+
+            // 14. Fin de documento
+            commands.push("199");
+
+            console.log("TfhkaDriver:: Enviando nota de débito con", commands.length, "comandos:", commands);
+
+            for (const cmd of commands) {
+                const result = await this.sendCommand(cmd, null, false);
+                if (!result.success) {
+                    console.error("TfhkaDriver:: ND - Comando falló:", cmd, result.error);
+                    await this.abortTransaction();
+                    return { success: false, data: "", error: `Error en comando [${cmd}]: ${result.error}` };
+                }
+            }
+
+            console.log("TfhkaDriver:: Nota de débito impresa correctamente");
+            return { success: true, data: "Nota de débito impresa correctamente", error: "" };
+
+        } catch (error) {
+            console.error("TfhkaDriver:: Error al imprimir nota de débito", error);
+            await this.abortTransaction();
+            return { success: false, data: "", error: error.message };
+        }
     }
 }
