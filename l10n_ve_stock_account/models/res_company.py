@@ -39,3 +39,5 @@ class ResCompany(models.Model):
     invoice_cron_time = fields.Float(required=True, default=18.0)
 
     hide_price_on_dispatch_guide = fields.Boolean()
+
+    is_subcontracting = fields.Boolean(string="Subcontracting", help="Enable Maquila option in Reason for Transfer", default=False)

@@ -2,7 +2,7 @@
 
 import { PosStore } from "@point_of_sale/app/store/pos_store";
 import { patch } from "@web/core/utils/patch";
-import { roundPrecision as round_pr, floatIsZero } from "@web/core/utils/numbers";
+import { roundPrecision as round_pr, roundDecimals as round_di, floatIsZero } from "@web/core/utils/numbers";
 
 patch(PosStore.prototype, {
 
@@ -35,11 +35,11 @@ patch(PosStore.prototype, {
       }
       product_ids.push(line.product.id)
     })
-    try{
+    try {
       const products = await this.orm.silent.call('pos.session', 'get_pos_ui_product_product_by_params', [odoo.pos_session_id, { domain: [['id', 'in', product_ids]] }],
       );
       this._loadProductProduct(products);
-    }catch(e){
+    } catch (e) {
       console.warn("Error while updating products", e)
     }
 
@@ -49,8 +49,8 @@ patch(PosStore.prototype, {
 
     // 1) Flatten the taxes.
 
-    var _collect_taxes = function(taxes, all_taxes) {
-      taxes = [...taxes].sort(function(tax1, tax2) {
+    var _collect_taxes = function (taxes, all_taxes) {
+      taxes = [...taxes].sort(function (tax1, tax2) {
         return tax1.sequence - tax2.sequence;
       });
       taxes.forEach((tax) => {
@@ -62,7 +62,7 @@ patch(PosStore.prototype, {
       });
       return all_taxes;
     };
-    var collect_taxes = function(taxes) {
+    var collect_taxes = function (taxes) {
       return _collect_taxes(taxes, []);
     };
 
@@ -79,7 +79,7 @@ patch(PosStore.prototype, {
     }
 
     // 3) Iterate the taxes in the reversed sequence order to retrieve the initial base of the computation.
-    var recompute_base = function(base_amount, incl_tax_amounts) {
+    var recompute_base = function (base_amount, incl_tax_amounts) {
       let fixed_amount = incl_tax_amounts.fixed_amount;
       let division_amount = 0.0;
       for (const [, tax_factor] of incl_tax_amounts.division_taxes) {
@@ -117,7 +117,7 @@ patch(PosStore.prototype, {
       );
     };
 
-    var base = round_pr(price_unit * quantity, initial_currency_rounding);
+    var base = round_pr(price_unit * quantity, currency_rounding);
 
     var sign = 1;
     if (base < 0) {
@@ -139,7 +139,7 @@ patch(PosStore.prototype, {
     var cached_base_amounts = {};
     let is_base_affected = true;
     if (handle_price_include) {
-      taxes.reverse().forEach(function(tax) {
+      taxes.reverse().forEach(function (tax) {
         if (tax.include_base_amount && is_base_affected) {
           base = recompute_base(base, incl_tax_amounts);
           store_included_tax_total = true;
@@ -175,7 +175,7 @@ patch(PosStore.prototype, {
 
     var total_excluded = round_pr(
       recompute_base(base, incl_tax_amounts),
-      initial_currency_rounding
+      currency_rounding
     );
     var total_included = total_excluded;
 
@@ -188,7 +188,7 @@ patch(PosStore.prototype, {
     var taxes_vals = [];
     i = 0;
     var cumulated_tax_included_amount = 0;
-    taxes.reverse().forEach(function(tax) {
+    taxes.reverse().forEach(function (tax) {
       if (tax.price_include && i in cached_base_amounts) {
         var tax_base_amount = cached_base_amounts[i];
       } else if (tax.price_include || tax.is_base_affected) {
@@ -233,11 +233,10 @@ patch(PosStore.prototype, {
       total_included += factorized_tax_amount;
       i += 1;
     });
-
     return {
       taxes: taxes_vals,
-      total_excluded: sign * round_pr(total_excluded, initial_currency_rounding),
-      total_included: sign * round_pr(total_included, initial_currency_rounding),
+      total_excluded: sign * total_excluded,
+      total_included: sign * total_included,
     };
   },
 

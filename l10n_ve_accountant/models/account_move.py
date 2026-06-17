@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 
 from lxml import etree
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import drop_index, float_compare, index_exists
 from odoo.tools.float_utils import float_round
@@ -111,15 +111,14 @@ class AccountMove(models.Model):
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        digits="Tasa",
         store=True,
+        digits="Tasa",
         tracking=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
         store=True,
         index=True,
         readonly=False,
@@ -163,8 +162,44 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
+    display_foreign_balance_warning = fields.Boolean(compute="_compute_total_debit_credit")
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
+
+    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
+
+    @api.depends(
+        'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.payment_id.is_matched',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.balance',
+        'line_ids.currency_id',
+        'line_ids.amount_currency',
+        'line_ids.amount_residual',
+        'line_ids.amount_residual_currency',
+        'line_ids.payment_id.state',
+        'line_ids.full_reconcile_id',
+        'state',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.foreign_amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.foreign_amount_residual',
+    )
+    def _compute_amount(self):
+        super()._compute_amount()
+        for move in self:
+            total_residual_currency = 0.0
+            for line in move.line_ids:
+                if line.display_type == 'payment_term':
+                    total_residual_currency += line.foreign_amount_residual
+            sign = move.direction_sign
+            if move.is_invoice(include_receipts=True):
+                move.foreign_amount_residual = -sign * total_residual_currency
+            else:
+                move.foreign_amount_residual = abs(total_residual_currency)
+            
+         
 
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
     def _compute_inverse_rate_vef(self):
@@ -177,6 +212,7 @@ class AccountMove(models.Model):
                 date = move.invoice_date or move.date
 
                 if date:
+                    
                     rate = Rate.search([
                         ('currency_id', '=', currency.id),
                         ('name', '<=', date),
@@ -192,17 +228,14 @@ class AccountMove(models.Model):
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
 
-    @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
-        context = self.with_context(active_test=False)
-        return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
 
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
         for move in self:
-            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit_no_format"))
-            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit_no_format"))
+            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
+            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
             move.foreign_balance = move.foreign_debit - move.foreign_credit
+            move.display_foreign_balance_warning = not move.foreign_currency_id.is_zero(move.foreign_balance)
 
     def _get_journal_income_account(self, journal):
         """
@@ -267,102 +300,36 @@ class AccountMove(models.Model):
             container = {'records': moves}
             moves._sync_dynamic_lines(container)
 
-    @api.depends("invoice_line_ids", "tax_totals")
+    @api.depends("invoice_line_ids.price_unit", "invoice_line_ids.quantity", "invoice_line_ids.discount", "tax_totals")
     def _compute_detailed_amounts(self):
         for record in self:
-            discount_amount = 0
-            if not record.tax_totals:
-                record.detailed_amounts = dict()
-                return
-            amount_taxed = record.tax_totals.get(
-                "amount_total", 0
-            ) - record.tax_totals.get("amount_untaxed", 0)
-            total = 0
+            # Inicializamos siempre para evitar errores si no entra en la lógica
+            total = 0.0
+            discount_amount = 0.0
+            amount_taxed = 0.0
+            
+            if record.tax_totals:
+                amount_taxed = record.tax_totals.get("amount_total", 0.0) - record.tax_totals.get("amount_untaxed", 0.0)
 
-            for line in record.invoice_line_ids:
+            # Calculamos sobre las líneas de factura de forma segura
+            for line in record.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
                 subtotal = line.price_unit * line.quantity
                 if line.discount > 0:
-                    discount_amount += subtotal - line.price_subtotal
+                    discount_amount += (subtotal - line.price_subtotal)
                 total += subtotal
 
-            record.detailed_amounts = dict(
-                {
-                    "gross_amount": total,
-                    "formatted_gross_amount": formatLang(
-                        self.env, total, currency_obj=self.currency_id
-                    ),
-                    "discount_amount": discount_amount,
-                    "formatted_discount_amount": formatLang(
-                        self.env, discount_amount, currency_obj=self.currency_id
-                    ),
-                    "gross_discount_amount": total,
-                    "formatted_gross_discount_amount": formatLang(
-                        self.env, total - discount_amount, currency_obj=self.currency_id
-                    ),
-                    "taxes_amount": amount_taxed,
-                    "formatted_taxes_amount": formatLang(
-                        self.env, amount_taxed, currency_obj=self.currency_id
-                    ),
-                }
-            )
+            # Asignamos el diccionario completo sin usar 'return' para no romper el bucle masivo
+            record.detailed_amounts = {
+                "gross_amount": total,
+                "formatted_gross_amount": formatLang(self.env, total, currency_obj=record.currency_id),
+                "discount_amount": discount_amount,
+                "formatted_discount_amount": formatLang(self.env, discount_amount, currency_obj=record.currency_id),
+                "gross_discount_amount": total - discount_amount, # Corregido: antes estaba 'total' a secas en dict original
+                "formatted_gross_discount_amount": formatLang(self.env, total - discount_amount, currency_obj=record.currency_id),
+                "taxes_amount": amount_taxed,
+                "formatted_taxes_amount": formatLang(self.env, amount_taxed, currency_obj=record.currency_id),
+            }
 
-    def _auto_init(self):
-        res = super()._auto_init()
-        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
-            # we can add the following UNIQUE INDEX
-            self.env.cr.execute(
-                """
-                WITH duplicated_sequence AS (
-                    SELECT name, partner_id, state, journal_id
-                      FROM account_move
-                     WHERE state = 'posted'
-                       AND name != '/'
-                       AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
-                  GROUP BY partner_id, journal_id, name, state
-                    HAVING COUNT(*) > 1
-                ),
-                to_update AS (
-                    SELECT move.id,
-                           move.name,
-                           move.state,
-                           move.date,
-                           row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
-                      FROM duplicated_sequence
-                      JOIN account_move move ON move.name = duplicated_sequence.name
-                                            AND move.partner_id = duplicated_sequence.partner_id
-                                            AND move.state = duplicated_sequence.state
-                                            AND move.journal_id = duplicated_sequence.journal_id
-                ),
-               new_vals AS (
-                    SELECT id,
-                           name || ' (' || (row_seq-1)::text || ')' AS name
-                      FROM to_update
-                     WHERE row_seq > 1
-                )
-                UPDATE account_move
-                   SET name = new_vals.name
-                  FROM new_vals
-                 WHERE account_move.id = new_vals.id;
-            """
-            )
-
-            self.env.cr.execute(
-                """
-                CREATE UNIQUE INDEX account_move_unique_name
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-                CREATE UNIQUE INDEX account_move_unique_name_ve
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-            """
-            )
-        return res
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -431,14 +398,10 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
+
         return moves
 
-    @api.onchange("partner_id")
-    def onchange_date(self):
-        for rec in self:
-            if rec.partner_id:
-                rec.invoice_date = fields.Date.today()
-                rec.foreign_currency_id = rec.default_alternate_currency()
+  
 
     def write(self, vals):
         """
@@ -470,6 +433,9 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
+            
+
+
             new_journal_id = move.journal_id.id
             if old_journal_id and new_journal_id and old_journal_id != new_journal_id:
                 if move.is_invoice(include_receipts=True) and move.move_type in ('out_invoice', 'out_refund', 'out_receipt'):
@@ -775,14 +741,16 @@ class AccountMove(models.Model):
         """
         Rate = self.env["res.currency.rate"]
 
+        
         for move in documents:
             if move.manually_set_rate:
                 continue
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.foreign_rate = rate_values.get("foreign_rate", 0)
-            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            move.foreign_rate = rate_values.get("foreign_rate")
+            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
+            
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -791,8 +759,8 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_taxable_income = False
-            if move.is_invoice() and move.invoice_line_ids:
-                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"]
+            if move.is_invoice() and move.invoice_line_ids and isinstance(move.tax_totals, dict):
+                move.foreign_taxable_income = move.tax_totals.get("foreign_amount_untaxed", 0.0)
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
@@ -816,7 +784,6 @@ class AccountMove(models.Model):
         "invoice_line_ids.price_total",
         "invoice_line_ids.price_subtotal",
         "invoice_payment_term_id",
-        "partner_id",
         "currency_id",
         "foreign_rate",
     )
@@ -1005,7 +972,6 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
-    # TO-DO: Modify the digital invoicing module (l10n_ve_invoice digital) if this wizard is deleted
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
@@ -1037,16 +1003,7 @@ class AccountMove(models.Model):
                             round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
-        for move in self:
-
-            precision = move.currency_id.decimal_places if move.currency_id else 2
-
-            move.foreign_debit = float_round(sum(move.line_ids.mapped("foreign_debit")), precision_digits=precision)
-            move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit")), precision_digits=precision)
-            if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
-                move.foreign_credit = float_round(sum(move.line_ids.mapped("foreign_credit_no_format")), precision_digits=precision)
-                if float_compare(move.foreign_debit, move.foreign_credit, precision_digits=precision) != 0:
-                    raise UserError(_("Your transaction cannot be processed because the debit must match the credit."))
+        
             
         return super().action_post()
 
@@ -1133,3 +1090,47 @@ class AccountMove(models.Model):
                     and line.display_type == "product"
                 ):
                     raise ValidationError(_("All added lines must indicate the product."))
+                
+
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        """
+        Reverse moves and swap foreign adjustment fields by matching line indices
+        to ensure every line is processed correctly even if sequences are identical.
+        """
+        reverse_moves = super(AccountMove, self)._reverse_moves(
+            default_values_list=default_values_list, 
+            cancel=cancel
+        )
+
+        for move in reverse_moves:
+            original_move = move.reversed_entry_id
+            if not original_move:
+                continue
+
+            lines_to_update = []
+            
+            reversed_lines = move.line_ids.sorted('id')
+            original_lines = original_move.line_ids.sorted('id')
+
+            for rev_line, orig_line in zip(reversed_lines, original_lines):
+                # THE SWAP: Get values from the specific matching original line
+                f_debit_source = getattr(orig_line, 'foreign_debit_adjustment', 0.0)
+                f_credit_source = getattr(orig_line, 'foreign_credit_adjustment', 0.0)
+
+                if f_debit_source or f_credit_source:
+                    lines_to_update.append(Command.update(rev_line.id, {
+                        'foreign_debit_adjustment': f_credit_source,
+                        'foreign_credit_adjustment': f_debit_source,
+                    }))
+                else:
+                    lines_to_update.append(Command.update(rev_line.id, {
+                        'foreign_debit_adjustment': 0.0,
+                        'foreign_credit_adjustment': 0.0,
+                    }))
+
+            if lines_to_update:
+                move.with_context(skip_invoice_sync=True).write({
+                    'line_ids': lines_to_update
+                })
+
+        return reverse_moves

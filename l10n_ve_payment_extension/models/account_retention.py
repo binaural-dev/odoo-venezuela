@@ -5,10 +5,15 @@ from odoo.exceptions import UserError, ValidationError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
-from odoo.tools.float_utils import float_round
+from odoo.tools.float_utils import float_round,float_compare
 import logging
 
 _logger = logging.getLogger(__name__)
+
+
+class SimulationSuccess(Exception):
+    """Exception raised to rollback simulation savepoints when dry-run succeeds."""
+    pass
 
 
 class AccountRetention(models.Model):
@@ -178,6 +183,8 @@ class AccountRetention(models.Model):
     available_invoice_ids = fields.Many2many(
         "account.move", string="Available Invoices"
     )
+
+    date_emision = fields.Date('Emision Date', default=False)
 
     @api.depends("retention_line_ids", "retention_line_ids.move_id")
     def _compute_actual_invoice_ids(self):
@@ -482,6 +489,16 @@ class AccountRetention(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if not self.env.context.get("simulation"):
+            try:
+                with self.env.cr.savepoint():
+                    self.with_context(simulation=True).create(vals_list)
+                    raise SimulationSuccess()
+            except SimulationSuccess:
+                pass
+            except Exception as e:
+                raise e
+
         res = super().create(vals_list)
         res._set_sequence()
         return res
@@ -648,14 +665,26 @@ class AccountRetention(models.Model):
             payment.compute_retention_amount_from_retention_lines()
 
     def action_draft(self):
-        self.ensure_one()
+        for retention in self:
+            if retention.state == 'cancel' and retention.payment_ids:
+                retention.payment_ids.action_draft()
+
         self.write({"state": "draft"})
         if self.payment_ids:
             self.payment_ids.action_draft()
 
     def action_post(self):
-        today = datetime.now()
+        if not self.env.context.get("simulation"):
+            try:
+                with self.env.cr.savepoint():
+                    self.with_context(simulation=True).action_post()
+                    raise SimulationSuccess()
+            except SimulationSuccess:
+                pass
+            except Exception as e:
+                raise e
 
+        today = datetime.now()
         self._create_payments_from_retention_lines()
         for retention in self:
 
@@ -720,24 +749,38 @@ class AccountRetention(models.Model):
             move.write({"municipal_voucher_number": retention.number})
 
     def action_print_municipal_retention_xlsx(self):
+
+
         self.ensure_one()
+        if not self.date_emision:
+            self.write({'date_emision': fields.Date.today()})
+        
+            # 2. Forzamos el guardado para que la interfaz se actualice
+            self.flush_recordset(['date_emision'])
+
         return {
             "type": "ir.actions.act_url",
             "url": f"/web/get_xlsx_municipal_retention?&retention_id={self.id}",
-            "target": "self",
+            "target": "new",
         }
 
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
             sequence_number = ""
-            if retention.type_retention == "iva":
-                sequence_number = retention.get_sequence_iva_retention().next_by_id()
-            elif retention.type_retention == "islr":
-                sequence_number = retention.get_sequence_islr_retention().next_by_id()
+            if self.env.context.get("simulation"):
+                if retention.type_retention == "iva":
+                    sequence_number = "99999999"
+                else:
+                    sequence_number = "99999"
             else:
-                sequence_number = (
-                    retention.get_sequence_municipal_retention().next_by_id()
-                )
+                if retention.type_retention == "iva":
+                    sequence_number = retention.get_sequence_iva_retention().next_by_id()
+                elif retention.type_retention == "islr":
+                    sequence_number = retention.get_sequence_islr_retention().next_by_id()
+                else:
+                    sequence_number = (
+                        retention.get_sequence_municipal_retention().next_by_id()
+                    )
             correlative = f"{retention.date_accounting.year}{retention.date_accounting.month:02d}{sequence_number}"
             retention.name = correlative
             retention.number = correlative
@@ -906,16 +949,16 @@ class AccountRetention(models.Model):
                 self._reconcile_customer_payment(payment)
 
     def _reconcile_supplier_payment(self, payment):
-
+        precision = self.company_currency_id.rounding
         if payment.payment_type == "outbound":
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "liability_payable"
-                and l.debit > 0
+                and float_compare(l.debit, 0.0, precision_rounding=precision) == 1
             )
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -927,11 +970,11 @@ class AccountRetention(models.Model):
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "liability_payable"
-                and l.credit > 0
+                and float_compare(l.credit, 0.0, precision_rounding=precision) == 1
             )
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -940,17 +983,17 @@ class AccountRetention(models.Model):
             )
 
     def _reconcile_customer_payment(self, payment):
-
+        precision = self.company_currency_id.rounding
         if payment.payment_type == "outbound":
 
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "asset_receivable"
-                and l.debit > 0
+                and float_compare(l.debit, 0.0, precision_rounding=precision) == 1
             )
 
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
@@ -961,12 +1004,12 @@ class AccountRetention(models.Model):
         elif payment.payment_type == "inbound":
             lines = payment.move_id.line_ids.filtered(
                 lambda l: l.account_id.account_type == "asset_receivable"
-                and l.credit > 0
+                and float_compare(l.credit, 0.0, precision_rounding=precision) == 1
             )
 
             if not lines:
                 raise ValidationError(
-                    _("No registered lines found in the move to reconcile.")
+                    _("Check the hold lines and ensure they have positive values.")
                 )
             line_to_reconcile = lines[0]
 
