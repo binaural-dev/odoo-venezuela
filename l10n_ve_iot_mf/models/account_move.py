@@ -87,7 +87,7 @@ class AccountMoveInh(models.Model):
 
         for invoice in account_moves:
             invoice.write({"mf_reportz": int(_numberOfLastZReport) + 1})
-        return _numberOfLastZReport
+        return response
 
     def _get_z_and_add_one(self, serial):
         account_move = self.env["account.move"].search(
