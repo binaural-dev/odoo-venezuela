@@ -335,9 +335,9 @@ class IGTFTestCommon(TransactionCase):
             self.assertAlmostEqual(expected_residual, invoice.amount_residual, 2,  f"Importe residual incorrecto. Esperado: {expected_residual}, Encontrado: {invoice.amount_residual}")
             
 
-        if float_compare(invoice.bi_igtf, expected_bi_igtf, precision_digits=prec) != 0:
+        if float_compare(invoice.foreign_bi_igtf, expected_bi_igtf, precision_digits=prec) != 0:
             raise AssertionError(
-                f"Base IGTF incorrecta. Esperada: {expected_bi_igtf}, Encontrada: {invoice.bi_igtf}"
+                f"Base IGTF incorrecta. Esperada: {expected_bi_igtf}, Encontrada: {invoice.foreign_bi_igtf}"
             )
         
         # Comparación de Estado
