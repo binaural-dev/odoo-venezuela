@@ -4,8 +4,9 @@ import { Orderline } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import {
   formatFloat,
-  roundDecimals as round_di,
   floatIsZero,
+  roundDecimals as round_di,
+  roundPrecision as round_pr,
 } from "@web/core/utils/numbers";
 
 // New orders are now associated with the current table, if any.
@@ -101,7 +102,7 @@ patch(Orderline.prototype, {
 
     var all_taxes = this.compute_all(
       product_taxes,
-      price_unit,
+      round_pr(price_unit, this.pos.foreign_currency.rounding),
       qty,
       this.pos.foreign_currency.rounding,
     );
@@ -111,6 +112,7 @@ patch(Orderline.prototype, {
       qty,
       this.pos.foreign_currency.rounding,
     );
+
     all_taxes.taxes.forEach(function (tax) {
       taxtotal += tax.amount;
       taxdetail[tax.id] = {

@@ -37,7 +37,6 @@ class AccountPaymentRegister(models.TransientModel):
             "Rate that will be used as factor to multiply of the foreign currency for the payment "
             "and the moves created by the wizard."
         ),
-        digits=(16, 15),
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
@@ -66,13 +65,8 @@ class AccountPaymentRegister(models.TransientModel):
         Onchange the foreign rate and compute the foreign inverse rate
         """
         Rate = self.env["res.currency.rate"]
-        for payment in self:
-            if not bool(payment.foreign_rate):
-                return
-
-            payment.foreign_inverse_rate = Rate.compute_inverse_rate(
-                payment.foreign_rate
-            )
+        rate_values = Rate.compute_rate(self.foreign_currency_id.id, self.payment_date)
+        self.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")  
             
 
     @api.onchange("payment_date")
@@ -113,7 +107,7 @@ class AccountPaymentRegister(models.TransientModel):
         '''
         payment_values = batch_result['payment_values']
         lines = batch_result['lines']
-        company = min(lines.company_id, key=lambda c: len(c.sudo().parent_ids)) if not self._from_sibling_companies(lines) else lines.company_id.root_id
+        company = min(lines.company_id, key=lambda c: len(c.sudo().parent_ids))
 
         source_amount = abs(sum(lines.mapped('amount_residual')))
         if payment_values['currency_id'] == company.currency_id.id:
