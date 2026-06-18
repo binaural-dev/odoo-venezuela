@@ -120,7 +120,7 @@ patch(PosStore.prototype, {
 
     if (order.orderlines.length > 0) {
 
-      let vef_base = this.currency.name === "VEF"
+      let vef_base = this.currency.name === "VEF" || this.currency.name === "VES"
 
       invoice['invoice_lines'] = order.orderlines.map((el) => {
 
@@ -143,14 +143,24 @@ patch(PosStore.prototype, {
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
       })
-      invoice['payment_lines'] = order.paymentlines.map((el) => {
+      // Solo enviar pagos positivos a la MF.
+      // Las líneas negativas corresponden a cambio y no deben enviarse como método de pago.
+      invoice['payment_lines'] = order.paymentlines
+        .map((el) => {
+          let amount = vef_base ? el.amount : el.get_foreign_amount()
+          return {
+            payment_method: el.payment_method?.code_fiscal_printer || false,
+            amount: amount,
+          }
+        })
+        .filter((line) => line.amount > 0 && !!line.payment_method)
 
-        let amount = vef_base ? el.amount : el.get_foreign_amount()
+      if (!invoice['payment_lines'].length) {
         return {
-          payment_method: el.payment_method.code_fiscal_printer,
-          amount: amount,
+          valid: false,
+          message: "No hay líneas de pago válidas para enviar a la máquina fiscal",
         }
-      })
+      }
     }
     invoice["valid"] = true
     return invoice
@@ -289,4 +299,3 @@ patch(PosStore.prototype, {
     return await super.push_single_order.apply(this, [order, opts]);
   },
 })
-

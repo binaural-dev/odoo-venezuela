@@ -35,7 +35,6 @@ patch(PaymentScreenStatus.prototype, {
     return is_igtf;
   },
   get amountIGTF() {
-    // Comprobamos si algún método de pago aplica IGTF
     let payment_lines = this.props.order.get_paymentlines();
     let hasIgtfMethod = false;
     payment_lines.forEach(payment_line => {
@@ -58,13 +57,12 @@ patch(PaymentScreenStatus.prototype, {
     return this.env.utils.formatCurrency(igtfAmount, 'Product Price');
   },
   get suggestedIgtf() {
-    var rounding = this.pos.currency.rounding;
-    var result = round_di(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), 4);
-    return this.env.utils.formatCurrency(result);
+    return this.env.utils.formatCurrency(this.props.order.get_igtf_amount());
   },
   get foreignTotalDueTextWithIGTF() {
     return this.env.utils.formatForeignCurrency(
-      (this.props.order.get_foreign_total_with_tax() * ((this.pos.config.igtf_percentage / 100) + 1)) + this.props.order.get_foreign_rounding_applied()
+      this.props.order.get_foreign_total_with_tax() +
+        this.props.order.get_foreign_rounding_applied(),
     );
   },
   get totalDueTextWithIGTF() {
@@ -81,10 +79,8 @@ patch(PaymentScreenStatus.prototype, {
     }
   },
   get totalDueTextWithIGTFDisplay() {
-    var rounding = this.pos.currency.rounding;
-    var result = round_di(this.props.order.get_total_with_tax() * (this.pos.config.igtf_percentage / 100), rounding);
     return this.env.utils.formatCurrency(
-      (this.props.order.get_total_with_tax() + result)
+      this.props.order.get_total_with_tax()
     );
   },
   get totalDueText() {

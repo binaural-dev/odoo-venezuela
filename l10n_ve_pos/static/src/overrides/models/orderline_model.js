@@ -112,6 +112,7 @@ patch(Orderline.prototype, {
       qty,
       this.pos.foreign_currency.rounding,
     );
+
     all_taxes.taxes.forEach(function (tax) {
       taxtotal += tax.amount;
       taxdetail[tax.id] = {
