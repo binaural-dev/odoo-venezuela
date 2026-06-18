@@ -164,8 +164,7 @@ class PosSession(models.Model):
                 )
             except KeyError as e:
                 raise ValueError(
-                    _("The category %s does not belong to this company.")
-                    % category["parent_id"][1]
+                    _("The category %s does not belong to this company.", category["parent_id"][1])
                 ) from e
 
         return categories
@@ -195,8 +194,7 @@ class PosSession(models.Model):
                 product["categ"] = product_category_by_id[categ_id]
             else:
                 raise ValueError(
-                    _("The category %s does not belong to this company.")
-                    % product["categ_id"][1]
+                    _("The category %s does not belong to this company.", product["categ_id"][1])
                 )
 
             product["image_128"] = bool(product["image_128"])
@@ -514,7 +512,10 @@ class PosSession(models.Model):
             'journal_id': payment_method.journal_id.id,
             'force_outstanding_account_id': outstanding_account.id,
             'destination_account_id':  destination_account.id,
-            'ref': _('Combine %s POS payments from %s', payment_method.name, self.name),
+            'ref': _('Combine %(payment_method_name)s POS payments from %(session_name)s') % {
+                'payment_method_name': payment_method.name,
+                'session_name': self.name,
+            },
             'pos_payment_method_id': payment_method.id,
             'pos_session_id': self.id,
             'company_id': self.company_id.id,
@@ -599,7 +600,7 @@ class PosSession(models.Model):
         if not line_ids:
             return move
             
-        move_ref_value = _("Cross Move per Operation - Session: %s") % self.name
+        move_ref_value = _("Cross Move per Operation - Session: %s", self.name)
         move = self.env["account.move"].create(
             {
                 "name": move_name_value,
@@ -649,7 +650,7 @@ class PosSession(models.Model):
         foreign_rate = amounts["foreign_rate"]
 
         move_name_value = self.name
-        move_ref_value = _("Unique PoS Cross Move - Sesión: %s") % self.name
+        move_ref_value = _("Unique PoS Cross Move - Sesión: %s", self.name)
 
         move = self.env["account.move"].create(
             {
