@@ -481,7 +481,7 @@ class AccountPaymentAndIgtf(models.Model):
                         igtf_base = float_round((balance * porcion_igtf), precision_digits=precision_base)
                         
                         """ Prevent apply more IGTF than """
-                        if igtf_base - top_igtf <= 0.1: 
+                        if top_igtf - igtf_base  <= 0.1: 
                             igtf_base = float_round(top_igtf,precision_digits=precision_base)
 
                         amount = credit_amount - igtf_base
@@ -584,7 +584,7 @@ class AccountPaymentAndIgtf(models.Model):
                         igtf_base = float_round((balance * porcion_igtf), precision_digits=precision_base)
                         
                         """ Prevent apply more IGTF than """
-                        if igtf_base - top_igtf <= 0.1: 
+                        if top_igtf - igtf_base  <= 0.1: 
                             igtf_base = float_round(top_igtf,precision_digits=precision_base)
 
                         amount = debit_amount - igtf_base
