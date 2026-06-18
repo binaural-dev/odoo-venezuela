@@ -6,10 +6,11 @@ import { patch } from "@web/core/utils/patch";
 // New orders are now associated with the current table, if any.
 patch(PaymentScreen.prototype, {
 
-  addNewPaymentLine(paymentMethod) {
+addNewPaymentLine(paymentMethod) {
     let res = super.addNewPaymentLine(...arguments);
-      this.pos.get_order().update_igtf()
-     
+    // update_igtf() already called inside Order.add_paymentline()
+    // No need to call it again — double invocation causes incorrect
+    // last_igtf_amount comparisons and unnecessary recalculation.
     this.render();
     return res
   },
