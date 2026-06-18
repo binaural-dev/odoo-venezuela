@@ -5,10 +5,6 @@ from odoo.exceptions import UserError
 class TaxUnit(models.Model):
     _inherit = "tax.unit"
 
-    name = fields.Char(string="Description", help="Tax Unit Description", required=True, store=True)
-    value = fields.Float(help="Tax unit value", required=True, store=True, tracking=True)
-    status = fields.Boolean(default=True, string="Active?", store=True, tracking=True)
-
     available_date = fields.Date(string="Publish Date", store=True, tracking=True, required=True)
 
     @api.constrains('value', 'available_date')
