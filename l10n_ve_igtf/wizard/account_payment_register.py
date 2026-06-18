@@ -98,17 +98,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             wizard.last_computed_amount = final_amount   
 
     def get_moves(self):
-        """ Return the moves to pay from the context.
-        Overridden to ensure that we always get the moves from the context,
-        even if we are in edit mode.
-        """
-        ids=self.env.context.get("active_id") or self.env.context.get("active_ids")
-
-        if isinstance(ids, int):
-            return self.env["account.move"].browse([ids])
-        else:
-            move_lines = self.env["account.move.line"].browse(ids)
-            return set(move_lines.mapped("move_id"))
+        return self.env["l10n_ve_igtf.utils"].get_moves_from_context()
+    
 
     @api.onchange('payment_difference')
     def _onchange_diference(self):

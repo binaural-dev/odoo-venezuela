@@ -67,13 +67,10 @@ class IGTFUtils(models.AbstractModel):
 
     @api.model
     def get_moves_from_context(self):
-        ctx = self.env.context
-        ids = ctx.get('active_ids', [])
-        if not ids and ctx.get('active_id'):
-            ids = [ctx.get('active_id')]
-        active_model = ctx.get('active_model', 'account.move')
-        if active_model == 'account.move':
-            return self.env["account.move"].browse(ids)
+
+        ids=self.env.context.get("active_id") or self.env.context.get("active_ids")
+        if isinstance(ids, int):
+            return self.env["account.move"].browse([ids])
         else:
             move_lines = self.env["account.move.line"].browse(ids)
             return set(move_lines.mapped("move_id"))
