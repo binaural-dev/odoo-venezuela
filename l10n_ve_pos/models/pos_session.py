@@ -507,12 +507,13 @@ class PosSession(models.Model):
             # revert the accounts because account.payment doesn't accept negative amount.
             outstanding_account, destination_account = destination_account, outstanding_account
 
+        ref_msg = _('Combine %(payment_method_name)s POS payments from %(session_name)s')
         account_payment = self.env['account.payment'].with_context(pos_payment=True).create({
             'amount': abs(amounts['amount']),
             'journal_id': payment_method.journal_id.id,
             'force_outstanding_account_id': outstanding_account.id,
             'destination_account_id':  destination_account.id,
-            'ref': _('Combine %(payment_method_name)s POS payments from %(session_name)s') % {
+            'ref': ref_msg % {
                 'payment_method_name': payment_method.name,
                 'session_name': self.name,
             },
