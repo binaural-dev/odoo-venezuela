@@ -173,10 +173,14 @@ class AccountPaymentAndIgtf(models.Model):
                         
                         rec._fix_writeoff_balance(vals, write_off_line_vals)
                     else:
-                        if abs(vals[0]['balance']) - abs(total_base_residual) <= 0.1:
+                        if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1:
                             """ FIX balances when diference is decimal"""
-                            vals[0].update({"balance": total_base_residual})
-                            vals[1].update({"balance": -total_base_residual})
+                            if rec.partner_type == "customer":
+                                vals[0].update({"balance": total_base_residual})
+                                vals[1].update({"balance": -total_base_residual})
+                            else:
+                                vals[0].update({"balance": -total_base_residual})
+                                vals[1].update({"balance": total_base_residual})
 
             return vals
     
