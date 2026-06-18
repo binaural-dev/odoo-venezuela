@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250821\n"
+"Project-Id-Version: Odoo Server 17.0+e-20260125\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-15 21:01+0000\n"
-"PO-Revision-Date: 2025-10-15 21:01+0000\n"
+"POT-Creation-Date: 2026-02-10 19:50+0000\n"
+"PO-Revision-Date: 2026-02-10 19:50+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -111,6 +111,11 @@ msgstr ""
 #: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__flag_21__30
 msgid "30"
 msgstr ""
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__custom_header
+msgid "Activate Custom Header"
+msgstr "Activar Encabezado Personalizado"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__ra
@@ -329,6 +334,11 @@ msgid "Has Pinpad Machine"
 msgstr "¿Tiene Pinpad? (Windows)"
 
 #. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__ph01_header
+msgid "Header of Invoice"
+msgstr "Encabezado de las facturas"
+
+#. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_port__id
 msgid "ID"
 msgstr ""
@@ -342,6 +352,11 @@ msgstr "Id del método de pago"
 #: model:ir.model,name:l10n_ve_iot_mf.model_iot_device
 msgid "IOT Device"
 msgstr "Dispositivo IoT"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_wizard_accounting_reports__all_documents
+msgid "Include all issued documents"
+msgstr "Incluir todos los documentos emitidos"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__rf
@@ -373,6 +388,13 @@ msgstr "Iot Lista negra"
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__is_credit
 msgid "Is Credit"
 msgstr "Es a Crédito"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,help:l10n_ve_iot_mf.field_wizard_accounting_reports__all_documents
+msgid ""
+"It includes all documents, both those issued by a fiscal machine and those "
+"issued by free form."
+msgstr "Incluye todos los documentos, tanto los emitidos por una máquina fiscal como los emitidos por forma libre."
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model,name:l10n_ve_iot_mf.model_account_journal
@@ -788,6 +810,20 @@ msgid "The invoice has not already been printed"
 msgstr "La factura no fue impresa"
 
 #. module: l10n_ve_iot_mf
+#: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__custom_header
+msgid "This check box allow to configure a custom header for the invoice"
+msgstr "Esta casilla de verificación permite configurar un encabezado personalizado para la factura"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__ph01_header
+msgid ""
+"This field allow to configure a custom header for the invoice for the Fiscal"
+" machines without fabric configuration"
+msgstr ""
+"Este campo permite configurar un encabezado personalizado para la factura en"
+" las máquinas fiscales sin configuración de fábrica."
+
+#. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_bank_statement_line__print_type
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_move__print_type
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_payment__print_type
@@ -885,20 +921,14 @@ msgid "iot.port"
 msgstr "Puerto IoT"
 
 #. module: l10n_ve_iot_mf
-#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__custom_header
-msgid "Activate Custom Header"
-msgstr "Activar Encabezado Personalizado"
-
-#. module: l10n_ve_iot_mf
-#: model:ir.model.fields,help:l10n_ve_iot_mf.field_iot_device__ph01_header
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/iot_handlers/drivers/SerialFiscalDriver.py:0
+#, python-format
 msgid ""
-"This field allow to configure a custom header for the invoice for the Fiscal"
-" machines without fabric configuration"
+"¡Error de impresora fiscal! La impresora fiscal actual no coincide con la "
+"usada en la factura original. Serial de la factura: %s. Serial de la "
+"impresora conectada: %s."
 msgstr ""
-"Este campo permite configurar un encabezado personalizado para la factura en "
-"las máquinas fiscales sin configuración de fábrica."
-
-#. module: l10n_ve_iot_mf
-#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_iot_device__ph01_header
-msgid "Header of Invoice"
-msgstr "Encabezado de las facturas"
+"¡Error de impresora fiscal! La impresora fiscal actual no coincide con la "
+"usada en la factura original. Serial de la factura: %s. Serial de la "
+"impresora conectada: %s."
