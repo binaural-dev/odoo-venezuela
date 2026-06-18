@@ -141,31 +141,37 @@ class AccountRetention(models.Model):
         help="Payments",
     )
 
-    total_invoice_amount = fields.Float(
+    total_invoice_amount = fields.Monetary(
+        currency_field="company_currency_id",
         string="Taxable Income",
         compute="_compute_totals",
         help="Taxable Income Total",
         store=True,
     )
-    total_iva_amount = fields.Float(
+    total_iva_amount = fields.Monetary(
+        currency_field="company_currency_id",
         string="Total IVA", compute="_compute_totals", store=True
     )
-    total_retention_amount = fields.Float(
+    total_retention_amount = fields.Monetary(
+        currency_field="company_currency_id",
         compute="_compute_totals",
         store=True,
         help="Retained Amount Total",
     )
 
-    foreign_total_invoice_amount = fields.Float(
+    foreign_total_invoice_amount = fields.Monetary(
+        currency_field="foreign_currency_id",
         string="Taxable Income",
         compute="_compute_totals",
         help="Taxable Income Total",
         store=True,
     )
-    foreign_total_iva_amount = fields.Float(
+    foreign_total_iva_amount = fields.Monetary(
+        currency_field="foreign_currency_id",
         string="Total IVA", compute="_compute_totals", store=True
     )
-    foreign_total_retention_amount = fields.Float(
+    foreign_total_retention_amount = fields.Monetary(
+        currency_field="foreign_currency_id",
         compute="_compute_totals",
         store=True,
         help="Retained Amount Total",
@@ -224,56 +230,19 @@ class AccountRetention(models.Model):
             retention.foreign_total_retention_amount = 0
 
             for line in retention.retention_line_ids:
-                if line.move_id.move_type in ("in_refund", "out_refund"):
-                    retention.total_invoice_amount -= float_round(
-                        line.invoice_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_iva_amount -= float_round(
-                        line.iva_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_retention_amount -= float_round(
-                        line.retention_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_invoice_amount -= float_round(
-                        line.foreign_invoice_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_iva_amount -= float_round(
-                        line.foreign_iva_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_retention_amount -= float_round(
-                        line.foreign_retention_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                else:
-                    retention.total_invoice_amount += float_round(
-                        line.invoice_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_iva_amount += float_round(
-                        line.iva_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_retention_amount += float_round(
-                        line.retention_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_invoice_amount += float_round(
-                        line.foreign_invoice_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_iva_amount += float_round(
-                        line.foreign_iva_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_retention_amount += float_round(
-                        line.foreign_retention_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
+                
+                retention.total_invoice_amount += line.invoice_amount
+                   
+                retention.total_iva_amount += line.iva_amount
+                    
+                retention.total_retention_amount += line.retention_amount
+                    
+                retention.foreign_total_invoice_amount += line.foreign_invoice_amount
+                   
+                retention.foreign_total_iva_amount += line.foreign_iva_amount
+                    
+                retention.foreign_total_retention_amount += line.foreign_retention_amount
+                    
 
     @api.onchange("partner_id")
     def onchange_partner_id(self):
@@ -520,7 +489,7 @@ class AccountRetention(models.Model):
                 if invoice_total < retention_amount:
                     error_msg = _(
                         "The retention amount (%s) cannot be greater than the invoice total signed amount (%s) for invoice %s."
-                    ) % (round(retention_amount, 2), invoice_total, move.name)
+                    ) % (retention_amount, invoice_total, move.name)
                     
                     if is_automated:
                         retention.message_post(body=error_msg, category='exception')
@@ -805,7 +774,7 @@ class AccountRetention(models.Model):
                 "foreign_iva_amount": tax_group["tax_amount_foreign_currency"],
                 "foreign_invoice_total": invoice_id.tax_totals["total_amount_foreign_currency"],
             }
-            if invoice_id.move_type == "out_invoice":
+            if invoice_id.move_type in ['out_invoice', 'out_refund']:
                 if self.env.company.auto_fill_retention_amount_iva:
                     line_data["retention_amount"] = retention_amount
                     line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (withholding_amount / 100)
@@ -833,7 +802,7 @@ class AccountRetention(models.Model):
     def _check_number(self):
         for record in self:
             if (
-                record.type == "out_invoice"
+                record.type in ['out_invoice', 'out_refund']
                 and record.number
                 and record.state != "draft"
             ):
@@ -886,7 +855,6 @@ class AccountRetention(models.Model):
         ALWAYS groups retention lines by invoice (move_id) to process them in optimal batches.
         """
         Payment = self.env["account.payment"]
-        Rate = self.env["res.currency.rate"]
 
         for retention in self:
             if any(retention.payment_ids):
@@ -905,13 +873,6 @@ class AccountRetention(models.Model):
             for move, lines in lines_by_move.items():
                 
                 vals = retention._prepare_retention_payment_vals(move, lines)
-                
-                if retention.type_retention == "iva":
-                    vals["foreign_rate"] = lines[0].foreign_currency_rate
-                    vals["foreign_inverse_rate"] = Rate.compute_inverse_rate(vals["foreign_rate"])
-                else:
-                    vals["foreign_rate"] = move.foreign_rate
-                    vals["foreign_inverse_rate"] = move.foreign_inverse_rate
 
                 payment_vals_list.append(vals)
                 lines_to_link_by_vals[id(vals)] = lines
@@ -953,7 +914,17 @@ class AccountRetention(models.Model):
             ("municipal", "in_invoice"): self.env.company.municipal_supplier_retention_journal_id,
             ("municipal", "out_invoice"): self.env.company.municipal_customer_retention_journal_id,
         }
-        journal = journals.get((self.type_retention, self.type))
+        move_type = self.type
+
+        # Si es Nota de Crédito (refund), lo tratamos como su factura equivalente para el diario
+        if move_type == 'in_refund':
+            move_type = 'in_invoice'
+        elif move_type == 'out_refund':
+            move_type = 'out_invoice'
+
+        journal = journals.get((self.type_retention, move_type))
+        if not journal:
+            raise UserError(_('There are not retention Journals config.'))
 
         res = {
             "state": "draft",
