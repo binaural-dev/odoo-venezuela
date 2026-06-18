@@ -747,7 +747,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         is_sale = self.report == "sale"
 
         if is_sale:
+            sale_lines = self.parse_sale_book_data()
+            if not sale_lines:
+                raise UserError(_('No sale records found for the selected period.'))
+
             return self.download_sales_book()
+        else:
+            purchase_lines = self.parse_purchase_book_data()
+            if not purchase_lines:
+                raise UserError(_('No purchase records found for the selected period.'))
 
         return self.download_purchases_book()
 
