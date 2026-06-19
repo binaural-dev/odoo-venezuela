@@ -1,5 +1,5 @@
-from odoo.tests.common import TransactionCase
-from odoo.tests.common import Form
+from odoo.tests import tagged , Form ,TransactionCase
+
 
 from odoo import fields, Command
 import logging

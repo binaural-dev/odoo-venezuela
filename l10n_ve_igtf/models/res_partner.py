@@ -8,7 +8,6 @@ class ResPartner(models.Model):
         "account.account", 
         domain=[("account_type", "=", "liability_current"), ("is_advance_account", "=", True),('reconcile','=',True)], 
         copy=False, 
-        required=True,
         default=lambda self: self.env.company.advance_customer_account_id,
     )
 
@@ -16,7 +15,6 @@ class ResPartner(models.Model):
         "account.account", 
         domain=[("account_type", "=", "asset_current"),("is_advance_account", "=", True),('reconcile','=',True)], 
         copy=False, 
-        required=True, 
         default=lambda self: self.env.company.advance_supplier_account_id,
     )
 
