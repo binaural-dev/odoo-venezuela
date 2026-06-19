@@ -737,7 +737,7 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self:
-            if abs(rec.amount_total_signed) > 0 or rec.payment_state in ['paid','in_payment']: 
+            if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']: 
                 rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
