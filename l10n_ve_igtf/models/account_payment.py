@@ -243,45 +243,34 @@ class AccountPaymentAndIgtf(models.Model):
             # Current counterpart balance and its direction
             cpart = vals[1]
             current = cpart.get('balance', 0) or (cpart.get('debit', 0) - cpart.get('credit', 0))
-            is_debit = cpart.get('debit', 0) > 0
 
             # Actual residual in company currency from the invoices
             invoice_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
             residual_abs = abs(invoice_residual) if invoice_residual else 0.0
 
             # Preserve the sign of the current counterpart line
-            expected = residual_abs if is_debit else -residual_abs
+            expected = -invoice_residual if invoice_residual else 0.0
 
             diff = expected - current
             if comp_curr.is_zero(diff):
                 return
 
-            # Force counterpart to match the invoice residual
+            # Force counterpart to match the invoice residual (solo balance)
             cpart['balance'] = expected
-            if is_debit:
-                cpart.update({'debit': expected, 'credit': 0.0})
-            else:
-                cpart.update({'debit': 0.0, 'credit': expected})
             # Recalculate amount_currency from the forced balance
-            # Preserve sign: debit > 0 → amount_currency > 0, credit > 0 → amount_currency < 0
             amt = comp_curr._convert(
                 abs(expected), currency, rec.company_id, rec.date,
             )
-            cpart['amount_currency'] = -amt if not is_debit else amt
+            cpart['amount_currency'] = amt if expected > 0 else -amt
 
             # Absorb the difference in the write-off line to keep total = 0
             w_off = vals[2]
             w_off['balance'] = w_off.get('balance', 0) - diff
-            if w_off['balance'] > 0:
-                w_off.update({'debit': w_off['balance'], 'credit': 0.0})
-            else:
-                w_off.update({'debit': 0.0, 'credit': -w_off['balance']})
             # Recalculate write-off amount_currency with correct sign
-            w_is_debit = w_off.get('debit', 0) > 0
             w_amt = comp_curr._convert(
                 abs(w_off['balance']), currency, rec.company_id, rec.date,
             )
-            w_off['amount_currency'] = -w_amt if not w_is_debit else w_amt
+            w_off['amount_currency'] = w_amt if w_off['balance'] > 0 else -w_amt
 
     def _create_inbound_move_line_igtf_vals(self, vals, igtf_base):
         """
@@ -406,7 +395,6 @@ class AccountPaymentAndIgtf(models.Model):
                         "amount_currency": igtf_amount_currency,
                         "account_id": igtf_account,
                         "partner_id": rec.partner_id.id,
-                        "credit": credit,
                         "balance": credit,
                     })
                 
@@ -419,11 +407,8 @@ class AccountPaymentAndIgtf(models.Model):
                         "amount_currency": igtf_amount_curr,
                         "account_id": igtf_account,
                         "partner_id": rec.partner_id.id,
-                        "credit": credit,
                         "balance": credit,
                     })
-            
-
         return vals
   
 
@@ -511,17 +496,21 @@ class AccountPaymentAndIgtf(models.Model):
                 
                 if write_off_line_vals:
                     # Recalculate write-off balance to compensate the adjusted counterpart
-                    cc = rec.company_id.currency_id
                     net_no_writeoff = sum(
-                        v.get('balance', 0) or (v.get('debit', 0.0) - v.get('credit', 0.0))
+                        v.get('balance', 0) 
                         for v in vals
                         if v is not vals[2]
                     ) - igtf_base
+
+                    amout_currency_no_writeoff = sum(
+                        v.get('amount_currency', 0) 
+                        for v in vals
+                        if v is not vals[2]
+                    ) - rec.igtf_amount
+
                     vals[2]['balance'] = -net_no_writeoff
                     if vals[2]['balance'] != 0:
-                        vals[2]['amount_currency'] = cc._convert(
-                            vals[2]['balance'], currency, rec.company_id, rec.date,
-                        )
+                        vals[2]['amount_currency'] = -amout_currency_no_writeoff
                     else:
                         vals[2]['amount_currency'] = 0.0
                 
@@ -552,7 +541,7 @@ class AccountPaymentAndIgtf(models.Model):
         for rec in self:
             lines = [line for line in vals]
             if rec.payment_type == "outbound":
-
+                
                 total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
                 top_igtf = abs(sum(rec.invoices_origin_ids.mapped('igtf_top_aply')))
 
@@ -579,7 +568,7 @@ class AccountPaymentAndIgtf(models.Model):
                         igtf_base = top_igtf
                         amount = debit_amount - igtf_base
                     else:
-
+                        
                         porcion_igtf = rec.igtf_amount / abs(lines[0]["amount_currency"])
                         igtf_base = float_round((balance * porcion_igtf), precision_digits=precision_base)
                         
@@ -587,7 +576,7 @@ class AccountPaymentAndIgtf(models.Model):
                         if top_igtf - igtf_base  <= 0.1: 
                             igtf_base = float_round(top_igtf,precision_digits=precision_base)
 
-                        amount = debit_amount - igtf_base
+                        amount = (debit_amount) - abs(igtf_base)
                         
                     total_base_residual_converted =  rec.company_id.currency_id._convert( 
                         total_base_residual, 
@@ -605,6 +594,7 @@ class AccountPaymentAndIgtf(models.Model):
                 
                 if float_compare(rec.igtf_amount, 0.0, precision_digits=precision) > 0.0:
                     if not write_off_line_vals:
+
                         
                         vals[1].update({"amount_currency": debit_line, "balance": amount})
                     else:
@@ -613,20 +603,24 @@ class AccountPaymentAndIgtf(models.Model):
                 
                 if write_off_line_vals:
                     # Recalculate write-off balance to compensate the adjusted counterpart
-                    cc = rec.company_id.currency_id
                     net_no_writeoff = sum(
-                        v.get('balance', 0) or (v.get('debit', 0.0) - v.get('credit', 0.0))
+                        v.get('balance', 0) 
                         for v in vals
                         if v is not vals[2]
                     ) + igtf_base
-                    vals[2]['balance'] = net_no_writeoff
+
+                    amout_currency_no_writeoff = sum(
+                        v.get('amount_currency', 0) 
+                        for v in vals
+                        if v is not vals[2]
+                    ) - rec.igtf_amount
+
+                    vals[2]['balance'] = -net_no_writeoff
                     if vals[2]['balance'] != 0:
-                        vals[2]['amount_currency'] = cc._convert(
-                            vals[2]['balance'], currency, rec.company_id, rec.date,
-                        )
+                        vals[2]['amount_currency'] = -amout_currency_no_writeoff
                     else:
                         vals[2]['amount_currency'] = 0.0
-
+                
                 rec._create_outbound_move_line_igtf_vals(vals, igtf_base)
 
     def action_cancel(self):

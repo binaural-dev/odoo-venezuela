@@ -151,23 +151,42 @@ class AccountPaymentRegister(models.TransientModel):
         wizard_curr = self.currency_id
         comp_curr = self.company_currency_id
         total_amount = 0.0
-
+        payment_date = self.payment_date
         for installment in installments:
             line = installment['line']
             curr = line.currency_id
+            doc_date = line.date
 
             if curr == wizard_curr:
-                total_amount += installment['amount_residual_currency']
+                if doc_date == payment_date:
+                    total_amount += installment['amount_residual_currency']
+                else:
+                    total_amount += curr._convert(
+                    installment['amount_residual_currency'],
+                    wizard_curr,
+                    self.company_id,
+                    payment_date,
+                )
+
 
             elif curr != comp_curr and wizard_curr == comp_curr:
-                total_amount += installment['amount_residual']
+                if doc_date == payment_date:
+                    total_amount += installment['amount_residual']
+                else:
+                    total_amount += curr._convert(
+                    installment['amount_residual_currency'],
+                    wizard_curr,
+                    self.company_id,
+                    payment_date,
+                )
+
 
             elif curr == comp_curr and wizard_curr != comp_curr:
                 total_amount += comp_curr._convert(
                     installment['amount_residual'],
                     wizard_curr,
                     self.company_id,
-                    self.payment_date,
+                    payment_date,
                 )
 
             else:
@@ -175,7 +194,7 @@ class AccountPaymentRegister(models.TransientModel):
                     installment['amount_residual_currency'],
                     wizard_curr,
                     self.company_id,
-                    self.payment_date,
+                    payment_date,
                 )
 
         return total_amount
