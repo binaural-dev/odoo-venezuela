@@ -271,6 +271,9 @@ class SaleOrder(models.Model):
        
         invoices = self.env["account.move"]
         for order in self:
+            if order._context.get("ignore_while", False):
+                invoices |= super()._create_invoices(grouped, final, date)
+                continue
             invoiceable_lines = order._get_invoiceable_lines(final)
             while len(invoiceable_lines) != 0:
                 invoices |= super()._create_invoices(grouped, final, date)

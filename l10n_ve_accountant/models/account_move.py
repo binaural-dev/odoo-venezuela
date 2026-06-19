@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 
 from lxml import etree
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import drop_index, float_compare, index_exists
 from odoo.tools.float_utils import float_round
@@ -166,12 +166,38 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
-    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_foreign_amount_residual", currency_field="foreign_currency_id",readonly=False)
+    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
 
-    @api.depends('amount_residual','company_currency_id','foreign_inverse_rate')
-    def _compute_foreign_amount_residual(self):
-        for rec in self:
-            rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+    @api.depends(
+        'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.payment_id.is_matched',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.balance',
+        'line_ids.currency_id',
+        'line_ids.amount_currency',
+        'line_ids.amount_residual',
+        'line_ids.amount_residual_currency',
+        'line_ids.payment_id.state',
+        'line_ids.full_reconcile_id',
+        'state',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.foreign_amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.foreign_amount_residual',
+    )
+    def _compute_amount(self):
+        super()._compute_amount()
+        for move in self:
+            total_residual_currency = 0.0
+            for line in move.line_ids:
+                if line.display_type == 'payment_term':
+                    total_residual_currency += line.foreign_amount_residual
+            sign = move.direction_sign
+            if move.is_invoice(include_receipts=True):
+                move.foreign_amount_residual = -sign * total_residual_currency
+            else:
+                move.foreign_amount_residual = abs(total_residual_currency)
             
          
 
@@ -274,44 +300,35 @@ class AccountMove(models.Model):
             container = {'records': moves}
             moves._sync_dynamic_lines(container)
 
-    @api.depends("invoice_line_ids", "tax_totals")
+    @api.depends("invoice_line_ids.price_unit", "invoice_line_ids.quantity", "invoice_line_ids.discount", "tax_totals")
     def _compute_detailed_amounts(self):
         for record in self:
-            discount_amount = 0
-            if not record.tax_totals:
-                record.detailed_amounts = dict()
-                return
-            amount_taxed = record.tax_totals.get(
-                "amount_total", 0
-            ) - record.tax_totals.get("amount_untaxed", 0)
-            total = 0
+            # Inicializamos siempre para evitar errores si no entra en la lógica
+            total = 0.0
+            discount_amount = 0.0
+            amount_taxed = 0.0
+            
+            if record.tax_totals:
+                amount_taxed = record.tax_totals.get("amount_total", 0.0) - record.tax_totals.get("amount_untaxed", 0.0)
 
-            for line in record.invoice_line_ids:
+            # Calculamos sobre las líneas de factura de forma segura
+            for line in record.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
                 subtotal = line.price_unit * line.quantity
                 if line.discount > 0:
-                    discount_amount += subtotal - line.price_subtotal
+                    discount_amount += (subtotal - line.price_subtotal)
                 total += subtotal
 
-            record.detailed_amounts = dict(
-                {
-                    "gross_amount": total,
-                    "formatted_gross_amount": formatLang(
-                        self.env, total, currency_obj=self.currency_id
-                    ),
-                    "discount_amount": discount_amount,
-                    "formatted_discount_amount": formatLang(
-                        self.env, discount_amount, currency_obj=self.currency_id
-                    ),
-                    "gross_discount_amount": total,
-                    "formatted_gross_discount_amount": formatLang(
-                        self.env, total - discount_amount, currency_obj=self.currency_id
-                    ),
-                    "taxes_amount": amount_taxed,
-                    "formatted_taxes_amount": formatLang(
-                        self.env, amount_taxed, currency_obj=self.currency_id
-                    ),
-                }
-            )
+            # Asignamos el diccionario completo sin usar 'return' para no romper el bucle masivo
+            record.detailed_amounts = {
+                "gross_amount": total,
+                "formatted_gross_amount": formatLang(self.env, total, currency_obj=record.currency_id),
+                "discount_amount": discount_amount,
+                "formatted_discount_amount": formatLang(self.env, discount_amount, currency_obj=record.currency_id),
+                "gross_discount_amount": total - discount_amount, # Corregido: antes estaba 'total' a secas en dict original
+                "formatted_gross_discount_amount": formatLang(self.env, total - discount_amount, currency_obj=record.currency_id),
+                "taxes_amount": amount_taxed,
+                "formatted_taxes_amount": formatLang(self.env, amount_taxed, currency_obj=record.currency_id),
+            }
 
 
     @api.model
@@ -742,8 +759,8 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_taxable_income = False
-            if move.is_invoice() and move.invoice_line_ids:
-                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"]
+            if move.is_invoice() and move.invoice_line_ids and isinstance(move.tax_totals, dict):
+                move.foreign_taxable_income = move.tax_totals.get("foreign_amount_untaxed", 0.0)
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
@@ -1075,4 +1092,45 @@ class AccountMove(models.Model):
                     raise ValidationError(_("All added lines must indicate the product."))
                 
 
-  
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        """
+        Reverse moves and swap foreign adjustment fields by matching line indices
+        to ensure every line is processed correctly even if sequences are identical.
+        """
+        reverse_moves = super(AccountMove, self)._reverse_moves(
+            default_values_list=default_values_list, 
+            cancel=cancel
+        )
+
+        for move in reverse_moves:
+            original_move = move.reversed_entry_id
+            if not original_move:
+                continue
+
+            lines_to_update = []
+            
+            reversed_lines = move.line_ids.sorted('id')
+            original_lines = original_move.line_ids.sorted('id')
+
+            for rev_line, orig_line in zip(reversed_lines, original_lines):
+                # THE SWAP: Get values from the specific matching original line
+                f_debit_source = getattr(orig_line, 'foreign_debit_adjustment', 0.0)
+                f_credit_source = getattr(orig_line, 'foreign_credit_adjustment', 0.0)
+
+                if f_debit_source or f_credit_source:
+                    lines_to_update.append(Command.update(rev_line.id, {
+                        'foreign_debit_adjustment': f_credit_source,
+                        'foreign_credit_adjustment': f_debit_source,
+                    }))
+                else:
+                    lines_to_update.append(Command.update(rev_line.id, {
+                        'foreign_debit_adjustment': 0.0,
+                        'foreign_credit_adjustment': 0.0,
+                    }))
+
+            if lines_to_update:
+                move.with_context(skip_invoice_sync=True).write({
+                    'line_ids': lines_to_update
+                })
+
+        return reverse_moves
