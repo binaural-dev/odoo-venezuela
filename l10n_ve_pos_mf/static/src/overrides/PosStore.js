@@ -4,7 +4,9 @@ import { PosStore } from "@point_of_sale/app/store/pos_store";
 import { patch } from "@web/core/utils/patch";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
+import { floatIsZero, roundPrecision as round_pr } from "@web/core/utils/numbers";
 import { LocalOrderBuffer } from "../utils/LocalOrderBuffer";
+import { LocalOrderHistory } from "../utils/LocalOrderHistory";
 
 /**
  * Override del PosStore para integrar la máquina fiscal vía Web Serial API
@@ -109,6 +111,7 @@ patch(PosStore.prototype, {
     let uid = order.uid
     const values = Object.values(this.toRefundLines)
     let lines = []
+    let affectedOrderData = null
     
     for (let i = 0; i < values.length; i++) {
       if (values[i].destinationOrderUid == uid) {
@@ -129,35 +132,67 @@ patch(PosStore.prototype, {
     }
 
     if (lines.length > 0 && invoice['type'] == 'out_refund') {
-      try {
-        const response = await this.orm.call("pos.order", "get_order_by_uid", [[], lines[0].orderline.orderUid])
-        if (!this.is_same_mf(response[0].fiscal_machine)) {
-          return { "valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}` }
-        }
-        if (response.length > 0) {
-          const date = new Date(response[0].date_order);
-          const format_date = date.toLocaleDateString('es-ES');
+      const originalOrderUid = lines[0].orderline.orderUid
+      const localOrder = LocalOrderHistory.getByUid(originalOrderUid)
 
-          invoice["invoice_affected"] = {
-            "number": response[0].mf_invoice_number,
-            "serial_machine": response[0].fiscal_machine,
-            "date": format_date,
+      if (localOrder) {
+        affectedOrderData = localOrder
+      } else {
+        try {
+          const response = await this.orm.call("pos.order", "get_order_by_uid", [[], originalOrderUid])
+          if (response.length > 0) {
+            affectedOrderData = response[0]
+          }
+        } catch (err) {
+          console.error("MF error: ", err)
+          if (!err.valid) {
+            this.env.services.popup.add(ErrorPopup, {
+              title: _t("MF error"),
+              body: _t(err.message ? err.message : "Internal MF error"),
+            });
+            return err
           }
         }
-      } catch (err) {
-        console.error("MF error: ", err)
-        if (!err.valid) { 
-          this.env.services.popup.add(ErrorPopup, {
-            title: _t("MF error"),
-            body: _t(err.message ? err.message : "Internal MF error"),
-          });
-          return err
+      }
+
+      if (!affectedOrderData) {
+        return {
+          valid: false,
+          message: _t("No se pudo recuperar la factura original para emitir la nota de credito"),
         }
+      }
+
+      if (!this.is_same_mf(affectedOrderData.fiscal_machine)) {
+        return { "valid": false, "message": `El documento fue impreso desde la Maquina ${affectedOrderData.fiscal_machine}` }
+      }
+
+      const date = new Date(affectedOrderData.date_order);
+      const format_date = date.toLocaleDateString('es-ES');
+
+      invoice["invoice_affected"] = {
+        "number": affectedOrderData.mf_invoice_number,
+        "serial_machine": affectedOrderData.fiscal_machine,
+        "date": format_date,
       }
     }
 
     if (order.orderlines.length > 0) {
       let vef_base = this.currency.name === "VEF" || this.currency.name === "VES"
+      const decimalPlaces = vef_base
+        ? this.currency.decimal_places
+        : (this.foreign_currency?.decimal_places || this.currency.decimal_places)
+      const rounding = vef_base
+        ? this.currency.rounding
+        : (this.foreign_currency?.rounding || this.currency.rounding)
+      const roundAmount = (amount) => round_pr(amount, rounding)
+      const isPositive = (amount) => {
+        const rounded = roundAmount(amount)
+        return !floatIsZero(rounded, decimalPlaces) && rounded > 0
+      }
+      const isNegative = (amount) => {
+        const rounded = roundAmount(amount)
+        return !floatIsZero(rounded, decimalPlaces) && rounded < 0
+      }
 
       invoice['invoice_lines'] = order.orderlines.map((el) => {
         if (!!el.customerNote) {
@@ -184,10 +219,69 @@ patch(PosStore.prototype, {
           let amount = vef_base ? el.amount : el.get_foreign_amount()
           return {
             payment_method: el.payment_method?.code_fiscal_printer || false,
-            amount: amount,
+            amount: roundAmount(amount),
           }
         })
-        .filter((line) => line.amount > 0 && !!line.payment_method)
+        .filter((line) => {
+          if (!line.payment_method) {
+            return false;
+          }
+          if (invoice.type === 'out_refund') {
+            return isNegative(line.amount);
+          }
+          return isPositive(line.amount);
+        })
+
+      if (
+        invoice.type === "out_refund" &&
+        !invoice['payment_lines'].length &&
+        affectedOrderData?.payment_lines?.length
+      ) {
+        const sourcePayments = affectedOrderData.payment_lines
+          .map((line) => ({
+            payment_method:
+              line.payment_method_code ||
+              line.payment_method ||
+              false,
+            amount: Math.abs(Number(line.amount || 0)),
+          }))
+          .filter((line) => !!line.payment_method && isPositive(line.amount));
+
+        const refundTotal = Math.abs(
+          roundAmount(
+            vef_base
+              ? order.get_total_with_tax()
+              : (typeof order.get_foreign_total_with_tax === "function"
+                ? order.get_foreign_total_with_tax()
+                : order.get_total_with_tax())
+          )
+        );
+
+        if (sourcePayments.length && isPositive(refundTotal)) {
+          const totalSource = sourcePayments.reduce((acc, line) => acc + line.amount, 0);
+          let remaining = refundTotal;
+
+          invoice['payment_lines'] = sourcePayments
+            .map((line, index) => {
+              const isLastLine = index === sourcePayments.length - 1;
+              let amount = isLastLine || floatIsZero(totalSource, decimalPlaces)
+                ? remaining
+                : roundAmount((refundTotal * line.amount) / totalSource);
+
+              if (amount > remaining) {
+                amount = remaining;
+              }
+
+              remaining = roundAmount(remaining - amount);
+
+              return {
+                payment_method: line.payment_method,
+                amount: -Math.abs(amount),
+              };
+            })
+            .filter((line) => isNegative(line.amount));
+        }
+      }
 
       if (!invoice['payment_lines'].length) {
         return {
@@ -220,9 +314,9 @@ patch(PosStore.prototype, {
    * @param {Object} response - Respuesta del driver
    */
   set_data_from_fiscal_machine(order, response) {
-    order.fiscal_machine = response.serial || "TFHKA-LOCAL";
-    order.mf_invoice_number = response.invoiceNumber || "";
-    order.mf_reportz = response.reportZ || "";
+    order.fiscal_machine = response.serial || response.serial_machine || "TFHKA-LOCAL";
+    order.mf_invoice_number = response.invoiceNumber || response.invoice_number || "";
+    order.mf_reportz = response.reportZ || response.mf_reportz || "";
   },
 
   /**
@@ -273,6 +367,7 @@ patch(PosStore.prototype, {
 
       // Guardar datos de la MF en la orden
       this.set_data_from_fiscal_machine(order, response);
+      LocalOrderHistory.add(order);
 
       return {
         valid: true,
@@ -314,7 +409,7 @@ patch(PosStore.prototype, {
     // Mapear líneas de pago con nombres de campos correctos
     const payment_lines = (invoiceData.payment_lines || []).map(payment => ({
       payment_method_code: payment.payment_method,
-      amount: payment.amount
+      amount: Math.abs(payment.amount)
     }));
 
     return {

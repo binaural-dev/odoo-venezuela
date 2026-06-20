@@ -6,6 +6,33 @@ import { StatusParser } from "../core/StatusParser";
 import { TfhkaDriver } from "../drivers/TfhkaDriver";
 import { MockSerialConnection } from "./MockSerialConnection";
 
+function buildS1Payload({
+    lastInvoiceNumber = 0,
+    lastNCNumber = 0,
+    dailyClosureCounter = 0,
+    serialMachine = "Z1F0000000",
+    rif = "J123456789",
+}) {
+    const fields = [
+        "01",
+        "000000000000",
+        String(lastInvoiceNumber).padStart(8, "0"),
+        "00000001",
+        "00000000",
+        "00000000",
+        String(dailyClosureCounter),
+        "00000000",
+        rif,
+        serialMachine,
+        "120000",
+        "200626",
+        String(lastNCNumber).padStart(8, "0"),
+        "00000001",
+    ];
+
+    return `S1${fields.join("\n")}`;
+}
+
 /**
  * Suite de Tests para el Driver de Máquina Fiscal TFHKA
  * 
@@ -33,13 +60,13 @@ QUnit.test("Cálculo correcto de LRC (XOR checksum)", (assert) => {
     assert.strictEqual(frame1[3], 0x58, "Contiene 'X' (0x58)");
     assert.strictEqual(frame1[4], 0x03, "Contiene ETX (0x03)");
     
-    // Calcular LRC manualmente: 0x02 ^ 0x49 ^ 0x30 ^ 0x58 ^ 0x03
-    const expectedLRC1 = 0x02 ^ 0x49 ^ 0x30 ^ 0x58 ^ 0x03;
+    // Calcular LRC manualmente: 0x49 ^ 0x30 ^ 0x58 ^ 0x03 (sin STX)
+    const expectedLRC1 = 0x49 ^ 0x30 ^ 0x58 ^ 0x03;
     assert.strictEqual(frame1[5], expectedLRC1, `LRC correcto: 0x${expectedLRC1.toString(16)}`);
     
     // Test 2: Comando con RIF "@J123456789"
     const frame2 = FiscalProtocol.buildFrame("@J123456789");
-    const dataBytes = frame2.slice(0, frame2.length - 1);
+    const dataBytes = frame2.slice(1, frame2.length - 1);
     const calculatedLRC = FiscalProtocol.calculateLRC(dataBytes);
     assert.strictEqual(frame2[frame2.length - 1], calculatedLRC, "LRC correcto para comando con RIF");
 });
@@ -54,7 +81,7 @@ QUnit.test("Parsing de respuesta válida con STX/ETX/LRC", (assert) => {
     frameWithoutLRC.set(data, 1);
     frameWithoutLRC[frameWithoutLRC.length - 1] = FiscalProtocol.ETX;
     
-    const lrc = FiscalProtocol.calculateLRC(frameWithoutLRC);
+    const lrc = FiscalProtocol.calculateLRC(frameWithoutLRC.slice(1));
     const frame = new Uint8Array(frameWithoutLRC.length + 1);
     frame.set(frameWithoutLRC, 0);
     frame[frame.length - 1] = lrc;
@@ -261,87 +288,145 @@ QUnit.test("Impresión de Reporte Z (comando 'I0Z')", async (assert) => {
     assert.ok(driver.connection.wasCommandSent("I0Z"), "Comando 'I0Z' enviado");
 });
 
-QUnit.test("Factura completa exitosa (flujo completo)", async (assert) => {
+QUnit.test("Impresión de factura con impuestos y métodos de pago", async (assert) => {
     const driver = new TfhkaDriver();
     driver.connection = new MockSerialConnection();
+    driver.retryDelay = 0;
     
     await driver.connection.requestPort();
     driver.isConnected = true;
     
-    // Simular orden completa
     const mockOrder = {
         partner: {
             vat: "J123456789",
-            name: "EMPRESA TEST"
+            name: "EMPRESA TEST",
         },
         lines: [
             {
-                product_id: { display_name: "Producto 1" },
-                qty: 2,
-                price_unit: 100.50
+                product_name: "Producto Exento",
+                fiscal_code: "0",
+                quantity: 1,
+                price_unit: 10.0,
             },
             {
-                product_id: { display_name: "Producto 2" },
-                qty: 1,
-                price_unit: 50.00
+                product_name: "Producto Reducido",
+                fiscal_code: "2",
+                quantity: 1,
+                price_unit: 20.0,
             }
         ],
-        payment_ids: [
-            { payment_method_id: { type: "cash" } }
+        payment_lines: [
+            { payment_method_code: "01", amount: 10.0 },
+            { payment_method_code: "02", amount: 20.0 },
         ],
-        total_discount: 0
+        additional_lines: [],
+        flag_21: "00",
+        has_cashbox: false,
     };
     
-    // Configurar respuestas simuladas (ACK para cada comando)
-    const expectedCommands = 5; // RIF, Nombre, Producto1, Producto2, Totalización
-    for (let i = 0; i < expectedCommands; i++) {
-        driver.connection.setNextResponse("ACK");
-    }
-    
-    // Configurar respuesta de status para obtener número de factura
     driver.connection.setNextResponse("STATUS");
+    driver.connection.setResponseSequence(["ACK", "ACK", "ACK", "ACK", "ACK", "ACK", "ACK", "ACK", "ACK"]);
+    driver.connection.setNextResponse(buildS1Payload({
+        lastInvoiceNumber: 863,
+        dailyClosureCounter: 18,
+        serialMachine: "Z1F0022949",
+    }));
     
     const result = await driver.printInvoice(mockOrder);
     
     assert.ok(result.success, "Factura impresa exitosamente");
-    
-    // Verificar que se enviaron todos los comandos necesarios
-    const history = driver.connection.getSentCommands();
-    assert.ok(history.length >= 5, `Se enviaron ${history.length} comandos (esperados: ≥5)`);
-    
-    // Verificar que se envió el RIF
-    assert.ok(driver.connection.wasCommandSent("@J123456789"), "RIF enviado correctamente");
-    
-    // Verificar que se envió el nombre
-    assert.ok(driver.connection.wasCommandSent("A"), "Nombre enviado");
-    
-    // Verificar que se envió el comando de totalización ('1')
-    assert.ok(driver.connection.wasCommandSent("1"), "Totalización enviada");
+    assert.strictEqual(result.invoiceNumber, "863", "Número de factura retornado desde S1");
+    assert.strictEqual(result.serial, "Z1F0022949", "Serial retornado desde S1");
+    assert.strictEqual(result.reportZ, 19, "Z afectado calculado desde contador diario");
+
+    const asciiHistory = driver.connection.getSentCommands().map((cmd) => cmd.ascii);
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>iR*J123456789<ETX>")), "RIF enviado");
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>iS*EMPRESA TEST<ETX>")), "Razón social enviada");
+    assert.ok(asciiHistory.some((cmd) => cmd.startsWith("<STX> 0000001000")), "Línea exenta enviada (tax code 0)");
+    assert.ok(asciiHistory.some((cmd) => cmd.startsWith("<STX>\"0000002000")), "Línea reducida enviada (tax code 2)");
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>201000000001000<ETX>")), "Pago parcial método 01 enviado");
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>202000000002000<ETX>")), "Pago parcial método 02 enviado");
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>102<ETX>")), "Cierre de documento usa método principal 02");
 });
 
-QUnit.test("Error de impresión detectado durante factura (debe cancelar)", async (assert) => {
+QUnit.test("Impresión de nota de crédito con secuencia fiscal correcta", async (assert) => {
     const driver = new TfhkaDriver();
     driver.connection = new MockSerialConnection();
+    driver.retryDelay = 0;
     
     await driver.connection.requestPort();
     driver.isConnected = true;
     
-    const mockOrder = {
-        partner: { vat: "J123456789", name: "TEST" },
+    const creditNoteOrder = {
+        partner: {
+            vat: "V17527041",
+            name: "Cliente NC",
+        },
+        invoice_affected: {
+            number: "863",
+            serial_machine: "Z1F0022949",
+            date: "20/06/2026",
+        },
         lines: [
-            { product_id: { display_name: "Producto" }, qty: 1, price_unit: 100 }
+            {
+                product_name: "Producto Devuelto",
+                product_code: "P001",
+                fiscal_code: "1",
+                quantity: 2,
+                price_unit: 50,
+            },
         ],
-        payment_ids: [{ payment_method_id: { type: "cash" } }],
-        total_discount: 0
+        payment_lines: [{ payment_method_code: "01", amount: 100 }],
+        additional_lines: ["OPERADOR: TEST"],
+        flag_21: "00",
+        has_cashbox: false,
     };
-    
-    // Simular error en el segundo comando (nombre)
-    driver.connection.setResponseSequence(["ACK", "NAK", "NAK", "NAK"]);
-    
-    const result = await driver.printInvoice(mockOrder);
-    
-    assert.notOk(result.success, "Factura falló correctamente");
-    assert.ok(result.error.length > 0, "Error reportado");
+
+    driver.connection.setNextResponse("STATUS");
+    driver.connection.setResponseSequence(["ACK", "ACK", "ACK", "ACK", "ACK", "ACK", "ACK", "ACK", "ACK", "ACK"]);
+    driver.connection.setNextResponse(buildS1Payload({
+        lastInvoiceNumber: 863,
+        lastNCNumber: 1234,
+        dailyClosureCounter: 18,
+        serialMachine: "Z1F0022949",
+    }));
+
+    const result = await driver.printCreditNote(creditNoteOrder);
+
+    assert.ok(result.success, "Nota de crédito impresa exitosamente");
+    assert.strictEqual(result.invoiceNumber, "1234", "Número de nota de crédito leído desde S1");
+
+    const fiscalCommands = driver.connection
+        .getSentCommands()
+        .map((cmd) => cmd.ascii)
+        .filter((cmd) => cmd.includes("<STX>"));
+
+    assert.notOk(fiscalCommands.some((cmd) => cmd.includes("PH01")), "No se envía PH01 en NC");
+    assert.ok(fiscalCommands[0].includes("<STX>iR*V17527041<ETX>"), "NC inicia con iR*");
+    assert.ok(fiscalCommands[1].includes("<STX>iS*Cliente NC<ETX>"), "NC continúa con iS*");
+    assert.ok(fiscalCommands.some((cmd) => cmd.includes("<STX>iF*00000863<ETX>")), "Factura afectada enviada en iF*");
+    assert.ok(fiscalCommands.some((cmd) => cmd.includes("<STX>iI*Z1F0022949<ETX>")), "Serial afectado enviado en iI*");
+    assert.ok(fiscalCommands.some((cmd) => cmd.includes("<STX>iD*20/06/2026<ETX>")), "Fecha afectada enviada en iD*");
+    assert.ok(fiscalCommands.some((cmd) => cmd.includes("<STX>d1000000500000002000|P001|Producto Devuelto<ETX>")), "Línea NC enviada con prefijo d");
+    assert.ok(fiscalCommands.some((cmd) => cmd.includes("<STX>101<ETX>")), "Cierre NC con método de pago correcto");
+});
+
+QUnit.test("Error de conexión a la máquina fiscal", async (assert) => {
+    const driver = new TfhkaDriver();
+    driver.connection = new MockSerialConnection();
+    driver.isConnected = false;
+
+    const result = await driver.printInvoice({
+        partner: { vat: "J000000001", name: "SIN CONEXION" },
+        lines: [{ product_name: "Producto", fiscal_code: "1", quantity: 1, price_unit: 10 }],
+        payment_lines: [{ payment_method_code: "01", amount: 10 }],
+        additional_lines: [],
+        flag_21: "00",
+        has_cashbox: false,
+    });
+
+    assert.notOk(result.success, "No imprime si la impresora está desconectada");
+    assert.ok(result.error.includes("Impresora no conectada"), "Retorna mensaje de conexión");
 });
 
 // Registrar tests en el registry de Odoo

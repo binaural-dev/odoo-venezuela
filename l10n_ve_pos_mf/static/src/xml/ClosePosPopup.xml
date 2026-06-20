@@ -4,11 +4,23 @@
             <button 
                 class="button btn btn-lg btn-secondary" 
                 t-on-click="generate_report_z" 
-                title="Generate report Z to close Report Z">Report Z</button>
+                t-att-disabled="state.isPrintingReport"
+                title="Generar Reporte Z para cierre fiscal">
+                <t t-if="state.isPrintingReport">
+                    <i class="fa fa-spinner fa-spin me-1"/>Imprimiendo...
+                </t>
+                <t t-else="">Reporte Z</t>
+            </button>
             <button 
                 class="button btn btn-lg btn-secondary" 
                 t-on-click="generate_report_x" 
-                title="Generate report X">Report X</button>
+                t-att-disabled="state.isPrintingReport"
+                title="Generar Reporte X">
+                <t t-if="state.isPrintingReport">
+                    <i class="fa fa-spinner fa-spin me-1"/>Imprimiendo...
+                </t>
+                <t t-else="">Reporte X</t>
+            </button>
         </xpath>
     </t>
 </templates>

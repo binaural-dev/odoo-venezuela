@@ -477,6 +477,103 @@ export class TfhkaDriver {
         return status.raw || "N/A";
     }
 
+    _toCounter(value) {
+        const cleaned = String(value || "").replace(/[^0-9]/g, "");
+        if (!cleaned) {
+            return null;
+        }
+        const parsed = parseInt(cleaned, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    _parseS1Data(rawData) {
+        if (!rawData) {
+            return null;
+        }
+
+        const payload = String(rawData)
+            .replace(/^\u0002/, "")
+            .replace(/\u0003$/, "")
+            .replace(/^S1/, "");
+
+        const fields = payload
+            .split("\n")
+            .map((value) => value.replace(/\r/g, "").trim())
+            .filter((value) => value.length > 0);
+
+        if (fields.length < 10) {
+            return null;
+        }
+
+        const shortFormat = fields.length <= 15;
+        const parsed = {
+            cashierNumber: fields[0] || "",
+            lastInvoiceNumber: null,
+            lastDebtNoteNumber: null,
+            lastNCNumber: null,
+            dailyClosureCounter: null,
+            fiscalReportsCounter: null,
+            rif: "",
+            registeredMachineNumber: "",
+            raw: fields,
+        };
+
+        if (shortFormat) {
+            parsed.lastInvoiceNumber = this._toCounter(fields[2]);
+            parsed.dailyClosureCounter = this._toCounter(fields[6]);
+            parsed.fiscalReportsCounter = this._toCounter(fields[7]);
+            parsed.rif = fields[8] || "";
+            parsed.registeredMachineNumber = fields[9] || "";
+            parsed.lastNCNumber = this._toCounter(fields[12]);
+        } else {
+            parsed.lastInvoiceNumber = this._toCounter(fields[2]);
+            parsed.lastDebtNoteNumber = this._toCounter(fields[4]);
+            parsed.lastNCNumber = this._toCounter(fields[6]);
+            parsed.dailyClosureCounter = this._toCounter(fields[11]);
+            parsed.rif = fields[12] || "";
+            parsed.registeredMachineNumber = fields[13] || "";
+        }
+
+        return parsed;
+    }
+
+    async _readS1Data() {
+        const response = await this.sendCommand("S1", 5000, false);
+        if (!response.success) {
+            return { success: false, data: null, error: response.error || "No se pudo leer S1" };
+        }
+
+        const data = this._parseS1Data(response.data);
+        if (!data) {
+            return {
+                success: false,
+                data: null,
+                error: "No se pudo parsear la respuesta S1 de la impresora",
+            };
+        }
+
+        return { success: true, data, error: "" };
+    }
+
+    _buildFiscalResponse(message, documentNumber, s1Data) {
+        const invoiceNumber = documentNumber ? String(documentNumber) : "";
+        const serial = s1Data?.registeredMachineNumber || "";
+        const reportCounter = s1Data?.dailyClosureCounter;
+        const reportZ = Number.isInteger(reportCounter) ? reportCounter + 1 : "";
+
+        return {
+            success: true,
+            data: message,
+            error: "",
+            invoiceNumber,
+            invoice_number: invoiceNumber,
+            serial,
+            serial_machine: serial,
+            reportZ,
+            mf_reportz: reportZ,
+        };
+    }
+
     // ============================================================================
     // MÉTODOS DE FACTURACIÓN (INVOICE, CREDIT NOTE, DEBIT NOTE)
     // ============================================================================
@@ -659,16 +756,26 @@ export class TfhkaDriver {
                 }
             }
 
-            // Leer número de factura del status S1
-            const status = await this.getStatus();
-            console.log("TfhkaDriver:: Factura impresa correctamente. Status:", status?.statusText);
+            const s1Result = await this._readS1Data();
+            if (!s1Result.success) {
+                return {
+                    success: false,
+                    data: "",
+                    error: `Factura impresa, pero no se pudo leer S1: ${s1Result.error}`,
+                };
+            }
 
-            return {
-                success: true,
-                data: "Factura impresa correctamente",
-                invoice_number: "Pendiente",  // TODO: leer de S1
-                error: ""
-            };
+            const invoiceNumber = s1Result.data.lastInvoiceNumber;
+            if (!invoiceNumber) {
+                return {
+                    success: false,
+                    data: "",
+                    error: "Factura impresa, pero S1 no devolvió número de factura",
+                };
+            }
+
+            console.log("TfhkaDriver:: Factura impresa correctamente. Nro:", invoiceNumber);
+            return this._buildFiscalResponse("Factura impresa correctamente", invoiceNumber, s1Result.data);
 
         } catch (error) {
             console.error("TfhkaDriver:: Error al imprimir factura", error);
@@ -683,7 +790,6 @@ export class TfhkaDriver {
      * Diferencias con factura:
      * - Items usan prefijo "d" + código_fiscal_numérico (no "!" / '"' / "#")
      * - Requiere datos de la factura afectada: número, fecha, serial MF
-     * - Lleva "PH01..." como primer comando (encabezado)
      * 
      * @param {Object} orderData - Datos de la orden
      * @returns {Promise<Object>}
@@ -729,33 +835,49 @@ export class TfhkaDriver {
             };
             const config = FLAG21_CONFIGS[String(orderData.flag_21 || "00")] || FLAG21_CONFIGS["00"];
 
-            // 1. Encabezado de nota de crédito
-            commands.push("PH01Encabezado 1");
+            // 1. RIF del cliente
+            const vat = orderData.partner?.vat || "V00000000";
+            commands.push(`iR*${vat}`);
 
-            // 2. Número de factura afectada (8 dígitos con cero a la izquierda)
+            // 2. Razón social del cliente
+            const name = (orderData.partner?.name || "CLIENTE GENERICO").substring(0, 127);
+            commands.push(`iS*${name}`);
+
+            // 3. Número de factura afectada (8 dígitos con cero a la izquierda)
             const invoiceNumber = String(affected.number).padStart(8, '0');
             commands.push(`iF*${invoiceNumber}`);
-
-            // 3. Fecha de factura afectada (formato DD/MM/YYYY)
-            commands.push(`iD*${affected.date}`);
 
             // 4. Serial de la máquina fiscal de la factura afectada
             commands.push(`iI*${affected.serial_machine}`);
 
-            // 5. RIF del cliente
-            const vat = orderData.partner?.vat || "V00000000";
-            commands.push(`iR*${vat}`);
+            // 5. Fecha de factura afectada (formato DD/MM/YYYY)
+            commands.push(`iD*${affected.date}`);
 
-            // 6. Razón social del cliente
-            const name = (orderData.partner?.name || "CLIENTE GENERICO").substring(0, 127);
-            commands.push(`iS*${name}`);
-
-            // 7. Dirección del cliente (opcional)
+            // 6. Dirección y teléfono del cliente (opcional)
+            let infoIndex = 0;
             if (orderData.partner?.address) {
                 const addr = orderData.partner.address;
-                commands.push(`i01Direccion:${addr.substring(0, 30)}`);
-                if (addr.length > 30) {
-                    commands.push(`i02${addr.substring(30, 70)}`);
+                const firstLine = addr.substring(0, 30);
+                commands.push(`i${String(infoIndex).padStart(2, '0')}Direccion:${firstLine}`);
+                infoIndex++;
+
+                const secondLine = addr.substring(30, 70);
+                if (secondLine) {
+                    commands.push(`i${String(infoIndex).padStart(2, '0')}${secondLine}`);
+                    infoIndex++;
+                }
+            }
+
+            if (orderData.partner?.phone) {
+                commands.push(`i${String(infoIndex).padStart(2, '0')}Telefono:${orderData.partner.phone}`);
+                infoIndex++;
+            }
+
+            // 7. Líneas informativas (operador, pedido, etc.)
+            if (orderData.additional_lines?.length > 0) {
+                for (const line of orderData.additional_lines) {
+                    commands.push(`i${String(infoIndex).padStart(2, '0')}${line}`);
+                    infoIndex++;
                 }
             }
 
@@ -806,14 +928,7 @@ export class TfhkaDriver {
             // 12. Cierre
             commands.push(`1${closingMethod}`);
 
-            // 13. Líneas adicionales
-            if (orderData.additional_lines?.length > 0) {
-                for (let i = 0; i < orderData.additional_lines.length; i++) {
-                    commands.push(`i${String(i).padStart(2, '0')}${orderData.additional_lines[i]}`);
-                }
-            }
-
-            // 14. Fin de documento
+            // 13. Fin de documento
             commands.push("199");
 
             console.log("TfhkaDriver:: Enviando nota de crédito con", commands.length, "comandos:", commands);
@@ -827,8 +942,26 @@ export class TfhkaDriver {
                 }
             }
 
-            console.log("TfhkaDriver:: Nota de crédito impresa correctamente");
-            return { success: true, data: "Nota de crédito impresa correctamente", error: "" };
+            const s1Result = await this._readS1Data();
+            if (!s1Result.success) {
+                return {
+                    success: false,
+                    data: "",
+                    error: `Nota de crédito impresa, pero no se pudo leer S1: ${s1Result.error}`,
+                };
+            }
+
+            const creditNoteNumber = s1Result.data.lastNCNumber;
+            if (!creditNoteNumber) {
+                return {
+                    success: false,
+                    data: "",
+                    error: "Nota de crédito impresa, pero S1 no devolvió número de NC",
+                };
+            }
+
+            console.log("TfhkaDriver:: Nota de crédito impresa correctamente. Nro:", creditNoteNumber);
+            return this._buildFiscalResponse("Nota de crédito impresa correctamente", creditNoteNumber, s1Result.data);
 
         } catch (error) {
             console.error("TfhkaDriver:: Error al imprimir nota de crédito", error);
@@ -1006,8 +1139,26 @@ export class TfhkaDriver {
                 }
             }
 
-            console.log("TfhkaDriver:: Nota de débito impresa correctamente");
-            return { success: true, data: "Nota de débito impresa correctamente", error: "" };
+            const s1Result = await this._readS1Data();
+            if (!s1Result.success) {
+                return {
+                    success: false,
+                    data: "",
+                    error: `Nota de débito impresa, pero no se pudo leer S1: ${s1Result.error}`,
+                };
+            }
+
+            const debitNoteNumber = s1Result.data.lastDebtNoteNumber;
+            if (!debitNoteNumber) {
+                return {
+                    success: false,
+                    data: "",
+                    error: "Nota de débito impresa, pero S1 no devolvió número de ND",
+                };
+            }
+
+            console.log("TfhkaDriver:: Nota de débito impresa correctamente. Nro:", debitNoteNumber);
+            return this._buildFiscalResponse("Nota de débito impresa correctamente", debitNoteNumber, s1Result.data);
 
         } catch (error) {
             console.error("TfhkaDriver:: Error al imprimir nota de débito", error);

@@ -103,8 +103,8 @@ export class FiscalProtocol {
         // Extraer LRC recibido
         const receivedLRC = response[etxIndex + 1];
         
-        // Calcular LRC esperado (desde STX hasta ETX inclusive)
-        const frameData = response.slice(0, etxIndex + 1);
+        // Calcular LRC esperado sobre DATA + ETX (sin STX)
+        const frameData = response.slice(1, etxIndex + 1);
         const calculatedLRC = FiscalProtocol.calculateLRC(frameData);
 
         // Verificar LRC

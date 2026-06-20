@@ -283,6 +283,14 @@ Consulta el **Manual TFHKA v8.4.2** para la lista completa de flags disponibles 
 **Causa:** Navegador incompatible  
 **Solución:** Usa Google Chrome o Microsoft Edge (≥ v89)
 
+### Error: "Web Serial API no soportada" desde otra PC en la red
+**Causa:** Contexto inseguro (`http://IP:puerto`). Web Serial solo funciona en contexto seguro (`https://`) o `localhost`.  
+**Solución:**
+1. Para pruebas locales, abre `chrome://flags/#unsafely-treat-insecure-origin-as-secure`
+2. Agrega el origen exacto (ej: `http://192.168.1.50:8117`)
+3. Reinicia Chrome
+4. Alternativa recomendada para productivo: publicar Odoo por `https://`
+
 ### Error: "Máquina fiscal no conectada"
 **Causa:** No se ha conectado el puerto serial  
 **Solución:** Click en el botón gris de la impresora y selecciona el puerto
@@ -341,5 +349,6 @@ Antes de hacer la prueba en vivo, verifica que hayas completado:
 - [ ] POS abierto en Google Chrome con `?debug=1`
 - [ ] Puerto serial conectado (botón verde)
 - [ ] Fiscalizador abierto y status en verde
+- [ ] Botones de **Reporte X** y **Reporte Z** visibles en la ventana de cierre de sesión
 
 ¡Listo para hacer tu primera factura fiscal con Web Serial API! 🎉

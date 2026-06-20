@@ -52,6 +52,17 @@
                     <field name="access_button_mf"/>
                 </setting>
 
+                <setting string="Sincronización Offline en Segundo Plano"
+                         help="Configura la sincronización automática de pedidos impresos offline para esta caja">
+                    <field name="enable_auto_sync"/>
+                    <div class="content-group" invisible="not enable_auto_sync">
+                        <div class="mt-2">
+                            <label for="auto_sync_interval" string="Intervalo (segundos)"/>
+                            <field name="auto_sync_interval" class="oe_inline ms-2"/>
+                        </div>
+                    </div>
+                </setting>
+
                 <!-- Setting: Línea tradicional -->
                 <setting string="Línea Tradicional" 
                          help="Activar si la impresora usa formato de línea tradicional (solo para modelos antiguos)">

@@ -12,6 +12,15 @@ Esta migración **elimina completamente la dependencia del IoT Box y del SDK de 
 - **💰 Escalabilidad**: Preparado para +500 cajas simultáneas sin overhead de red centralizada.
 - **🔐 Seguridad**: El puerto serial se bloquea exclusivamente en el navegador del cajero. No hay tráfico de red vulnerable.
 
+### Estado de la Etapa 1 (Jun 2026)
+
+- ✅ Flujo fiscal offline-first de factura y nota de credito operativo en Web Serial.
+- ✅ Lectura/parsing de `S1` implementada para recuperar numero de documento, serial de maquina y contador Z.
+- ✅ Validacion de LRC corregida para respuestas: se calcula sobre `DATA + ETX` (sin `STX`).
+- ✅ Nota de credito alineada al flujo del SDK Python (`iR*`, `iS*`, `iF*`, `iI*`, `iD*`, lineas `d...`).
+- ✅ Botones `Reporte X` y `Reporte Z` funcionales en popup de cierre de sesion, incluyendo sincronizacion de Z con Odoo.
+- ✅ Bloque de datos fiscales en `ReceiptScreen` mejorado visualmente (centrado, destacado, mayor legibilidad).
+
 ---
 
 ## Arquitectura
@@ -75,7 +84,7 @@ l10n_ve_pos_mf/static/src/
 - **STX**: Start of Text (0x02)
 - **COMMAND**: Comando ASCII (ej: `I0X`, `I0Z`, `1`, `@`, etc.)
 - **ETX**: End of Text (0x03)
-- **LRC**: Longitudinal Redundancy Check (XOR de todos los bytes entre STX y ETX, inclusive)
+- **LRC**: Longitudinal Redundancy Check (XOR de `DATA + ETX`, sin incluir `STX`)
 
 ### Comandos Principales
 
@@ -529,7 +538,15 @@ Secuencia recomendada:
 
 ## 🧪 Suite de Tests QUnit
 
-Se han implementado **12 tests automatizados** para validar el correcto funcionamiento del driver TFHKA sin necesidad de hardware físico.
+Se implementó una suite automatizada QUnit para validar el funcionamiento del driver TFHKA sin hardware físico, usando `MockSerialConnection`.
+
+### Cobertura funcional del hito POS 17
+
+- ✅ Impresión de factura fiscal con lectura de `S1` (número, serial, Z afectado)
+- ✅ Impresión de nota de crédito con secuencia fiscal alineada al SDK Python
+- ✅ Cálculo/formato de impuestos por código fiscal (`0`, `1`, `2`, `3`)
+- ✅ Métodos de pago correctos (parciales `2XX` y cierre `1XX`)
+- ✅ Manejo de error de conexión a máquina fiscal
 
 ### Tests Incluidos
 
@@ -553,8 +570,9 @@ Se han implementado **12 tests automatizados** para validar el correcto funciona
 13. ✅ Apertura de gaveta (comando '0')
 14. ✅ Impresión de Reporte X (comando 'I0X')
 15. ✅ Impresión de Reporte Z (comando 'I0Z')
-16. ✅ **Factura completa exitosa (flujo end-to-end)**
-17. ✅ Error de impresión detectado durante factura (debe cancelar)
+16. ✅ **Factura fiscal con impuestos + pagos + lectura S1**
+17. ✅ **Nota de crédito con factura afectada + lectura S1**
+18. ✅ **Error de conexión a máquina fiscal**
 
 ### Ejecutar los Tests
 
@@ -567,6 +585,11 @@ URL: http://localhost:8117/web/tests?mod=web&failfast
 ```bash
 ./odoo-bin --test-enable --test-tags=tfhka_driver_tests --stop-after-init
 ```
+
+### Matriz de pruebas del hito
+
+- Ver matriz consolidada (unitarias + UAT): `TEST_MATRIX_POS17.md`
+- Incluye guia de ejecucion en CI para tests JS/QUnit del POS (headless).
 
 ### Mock de Hardware (MockSerialConnection)
 
@@ -829,4 +852,3 @@ Si tienes problemas durante la migración de un cliente en producción:
 **Desarrollado por**: Binaural.dev  
 **Soporte**: contacto@binaural.dev  
 **Repositorio**: `odoo-venezuela` (rama `feature/pos-mf-web-serial-api`)
-

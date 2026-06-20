@@ -46,3 +46,15 @@ class PosConfigInherit(models.Model):
         string="Mensaje en Encabezado",
         default=False
     )
+
+    enable_auto_sync = fields.Boolean(
+        string="Habilitar Sincronización Automática",
+        default=True,
+        help="Si está activo, sincroniza automáticamente pedidos offline en segundo plano"
+    )
+
+    auto_sync_interval = fields.Integer(
+        string="Intervalo de Sincronización (segundos)",
+        default=60,
+        help="Intervalo en segundos para sincronizar pedidos offline con Odoo"
+    )

@@ -21,7 +21,11 @@ export class MockSerialConnection {
         this.sentCommands = []; // Historial de comandos enviados
         this.responseQueue = []; // Cola de respuestas a devolver
         this.currentStatus = {
-            // STS1 - Estado
+            // STS1/STS2 base (equivalente a impresora lista en modo fiscal)
+            sts1: 0x60,
+            sts2: 0x40,
+
+            // Overrides opcionales por flags
             fiscalMode: true,
             fiscalMemoryNearFull: false,
             fiscalMemoryFull: false,
@@ -193,22 +197,33 @@ export class MockSerialConnection {
      * Construye una respuesta de status basada en currentStatus
      */
     _buildStatusResponse() {
-        // Construir STS1 (byte de estado)
-        let sts1 = 0x40; // Base: 01000000
-        if (this.currentStatus.fiscalMode) sts1 |= 0x04; // Bit 2
-        if (this.currentStatus.fiscalMemoryNearFull) sts1 |= 0x08; // Bit 3
-        if (this.currentStatus.fiscalMemoryFull) sts1 |= 0x10; // Bit 4
-        if (this.currentStatus.bufferFull) sts1 |= 0x20; // Bit 5
-        if (this.currentStatus.nonFiscalTransactionInProgress) sts1 |= 0x40; // Bit 6
-        if (this.currentStatus.fiscalTransactionInProgress) sts1 |= 0x80; // Bit 7
+        // Construir STS1/STS2 a partir de defaults seguros y overrides opcionales
+        let sts1 = Number.isInteger(this.currentStatus.sts1) ? this.currentStatus.sts1 : 0x60;
+        let sts2 = Number.isInteger(this.currentStatus.sts2) ? this.currentStatus.sts2 : 0x40;
 
-        // Construir STS2 (byte de error)
-        let sts2 = 0x40; // Base: 01000000 (sin errores)
-        if (this.currentStatus.criticalError) sts2 |= 0x04; // Bit 2
-        if (this.currentStatus.drawerError) sts2 |= 0x08; // Bit 3
-        if (this.currentStatus.printerError) sts2 |= 0x10; // Bit 4
-        if (this.currentStatus.paperError) sts2 |= 0x40; // Bit 6
-        if (this.currentStatus.fiscalMemoryError) sts2 |= 0x04; // Bit 2
+        if (this.currentStatus.fiscalTransactionInProgress) {
+            sts1 = 0x61;
+        } else if (this.currentStatus.nonFiscalTransactionInProgress) {
+            sts1 = 0x40;
+        } else if (this.currentStatus.fiscalMode) {
+            sts1 = 0x60;
+        }
+
+        if (this.currentStatus.fiscalMemoryNearFull) sts1 |= 0x08;
+        if (this.currentStatus.fiscalMemoryFull) sts1 |= 0x10;
+        if (this.currentStatus.bufferFull) sts1 |= 0x20;
+
+        if (this.currentStatus.paperError) {
+            sts2 = 0x41;
+        } else if (this.currentStatus.printerError) {
+            sts2 = 0x42;
+        }
+        if (this.currentStatus.criticalError || this.currentStatus.fiscalMemoryError) {
+            sts2 = 0x64;
+        }
+        if (this.currentStatus.drawerError) {
+            sts2 |= 0x08;
+        }
 
         // Construir trama: STX + STS1 + STS2 + ETX + LRC
         const data = new Uint8Array([
@@ -218,7 +233,8 @@ export class MockSerialConnection {
             FiscalProtocol.ETX
         ]);
 
-        const lrc = FiscalProtocol.calculateLRC(data);
+        // ENQ usa LRC sobre STS1 ^ STS2 ^ ETX (sin STX)
+        const lrc = sts1 ^ sts2 ^ FiscalProtocol.ETX;
         const response = new Uint8Array(data.length + 1);
         response.set(data, 0);
         response[response.length - 1] = lrc;

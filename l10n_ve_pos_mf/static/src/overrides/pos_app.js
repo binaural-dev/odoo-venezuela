@@ -2,7 +2,7 @@
 
 import { Chrome } from "@point_of_sale/app/pos_app";
 import { patch } from "@web/core/utils/patch";
-import { onMounted } from "@odoo/owl";
+import { onMounted, onWillUnmount } from "@odoo/owl";
 import { TfhkaDriver } from "../drivers/TfhkaDriver";
 import { useService } from "@web/core/utils/hooks";
 import { LocalOrderBuffer } from "../utils/LocalOrderBuffer";
@@ -16,8 +16,11 @@ patch(Chrome.prototype, {
         super.setup(...arguments);
         this.fiscalPrinter = null;
         this.fiscalPrinterStatus = "disconnected";
+        this.autoSyncIntervalId = null;
+        this.isFlushingPendingOrders = false;
         this.orm = useService("orm");
         onMounted(this._onMountedFiscalPrinter);
+        onWillUnmount(() => this._clearAutoSyncInterval());
     },
 
     async _onMountedFiscalPrinter() {
@@ -26,6 +29,47 @@ patch(Chrome.prototype, {
         
         // Intentar sincronizar pedidos offline pendientes
         await this._flushPendingOrders();
+        this._setupAutoSync();
+    },
+
+    _getAutoSyncConfig() {
+        const posConfig = this.env.services.pos?.config || {};
+        const enableAutoSync = posConfig.enable_auto_sync !== false;
+        const configuredInterval = Number(posConfig.auto_sync_interval || 60);
+        const intervalSeconds = Number.isFinite(configuredInterval)
+            ? Math.max(10, configuredInterval)
+            : 60;
+
+        return {
+            enableAutoSync,
+            intervalSeconds,
+        };
+    },
+
+    _setupAutoSync() {
+        const { enableAutoSync, intervalSeconds } = this._getAutoSyncConfig();
+        this._clearAutoSyncInterval();
+
+        if (!enableAutoSync) {
+            console.log("FiscalPrinter:: Sincronizacion automatica deshabilitada para esta caja");
+            return;
+        }
+
+        this.autoSyncIntervalId = setInterval(async () => {
+            if (!navigator.onLine || !LocalOrderBuffer.hasPending()) {
+                return;
+            }
+            await this._flushPendingOrders();
+        }, intervalSeconds * 1000);
+
+        console.log(`FiscalPrinter:: Sincronizacion automatica activa cada ${intervalSeconds}s`);
+    },
+
+    _clearAutoSyncInterval() {
+        if (this.autoSyncIntervalId) {
+            clearInterval(this.autoSyncIntervalId);
+            this.autoSyncIntervalId = null;
+        }
     },
 
     _createFiscalPrinterButton() {
@@ -151,37 +195,46 @@ patch(Chrome.prototype, {
      * Intenta sincronizar pedidos pendientes del buffer offline
      */
     async _flushPendingOrders() {
+        if (this.isFlushingPendingOrders) {
+            return;
+        }
+
         const buffer = LocalOrderBuffer.getAll();
         
         if (buffer.length === 0) return;
+
+        this.isFlushingPendingOrders = true;
         
         console.log(`FiscalPrinter:: Intentando sincronizar ${buffer.length} pedidos offline...`);
-        
-        for (let i = buffer.length - 1; i >= 0; i--) {
-            const entry = buffer[i];
-            
-            try {
-                await this.orm.call("pos.order", "create_from_ui", [[{
-                    'data': entry.orderData
-                }]]);
+        try {
+            for (let i = buffer.length - 1; i >= 0; i--) {
+                const entry = buffer[i];
                 
-                LocalOrderBuffer.remove(i);
-                console.log(`FiscalPrinter:: Pedido offline #${i} sincronizado`);
-                
-            } catch (error) {
-                entry.retries = (entry.retries || 0) + 1;
-                console.warn(`FiscalPrinter:: Pedido offline #${i} falló (intento ${entry.retries}):`, error.message);
-                
-                if (entry.retries >= 5) {
+                try {
+                    await this.orm.call("pos.order", "create_from_ui", [[{
+                        'data': entry.orderData
+                    }]]);
+                    
                     LocalOrderBuffer.remove(i);
-                    console.error(`FiscalPrinter:: Pedido offline #${i} abandonado`);
+                    console.log(`FiscalPrinter:: Pedido offline #${i} sincronizado`);
+                    
+                } catch (error) {
+                    entry.retries = (entry.retries || 0) + 1;
+                    console.warn(`FiscalPrinter:: Pedido offline #${i} fallo (intento ${entry.retries}):`, error.message);
+                    
+                    if (entry.retries >= 5) {
+                        LocalOrderBuffer.remove(i);
+                        console.error(`FiscalPrinter:: Pedido offline #${i} abandonado`);
+                    }
                 }
             }
-        }
-        
-        const remaining = LocalOrderBuffer.count();
-        if (remaining === 0) {
-            console.log("FiscalPrinter:: Todos los pedidos offline sincronizados");
+
+            const remaining = LocalOrderBuffer.count();
+            if (remaining === 0) {
+                console.log("FiscalPrinter:: Todos los pedidos offline sincronizados");
+            }
+        } finally {
+            this.isFlushingPendingOrders = false;
         }
     },
 });
