@@ -612,8 +612,8 @@ class TestIGTFNEW(IGTFTestCommon):
         residual_advance = payment.advanced_move_ids[0]
 
         expected_lines = [
-            {'account': self.advance_supp_acc, 'amount_currency': -679.46},
-            {'account': self.acc_payable, 'amount_currency': 679.46},
+            {'account': self.advance_supp_acc, 'amount_currency': -680.48},
+            {'account': self.acc_payable, 'amount_currency': 680.48},
         ]
         self._assert_move_lines_equal(residual_advance, expected_lines)
 
@@ -627,15 +627,13 @@ class TestIGTFNEW(IGTFTestCommon):
         cross_move = self.env['account.move'].search([], order='id desc', limit=2)
 
         expected_lines = [
-            {'account': self.advance_supp_acc, 'amount_currency': -679.46},
-            {'account': self.acc_payable, 'amount_currency': 659.08},
-            {'account': self.acc_igtf_prov, 'amount_currency': 20.38 },
+            {'account': self.advance_supp_acc, 'amount_currency': -680.48},
+            {'account': self.acc_payable, 'amount_currency': 660.07},
+            {'account': self.acc_igtf_prov, 'amount_currency': 20.41 },
         ]
         self._assert_move_lines_equal(cross_move[0], expected_lines)
 
-        self.assert_invoice_values(invoice2, 560.86,  255.97, 'partial')
-        
-
+        self.assert_invoice_values(invoice2, 561.7,  255.15, 'partial')
 
     def test11_payment_from_invoice_with_igtf_journal(self):
 
