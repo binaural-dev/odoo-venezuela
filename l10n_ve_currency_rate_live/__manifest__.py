@@ -5,7 +5,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.1.0.7",
+    "version": "17.0.1.0.8",
     "depends": ["l10n_ve_rate", "currency_rate_live"],
     "data": [
         "data/cron_data.xml",
