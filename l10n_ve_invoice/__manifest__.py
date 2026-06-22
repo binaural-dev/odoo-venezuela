@@ -3,9 +3,9 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
-    "version": "17.0.0.1.9",
+    "version": "17.0.1.0.3",
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
     "depends": [
@@ -14,6 +14,7 @@
         "l10n_ve_accountant",
         "l10n_ve_contact",
         "l10n_ve_tax",
+        "l10n_ve_filter_partner",
         "od_journal_sequence",
         "account_debit_note",
     ],
