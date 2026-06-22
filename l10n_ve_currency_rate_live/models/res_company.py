@@ -1,8 +1,6 @@
-from odoo import api, fields, models, _
+from odoo import api, fields, models
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
-from datetime import datetime
-import pytz
 import requests
 from bs4 import BeautifulSoup
 
@@ -14,9 +12,6 @@ BCV_HEADERS = {
         "Chrome/120.0.0.0 Safari/537.36"
     )
 }
-BCV_WINDOW_START_HOUR = 8
-BCV_WINDOW_END_HOUR = 18
-BCV_TIMEZONE = "America/Caracas"
 VEF_CURRENCY_CODE = "VEF"
 
 
@@ -34,17 +29,18 @@ class ResCompany(models.Model):
         current_date = fields.Date.context_today(self)
         result = {"USD": (1.0, current_date)}
 
+        if self[:1].can_update_habil_days and current_date.isoweekday() > 5:
+            return result
+
         rate_value, published_date = self._scrape_bcv_rate()
         if not rate_value or not published_date:
             return result
 
-        if published_date < current_date:
+        if published_date > current_date:
             return result
 
-        if published_date > current_date:
-            if not bool(self[:1].can_update_habil_days):
-                return result
-
+        # After midnight we keep the latest published BCV rate, but store it
+        # with the new Odoo date so customers on late shifts are not affected earlier.
         result["VEF"] = (rate_value, current_date)
         return result
 
@@ -53,7 +49,10 @@ class ResCompany(models.Model):
         disable_warnings(InsecureRequestWarning)
         try:
             response = requests.get(
-                BCV_URL, verify=False, timeout=30, headers=BCV_HEADERS,
+                BCV_URL,
+                verify=False,
+                timeout=30,
+                headers=BCV_HEADERS,
             )
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
@@ -74,9 +73,7 @@ class ResCompany(models.Model):
             published_date = None
             date_node = soup.find("span", class_="date-display-single")
             if date_node and date_node.get("content"):
-                published_date = fields.Date.from_string(
-                    date_node["content"][:10]
-                )
+                published_date = fields.Date.from_string(date_node["content"][:10])
             return (rate, published_date)
         except Exception:
             return (None, None)
@@ -88,32 +85,33 @@ class ResCompany(models.Model):
 
     @api.model
     def run_update_bcv_currency(self):
-        try:
-            tz = pytz.timezone(BCV_TIMEZONE)
-        except Exception:
-            tz = pytz.UTC
-        now_local = datetime.now(tz)
-        if not (BCV_WINDOW_START_HOUR <= now_local.hour < BCV_WINDOW_END_HOUR):
-            return
-
         today = fields.Date.today()
         Rate = self.env["res.currency.rate"]
-        vef = self.env["res.currency"].with_context(active_test=False).search(
-            [("name", "=", VEF_CURRENCY_CODE)], limit=1,
+        vef = (
+            self.env["res.currency"]
+            .with_context(active_test=False)
+            .search(
+                [("name", "=", VEF_CURRENCY_CODE)],
+                limit=1,
+            )
         )
         if not vef:
             return
 
-        bcv_companies = self.search([
-            ("currency_provider", "=", "bcv"),
-            ("parent_id", "=", False),
-        ])
+        bcv_companies = self.search(
+            [
+                ("currency_provider", "=", "bcv"),
+                ("parent_id", "=", False),
+            ]
+        )
         for company in bcv_companies:
-            already_today = Rate.search_count([
-                ("company_id", "=", company.id),
-                ("currency_id", "=", vef.id),
-                ("name", "=", today),
-            ])
+            already_today = Rate.search_count(
+                [
+                    ("company_id", "=", company.id),
+                    ("currency_id", "=", vef.id),
+                    ("name", "=", today),
+                ]
+            )
             if already_today:
                 continue
             company.with_context(suppress_errors=True).update_currency_rates()
