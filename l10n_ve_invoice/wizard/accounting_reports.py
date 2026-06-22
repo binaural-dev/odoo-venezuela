@@ -66,7 +66,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     def _fields_sale_book_line(self, move, taxes):
         if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
-        multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
+
+        total_sales_val = taxes.get("amount_taxed", 0) if move.state == 'posted' else 0.0
+        exempt_val = taxes.get("tax_base_exempt_aliquot", 0)
+
         values =  {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date_display),
@@ -87,19 +90,18 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
             "extend_aliquot": 0.31,
-            "total_sales": taxes.get("amount_taxed", 0),
-            "total_sales_iva": taxes.get("amount_taxed", 0) - (taxes.get("tax_base_exempt_aliquot", 0) * multiplier),
-            "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0)
-            * multiplier,
-            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0)
-            * multiplier,
-            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) * multiplier,
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0)
-            * multiplier,
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0)
-            * multiplier,
-            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) * multiplier,
+            
+            "total_sales": total_sales_val ,
+            "total_sales_iva": (total_sales_val - exempt_val),
+            "total_sales_not_iva": exempt_val,
+            
+            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) ,
+            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) ,
+            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) ,
+            
+            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) ,
+            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0),
+            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) ,
         }
         return values
 
@@ -107,7 +109,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if not move.invoice_date_display:
             raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
 
-        multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
 
         if move.journal_id.is_purchase_international :
             tax_keys_to_check = [
@@ -142,27 +143,27 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "extend_aliquot": 0.31,
             "general_aliquot": 0.16,
             "total_purchases": amount_taxed,
-            "total_purchases_iva": amount_taxed - (tax_base_exempt_aliquot * multiplier),
-            "total_purchases_not_iva": tax_base_exempt_aliquot * multiplier,
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
-            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
-            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) * multiplier,
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
-            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) * multiplier,
+            "total_purchases_iva": (amount_taxed or 0) - (tax_base_exempt_aliquot or 0),    
+            "total_purchases_not_iva": tax_base_exempt_aliquot ,
+            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot",0) ,    
+            "amount_general_aliquot": taxes.get("amount_general_aliquot",0) ,    
+            "amount_extend_aliquot": taxes.get("amount_extend_aliquot",0) ,    
+            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot",0) ,    
+            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot",0) ,    
+            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot",0) ,    
         }
 
         fields_purchase_book_line.update(
             {   
                 "total_purchases_international": taxes.get("international_amount_taxed", 0),
-                "total_purchases_iva_international": taxes.get("international_amount_taxed", 0) - (taxes.get("international_tax_base_exempt_aliquot", 0) * multiplier),
-                "total_purchases_not_iva_international": taxes.get("international_tax_base_exempt_aliquot", 0) * multiplier,
-                "amount_reduced_aliquot_international": taxes.get("amount_reduced_aliquot_international", 0) * multiplier,
-                "amount_general_aliquot_international": taxes.get("amount_general_aliquot_international", 0) * multiplier,
-                "amount_extend_aliquot_international": taxes.get("amount_extend_aliquot_international", 0) * multiplier,
-                "tax_base_reduced_aliquot_international": taxes.get("tax_base_reduced_aliquot_international", 0) * multiplier,
-                "tax_base_general_aliquot_international": taxes.get("tax_base_general_aliquot_international", 0) * multiplier,
-                "tax_base_extend_aliquot_international": taxes.get("tax_base_extend_aliquot_international", 0) * multiplier,
+                "total_purchases_iva_international": taxes.get("international_amount_taxed", 0) - (taxes.get("international_tax_base_exempt_aliquot",0) ),    
+                "total_purchases_not_iva_international": taxes.get("international_tax_base_exempt_aliquot",0) ,    
+                "amount_reduced_aliquot_international": taxes.get("amount_reduced_aliquot_international",0) ,    
+                "amount_general_aliquot_international": taxes.get("amount_general_aliquot_international",0) ,    
+                "amount_extend_aliquot_international": taxes.get("amount_extend_aliquot_international",0) ,    
+                "tax_base_reduced_aliquot_international": taxes.get("tax_base_reduced_aliquot_international",0) ,    
+                "tax_base_general_aliquot_international": taxes.get("tax_base_general_aliquot_international",0) ,    
+                "tax_base_extend_aliquot_international": taxes.get("tax_base_extend_aliquot_international",0) ,    
                 "declaration_unique_of_customs": move.declaration_unique_of_customs or "-",
                 "amount_import_international": taxes.get("amount_import_international", 0),
                 "import_file_number_purchase_international": move.import_file_number_purchase_international or "--",
@@ -174,12 +175,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "reduced_aliquot_no_deductible": 0.08,
                 "extend_aliquot_no_deductible": 0.31,
                 "general_aliquot_no_deductible": 0.16,
-                "amount_reduced_aliquot_no_deductible": taxes.get("amount_reduced_aliquot_no_deductible", 0) * multiplier,
-                "amount_general_aliquot_no_deductible": taxes.get("amount_general_aliquot_no_deductible", 0) * multiplier,
-                "amount_extend_aliquot_no_deductible": taxes.get("amount_extend_aliquot_no_deductible", 0) * multiplier,
-                "tax_base_reduced_aliquot_no_deductible": taxes.get("tax_base_reduced_aliquot_no_deductible", 0) * multiplier,
-                "tax_base_general_aliquot_no_deductible": taxes.get("tax_base_general_aliquot_no_deductible", 0) * multiplier,
-                "tax_base_extend_aliquot_no_deductible": taxes.get("tax_base_extend_aliquot_no_deductible", 0) * multiplier,
+                "amount_reduced_aliquot_no_deductible": taxes.get("amount_reduced_aliquot_no_deductible",0) ,    
+                "amount_general_aliquot_no_deductible": taxes.get("amount_general_aliquot_no_deductible",0) ,    
+                "amount_extend_aliquot_no_deductible": taxes.get("amount_extend_aliquot_no_deductible",0) ,    
+                "tax_base_reduced_aliquot_no_deductible": taxes.get("tax_base_reduced_aliquot_no_deductible",0) ,    
+                "tax_base_general_aliquot_no_deductible": taxes.get("tax_base_general_aliquot_no_deductible",0) ,    
+                "tax_base_extend_aliquot_no_deductible": taxes.get("tax_base_extend_aliquot_no_deductible",0) ,    
             }
         )
         return fields_purchase_book_line
@@ -244,7 +245,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_exempt_aliquot"] * -1
+                        self._determinate_amount_taxeds(note)["tax_base_exempt_aliquot"] 
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -253,7 +254,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_exempt_aliquot"] * -1
+                        self._determinate_amount_taxeds(note)["amount_exempt_aliquot"] 
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -283,7 +284,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_general_aliquot"] * -1
+                        self._determinate_amount_taxeds(note)["tax_base_general_aliquot"] 
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -292,7 +293,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_general_aliquot"] * -1
+                        self._determinate_amount_taxeds(note)["amount_general_aliquot"] 
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -322,7 +323,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_reduced_aliquot"] * -1
+                        self._determinate_amount_taxeds(note)["tax_base_reduced_aliquot"] 
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -331,7 +332,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_reduced_aliquot"] * -1
+                        self._determinate_amount_taxeds(note)["amount_reduced_aliquot"] 
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -361,7 +362,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_extend_aliquot"] * -1
+                        self._determinate_amount_taxeds(note)["tax_base_extend_aliquot"]
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -370,7 +371,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_extend_aliquot"] * -1
+                        self._determinate_amount_taxeds(note)["amount_extend_aliquot"]
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -399,7 +400,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_general_aliquot_international"] * -1
+                        self._determinate_amount_taxeds(note)["tax_base_general_aliquot_international"]
                         for note in credit_notes
                     ]
                 )
@@ -407,7 +408,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_general_aliquot_international"] * -1
+                        self._determinate_amount_taxeds(note)["amount_general_aliquot_international"]
                         for note in credit_notes
                     ]
                 )
@@ -435,7 +436,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_reduced_aliquot_international"] * -1
+                        self._determinate_amount_taxeds(note)["tax_base_reduced_aliquot_international"] 
                         for note in credit_notes
                     ]
                 )
@@ -443,7 +444,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_reduced_aliquot_international"] * -1
+                        self._determinate_amount_taxeds(note)["amount_reduced_aliquot_international"] 
                         for note in credit_notes
                     ]
                 )
@@ -471,7 +472,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_extend_aliquot_international"] * -1
+                        self._determinate_amount_taxeds(note)["tax_base_extend_aliquot_international"] 
                         for note in credit_notes
                     ]
                 )
@@ -479,7 +480,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_extend_aliquot_international"] * -1
+                        self._determinate_amount_taxeds(note)["amount_extend_aliquot_international"] 
                         for note in credit_notes
                     ]
                 )
@@ -601,7 +602,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
         
-        """ International Purchase Fields """
         
         if not self.company_id.not_show_general_aliquot_purchase_international:
             fields_info = [
@@ -639,7 +639,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
 
-        """ Fin international purchase fields """
         
         if self.company_id.config_deductible_tax:
             purchase_fields = self.not_deductible_purchase_book_fields(purchase_fields)
@@ -1531,27 +1530,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         row_resume, 5, total_f_formula,cell_formats.get("number")
                     )
 
-            start_col_formula = 6
-                
-            column_bi_range = (
-                f"C{row_resume + 1}:{utility.xl_col_to_name(total_line - 1)}{row_resume + 1}"
-            )
-            column_df_range = (
-                f"D{row_resume + 1}:{utility.xl_col_to_name(total_line)}{row_resume + 1}"
-            )
-            imposed_formula = (
-                f"=SUMPRODUCT(--({column_bi_range}), --(MOD(COLUMN({column_bi_range}), 2)=1))"
-            )
-            debit_formula = (
-                f"=SUMPRODUCT(--({column_df_range}), --(MOD(COLUMN({column_df_range}), 2)=0))"
-            )
+            values = resume.get("values", [0, 0, 0, 0])
+            base_total_neto = (values[0] if len(values) > 0 else 0) + (values[2] if len(values) > 2 else 0)
+            debit_total_neto = (values[1] if len(values) > 1 else 0) + (values[3] if len(values) > 3 else 0)
 
-            worksheet.write_formula(
-                row_resume, start_col_formula, imposed_formula, cell_formats.get("number")
+            worksheet.write(
+                row_resume, 6, base_total_neto, cell_formats.get("number")
             )
-            worksheet.write_formula(
-                row_resume, start_col_formula + 1, debit_formula, cell_formats.get("number")
-                    )
+            worksheet.write(
+                row_resume, 7, debit_total_neto, cell_formats.get("number")
+            )
 
     def _get_sale_book_field_groups(self):
         company = self.company_id
