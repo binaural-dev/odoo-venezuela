@@ -199,7 +199,7 @@ class AccountRetention(models.Model):
         for retention in self:
             allowed_types = (
                 ("in_invoice", "in_refund")
-                if retention.type == "in_invoice"
+                if retention.type == ["in_invoice", "in_refund", "in_debit"]
                 else ("out_invoice", "out_refund")
             )
 
@@ -265,7 +265,7 @@ class AccountRetention(models.Model):
         for retention in standard_retentions.filtered(
             lambda r: (r.state, r.type_retention) == ("draft", "iva") and r.partner_id
         ):
-            if retention.type == "in_invoice":
+            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 result = retention._load_retention_lines_for_iva_supplier_retention()
             else:
                 result = retention._load_retention_lines_for_iva_customer_retention()
@@ -511,7 +511,7 @@ class AccountRetention(models.Model):
             if retention.type_retention == "iva" and (not retention.number or not re.fullmatch(r"\d{14}", retention.number)):
                 raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
                 
-            if retention.type_retention == "islr" and retention.type == "in_invoice":
+            if retention.type_retention == "islr" and retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._validate_islr_retention()
 
         for retention in self:
@@ -900,7 +900,7 @@ class AccountRetention(models.Model):
         """
         self.ensure_one()
         has_subsidiary = "subsidiary" in self.env.company._fields
-        is_supplier = self.type == "in_invoice"
+        is_supplier = self.type in ["in_invoice", "in_refund", "in_debit"]
         refund_type = "in_refund" if is_supplier else "out_refund"
 
         is_refund = move.move_type == refund_type
@@ -918,9 +918,9 @@ class AccountRetention(models.Model):
         move_type = self.type
 
         # Si es Nota de Crédito (refund), lo tratamos como su factura equivalente para el diario
-        if move_type == 'in_refund':
+        if move_type in ["in_refund", "in_debit"]:
             move_type = 'in_invoice'
-        elif move_type == 'out_refund':
+        elif move_type in ['out_refund' ,'out_debit']:
             move_type = 'out_invoice'
 
         journal = journals.get((self.type_retention, move_type))
