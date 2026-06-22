@@ -917,7 +917,6 @@ class AccountMove(models.Model):
         'invoice_line_ids.price_total',
         'invoice_line_ids.price_subtotal',
         'invoice_payment_term_id',
-        'partner_id',
         'currency_id',
         'foreign_rate',
     )
