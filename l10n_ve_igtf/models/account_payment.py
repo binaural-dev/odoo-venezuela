@@ -174,7 +174,7 @@ class AccountPaymentAndIgtf(models.Model):
                         rec._fix_writeoff_balance(vals, write_off_line_vals)
                     else:
                         if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1:
-                            """ FIX balances when diference is decimal"""
+                            # FIX balances when diference is decimal
                             if rec.partner_type == "customer":
                                 vals[0].update({"balance": total_base_residual})
                                 vals[1].update({"balance": -total_base_residual})
@@ -471,7 +471,7 @@ class AccountPaymentAndIgtf(models.Model):
                 precision_base = self.env.company.currency_id.decimal_places
                 if rec.igtf_amount > 0.0: 
                     balance = abs(lines[0]["balance"])
-                    """ for exedent payment and multipayment"""
+                    # for exedent payment and multipayment
                     if balance - top_igtf_residual_base >= 1.0 or len(rec.invoices_origin_ids) > 1: 
                         igtf_base = top_igtf
                         amount = credit_amount - igtf_base
@@ -480,7 +480,7 @@ class AccountPaymentAndIgtf(models.Model):
                         porcion_igtf = rec.igtf_amount / abs(lines[0]["amount_currency"])
                         igtf_base = float_round((balance * porcion_igtf), precision_digits=precision_base)
                         
-                        """ Prevent apply more IGTF than """
+                        #Prevent apply more IGTF than
                         if top_igtf - igtf_base  <= 0.1: 
                             igtf_base = float_round(top_igtf,precision_digits=precision_base)
 
@@ -496,7 +496,7 @@ class AccountPaymentAndIgtf(models.Model):
 
                     total_base_residual_converted_with_igtf = float_round(abs(total_base_residual_converted) + abs(rec.igtf_amount), precision_digits=precision)
                     if total_base_residual_converted_with_igtf == abs(lines[0]["amount_currency"]): 
-                        """ Ajust cxc balance"""
+                        #Ajust cxc balance
                         if abs(credit_amount) > abs(total_base_residual):
                             amount = abs(total_base_residual)
 
@@ -574,7 +574,7 @@ class AccountPaymentAndIgtf(models.Model):
                 if rec.igtf_amount > 0.0: 
 
                     balance = abs(lines[0]["balance"])
-                    """ for exedent payment and multipayment"""
+                    # for exedent payment and multipayment
                     if balance - top_igtf_residual_base >= 1.0 or len(rec.invoices_origin_ids) > 1: 
                         igtf_base = top_igtf
                         amount = debit_amount - igtf_base
@@ -583,7 +583,7 @@ class AccountPaymentAndIgtf(models.Model):
                         porcion_igtf = rec.igtf_amount / abs(lines[0]["amount_currency"])
                         igtf_base = float_round((balance * porcion_igtf), precision_digits=precision_base)
                         
-                        """ Prevent apply more IGTF than """
+                        #Prevent apply more IGTF than
                         if top_igtf - igtf_base  <= 0.1: 
                             igtf_base = float_round(top_igtf,precision_digits=precision_base)
 
@@ -599,7 +599,7 @@ class AccountPaymentAndIgtf(models.Model):
 
                     total_base_residual_converted_with_igtf = float_round(abs(total_base_residual_converted) + abs(rec.igtf_amount), precision_digits=precision)
                     if total_base_residual_converted_with_igtf == abs(lines[0]["amount_currency"]): 
-                        """ Ajust cxp balance"""
+                        # Ajust cxp balance
                         if abs(debit_amount) > abs(total_base_residual):
                             amount = abs(total_base_residual)
                 
