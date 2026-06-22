@@ -113,15 +113,28 @@ class TestRetentionFlows(TransactionCase):
             if k in invoice._fields:
                 invoice.write({k: 1.0})
         self._ensure_tax_totals(invoice)
-        line = self.env["account.retention.line"].create({
-            "name": "Test ISLR Line (temp)",
-            "move_id": invoice.id,
-            "invoice_total": 1.0,
-            "invoice_amount": 1.0,
-            "retention_amount": 1.0,
-            "foreign_invoice_amount": 1.0,
-            "foreign_retention_amount": 1.0,
+        retention = self.env["account.retention"].create({
+            "type_retention": "islr",
+            "type": "in_invoice",
+            "company_id": self.company.id,
+            "company_currency_id": self.company.currency_id.id,
+            "foreign_currency_id": foreign.id,
+            "partner_id": self.partner.id,
+            "date": fields.Date.today(),
+            "date_accounting": fields.Date.today(),
+            "retention_line_ids": [
+                Command.create({
+                    "name": "Test ISLR Line (temp)",
+                    "move_id": invoice.id,
+                    "invoice_total": 1.0,
+                    "invoice_amount": 1.0,
+                    "retention_amount": 1.0,
+                    "foreign_invoice_amount": 1.0,
+                    "foreign_retention_amount": 1.0,
+                })
+            ],
         })
+        line = retention.retention_line_ids[0]
         line.write({"payment_concept_id": self.payment_concept.id})
         self._ensure_tax_totals(invoice)
         line.invalidate_recordset()
