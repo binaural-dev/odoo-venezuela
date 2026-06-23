@@ -313,7 +313,6 @@ class AccountMove(models.Model):
                 if line.display_type == 'payment_term':
                     total_residual_company += line.amount_residual
             sign = move.direction_sign
-            #raise UserError(_("total_residual_company: %s") % total_residual_company)
             move.amount_residual_company = -sign * total_residual_company
 
     @api.onchange('invoice_date_display')
@@ -322,8 +321,6 @@ class AccountMove(models.Model):
             if move.invoice_date_display and move.is_sale_document(include_receipts=True):
                 move.invoice_date = move.invoice_date_display
 
-
-    is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -1219,12 +1216,7 @@ class AccountMove(models.Model):
                         }
         return res
 
-    def button_draft(self):
-
-        if self.move_type == "in_invoice":
-            self.is_reset_to_draft_for_price_change = True
-
-        return super().button_draft()
+   
 
     @api.constrains("invoice_line_ids")
     def _check_product_id(self):
@@ -1573,7 +1565,6 @@ class AccountMove(models.Model):
     def _sync_dynamic_lines(self, container):
         with super()._sync_dynamic_lines(container):
             yield
-        self._distribute_foreign_pt_residual(container['records'])
         self._distribute_final_real_portion(container['records'])
         self._distribute_foreign_pt_residual(container['records'])
         self._fix_company_currency_rounding(container['records'])
@@ -1664,20 +1655,28 @@ class AccountMove(models.Model):
     # ── Real Portion ────────────────────────────────────────────
 
     def _distribute_final_real_portion(self, moves):
-        for move in moves:
-            if move.state != 'draft':
-                continue
-            if move.currency_id == move.company_currency_id:
-                continue
-            key = ('_real_portion_distributed', move.id)
-            if self.env.cr.cache.get(key):
-                continue
-            self.env.cr.cache[key] = True
-            cc = move.company_currency_id
-            if move.is_invoice(include_receipts=True):
-                self._distribute_invoice_real_portion(move, cc)
-            else:
-                self._distribute_entry_real_portion(move, cc)
+        distributes_keys = []
+        try:
+            for move in moves:
+                if move.state != 'draft':
+                    continue
+                if move.currency_id == move.company_currency_id:
+                    continue
+                key = ('_real_portion_distributed', move.id)
+                if self.env.cr.cache.get(key):
+                    continue
+                self.env.cr.cache[key] = True
+                distributes_keys.append(key)
+                cc = move.company_currency_id
+                if move.is_invoice(include_receipts=True):
+                    self._distribute_invoice_real_portion(move, cc)
+                else:
+                    self._distribute_entry_real_portion(move, cc)
+        except Exception:
+            for key in distributes_keys:
+                self.env.cr.cache.pop(key,None)
+            raise
+
 
     def _distribute_invoice_real_portion(self, move, cc):
         rate = move.invoice_currency_rate
