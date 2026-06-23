@@ -548,8 +548,9 @@ class StockPicking(models.Model):
                 if not price_unit:
                     raise UserError(_(
                         "The product '%s' does not have a sales price defined in its product profile.\n\n"
-                        "Please set a sales price for this product to proceed with the operation."
-                    ) % name)
+                        "Please set a sales price for this product to proceed with the operation.",
+                        name,
+                    ))
             
                 vals_dict = {
                     "name": name,
