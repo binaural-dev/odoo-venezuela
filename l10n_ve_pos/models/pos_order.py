@@ -12,11 +12,6 @@ class PosOrder(models.Model):
     foreign_amount_total = fields.Float(string="Foreign Total", readonly=True, required=True)
     foreign_currency_rate = fields.Float(readonly=True, required=False)
     
-    def _process_order(self, order, draft, existing_order):
-        res = super()._process_order(order, draft, existing_order)
-        order = self.browse(res)
-        return res
-
     @api.model
     def _order_fields(self, ui_order):
         res = super()._order_fields(ui_order)
@@ -73,4 +68,3 @@ class PosOrderLine(models.Model):
         res["foreign_price"] = orderline.foreign_price
         res["foreign_currency_rate"] = orderline.foreign_currency_rate
         return res
-

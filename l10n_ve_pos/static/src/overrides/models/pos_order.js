@@ -15,6 +15,7 @@ import {
 patch(PosOrder.prototype, {
   setup() {
       super.setup(...arguments);
+      this._missingConversionRateWarningShown = false;
 //   this.set_to_invoice(true);
 //   if (props.json) {
 //     if (props.json.account_move === undefined) {
@@ -31,7 +32,7 @@ get_foreign_currency(){
         return this.config.foreign_currency_id;
     },
  get_display_rate() {
-    return this.env.pos.config.foreign_rate;
+    return this.pos?.config?.foreign_rate;
   },
 
 //   _isValidEmptyOrder() {
@@ -59,14 +60,16 @@ get_foreign_currency(){
 //     return res;
 //   },
   get_conversion_rate() {
-    const orderlines = this.currentOrder?.get_orderlines()?.length || [];
-    if (orderlines.length != 0) {
-      return orderlines[0].currency_rate_display();
+    const orderlines = this.get_orderlines?.() || [];
+    if (orderlines.length) {
+      const lineRate = orderlines[0]?.currency_rate_display?.();
+      if (lineRate) {
+        return lineRate;
+      }
     }
     if (!this.init_conversion_rate) {
-      throw new Error(
-        "Conversion rate cannot be determined due to missing values.",
-      );
+      this._missingConversionRateWarningShown = true;
+      return _t("N/D");
     }
 
     return this.init_conversion_rate;

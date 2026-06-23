@@ -1,4 +1,11 @@
 
+/** @odoo-module */
+
+import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
+import { patch } from "@web/core/utils/patch";
+import { roundDecimals as round_di } from "@web/core/utils/numbers";
+import { parseFloat as oParseFloat } from "@web/views/fields/parsers";
+
 patch(Orderline.prototype, {
   //DEPRECATED
   // init_from_JSON(json) {

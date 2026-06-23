@@ -22,6 +22,14 @@ class PosSession(models.Model):
         res["prefix_vats"] = self.env["res.partner"]._fields["prefix_vat"].selection
         return res
 
+    def delete_opening_control_session(self):
+        """Odoo 19 borra sesiones en opening_control al recargar la pestaña.
+        En esta migración lo evitamos para no quedar con session_id huérfano durante reload.
+        """
+        self.ensure_one()
+        _logger.info("l10n_ve_pos: skipping delete_opening_control_session for session %s", self.id)
+        return {"status": "success"}
+
     def _loader_params_pos_payment(self):
         res = super()._loader_params_pos_payment(self)
         res["search_params"]["fields"].append("foreign_rate")
