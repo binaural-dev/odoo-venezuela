@@ -39,10 +39,11 @@ class ResCompany(models.Model):
 
     @api.depends("country_id")
     def _compute_currency_provider(self):
-        super()._compute_currency_provider()
+        result = super()._compute_currency_provider()
         for record in self:
             if record.country_id and record.country_id.code == "VE":
                 record.currency_provider = "bcv"
+        return result
 
     @api.model
     def _parse_bcv_data(self, available_currencies):
