@@ -164,8 +164,7 @@ class PosSession(models.Model):
                 )
             except KeyError as e:
                 raise ValueError(
-                    _("The category %s does not belong to this company.")
-                    % category["parent_id"][1]
+                    _("The category %s does not belong to this company.", category["parent_id"][1])
                 ) from e
 
         return categories
@@ -195,8 +194,7 @@ class PosSession(models.Model):
                 product["categ"] = product_category_by_id[categ_id]
             else:
                 raise ValueError(
-                    _("The category %s does not belong to this company.")
-                    % product["categ_id"][1]
+                    _("The category %s does not belong to this company.", product["categ_id"][1])
                 )
 
             product["image_128"] = bool(product["image_128"])
@@ -406,37 +404,32 @@ class PosSession(models.Model):
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
-        other_lines = line.move_id.line_ids.filtered(
-            lambda x: x != line and x.account_id.account_type != "asset_receivable"
-        )
+        other_lines = line.move_id.line_ids
         if other_lines:
-            other_line = other_lines[0]
-            if (
-                abs(line.credit) > 0
-                and float_compare(
-                    line.credit,
-                    abs(amount),
-                    precision_rounding=self.currency_id.rounding,
-                )
-                == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(foreign_amount)
-                if other_line.foreign_debit != line.foreign_credit:
-                    other_line.foreign_debit = abs(line.foreign_credit)
-            if (
-                abs(line.debit) > 0
-                and float_compare(
-                    line.debit,
-                    abs(amount),
-                    precision_rounding=self.currency_id.rounding,
-                )
-                == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(foreign_amount)
-                if other_line.foreign_credit != line.foreign_debit:
-                    other_line.foreign_credit = abs(line.foreign_debit)
+            for other_line in other_lines:
+                
+                if (
+                    abs(line.credit) > 0
+                    and float_compare(
+                        line.credit,
+                        abs(amount),
+                        precision_rounding=self.currency_id.rounding,
+                    )
+                    == 0
+                ):
+                    line.not_foreign_recalculate = True
+                    line.foreign_credit = abs(foreign_amount)
+                if (
+                    abs(line.debit) > 0
+                    and float_compare(
+                        line.debit,
+                        abs(amount),
+                        precision_rounding=self.currency_id.rounding,
+                    )
+                    == 0
+                ):
+                    line.not_foreign_recalculate = True
+                    line.foreign_debit = abs(foreign_amount)
 
     def _validate_cross_move(self):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
@@ -514,15 +507,21 @@ class PosSession(models.Model):
             # revert the accounts because account.payment doesn't accept negative amount.
             outstanding_account, destination_account = destination_account, outstanding_account
 
+        ref_msg = _('Combine %(payment_method_name)s POS payments from %(session_name)s')
         account_payment = self.env['account.payment'].with_context(pos_payment=True).create({
             'amount': abs(amounts['amount']),
             'journal_id': payment_method.journal_id.id,
             'force_outstanding_account_id': outstanding_account.id,
             'destination_account_id':  destination_account.id,
-            'ref': _('Combine %s POS payments from %s', payment_method.name, self.name),
+            'ref': ref_msg % {
+                'payment_method_name': payment_method.name,
+                'session_name': self.name,
+            },
             'pos_payment_method_id': payment_method.id,
             'pos_session_id': self.id,
             'company_id': self.company_id.id,
+            "foreign_rate": self.config_id.foreign_rate,
+            "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
         })
 
         diff_amount_compare_to_zero = self.currency_id.compare_amounts(diff_amount, 0)
@@ -530,13 +529,6 @@ class PosSession(models.Model):
             self._apply_diff_on_account_payment_move(account_payment, payment_method, diff_amount)
 
         account_payment.action_post()
-        account_payment.with_context(skip_account_move_synchronization=True).write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-                "destination_account_id": destination_account.id,
-            }
-        )
 
         res = account_payment.move_id.line_ids.filtered(lambda line: line.account_id == account_payment.destination_account_id)
 
@@ -609,7 +601,7 @@ class PosSession(models.Model):
         if not line_ids:
             return move
             
-        move_ref_value = _("Cross Move per Operation - Session: %s") % self.name
+        move_ref_value = _("Cross Move per Operation - Session: %s", self.name)
         move = self.env["account.move"].create(
             {
                 "name": move_name_value,
@@ -659,7 +651,7 @@ class PosSession(models.Model):
         foreign_rate = amounts["foreign_rate"]
 
         move_name_value = self.name
-        move_ref_value = _("Unique PoS Cross Move - Sesión: %s") % self.name
+        move_ref_value = _("Unique PoS Cross Move - Sesión: %s", self.name)
 
         move = self.env["account.move"].create(
             {

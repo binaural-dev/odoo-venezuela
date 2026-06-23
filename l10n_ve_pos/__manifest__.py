@@ -4,11 +4,11 @@
         Módulo de POS (Punto de Venta) en Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "17.0.0.0.11",
+    "version": "17.0.0.0.12",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
