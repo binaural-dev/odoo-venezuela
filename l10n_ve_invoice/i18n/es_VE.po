@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250522\n"
+"Project-Id-Version: Odoo Server 17.0+e-20251016\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-25 20:45+0000\n"
-"PO-Revision-Date: 2026-03-25 20:45+0000\n"
+"POT-Creation-Date: 2026-06-15 16:04+0000\n"
+"PO-Revision-Date: 2026-06-15 16:04+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -251,7 +251,7 @@ msgstr "Libro de Compras"
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #, python-format
 msgid "Check the move %s does not have an invoice date and its id is %s"
-msgstr "Verifique el asiento %s no tiene una fecha de factura"
+msgstr "Verifique el asiento %s no tiene una fecha de factura y su id es %s"
 
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_company
@@ -432,6 +432,16 @@ msgid ""
 msgstr ""
 "Permite habilitar las secuencias de la facturación por series en los diarios"
 " de ventas."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+#, python-format
+msgid ""
+"It is not possible to confirm with a date posterior to the current one. "
+"Please verify the document date before proceeding."
+msgstr "No es posible confirmar con una fecha posterior a la actual. "
+"Por favor, verifique la fecha del documento antes de continuar."
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
