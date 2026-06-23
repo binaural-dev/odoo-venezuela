@@ -19,3 +19,4 @@ from . import res_partner
 from . import signature_config
 from . import type_person
 from . import ir_actions_report
+from . import tax_unit
