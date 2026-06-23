@@ -23,13 +23,15 @@
 
             <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" force_save="1" readonly="1"/>
+                <field name="foreign_currency_id" invisible="1" />
+                <field name="foreign_price" force_save="1" widget="monetary" options="{'currency_field': 'foreign_currency_id','precision': 'Foreign Product Price'}"/>
             </xpath>
 
             <xpath
                 expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']"
                 position="after">
-                <field name="foreign_subtotal" />
+                <field name="foreign_currency_id" invisible="1" />
+                <field name="foreign_subtotal" widget="monetary" options="{'currency_field': 'foreign_currency_id','precision': 'Foreign Product Price'}"/>
                 <field name="foreign_rate" optional="hide" readonly="1" force_save="1"/>
                 <field
                     name="foreign_inverse_rate"

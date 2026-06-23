@@ -74,3 +74,37 @@ class AccountMoveLine(models.Model):
             return False
 
         return True
+    
+    def _get_computed_taxes(self):
+        """
+        Override to determine the applicable taxes for invoice lines, specifically
+        handling international sales scenarios.
+
+        This method extends the standard tax computation by replacing the default
+        taxes with the company's configured zero-aliquot taxes when the following
+        conditions are met:
+            - The move is a sale document (including receipts).
+            - The journal is marked as an international sale.
+
+        If these conditions are not satisfied, the method falls back to the default
+        tax computation provided by the parent implementation.
+
+        Additionally, the resulting taxes are filtered to ensure they belong to the
+        same company as the invoice.
+
+        Returns:
+            recordset: A recordset of `account.tax` representing the applicable taxes.
+        """
+
+        tax_ids = super()._get_computed_taxes()
+
+        is_sale_international = self.move_id.journal_id.is_sale_international
+
+        if not self.move_id.is_sale_document(include_receipts=True) or not is_sale_international:
+            return tax_ids
+        
+        company_domain = self.env['account.tax']._check_company_domain(self.move_id.company_id)
+        filtered_taxes_id = self.env.company.zero_aliquot_sale_international.filtered_domain(company_domain)
+        tax_ids = filtered_taxes_id or self.product_id.taxes_id.filtered_domain(company_domain)
+
+        return tax_ids

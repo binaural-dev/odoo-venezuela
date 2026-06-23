@@ -34,18 +34,20 @@ patch(Order.prototype, {
     }
     return res;
   },
-  assert_editable() {},
+  assert_editable() { },
   get init_conversion_rate() {
     //FIXME :Buscar una manera de esto sea por id y no por name
-    if (this.pos.currency.name == "VEF") {
+    if (this.pos.currency.name == "VEF" || this.pos.currency.name == "VES") {
+      // IMPORTANT: do not round inverse rate for Bolivar base.
+      // Small values (e.g. 0.0018...) rounded to 2 decimals become 0.00.
       return this.pos.config.foreign_inverse_rate;
     }
     if (this.pos.currency.name == "USD") {
-      return this.pos.config.foreign_rate;
+      return round_di(this.pos.config.foreign_rate, this.pos.dp["Tasa"]);
     }
   },
   get_display_rate() {
-    return this.pos.config.foreign_rate;
+    return parseFloat(this.pos.config.foreign_rate.toFixed(this.pos.dp["Tasa"]));
   },
 
   add_orderline(line) {
@@ -65,42 +67,6 @@ patch(Order.prototype, {
 
     return this.init_conversion_rate;
   },
-
-  // get_orderlines() {
-  //   if (!this.cid || !this.pos.get_order()) {
-  //     return this.orderlines
-  //   }
-
-  //   if (this.cid != this.pos.get_order().cid) {
-  //     return this.orderlines;
-  //   }
-
-  //   if (this.orderlines.length < 1) {
-  //     this.lock_toggle_receipt_invoice = false
-  //     return this.orderlines
-  //   }
-
-  //   let line = this.orderlines[0]
-
-  //   if (!line.refunded_orderline_id) {
-  //     return this.orderlines
-  //   }
-
-  //   if (this.lock_toggle_receipt_invoice) {
-  //     return this.orderlines
-  //   }
-
-  //   this.pos.env.services.rpc({
-  //     model: 'pos.order.line',
-  //     method: 'search_read',
-  //     domain: [['id', '=', line.refunded_orderline_id]],
-  //   }).then((el) => {
-  //     this.to_receipt = el[0].to_receipt
-  //     this.lock_toggle_receipt_invoice = true
-  //   })
-
-  //   return this.orderlines;
-  // },
 
   reload_taxes() {
     this.orderlines.forEach((el) => {
@@ -123,6 +89,7 @@ patch(Order.prototype, {
     let json = super.export_as_JSON();
     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
     json["foreign_currency_rate"] = this.get_conversion_rate();
+    json["foreign_inverse_rate"] = this.init_conversion_rate;
     json["to_receipt"] = this.is_to_receipt();
     return json;
   },
@@ -170,7 +137,7 @@ patch(Order.prototype, {
       this.orderlines.reduce(function (sum, orderLine) {
         return sum + orderLine.get_display_foreign_price();
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.foreign_currency.rounding || 0.01,
     );
   },
   get_foreign_total_with_tax() {
@@ -202,7 +169,7 @@ patch(Order.prototype, {
         }
         return sum;
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.foreign_currency.rounding || 0.01,
     );
   },
   get_foreign_total_tax() {
@@ -313,9 +280,8 @@ patch(Order.prototype, {
         if (prd.type != "product") {
           continue;
         }
-        
-        console.log("AKDASD PRODUCT", this.pos.config.allow_sales_on_order );
-        if (this.pos.config.allow_sales_on_order && prd.pos_sale_on_order){
+
+        if (this.pos.config.allow_sales_on_order && prd.pos_sale_on_order) {
           allow_sales_on_order = true
         }
 
@@ -332,7 +298,7 @@ patch(Order.prototype, {
         }
       }
 
-      if (allow_sales_on_order){
+      if (allow_sales_on_order) {
         return await super.pay(...arguments)
       }
 
@@ -360,7 +326,8 @@ patch(Order.prototype, {
       if (!only_cash || (only_cash && last_line_is_cash)) {
         var rounding_method = this.pos.cash_rounding[0].rounding_method;
         var remaining =
-          this.get_foreign_total_with_tax() - this.get_total_paid();
+this.get_foreign_total_with_tax() -
+            this.get_foreign_total_paid();
         var sign = this.get_foreign_total_with_tax() > 0 ? 1.0 : -1.0;
         if (
           ((this.get_foreign_total_with_tax() < 0 && remaining > 0) ||
@@ -427,22 +394,23 @@ patch(Order.prototype, {
   },
 
   get_foreign_total_paid() {
-    return round_pr(
+    const result = round_pr(
       this.paymentlines.reduce(function (sum, paymentLine) {
         if (paymentLine.is_done()) {
           sum += paymentLine.get_foreign_amount();
         }
         return sum;
       }, 0),
-      this.pos.foreign_currency.rounding,
+      this.pos.foreign_currency.rounding || 0.01,
     );
+    return result;
   },
   get_foreign_change(paymentline) {
     if (!paymentline) {
       var change =
-        this.get_foreign_total_paid() -
-        this.get_foreign_total_with_tax() -
-        this.get_rounding_applied();
+this.get_foreign_total_paid() -
+            this.get_foreign_total_with_tax() -
+            this.get_foreign_rounding_applied();
     } else {
       change = -this.get_foreign_total_with_tax();
       var lines = this.paymentlines;
@@ -455,12 +423,12 @@ patch(Order.prototype, {
     }
     return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
   },
-  get_foreign_due(paymentline) {
+get_foreign_due(paymentline) {
     if (!paymentline) {
       var due =
-        this.get_foreign_total_with_tax() -
-        this.get_foreign_total_paid() +
-        this.get_rounding_applied();
+this.get_foreign_total_with_tax() -
+            this.get_foreign_total_paid() +
+            this.get_foreign_rounding_applied();
     } else {
       due = this.get_foreign_total_with_tax();
       var lines = this.paymentlines;

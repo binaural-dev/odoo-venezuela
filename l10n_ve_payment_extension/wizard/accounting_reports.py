@@ -83,43 +83,67 @@ class WizardAccountingReports(models.TransientModel):
         )
         return res_book
 
-    def sale_book_fields(self):
-        fields = super().sale_book_fields()
-        fields.extend(
-            [
-                {
-                    "name": "Fecha Retención",
-                    "field": "date_retention",
-                    "size": 20,
-                },
-                {
-                    "name": "N° Retención",
-                    "field": "number_retention",
-                    "size": 20,
-                },
-                {"name": "IVA retenido", "field": "iva_retained", "format": "number"},
-            ]
-        )
-        return fields
+    
+    def _get_sale_book_field_groups(self):
+        sale_groups = super()._get_sale_book_field_groups()
 
-    def purchase_book_fields(self):
-        fields = super().purchase_book_fields()
-        fields.extend(
-            [
+        retention_fields = [
+            {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},
+            {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
+            {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
+        ]
+        
+        sale_groups.append({
+            'header': 'RETENCIONES', 
+            'fields': retention_fields
+        })
+
+        return sale_groups
+    
+    def _fields_purchase_book_line(self, move, taxes):
+        fields_purchase_book_line = super()._fields_purchase_book_line(move, taxes)
+
+        retention_data = self.get_retention_iva_values(move.id)
+        if fields_purchase_book_line:
+            fields_purchase_book_line.update(
                 {
-                    "name": "Fecha Retención",
-                    "field": "date_retention",
-                    "size": 20,
-                },
-                {
-                    "name": "N° Retención",
-                    "field": "number_retention",
-                    "size": 20,
-                },
-                {"name": "IVA retenido", "field": "iva_retained", "format": "number"},
-            ]
+                    "retention_date": retention_data.get("date_retention", "00/00/0000"),
+                    "retention_number": retention_data.get("number_retention", "--"),
+                    "iva_withheld": retention_data.get("iva_retained", 0),
+                }
+            )
+
+        return fields_purchase_book_line
+    
+    def _fields_sale_book_line(self, move, taxes):
+        fields_sale_book_line = super()._fields_sale_book_line(move, taxes)
+
+        retention_data = self.get_retention_iva_values(move.id)
+        fields_sale_book_line.update(
+            {
+                "retention_date": retention_data.get("date_retention", "--"),
+                "retention_number": retention_data.get("number_retention", "--"),
+                "iva_withheld": retention_data.get("iva_retained", 0),
+            }
         )
-        return fields
+
+        return fields_sale_book_line
+    
+    def _get_purchase_book_field_groups(self):
+        purchase_groups = super()._get_purchase_book_field_groups() 
+
+        retention_fields = [
+            {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},
+            {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
+            {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
+        ]
+        
+        purchase_groups.append({
+            'header': 'RETENCIONES', 
+            'fields': retention_fields
+        })
+
+        return purchase_groups
 
     def _get_retention_domain(self):
         is_purchase = self.report == "purchase"
