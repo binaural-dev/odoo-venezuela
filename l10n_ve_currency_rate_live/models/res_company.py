@@ -1,10 +1,16 @@
+import logging
+from datetime import datetime
+
 from odoo import api, fields, models
+import pytz
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 import requests
 from bs4 import BeautifulSoup
 
 BCV_URL = "https://www.bcv.org.ve/"
+DOLAR_API_STATUS_URL = "https://ve.dolarapi.com/v1/estado"
+DOLAR_API_OFFICIAL_URL = "https://ve.dolarapi.com/v1/dolares/oficial"
 BCV_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -12,7 +18,14 @@ BCV_HEADERS = {
         "Chrome/120.0.0.0 Safari/537.36"
     )
 }
+API_TIMEOUT = 15
+SOURCE_MAX_ATTEMPTS = 3
+BCV_TIMEZONE = "America/Caracas"
+BCV_WINDOW_START_HOUR = 4
+BCV_WINDOW_END_HOUR = 6
 VEF_CURRENCY_CODE = "VEF"
+
+_logger = logging.getLogger(__name__)
 
 
 class ResCompany(models.Model):
@@ -24,67 +37,158 @@ class ResCompany(models.Model):
 
     can_update_habil_days = fields.Boolean(default=True)
 
+    @api.depends("country_id")
+    def _compute_currency_provider(self):
+        super()._compute_currency_provider()
+        for record in self:
+            if record.country_id and record.country_id.code == "VE":
+                record.currency_provider = "bcv"
+
     @api.model
     def _parse_bcv_data(self, available_currencies):
-        current_date = fields.Date.context_today(self)
+        current_date = fields.Date.to_date(fields.Date.context_today(self))
         result = {"USD": (1.0, current_date)}
 
         if self[:1].can_update_habil_days and current_date.isoweekday() > 5:
             return result
 
-        rate_value, published_date = self._scrape_bcv_rate()
+        rate_value, published_date = self._get_bcv_rate()
         if not rate_value or not published_date:
             return result
 
-        if published_date > current_date:
+        if published_date != current_date:
             return result
 
-        # After midnight we keep the latest published BCV rate, but store it
-        # with the new Odoo date so customers on late shifts are not affected earlier.
         result["VEF"] = (rate_value, current_date)
         return result
 
     @api.model
+    def _is_bcv_update_window(self, now_local):
+        if BCV_WINDOW_START_HOUR <= now_local.hour < BCV_WINDOW_END_HOUR:
+            return True
+        return now_local.hour == BCV_WINDOW_END_HOUR and now_local.minute == 0
+
+    @api.model
+    def _parse_source_date(self, value):
+        if not value:
+            return None
+        try:
+            return fields.Date.to_date(value[:10])
+        except Exception:
+            _logger.warning("BCV source returned an invalid date: %s", value)
+            return None
+
+    @api.model
+    def _get_bcv_rate_from_api(self):
+        for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
+            try:
+                status_response = requests.get(
+                    DOLAR_API_STATUS_URL,
+                    timeout=API_TIMEOUT,
+                    headers=BCV_HEADERS,
+                )
+                status_response.raise_for_status()
+                api_status = (status_response.json().get("estado") or "").strip().lower()
+                if api_status != "disponible":
+                    _logger.warning("DolarAPI healthcheck returned status '%s'", api_status)
+                    return (None, None)
+
+                official_response = requests.get(
+                    DOLAR_API_OFFICIAL_URL,
+                    timeout=API_TIMEOUT,
+                    headers=BCV_HEADERS,
+                )
+                official_response.raise_for_status()
+                payload = official_response.json()
+
+                rate_value = payload.get("promedio")
+                if rate_value is None:
+                    rate_value = payload.get("venta") or payload.get("compra")
+                published_date = self._parse_source_date(payload.get("fechaActualizacion"))
+                if rate_value is None or not published_date:
+                    return (None, None)
+                return (float(rate_value), published_date)
+            except Exception as exc:
+                _logger.warning(
+                    "DolarAPI official rate fetch failed on attempt %s/%s: %s",
+                    attempt,
+                    SOURCE_MAX_ATTEMPTS,
+                    exc,
+                )
+        return (None, None)
+
+    @api.model
     def _scrape_bcv_rate(self):
         disable_warnings(InsecureRequestWarning)
-        try:
-            response = requests.get(
-                BCV_URL,
-                verify=False,
-                timeout=30,
-                headers=BCV_HEADERS,
-            )
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "html.parser")
+        for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
+            try:
+                response = requests.get(
+                    BCV_URL,
+                    verify=False,
+                    timeout=30,
+                    headers=BCV_HEADERS,
+                )
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, "html.parser")
 
-            usd_container = soup.find(id="dolar")
-            if not usd_container:
-                return (None, None)
+                # Extracting the USD value from the specific HTML ID used by BCV
+                usd_container = soup.find(id="dolar")
+                if not usd_container:
+                    _logger.warning("BCV scraping did not find #dolar on attempt %s/%s", attempt, SOURCE_MAX_ATTEMPTS)
+                    continue
 
-            usd_value = (
-                usd_container.text.replace("\n", "")
-                .replace("USD", "")
-                .replace(",", ".")
-                .strip()
-            )
-            rate = float(usd_value)
+                usd_value = (
+                    usd_container.text.replace("\n", "")
+                    .replace("USD", "")
+                    .replace(",", ".")
+                    .strip()
+                )
+                rate = float(usd_value)
 
-            published_date = None
-            date_node = soup.find("span", class_="date-display-single")
-            if date_node and date_node.get("content"):
-                published_date = fields.Date.from_string(date_node["content"][:10])
-            return (rate, published_date)
-        except Exception:
-            return (None, None)
+                published_date = None
+                date_node = usd_container.find_next("span", class_="date-display-single")
+                if date_node and date_node.get("content"):
+                    published_date = self._parse_source_date(date_node["content"])
+                if not published_date:
+                    _logger.warning(
+                        "BCV scraping did not find a valid published date on attempt %s/%s",
+                        attempt,
+                        SOURCE_MAX_ATTEMPTS,
+                    )
+                    continue
+                return (rate, published_date)
+            except Exception as exc:
+                _logger.warning(
+                    "BCV scraping failed on attempt %s/%s: %s",
+                    attempt,
+                    SOURCE_MAX_ATTEMPTS,
+                    exc,
+                )
+        return (None, None)
+
+    @api.model
+    def _get_bcv_rate(self):
+        rate_value, published_date = self._get_bcv_rate_from_api()
+        if rate_value and published_date:
+            return (rate_value, published_date)
+        return self._scrape_bcv_rate()
 
     @api.model
     def get_usd_rate_of_the_day_bcv(self):
-        rate, date = self._scrape_bcv_rate()
+        rate, date = self._get_bcv_rate()
         return (rate if rate is not None else 1, date or False)
 
     @api.model
     def run_update_bcv_currency(self):
-        today = fields.Date.today()
+        try:
+            timezone = pytz.timezone(BCV_TIMEZONE)
+        except Exception:
+            timezone = pytz.UTC
+        now_local = datetime.now(timezone)
+        if not self._is_bcv_update_window(now_local):
+            return
+
+        today = fields.Date.to_date(fields.Date.today())
         Rate = self.env["res.currency.rate"]
         vef = (
             self.env["res.currency"]
@@ -100,6 +204,7 @@ class ResCompany(models.Model):
         bcv_companies = self.search(
             [
                 ("currency_provider", "=", "bcv"),
+                # Child companies inherit the shared rate through their parent company.
                 ("parent_id", "=", False),
             ]
         )
