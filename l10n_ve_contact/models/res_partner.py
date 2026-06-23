@@ -99,11 +99,18 @@ class ResPartner(models.Model):
 
     def check_duplicate_vat(self, prefix_vat, vat, company_id=None):
         error_message = ""
+        merge_partner_ids = self.env.context.get("l10n_ve_merge_partner_ids") or []
+        if isinstance(merge_partner_ids, int):
+            merge_partner_ids = [merge_partner_ids]
+
         domain = [
             ("prefix_vat", "=", prefix_vat),
             ("vat", "=", vat),
             ("id", "!=", self.id if self else False),
         ]
+
+        if self.env.context.get("l10n_ve_partner_merge_validation") and merge_partner_ids:
+            domain.append(("id", "not in", merge_partner_ids))
 
         if prefix_vat and vat:
             if self.env.company.validate_user_creation_by_company:
@@ -119,8 +126,12 @@ class ResPartner(models.Model):
                 error_message = _(
                     "A partner with the same VAT number already exists for this company."
                 )
+            else:
+                error_message = _(
+                    "A partner with the same VAT number already exists."
+                )
 
-            existing_partner = self.env["res.partner"].search(domain)
+            existing_partner = self.env["res.partner"].search(domain, limit=1)
             if existing_partner:
                 raise ValidationError(error_message)
 
@@ -182,7 +193,7 @@ class ResPartner(models.Model):
                     if not flag:
                         continue
                     vals["name"] = name
-            if "vat" and "prefix_vat" in vals:
+            if "vat" in vals and "prefix_vat" in vals:
                 self.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
             if "email" in vals:
                 self.check_duplicate_email(vals.get("email"), parent_id=vals.get("parent_id"))
@@ -190,9 +201,12 @@ class ResPartner(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        if "prefix_vat" and "vat" in vals:
+        if "vat" in vals or "prefix_vat" in vals:
             for record in self:
-                record.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
+                record.check_duplicate_vat(
+                    vals.get("prefix_vat", record.prefix_vat),
+                    vals.get("vat", record.vat),
+                )
         if "email" in vals:
             for record in self:
                 actual_parent_id = vals.get("parent_id", record.parent_id.id)

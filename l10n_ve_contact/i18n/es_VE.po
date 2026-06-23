@@ -44,6 +44,13 @@ msgstr "Ya existe un cliente con el mismo RIF/CI/PAS para esta compañía."
 #. module: l10n_ve_contact
 #. odoo-python
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid "A partner with the same VAT number already exists."
+msgstr "Ya existe un cliente con la misma identificación."
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "A partner with the same email address already exists for this company."
