@@ -641,14 +641,41 @@ class SerialFiscalDriver(SerialDriver):
                 next_index += 1
 
             discount = 0
-            
+            # Acumula los descuentos de líneas con precio negativo (rewards/loyalty).
+            # El driver format_invoice_line devuelve (None, abs(price_unit)) para
+            # esas líneas, indicando que NO deben enviarse como ítem sino como
+            # comando fiscal de descuento (q-) antes del subtotal.
+            discount_amount = 0.0
+
             for item in invoice_data["invoice_lines"]:
                 line_cmd, line_discount = self.format_invoice_line(
                     item, max_amount_decimal, max_qty_decimal, max_amount_int, max_qty_int
                 )
-                
-                cmd.append(line_cmd)            
-            
+
+                if line_cmd is None:
+                    # Línea de descuento (reward/loyalty): acumular monto y no
+                    # agregar como ítem a la factura fiscal.
+                    if line_discount:
+                        discount_amount += line_discount
+                    continue
+
+                cmd.append(line_cmd)
+
+            # Si hay descuento acumulado, enviar comando fiscal de descuento por
+            # monto (q-XXXXXXXXX) antes del subtotal. Formato HKA según flag 21:
+            # se usan los campos `disc_int` y `disc_decimal` (no max_amount_*)
+            # porque el manual reserva longitudes distintas para descuentos.
+            # Ref: Manual de Protocolos y Comandos HKA Venezuela V8.5.0, Tabla 22.
+            if discount_amount > 0:
+                amount_i, amount_d = self.split_amount(
+                    round(discount_amount, disc_decimal), disc_decimal
+                )
+                discount_padded = (
+                    str(amount_i).zfill(disc_int)
+                    + str(amount_d).zfill(disc_decimal)
+                )
+                cmd.append(f"q-{discount_padded}")
+
             cmd.append("3")
             
             closing_method = "01"
@@ -718,7 +745,7 @@ class SerialFiscalDriver(SerialDriver):
             
             for command in cmd:
                 result = self.send_command(command)
-                
+
                 if not result and not (command.startswith("1") and len(command) == 3):
                     msg.append(f"Fallo al enviar comando: {command}")
                     self.send_command("199")
