@@ -60,8 +60,25 @@ class PosOrder(models.Model):
         return res
     @api.model
     def create_from_ui(self, orders, draft=False):
+        """Crea órdenes POS desde UI evitando render síncrono de PDF en este flujo.
+
+        Este override mantiene ``from_pos=True`` y desactiva ``generate_pdf`` para
+        que la validación/cierre en POS no dependa de wkhtmltopdf/EDI dentro de la
+        misma transacción.
+
+        Objetivo: reducir cuelgues/esperas largas en caja y proteger confirmación
+        de la venta en escenarios de carga o infraestructura inestable.
+
+        :param list orders: órdenes serializadas enviadas por el frontend POS.
+        :param bool draft: modo borrador estándar de Odoo POS.
+        :return: resultado de ``super().create_from_ui``.
+        """
         context = dict(self.env.context)
         context['from_pos'] = True
+        # Evita generar PDF sincrónico en validación POS.
+        # En este entorno la ruta de render/envío puede romper la transacción
+        # (wkhtmltopdf/edi) y dejar la orden en "cargando".
+        context['generate_pdf'] = False
         return super(PosOrder, self.with_context(context)).create_from_ui(orders, draft)
 
 class PosOrderLine(models.Model):
@@ -80,4 +97,3 @@ class PosOrderLine(models.Model):
         res["foreign_price"] = orderline.foreign_price
         res["foreign_currency_rate"] = orderline.foreign_currency_rate
         return res
-

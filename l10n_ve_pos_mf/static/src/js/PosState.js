@@ -6,6 +6,11 @@ import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { ReprintInvoiceButton } from "./ReprintInvoiceButton";
+import {
+  FISCAL_PRINT_CLASSIFICATION,
+  classifyFiscalPrintResponse,
+  hasAnyFiscalField,
+} from "./fiscal_payload_utils";
 
 patch(TicketScreen, {
   components: {
@@ -223,12 +228,29 @@ patch(PosStore.prototype, {
 
   set_data_from_fiscal_machine(order, values) {
     const data = values?.data ?? {};
+    console.info("[POS-MF] payload previo a asignación fiscal", {
+      order_uid: order?.uid,
+      response_valid: values?.valid,
+      response_message: values?.message,
+      raw_response: values,
+      fiscal_data: data,
+    });
     const sequence = data.sequence;
     const serial_machine = data.serial_machine;
     const mf_reportz = data.mf_reportz;
     order.fiscal_machine = serial_machine || false;
     order.mf_invoice_number = sequence || false;
     order.mf_reportz = mf_reportz || false;
+    console.info("[POS-MF] asignación fiscal aplicada", {
+      order_uid: order?.uid,
+      fiscal_machine: order.fiscal_machine,
+      mf_invoice_number: order.mf_invoice_number,
+      mf_reportz: order.mf_reportz,
+    });
+  },
+
+  hasFiscalContext(order) {
+    return hasAnyFiscalField(order);
   },
 
   async pushToMF(order) {
@@ -244,11 +266,16 @@ patch(PosStore.prototype, {
         throw response
       }
 
+      const printClassification = classifyFiscalPrintResponse(response);
+      if (printClassification.type === FISCAL_PRINT_CLASSIFICATION.PRINT_FAILED) {
+        throw printClassification;
+      }
       this.set_data_from_fiscal_machine(order, response)
       
       return {  
         valid: true,
-        message: "",
+        message: printClassification.message || "",
+        type: printClassification.type,
         printer_connection: true
       }
     
@@ -291,10 +318,13 @@ patch(PosStore.prototype, {
       
       const response = await this.pushToMF(order)
 
+      if (!response) {
+        return;
+      }
+
       if (response.printer_connection == false || !("printer_connection" in response)) {
         return
       }
-
     }
     return await super.push_single_order.apply(this, [order, opts]);
   },
