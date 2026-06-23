@@ -99,7 +99,7 @@ class WizardAccountingReports(models.TransientModel):
         multiplier = -1 if move.move_type == "out_refund" else 1
         bi_igtf = move.foreign_bi_igtf if not self.currency_system else move.bi_igtf
         is_igtf = bool(move.alter_bi_igtf > 0)
-        igtf = (move.tax_totals["igtf"]["foreign_igtf_amount"]) if is_igtf else 0
+        igtf = (move.tax_totals['igtf']["foreign_igtf_amount"]) if is_igtf else 0
         # fields |= {"bi_igtf": bi_igtf,}
         if fields:
             fields |= {"igtf": igtf * multiplier,}
@@ -132,8 +132,8 @@ class WizardAccountingReports(models.TransientModel):
         multiplier = -1 if move.move_type == "in_refund" else 1
         bi_igtf = move.foreign_bi_igtf if not self.currency_system else move.bi_igtf
         is_igtf = bool(move.alter_bi_igtf > 0)
-        _logger.info(f"TAX TOTALS IGTF:{move.tax_totals["igtf"]}")
-        igtf =  (move.tax_totals["igtf"]["foreign_igtf_amount"]) if is_igtf else 0
+        _logger.info(f"TAX TOTALS IGTF:{move.tax_totals['igtf']}")
+        igtf =  (move.tax_totals['igtf']["foreign_igtf_amount"]) if is_igtf else 0
         # fields |= {"bi_igtf": bi_igtf,}
         if fields:
             fields |= {"igtf": igtf * multiplier,}
