@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <!-- Add is_donation field in form (visible for editing) -->
             <xpath expr="//field[@name='partner_id']" position="before">
-                <field name="is_donation" readonly="is_donation" force_save="1"/>
+                <field name="is_donation" readonly="1" invisible="not is_donation" force_save="1"/>
             </xpath>
 
             <!-- Make partner_id readonly when is_donation -->
