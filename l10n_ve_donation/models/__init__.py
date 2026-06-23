@@ -1,4 +1,5 @@
 from . import (
+    account_asset,
     account_move,
     account_move_line,
     product_template,
