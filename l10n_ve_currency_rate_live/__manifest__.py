@@ -2,7 +2,7 @@
     "name": "Venezuela - Sincronización de Tasa de Cambio",
     "summary": "Fijar automáticamente el tipo de cambio oficial de Venezuela (tipo BCV).",
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
     "version": "17.0.1.0.10",
