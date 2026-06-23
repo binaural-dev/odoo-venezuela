@@ -107,7 +107,7 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
-        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
+        self.invoice_date = False if self.move_type == "entry" else fields.Date.context_today(self)
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
@@ -421,7 +421,7 @@ class AccountMove(models.Model):
 
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
+                move.foreign_currency_id.id, move.invoice_date or fields.Date.context_today(self)
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
@@ -437,7 +437,7 @@ class AccountMove(models.Model):
     def onchange_date(self):
         for rec in self:
             if rec.partner_id:
-                rec.invoice_date = fields.Date.today()
+                rec.invoice_date = fields.Date.context_today(self)
                 rec.foreign_currency_id = rec.default_alternate_currency()
 
     def write(self, vals):
@@ -779,7 +779,7 @@ class AccountMove(models.Model):
             if move.manually_set_rate:
                 continue
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
-            rate_date = getattr(move, date_field) or fields.Date.today()
+            rate_date = getattr(move, date_field) or fields.Date.context_today(self)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)

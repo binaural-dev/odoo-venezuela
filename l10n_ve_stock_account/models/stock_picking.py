@@ -1088,7 +1088,7 @@ class StockPicking(models.Model):
             self._create_invoices_from_pickings()
 
     def _is_execution_day(self, config_type):
-        today = fields.Date.today()
+        today = fields.Date.context_today(self)
         last_day = (today.replace(day=1) + timedelta(days=32)).replace(
             day=1
         ) - timedelta(days=1)
