@@ -32,7 +32,7 @@ get_foreign_currency(){
         return this.config.foreign_currency_id;
     },
  get_display_rate() {
-    return this.pos?.config?.foreign_rate;
+    return this.pos?.config?.foreign_inverse_rate;
   },
 
 //   _isValidEmptyOrder() {
