@@ -271,11 +271,19 @@ class SaleOrder(models.Model):
                 else sale.foreign_rate
             )
 
+    @api.model
+    def _has_significant_invoiceable_quantity(self, line):
+        if line.display_type:
+            return True
+        return abs(line.qty_to_invoice) >= line.product_uom.rounding
+
     def _get_invoiceable_lines(self, final=False):
         if self._context.get("ignore_limit", False):
             return super()._get_invoiceable_lines(final)
 
         res = super()._get_invoiceable_lines(final)
+        res = res.filtered(self._has_significant_invoiceable_quantity)
+
         limit = self.company_id.max_product_invoice
         if len(res) > limit:
             res = res[:limit]
@@ -285,17 +293,10 @@ class SaleOrder(models.Model):
         return res
 
     def _create_invoices(self, grouped=False, final=False, date=None):
-        """
-        This function creates the invoice associated to the order,
-        but with this inheritance it creates multiple invoices if
-        it exceeds the configuration limit.
-
-        It also sends the custom rate of the order to the invoice
-        """
         invoices = self.env["account.move"]
         for order in self:
             invoiceable_lines = order._get_invoiceable_lines(final)
-            while len(invoiceable_lines) != 0:
+            while invoiceable_lines:
                 invoices |= super()._create_invoices(grouped, final, date)
                 invoiceable_lines = order._get_invoiceable_lines(final)
 
