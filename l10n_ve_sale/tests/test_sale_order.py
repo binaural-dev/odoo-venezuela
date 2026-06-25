@@ -302,3 +302,47 @@ class TestSaleOrderInvoice(TransactionCase):
         order.action_confirm()
         self.assertEqual(order.state, 'sale')
         _logger.info("test_03_reconfirm_sale_order_with_pickings --- successfully")
+
+    def test_04_rounding_residual_no_extra_invoices(self):
+        """Verify that a rounding residual (±0.005 with rounding 0.01) is filtered
+        and the while loop does not produce extra invoices."""
+        dp = self.env["decimal.precision"].search(
+            [("name", "=", "Product Unit of Measure")]
+        )
+        original = dp.digits
+        dp.digits = 3
+
+        try:
+            rate = 5.0
+            order = self.env["sale.order"].create({
+                "partner_id": self.partner.id,
+                "manually_set_rate": True,
+                "foreign_rate": rate,
+                "foreign_inverse_rate": 1 / rate,
+                "order_line": [(0, 0, {
+                    "product_id": self.product.id,
+                    "product_uom_qty": 1.005,
+                    "price_unit": 100,
+                    "tax_id": [(6, 0, [self.tax_iva16.id])],
+                    "name": "3-decimal qty",
+                })],
+            })
+            order.action_confirm()
+
+            invoiceable = order._get_invoiceable_lines()
+            self.assertEqual(len(invoiceable), 1, "Line must be invoiceable")
+
+            before = self.env["account.move"].search_count(
+                [("invoice_origin", "=", order.name)]
+            )
+            order._create_invoices()
+            after = self.env["account.move"].search_count(
+                [("invoice_origin", "=", order.name)]
+            )
+            self.assertEqual(after - before, 1, "Must create exactly 1 invoice")
+
+            remaining = order._get_invoiceable_lines()
+            self.assertFalse(remaining, "No lines must remain after invoicing")
+        finally:
+            dp.digits = original
+            self.env["decimal.precision"].invalidate_cache()
