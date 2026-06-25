@@ -95,7 +95,7 @@ class AccountPaymentIgtf(models.Model):
         if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
             return 0.0
  
-        return float_round(igtf, precision_rounding=precision)
+        return igtf
     
     def _create_igtf_moves_in_payments(self, vals, write_off_line_vals = False):
         
@@ -130,7 +130,7 @@ class AccountPaymentIgtf(models.Model):
                 if rec.partner_type == "customer"
                 else self.env.company.supplier_account_igtf_id.id
             )
-            igtf_amount = float_round(rec.igtf_amount, precision_rounding=rec.currency_id.rounding)
+            igtf_amount = rec.igtf_amount
             account_id = igtf_account if rec.igtf_percentage else None
             currency = self.currency_id 
             precision = currency.rounding
@@ -155,7 +155,7 @@ class AccountPaymentIgtf(models.Model):
                 if rec.partner_type == "customer"
                 else self.env.company.supplier_account_igtf_id.id
             )
-            igtf_amount = float_round(rec.igtf_amount, precision_rounding=rec.currency_id.rounding)
+            igtf_amount = rec.igtf_amount
             account_id = igtf_account if rec.igtf_percentage else None
             currency = self.currency_id 
             precision = currency.rounding
@@ -196,11 +196,11 @@ class AccountPaymentIgtf(models.Model):
                 precision = currency.rounding
                 
                 credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
-                credit_line = float_round(credit_line_unrounded, precision_rounding=precision)
-                credit_amount = float_round(-credit_line, precision_rounding=precision)
+                credit_line = credit_line_unrounded
+                credit_amount = -credit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     
-                    credit_amount = float_round(-(credit_line / rec.foreign_inverse_rate), precision_rounding=precision)
+                    credit_amount = -(credit_line / rec.foreign_inverse_rate)
                 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:
@@ -226,11 +226,11 @@ class AccountPaymentIgtf(models.Model):
                 precision = currency.rounding
 
                 debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
-                debit_line = float_round(debit_line_unrounded, precision_rounding=precision)
-                debit_amount = float_round(debit_line, precision_rounding=precision)
+                debit_line = debit_line_unrounded
+                debit_amount = debit_line
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     
-                    debit_amount = float_round(debit_line / rec.foreign_inverse_rate, precision_rounding=precision)
+                    debit_amount = debit_line / rec.foreign_inverse_rate
                 
                 if float_compare(rec.igtf_amount, 0.0, precision_rounding=precision) > 0.0:
                     if not write_off_line_vals:

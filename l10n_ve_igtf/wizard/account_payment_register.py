@@ -241,7 +241,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
             return 0.0
         
-        return float_round(igtf, precision_rounding=precision)
+        return igtf
         
     @api.onchange('journal_id')
     def _compute_is_igtf_journal(self):

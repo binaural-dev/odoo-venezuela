@@ -104,14 +104,9 @@ class AccountTax(models.Model):
 
         foreign_igtf_base_amount = igtf_foreign_base_amount 
 
-        igtf_amount = float_round(
-            igtf_base_amount * igtf_percentage, precision_rounding=currency.rounding
-        )
+        igtf_amount = igtf_base_amount * igtf_percentage
 
-        foreign_igtf_amount = float_round(
-            igtf_foreign_base_amount * igtf_percentage,
-            precision_rounding=foreign_currency.rounding,
-        )
+        foreign_igtf_amount = igtf_foreign_base_amount * igtf_percentage
             
 
         res["igtf"] = {}
