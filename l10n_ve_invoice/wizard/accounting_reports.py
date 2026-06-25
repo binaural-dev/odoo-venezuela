@@ -829,12 +829,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "values": self._determinate_resume_books(moves, "exempt_aliquot"),
             },
             {
-                "name": "Exportaciones Gravadas por Alícuota General",
-                "format": "number",
-                "values": self._determinate_resume_books(moves),
-            },
-            {
-                "name": "Exportaciones Gravadas por Alícuota General más Adicional",
+                "name": "Ventas de Exportación",
                 "format": "number",
                 "values": self._determinate_resume_books(moves),
             },
@@ -847,6 +842,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "name": "Ventas Internas Gravadas por Alícuota Reducida",
                 "format": "number",
                 "values": self._determinate_resume_books(moves, "reduced_aliquot"),
+            },
+            {
+                "name": "Ventas Internas Gravadas por Alícuota General más Adicional",
+                "format": "number",
+                "values": self._determinate_resume_books(moves, "extend_aliquot"),
             },
             {
                 "name": "Ajustes a los Débitos Fiscales de Periodos Anteriores",
