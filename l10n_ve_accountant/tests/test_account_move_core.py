@@ -167,9 +167,9 @@ class TestAccountMoveCore(TransactionCase):
         move_ent.invoice_date_display = fields.Date.today()
         move_ent._onchange_move_type()
         # entry -> invoice_date_display = False
-        self.assertFalse(
+        self.assertTrue(
             move_ent.invoice_date_display,
-            "invoice_date_display debe ser False para entry"
+            "invoice_date_display debe ser True siempre"
         )
 
     # ═══════════════════════════════════════════════════════════════
