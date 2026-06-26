@@ -198,12 +198,6 @@ class SaleOrder(models.Model):
         """
         Compute the foreign total billed of the order
         """
-<<<<<<< HEAD
-        for move in self:
-            move.foreign_total_billed = False
-            if move.order_line:
-                move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
-=======
         for order in self:
             order.foreign_total_billed = False
             if not order.order_line or not order.tax_totals:
@@ -222,19 +216,12 @@ class SaleOrder(models.Model):
                 )
             else:
                 order.foreign_total_billed = order.tax_totals.get("total_amount_foreign_currency", 0)
->>>>>>> c6874b905 ([FIX] l10n_ve_accountant, l10n_ve_igtf, l10n_ve_sale, l10n_ve_rate, binaural_purchase:)
 
     @api.depends("tax_totals", "currency_id", "date_order", "amount_untaxed")
     def _compute_foreign_untaxed_total(self):
         """
         Compute the foreign untaxed total of the order
         """
-<<<<<<< HEAD
-        for move in self:
-            move.foreign_untaxed_total = False
-            if move.order_line:
-                move.foreign_untaxed_total = move.tax_totals.get("base_amount_foreign_currency",0)
-=======
         for order in self:
             order.foreign_untaxed_total = False
             if not order.order_line or not order.tax_totals:
@@ -253,7 +240,6 @@ class SaleOrder(models.Model):
                 )
             else:
                 order.foreign_untaxed_total = order.tax_totals.get("base_amount_foreign_currency", 0)
->>>>>>> c6874b905 ([FIX] l10n_ve_accountant, l10n_ve_igtf, l10n_ve_sale, l10n_ve_rate, binaural_purchase:)
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
