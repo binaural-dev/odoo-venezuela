@@ -166,9 +166,15 @@ class TestAccountMoveCore(TransactionCase):
         })
         move.invoice_date = fields.Date.today()
         move.invoice_date_display = fields.Date.today()
-        # Cambiar a entry
-        move.move_type = "entry"
+        # Llamar onchange directamente
         move._onchange_move_type()
+        # out_invoice -> invoice_date = today
+        self.assertTrue(move.invoice_date)
+        self.assertTrue(move.invoice_date_display)
+        # Cambiar a entry y llamar onchange nuevamente
+        move.write({"move_type": "entry"})
+        move._onchange_move_type()
+        # entry -> invoice_date debe ser False
         self.assertFalse(move.invoice_date, "invoice_date debe ser False para entry")
         self.assertFalse(move.invoice_date_display, "invoice_date_display debe ser False para entry")
 
@@ -306,6 +312,12 @@ class TestAccountMoveCore(TransactionCase):
             "name": "Purchase Core Test", "code": "PCORE",
             "type": "purchase", "company_id": self.company.id,
         })
+        # Crear impuesto de compra
+        purchase_tax = self.env["account.tax"].with_company(self.company).create({
+            "name": "IVA 16% Compra", "amount": 16, "amount_type": "percent",
+            "type_tax_use": "purchase", "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+        })
         invoice = self.env["account.move"].with_context(
             check_move_validity=False,
         ).create({
@@ -319,7 +331,7 @@ class TestAccountMoveCore(TransactionCase):
                     "product_id": self.product.id,
                     "quantity": 1.0, "price_unit": 100.0,
                     "account_id": self.acc_exp.id,
-                    "tax_ids": [(5, 0, 0)],
+                    "tax_ids": [(6, 0, [purchase_tax.id])],
                 }),
             ],
         })

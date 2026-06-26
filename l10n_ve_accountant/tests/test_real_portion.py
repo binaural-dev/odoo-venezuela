@@ -104,6 +104,7 @@ class TestRealPortion(TransactionCase):
         })
         self.tax_16 = self._create_tax('IVA 16%', 16.0)
         self.tax_8 = self._create_tax('IVA 8%', 8.0)
+        self.tax_0 = self._create_tax('Exento', 0.0)
 
         # ── Product ─────────────────────────────────────────────
         self.product = self.env['product.product'].create({
@@ -403,7 +404,7 @@ class TestRealPortion(TransactionCase):
                     "quantity": 1.0,
                     "price_unit": 56200.00,
                     "account_id": self.acc_inc.id,
-                    "tax_ids": [(5, 0, 0)],
+                    "tax_ids": [(6, 0, [self.tax_0.id])],
                 }),
             ],
         })
@@ -455,7 +456,7 @@ class TestRealPortion(TransactionCase):
                     "quantity": 1.0,
                     "price_unit": 56200.00,
                     "account_id": self.acc_inc.id,
-                    "tax_ids": [(5, 0, 0)],
+                    "tax_ids": [(6, 0, [self.tax_0.id])],
                 }),
             ],
         })
