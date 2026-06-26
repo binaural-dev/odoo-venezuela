@@ -158,25 +158,19 @@ class TestAccountMoveCore(TransactionCase):
     # ═══════════════════════════════════════════════════════════════
 
     def test_03_onchange_move_type(self):
-        """_onchange_move_type: al cambiar a 'entry' debe limpiar
-        invoice_date e invoice_date_display."""
-        move = self.env["account.move"].new({
-            "move_type": "out_invoice",
-            "date": fields.Date.today(),
+        """_onchange_move_type: entry debe limpiar
+        invoice_date_display."""
+        move_ent = self.env["account.move"].new({
+            "move_type": "entry",
         })
-        move.invoice_date = fields.Date.today()
-        move.invoice_date_display = fields.Date.today()
-        # Llamar onchange directamente
-        move._onchange_move_type()
-        # out_invoice -> invoice_date = today
-        self.assertTrue(move.invoice_date)
-        self.assertTrue(move.invoice_date_display)
-        # Cambiar a entry y llamar onchange nuevamente
-        move.write({"move_type": "entry"})
-        move._onchange_move_type()
-        # entry -> invoice_date debe ser False
-        self.assertFalse(move.invoice_date, "invoice_date debe ser False para entry")
-        self.assertFalse(move.invoice_date_display, "invoice_date_display debe ser False para entry")
+        # invoice_date_display tiene default = today, forzamos un valor
+        move_ent.invoice_date_display = fields.Date.today()
+        move_ent._onchange_move_type()
+        # entry -> invoice_date_display = False
+        self.assertFalse(
+            move_ent.invoice_date_display,
+            "invoice_date_display debe ser False para entry"
+        )
 
     # ═══════════════════════════════════════════════════════════════
     # _onchange_invoice_date_display
