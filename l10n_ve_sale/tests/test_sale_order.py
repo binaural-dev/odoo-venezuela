@@ -345,4 +345,4 @@ class TestSaleOrderInvoice(TransactionCase):
             self.assertFalse(remaining, "No lines must remain after invoicing")
         finally:
             dp.digits = original
-            self.env["decimal.precision"].invalidate_cache()
+            self.env.registry.clear_cache()
