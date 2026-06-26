@@ -26,3 +26,13 @@ class ResPartner(models.Model):
     economic_activity_id = fields.Many2one(
         "economic.activity", "Default Economic Activity", store=True, tracking=True
     )
+
+    is_current_company_partner = fields.Boolean(
+        compute='_compute_is_current_company_partner',
+        string="Is Current Company Partner",
+    )
+
+    def _compute_is_current_company_partner(self):
+        company_partner_ids = self.env['res.company'].search([]).mapped('partner_id.id')        
+        for partner in self:
+            partner.is_current_company_partner = partner.id in company_partner_ids
