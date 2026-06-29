@@ -49,15 +49,22 @@ class ResCompany(models.Model):
     def _parse_bcv_data(self, available_currencies):
         current_date = fields.Date.to_date(fields.Date.context_today(self))
         result = {"USD": (1.0, current_date)}
+        fallback_rate = None
 
         if self[:1].can_update_habil_days and current_date.isoweekday() > 5:
             return result
 
-        rate_value, published_date = self._get_bcv_rate()
+        rate_value, published_date = self._get_bcv_rate(expected_date=current_date)
         if not rate_value or not published_date:
+            fallback_rate = self._get_last_system_rate(current_date)
+            if fallback_rate is not None and not bool(self[:1].can_update_habil_days):
+                result["VEF"] = (fallback_rate, current_date)
             return result
 
-        if published_date != current_date:
+        if not self._is_valid_rate_date(current_date, published_date):
+            fallback_rate = self._get_last_system_rate(current_date)
+            if fallback_rate is not None and not bool(self[:1].can_update_habil_days):
+                result["VEF"] = (fallback_rate, current_date)
             return result
 
         result["VEF"] = (rate_value, current_date)
@@ -68,6 +75,50 @@ class ResCompany(models.Model):
         if BCV_WINDOW_START_HOUR <= now_local.hour < BCV_WINDOW_END_HOUR:
             return True
         return now_local.hour == BCV_WINDOW_END_HOUR and now_local.minute == 0
+
+    @api.model
+    def _is_valid_rate_date(self, current_date, published_date):
+        if not published_date:
+            return False
+        if published_date == current_date:
+            return True
+
+        # When enabled, accept the next published business-day rate.
+        if published_date > current_date:
+            return bool(self[:1].can_update_habil_days)
+
+        # When disabled, keep using the last available published rate.
+        return not bool(self[:1].can_update_habil_days)
+
+    @api.model
+    def _get_last_system_rate(self, current_date):
+        company = self[:1] or self.env.company
+        vef = self.env["res.currency"].with_context(active_test=False).search(
+            [("name", "=", VEF_CURRENCY_CODE)], limit=1,
+        )
+        if not vef:
+            return None
+
+        rate_model = self.env["res.currency.rate"]
+        last_rate = rate_model.search(
+            [
+                ("company_id", "=", company.id),
+                ("currency_id", "=", vef.id),
+                ("name", "<=", current_date),
+            ],
+            order="name desc, id desc",
+            limit=1,
+        )
+        if not last_rate:
+            last_rate = rate_model.search(
+                [
+                    ("company_id", "=", company.id),
+                    ("currency_id", "=", vef.id),
+                ],
+                order="name desc, id desc",
+                limit=1,
+            )
+        return last_rate.company_rate if last_rate else None
 
     @api.model
     def _parse_source_date(self, value):
