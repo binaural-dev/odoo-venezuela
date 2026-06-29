@@ -26,9 +26,9 @@ class TestStockMoveLine(TransactionCase):
 @tagged("post_install", "-at_install", "l10n_ve_stock")
 class TestProductBarcode(TransactionCase):
     def test_duplicate_barcode_same_company(self):
-        self.env["product.product"].create({"name": "Prod1", "barcode": "123456", 'type': 'product',})
+        self.env["product.product"].create({"name": "Prod1", "barcode": "123456", 'type': 'consu',})
         with self.assertRaises(ValidationError):
-            self.env["product.product"].create({"name": "Prod2", "barcode": "123456", 'type': 'product',})
+            self.env["product.product"].create({"name": "Prod2", "barcode": "123456", 'type': 'consu',})
 
 
 @tagged("post_install", "-at_install", "l10n_ve_stock")
@@ -37,7 +37,7 @@ class TestStockQuant(TransactionCase):
         loc1 = self.env["stock.location"].create({"name": "Loc1", "usage": "internal"})
         loc2 = self.env["stock.location"].create({"name": "Loc2", "usage": "internal"})
         product_tmpl = self.env["product.template"].create(
-            {"name": "Prod", "physical_location_id": loc1.id, 'type': 'product'}
+            {"name": "Prod", "physical_location_id": loc1.id, 'type': 'consu', 'is_storable': True}
         )
         product = product_tmpl.product_variant_id
         quant1 = self.env["stock.quant"].create(
@@ -68,11 +68,9 @@ class TestProductTemplate(TransactionCase):
             self.env["product.product"].create({
                 "name": "Product 1",
                 "barcode": "123456",
-                "type": 'product',
+                "type": 'consu',
                 "taxes_id": [(6, 0, [tax1.id, tax2.id])],
                 "product_tmpl_id": self.env["product.template"].create({
                     "name": "Prod1",
-                    "uom_id": self.env.ref('uom.product_uom_unit').id,
-                    "uom_po_id": self.env.ref('uom.product_uom_unit').id,
                 }).id,
             })
