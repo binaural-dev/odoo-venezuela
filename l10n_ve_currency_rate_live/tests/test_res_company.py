@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 import requests
 
-from odoo.addons.l10n_ve_currency_rate_live.models import res_company as currency_res_company
+from odoo.addons.l10n_ve_currency_rate_live.models import (
+    res_company as currency_res_company,
+)
 from odoo.tests import TransactionCase, tagged
 
 
@@ -74,7 +76,9 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         saturday = date(2026, 6, 20)
         self.company.can_update_habil_days = True
 
-        with patch.object(currency_res_company.fields.Date, "context_today", return_value=saturday), patch.object(
+        with patch.object(
+            currency_res_company.fields.Date, "context_today", return_value=saturday
+        ), patch.object(
             type(self.company),
             "_get_bcv_rate",
         ) as mock_get_rate:
@@ -88,7 +92,9 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         future_date = date(2026, 6, 24)
         self.company.can_update_habil_days = False
 
-        with patch.object(currency_res_company.fields.Date, "context_today", return_value=current_date), patch.object(
+        with patch.object(
+            currency_res_company.fields.Date, "context_today", return_value=current_date
+        ), patch.object(
             type(self.company),
             "_get_bcv_rate",
             return_value=(36.12, future_date),
@@ -102,21 +108,29 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         future_date = date(2026, 6, 24)
         self.company.can_update_habil_days = True
 
-        with patch.object(currency_res_company.fields.Date, "context_today", return_value=current_date), patch.object(
+        with patch.object(
+            currency_res_company.fields.Date, "context_today", return_value=current_date
+        ), patch.object(
             type(self.company),
             "_get_bcv_rate",
             return_value=(36.12, future_date),
         ):
             result = self.company._parse_bcv_data([])
 
-        self.assertEqual(result, {"USD": (1.0, current_date), "VEF": (36.12, current_date)})
+        self.assertEqual(
+            result, {"USD": (1.0, current_date), "VEF": (36.12, current_date)}
+        )
 
-    def test_parse_bcv_data_accepts_last_available_rate_when_habil_days_disabled(self):
+    def test_parse_bcv_data_accepts_last_available_rate_from_source_when_habil_days_disabled(
+        self,
+    ):
         current_date = date(2026, 6, 23)
         previous_date = date(2026, 6, 20)
         self.company.can_update_habil_days = False
 
-        with patch.object(currency_res_company.fields.Date, "context_today", return_value=current_date), patch.object(
+        with patch.object(
+            currency_res_company.fields.Date, "context_today", return_value=current_date
+        ), patch.object(
             type(self.company),
             "_get_bcv_rate",
             return_value=(36.12, previous_date),
@@ -127,14 +141,18 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         ):
             result = self.company._parse_bcv_data([])
 
-        self.assertEqual(result, {"USD": (1.0, current_date), "VEF": (35.5, current_date)})
+        self.assertEqual(
+            result, {"USD": (1.0, current_date), "VEF": (36.12, current_date)}
+        )
 
     def test_parse_bcv_data_skips_last_available_rate_when_habil_days_enabled(self):
         current_date = date(2026, 6, 23)
         previous_date = date(2026, 6, 20)
         self.company.can_update_habil_days = True
 
-        with patch.object(currency_res_company.fields.Date, "context_today", return_value=current_date), patch.object(
+        with patch.object(
+            currency_res_company.fields.Date, "context_today", return_value=current_date
+        ), patch.object(
             type(self.company),
             "_get_bcv_rate",
             return_value=(36.12, previous_date),
@@ -143,12 +161,16 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
 
         self.assertEqual(result, {"USD": (1.0, current_date)})
 
-    def test_parse_bcv_data_uses_last_system_rate_when_future_rate_arrives_and_habil_days_disabled(self):
+    def test_parse_bcv_data_uses_last_system_rate_when_future_rate_arrives_and_habil_days_disabled(
+        self,
+    ):
         current_date = date(2026, 6, 29)
         future_date = date(2026, 6, 30)
         self.company.can_update_habil_days = False
 
-        with patch.object(currency_res_company.fields.Date, "context_today", return_value=current_date), patch.object(
+        with patch.object(
+            currency_res_company.fields.Date, "context_today", return_value=current_date
+        ), patch.object(
             type(self.company),
             "_get_bcv_rate",
             return_value=(623.023, future_date),
@@ -159,13 +181,19 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         ):
             result = self.company._parse_bcv_data([])
 
-        self.assertEqual(result, {"USD": (1.0, current_date), "VEF": (622.2135, current_date)})
+        self.assertEqual(
+            result, {"USD": (1.0, current_date), "VEF": (622.2135, current_date)}
+        )
 
-    def test_parse_bcv_data_uses_last_system_rate_when_no_source_rate_and_habil_days_disabled(self):
+    def test_parse_bcv_data_uses_last_system_rate_when_no_source_rate_and_habil_days_disabled(
+        self,
+    ):
         current_date = date(2026, 6, 29)
         self.company.can_update_habil_days = False
 
-        with patch.object(currency_res_company.fields.Date, "context_today", return_value=current_date), patch.object(
+        with patch.object(
+            currency_res_company.fields.Date, "context_today", return_value=current_date
+        ), patch.object(
             type(self.company),
             "_get_bcv_rate",
             return_value=(None, None),
@@ -176,7 +204,9 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         ):
             result = self.company._parse_bcv_data([])
 
-        self.assertEqual(result, {"USD": (1.0, current_date), "VEF": (622.2135, current_date)})
+        self.assertEqual(
+            result, {"USD": (1.0, current_date), "VEF": (622.2135, current_date)}
+        )
 
     def test_get_bcv_rate_falls_back_to_scraping_when_api_date_is_stale(self):
         current_date = date(2026, 6, 23)
@@ -190,7 +220,9 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
             "_scrape_bcv_rate",
             return_value=(36.12, current_date),
         ) as mock_scrape:
-            rate, published_date = self.company._get_bcv_rate(expected_date=current_date)
+            rate, published_date = self.company._get_bcv_rate(
+                expected_date=current_date
+            )
 
         self.assertEqual(rate, 36.12)
         self.assertEqual(published_date, current_date)
