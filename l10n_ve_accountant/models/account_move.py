@@ -1579,6 +1579,8 @@ class AccountMove(models.Model):
         portion adjusts the native balances of PT lines.
         """
         for move in moves:
+            if move.state != 'draft':
+                continue
             if not move.is_invoice(include_receipts=True):
                 continue
             lines = move.line_ids
@@ -1753,6 +1755,8 @@ class AccountMove(models.Model):
         to keep the entry balanced.
         """
         for move in moves:
+            if move.state != 'draft':
+                continue
             if not move.is_invoice(include_receipts=True):
                 continue
             if move.currency_id == move.company_currency_id:

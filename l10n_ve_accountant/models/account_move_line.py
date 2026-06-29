@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from odoo import api, fields, models, _
-from odoo.tools import float_compare
+from odoo.tools import float_compare ,float_round, float_is_zero
 from odoo.exceptions import UserError, ValidationError
 import logging
 
@@ -189,6 +189,7 @@ class AccountMoveLine(models.Model):
         if cur and cur != self.company_id.foreign_currency_id and cur != self.company_id.currency_id:
             return self.company_id.currency_id._convert(
                 self.debit - self.credit,
+
                 self.company_id.foreign_currency_id,
                 self.company_id,
                 self.date or fields.Date.context_today(self),
@@ -221,14 +222,6 @@ class AccountMoveLine(models.Model):
         if self.currency_id == self.company_id.foreign_currency_id and self.amount_currency:
             return self.amount_currency
 
-        # 6 — Withholding
-        op = self.move_id.origin_payment_id
-        if op and "retention_foreign_amount" in self.env["account.payment"]._fields and op.is_retention:
-            amt = op.retention_foreign_amount
-            if not self.currency_id.is_zero(self.debit):
-                return amt
-            if not self.currency_id.is_zero(self.credit):
-                return -amt
 
         # 7 — Non-invoice entry (journal entry, payment, etc.)
         if not self.move_id.is_invoice(include_receipts=True):
@@ -284,15 +277,6 @@ class AccountMoveLine(models.Model):
                 abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
             )
 
-    @api.depends("foreign_rate", "balance")
-    def _compute_amount_currency(self):
-        res = super()._compute_amount_currency()
-        for line in self:
-            if line.amount_currency is False:
-                line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
-            if line.currency_id == line.company_id.currency_id:
-                line.amount_currency = line.balance
-        return res
 
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
@@ -474,6 +458,51 @@ class AccountMoveLine(models.Model):
             yield
 
         self._apply_product_real_portion(container['records'])
+
+    @api.onchange('amount_currency', 'currency_id')
+    def _inverse_amount_currency(self):
+        """
+        Updates the 'balance' (company currency amount) whenever the 'amount_currency' 
+        or 'currency_id' changes, ensuring a symmetric rounding.
+
+        This method addresses the common floating-point discrepancy where a balance 
+        converted to foreign currency and then back to company currency results in 
+        a small difference (e.g., 0.01). 
+
+        The logic performs a "Symmetry Test":
+        1. It calculates the initial balance using the current exchange rate.
+        2. It simulates a back-conversion to the foreign currency.
+        3. If the back-conversion doesn't match the original 'amount_currency' due to 
+        rounding noise, it applies a micro-adjustment to the 'balance' in the 
+        company currency (VES) to force a perfect match.
+
+        :return: None
+        """
+        for line in self:
+            if line.currency_id == line.company_id.currency_id and line.balance != line.amount_currency:
+                line.balance = line.amount_currency
+                
+            elif (
+                line.currency_id != line.company_id.currency_id
+                and not line.move_id.is_invoice(True)
+                and not self.env.is_protected(self._fields['balance'], line)
+            ):
+                rate = line.currency_rate
+                if not rate:
+                    continue
+                    
+                raw_balance = line.amount_currency / rate
+                
+                rounded_balance = line.company_id.currency_id.round(raw_balance)
+                
+                back_to_foreign = rounded_balance * rate
+                diff_foreign = line.amount_currency - back_to_foreign
+                
+                if not float_is_zero(diff_foreign, precision_rounding=line.currency_id.rounding):
+                    adjustment = float_round(diff_foreign / rate, precision_rounding=line.company_id.currency_id.rounding)
+                    line.balance = rounded_balance + adjustment
+                else:
+                    line.balance = rounded_balance
 
     @api.model
     def _apply_product_real_portion(self, lines):
