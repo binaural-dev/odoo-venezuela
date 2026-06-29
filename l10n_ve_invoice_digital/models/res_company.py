@@ -18,14 +18,15 @@ class ResCompany(models.Model):
     sequence_validation_tfhka = fields.Boolean(default=True)
     digitalization_with_payment_tfhka = fields.Boolean(default=False)
     # Habilita el flag multi-moneda a nivel compañía.
-    # Cuando está activo, aparece un checkbox "Multi-Currency Invoice" en cada
-    # factura de venta para activar el comportamiento multi-moneda por documento.
+    # Cuando está activo, aparece el checkbox "Multi-Currency Invoice" en cada
+    # factura, y dentro de este un selector VES/USD para elegir la moneda de
+    # las líneas de producto.
     multi_currency_invoice_tfhka = fields.Boolean(
         string="Multi-currency digital invoicing",
         default=False,
         help="When enabled, invoices can be digitalized with multi-currency support "
-             "(mixed VES/USD). An additional checkbox will appear on each invoice to "
-             "enable multi-currency behavior per document."
+             "(VES or USD line prices + dual totals if USD selected). An additional "
+             "checkbox + currency selector will appear on each invoice."
     )
     
     def generate_token_tfhka(self):

@@ -24,15 +24,16 @@ class AccountMove(models.Model):
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
     # --- MULTI-MONEDA ---
-    # Flag por factura: activa comportamiento multi-moneda (mixto VES/USD).
+    # Flag por factura: habilita el selector de moneda de línea (VES/USD).
     # Requiere que multi_currency_invoice_tfhka esté activo en la compañía.
     multi_currency_invoice = fields.Boolean(
         string='Multi-Currency Invoice',
         default=False,
         tracking=True,
-        help="When enabled, this invoice is treated as multi-currency. "
-             "Exchange rates and dual totals (VES/USD) are sent to HKA. "
-             "Requires 'Multi-currency digital invoicing' to be enabled in company settings."
+        help="When enabled, the 'Line Currency' selector appears, allowing you to "
+             "choose VES (prices in Bolivars, totals in VES) or USD (prices in USD, "
+             "totals in both currencies). "
+             "Requires 'Multi-currency digital invoicing' in company settings."
     )
     # Indica si la funcionalidad multi-moneda está disponible (según compañía).
     # Controla la visibilidad del campo multi_currency_invoice en vista.
@@ -47,15 +48,22 @@ class AccountMove(models.Model):
         for move in self:
             move.multi_currency_enabled = move.company_id.multi_currency_invoice_tfhka
 
+    # Moneda de las líneas de producto: VES (precios en Bs.) o USD (precios en USD).
+    # Solo visible cuando multi_currency_invoice está activo en la factura.
+    line_currency = fields.Selection([
+        ('VES', 'VES'),
+        ('USD', 'USD'),
+    ], string='Line Currency', default='VES',
+       help="VES: precios de líneas en Bolívares, totales solo en VES.\n"
+            "USD: precios de líneas en dólares, totales en ambas monedas.")
+
     # Resuelve si esta factura debe tratarse como multi-moneda.
-    # Prioridad: 1) flag directo en la factura, 2) flag de la compañía.
-    # Sigue el mismo patrón que binaural_unidigital.
+    # El modo multi-moneda (USD + totales bimoneda) se activa solo cuando
+    # multi_currency_invoice=True y line_currency='USD'.
+    # Sigue el patrón de binaural_unidigital con la adición de line_currency.
     def is_invoice_multi_currency_enabled(self):
         self.ensure_one()
-        invoice_flag = self.multi_currency_invoice
-        if invoice_flag is not None:
-            return invoice_flag
-        return self.company_id.multi_currency_invoice_tfhka
+        return bool(self.multi_currency_invoice and self.line_currency == 'USD')
 
     def generate_document_digital(self):
         if not self.company_id.invoice_digital_tfhka:
@@ -229,6 +237,10 @@ class AccountMove(models.Model):
                 if due_date_obj >= emission_date:
                     due_date = due_date_obj.strftime("%d/%m/%Y")
                 else:
+                    _logger.error(
+                        "Fecha vencimiento (%s) anterior a fecha emisión (%s) — invoice=%s",
+                        due_date_obj, emission_date, record.id
+                    )
                     raise ValidationError(_("The expiration date cannot be less than the digitization date."))
             else:
                 due_date = emission_date.strftime("%d/%m/%Y")
@@ -248,10 +260,10 @@ class AccountMove(models.Model):
                 if record.debit_origin_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
-                # Multi-moneda: aunque la moneda local sea VEF, si multi_currency_invoice
-                # está activo, usamos foreign_amount_total_igtf para reflejar el monto
-                # en la moneda extranjera de la factura afectada.
-                if record.company_id.currency_id.name == "VEF" and not record.is_invoice_multi_currency_enabled():
+                # El monto de la factura afectada siempre se envía en VES
+                # (moneda local de la compañía), independientemente de si la
+                # NC/ND actual está en modo USD multi-moneda.
+                if record.company_id.currency_id.name in ('VEF', 'VES'):
                     affected_invoice_amount = str(record.debit_origin_id.amount_total)
                 else:
                     tax_totals = record.debit_origin_id.tax_totals
@@ -268,23 +280,42 @@ class AccountMove(models.Model):
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
-                # Misma lógica multi-moneda que para debit_origin.
-                if record.company_id.currency_id.name == "VEF" and not record.is_invoice_multi_currency_enabled():
+                # Misma lógica: monto afectado en VES para compañías VEF/VES.
+                if record.company_id.currency_id.name in ('VEF', 'VES'):
                     affected_invoice_amount = str(record.reversed_entry_id.amount_total)
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
 
+                _logger.info(
+                    "NC — factura_afectada=%s monto=%s serie=%s date=%s",
+                    affected_invoice_number, affected_invoice_amount,
+                    affected_invoice_series, affected_invoice_date
+                )
+
                 if record.ref and ',' in record.ref:
                     affected_invoice_comment = record.ref.split(',', 1)[1].strip()
 
             if not record.invoice_date:
+                _logger.error("Fecha de emisión no definida — invoice=%s", record.id)
                 raise UserError(_("The invoice date is not defined."))
 
-            currency_tfhka = record.company_id.currency_foreign_id.code_tfhka
-
-            if record.company_id.currency_id.name == 'VEF' or record.company_id.currency_id.name == 'VES':
-                currency_tfhka = record.company_id.currency_id.code_tfhka
+            # Determina la moneda del documento.
+            # line_currency='USD' + multi_currency_invoice → Moneda = USD.
+            if record.is_invoice_multi_currency_enabled():
+                currency_tfhka = 'USD'
+                _logger.info("Moneda resuelta: USD (multi_currency activo) — invoice=%s", record.id)
+            else:
+                currency_tfhka = record.company_id.currency_foreign_id.code_tfhka
+                if record.company_id.currency_id.name in ('VEF', 'VES'):
+                    currency_tfhka = record.company_id.currency_id.code_tfhka
+                _logger.info(
+                    "Moneda resuelta: %s (compañía=%s, foreign=%s) — invoice=%s",
+                    currency_tfhka,
+                    record.company_id.currency_id.name,
+                    record.company_id.currency_foreign_id.code_tfhka,
+                    record.id
+                )
 
             return {
                 "tipoDocumento": document_type,
@@ -349,7 +380,7 @@ class AccountMove(models.Model):
                 amounts["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
 
-                taxes_subtotal = self.get_tax_subtotals(currency)
+                taxes_subtotal, _ = self.get_tax_subtotals(currency)
                 currency_tfhka_code = record.company_id.currency_id.code_tfhka
 
                 # Multi-moneda activo + factura en VEF/VES:
@@ -384,7 +415,7 @@ class AccountMove(models.Model):
                         abs(round(float(amounts["totalDescuento"]) / rate, 2))
                     )
                     # Impuestos desglosados en ambas monedas para ImpuestosSubtotal.
-                    taxes_subtotal_foreign = self.get_tax_subtotals(
+                    _, taxes_subtotal_foreign = self.get_tax_subtotals(
                         currency, multi_currency=True
                     )
                     # Código de moneda extranjera (ej. "USD") para TotalesOtraMoneda.
@@ -526,7 +557,7 @@ class AccountMove(models.Model):
                         "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
                         "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
                     })
-                return tax_subtotals
+                return tax_subtotals, tax_subtotals_foreign
             # Rama multi-moneda: factura en VES con flag multi_currency activo.
             # Se construyen dos listas de impuestos:
             #   - tax_subtotals: montos en VES (base imponible original).
@@ -609,7 +640,16 @@ class AccountMove(models.Model):
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
-                if record.company_id.currency_id.name == "VEF":
+                # Rama USD multi-moneda: convierte precios VES → USD vía foreign_rate.
+                if record.is_invoice_multi_currency_enabled():
+                    rate = record.foreign_rate or 1.0
+                    unit_price = round(line.price_unit / rate, 2)
+                    unit_price_discount = round((line.price_unit / rate) * (line.discount / 10), 2)
+                    discount_amount = round(((line.price_unit / rate) * (line.discount / 100)) * line.quantity, 2)
+                    item_price = round(line.price_subtotal / rate, 2)
+                    price_before_discount = round((line.price_unit / rate) * line.quantity, 2)
+
+                elif record.company_id.currency_id.name == "VEF":
                     unit_price = round(line.price_unit, 2)
                     unit_price_discount = round(line.price_unit * (line.discount / 10), 2)
                     discount_amount = round((line.price_unit * (line.discount / 100)) * line.quantity, 2)

@@ -19,13 +19,15 @@
             <xpath expr="//group[@id='header_right_group']/label[1]" position="before">
                 <field name="is_digitalized" string="Digitized" invisible="move_type not in ['out_invoice', 'out_refund']" readonly="True"/>
             </xpath>
-            <!-- Multi-moneda: checkbox visible solo si la compañía tiene habilitado
-                 multi_currency_invoice_tfhka. Se vuelve readonly al digitalizar. -->
+            <!-- Multi-moneda: checkbox + selector de moneda de línea.
+                 Solo visible si multi_currency_enabled (compañía).
+                 line_currency se despliega solo cuando multi_currency_invoice está activo. -->
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="multi_currency_enabled" invisible="1"/>
                 <field name="multi_currency_invoice" invisible="not multi_currency_enabled"
-                       readonly="is_digitalized"
-                       attrs="{'invisible': [('multi_currency_enabled', '=', False)]}"/>
+                       readonly="is_digitalized"/>
+                <field name="line_currency" invisible="not multi_currency_invoice"
+                       readonly="is_digitalized"/>
             </xpath>
         </field>
     </record>
