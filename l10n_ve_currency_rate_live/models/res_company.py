@@ -131,7 +131,7 @@ class ResCompany(models.Model):
             return None
 
     @api.model
-    def _get_bcv_rate_from_api(self):
+    def _get_bcv_rate_from_api(self, expected_date=None):
         for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
             try:
                 status_response = requests.get(
@@ -158,6 +158,13 @@ class ResCompany(models.Model):
                     rate_value = payload.get("venta") or payload.get("compra")
                 published_date = self._parse_source_date(payload.get("fechaActualizacion"))
                 if rate_value is None or not published_date:
+                    return (None, None)
+                if expected_date and published_date != expected_date:
+                    _logger.warning(
+                        "DolarAPI returned stale rate date %s while expecting %s",
+                        published_date,
+                        expected_date,
+                    )
                     return (None, None)
                 return (float(rate_value), published_date)
             except Exception as exc:
@@ -219,15 +226,19 @@ class ResCompany(models.Model):
         return (None, None)
 
     @api.model
-    def _get_bcv_rate(self):
-        rate_value, published_date = self._get_bcv_rate_from_api()
+    def _get_bcv_rate(self, expected_date=None):
+        rate_value, published_date = self._get_bcv_rate_from_api(
+            expected_date=expected_date,
+        )
         if rate_value and published_date:
             return (rate_value, published_date)
         return self._scrape_bcv_rate()
 
     @api.model
     def get_usd_rate_of_the_day_bcv(self):
-        rate, date = self._get_bcv_rate()
+        rate, date = self._get_bcv_rate(
+            expected_date=fields.Date.to_date(fields.Date.context_today(self)),
+        )
         return (rate if rate is not None else 1, date or False)
 
     @api.model
