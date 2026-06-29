@@ -35,7 +35,6 @@ patch(PaymentScreenStatus.prototype, {
     return is_igtf;
   },
   get amountIGTF() {
-    // Comprobamos si algún método de pago aplica IGTF
     let payment_lines = this.props.order.get_paymentlines();
     let hasIgtfMethod = false;
     payment_lines.forEach(payment_line => {

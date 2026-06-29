@@ -19,7 +19,7 @@
         "l10n_ve_location",
         "l10n_ve_contact",
         "l10n_ve_tax_payer",
-        
+
     ],
     "data": [
         "security/ir.model.access.csv",
