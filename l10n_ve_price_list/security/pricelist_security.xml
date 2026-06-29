@@ -4,18 +4,12 @@
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 
-    <record id="group_pricelist_change_permission_purchase" model="res.groups">
-        <field name="name">Pricelist Change Permission purchase</field>
-        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
-    </record>
-    
-    <record id="group_pricelist_change_permission_sale" model="res.groups">
-        <field name="name">Pricelist Change Permission Sale</field>
+    <record id="group_editing_prices_sales_orders_and_invoices" model="res.groups">
+        <field name="name">Editing prices on sales orders and invoices</field>
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 
-    <record id="group_pricelist_see_permission" model="res.groups">
-        <field name="name">Pricelist See Permission</field>
-        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    <record id="group_hide_product_sale_prices" model="res.groups">
+        <field name="name">Hide product sale prices</field>
     </record>
 </odoo>
