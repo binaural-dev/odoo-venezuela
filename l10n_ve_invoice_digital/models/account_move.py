@@ -383,12 +383,13 @@ class AccountMove(models.Model):
                 taxes_subtotal, _ = self.get_tax_subtotals(currency)
                 currency_tfhka_code = record.company_id.currency_id.code_tfhka
 
-                # Multi-moneda activo + factura en VEF/VES:
+                # TotalesOtraMoneda activo: factura VEF/VES con tipo de cambio.
+                # Se genera cuando multi_currency_invoice=True + line_currency='USD'
+                # (multi_currency), o cuando hay un foreign_rate (ej. desde POS).
                 # Enviamos Totales en VES (amounts) y TotalesOtraMoneda en USD
                 # (amounts_foreign = amounts / tasa de cambio).
-                # Esto permite que HKA refleje la moneda extranjera en el bloque
-                # TotalesOtraMoneda del documento electrónico.
-                if multi_currency:
+                has_foreign_rate = bool(record.foreign_rate)
+                if multi_currency or has_foreign_rate:
                     rate = record.foreign_rate or 1.0
                     amounts_foreign["montoGravadoTotal"] = str(
                         round(float(amounts["montoGravadoTotal"]) / rate, 2)
@@ -754,7 +755,7 @@ class AccountMove(models.Model):
         try:
             payment_data = []
             for record in self:
-                content_data = record.invoice_payments_widget.get("content", [])
+                content_data = record.invoice_payments_widget.get("content", []) if record.invoice_payments_widget else []
                 if content_data:
                     for item in content_data:
                         payment = self.get_payment(item.get('account_payment_id'))
