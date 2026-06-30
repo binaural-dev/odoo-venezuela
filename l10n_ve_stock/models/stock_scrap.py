@@ -17,7 +17,7 @@ class StockScrap(models.Model):
         if not self.env.company.not_allow_scrap_more_than_what_was_manufactured:
             return super(StockScrap,self).action_validate()
 
-        if self.production_id:
+        if getattr(self, 'production_id', False):
             count = 0
             if self.production_id.scrap_ids:
                 for scrap in self.production_id.scrap_ids.filtered(
