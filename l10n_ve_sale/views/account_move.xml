@@ -1,0 +1,12 @@
+<odoo>
+    <record id="view_account_move_form_l10n_ve_sale" model="ir.ui.view">
+        <field name="name">view.account.move.form.l10n.ve.sale</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='currency_div']//field[@name='currency_id']" position="attributes">
+                <attribute name="readonly">state != 'draft' or invoice_origin</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
