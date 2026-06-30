@@ -794,7 +794,7 @@ class TestAccountingReports(TransactionCase):
         self.wizard.write({"report": "sale"})
         moves = self.wizard.search_moves()
 
-        self.assertEqual(moves[:3].ids, [move_b.id, move_c_cancel.id, move_a.id])
+        self.assertEqual(moves[:3].ids, [move_a.id, move_b.id, move_c_cancel.id])
         self.assertIn(move_c_cancel.id, moves.ids)
 
     def test_resume_sale_and_purchase_book_fields(self):

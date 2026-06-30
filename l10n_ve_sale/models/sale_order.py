@@ -49,7 +49,6 @@ class SaleOrder(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
         store=True,
         readonly=False,
     )
@@ -272,6 +271,9 @@ class SaleOrder(models.Model):
        
         invoices = self.env["account.move"]
         for order in self:
+            if order._context.get("ignore_while", False):
+                invoices |= super()._create_invoices(grouped, final, date)
+                continue
             invoiceable_lines = order._get_invoiceable_lines(final)
             while len(invoiceable_lines) != 0:
                 invoices |= super()._create_invoices(grouped, final, date)
