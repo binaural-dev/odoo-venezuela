@@ -98,7 +98,7 @@
                 </div>
                             
                 <div groups="!l10n_ve_sale.pricelist_sale_order_group" class="o_row">
-                    <field name="pricelist_id" options="{'no_open':True,'no_create': True}" />
+                    <field name="pricelist_id" readonly="state not in ['sale', 'done', 'cancel']" options="{'no_open':True,'no_create': True}" />
                     <button name="action_update_prices" type="object"
                         string=" Update Prices"
                         help="Recompute all prices based on this pricelist"
