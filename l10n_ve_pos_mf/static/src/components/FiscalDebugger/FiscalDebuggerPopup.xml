@@ -23,6 +23,11 @@
                     🚦 Status Parser
                 </button>
                 <button 
+                    t-att-class="state.activeTab === 's3' ? 'active' : ''"
+                    t-on-click="() => this.switchTab('s3')">
+                    📋 Diagnóstico Tasas
+                </button>
+                <button 
                     t-att-class="state.activeTab === 'console' ? 'active' : ''"
                     t-on-click="() => this.switchTab('console')">
                     💻 Consola Raw
@@ -158,6 +163,84 @@
                     
                     <t t-else="">
                         <p class="text-muted">Presiona "Refrescar Status" para obtener el estado de la impresora.</p>
+                    </t>
+                </div>
+
+                <!-- TAB: Diagnóstico S3 -->
+                <div t-if="state.activeTab === 's3'" class="tab-panel">
+                    <div class="status-controls">
+                        <button class="btn btn-sm btn-primary" t-on-click="refreshS3Data">
+                            <i class="fa fa-refresh"/> Leer S3
+                        </button>
+                    </div>
+
+                    <t t-if="!hasConnection">
+                        <div class="alert alert-warning mt-3">
+                            ⚠️ No hay conexión con la impresora fiscal.
+                        </div>
+                    </t>
+
+                    <t t-elif="state.s3Error">
+                        <div class="alert alert-danger mt-3">
+                            <strong>Error S3:</strong> <t t-esc="state.s3Error"/>
+                        </div>
+                    </t>
+
+                    <t t-elif="state.s3Data">
+                        <div class="status-display">
+                            <div class="status-card">
+                                <h4>Tasas Programadas</h4>
+                                <table class="table table-sm mt-2">
+                                    <thead>
+                                        <tr>
+                                            <th>Tasa</th>
+                                            <th>Tipo</th>
+                                            <th>Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Tasa 1</td>
+                                            <td><t t-esc="state.s3Data.tax1.typeLabel"/></td>
+                                            <td><t t-esc="state.s3Data.tax1.value"/>%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Tasa 2</td>
+                                            <td><t t-esc="state.s3Data.tax2.typeLabel"/></td>
+                                            <td><t t-esc="state.s3Data.tax2.value"/>%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Tasa 3</td>
+                                            <td><t t-esc="state.s3Data.tax3.typeLabel"/></td>
+                                            <td><t t-esc="state.s3Data.tax3.value"/>%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>IGTF</td>
+                                            <td><t t-esc="state.s3Data.igtf.typeLabel"/></td>
+                                            <td><t t-esc="state.s3Data.igtf.value"/>%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="status-card mt-3">
+                                <h4>Flags del Sistema</h4>
+                                <t t-if="state.s3Data.systemFlags.length">
+                                    <p>
+                                        <t t-foreach="state.s3Data.systemFlags" t-as="flag" t-key="flag_index">
+                                            <span class="badge bg-secondary me-1" t-esc="flag"/>
+                                        </t>
+                                    </p>
+                                </t>
+                                <t t-else="">
+                                    <p class="text-muted">S3 no reportó flags del sistema.</p>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+
+                    <t t-else="">
+                        <p class="text-muted">Presiona "Leer S3" para consultar tasas y flags de la impresora.</p>
                     </t>
                 </div>
 

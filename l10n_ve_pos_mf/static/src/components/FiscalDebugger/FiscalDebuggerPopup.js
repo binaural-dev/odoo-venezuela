@@ -28,7 +28,7 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
         
         this.state = useState({
             // Tab activo
-            activeTab: "monitor", // monitor, status, console, flags
+            activeTab: "monitor", // monitor, status, s3, console, flags
             
             // Monitor de tramas
             commandLog: [],
@@ -38,6 +38,10 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
             currentStatus: null,
             statusRefreshInterval: null,
             autoRefresh: false,
+
+            // Diagnóstico S3
+            s3Data: null,
+            s3Error: "",
             
             // Consola de comandos
             rawCommand: "",
@@ -177,6 +181,11 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
         if (tab === "status" && !this.state.currentStatus) {
             this.refreshStatus();
         }
+
+        // Si se activa el tab S3, leer tasas/flags
+        if (tab === "s3" && !this.state.s3Data) {
+            this.refreshS3Data();
+        }
     }
 
     /**
@@ -214,6 +223,38 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
                 clearInterval(this.state.statusRefreshInterval);
                 this.state.statusRefreshInterval = null;
             }
+        }
+    }
+
+    /**
+     * Lee y parsea diagnóstico S3 (tasas y flags)
+     */
+    async refreshS3Data() {
+        if (!this.fiscalPrinter || !this.fiscalPrinter.isConnected) {
+            this.state.s3Error = "Impresora no conectada";
+            this.state.s3Data = null;
+            return;
+        }
+
+        if (typeof this.fiscalPrinter.readS3Data !== "function") {
+            this.state.s3Error = "El driver actual no soporta lectura S3";
+            this.state.s3Data = null;
+            return;
+        }
+
+        try {
+            this.state.s3Error = "";
+            const result = await this.fiscalPrinter.readS3Data();
+            if (!result.success) {
+                this.state.s3Error = result.error || "No se pudo leer S3";
+                this.state.s3Data = null;
+                return;
+            }
+
+            this.state.s3Data = result.data;
+        } catch (error) {
+            this.state.s3Error = error.message || "Error inesperado leyendo S3";
+            this.state.s3Data = null;
         }
     }
 

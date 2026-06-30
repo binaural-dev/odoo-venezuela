@@ -44,6 +44,18 @@ export class TfhkaDriver {
         this.retryDelay = 500; // ms
     }
 
+    _isWaitingState(sts1) {
+        return [0x40, 0x60, 0x64].includes(sts1);
+    }
+
+    _isTransactionState(sts1) {
+        return [0x41, 0x61, 0x65, 0x62, 0x42].includes(sts1);
+    }
+
+    _formatSts(sts1) {
+        return typeof sts1 === "number" ? `0x${sts1.toString(16)}` : "N/A";
+    }
+
     /**
      * Conecta con la impresora fiscal
      * @returns {Promise<boolean>}
@@ -114,21 +126,21 @@ export class TfhkaDriver {
             // 0x40 = Test mode, waiting (code 1)
             // 0x60 = Fiscal mode, waiting (code 4)
             const sts1 = status.raw?.sts1;
-            const isWaiting = (sts1 === 0x40 || sts1 === 0x60);
-            const isInTransaction = (sts1 === 0x41 || sts1 === 0x61 || sts1 === 0x65 || sts1 === 0x62 || sts1 === 0x42);
+            const isWaiting = this._isWaitingState(sts1);
+            const isInTransaction = this._isTransactionState(sts1);
 
             if (isInTransaction) {
-                console.warn("TfhkaDriver:: Impresora tiene transacción abierta (STS1:", sts1?.toString(16), "). Intentando abortar...");
+                console.warn("TfhkaDriver:: Impresora tiene transacción abierta (STS1:", this._formatSts(sts1), "). Intentando abortar...");
                 const aborted = await this.abortTransaction();
                 if (!aborted) {
                     return {
                         success: false,
                         data: "",
-                        error: `Impresora ocupada (STS1=0x${sts1?.toString(16)}). Transacción previa no pudo ser cancelada. Reinicia la impresora.`
+                        error: `Impresora ocupada (STS1=${this._formatSts(sts1)}). Transacción previa no pudo ser cancelada. Reinicia la impresora.`
                     };
                 }
             } else if (!isWaiting && sts1 !== undefined) {
-                console.warn("TfhkaDriver:: Estado inesperado STS1:", sts1?.toString(16), "- continuando de todas formas");
+                console.warn("TfhkaDriver:: Estado inesperado STS1:", this._formatSts(sts1), "- continuando de todas formas");
             }
         }
 
@@ -209,6 +221,13 @@ export class TfhkaDriver {
     async abortTransaction() {
         try {
             console.log("TfhkaDriver:: Intentando abortar transacción colgada...");
+
+            const statusBefore = await this.getStatus();
+            const stsBefore = statusBefore?.raw?.sts1;
+            if (this._isWaitingState(stsBefore)) {
+                console.log("TfhkaDriver:: Impresora ya está en reposo (STS1=", this._formatSts(stsBefore), ")");
+                return true;
+            }
             
             await this.connection.flushBuffer();
 
@@ -220,6 +239,13 @@ export class TfhkaDriver {
             if (response9 && FiscalProtocol.isACK(response9)) {
                 console.log("TfhkaDriver:: Transacción cancelada con comando 9");
                 await new Promise(resolve => setTimeout(resolve, 500));
+                return true;
+            }
+
+            const statusAfter9 = await this.getStatus();
+            const stsAfter9 = statusAfter9?.raw?.sts1;
+            if (this._isWaitingState(stsAfter9)) {
+                console.log("TfhkaDriver:: Impresora en reposo tras comando 9 (STS1=", this._formatSts(stsAfter9), ")");
                 return true;
             }
 
@@ -240,11 +266,12 @@ export class TfhkaDriver {
             const statusCheck = await this.getStatus();
             if (statusCheck) {
                 const sts1 = statusCheck.raw?.sts1;
-                const isNowWaiting = (sts1 === 0x40 || sts1 === 0x60);
+                const isNowWaiting = this._isWaitingState(sts1);
                 if (isNowWaiting) {
                     console.log("TfhkaDriver:: Impresora en reposo tras intentos de abort");
                     return true;
                 }
+                console.error("TfhkaDriver:: Abort falló. STS1 actual:", this._formatSts(sts1));
             }
 
             console.error("TfhkaDriver:: No se pudo abortar la transacción");
@@ -555,6 +582,113 @@ export class TfhkaDriver {
         return { success: true, data, error: "" };
     }
 
+    _decodeImplicit2Decimals(rawValue) {
+        const cleaned = String(rawValue || "").replace(/[^0-9]/g, "");
+        if (!cleaned) {
+            return 0;
+        }
+
+        if (cleaned.length <= 2) {
+            return Number(cleaned) / 100;
+        }
+
+        const integer = Number(cleaned.slice(0, -2));
+        const decimal = Number(cleaned.slice(-2)) / 100;
+        return integer + decimal;
+    }
+
+    _getTaxTypeLabel(type) {
+        if (String(type) === "1") {
+            return "Excluido";
+        }
+        if (String(type) === "2") {
+            return "Incluido";
+        }
+        return "No definido";
+    }
+
+    _parseS3RateLine(rawLine, removePrefix = false) {
+        const line = removePrefix
+            ? String(rawLine || "").replace(/^S3/, "")
+            : String(rawLine || "");
+        const type = line.charAt(0) || "";
+        const value = this._decodeImplicit2Decimals(line.slice(1));
+
+        return {
+            type,
+            typeLabel: this._getTaxTypeLabel(type),
+            value,
+        };
+    }
+
+    _parseS3Data(rawData) {
+        if (!rawData) {
+            return null;
+        }
+
+        const payload = String(rawData)
+            .replace(/^\u0002/, "")
+            .replace(/\u0003$/, "");
+
+        const lines = payload
+            .split("\n")
+            .map((value) => value.replace(/\r/g, "").trim())
+            .filter((value) => value.length > 0);
+
+        if (lines.length < 4) {
+            return null;
+        }
+
+        const tax1 = this._parseS3RateLine(lines[0], true);
+        const tax2 = this._parseS3RateLine(lines[1]);
+        const tax3 = this._parseS3RateLine(lines[2]);
+
+        const tax4Line = String(lines[3] || "");
+        const igtfType = tax4Line.charAt(0) || "";
+        const numericTail = tax4Line.slice(1).replace(/[^0-9]/g, "");
+        const igtfRaw = numericTail.slice(0, 4);
+        const flagsRaw = numericTail.slice(4);
+        const systemFlags = [];
+
+        for (let i = 0; i + 1 < flagsRaw.length; i += 2) {
+            const flag = parseInt(flagsRaw.slice(i, i + 2), 10);
+            if (!Number.isNaN(flag)) {
+                systemFlags.push(flag);
+            }
+        }
+
+        return {
+            tax1,
+            tax2,
+            tax3,
+            igtf: {
+                type: igtfType,
+                typeLabel: this._getTaxTypeLabel(igtfType),
+                value: this._decodeImplicit2Decimals(igtfRaw),
+            },
+            systemFlags,
+            raw: lines,
+        };
+    }
+
+    async readS3Data() {
+        const response = await this.sendCommand("S3", 5000, false);
+        if (!response.success) {
+            return { success: false, data: null, error: response.error || "No se pudo leer S3" };
+        }
+
+        const data = this._parseS3Data(response.data);
+        if (!data) {
+            return {
+                success: false,
+                data: null,
+                error: "No se pudo parsear la respuesta S3 de la impresora",
+            };
+        }
+
+        return { success: true, data, error: "" };
+    }
+
     _buildFiscalResponse(message, documentNumber, s1Data) {
         const invoiceNumber = documentNumber ? String(documentNumber) : "";
         const serial = s1Data?.registeredMachineNumber || "";
@@ -598,6 +732,7 @@ export class TfhkaDriver {
      * @returns {string} - Carácter TFHKA (" ", "!", '"', "#")
      */
     _getTaxCharacter(fiscalCode) {
+        const normalizedCode = String(fiscalCode ?? "1").replace(/^t/i, "");
         const TAX_MAP = {
             "0": " ",   // Exento (0x20)
             "1": "!",   // Tasa 1 General (0x21)
@@ -605,7 +740,96 @@ export class TfhkaDriver {
             "3": "#"    // Tasa 3 Adicional (0x23)
         };
         
-        return TAX_MAP[String(fiscalCode)] || "!";
+        return TAX_MAP[normalizedCode] || "!";
+    }
+
+    _appendHeaderInfo(commands, orderData) {
+        let infoIndex = 0;
+
+        if (orderData.partner?.address) {
+            const addr = String(orderData.partner.address || "");
+            const firstLine = addr.substring(0, 30);
+            if (firstLine) {
+                commands.push(`i${String(infoIndex).padStart(2, '0')}Direccion:${firstLine}`);
+                infoIndex++;
+            }
+
+            const secondLine = addr.substring(30, 70);
+            if (secondLine) {
+                commands.push(`i${String(infoIndex).padStart(2, '0')}${secondLine}`);
+                infoIndex++;
+            }
+        }
+
+        if (orderData.partner?.phone) {
+            commands.push(`i${String(infoIndex).padStart(2, '0')}Telefono:${orderData.partner.phone}`);
+            infoIndex++;
+        }
+
+        for (const line of orderData.header_lines || []) {
+            commands.push(`i${String(infoIndex).padStart(2, '0')}${String(line).substring(0, 127)}`);
+            infoIndex++;
+        }
+    }
+
+    _appendFooterInfo(commands, orderData) {
+        let footerIndex = 0;
+
+        for (const line of orderData.footer_lines || []) {
+            commands.push(`i${String(footerIndex).padStart(2, '0')}${String(line).substring(0, 127)}`);
+            footerIndex++;
+        }
+
+        for (const line of orderData.additional_lines || []) {
+            commands.push(`i${String(footerIndex).padStart(2, '0')}${String(line).substring(0, 127)}`);
+            footerIndex++;
+        }
+    }
+
+    _appendPaymentCommands(commands, orderData, config) {
+        const payments = orderData.payment_lines || [];
+        const groupedPayments = {};
+
+        if (orderData.has_cashbox) {
+            commands.push("w");
+        }
+
+        for (const payment of payments) {
+            const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
+            const amount = Math.abs(Number(payment.amount || 0));
+            groupedPayments[methodCode] = (groupedPayments[methodCode] || 0) + amount;
+        }
+
+        const uniqueMethods = Object.keys(groupedPayments);
+        const allMethod20 = payments.length > 1 && payments.every(
+            (payment) => String(payment.payment_method_code || "01").padStart(2, '0') === "20"
+        );
+        const firstPaymentAmount = Math.abs(Number(payments[0]?.amount || 0));
+        const useDirectClose =
+            payments.length === 1 ||
+            (payments.length > 0 && firstPaymentAmount === 0) ||
+            allMethod20;
+
+        if (useDirectClose) {
+            const closingMethod = String(payments[0]?.payment_method_code || uniqueMethods[0] || "01").padStart(2, '0');
+            commands.push(`1${closingMethod}`);
+            if (closingMethod !== "01") {
+                commands.push("101");
+            }
+        } else {
+            for (const [methodCode, amount] of Object.entries(groupedPayments)) {
+                if (amount <= 0) {
+                    continue;
+                }
+                const amountStr = this._formatAmount(
+                    amount,
+                    config.max_payment_amount_int,
+                    config.max_payment_amount_decimal
+                );
+                commands.push(`2${methodCode}${amountStr}`);
+            }
+            commands.push("101");
+        }
     }
 
     /**
@@ -626,15 +850,15 @@ export class TfhkaDriver {
         }
 
         const sts1Before = statusBefore.raw?.sts1;
-        const isWaiting = (sts1Before === 0x40 || sts1Before === 0x60);
+        const isWaiting = this._isWaitingState(sts1Before);
         if (!isWaiting) {
-            console.warn("TfhkaDriver:: Impresora no está en reposo (STS1=0x" + sts1Before?.toString(16) + "), intentando abortar...");
+            console.warn("TfhkaDriver:: Impresora no está en reposo (STS1=" + this._formatSts(sts1Before) + "), intentando abortar...");
             const aborted = await this.abortTransaction();
             if (!aborted) {
                 return {
                     success: false,
                     data: "",
-                    error: "La impresora tiene una transacción previa abierta. Reiníciala y vuelve a intentarlo."
+                    error: `La impresora tiene una transacción previa abierta (STS1=${this._formatSts(sts1Before)}). Reiníciala y vuelve a intentarlo.`
                 };
             }
         }
@@ -644,10 +868,10 @@ export class TfhkaDriver {
 
             // Formato de números según flag 21 (default: "00" = estándar)
             const FLAG21_CONFIGS = {
-                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2 },
+                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2, disc_int: 15, disc_decimal: 2 },
             };
             const flag21Key = String(orderData.flag_21 || "00");
             const config = flag21Config || FLAG21_CONFIGS[flag21Key] || FLAG21_CONFIGS["00"];
@@ -660,31 +884,21 @@ export class TfhkaDriver {
             const name = (orderData.partner?.name || "CLIENTE GENERICO").substring(0, 127);
             commands.push(`iS*${name}`);
 
-            // 3. Información adicional (dirección, teléfono) - opcional
-            let infoIndex = 0;
-            if (orderData.partner?.address) {
-                const addr = orderData.partner.address;
-                const firstLine = addr.substring(0, 30);
-                commands.push(`i${String(infoIndex).padStart(2, '0')}Direccion:${firstLine}`);
-                infoIndex++;
-                const secondLine = addr.substring(30, 70);
-                if (secondLine) {
-                    commands.push(`i${String(infoIndex).padStart(2, '0')}${secondLine}`);
-                    infoIndex++;
-                }
-            }
-
-            if (orderData.partner?.phone) {
-                commands.push(`i${String(infoIndex).padStart(2, '0')}Telefono:${orderData.partner.phone}`);
-                infoIndex++;
-            }
+            // 3. Información adicional del encabezado (dirección, teléfono, encabezado POS)
+            this._appendHeaderInfo(commands, orderData);
 
             // 4. Items de la orden
+            let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
             for (const line of orderData.lines || []) {
-                if (line.price_unit <= 0) continue; // Descuentos negativos se manejan aparte
+                const linePrice = Number(line.price_unit || 0);
+                if (linePrice < 0) {
+                    globalDiscountAmount += Math.abs(linePrice);
+                    continue;
+                }
+                if (linePrice <= 0) continue;
 
                 const taxChar = this._getTaxCharacter(line.fiscal_code || "1");
-                const price = this._formatAmount(line.price_unit, config.max_amount_int, config.max_amount_decimal);
+                const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
                 const desc  = (line.product_name || "PRODUCTO")
@@ -699,41 +913,19 @@ export class TfhkaDriver {
             // 5. Subtotal
             commands.push("3");
 
-            // 6. Pagos (parciales 2XX + cierre 1XX)
-            const payments = orderData.payment_lines || [];
-            let closingMethod = "01"; // Por defecto efectivo
-
-            if (payments.length > 0) {
-                // El método de cierre es el de mayor monto
-                const mainPayment = payments.reduce((prev, cur) => cur.amount > prev.amount ? cur : prev);
-                closingMethod = String(mainPayment.payment_method_code || "01").padStart(2, '0');
-
-                // Enviar todos los pagos como parciales (2 + código + monto)
-                for (const payment of payments) {
-                    if (payment.amount > 0) {
-                        const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
-                        const amount = this._formatAmount(payment.amount, config.max_payment_amount_int, config.max_payment_amount_decimal);
-                        commands.push(`2${methodCode}${amount}`);
-                    }
-                }
+            // 5.1 Descuento global absoluto (q-)
+            if (globalDiscountAmount > 0) {
+                const discount = this._formatAmount(globalDiscountAmount, config.disc_int, config.disc_decimal);
+                commands.push(`q-${discount}`);
             }
 
-            // 7. Abrir gaveta (si está configurado y pago es en efectivo)
-            if (orderData.has_cashbox) {
-                commands.push("w");
-            }
+            // 6. Pagos y cierre fiscal (1XX/2XX + 101)
+            this._appendPaymentCommands(commands, orderData, config);
 
-            // 8. Cierre de documento (1 + código método principal)
-            commands.push(`1${closingMethod}`);
+            // 7. Líneas al pie (footer de POS + operador/pedido)
+            this._appendFooterInfo(commands, orderData);
 
-            // 9. Líneas adicionales al pie (operador, número de pedido, etc.)
-            if (orderData.additional_lines?.length > 0) {
-                for (let i = 0; i < orderData.additional_lines.length; i++) {
-                    commands.push(`i${String(i).padStart(2, '0')}${orderData.additional_lines[i]}`);
-                }
-            }
-
-            // 10. Fin de documento
+            // 8. Fin de documento
             commands.push("199");
 
             // Enviar comandos secuencialmente — sin checkStatus (ya lo hicimos arriba)
@@ -817,10 +1009,14 @@ export class TfhkaDriver {
             return { success: false, data: "", error: "No se puede leer el estado de la impresora" };
         }
         const sts1 = statusBefore.raw?.sts1;
-        if (sts1 !== 0x40 && sts1 !== 0x60) {
+        if (!this._isWaitingState(sts1)) {
             const aborted = await this.abortTransaction();
             if (!aborted) {
-                return { success: false, data: "", error: "La impresora tiene una transacción previa abierta. Reiníciala." };
+                return {
+                    success: false,
+                    data: "",
+                    error: `La impresora tiene una transacción previa abierta (STS1=${this._formatSts(sts1)}). Reiníciala.`,
+                };
             }
         }
 
@@ -828,10 +1024,10 @@ export class TfhkaDriver {
             const commands = [];
 
             const FLAG21_CONFIGS = {
-                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2 },
+                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2, disc_int: 15, disc_decimal: 2 },
             };
             const config = FLAG21_CONFIGS[String(orderData.flag_21 || "00")] || FLAG21_CONFIGS["00"];
 
@@ -853,41 +1049,22 @@ export class TfhkaDriver {
             // 5. Fecha de factura afectada (formato DD/MM/YYYY)
             commands.push(`iD*${affected.date}`);
 
-            // 6. Dirección y teléfono del cliente (opcional)
-            let infoIndex = 0;
-            if (orderData.partner?.address) {
-                const addr = orderData.partner.address;
-                const firstLine = addr.substring(0, 30);
-                commands.push(`i${String(infoIndex).padStart(2, '0')}Direccion:${firstLine}`);
-                infoIndex++;
-
-                const secondLine = addr.substring(30, 70);
-                if (secondLine) {
-                    commands.push(`i${String(infoIndex).padStart(2, '0')}${secondLine}`);
-                    infoIndex++;
-                }
-            }
-
-            if (orderData.partner?.phone) {
-                commands.push(`i${String(infoIndex).padStart(2, '0')}Telefono:${orderData.partner.phone}`);
-                infoIndex++;
-            }
-
-            // 7. Líneas informativas (operador, pedido, etc.)
-            if (orderData.additional_lines?.length > 0) {
-                for (const line of orderData.additional_lines) {
-                    commands.push(`i${String(infoIndex).padStart(2, '0')}${line}`);
-                    infoIndex++;
-                }
-            }
+            // 6. Información adicional del encabezado (dirección, teléfono, encabezado POS)
+            this._appendHeaderInfo(commands, orderData);
 
             // 8. Items de la devolución
             // NC usa "d" + código_fiscal_numérico + precio + qty + desc
+            let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
             for (const line of orderData.lines || []) {
-                if (line.price_unit <= 0) continue;
+                const linePrice = Number(line.price_unit || 0);
+                if (linePrice < 0) {
+                    globalDiscountAmount += Math.abs(linePrice);
+                    continue;
+                }
+                if (linePrice <= 0) continue;
 
                 const fiscalCode = String(line.fiscal_code || "1");
-                const price = this._formatAmount(line.price_unit, config.max_amount_int, config.max_amount_decimal);
+                const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
                 const desc  = (line.product_name || "PRODUCTO")
@@ -902,33 +1079,19 @@ export class TfhkaDriver {
             // 9. Subtotal
             commands.push("3");
 
-            // 10. Pagos
-            const payments = orderData.payment_lines || [];
-            let closingMethod = "01";
-
-            if (payments.length > 0) {
-                const mainPayment = payments.reduce((prev, cur) => cur.amount > prev.amount ? cur : prev);
-                closingMethod = String(mainPayment.payment_method_code || "01").padStart(2, '0');
-
-                for (const payment of payments) {
-                    const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
-                    // Enviar solo los pagos que NO sean el método principal (parciales)
-                    if (payment.amount > 0 && methodCode !== closingMethod) {
-                        const amount = this._formatAmount(payment.amount, config.max_payment_amount_int, config.max_payment_amount_decimal);
-                        commands.push(`2${methodCode}${amount}`);
-                    }
-                }
+            // 9.1 Descuento global absoluto (q-)
+            if (globalDiscountAmount > 0) {
+                const discount = this._formatAmount(globalDiscountAmount, config.disc_int, config.disc_decimal);
+                commands.push(`q-${discount}`);
             }
 
-            // 11. Gaveta (si aplica)
-            if (orderData.has_cashbox) {
-                commands.push("w");
-            }
+            // 10. Pagos y cierre fiscal (1XX/2XX + 101)
+            this._appendPaymentCommands(commands, orderData, config);
 
-            // 12. Cierre
-            commands.push(`1${closingMethod}`);
+            // 11. Líneas al pie (footer de POS + operador/pedido)
+            this._appendFooterInfo(commands, orderData);
 
-            // 13. Fin de documento
+            // 12. Fin de documento
             commands.push("199");
 
             console.log("TfhkaDriver:: Enviando nota de crédito con", commands.length, "comandos:", commands);
@@ -1003,10 +1166,14 @@ export class TfhkaDriver {
             return { success: false, data: "", error: "No se puede leer el estado de la impresora" };
         }
         const sts1 = statusBefore.raw?.sts1;
-        if (sts1 !== 0x40 && sts1 !== 0x60) {
+        if (!this._isWaitingState(sts1)) {
             const aborted = await this.abortTransaction();
             if (!aborted) {
-                return { success: false, data: "", error: "La impresora tiene una transacción previa abierta. Reiníciala." };
+                return {
+                    success: false,
+                    data: "",
+                    error: `La impresora tiene una transacción previa abierta (STS1=${this._formatSts(sts1)}). Reiníciala.`,
+                };
             }
         }
 
@@ -1014,10 +1181,10 @@ export class TfhkaDriver {
             const commands = [];
 
             const FLAG21_CONFIGS = {
-                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2 },
-                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2 },
+                "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "02": { max_amount_int: 6,  max_amount_decimal: 4, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
+                "30": { max_amount_int: 14, max_amount_decimal: 2, max_qty_int: 14, max_qty_decimal: 3, max_payment_amount_int: 15, max_payment_amount_decimal: 2, disc_int: 15, disc_decimal: 2 },
             };
             const config = FLAG21_CONFIGS[String(orderData.flag_21 || "00")] || FLAG21_CONFIGS["00"];
 
@@ -1039,38 +1206,22 @@ export class TfhkaDriver {
             // 5. Fecha de factura afectada
             commands.push(`iD*${affected.date}`);
 
-            // 6. Dirección del cliente (opcional)
-            let infoIndex = 0;
-            if (orderData.partner?.address) {
-                const addr = orderData.partner.address;
-                commands.push(`i${String(infoIndex).padStart(2, '0')}Direccion:${addr.substring(0, 30)}`);
-                infoIndex++;
-                if (addr.length > 30) {
-                    commands.push(`i${String(infoIndex).padStart(2, '0')}${addr.substring(30, 70)}`);
-                    infoIndex++;
-                }
-            }
-
-            if (orderData.partner?.phone) {
-                commands.push(`i${String(infoIndex).padStart(2, '0')}Telefono:${orderData.partner.phone}`);
-                infoIndex++;
-            }
-
-            // 7. Información adicional
-            if (orderData.additional_info?.length > 0) {
-                for (const info of orderData.additional_info) {
-                    commands.push(`i${String(infoIndex).padStart(2, '0')}${info}`);
-                    infoIndex++;
-                }
-            }
+            // 6. Información adicional del encabezado (dirección, teléfono, encabezado POS)
+            this._appendHeaderInfo(commands, orderData);
 
             // 8. Items de la nota de débito
             // ND usa backtick (`) + código_fiscal_texto + precio + qty + desc
+            let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
             for (const line of orderData.lines || []) {
-                if (line.price_unit < 0) continue;
+                const linePrice = Number(line.price_unit || 0);
+                if (linePrice < 0) {
+                    globalDiscountAmount += Math.abs(linePrice);
+                    continue;
+                }
+                if (linePrice <= 0) continue;
 
                 const fiscalCode = String(line.fiscal_code || "1");
-                const price = this._formatAmount(Math.abs(line.price_unit), config.max_amount_int, config.max_amount_decimal);
+                const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
                 const desc  = (line.product_name || "PRODUCTO")
@@ -1085,47 +1236,19 @@ export class TfhkaDriver {
             // 9. Subtotal
             commands.push("3");
 
-            // 10. Pagos
-            const payments = orderData.payment_lines || [];
-            let closingMethod = "01";
-
-            // Agrupar pagos por método (sumar montos del mismo método)
-            const groupedPayments = {};
-            for (const p of payments) {
-                const key = String(p.payment_method_code || "01").padStart(2, '0');
-                groupedPayments[key] = (groupedPayments[key] || 0) + Math.abs(p.amount);
+            // 9.1 Descuento global absoluto (q-)
+            if (globalDiscountAmount > 0) {
+                const discount = this._formatAmount(globalDiscountAmount, config.disc_int, config.disc_decimal);
+                commands.push(`q-${discount}`);
             }
 
-            // Método de cierre = el de mayor monto
-            if (Object.keys(groupedPayments).length > 0) {
-                closingMethod = Object.entries(groupedPayments)
-                    .reduce((a, b) => b[1] > a[1] ? b : a)[0];
-            }
+            // 10. Pagos y cierre fiscal (1XX/2XX + 101)
+            this._appendPaymentCommands(commands, orderData, config);
 
-            // Enviar pagos parciales (los que no son el de cierre)
-            for (const [methodCode, amount] of Object.entries(groupedPayments)) {
-                if (amount > 0 && methodCode !== closingMethod) {
-                    const amountStr = this._formatAmount(amount, config.max_payment_amount_int, config.max_payment_amount_decimal);
-                    commands.push(`2${methodCode}${amountStr}`);
-                }
-            }
+            // 11. Líneas al pie (footer de POS + operador/pedido)
+            this._appendFooterInfo(commands, orderData);
 
-            // 11. Gaveta
-            if (orderData.has_cashbox) {
-                commands.push("w");
-            }
-
-            // 12. Cierre
-            commands.push(`1${closingMethod}`);
-
-            // 13. Líneas adicionales al pie
-            if (orderData.additional_lines?.length > 0) {
-                for (let i = 0; i < orderData.additional_lines.length; i++) {
-                    commands.push(`i${String(i).padStart(2, '0')}${orderData.additional_lines[i]}`);
-                }
-            }
-
-            // 14. Fin de documento
+            // 12. Fin de documento
             commands.push("199");
 
             console.log("TfhkaDriver:: Enviando nota de débito con", commands.length, "comandos:", commands);

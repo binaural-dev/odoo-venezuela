@@ -47,6 +47,12 @@
             "l10n_ve_pos_mf/static/src/css/*.css",
         ],
         "web.qunit_suite_tests": [
+            # Dependencias del driver necesarias para QUnit
+            "l10n_ve_pos_mf/static/src/core/FiscalProtocol.js",
+            "l10n_ve_pos_mf/static/src/core/StatusParser.js",
+            "l10n_ve_pos_mf/static/src/core/SerialConnection.js",
+            "l10n_ve_pos_mf/static/src/drivers/TfhkaDriver.js",
+
             # Tests QUnit para el driver TFHKA
             "l10n_ve_pos_mf/static/src/tests/*.js",
         ],

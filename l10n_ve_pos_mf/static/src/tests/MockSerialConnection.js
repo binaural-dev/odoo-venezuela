@@ -20,6 +20,8 @@ export class MockSerialConnection {
         this.isConnected = false;
         this.sentCommands = []; // Historial de comandos enviados
         this.responseQueue = []; // Cola de respuestas a devolver
+        this.lastWriteData = null;
+        this.s1Payload = null;
         this.currentStatus = {
             // STS1/STS2 base (equivalente a impresora lista en modo fiscal)
             sts1: 0x60,
@@ -73,6 +75,7 @@ export class MockSerialConnection {
         }
 
         await this._delay(this.writeDelay);
+        this.lastWriteData = data;
         
         // Registrar el comando enviado para verificación en tests
         const decoder = new TextDecoder();
@@ -98,6 +101,21 @@ export class MockSerialConnection {
 
         await this._delay(this.readDelay);
 
+        // Para ENQ (0x05), responder siempre con status de 5 bytes
+        // sin consumir la cola de respuestas de comandos fiscales.
+        if (
+            this.lastWriteData &&
+            this.lastWriteData.length === 1 &&
+            this.lastWriteData[0] === FiscalProtocol.ENQ
+        ) {
+            return this._buildStatusResponse();
+        }
+
+        const lastCommand = this._extractCommandFromFrame(this.lastWriteData);
+        if (lastCommand === "S1" && this.s1Payload) {
+            return FiscalProtocol.buildFrame(this.s1Payload);
+        }
+
         // Si hay respuestas en cola, devolver la siguiente
         if (this.responseQueue.length > 0) {
             const response = this.responseQueue.shift();
@@ -122,6 +140,14 @@ export class MockSerialConnection {
         this.isConnected = false;
         this.sentCommands = [];
         this.responseQueue = [];
+    }
+
+    /**
+     * Simula limpieza de buffer serial (API usada por el driver)
+     */
+    async flushBuffer() {
+        await this._delay(1);
+        return true;
     }
 
     // ========== MÉTODOS PARA CONFIGURAR EL MOCK ==========
@@ -151,6 +177,14 @@ export class MockSerialConnection {
      */
     setResponseSequence(responses) {
         responses.forEach(r => this.setNextResponse(r));
+    }
+
+    /**
+     * Configura payload dedicado para respuesta S1
+     * @param {string} payload
+     */
+    setS1Payload(payload) {
+        this.s1Payload = payload;
     }
 
     /**
@@ -248,6 +282,28 @@ export class MockSerialConnection {
     _stringToBytes(str) {
         const encoder = new TextEncoder();
         return encoder.encode(str);
+    }
+
+    _extractCommandFromFrame(frame) {
+        if (!frame || !frame.length) {
+            return "";
+        }
+
+        if (frame.length === 1 && frame[0] === FiscalProtocol.ENQ) {
+            return "ENQ";
+        }
+
+        if (frame[0] !== FiscalProtocol.STX) {
+            return "";
+        }
+
+        const etxIndex = frame.indexOf(FiscalProtocol.ETX);
+        if (etxIndex <= 1) {
+            return "";
+        }
+
+        const decoder = new TextDecoder();
+        return decoder.decode(frame.slice(1, etxIndex));
     }
 
     /**

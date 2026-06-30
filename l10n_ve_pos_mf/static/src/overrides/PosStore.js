@@ -203,6 +203,10 @@ patch(PosStore.prototype, {
         }
 
         let amount = vef_base ? el.price : el.get_foreign_unit_price()
+        const taxes = el.get_taxes()
+        const fiscalCode = taxes.length > 0
+          ? (String(taxes[0]?.fiscal_code || "").replace(/^t/i, "") || "0")
+          : "0"
 
         return {
           price_unit: amount,
@@ -210,7 +214,7 @@ patch(PosStore.prototype, {
           quantity: Math.abs(el.quantity),
           name: this.normalizeProductName(el.product.display_name),
           code: el.product.default_code,
-          tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
+          tax: fiscalCode,
         }
       })
 
@@ -308,6 +312,26 @@ patch(PosStore.prototype, {
     return noSpecialChars;
   },
 
+  _stripHtml(text) {
+    return String(text || "").replace(/<[^>]*>/g, " ");
+  },
+
+  _extractReceiptLines(fieldName) {
+    const source = this._stripHtml(this.config?.[fieldName] || "")
+      .split("\n")
+      .map((line) => line.replace(/\r/g, "").trim())
+      .filter((line) => line.length > 0);
+
+    const lines = [];
+    for (const line of source) {
+      if (lines.length >= 10) {
+        break;
+      }
+      lines.push(line.substring(0, 127));
+    }
+    return lines;
+  },
+
   /**
    * Guarda los datos de la máquina fiscal en la orden
    * @param {Object} order
@@ -396,15 +420,31 @@ patch(PosStore.prototype, {
    * @returns {Object}
    */
   _convertOrderForDriver(order, invoiceData) {
+    const roundAmount = (value) => round_pr(Number(value || 0), this.currency?.rounding || 0.01);
+    let globalDiscountAmount = 0;
+
     // Mapear líneas de productos con nombres de campos correctos
-    const lines = (invoiceData.invoice_lines || []).map(line => ({
-      product_name: line.name,
-      product_code: line.code || line.default_code,
-      price_unit: line.price_unit,
-      quantity: line.quantity,
-      fiscal_code: line.tax,  // 0=Exento, 1=General, 2=Reducido, 3=Adicional
-      discount: line.discount || 0
-    }));
+    const lines = [];
+    for (const line of (invoiceData.invoice_lines || [])) {
+      const priceUnit = Number(line.price_unit || 0);
+      const discount = Number(line.discount || 0);
+
+      // Odoo representa descuentos globales como líneas negativas
+      if (priceUnit < 0) {
+        globalDiscountAmount += Math.abs(priceUnit);
+        continue;
+      }
+
+      const netUnitPrice = roundAmount(priceUnit * (1 - discount / 100));
+      lines.push({
+        product_name: line.name,
+        product_code: line.code || line.default_code,
+        price_unit: netUnitPrice,
+        quantity: line.quantity,
+        fiscal_code: line.tax,  // 0=Exento, 1=General, 2=Reducido, 3=Adicional
+        discount: 0,
+      });
+    }
 
     // Mapear líneas de pago con nombres de campos correctos
     const payment_lines = (invoiceData.payment_lines || []).map(payment => ({
@@ -419,7 +459,10 @@ patch(PosStore.prototype, {
       flag_21: invoiceData.flag_21 || this.get_flag_21 || "00",
       has_cashbox: invoiceData.has_cashbox || false,
       additional_lines: invoiceData.info || [],
-      invoice_affected: invoiceData.invoice_affected || null
+      invoice_affected: invoiceData.invoice_affected || null,
+      global_discount_amount: roundAmount(globalDiscountAmount),
+      header_lines: this._extractReceiptLines("receipt_header"),
+      footer_lines: this._extractReceiptLines("receipt_footer"),
     };
   },
 
