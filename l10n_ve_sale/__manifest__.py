@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.0.3",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -29,7 +29,6 @@
         "views/sale_order.xml",
         "views/product_pricelist_item_views.xml",
         "views/menuitems.xml",
-        "views/account_move.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,

@@ -5,12 +5,12 @@
         <field name="inherit_id" ref="account_invoice_pricelist.view_account_move_customer_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='pricelist_id'][1]" position="attributes">
-                <attribute name="readonly">invoice_origin and not can_edit_pricelist</attribute>
-                <attribute name="invisible">0</attribute>
+                <attribute name="readonly">(invoice_origin and not can_edit_pricelist) or state != 'draft'</attribute>
+                <attribute name="invisible">move_type == 'in_invoice'</attribute>
             </xpath>
             <xpath expr="//field[@name='pricelist_id'][2]" position="attributes">
-                <attribute name="invisible">0</attribute>
-                <attribute name="readonly">invoice_origin and not can_edit_pricelist</attribute>
+                <attribute name="invisible">move_type == 'in_invoice'</attribute>
+                <attribute name="readonly">(invoice_origin and not can_edit_pricelist) or state != 'draft'</attribute>
             </xpath>
             
         </field>
@@ -25,11 +25,6 @@
                 position="attributes">
                 <attribute name="readonly">not can_edit_prices</attribute>
             </xpath>
-            <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='foreign_price']"
-                position="attributes">
-                <attribute name="readonly">not can_edit_prices</attribute>
-            </xpath>
-            
         </field>
     </record>
 </odoo>
