@@ -145,18 +145,18 @@ class ReportSaleDetails(models.AbstractModel):
             )
             payments = []
             for payment in self.env.cr.dictfetchall():
-                total = payment.get("total") or 0.0
-                f_total = payment.get("f_total") or 0.0
+                payment_total = payment.get("total") or 0.0
+                payment_f_total = payment.get("f_total") or 0.0
                 try:
-                    total = float(total)
+                    payment_total = float(payment_total)
                 except (TypeError, ValueError):
-                    total = 0.0
+                    payment_total = 0.0
                 try:
-                    f_total = float(f_total)
+                    payment_f_total = float(payment_f_total)
                 except (TypeError, ValueError):
-                    f_total = 0.0
-                payment["total"] = total
-                payment["f_total"] = f_total
+                    payment_f_total = 0.0
+                payment["total"] = payment_total
+                payment["f_total"] = payment_f_total
                 payments.append(payment)
         else:
             payments = []

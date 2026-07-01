@@ -10,9 +10,11 @@ from collections import OrderedDict
 class MunicipalRetentionXlsx(models.AbstractModel):
     _name = "municipal.retention.xlsx"
 
-    def xlsx_file(self, tabla, nombre, retention_id):
-        # --- 1. DATOS INICIALES Y WORKBOOK ---
-        company = self.env.company
+    def xlsx_file(self, tabla, nombre, retention_id, company_id=None):
+        if company_id:
+            company = self.env['res.company'].browse(company_id)
+        else:
+            company = self.env.company
         retention = self.env["account.retention"].browse(retention_id)
         currency_symbol = self.env.ref("base.VEF").symbol
         
@@ -44,8 +46,8 @@ class MunicipalRetentionXlsx(models.AbstractModel):
             logo_data = BytesIO(base64.b64decode(tax_auth.tax_authorities_logo))
             worksheet.insert_image("A2", "logo.png", {"image_data": logo_data})
 
-        text1 = "Comprobante emitido en cumplimiento de la Providencia Administrativa N° 001-2024 sobre la Designación de Sujetos Pasivos Especiales y Agentes de Retención del Impuesto sobre Actividades Económicas,"
-        text2 = "Industria, Comercio, Servicios o de Índole Similar en el Municipio Libertador del Distrito Capital, publicada en la Gaceta Municipal N° 5030 del 08/02/2024."
+        text1 = company.text_header_1_municipal_retention or ""
+        text2 = company.text_header_2_municipal_retention or ""
         tax_name = (tax_auth.tax_authorities_name or "").upper()
         worksheet.write("B2", text1, fmt_bold)
         worksheet.write("C3", text2, fmt_bold)
