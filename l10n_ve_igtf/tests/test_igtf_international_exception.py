@@ -20,6 +20,9 @@ class TestIgtfInternationalException(TransactionCase):
         company = cls.env.company
         if not company.account_fiscal_country_id:
             company.account_fiscal_country_id = cls.env.ref("base.ve").id
+        if not company.foreign_currency_id:
+            company.currency_id = cls.env.ref("base.VEF").id
+            company.foreign_currency_id = cls.env.ref("base.USD").id
 
         # ── Cuenta de Banco requerida por el diario de pagos ─────────────────
         account_bank_usd = cls.env["account.account"].create({

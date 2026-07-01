@@ -1,6 +1,4 @@
-from odoo import api, fields, models,  Command, _
-from odoo.tools.sql import column_exists, create_column
-from odoo.tools import  float_compare, formatLang
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 import logging
