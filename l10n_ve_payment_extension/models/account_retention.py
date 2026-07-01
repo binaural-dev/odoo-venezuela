@@ -224,56 +224,30 @@ class AccountRetention(models.Model):
             retention.foreign_total_retention_amount = 0
 
             for line in retention.retention_line_ids:
-                if line.move_id.move_type in ("in_refund", "out_refund"):
-                    retention.total_invoice_amount -= float_round(
-                        line.invoice_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_iva_amount -= float_round(
-                        line.iva_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_retention_amount -= float_round(
-                        line.retention_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_invoice_amount -= float_round(
-                        line.foreign_invoice_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_iva_amount -= float_round(
-                        line.foreign_iva_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_retention_amount -= float_round(
-                        line.foreign_retention_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                else:
-                    retention.total_invoice_amount += float_round(
-                        line.invoice_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_iva_amount += float_round(
-                        line.iva_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_retention_amount += float_round(
-                        line.retention_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_invoice_amount += float_round(
-                        line.foreign_invoice_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_iva_amount += float_round(
-                        line.foreign_iva_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_retention_amount += float_round(
-                        line.foreign_retention_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
+                retention.total_invoice_amount += float_round(
+                    line.invoice_amount,
+                    precision_digits=retention.company_currency_id.decimal_places,
+                )
+                retention.total_iva_amount += float_round(
+                    line.iva_amount,
+                    precision_digits=retention.company_currency_id.decimal_places,
+                )
+                retention.total_retention_amount += float_round(
+                    line.retention_amount,
+                    precision_digits=retention.company_currency_id.decimal_places,
+                )
+                retention.foreign_total_invoice_amount += float_round(
+                    line.foreign_invoice_amount,
+                    precision_digits=retention.foreign_currency_id.decimal_places,
+                )
+                retention.foreign_total_iva_amount += float_round(
+                    line.foreign_iva_amount,
+                    precision_digits=retention.foreign_currency_id.decimal_places,
+                )
+                retention.foreign_total_retention_amount += float_round(
+                    line.foreign_retention_amount,
+                    precision_digits=retention.foreign_currency_id.decimal_places,
+                )
 
     @api.onchange("partner_id")
     def onchange_partner_id(self):
@@ -300,7 +274,7 @@ class AccountRetention(models.Model):
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
             ("move_type", "in", ("in_refund", "in_invoice")),
-            ("amount_residual", ">", 0),
+            ("amount_residual", "!=", 0),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain
@@ -340,7 +314,7 @@ class AccountRetention(models.Model):
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
             ("move_type", "in", ("out_refund", "out_invoice")),
-            ("amount_residual", ">", 0),
+            ("amount_residual", "!=", 0),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain
@@ -1034,23 +1008,23 @@ class AccountRetention(models.Model):
                 "move_id": invoice_id.id,
                 "payment_id": payment.id if payment else None,
                 "aliquot": tax.amount,
-                "iva_amount": tax_group["tax_group_amount"],
-                "invoice_total": invoice_id.tax_totals["amount_total"],
+                "iva_amount": abs(tax_group["tax_group_amount"]),
+                "invoice_total": abs(invoice_id.tax_totals["amount_total"]),
                 "related_percentage_tax_base": withholding_amount,
-                "invoice_amount": tax_group["tax_group_base_amount"],
+                "invoice_amount": abs(tax_group["tax_group_base_amount"]),
                 "foreign_currency_rate": invoice_id.foreign_rate,
-                "foreign_invoice_amount": foreign_tax_group["tax_group_base_amount"],
-                "foreign_iva_amount": foreign_tax_group["tax_group_amount"],
-                "foreign_invoice_total": invoice_id.tax_totals["foreign_amount_total"],
+                "foreign_invoice_amount": abs(foreign_tax_group["tax_group_base_amount"]),
+                "foreign_iva_amount": abs(foreign_tax_group["tax_group_amount"]),
+                "foreign_invoice_total": abs(invoice_id.tax_totals["foreign_amount_total"]),
             }
             if invoice_id.move_type == "out_invoice":
                 line_data["retention_amount"] = 0.0
                 line_data["foreign_retention_amount"] = 0.0
             else:
-                line_data["retention_amount"] = retention_amount
-                line_data["foreign_retention_amount"] = line_data[
+                line_data["retention_amount"] = abs(retention_amount)
+                line_data["foreign_retention_amount"] = abs(line_data[
                     "foreign_iva_amount"
-                ] * (withholding_amount / 100)
+                ] * (withholding_amount / 100))
             lines_data.append(line_data)
         return lines_data
 
