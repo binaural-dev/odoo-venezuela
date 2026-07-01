@@ -67,7 +67,7 @@ class AccountJournal(models.Model):
 
                 raise UserError(
                     _(
-                        f"You do not have permissions to create/update a journal with this type."
+                        "You do not have permissions to create/update a journal with this type."
                     )
                 )
 

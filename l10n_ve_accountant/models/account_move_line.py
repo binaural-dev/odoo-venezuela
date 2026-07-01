@@ -1,5 +1,6 @@
+from contextlib import contextmanager
 from odoo import api, fields, models, _
-from odoo.tools import float_compare
+from odoo.tools import float_compare ,float_round, float_is_zero
 from odoo.exceptions import UserError, ValidationError
 import logging
 
@@ -77,13 +78,13 @@ class AccountMoveLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
     def _compute_price_unit_ves(self):
         for line in self:
-            if line.currency_id and line.currency_id.name == "VEF":
+            if line.currency_id and line.currency_id == line.company_id.currency_id:
                 line.price_unit_ves = line.price_unit
             else:
                 line.price_unit_ves = line.price_unit / line.currency_id.rate
 
     def _compute_ves_currency_id(self):
-        ves_currency = self.env["res.currency"].search([("name", "=", "VES")], limit=1)
+        ves_currency = self.env.ref("base.VES", raise_if_not_found=False) or self.env["res.currency"].search([("name", "=", "VES")], limit=1)
         for line in self:
             if line.currency_id and ves_currency and line.currency_id == ves_currency:
                 line.ves_currency_id = ves_currency
@@ -135,13 +136,12 @@ class AccountMoveLine(models.Model):
             elif line.currency_id.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
             else:
-                price_in_company = line.currency_id._convert(
+                line.foreign_price = line.currency_id._convert(
                     line.price_unit,
-                    company_currency,
+                    foreign_currency,
                     line.company_id,
                     line.move_id.invoice_date or fields.Date.today(),
                 )
-                line.foreign_price = price_in_company * line.foreign_inverse_rate
 
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
@@ -165,6 +165,85 @@ class AccountMoveLine(models.Model):
             else:
                 line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
 
+    # ── Helpers for foreign computation ──────────────────────────────
+
+    def _set_foreign(self, value):
+        """Set foreign_debit/credit from a signed value."""
+        self.foreign_debit = abs(value) if value > 0 else 0.0
+        self.foreign_credit = abs(value) if value < 0 else 0.0
+
+    def _get_non_invoice_foreign_value(self):
+        """Foreign value (signed) for non-invoice entries."""
+        foreign_lines = self.move_id.line_ids.filtered(
+            lambda l: l.currency_id == l.company_id.foreign_currency_id
+        )
+        currency_lines = self.move_id.line_ids.filtered(
+            lambda l: l.currency_id == l.company_id.currency_id
+        )
+        balance = sum(foreign_lines.mapped("amount_currency"))
+        if balance and len(currency_lines) == 1:
+            return -balance
+
+        # Third currency (neither base nor alternate)
+        cur = self.currency_id
+        if cur and cur != self.company_id.foreign_currency_id and cur != self.company_id.currency_id:
+            return self.company_id.currency_id._convert(
+                self.debit - self.credit,
+
+                self.company_id.foreign_currency_id,
+                self.company_id,
+                self.date or fields.Date.context_today(self),
+            )
+
+        # Standard rate
+        return (self.debit - self.credit) * self.foreign_inverse_rate
+
+    def _get_foreign_value(self):
+        """Return the foreign value (signed) for this line, or None."""
+        self.ensure_one()
+
+        # 1 — PT / Tax: use foreign_balance directly
+        if self.display_type in ("payment_term", "tax"):
+            return self.foreign_balance
+
+        # 2 — Section / Note: zero
+        if self.display_type in ("line_section", "line_note"):
+            return 0.0
+
+        # 3 — Manual debit adjustment
+        if self.foreign_debit_adjustment:
+            return abs(self.foreign_debit_adjustment)
+
+        # 4 — Manual credit adjustment
+        if self.foreign_credit_adjustment:
+            return -abs(self.foreign_credit_adjustment)
+
+        # 5 — Line already in alternate currency
+        if self.currency_id == self.company_id.foreign_currency_id and self.amount_currency:
+            return self.amount_currency
+
+
+        # 7 — Non-invoice entry (journal entry, payment, etc.)
+        if not self.move_id.is_invoice(include_receipts=True):
+            return self._get_non_invoice_foreign_value()
+
+        # 8 — Product / COGS: from foreign_subtotal
+        # NOTE: foreign_subtotal uses native sign (positive = income)
+        # while _set_foreign uses accounting sign (positive = debit).
+        # Negate to align both conventions.
+        if self.display_type in ("product", "cogs"):
+            sign = self.move_id.direction_sign * -1
+            return -(self.foreign_subtotal * sign)
+
+        return None
+
+    def _skip_foreign_compute(self):
+        """Return True if this line should skip foreign computation."""
+        return (
+            self.move_id.journal_id == self.company_id.currency_exchange_journal_id
+            or self.not_foreign_recalculate
+        )
+
     @api.depends(
         "debit",
         "credit",
@@ -178,157 +257,11 @@ class AccountMoveLine(models.Model):
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
-            if line.move_id.journal_id == line.company_id.currency_exchange_journal_id:
-                line.foreign_debit = 0.0
-                line.foreign_credit = 0.0
+            if line._skip_foreign_compute():
                 continue
-            if line.not_foreign_recalculate:
-                continue
-
-            if line.display_type in ("payment_term", "tax"):
-                # 1 Case: Payment Term / Tax
-                # foreign_balance is set by _sync_tax_lines / _inverse_foreign_balance.
-                # payment_term will be overwritten by the residue block below.
-                line.foreign_debit = (
-                    abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
-                )
-                line.foreign_credit = (
-                    abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
-                )
-                continue
-
-            if line.display_type in ("line_section", "line_note"):
-                # 2 Case: Section / Note — no foreign amount
-                line.foreign_debit = line.foreign_credit = 0.0
-                continue
-
-            if line.foreign_debit_adjustment:
-                # 3 Case: Foreign Debit Adjustment (manual override)
-                line.foreign_debit = abs(line.foreign_debit_adjustment)
-                continue
-
-            if line.foreign_credit_adjustment:
-                # 4 Case: Foreign Credit Adjustment (manual override)
-                line.foreign_credit = abs(line.foreign_credit_adjustment)
-                continue
-
-            if (
-                line.currency_id == line.company_id.foreign_currency_id
-                and line.amount_currency
-            ):
-                # 5 Case: Line already in foreign currency — use amount_currency directly
-                line.foreign_debit = (
-                    abs(line.amount_currency) if line.amount_currency > 0 else 0.0
-                )
-                line.foreign_credit = (
-                    abs(line.amount_currency) if line.amount_currency < 0 else 0.0
-                )
-                continue
-
-            if (
-                line.move_id.origin_payment_id
-                and "retention_foreign_amount" in self.env["account.payment"]._fields
-                and line.move_id.origin_payment_id.is_retention
-            ):
-                # 6 Case: Retention — use the retention's own foreign amount
-                if not line.currency_id.is_zero(line.debit):
-                    line.foreign_debit = (
-                        line.move_id.origin_payment_id.retention_foreign_amount
-                    )
-                    continue
-                if not line.currency_id.is_zero(line.credit):
-                    line.foreign_credit = (
-                        line.move_id.origin_payment_id.retention_foreign_amount
-                    )
-                    continue
-
-            if not line.move_id.is_invoice(include_receipts=True):
-                # 7 Case: Not Invoice (journal entry, payment, etc.)
-                foreign_lines = line.move_id.line_ids.filtered(
-                    lambda l: l.currency_id == l.company_id.foreign_currency_id
-                )
-                currency_lines = line.move_id.line_ids.filtered(
-                    lambda l: l.currency_id == l.company_id.currency_id
-                )
-                balance = sum((foreign_lines).mapped("amount_currency"))
-                if balance and len(currency_lines) == 1:
-                    line.foreign_debit = abs(balance) if balance < 0 else 0.0
-                    line.foreign_credit = abs(balance) if balance > 0 else 0.0
-                    continue
-                if line.currency_id and line.currency_id != line.company_id.foreign_currency_id and line.currency_id != line.company_id.currency_id:
-                    line.foreign_debit = line.company_id.currency_id._convert(
-                        line.debit,
-                        line.company_id.foreign_currency_id,
-                        line.company_id,
-                        line.date or fields.Date.context_today(line)
-                    )
-                    line.foreign_credit = line.company_id.currency_id._convert(
-                        line.credit,
-                        line.company_id.foreign_currency_id,
-                        line.company_id,
-                        line.date or fields.Date.context_today(line)
-                    )
-                else:
-                    line.foreign_debit = line.debit * line.foreign_inverse_rate
-                    line.foreign_credit = line.credit * line.foreign_inverse_rate
-                continue
-
-            if line.display_type in ("product", "cogs"):
-                # 8 Case: Product / COGS — use foreign_subtotal
-                sign = line.move_id.direction_sign * -1
-                amount = line.foreign_subtotal * sign
-                line.foreign_debit = abs(amount) if amount < 0 else 0.0
-                line.foreign_credit = abs(amount) if amount > 0 else 0.0
-                continue
-
-        # ── Ajuste de residuo: payment_term en facturas ───────────────────────
-        # El loop calcula payment_term con foreign_balance (conversión individual),
-        # lo que introduce diferencia de centavo al sumar múltiples líneas con tasa.
-        # Leemos move.line_ids completo (no solo self) porque Odoo puede disparar
-        # este compute solo para la payment_term cuando las otras ya están en DB.
-        for move in self.mapped("move_id"):
-            if not move.is_invoice(include_receipts=True):
-                continue
-            pt_lines = self.filtered(
-                lambda l: l.move_id == move
-                and l.display_type == "payment_term"
-                and not l.not_foreign_recalculate
-            )
-            if not pt_lines:
-                continue
-            all_other = move.line_ids.filtered(
-                lambda l: l.display_type != "payment_term"
-            )
-            total_debit = sum(all_other.mapped("foreign_debit"))
-            total_credit = sum(all_other.mapped("foreign_credit"))
-            foreign_currency = move.company_id.foreign_currency_id
-            pt_sorted = pt_lines.sorted("id")
-            n = len(pt_sorted)
-            total_balance = sum(abs(l.balance) for l in pt_sorted)
-
-            for i, pt_line in enumerate(pt_sorted):
-                is_credit_side = pt_line.credit > 0
-                foreign_total = total_debit if is_credit_side else total_credit
-
-                if n == 1:
-                    my_foreign = foreign_total
-                elif i < n - 1:
-                    ratio = abs(pt_line.balance) / total_balance if total_balance else 0.0
-                    my_foreign = foreign_currency.round(ratio * foreign_total)
-                else:
-                    assigned = sum(
-                        foreign_currency.round(abs(l.balance) / total_balance * foreign_total)
-                        if total_balance else 0.0
-                        for l in list(pt_sorted)[:-1]
-                    )
-                    my_foreign = foreign_total - assigned
-
-                if is_credit_side:
-                    pt_line.foreign_credit = my_foreign
-                    pt_line.foreign_debit = 0.0
-                else:
-                    pt_line.foreign_debit = my_foreign
-                    pt_line.foreign_credit = 0.0
+            value = line._get_foreign_value()
+            if value is not None:
+                line._set_foreign(value)
 
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
@@ -344,15 +277,6 @@ class AccountMoveLine(models.Model):
                 abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
             )
 
-    @api.depends("foreign_rate", "balance")
-    def _compute_amount_currency(self):
-        res = super()._compute_amount_currency()
-        for line in self:
-            if line.amount_currency is False:
-                line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
-            if line.currency_id == line.company_id.currency_id:
-                line.amount_currency = line.balance
-        return res
 
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
@@ -521,5 +445,133 @@ class AccountMoveLine(models.Model):
     def _onchange_price_unit(self):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
+
+    # ── Real Portion ──
+
+    @contextmanager
+    def _sync_invoice(self, container):
+        if container['records'].env.context.get('skip_invoice_line_sync'):
+            yield
+            return
+
+        with super()._sync_invoice(container):
+            yield
+
+        self._apply_product_real_portion(container['records'])
+
+    @api.onchange('amount_currency', 'currency_id')
+    def _inverse_amount_currency(self):
+        """
+        Updates the 'balance' (company currency amount) whenever the 'amount_currency' 
+        or 'currency_id' changes, ensuring a symmetric rounding.
+
+        This method addresses the common floating-point discrepancy where a balance 
+        converted to foreign currency and then back to company currency results in 
+        a small difference (e.g., 0.01). 
+
+        The logic performs a "Symmetry Test":
+        1. It calculates the initial balance using the current exchange rate.
+        2. It simulates a back-conversion to the foreign currency.
+        3. If the back-conversion doesn't match the original 'amount_currency' due to 
+        rounding noise, it applies a micro-adjustment to the 'balance' in the 
+        company currency (VES) to force a perfect match.
+
+        :return: None
+        """
+        for line in self:
+            if line.currency_id == line.company_id.currency_id and line.balance != line.amount_currency:
+                line.balance = line.amount_currency
+                
+            elif (
+                line.currency_id != line.company_id.currency_id
+                and not line.move_id.is_invoice(True)
+                and not self.env.is_protected(self._fields['balance'], line)
+            ):
+                rate = line.currency_rate
+                if not rate:
+                    continue
+                    
+                raw_balance = line.amount_currency / rate
+                
+                rounded_balance = line.company_id.currency_id.round(raw_balance)
+                
+                back_to_foreign = rounded_balance * rate
+                diff_foreign = line.amount_currency - back_to_foreign
+                
+                if not float_is_zero(diff_foreign, precision_rounding=line.currency_id.rounding):
+                    adjustment = float_round(diff_foreign / rate, precision_rounding=line.company_id.currency_id.rounding)
+                    line.balance = rounded_balance + adjustment
+                else:
+                    line.balance = rounded_balance
+
+    @api.model
+    def _apply_product_real_portion(self, lines):
+        for move in lines.move_id:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            if move.currency_id == move.company_currency_id:
+                continue
+            if move.state != 'draft':
+                continue
+            if move.env.cr.cache.get(('_real_portion_distributed', move.id)):
+                continue
+
+            cc = move.company_currency_id
+            product_lines = lines.filtered(
+                lambda l: l.move_id == move
+                and l.display_type == 'product'
+                and l.currency_id != l.company_currency_id
+            )
+            if not product_lines:
+                continue
+
+            rate = product_lines[0].currency_rate
+            if not rate:
+                continue
+
+            total_currency = sum(product_lines.mapped('amount_currency'))
+            expected = cc.round(total_currency / rate)
+            actual = sum(product_lines.mapped('balance'))
+            diff = cc.round(expected - actual)
+
+            if cc.is_zero(diff):
+                continue
+
+            self._adjust_product_distribution(
+                product_lines, diff, cc, move,
+            )
+
+    @api.model
+    def _adjust_product_distribution(
+        self, product_lines, diff, cc, move,
+    ):
+        bal_map = {line.id: line.balance for line in product_lines}
+        total_abs = sum(abs(b) for b in bal_map.values())
+        if cc.is_zero(total_abs):
+            return
+
+        sign = 1 if diff > 0 else -1
+        abs_diff = abs(diff)
+        sorted_ids = sorted(product_lines.ids, key=lambda lid: -abs(bal_map[lid]))
+        remaining_units = round(abs_diff / cc.rounding)
+        n = len(sorted_ids)
+
+        for i, line_id in enumerate(sorted_ids):
+            if remaining_units <= 0:
+                break
+            cur_bal = bal_map[line_id]
+            if i < n - 1:
+                ratio = abs(cur_bal) / total_abs
+                share = cc.round(ratio * abs_diff)
+                units = round(share / cc.rounding)
+                if units > remaining_units:
+                    units = remaining_units
+            else:
+                units = remaining_units
+            new_balance = cc.round(cur_bal + sign * units * cc.rounding)
+            product_lines.browse(line_id).balance = new_balance
+            remaining_units -= units
+
+        move.real_portion_count += 1
 
     
