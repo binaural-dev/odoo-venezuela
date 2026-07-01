@@ -196,21 +196,21 @@ class AccountRetentionLine(models.Model):
                 record.invoice_type = invoice_id.move_type
                 record.move_id = invoice_id.id
                 record.aliquot = tax.amount
-                record.iva_amount = tax_group["tax_group_amount"]
-                record.invoice_total = invoice_id.tax_totals["amount_total"]
+                record.iva_amount = abs(tax_group["tax_group_amount"])
+                record.invoice_total = abs(invoice_id.tax_totals["amount_total"])
                 record.related_percentage_tax_base = withholding_amount
-                record.invoice_amount = tax_group["tax_group_base_amount"]
+                record.invoice_amount = abs(tax_group["tax_group_base_amount"])
                 record.foreign_currency_rate = invoice_id.foreign_rate
-                record.foreign_invoice_amount = foreign_tax_group["tax_group_base_amount"]
-                record.foreign_iva_amount = foreign_tax_group["tax_group_amount"]
-                record.foreign_invoice_total = invoice_id.tax_totals["foreign_amount_total"]
+                record.foreign_invoice_amount = abs(foreign_tax_group["tax_group_base_amount"])
+                record.foreign_iva_amount = abs(foreign_tax_group["tax_group_amount"])
+                record.foreign_invoice_total = abs(invoice_id.tax_totals["foreign_amount_total"])
 
                 if invoice_id.move_type == "out_invoice":
                     record.retention_amount = 0.0
                     record.foreign_retention_amount = 0.0
                 else:
-                    record.retention_amount = retention_amount
-                    record.foreign_retention_amount = record.foreign_iva_amount * (withholding_amount / 100)
+                    record.retention_amount = abs(retention_amount)
+                    record.foreign_retention_amount = abs(record.foreign_iva_amount * (withholding_amount / 100))
                     
                 break
 
@@ -271,8 +271,8 @@ class AccountRetentionLine(models.Model):
                 if record.move_id.partner_id.type_person_id.id == line.type_person_id.id:
                     # compare the type_person_id of the partner with the type_person_id of the
                     # payment concept and set the related fields.
-                    record.invoice_total = record.move_id.tax_totals["amount_total"]
-                    record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
+                    record.invoice_total = abs(record.move_id.tax_totals["amount_total"])
+                    record.foreign_invoice_total = abs(record.move_id.tax_totals["foreign_amount_total"])
                     record.related_pay_from = line.pay_from
                     record.related_percentage_tax_base = line.percentage_tax_base
                     record.related_percentage_fees = line.tariff_id.percentage
@@ -283,8 +283,8 @@ class AccountRetentionLine(models.Model):
                         # We don't want this fields to be computed when the retention is
                         # created from a customer invoice since they are filled by the user.
                         if (islr_retention_lines <= 1) and (municipal_retention_lines <= 1):
-                            record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
-                            record.foreign_invoice_amount = record.move_id.tax_totals["foreign_amount_untaxed"]
+                            record.invoice_amount = abs(record.move_id.tax_totals["amount_untaxed"])
+                            record.foreign_invoice_amount = abs(record.move_id.tax_totals["foreign_amount_untaxed"])
                         else:
                             record.invoice_amount = record.invoice_amount or 0
                             record.foreign_invoice_amount = record.foreign_invoice_amount or 0
@@ -370,11 +370,11 @@ class AccountRetentionLine(models.Model):
             if not record.retention_id or record.retention_id.type == "in_invoice":
                 # We don't want this fields to be computed when the retention is
                 # created from a customer invoice since they are filled by the user.
-                record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
-                record.foreign_invoice_amount = record.move_id.tax_totals["foreign_amount_untaxed"]
+                record.invoice_amount = abs(record.move_id.tax_totals["amount_untaxed"])
+                record.foreign_invoice_amount = abs(record.move_id.tax_totals["foreign_amount_untaxed"])
 
-            record.invoice_total = record.move_id.tax_totals["amount_total"]
-            record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
+            record.invoice_total = abs(record.move_id.tax_totals["amount_total"])
+            record.foreign_invoice_total = abs(record.move_id.tax_totals["foreign_amount_total"])
             record.foreign_currency_rate = record.move_id.foreign_rate
 
             record.aliquot = record.economic_activity_id.aliquot
