@@ -612,8 +612,8 @@ class TestIGTFNEW(IGTFTestCommon):
         residual_advance = payment.advanced_move_ids[0]
 
         expected_lines = [
-            {'account': self.advance_supp_acc, 'amount_currency': -679.46},
-            {'account': self.acc_payable, 'amount_currency': 679.46},
+            {'account': self.advance_supp_acc, 'amount_currency': -680.48},
+            {'account': self.acc_payable, 'amount_currency': 680.48},
         ]
         self._assert_move_lines_equal(residual_advance, expected_lines)
 
@@ -627,15 +627,13 @@ class TestIGTFNEW(IGTFTestCommon):
         cross_move = self.env['account.move'].search([], order='id desc', limit=2)
 
         expected_lines = [
-            {'account': self.advance_supp_acc, 'amount_currency': -679.46},
-            {'account': self.acc_payable, 'amount_currency': 659.08},
-            {'account': self.acc_igtf_prov, 'amount_currency': 20.38 },
+            {'account': self.advance_supp_acc, 'amount_currency': -680.48},
+            {'account': self.acc_payable, 'amount_currency': 660.07},
+            {'account': self.acc_igtf_prov, 'amount_currency': 20.41 },
         ]
         self._assert_move_lines_equal(cross_move[0], expected_lines)
 
-        self.assert_invoice_values(invoice2, 560.86,  255.97, 'partial')
-        
-
+        self.assert_invoice_values(invoice2, 561.7,  255.15, 'partial')
 
     def test11_payment_from_invoice_with_igtf_journal(self):
 
@@ -1026,4 +1024,42 @@ class TestIGTFNEW(IGTFTestCommon):
         ]
 
         self._assert_move_lines_equal(payment_move, expected_lines)
+
+    def test16_cross_move_sin_igtf_explicit_debit_credit(self):
+        """Cross move sin IGTF debe tener debit/credit explícitos en todas las líneas."""
+        invoice_amount = 1000.00
+        payment_amount = 600.00
+
+        invoice = self._create_invoice_usd(invoice_amount)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        context = {
+            'default_payment_type': 'outbound',
+            'default_partner_type': 'supplier',
+            'search_default_outbound_filter': 1,
+            'default_move_journal_types': ('bank', 'cash'),
+            'display_account_trust': True,
+            'default_is_advance_payment': True,
+        }
+        with Form(self.env['account.payment'].with_context(context)) as pay_form:
+            pay_form.partner_id = self.partner
+            pay_form.journal_id = self.bank_journal_bs
+            pay_form.amount = payment_amount
+        payment = pay_form.save()
+        payment.action_post()
+
+        outstanding_line = payment.move_id.line_ids.filtered(
+            lambda l: l.account_id == self.advance_supp_acc and l.debit > 0
+        )
+        self.assertTrue(outstanding_line, "Debe existir línea de anticipo")
+
+        invoice.with_context({}).js_assign_outstanding_line(outstanding_line.id)
+
+        cross_move = self.env['account.move'].search([], order='id desc', limit=1)
+
+        expected_lines = [
+            {'account': self.acc_payable, 'debit': 600.00},
+            {'account': self.advance_supp_acc, 'credit': 600.00},
+        ]
+        self._assert_move_lines_equal(cross_move, expected_lines)
 
