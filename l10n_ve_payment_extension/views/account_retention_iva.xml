@@ -31,7 +31,9 @@
                             <field name="type_retention" invisible="1" force_save="1" />
                             <field name="type" force_save="1" select="2" />
                             <field name="company_id" invisible="1"/>
+                            <field name="iva_eligible_partner_ids" invisible="1" />
                             <field name="partner_id" on_change="onchange_partner_id(type,partner_id)"
+                                domain="[('id', 'in', iva_eligible_partner_ids)]"
                                 select="1"
                                 invisible="not type"
                                 readonly="state in ['emitted', 'cancel']" />
