@@ -175,6 +175,46 @@ class AccountRetention(models.Model):
     actual_invoice_ids = fields.Many2many("account.move", string="Actual Invoices", compute="_compute_actual_invoice_ids")  
     available_invoice_ids = fields.Many2many("account.move", string="Available Invoices")
 
+
+    iva_eligible_partner_ids = fields.Many2many(
+        "res.partner",
+        string="Eligible Partners for IVA",
+        compute="_compute_iva_eligible_partner_ids",
+    )
+
+    @api.depends("type_retention", "type", "company_id")
+    def _compute_iva_eligible_partner_ids(self):
+        for record in self:
+            if record.type_retention == 'iva' and record.type:
+                if record.type in ('in_invoice', 'in_refund'):
+                    move_types = ('in_invoice', 'in_refund')
+                elif record.type in ('out_invoice', 'out_refund'):
+                    move_types = ('out_invoice', 'out_refund')
+                else:
+                    record.iva_eligible_partner_ids = False
+                    continue
+
+                invoices = search_invoices_with_taxes(
+                    self.env['account.move'],
+                    [
+                        ('iva_voucher_number', '=', False),
+                        ('company_id', '=', record.company_id.id),
+                        ('state', '=', 'posted'),
+                        ('move_type', 'in', move_types),
+                        ('amount_residual', '!=', 0),
+                    ]
+                )
+                invoices = invoices.filtered(
+                    lambda i: not any(
+                        i.retention_iva_line_ids.filtered(
+                            lambda l: l.state in ('draft', 'emitted')
+                        )
+                    )
+                )
+                record.iva_eligible_partner_ids = invoices.mapped('partner_id')
+            else:
+                record.iva_eligible_partner_ids = False
+
     @api.depends("retention_line_ids", "retention_line_ids.move_id")
     def _compute_actual_invoice_ids(self):
         for retention in self:
