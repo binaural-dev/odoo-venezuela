@@ -12,7 +12,25 @@ patch(OrderSummary.prototype, {
       return _t("N/D");
     }
 
+    const rateDp = this.pos?.models?.["decimal.precision"]?.find?.(
+      (dp) => dp.name === "Tasa",
+    );
+    const ratePrecision = Number.isFinite(Number(rateDp?.digits))
+      ? Number(rateDp.digits)
+      : 6;
+    const configRate = Number(this.pos?.config?.foreign_rate || order?.config?.foreign_rate || 0);
+    if (Number.isFinite(configRate) && configRate > 0) {
+      return configRate.toFixed(ratePrecision);
+    }
+
     const conversionRate = order.get_conversion_rate?.();
+    const numericRate = Number(conversionRate);
+    const fallbackVisualRate = Number.isFinite(numericRate) && numericRate > 0
+      ? (numericRate < 1 ? 1 / numericRate : numericRate)
+      : conversionRate;
+    const visualRate = Number.isFinite(fallbackVisualRate)
+      ? Number((fallbackVisualRate + Number.EPSILON).toFixed(ratePrecision)).toFixed(ratePrecision)
+      : fallbackVisualRate;
     const isMissingRate = conversionRate === "N/D" || conversionRate === _t("N/D");
 
     if (isMissingRate && !order._missingConversionRateAlertShownInUI) {
@@ -25,6 +43,6 @@ patch(OrderSummary.prototype, {
       });
     }
 
-    return conversionRate;
+    return visualRate;
   },
 });
