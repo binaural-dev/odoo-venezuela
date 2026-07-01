@@ -23,7 +23,7 @@
         <field name="arch" type="xml">
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="attributes">
-                <attribute name="readonly">not can_edit_prices</attribute>
+                <attribute name="readonly">move_type != 'in_invoice' and not can_edit_prices</attribute>
             </xpath>
         </field>
     </record>
