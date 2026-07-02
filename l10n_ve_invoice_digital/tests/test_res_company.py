@@ -1,5 +1,5 @@
 from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from unittest.mock import patch, MagicMock
 
 import logging
@@ -79,3 +79,41 @@ class TestAccountMoveApiCalls(TransactionCase):
         with self.assertRaises(UserError):
                 self.company.generate_token_tfhka()
         _logger.info("Test passed: Invalid credentials for TFHKA, UserError raised as expected.")
+
+    @patch('requests.post')
+    def test_06_generate_token_tfhka_request_exception(self, mock_post):
+        import requests
+        mock_post.side_effect = requests.exceptions.RequestException("Connection error")
+        with self.assertRaises(ValidationError):
+            self.company.generate_token_tfhka()
+
+    @patch('requests.post')
+    def test_07_generate_token_tfhka_no_token_in_response(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "codigo": 200,
+            "mensaje": "OK",
+        }
+        mock_post.return_value = mock_response
+        with self.assertRaises(ValidationError):
+            self.company.generate_token_tfhka()
+
+    @patch('requests.post')
+    def test_08_generate_token_tfhka_http_error_no_message(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.json.return_value = {}
+        mock_post.return_value = mock_response
+        with self.assertRaises(ValidationError):
+            self.company.generate_token_tfhka()
+
+    def test_09_handle_tfhka_response_value_error_on_processing(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"codigo": 200, "mensaje": "OK"}
+        with patch.object(
+            type(self.company), '_process_tfhka_response_data', side_effect=ValueError("bad data")
+        ):
+            with self.assertRaises(ValidationError):
+                self.company._handle_tfhka_response(mock_response)
