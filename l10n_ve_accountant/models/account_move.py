@@ -393,8 +393,9 @@ class AccountMove(models.Model):
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
                 move.message_post(
-                    body=_("The rate has been updated from %(last_rate)s to %(rate)s ")
-                    % {"rate": move.foreign_rate, "last_rate": last_foreign_rate}
+                    body=_("The rate has been updated from {last_rate} to {rate} ").format(
+                        rate=move.foreign_rate, last_rate=last_foreign_rate
+                    )
                 )
 
             if move.move_type in ('out_refund', 'in_refund') and move.reversed_entry_id:
@@ -438,8 +439,9 @@ class AccountMove(models.Model):
                 and move.foreign_rate != move.last_foreign_rate
             ):
                 move.message_post(
-                    body=_("The rate has been updated from %(last_rate)s to %(rate)s ")
-                    % {"rate": move.foreign_rate, "last_rate": move.last_foreign_rate}
+                    body=_("The rate has been updated from {last_rate} to {rate} ").format(
+                        rate=move.foreign_rate, last_rate=move.last_foreign_rate
+                    )
                 )
             
 
@@ -1003,12 +1005,12 @@ class AccountMove(models.Model):
                 if total_pay > invoice.partner_id.credit_limit:
                     decimal_places = invoice.currency_id.decimal_places
                     raise ValidationError(
-                        _("No se ha confirmado la factura. Límite de crédito excedido. La cuenta por cobrar del cliente es de %(credit)s más %(amount_residual)s en factura da un total de %(total_pay)s superando el límite de ventas de %(credit_limit)s. Por favor cancele la factura o comuníquese con el administrador para aumentar el límite de crédito del cliente.") % {
-                            'credit': round(invoice.partner_id.credit, decimal_places),
-                            'amount_residual': round(invoice.amount_residual, decimal_places),
-                            'total_pay': round(total_pay, decimal_places),
-                            'credit_limit': round(invoice.partner_id.credit_limit, decimal_places),
-                        }
+                        _("No se ha confirmado la factura. Límite de crédito excedido. La cuenta por cobrar del cliente es de {credit} más {amount_residual} en factura da un total de {total_pay} superando el límite de ventas de {credit_limit}. Por favor cancele la factura o comuníquese con el administrador para aumentar el límite de crédito del cliente.").format(
+                            credit=round(invoice.partner_id.credit, decimal_places),
+                            amount_residual=round(invoice.amount_residual, decimal_places),
+                            total_pay=round(total_pay, decimal_places),
+                            credit_limit=round(invoice.partner_id.credit_limit, decimal_places),
+                        )
                     )
         
             
