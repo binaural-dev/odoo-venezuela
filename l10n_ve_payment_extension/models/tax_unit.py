@@ -5,7 +5,7 @@ from odoo.exceptions import UserError
 class TaxUnit(models.Model):
     _inherit = "tax.unit"
 
-    available_date = fields.Date(string="Publish Date", store=True, tracking=True, required=True)
+    available_date = fields.Date(string="Publish Date", store=True, tracking=True, required=True, default=fields.Date.today)
 
     @api.constrains('value', 'available_date')
     def _check_unique_tax_unit(self):
@@ -39,8 +39,9 @@ class TaxUnit(models.Model):
 
     def write(self, vals):
         for record in self:
-            if not record.status and any(field not in {'status'} for field in vals):
-                raise UserError(_("You cannot edit a tax unit that is not active."))
+            if not self.env.context.get('install_mode'):
+                if not record.status and any(field not in {'status'} for field in vals):
+                    raise UserError(_("You cannot edit a tax unit that is not active."))
 
         res = super(TaxUnit, self).write(vals)
 
