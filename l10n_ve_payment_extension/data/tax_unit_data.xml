@@ -5,6 +5,7 @@
             <field name="name">0,40</field>
             <field name="value">0.4</field>
             <field name="status">True</field>
+            <field name="available_date" eval="time.strftime('%Y-%m-%d')"/>
         </record>
     </data>
 </odoo>
