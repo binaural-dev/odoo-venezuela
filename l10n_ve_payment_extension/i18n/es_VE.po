@@ -1382,7 +1382,7 @@ msgstr "Factura de Proveedor"
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__in_refund
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention_line__invoice_type__in_refund
 msgid "In refund"
-msgstr "Nota de Débito de Proveedor"
+msgstr "Nota de Credito de Proveedor"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__economic_branch__status__inactive

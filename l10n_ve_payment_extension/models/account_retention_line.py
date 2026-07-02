@@ -42,22 +42,33 @@ class AccountRetentionLine(models.Model):
     retention_rate = fields.Float(store=True, digits="Tasa")
     move_id = fields.Many2one("account.move", "move", ondelete="cascade", store=True)
     is_retention_client = fields.Boolean(default=True)
- 
-    invoice_amount = fields.Float(
+    display_invoice_number = fields.Char(
+        string="Invoice Number", compute="_compute_display_invoice_number", store=True
+    )
+    invoice_amount = fields.Monetary(
+        currency_field="company_currency_id",
         string="Taxable income",
-        digits="Tasa",
         compute="_compute_amounts",
         store=True,
         readonly=False,
     )
-    invoice_total = fields.Float(string="Total invoiced", digits="Tasa", store=True)
-    iva_amount = fields.Float(string="IVA", digits=(16, 2))
-
-    retention_amount = fields.Float(
-        digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
+    invoice_total = fields.Monetary(
+        currency_field="company_currency_id",
+        string="Total invoiced",
+        store=True
     )
-    foreign_retention_amount = fields.Float(
-        digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
+    iva_amount = fields.Monetary(
+        currency_field="company_currency_id",
+        string="IVA", 
+    
+    )
+
+    retention_amount = fields.Monetary(
+        currency_field="company_currency_id",
+        compute="_compute_retention_amount", store=True, readonly=False
+    )
+    foreign_retention_amount = fields.Monetary(
+        currency_field="foreign_currency_id", compute="_compute_retention_amount", store=True, readonly=False
     )
 
     payment_concept_id = fields.Many2one(
@@ -120,12 +131,16 @@ class AccountRetentionLine(models.Model):
     )
 
     # foreign currency
-    foreign_invoice_amount = fields.Float(
+    foreign_invoice_amount = fields.Monetary(
+        currency_field="foreign_currency_id",
         string="Foreign taxable income", compute="_compute_amounts", store=True, readonly=False
     )
-    foreign_invoice_total = fields.Float(string="Foreign total invoiced")
-    foreign_iva_amount = fields.Float(string="Foreign IVA")
-    foreign_retention_amount = fields.Float()
+    foreign_invoice_total = fields.Monetary(
+        currency_field="foreign_currency_id",string="Foreign total invoiced")
+    foreign_iva_amount = fields.Monetary(
+        currency_field="foreign_currency_id",string="Foreign IVA")
+    foreign_retention_amount = fields.Monetary(
+        currency_field="foreign_currency_id",)
     foreign_currency_rate = fields.Float(string="Rate")
 
     @api.depends('move_id', 'retention_id.type_retention')
@@ -480,43 +495,75 @@ class AccountRetentionLine(models.Model):
             if is_accumulated and ut_value:
                 if not base_currency_is_vef:
                     base_vef = record.foreign_invoice_amount
-                    base_ut = round(base_vef / ut_value, 2)
-                    aplicable_ut = round(base_ut * (related_percentage_tax_base / 100.0), 2)
-                    retention_ut = round(aplicable_ut * (related_percentage_fees / 100.0), 2)
-                    subtract_ut = round(related_amount_subtract_fees / ut_value, 2) if ut_value else 0.0
+                    base_ut = record.company_currency_id.round(base_vef / ut_value)
+                    aplicable_ut = base_ut * (related_percentage_tax_base / 100.0)
+                    retention_ut = aplicable_ut * (related_percentage_fees / 100.0)
+                    subtract_ut = record.company_currency_id.round(related_amount_subtract_fees / ut_value) if ut_value else 0.0
                     final_retention_vef = (retention_ut - subtract_ut) * ut_value
 
                     record.foreign_retention_amount = abs(final_retention_vef)
-                    record.retention_amount = abs(final_retention_vef / foreign_rate)
+                    record.retention_amount = record.company_currency_id._convert(
+                        record.foreign_retention_amount,
+                        record.foreign_currency_id,
+                        record.company_id,
+                        record.move_id.date
+                    )
                 else:
                     base_vef = record.invoice_amount
-                    base_ut = round(base_vef / ut_value, 2)
-                    aplicable_ut = round(base_ut * (related_percentage_tax_base / 100.0), 2)
-                    retention_ut = round(aplicable_ut * (related_percentage_fees / 100.0), 2)
-                    subtract_ut = round(related_amount_subtract_fees / ut_value, 2) if ut_value else 0.0
+                    base_ut = record.company_currency_id.round(base_vef / ut_value)
+                    aplicable_ut =  base_ut * (related_percentage_tax_base / 100.0)
+                    retention_ut =  aplicable_ut * (related_percentage_fees / 100.0)
+                    subtract_ut =  record.company_currency_id.round(related_amount_subtract_fees / ut_value) if ut_value else 0.0
                     final_retention_vef = (retention_ut - subtract_ut) * ut_value
 
                     record.retention_amount = abs(final_retention_vef)
-                    record.foreign_retention_amount = abs(final_retention_vef / foreign_rate) if foreign_rate else abs(final_retention_vef)
+                    record.foreign_retention_amount = record.company_currency_id._convert(
+                        record.retention_amount,
+                        record.foreign_currency_id,
+                        record.company_id,
+                        record.move_id.date
+                    )
             else:
                 if not base_currency_is_vef:
-                    record.retention_amount = abs((
-                        record.invoice_amount
-                        * (related_percentage_tax_base / 100.0)
-                        * (related_percentage_fees / 100.0)
-                    ) - related_amount_subtract_fees / foreign_rate)
+                    retention_amount_vef = abs(
+                        (
+                            record.invoice_amount
+                            * (related_percentage_tax_base / 100.0)
+                            * (related_percentage_fees / 100.0)
+                        )
+                        - related_amount_subtract_fees
+                    )
+
+                    record.retention_amount = record.company_currency_id._convert(
+                        retention_amount_vef,
+                        record.foreign_currency_id,
+                        record.company_id,
+                        record.move_id.date
+                    )
+
                 else:
+
                     record.retention_amount = abs((
                         record.invoice_amount
                         * (related_percentage_tax_base / 100.0)
                         * (related_percentage_fees / 100.0)
                     ) - related_amount_subtract_fees)
 
-                record.foreign_retention_amount = abs((
-                    record.foreign_invoice_amount
-                    * (related_percentage_tax_base / 100.0)
-                    * (related_percentage_fees / 100.0)
-                ) - related_amount_subtract_fees)
+                foreign_retention_amount_vef = abs(
+                        (
+                            record.foreign_invoice_amount
+                            * (related_percentage_tax_base / 100.0)
+                            * (related_percentage_fees / 100.0)
+                        )
+                        - related_amount_subtract_fees
+                    )
+
+                record.foreign_retention_amount = record.company_currency_id._convert(
+                        foreign_retention_amount_vef,
+                        record.foreign_currency_id,
+                        record.company_id,
+                        record.move_id.date
+                    )
 
     @api.onchange("economic_activity_id", "move_id")
     def onchange_economic_activity_id(self):
