@@ -27,11 +27,11 @@ class MoveActionPostAlertWizard(models.TransientModel):
                     if previous_invoice and not previous_invoice.is_digitalized:
                         move_type = previous_invoice.move_type
                         if move_type == "out_invoice" and not previous_invoice.debit_origin_id:
-                            raise UserError(_("The invoice %s has not been digitized") % (previous_invoice.name))
+                            raise UserError(_("The invoice %s has not been digitized", previous_invoice.name))
                         if move_type == "out_invoice" and previous_invoice.debit_origin_id:
-                            raise UserError(_("The debit note %s has not been digitized") % (previous_invoice.name))
+                            raise UserError(_("The debit note %s has not been digitized", previous_invoice.name))
                         if move_type == "out_refund":
-                            raise UserError(_("The credit note %s has not been digitized") % (previous_invoice.name))
+                            raise UserError(_("The credit note %s has not been digitized", previous_invoice.name))
                         
                 if not record.company_id.digitalization_with_payment_tfhka:
                     record.generate_document_digital()

@@ -38,11 +38,11 @@ class ResCompany(models.Model):
         }
 
         try:
-            response = requests.post(url, json=payload)
+            response = requests.post(url, json=payload, timeout=30)
             self._handle_tfhka_response(response)
         except requests.exceptions.RequestException as e:
             _logger.error(f"Error connecting to the TFHKA API: {e}")
-            raise ValidationError(_("Error connecting to the TFHKA API: %s") % e)
+            raise ValidationError(_("Error connecting to the TFHKA API: %s", e))
 
     def _validate_tfhka_credentials(self):
         if not self.username_tfhka:
@@ -75,6 +75,6 @@ class ResCompany(models.Model):
     def _handle_tfhka_http_error(self, response, data):
         message = data.get("mensaje")
         if message:
-            raise ValidationError(_("Authentication error: %(message)s") % {'message': message})
+            raise ValidationError(_("Authentication error: %(message)s", message=message))
         else:
-            raise ValidationError(_("Error in the TFHKA API: %(status_code)s") % {'status_code': response.status_code})
+            raise ValidationError(_("Error in the TFHKA API: %(status_code)s", status_code=response.status_code))
