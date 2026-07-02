@@ -461,7 +461,7 @@ msgstr "Almacén Principal"
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid "Maximum quantity of products to be sold per stock picking."
-msgstr "Máxima cantidad de líneas de productos por guía de despacho."
+msgstr "Cantidad máxima de productos a vender por guía de despacho."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_error
