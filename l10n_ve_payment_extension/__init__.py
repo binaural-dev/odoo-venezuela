@@ -3,6 +3,8 @@ from . import models
 from . import wizard
 from . import report
 
+from odoo import fields
+
 old_module = "binaural_payment_extension"
 new_module = "l10n_ve_payment_extension"
     
@@ -74,6 +76,12 @@ def reassign_xml_tax_unit_data_ids(env):
     
 def reassign_xml_ir_rule_ids(env):
     execute_script_sql(env, "retention_")
+
+def post_init_hook(env):
+    """Fix seed tax.unit record so its available_date doesn't conflict with today."""
+    seed = env.ref('l10n_ve_accountant.tax_unit_data_l10n_ve_payment_extension', raise_if_not_found=False)
+    if seed and (not seed.available_date or seed.available_date == fields.Date.today()):
+        seed._write({'available_date': '2000-01-01'})
     
 def execute_script_sql(env, xml_id_prefix): 
     
