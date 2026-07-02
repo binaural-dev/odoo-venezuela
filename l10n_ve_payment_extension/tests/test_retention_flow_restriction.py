@@ -13,6 +13,7 @@ class TestRetentionFlowRestriction(TransactionCase):
         cls.company.currency_id = cls.env.ref('base.VEF')
         cls.company.foreign_currency_id = cls.env.ref("base.USD")
 
+        cls.env.company.currency_id = cls.env.ref('base.VEF')
         cls.env.company.foreign_currency_id = cls.env.ref('base.USD')
 
         cls.partner = cls.env["res.partner"].create({"name": "Test Partner Retention Flow Restriction"})
