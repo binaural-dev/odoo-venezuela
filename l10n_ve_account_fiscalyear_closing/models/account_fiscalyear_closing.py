@@ -269,6 +269,7 @@ class AccountFiscalyearClosing(models.Model):
         if not needs or (res.get('year') and res.get('date_start') and res.get('date_end')):
             return res
         company = self.env.company
+        prev = False
         if not res.get('year'):
             prev = self.search([
                 ('company_id', '=', company.id),
