@@ -4,7 +4,7 @@
         Módulo de Ventas Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
     "version": "17.0.1.1.23",

@@ -587,6 +587,36 @@ class SerialFiscalDriver(SerialDriver):
                 change_lines.append({"payment_method": method, "amount": abs(amount)})
         return payment_lines, change_lines
 
+    def get_closing_method(self, payment_lines=None, fallback_lines=None, default="01"):
+        """Determina el método de cierre usando el mayor monto absoluto.
+
+        Si no hay pagos positivos (caso típico en reembolsos), usa `fallback_lines`
+        para respetar el método fiscal configurado en la línea de pago.
+        """
+        candidates = []
+
+        def collect(lines):
+            for line in lines or []:
+                method_raw = line.get("payment_method")
+                if not method_raw:
+                    continue
+                amount = abs(line.get("amount", 0) or 0)
+                if amount > 0:
+                    candidates.append(
+                        {
+                            "payment_method": str(method_raw).strip().zfill(2),
+                            "amount": amount,
+                        }
+                    )
+
+        collect(payment_lines)
+        collect(fallback_lines)
+
+        if not candidates:
+            return default
+
+        return max(candidates, key=lambda item: item["amount"])["payment_method"]
+
     def prepare_invoice_data(self, invoice):
         """
         Prepara los datos de la factura.
@@ -651,10 +681,10 @@ class SerialFiscalDriver(SerialDriver):
             
             cmd.append("3")
             
-            closing_method = "01"
-            if payment_lines:
-                closing_payment = max(payment_lines, key=lambda x: x["amount"])
-                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
+            closing_method = self.get_closing_method(
+                payment_lines=payment_lines,
+                fallback_lines=change_lines,
+            )
  
             for item in payment_lines:
                 method_raw = item.get("payment_method")
@@ -662,8 +692,8 @@ class SerialFiscalDriver(SerialDriver):
                     return {"valid": False, "message": "Método de pago fiscal no configurado en una línea de pago."}
 
                 method_code = str(method_raw).strip().zfill(2)
-                # Enviar TODOS los montos positivos recibidos (incluido el método de cierre)
-                # para que la MF pueda calcular e imprimir CAMBIO cuando corresponda.
+                # El método de cierre se envía con comando 1XX, no con 2XX.
+                # Enviar en 2XX solo métodos distintos al de cierre.
                 if item["amount"] > 0:
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
@@ -958,10 +988,7 @@ class SerialFiscalDriver(SerialDriver):
             for item in new_payment_lines:
                 item["amount"] = abs(item["amount"])
 
-            closing_method = "01"
-            if new_payment_lines:
-                closing_payment = max(new_payment_lines, key=lambda x: x["amount"])
-                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
+            closing_method = self.get_closing_method(payment_lines=new_payment_lines)
 
             for item in new_payment_lines:
                 method_code = str(item["payment_method"]).strip().zfill(2)
@@ -1068,8 +1095,8 @@ class SerialFiscalDriver(SerialDriver):
                 number_invoice_formateado = number_invoice.zfill(8)
                 cmd_number_invoice_affected = f"iF*{number_invoice_formateado}"
             else:
-                _logger.error("Fecha de factura afectada no encontrada en la nota de crédito.")
-                return {"valid": False, "message": "No se encontró la fecha de la factura afectada."}
+                _logger.error("Numero de factura afectada no encontrada en la nota de crédito.")
+                return {"valid": False, "message": "No se encontró el numero de la factura afectada."}
                         
             fecha_afectada = invoice.get('invoice_affected', {}).get('date', '')
             
@@ -1114,6 +1141,11 @@ class SerialFiscalDriver(SerialDriver):
                 if remaining:
                     aditional_lines.append(f"i02{remaining}")
 
+            next_index = 1 + len(aditional_lines)
+            for info in invoice.get("info", []):
+                aditional_lines.append(f"i{next_index:02d}{info}")
+                next_index += 1
+
             invoice_lines = invoice.get('invoice_lines', [])
             product_lines = []
             for line in invoice_lines:
@@ -1127,20 +1159,24 @@ class SerialFiscalDriver(SerialDriver):
                 if formatted_line:
                     product_lines.append(formatted_line)          
 
-            payment_lines, _change_lines = self.group_payments(invoice.get("payment_lines", []))
+            payment_lines, change_lines = self.group_payments(invoice.get("payment_lines", []))
             payment_commands = []
             
-            closing_method = "01"
-            if payment_lines:
-                closing_payment = max(payment_lines, key=lambda x: x["amount"])
-                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
+            closing_method = self.get_closing_method(
+                payment_lines=payment_lines,
+                fallback_lines=change_lines,
+            )
 
-            for item in payment_lines:
+            # En NC, si no hay pagos positivos (caso común), usar change_lines
+            # para conservar métodos mixtos en comandos fiscales.
+            payment_lines_to_send = payment_lines or change_lines
+
+            for item in payment_lines_to_send:
                 _logger.info("ITEM : %s", item)
                 method_code = str(item["payment_method"]).strip().zfill(2)
                 if item["amount"] > 0 and method_code != closing_method:
-                    amount_i, amount_d = self.split_amount(item["amount"], dec=2)  
-                    amount_i_filled = amount_i.zfill(10)  
+                    amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
+                    amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     payment_command = f"2{method_code}{amount_i_filled}{amount_d}"
                     payment_commands.append(payment_command)
 
