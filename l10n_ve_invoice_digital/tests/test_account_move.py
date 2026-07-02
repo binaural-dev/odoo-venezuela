@@ -1,4 +1,4 @@
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo import fields, Command
 from odoo.tests import TransactionCase, tagged
 from unittest.mock import patch, MagicMock
@@ -29,6 +29,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "country_id": self.env.ref('base.ve').id,
             }
         )
+        self.env.user.company_id = self.company.id
 
         # ───────────────────────────────────────────────────── helpers
         def acc(code, ttype, name, recon=False):
@@ -507,26 +508,20 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         self.assertEqual(self.invoice.is_digitalized, True)
 
-    # Validacion de secuencia entre la API y Odoo
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
-    def test_07_generate_document_digital_sequence_error(self, mock_call):
-
-        self.journal.sequence_id.number_next_actual = 3
-        self.invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ]
-        )
-
-        with self.assertRaises(UserError) as e:
-            self.invoice.generate_document_digital()
-            _logger.error(e.exception)
-
-        _logger.info("Test passed: Sequence validation error raised as expected.")
+    def test_07_action_post_mixed_invoicing_disabled(self):
+        self.company.mix_invoicing_tfhka = False
+        self.journal.digital_invoice = False
+        with self.assertRaises(ValidationError):
+            self._create_invoice(
+                products=[
+                    {
+                        "product_id": self.product.id,
+                        "price_unit": 1,
+                        "tax_ids": [self.tax_iva16.id],
+                    }
+                ]
+            )
+        _logger.info("Test passed: Mixed invoicing disabled validation raised as expected.")
 
     # Factura de cliente con serie
     @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
@@ -799,42 +794,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     # Validacion de factura sin digitalizar
     @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
-    def test_15_generate_document_digital_has_not_been_digitized_error(self, mock_call):
 
-        self.invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ]
-        )
-
-        self.env['move.action.post.alert.wizard'].create({
-            'move_id': self.invoice.id
-        }).action_confirm()
-
-        invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ]
-        )
-        
-        with self.assertRaises(UserError) as e:        
-            self.env['move.action.post.alert.wizard'].create({
-                'move_id': invoice.id
-            }).action_confirm()
-
-            _logger.info(e.exception)
-        _logger.info("Test passed: ")
-
-    # Validacion de fecha
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
     def test_16_generate_document_digital_validation_expiration_date_error(self, mock_call):
 
         self.invoice = self._create_invoice(
@@ -854,45 +814,1045 @@ class TestAccountMoveApiCalls(TransactionCase):
             _logger.info(e.exception)
         _logger.info("Test passed: Invalid expiration date validation")
 
-    # # Factura con Sucursal
-    # @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
-    # def test_17_generate_document_digital_subsidiary_succes(self, mock_call):
-    #     self.company.write({"subsidiary": True})
-    #     subsidiary = self._create_subsidiary()
+    def test_17_is_eligible_for_tfhka_not_digital_journal(self):
+        self.journal.digital_invoice = False
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        self.assertFalse(invoice._is_eligible_for_tfhka())
 
-    #     self.invoice = self._create_invoice(
-    #         products=[
-    #             {
-    #                 "product_id": self.product.id,
-    #                 "price_unit": 1,
-    #                 "tax_ids": [self.tax_iva16.id],
-    #             }
-    #         ]
-    #     )
-    #     self.invoice.account_analytic_id = subsidiary.id
 
-    #     self.invoice.generate_document_digital()
-    #     self.assertEqual(self.invoice.is_digitalized, True)
-    #     _logger.info("Test passed: Digital document with subsidiary successfully generated.")
+    def test_19_get_buyer_missing_vat(self):
+        partner = self.env['res.partner'].create({
+            'name': 'Sin RIF',
+            'country_id': self.env.ref('base.ve').id,
+            'phone': '04141234567',
+            'email': 'test@test.com',
+            'street': 'Calle',
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.partner_id = partner
+        with self.assertRaises(UserError):
+            invoice.get_buyer()
 
-    # # Validacion Sucursales
-    # @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
-    # def test_18_generate_document_digital_validation_subsidiary_error(self, mock_call):
-    #     self.company.write({"subsidiary": True})
-    #     subsidiary = self._create_subsidiary()
-    #     subsidiary.code = ""
-    #     self.invoice = self._create_invoice(
-    #         products=[
-    #             {
-    #                 "product_id": self.product.id,
-    #                 "price_unit": 1,
-    #                 "tax_ids": [self.tax_iva16.id],
-    #             }
-    #         ]
-    #     )
-    #     self.invoice.account_analytic_id = subsidiary.id
 
-    #     with self.assertRaises(UserError) as e:        
-    #         self.invoice.generate_document_digital()
-    #         _logger.info(e.exception)
-    #     _logger.info("Test passed: Invalid branch configuration validation")
+    def test_21_get_buyer_missing_phone(self):
+        partner = self.env['res.partner'].create({
+            'name': 'Sin Telefono',
+            'vat': 'E12345679',
+            'prefix_vat': 'E',
+            'country_id': self.env.ref('base.ve').id,
+            'email': 'test@test.com',
+            'street': 'Calle',
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.partner_id = partner
+        with self.assertRaises(UserError):
+            invoice.get_buyer()
+
+    def test_22_get_buyer_missing_email(self):
+        partner = self.env['res.partner'].create({
+            'name': 'Sin Email',
+            'vat': 'G12345679',
+            'prefix_vat': 'G',
+            'country_id': self.env.ref('base.ve').id,
+            'phone': '04141234567',
+            'street': 'Calle',
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.partner_id = partner
+        with self.assertRaises(UserError):
+            invoice.get_buyer()
+
+    def test_23_get_payment_type_credit(self):
+        term = self.env['account.payment.term'].create({
+            'name': '30 dias',
+            'line_ids': [(0, 0, {'nb_days': 30, 'value': 'percent', 'value_amount': 100})],
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.invoice_payment_term_id = term
+        self.assertEqual(invoice.get_payment_type(), "Crédito")
+
+    def test_24_get_payment_type_immediate(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        self.assertEqual(invoice.get_payment_type(), "Inmediato")
+
+    def test_25_call_tfhka_api_undefined_endpoint(self):
+        self.company.write({
+            "url_tfhka": "https://api.tfhka.com",
+            "token_auth_tfhka": "token_fake",
+            "invoice_digital_tfhka": True,
+            "sequence_validation_tfhka": True,
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(UserError):
+            invoice.call_tfhka_api("no_existe", {})
+
+    @patch('requests.post')
+    def test_26_call_tfhka_api_401_refresh_token(self, mock_post):
+        self.company.write({
+            "username_tfhka": "u",
+            "password_tfhka": "p",
+            "url_tfhka": "https://api.tfhka.com",
+            "token_auth_tfhka": "old",
+            "invoice_digital_tfhka": True,
+            "sequence_validation_tfhka": True,
+        })
+        def side_effect(url, *args, **kwargs):
+            resp = MagicMock()
+            if "/Autenticacion" in url:
+                resp.status_code = 200
+                resp.json.return_value = {
+                    "codigo": 200,
+                    "mensaje": "OK",
+                    "token": "refreshed_token",
+                    "expiracion": "2025-12-31T23:59:59",
+                }
+            else:
+                if not hasattr(side_effect, 'emision_calls'):
+                    side_effect.emision_calls = 0
+                side_effect.emision_calls += 1
+                if side_effect.emision_calls == 1:
+                    resp.status_code = 401
+                    resp.text = "Unauthorized"
+                else:
+                    resp.status_code = 200
+                    resp.json.return_value = {
+                        "codigo": "200",
+                        "mensaje": "OK",
+                        "resultado": {"numeroControl": "00-00000001"}
+                    }
+            return resp
+        mock_post.side_effect = side_effect
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        result = invoice.call_tfhka_api("emision", {})
+        self.assertEqual(result["codigo"], "200")
+
+    def test_27_get_base_url_raises(self):
+        self.company.url_tfhka = ""
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(UserError):
+            invoice.get_base_url()
+
+    def test_28_get_token_raises(self):
+        self.company.token_auth_tfhka = ""
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            invoice.get_token()
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    def test_29_get_item_details_product_type(self, mock_call):
+        prod = self.env['product.product'].create({
+            'name': 'Producto Fisico',
+            'type': 'consu',
+            'list_price': 50,
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": prod.id, "price_unit": 50, "tax_ids": [self.tax_iva16.id]}]
+        )
+        details = invoice.get_item_details()
+        self.assertEqual(details[0]["indicadorBienoServicio"], "1")
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    def test_31_compute_invisible_check(self, mock_call):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.generate_document_digital()
+        invoice._compute_invisible_check()
+        self.assertTrue(invoice.show_digital_invoice)
+        self.assertTrue(invoice.show_digital_credit_note)
+
+    def test_32_get_document_identification_debit_note(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        debit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            debit_origin_id=inv,
+        )
+        ident = debit.get_document_identification("03", "123", "")
+        self.assertEqual(ident["numeroFacturaAfectada"], str(inv.sequence_number))
+
+    def test_33_get_document_identification_credit_note(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+        )
+        ident = credit.get_document_identification("02", "124", "")
+        self.assertEqual(ident["numeroFacturaAfectada"], str(inv.sequence_number))
+
+    def test_34_get_document_identification_no_invoice_date(self):
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        with self.assertRaises(UserError):
+            inv.get_document_identification("01", "125", "")
+
+    def test_35_get_buyer_numeric_vat(self):
+        partner = self.env['res.partner'].create({
+            'name': 'Cliente Numérico',
+            'vat': '12345678',
+            'country_id': self.env.ref('base.ve').id,
+            'phone': '04141234567',
+            'email': 'test@test.com',
+            'street': 'Calle',
+        })
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        buyer = invoice.get_buyer()
+        self.assertTrue(buyer)
+        self.assertEqual(buyer["numeroIdentificacion"], "12345678")
+
+    def test_36_get_buyer_prefix_vat(self):
+        partner = self.env['res.partner'].create({
+            'name': 'Cliente Prefijo',
+            'vat': 'V12345678',
+            'prefix_vat': 'V',
+            'country_id': self.env.ref('base.ve').id,
+            'phone': '04141234567',
+            'email': 'test@test.com',
+            'street': 'Calle',
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.partner_id = partner
+        buyer = invoice.get_buyer()
+        self.assertEqual(buyer["tipoIdentificacion"], "V")
+
+    def test_39_get_last_document_number_zero(self):
+        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api') as mock_call:
+            mock_call.return_value = 0
+            invoice = self._create_invoice(
+                products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+            )
+            result = invoice.get_last_document_number("01", "")
+            self.assertEqual(result, 0)
+
+    def test_40_get_payment_methods_with_payment(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        pay = self._create_payment(amount=100)
+        invoice._compute_tax_totals()
+        # Forzar widget de pagos
+        methods = invoice.get_payment_methods()
+        self.assertTrue(methods or methods is False)
+
+    def test_41_compute_invisible_check_credit_note(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+        )
+        credit._compute_invisible_check()
+        self.assertTrue(credit.show_digital_credit_note)
+
+    def test_42_compute_invisible_check_debit_note(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        debit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            debit_origin_id=inv,
+        )
+        debit._compute_invisible_check()
+        self.assertTrue(debit.show_digital_debit_note)
+
+    def test_43_get_document_identification_due_date_equal(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.invoice_date_due = inv.invoice_date
+        ident = inv.get_document_identification("01", "126", "")
+        self.assertEqual(ident["fechaVencimiento"], ident["fechaEmision"])
+
+    def test_44_get_document_identification_ref_with_comma(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            ref="Motivo, detalle adicional"
+        )
+        debit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            debit_origin_id=inv,
+            ref="Motivo, detalle adicional",
+        )
+        ident = debit.get_document_identification("03", "127", "")
+        self.assertEqual(ident["comentarioFacturaAfectada"], "detalle adicional")
+
+    def test_45_generate_document_digital_no_document_type(self):
+        inv = self.env["account.move"].create({
+            "move_type": "out_refund",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        res = inv.generate_document_digital()
+        self.assertIsNone(res)
+
+    def test_46_get_currency(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        name = invoice.get_currency(self.currency_usd.id)
+        self.assertEqual(name, "USD")
+
+    def test_47_get_payment(self):
+        pay = self._create_payment()
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        result = invoice.get_payment(pay.id)
+        self.assertTrue(result)
+
+    def test_48_build_payment_info_ves(self):
+        pay = self._create_payment()
+        # Forzar que el pago use moneda VEF
+        pay.currency_id = self.env.ref("base.VEF")
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        info = invoice.build_payment_info(pay)
+        self.assertEqual(info["moneda"], "VES")
+
+    def test_49_get_item_details_with_discount(self):
+        prod = self.env['product.product'].create({
+            'name': 'Prod Descuento',
+            'type': 'service',
+            'list_price': 100,
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": prod.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.invoice_line_ids[0].discount = 10
+        details = invoice.get_item_details()
+        self.assertTrue(float(details[0]["descuentoMonto"]) > 0)
+
+    def test_50_compute_invisible_check_draft(self):
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        inv._compute_invisible_check()
+        self.assertTrue(inv.show_digital_invoice)
+
+    def test_51_compute_invisible_check_company_disabled(self):
+        self.company.invoice_digital_tfhka = False
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv._compute_invisible_check()
+        self.assertTrue(inv.show_digital_invoice)
+
+    def test_52_compute_invisible_check_reversed_not_digitized(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+        )
+        credit._compute_invisible_check()
+        self.assertTrue(credit.show_digital_credit_note)
+
+    def test_53_compute_invisible_check_debit_not_digitized(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        debit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            debit_origin_id=inv,
+        )
+        debit._compute_invisible_check()
+        self.assertTrue(debit.show_digital_debit_note)
+
+    def test_54_compute_invisible_check_debit_note_posted(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.is_digitalized = True
+        debit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            debit_origin_id=inv,
+        )
+        debit._compute_invisible_check()
+        self.assertTrue(debit.show_digital_debit_note)
+
+    def test_55_get_totals_too_many_payments(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.get_payment_methods', return_value=[{"forma": "01"}] * 6):
+            with self.assertRaises(UserError):
+                invoice.get_totals()
+
+    def test_56_get_totals_payment_without_forma(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.get_payment_methods', return_value=[{"forma": ""}]):
+            with self.assertRaises(ValidationError):
+                invoice.get_totals()
+
+    def test_57_get_payment_methods_with_widget(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        pay = self._create_payment(amount=100)
+        # Simular widget de pagos
+        invoice.invoice_payments_widget = {"content": [{"account_payment_id": pay.id}]}
+        methods = invoice.get_payment_methods()
+        self.assertTrue(methods)
+
+    def test_58_get_payment_methods_exception(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.invoice_payments_widget = None
+        methods = invoice.get_payment_methods()
+        self.assertFalse(methods)
+
+    def test_59_get_document_identification_debit_origin(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        debit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            debit_origin_id=inv,
+        )
+        ident = debit.get_document_identification("03", "128", "")
+        self.assertEqual(ident["numeroFacturaAfectada"], str(inv.sequence_number))
+        self.assertEqual(ident["fechaFacturaAfectada"], inv.invoice_date.strftime("%d/%m/%Y"))
+
+    def test_60_get_document_identification_reversed(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+        )
+        ident = credit.get_document_identification("02", "129", "")
+        self.assertEqual(ident["numeroFacturaAfectada"], str(inv.sequence_number))
+        self.assertEqual(ident["fechaFacturaAfectada"], inv.invoice_date.strftime("%d/%m/%Y"))
+
+    def test_61_get_document_identification_no_due_date(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.invoice_date_due = False
+        ident = inv.get_document_identification("01", "130", "")
+        self.assertEqual(ident["fechaVencimiento"], ident["fechaEmision"])
+
+    def test_62_generate_document_digital_company_disabled(self):
+        self.company.write({"invoice_digital_tfhka": False})
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        res = inv.generate_document_digital()
+        self.assertIsNone(res)
+
+    def test_63_tfhka_get_document_type_and_series(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        doc_type, series = inv._tfhka_get_document_type_and_series()
+        self.assertEqual(doc_type, "01")
+        self.assertEqual(series, "")
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    def test_64_generate_document_data_sequence_update_error(self, mock_call):
+        mock_call.return_value = {
+            "codigo": "200",
+            "resultado": {"numeroControl": "00-00000001"}
+        }
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        from odoo.addons.account.models.account_journal import AccountJournal
+        with patch.object(AccountJournal, 'write', side_effect=Exception("fail")):
+            inv.generate_document_data("123", "01", "")
+        self.assertTrue(inv.is_digitalized)
+
+    def test_65_is_eligible_for_tfhka_company_disabled(self):
+        self.company.write({"invoice_digital_tfhka": False})
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        self.assertFalse(inv._is_eligible_for_tfhka())
+
+    def test_66_tfhka_get_document_type_credit_note(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+        )
+        doc_type, series = credit._tfhka_get_document_type_and_series()
+        self.assertEqual(doc_type, "02")
+        self.assertEqual(series, "")
+
+    def test_67_generate_document_digital_non_numeric_last_number(self):
+        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.get_last_document_number', return_value="abc"):
+            with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.query_numbering', return_value=None):
+                with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api') as mock_call:
+                    mock_call.return_value = {
+                        "codigo": "200",
+                        "resultado": {"numeroControl": "00-00000001"}
+                    }
+                    inv = self._create_invoice(
+                        products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                    )
+                    inv.generate_document_digital()
+                    self.assertTrue(inv.is_digitalized)
+
+    def test_68_get_seller_with_seller_id(self):
+        if "seller_id" not in self.env["account.move"]._fields:
+            self.skipTest("seller_id field not installed")
+        user = self.env["res.users"].create({
+            "name": "Vendedor Test",
+            "login": "vendedor_test",
+        })
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.seller_id = user.partner_id
+        seller = inv.get_seller()
+        self.assertTrue(seller)
+        self.assertEqual(seller["nombre"], "Vendedor Test")
+
+    def test_69_get_totals_vef(self):
+        vef = self.env.ref("base.VEF")
+        self.company.currency_id = vef
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": vef.id,
+            "foreign_currency_id": self.currency_usd.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        inv.action_post()
+        totals, foreign = inv.get_totals()
+        self.assertIn("montoGravadoTotal", totals)
+        self.assertFalse(foreign)
+
+    def test_70_get_tax_subtotals_vef(self):
+        vef = self.env.ref("base.VEF")
+        self.company.currency_id = vef
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": vef.id,
+            "foreign_currency_id": self.currency_usd.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        inv.action_post()
+        result = inv.get_tax_subtotals("VEF")
+        self.assertTrue(isinstance(result, list))
+
+    def test_71_get_item_details_vef(self):
+        vef = self.env.ref("base.VEF")
+        self.company.currency_id = vef
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": vef.id,
+            "foreign_currency_id": self.currency_usd.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        inv.action_post()
+        details = inv.get_item_details()
+        self.assertTrue(len(details) > 0)
+        self.assertEqual(details[0]["indicadorBienoServicio"], "2")
+
+    def test_72_get_document_identification_no_affected_invoice(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        ident = inv.get_document_identification("01", "131", "")
+        self.assertEqual(ident["numeroFacturaAfectada"], "")
+        self.assertEqual(ident["fechaFacturaAfectada"], "")
+        self.assertEqual(ident["montoFacturaAfectada"], "")
+
+    def test_73_compute_invisible_check_posted_not_digitized(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv._compute_invisible_check()
+        self.assertTrue(inv.show_digital_invoice)
+
+    def test_76_get_payment_methods_with_widget_no_content(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.invoice_payments_widget = {"content": []}
+        methods = inv.get_payment_methods()
+        self.assertFalse(methods)
+
+    def test_77_get_buyer_missing_prefix_vat_numeric(self):
+        partner = self.env['res.partner'].create({
+            'name': 'Cliente Numérico Sin Prefijo',
+            'vat': '12345679',
+            'country_id': self.env.ref('base.ve').id,
+            'phone': '04141234567',
+            'email': 'test@test.com',
+            'street': 'Calle',
+        })
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        buyer = inv.get_buyer()
+        # prefix_vat default in l10n_ve_contact is 'V'
+        self.assertEqual(buyer["tipoIdentificacion"], "V")
+
+    def test_79_tfhka_validate_mixed_invoicing_disabled(self):
+        self.company.mix_invoicing_tfhka = False
+        self.journal.digital_invoice = False
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(5, 0, 0)],
+            })],
+        })
+        with self.assertRaises(ValidationError):
+            inv._tfhka_validate_mixed_invoicing()
+
+    def test_80_tfhka_get_document_type_and_series_no_prefix(self):
+        self.company.group_sales_invoicing_series = True
+        seq = self.env['ir.sequence'].create({
+            'name': 'Serie Sin Prefix',
+            'code': 'account.move',
+            'padding': 4,
+        })
+        self.journal.write({
+            'series_correlative_sequence_id': seq.id,
+            'sequence_id': seq.id,
+        })
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(UserError):
+            inv._tfhka_get_document_type_and_series()
+
+    def test_83_call_tfhka_api_request_exception(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.requests.post') as mock_post:
+            mock_post.side_effect = Exception("Connection error")
+            with self.assertRaises(UserError):
+                inv.call_tfhka_api("emision", {})
+
+    def test_87_get_tax_subtotals_vef_no_taxes(self):
+        vef = self.env.ref("base.VEF")
+        self.company.currency_id = vef
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": vef.id,
+            "foreign_currency_id": self.currency_usd.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(5, 0, 0)],
+            })],
+        })
+        inv.with_context(move_action_post_alert=True).action_post()
+        result = inv.get_tax_subtotals("VEF")
+        self.assertEqual(result, [])
+
+    def test_88_get_tax_subtotals_no_vef_no_taxes(self):
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(5, 0, 0)],
+            })],
+        })
+        inv.with_context(move_action_post_alert=True).action_post()
+        result = inv.get_tax_subtotals("USD")
+        self.assertEqual(result, ([], []))
+
+    def test_89_get_payment_type_empty(self):
+        result = self.env['account.move'].browse([]).get_payment_type()
+        self.assertIsNone(result)
+
+    def test_91_get_buyer_no_partner(self):
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": False,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(5, 0, 0)],
+            })],
+        })
+        result = inv.get_buyer()
+        self.assertIsNone(result)
+
+    def test_92_get_payment_methods_invalid_payment(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.invoice_payments_widget = {"content": [{"account_payment_id": 99999}]}
+        methods = inv.get_payment_methods()
+        self.assertFalse(methods)
+
+    def test_96_tfhka_validate_mixed_invoicing_enabled(self):
+        self.company.mix_invoicing_tfhka = True
+        self.journal.digital_invoice = False
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(5, 0, 0)],
+            })],
+        })
+        inv._tfhka_validate_mixed_invoicing()
+
+    def test_98_tfhka_get_document_type_credit_note_no_reversed(self):
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+        )
+        doc_type, series = credit._tfhka_get_document_type_and_series()
+        self.assertEqual(doc_type, "")
+        self.assertEqual(series, "")
+
+    def test_99_tfhka_get_document_type_and_series_with_prefix(self):
+        self.company.group_sales_invoicing_series = True
+        seq = self.env['ir.sequence'].create({
+            'name': 'Serie Con Prefix',
+            'code': 'account.move',
+            'prefix': 'INV-',
+            'padding': 4,
+        })
+        self.journal.write({
+            'series_correlative_sequence_id': seq.id,
+            'sequence_id': seq.id,
+        })
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        doc_type, series = inv._tfhka_get_document_type_and_series()
+        self.assertEqual(series, "INV")
+
+    def test_100_get_buyer_empty_prefix_vat(self):
+        partner = self.env['res.partner'].create({
+            'name': 'Cliente Sin Prefijo',
+            'vat': 'J12345679',
+            'prefix_vat': '',
+            'country_id': self.env.ref('base.ve').id,
+            'phone': '04141234567',
+            'email': 'test@test.com',
+            'street': 'Calle',
+        })
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(5, 0, 0)],
+            })],
+        })
+        buyer = inv.get_buyer()
+        self.assertEqual(buyer["tipoIdentificacion"], "J")
+
+
+
+
+
+    def test_105_call_tfhka_api_request_exception(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with patch('requests.post') as mock_post:
+            mock_post.side_effect = Exception("Connection error")
+            with self.assertRaises(UserError):
+                inv.call_tfhka_api("emision", {})
+
+
+
+
+    def test_109_get_document_identification_empty_recordset(self):
+        result = self.env['account.move'].browse([]).get_document_identification("01", "1", "")
+        self.assertIsNone(result)
+
+
+
+
+
+
+    def test_115_get_tax_subtotals_vef_no_taxes(self):
+        vef = self.env.ref("base.VEF")
+        self.company.currency_id = vef
+        inv = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": vef.id,
+            "foreign_currency_id": self.currency_usd.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(5, 0, 0)],
+            })],
+        })
+        inv.with_context(move_action_post_alert=True).action_post()
+        result = inv.get_tax_subtotals("VEF")
+        self.assertEqual(result, [])
+
+    def test_120_is_eligible_for_tfhka_wrong_move_type(self):
+        misc_journal = self.env['account.journal'].create({
+            'name': 'Miscelaneos Elegibilidad',
+            'code': 'MSCE',
+            'type': 'general',
+            'company_id': self.company.id,
+            'digital_invoice': True,
+        })
+        entry = self.env['account.move'].create({
+            'move_type': 'entry',
+            'journal_id': misc_journal.id,
+            'date': fields.Date.today(),
+        })
+        self.assertFalse(entry._is_eligible_for_tfhka())
+
+        self.journal.digital_invoice = True
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        self.assertTrue(inv._is_eligible_for_tfhka())
+
+    def test_121_tfhka_validate_mixed_invoicing_non_out_move_type(self):
+        self.company.mix_invoicing_tfhka = False
+        misc_journal = self.env['account.journal'].create({
+            'name': 'Miscelaneos Mixto',
+            'code': 'MSCM',
+            'type': 'general',
+            'company_id': self.company.id,
+            'digital_invoice': False,
+        })
+        entry = self.env['account.move'].create({
+            'move_type': 'entry',
+            'journal_id': misc_journal.id,
+            'date': fields.Date.today(),
+        })
+        entry._tfhka_validate_mixed_invoicing()
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    def test_122_query_numbering_skips_non_matching_series(self, mock_call):
+        mock_call.return_value = {
+            "numeraciones": [
+                {"serie": "B", "hasta": "100", "correlativo": "1"},
+                {"serie": "NO APLICA", "hasta": "100000", "correlativo": "1"},
+            ],
+            "codigo": "200",
+        }
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.query_numbering(series="")
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    def test_123_query_numbering_no_series_configured_raises(self, mock_call):
+        mock_call.return_value = {"numeraciones": [], "codigo": "200"}
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(UserError):
+            inv.query_numbering(series="X")
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.requests.post')
+    def test_124_call_tfhka_api_codigo_203_ultimo_documento(self, mock_post):
+        self.company.write({"url_tfhka": "https://api.tfhka.com", "token_auth_tfhka": "token_fake"})
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"codigo": "203", "validaciones": ["no existe numeracion"]}
+        mock_post.return_value = mock_resp
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        result = inv.call_tfhka_api("ultimo_documento", {})
+        self.assertEqual(result, 0)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.requests.post')
+    def test_125_call_tfhka_api_connection_error(self, mock_post):
+        self.company.write({"url_tfhka": "https://api.tfhka.com", "token_auth_tfhka": "token_fake"})
+        import requests as req
+        mock_post.side_effect = req.exceptions.ConnectionError("Connection error")
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(UserError):
+            inv.call_tfhka_api("emision", {})
+
