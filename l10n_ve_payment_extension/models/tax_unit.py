@@ -103,17 +103,20 @@ class TaxUnit(models.Model):
                 if rec.status != new_status:
                     super(TaxUnit, rec).write({'status': new_status})
                 
-                    self._trigger_retention_update(rec)
-                else:
-                    self._trigger_retention_update(rec)
+            self._trigger_retention_update(latest_record)
 
 
     def _trigger_retention_update(self, tax_unit_record):
         retentions = self.env['fees.retention'].search([
-            ('apply_subtracting', '=', True),
             ('status', '=', True)
         ])
+
+        if not retentions:
+            return
+        
         retentions.write({'tax_unit_ids': tax_unit_record.id})
+        retentions.env.flush_all()
+        
         for ret in retentions:
 
             if hasattr(ret, '_compute_amount_subtract'):
