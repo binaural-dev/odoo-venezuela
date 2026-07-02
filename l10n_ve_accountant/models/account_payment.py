@@ -235,8 +235,16 @@ class AccountPayment(models.Model):
         return res
             
 
-    # @api.model
-    # def _get_trigger_fields_to_synchronize(self):
-    #     original_fields = super()._get_trigger_fields_to_synchronize()
-    #     additional_fields = ("foreign_rate", "foreign_inverse_rate")
-    #     return original_fields + additional_fields
+    def action_cancel(self):
+        """ 
+        Cancel the payments and their related journal entries.
+        
+        Odoo's native behavior physically deletes ('unlink') draft moves 
+        associated with the payment. This override changes that behavior to 
+        ensure fiscal integrity, keeping the journal entries in the system 
+        by moving them to 'cancel' instead of deleting them.
+        
+        """
+        self.state = 'canceled'
+        draft_moves = self.move_id.filtered(lambda m: m.state == 'draft')
+        draft_moves.button_cancel()
