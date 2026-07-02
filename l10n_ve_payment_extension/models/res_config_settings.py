@@ -25,9 +25,6 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.municipal_customer_retention_journal_id", readonly=False
     )
 
-    condition_withholding_id = fields.Many2one(
-        related="company_id.condition_withholding_id", readonly=False
-    )
     code_visible = fields.Boolean(
         related="company_id.code_visible", readonly=False)
 
@@ -43,3 +40,7 @@ class ResConfigSettings(models.TransientModel):
     hide_issue_date_of_municipal_withholding_receipt = fields.Boolean('Hide issue date of municipal withholding receipt',
         related='company_id.hide_issue_date_of_municipal_withholding_receipt', 
         readonly=False)
+
+    auto_fill_retention_amount_iva = fields.Boolean(
+        related="company_id.auto_fill_retention_amount_iva", readonly=False
+    )
