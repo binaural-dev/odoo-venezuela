@@ -458,7 +458,22 @@ QUnit.test("Código fiscal t0 se mapea como exento", async (assert) => {
     assert.notOk(exemptLine && exemptLine.startsWith("<STX>!0000001000"), "La línea no se envía como gravada (G)");
 });
 
-QUnit.test("Descuento global se envía con comando q-", async (assert) => {
+QUnit.test("_applyDiscount aplica porcentaje sobre la base y redondea", (assert) => {
+    // Espejo del helper en PosStore._applyDiscount sin requerir PosStore.
+    const round = (value, decimals = 2) => Number(Number(value).toFixed(decimals));
+    const applyDiscount = (unitPrice, percent) =>
+        round(Number(unitPrice || 0) * (1 - Number(percent || 0) / 100));
+
+    assert.strictEqual(applyDiscount(100, 10), 90, "10% sobre 100 → 90.00");
+    assert.strictEqual(applyDiscount(100, 0), 100, "0% sobre 100 → 100.00");
+    assert.strictEqual(applyDiscount(0, 10), 0, "Cualquier % sobre 0 → 0.00");
+    assert.strictEqual(applyDiscount(90, 10), 81, "Cascada: 100 → 90 → 81");
+    assert.strictEqual(applyDiscount(99.99, 10), 89.99, "Redondeo a 2 decimales");
+    assert.strictEqual(applyDiscount(50, 50), 25, "50% sobre 50 → 25.00");
+    assert.strictEqual(applyDiscount(1, 100), 0, "100% sobre 1 → 0.00");
+});
+
+QUnit.test("Descuento global (Strategy A) no envía q- y refleja monto en líneas", async (assert) => {
     const driver = new TfhkaDriver();
     driver.connection = new MockSerialConnection();
     driver.retryDelay = 0;
@@ -466,6 +481,8 @@ QUnit.test("Descuento global se envía con comando q-", async (assert) => {
     await driver.connection.requestPort();
     driver.isConnected = true;
 
+    // Strategy A: el PosStore ya aplicó la cascada y la tasa global al price_unit.
+    // Cada línea positiva llega con su precio base ya neto de descuento.
     const orderWithGlobalDiscount = {
         partner: {
             vat: "J123456789",
@@ -477,18 +494,13 @@ QUnit.test("Descuento global se envía con comando q-", async (assert) => {
                 product_code: "A001",
                 fiscal_code: "1",
                 quantity: 1,
-                price_unit: 100,
-            },
-            {
-                product_name: "Descuento Global",
-                product_code: "DESC",
-                fiscal_code: "1",
-                quantity: 1,
-                price_unit: -15,
+                price_unit: 85,   // 100 base - 15% (10% global sobre base 100)
             },
         ],
         payment_lines: [{ payment_method_code: "01", amount: 85 }],
-        global_discount_amount: 0,
+        global_discount_amount: 15,
+        global_discount_rate: 15,
+        global_clamped: false,
         additional_lines: [],
         flag_21: "00",
         has_cashbox: false,
@@ -507,10 +519,71 @@ QUnit.test("Descuento global se envía con comando q-", async (assert) => {
 
     const asciiHistory = driver.connection.getSentCommands().map((cmd) => cmd.ascii);
     const close101Count = asciiHistory.filter((cmd) => cmd.includes("<STX>101<ETX>")).length;
-    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>q-000001500<ETX>")), "Se envía q- por 15.00");
-    assert.notOk(asciiHistory.some((cmd) => cmd.includes("Descuento Global<ETX>")), "La línea negativa no se imprime como item");
+    assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>q-")), "No se envía q- con Strategy A");
+    assert.ok(
+        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL 15% = 15.00<ETX>")),
+        "Línea informativa de descuento global con porcentaje y monto presentes"
+    );
+    assert.notOk(asciiHistory.some((cmd) => cmd.includes("Descuento Global<ETX>")), "No hay línea negativa enviada como item");
     assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>201000000008500<ETX>")), "Pago único no se envía como parcial 2XX");
     assert.strictEqual(close101Count, 1, "Pago único con método 01 envía 101 una sola vez");
+    assert.strictEqual(result.global_discount_amount, 15, "Monto del descuento global retornado al caller");
+    assert.strictEqual(result.global_discount_rate, 15, "Tasa del descuento global retornada al caller");
+    assert.notOk(result.global_clamped, "Sin clamp en este caso");
+});
+
+QUnit.test("Descuento global (Strategy A) emite aviso adicional cuando es clampado", async (assert) => {
+    const driver = new TfhkaDriver();
+    driver.connection = new MockSerialConnection();
+    driver.retryDelay = 0;
+
+    await driver.connection.requestPort();
+    driver.isConnected = true;
+
+    const orderWithClampedDiscount = {
+        partner: {
+            vat: "J123456789",
+            name: "CLIENTE DESCUENTO",
+        },
+        lines: [
+            {
+                product_name: "Producto A",
+                product_code: "A001",
+                fiscal_code: "1",
+                quantity: 1,
+                price_unit: 0,    // Base reducida al 100% por el clamp del PosStore
+            },
+        ],
+        payment_lines: [{ payment_method_code: "01", amount: 0 }],
+        global_discount_amount: 50,
+        global_discount_rate: 100,
+        global_clamped: true,
+        additional_lines: [],
+        flag_21: "00",
+        has_cashbox: false,
+    };
+
+    driver.connection.setNextResponse("STATUS");
+    driver.connection.setResponseSequence(new Array(30).fill("ACK"));
+    driver.connection.setS1Payload(buildS1Payload({
+        lastInvoiceNumber: 1000,
+        dailyClosureCounter: 21,
+        serialMachine: "Z1F0022949",
+    }));
+
+    const result = await driver.printInvoice(orderWithClampedDiscount);
+    assert.ok(result.success, "Factura con descuento clampado impresa");
+
+    const asciiHistory = driver.connection.getSentCommands().map((cmd) => cmd.ascii);
+    assert.ok(
+        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL 100% = 50.00<ETX>")),
+        "Línea informativa del descuento clampado presente"
+    );
+    assert.ok(
+        asciiHistory.some((cmd) => cmd.includes("i01DESC. GLOBAL EXCEDIO SUBTOTAL<ETX>")),
+        "Línea de aviso por clamp emitida"
+    );
+    assert.ok(result.global_clamped, "Bandera global_clamped=true hacia el caller");
 });
 
 QUnit.test("Header y footer del POS se envían como iXX", async (assert) => {

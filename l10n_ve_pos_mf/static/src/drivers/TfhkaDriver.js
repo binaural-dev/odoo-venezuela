@@ -773,17 +773,67 @@ export class TfhkaDriver {
     }
 
     _appendFooterInfo(commands, orderData) {
-        let footerIndex = 0;
+        const counter = { value: 0 };
+        this._appendDiscountInfoLine(commands, orderData, counter);
 
         for (const line of orderData.footer_lines || []) {
-            commands.push(`i${String(footerIndex).padStart(2, '0')}${String(line).substring(0, 127)}`);
-            footerIndex++;
+            commands.push(`i${String(counter.value).padStart(2, '0')}${String(line).substring(0, 127)}`);
+            counter.value++;
         }
 
         for (const line of orderData.additional_lines || []) {
-            commands.push(`i${String(footerIndex).padStart(2, '0')}${String(line).substring(0, 127)}`);
-            footerIndex++;
+            commands.push(`i${String(counter.value).padStart(2, '0')}${String(line).substring(0, 127)}`);
+            counter.value++;
         }
+    }
+
+    /**
+     * Emite UNA línea informativa sobre el descuento global aplicado.
+     *
+     * Solo se invoca para facturas (no para NC ni ND). El cálculo de la
+     * tasa y del monto ya viene resuelto en el PosStore (`global_discount_rate`,
+     * `global_discount_amount`, `global_clamped`). Aquí se formatea y se
+     * infiere un índice `iXX` libre dentro del cupo de 10 líneas informativas.
+     * Avanza `counter.value` para que el resto del pie de factura continúe con
+     * índices consecutivos.
+     *
+     * @param {Array} commands - Buffer de comandos fiscales
+     * @param {Object} orderData - Datos de la orden
+     * @param {Object} counter - { value: number } mutable; índice actual
+     * @returns {boolean} true si al menos una línea fue emitida
+     */
+    _appendDiscountInfoLine(commands, orderData, counter) {
+        const rate = Number(orderData?.global_discount_rate || 0);
+        const amount = Number(orderData?.global_discount_amount || 0);
+        const clamped = Boolean(orderData?.global_clamped);
+
+        if (!(rate > 0) || amount <= 0) {
+            return false;
+        }
+
+        const MAX_INFO_LINES = 10;
+        const startIndex = counter.value;
+        if (startIndex >= MAX_INFO_LINES) {
+            console.warn(
+                `TfhkaDriver:: No hay slot libre para línea informativa de descuento global (slots usados: ${startIndex}/10)`
+            );
+            return false;
+        }
+
+        const amountStr = amount.toFixed(2);
+        const rateText = rate.toFixed(2).replace(/\.0+$/, "");
+        const text = `DESC. GLOBAL ${rateText}% = ${amountStr}`;
+        commands.push(`i${String(startIndex).padStart(2, '0')}${text.substring(0, 127)}`);
+        counter.value++;
+
+        if (clamped && counter.value < MAX_INFO_LINES) {
+            commands.push(
+                `i${String(counter.value).padStart(2, '0')}DESC. GLOBAL EXCEDIO SUBTOTAL`
+            );
+            counter.value++;
+        }
+
+        return true;
     }
 
     _appendPaymentCommands(commands, orderData, config) {
@@ -888,13 +938,10 @@ export class TfhkaDriver {
             this._appendHeaderInfo(commands, orderData);
 
             // 4. Items de la orden
-            let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
+            // Estrategia A: el descuento global ya viene prorrateado en
+            // `price_unit` de cada línea positiva. No se emite `q-` aquí.
             for (const line of orderData.lines || []) {
                 const linePrice = Number(line.price_unit || 0);
-                if (linePrice < 0) {
-                    globalDiscountAmount += Math.abs(linePrice);
-                    continue;
-                }
                 if (linePrice <= 0) continue;
 
                 const taxChar = this._getTaxCharacter(line.fiscal_code || "1");
@@ -912,12 +959,6 @@ export class TfhkaDriver {
 
             // 5. Subtotal
             commands.push("3");
-
-            // 5.1 Descuento global absoluto (q-)
-            if (globalDiscountAmount > 0) {
-                const discount = this._formatAmount(globalDiscountAmount, config.disc_int, config.disc_decimal);
-                commands.push(`q-${discount}`);
-            }
 
             // 6. Pagos y cierre fiscal (1XX/2XX + 101)
             this._appendPaymentCommands(commands, orderData, config);
@@ -967,7 +1008,23 @@ export class TfhkaDriver {
             }
 
             console.log("TfhkaDriver:: Factura impresa correctamente. Nro:", invoiceNumber);
-            return this._buildFiscalResponse("Factura impresa correctamente", invoiceNumber, s1Result.data);
+            const fiscalResponse = this._buildFiscalResponse(
+                "Factura impresa correctamente",
+                invoiceNumber,
+                s1Result.data
+            );
+            fiscalResponse.global_discount_amount = Number(orderData?.global_discount_amount || 0);
+            fiscalResponse.global_discount_rate = Number(orderData?.global_discount_rate || 0);
+            fiscalResponse.global_clamped = Boolean(orderData?.global_clamped);
+            if (fiscalResponse.global_clamped) {
+                console.warn(
+                    "TfhkaDriver:: Descuento global clampeado a 100%. Monto POS:",
+                    fiscalResponse.global_discount_amount,
+                    "Tasa aplicada:",
+                    fiscalResponse.global_discount_rate
+                );
+            }
+            return fiscalResponse;
 
         } catch (error) {
             console.error("TfhkaDriver:: Error al imprimir factura", error);

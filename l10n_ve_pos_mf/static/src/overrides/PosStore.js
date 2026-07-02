@@ -389,6 +389,19 @@ patch(PosStore.prototype, {
         };
       }
 
+      // Aviso: descuento global POS excedió subtotal y fue clampeado a 100%
+      if (response.global_clamped) {
+        const amount = Number(response.global_discount_amount || 0);
+        const appliedRate = Number(response.global_discount_rate || 0).toFixed(2);
+        this.env.services.popup.add(ErrorPopup, {
+          title: _t("Aviso de descuento"),
+          body: _t(
+            `El descuento global (${amount.toFixed(2)} Bs) excede el subtotal de las líneas. ` +
+            `Se aplicó el máximo permitido (${appliedRate}%) en el comprobante.`
+          ),
+        });
+      }
+
       // Guardar datos de la MF en la orden
       this.set_data_from_fiscal_machine(order, response);
       LocalOrderHistory.add(order);
@@ -414,39 +427,87 @@ patch(PosStore.prototype, {
   },
 
   /**
+   * Aplica un descuento porcentual a un precio base.
+   *
+   * Función reutilizable: se invoca primero con `line.discount` y luego, si
+   * hay descuento global POS, con la tasa global redistribuida sobre el neto
+   * (Estrategia A del documento DISCOUNT_STRATEGY.md).
+   *
+   * @param {number} unitPrice - Precio base antes del descuento
+   * @param {number} percent - Porcentaje a descontar (0-100)
+   * @returns {number} Precio neto redondeado
+   */
+  _applyDiscount(unitPrice, percent) {
+    const value = Number(unitPrice || 0) * (1 - Number(percent || 0) / 100);
+    return round_pr(value, this.currency?.rounding || 0.01);
+  },
+
+  /**
    * Convierte la orden de Odoo al formato esperado por el driver
+   *
+   * Estrategia A (ver DISCOUNT_STRATEGY.md):
+   * - El descuento por línea se aplica primero al precio base.
+   * - El descuento global POS (representado por líneas negativas en
+   *   `invoice_lines`) se prorratea sobre la base ya neta de las líneas
+   *   positivas y se aplica en cascada.
+   * - Si la tasa global supera el 100%, se clampa a 100% y se marca
+   *   `global_clamped` para que el driver emita una línea informativa de
+   *   aviso y muestre un pop-up al usuario.
+   *
    * @param {Object} order
    * @param {Object} invoiceData
    * @returns {Object}
    */
   _convertOrderForDriver(order, invoiceData) {
-    const roundAmount = (value) => round_pr(Number(value || 0), this.currency?.rounding || 0.01);
     let globalDiscountAmount = 0;
+    const POSITIVE_LINES = [];
+    const allLines = (invoiceData.invoice_lines || []);
 
-    // Mapear líneas de productos con nombres de campos correctos
-    const lines = [];
-    for (const line of (invoiceData.invoice_lines || [])) {
+    for (const line of allLines) {
       const priceUnit = Number(line.price_unit || 0);
-      const discount = Number(line.discount || 0);
-
-      // Odoo representa descuentos globales como líneas negativas
       if (priceUnit < 0) {
         globalDiscountAmount += Math.abs(priceUnit);
         continue;
       }
+      POSITIVE_LINES.push(line);
+    }
 
-      const netUnitPrice = roundAmount(priceUnit * (1 - discount / 100));
-      lines.push({
+    let positiveBaseSum = 0;
+    for (const line of POSITIVE_LINES) {
+      const priceUnit = Number(line.price_unit || 0);
+      const quantity = Math.abs(Number(line.quantity || 1));
+      const lineDiscount = Number(line.discount || 0);
+      const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);
+      positiveBaseSum += Math.abs(netAfterLineDiscount * quantity);
+    }
+
+    let globalRate = 0;
+    let globalClamped = false;
+    if (globalDiscountAmount > 0 && positiveBaseSum > 0) {
+      const rawRate = (globalDiscountAmount / positiveBaseSum) * 100;
+      if (rawRate > 100) {
+        globalRate = 100;
+        globalClamped = true;
+      } else {
+        globalRate = rawRate;
+      }
+    }
+
+    const lines = POSITIVE_LINES.map((line) => {
+      const priceUnit = Number(line.price_unit || 0);
+      const lineDiscount = Number(line.discount || 0);
+      const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);
+      const finalUnitPrice = this._applyDiscount(netAfterLineDiscount, globalRate);
+      return {
         product_name: line.name,
         product_code: line.code || line.default_code,
-        price_unit: netUnitPrice,
+        price_unit: finalUnitPrice,
         quantity: line.quantity,
         fiscal_code: line.tax,  // 0=Exento, 1=General, 2=Reducido, 3=Adicional
         discount: 0,
-      });
-    }
+      };
+    });
 
-    // Mapear líneas de pago con nombres de campos correctos
     const payment_lines = (invoiceData.payment_lines || []).map(payment => ({
       payment_method_code: payment.payment_method,
       amount: Math.abs(payment.amount)
@@ -460,7 +521,9 @@ patch(PosStore.prototype, {
       has_cashbox: invoiceData.has_cashbox || false,
       additional_lines: invoiceData.info || [],
       invoice_affected: invoiceData.invoice_affected || null,
-      global_discount_amount: roundAmount(globalDiscountAmount),
+      global_discount_amount: globalDiscountAmount,
+      global_discount_rate: globalRate,
+      global_clamped: globalClamped,
       header_lines: this._extractReceiptLines("receipt_header"),
       footer_lines: this._extractReceiptLines("receipt_footer"),
     };

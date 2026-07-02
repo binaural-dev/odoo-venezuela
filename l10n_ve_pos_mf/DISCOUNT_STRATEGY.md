@@ -10,123 +10,116 @@ Current config observed during tests:
 - Main VAT rate: 16%
 - Fiscal printer integration: Web Serial (`l10n_ve_pos_mf`)
 
-## Why totals differ
+## Decision (implemented)
 
-Even with "10% discount" in both flows, totals differ because the discount is applied at different stages.
+**Strategy A: line-discount cascade applied uniformly.**
 
-### Case 1: Line discount
+The global POS discount is mathematically redistributed onto the base price of each positive line BEFORE the request reaches the fiscal driver. Result: the printer receives only positive items with pre-discounted net unit prices. The arithmetic becomes identical to having the cashier apply the same percent on every line individually.
 
-- Product base: 100.00
-- Line discount 10%: -10.00 on base
-- Tax base becomes: 90.00
-- VAT 16%: 14.40
-- Total: 104.40
+### Why this resolves the mismatch
 
-### Case 2: Global discount via `q-`
+| Path | Math | Result |
+|---|---|---|
+| Line discount on a 100 Bs item (tasa 1) | 100 × (1 − 10%) = 90 base → IVA 14,40 | **104,40** |
+| Global POS discount of 10% in Odoo: line 100, "discount product −10" | Odoo computes: 116 − 10 = 106 (subtotal − amount, no tax on discount) | **106,00** (different) |
+| Global POS discount using **Strategy A** | 100 × (1 − 10%) = 90 base → IVA 14,40 | **104,40** (matches line-discount) |
 
-- Product base: 100.00
-- VAT 16%: 16.00
-- Subtotal: 116.00
-- `q-10.00` discount applied after subtotal
-- Total: 106.00
+The mismatch previously occurred because:
+- Line-discount applied to base — tax is recomputed.
+- Global discount applied after tax — `q-` subtracts from the post-tax subtotal.
 
-Result: line discount and global discount are not equivalent with this tax setup.
+Strategy A forces the global discount into the same regime as line-discount: applied to base. Totals then match.
 
-## What was tested
+## Implementation summary
 
-### Option A tested (negative lines as fiscal items)
+### PosStore.js (`_applyDiscount` + `_convertOrderForDriver`)
 
-Implemented temporarily:
+```javascript
+_applyDiscount(unitPrice, percent) {
+    const value = Number(unitPrice || 0) * (1 - Number(percent || 0) / 100);
+    return round_pr(value, this.currency?.rounding || 0.01);
+}
+```
 
-- Send negative discount line as normal item command (instead of `q-`)
+Cascade:
 
-Observed on real printer:
+1. Detect negative lines (`price_unit < 0`) → sum them into `globalDiscountAmount` (raw POS amount).
+2. Compute `positiveBaseSum = Σ ((1 − lineDiscount/100) × price_unit × quantity)` for positive lines.
+3. Compute `globalRate = (globalDiscountAmount / positiveBaseSum) × 100`, clamp at 100.
+4. Apply `finalUnitPrice = (1 − lineDiscount/100) × (1 − globalRate/100) × price_unit` per positive line.
+5. If `globalRate` clamped to 100%, set `global_clamped = true` to surface an advisory pop-up.
 
-- Command like ` -000000100000001000|DISC|Descuento` was rejected (`NAK`)
-- Transaction got stuck in `STS1=0x61`
-- Recovery with `9`/`199` did not complete reliably
+### TfhkaDriver.js (`_appendDiscountInfoLine`)
 
-Conclusion: this firmware/model does not accept negative item lines in this invoice flow.
+A new helper emits ONE informational line on the printed ticket:
 
-### Rollback performed
+```
+iXX DESC. GLOBAL 15% = 15.00
+```
 
-System was returned to previous stable behavior:
+If `global_clamped === true`, a second line is emitted:
 
-- Negative POS lines are not sent as items
-- Global discount is sent with `q-`
-- Tests are green with this behavior
+```
+iXX DESC. GLOBAL EXCEDIO SUBTOTAL
+```
 
-## Current behavior (stable)
+These lines are sent in the **factura** footer only and never appear in NC/ND.
 
-- Line discounts: converted to net unit price before sending line
-- Global discounts: mapped to fiscal `q-` absolute amount
-- This is protocol-safe for current printer/firmware, but arithmetic differs from line discount by design
+### Clamping policy
 
-## Decision options for team
+If the global POS discount exceeds the value of the underlying base, the rate is clamped to 100% and the user sees a pop-up:
 
-### Option 1: Keep current approach (`q-` for global discounts)
+> "El descuento global (X.XX Bs) excede el subtotal de las líneas. Se aplicó el máximo permitido (100.00%) en el comprobante."
 
-Pros:
+Receipt is still printed.
 
-- Works with current printer firmware
-- Stable and already tested
+### NC / ND
 
-Cons:
+Strategy A is **not** propagated to Notas de Crédito / Débito. NC/ND retain the legacy `q-` behavior because they are refund/charge documents that don't carry a "global POS discount" context in the same way. Information line and clamp warning are only emitted in Factura.
 
-- Global discount totals differ from line discount totals in tax-exclusive mode
-- User confusion unless clearly explained
+## What this affects
 
-When to choose:
+- **Math**: Total printed by the fiscal printer matches what Odoo computes for an equivalent line-discount situation. Eliminates the "tax discrepancy" complaint.
+- **Ticket readability**: The single line `DESC. GLOBAL 15% = 15.00` preserves audit visibility.
+- **Cascade**: Line discounts and global discounts compose cleanly via the helper `_applyDiscount`. If a cashier edits `line.discount` and then adjusts global, both apply in well-defined order (line first, then global on the net of line).
+- **No new fiscal commands introduced** — still uses only `!`, `iXX`, `3`, `1XX`, `2XX`, `101`, `199`. No `p-` per-line or negative-priced items. Compatible with the existing printer firmware.
+- **No firmware-specific assumptions** beyond what was already working.
 
-- Priority is hardware compatibility and low risk
+## What was tried before (and discarded)
 
-### Option 2: Functional policy - disable global discount in POS UI
+### Option "negative line as item" (single experiment)
 
-Pros:
+Tried sending the discount as a negative-priced item command (no `q-`). Result on the real printer:
 
-- Enforces a single fiscal-consistent discount method (line discount)
-- Avoids user confusion and accounting disputes
+- Command like `<STX> -000000100000001000|DISC|Descuento<ETX>` was rejected with NAK.
+- Transaction stuck in `STS1=0x61`; recovery with `9` / `199` did not stabilize.
 
-Cons:
+The firmware rejects negative-priced items in this invoice flow. Rolled back.
 
-- Changes cashier workflow
-- Requires product/process update and user training
+### Reference: legacy IoT (`binaural_iot_mf`)
 
-When to choose:
+The legacy IoT reference implementation (`SerialFiscalDriver.py`) follows the same `q-` approach. There is no historical "send discount to fiscal" pattern in production that would have solved this arithmetic.
 
-- Priority is mathematical consistency in tax handling
+## Limitations & open questions
 
-### Option 3: Keep global discount but with explicit rule and training
+- **10-line info buffer**: TFHKA limits informational `iXX` lines to ~10 per document. Each header line (address/phone) and footer line consumes one slot. With Strategy A, we get 1 (info) + 1 (clamp warning if needed) + headers + footers. For a document with > 7 header lines + 8 footer lines, the discount info line may be skipped (logged warning in browser console).
+- **Clamp >100%**: Treated as a soft cap with pop-up rather than a hard rejection. Discuss with business if they prefer strict rejection.
+- **Coexistence with line discount**: Tested via the `_applyDiscount` helper; composition order is "line first, then global on the net". Earlier work treats `line.discount` as the primary discount mechanism; Strategy A only changes how the global discount is converted into per-line base delta.
 
-Pros:
+## Tests
 
-- No UI restriction
-- Keeps both tools available
+Includes in `tfhka_driver_tests.js`:
 
-Cons:
+- `_applyDiscount` helper unit test (`round`, percent cases, cascade).
+- Strategy A integration: no `q-`, discount info line emitted, metadata returned to caller.
+- Clamp integration: second "EXCEDIO SUBTOTAL" line present, `global_clamped=true`.
+- Pre-existing "Impresión de factura con impuestos y métodos de pago" coverage still pass for the discount/output sequence.
 
-- Requires clear SOP: line discount and global discount are not equivalent
-- Still needs support for user questions
+## Operational checklist after upgrade
 
-When to choose:
-
-- Business wants flexibility and accepts non-equivalent totals
-
-## Recommended path
-
-For production robustness on current hardware:
-
-1. Keep current protocol implementation (`q-` for global discount)
-2. Decide with stakeholders whether to:
-   - Disable global discount (preferred for consistency), or
-   - Keep it with explicit user guidance
-3. Add a short help note in POS docs/training: "Line discount affects tax base; global discount (`q-`) is applied after subtotal."
-
-## Checklist for final team decision
-
-- Is legal/accounting policy expecting global discount to reduce tax base?
-- Is cashier workflow acceptable with line-discount-only policy?
-- Do we need to preserve legacy behavior from IoT/old deployments?
-- Should the POS UI warn when using global discount in tax-exclusive mode?
-
-If all answers prioritize consistency over flexibility, implement policy: line discounts only.
+1. `docker exec "odoo-odoo17" odoo -d "bd17" --workers=0 --http-port=8079 -u "l10n_ve_pos_mf" --stop-after-init`
+2. Hard refresh POS (`Cmd+Shift+R`).
+3. Repeat the discount comparison test. Confirm:
+   - Total in Odoo equals Total in printed receipt.
+   - The line `DESC. GLOBAL X% = Y.YY` appears on the receipt.
+4. If the discount exceeds the subtotal, the pop-up "excede el subtotal" appears.
