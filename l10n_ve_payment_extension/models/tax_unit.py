@@ -115,7 +115,6 @@ class TaxUnit(models.Model):
             return
         
         retentions.write({'tax_unit_ids': tax_unit_record.id})
-        retentions.env.flush_all()
         
         for ret in retentions:
 

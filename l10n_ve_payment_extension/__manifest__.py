@@ -25,6 +25,7 @@
         "security/ir_rule.xml",
         "data/sequence_data.xml",
         "data/type_person_data.xml",
+        "data/tax_unit_data.xml",
         "data/account_withholding_type_data.xml",
         "data/report_paperformat_data.xml",
         "data/fees_retention_data.xml",
