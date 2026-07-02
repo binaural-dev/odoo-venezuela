@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.0.3",
+    "version": "19.0.0.4",
     "depends": [
         "account_fiscal_year_closing",
         "l10n_ve_contact",
