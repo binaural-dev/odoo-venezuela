@@ -1,7 +1,7 @@
 
 <odoo>
     <data noupdate="0">
-        <record id="l10n_ve_accountant.tax_unit_data_binaural_payment_extension" model="tax.unit" forcecreate="0">
+        <record id="l10n_ve_accountant.tax_unit_data_l10n_ve_payment_extension" model="tax.unit" forcecreate="0">
             <field name="available_date">2025-01-01</field>
         </record>
     </data>
