@@ -75,15 +75,42 @@ class TestAccountPaymentRate(TransactionCase):
             "list_price": 100.0,
         })
         
+        self.account_bank = self.env["account.account"].create({
+            "name": "BANK ACCOUNT",
+            "code": "100100",
+            "account_type": "asset_cash",
+            "company_ids": [(6, 0, [self.company.id])],
+            "reconcile": True,
+        })
+        
+        self.manual_in = self.env.ref("account.account_payment_method_manual_in")
+        self.manual_out = self.env.ref("account.account_payment_method_manual_out")
+
+        self.pm_line_in = self.env["account.payment.method.line"].create({
+            "name": "Manual Inbound",
+            "payment_method_id": self.manual_in.id,
+            "payment_type": "inbound",
+            "payment_account_id": self.account_bank.id,
+        })
+
+        self.pm_line_out = self.env["account.payment.method.line"].create({
+            "name": "Manual Outbound",
+            "payment_method_id": self.manual_out.id,
+            "payment_type": "outbound",
+            "payment_account_id": self.account_bank.id,
+        })
+        
         # Create a journal for EUR if needed, or use Bank and force currency
-        self.bank_journal = self.env["account.journal"].search([('type', '=', 'bank'), ('company_id', '=', self.company.id)], limit=1)
-        if not self.bank_journal:
-             self.bank_journal = self.env["account.journal"].create({
-                "name": "Bank",
-                "type": "bank",
-                "code": "BNK",
-                "currency_id": self.currency_vef.id,
-            })
+        self.bank_journal = self.env["account.journal"].create({
+            "name": "Bank",
+            "type": "bank",
+            "code": "BNK",
+            "currency_id": self.currency_vef.id,
+            "default_account_id": self.account_bank.id,
+            "inbound_payment_method_line_ids": [(6, 0, self.pm_line_in.ids)],
+            "outbound_payment_method_line_ids": [(6, 0, self.pm_line_out.ids)],
+        })
+      
 
     def test_payment_eur_assignment(self):
         """

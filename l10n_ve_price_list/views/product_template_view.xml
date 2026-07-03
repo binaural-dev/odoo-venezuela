@@ -5,13 +5,13 @@
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='list_price_uom']" position="attributes">
-                <attribute name="invisible">not can_view_list_price_uom</attribute>
+                <attribute name="invisible">hide_list_price</attribute>
             </xpath>
             <xpath expr="//field[@name='list_price']" position="attributes">
-                <attribute name="invisible">not can_view_list_price_uom</attribute>
+                <attribute name="invisible">hide_list_price</attribute>
             </xpath>
             <xpath expr="//label[@for='list_price']" position="attributes">
-                <attribute name="invisible">not can_view_list_price_uom</attribute>
+                <attribute name="invisible">hide_list_price</attribute>
             </xpath>
         </field>
     </record>
