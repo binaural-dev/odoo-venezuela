@@ -3,12 +3,7 @@
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
-import {
-  formatFloat,
-  roundDecimals as round_di,
-  roundPrecision as round_pr,
-  floatIsZero,
-} from "@web/core/utils/numbers";
+import { roundPrecision as round_pr } from "@web/core/utils/numbers";
 
 
 // New orders are now associated with the current table, if any.
@@ -28,11 +23,22 @@ patch(PosOrder.prototype, {
 //     this.to_receipt = always_invoice;
 //   }
 },
-get_foreign_currency(){
+ get_foreign_currency(){
         return this.config.foreign_currency_id;
     },
  get_display_rate() {
-    return this.pos?.config?.foreign_inverse_rate;
+    const foreignCurrencyId = this.config?.foreign_currency_id?.id ?? this.config?.foreign_currency_id;
+    const orderCurrencyId = this.currency?.id ?? this.currency;
+    const configCurrencyId = this.config?.currency_id?.id ?? this.config?.currency_id;
+    if (orderCurrencyId && foreignCurrencyId) {
+      if (orderCurrencyId === foreignCurrencyId) {
+        return this.config.foreign_rate;
+      }
+      if (configCurrencyId && orderCurrencyId === configCurrencyId) {
+        return this.config.foreign_inverse_rate;
+      }
+    }
+    return this.config?.foreign_inverse_rate ?? this.pos?.config?.foreign_inverse_rate;
   },
 
 //   _isValidEmptyOrder() {
@@ -45,12 +51,27 @@ get_foreign_currency(){
 //   assert_editable() {},
 
   get init_conversion_rate() {
-    if (this.currency.name == "VEF") {
-      return this.config.foreign_inverse_rate;
+    const foreignCurrencyId = this.config?.foreign_currency_id?.id ?? this.config?.foreign_currency_id;
+    const orderCurrencyId = this.currency?.id ?? this.currency;
+    const inverseRate = Number(this.config?.foreign_inverse_rate ?? this.pos?.config?.foreign_inverse_rate ?? 0);
+    const directRate = Number(this.config?.foreign_rate ?? this.pos?.config?.foreign_rate ?? 0);
+
+    // Order is in the foreign currency itself → identity (setUnitPrice handles
+    // the isOrderInForeignCurrency fast-path; this branch covers the fallback
+    // in get_foreign_unit_price when foreign_price was never set).
+    if (orderCurrencyId && foreignCurrencyId && orderCurrencyId === foreignCurrencyId) {
+      return 1;
     }
-    if (this.currency.name == "USD") {
-      return this.config.foreign_rate;
+
+    // Order is in local/company currency → convert using foreign_inverse_rate.
+    // foreign_inverse_rate = X means "1 unit of foreign_currency = X local".
+    if (Number.isFinite(inverseRate) && inverseRate > 0) {
+      return inverseRate;
     }
+    if (Number.isFinite(directRate) && directRate > 0) {
+      return directRate;
+    }
+    return 0;
   },
  
 
@@ -60,13 +81,8 @@ get_foreign_currency(){
 //     return res;
 //   },
   get_conversion_rate() {
-    const orderlines = this.get_orderlines?.() || [];
-    if (orderlines.length) {
-      const lineRate = orderlines[0]?.currency_rate_display?.();
-      if (lineRate) {
-        return lineRate;
-      }
-    }
+    // NOTE: currency_rate_display on line is a getter on the OWL component,
+    // not callable on PosOrderline model, so we removed the dead call to it.
     if (!this.init_conversion_rate) {
       this._missingConversionRateWarningShown = true;
       return _t("N/D");
@@ -187,7 +203,8 @@ get_foreign_currency(){
   get_foreign_total_without_tax() {
     const lines = this.get_orderlines();
     const foreign_currency = this.get_foreign_currency();
-    const digits = foreign_currency ? foreign_currency.decimal_places : 2;
+    const foreignRounding = Number(foreign_currency?.rounding);
+    const rounding = Number.isFinite(foreignRounding) && foreignRounding > 0 ? foreignRounding : 0.01;
     return round_pr(
       lines.reduce(function (sum, orderLine) {
         if (typeof orderLine.get_foreign_price_without_tax === "function") {
@@ -197,7 +214,7 @@ get_foreign_currency(){
             return sum;
         }
       }, 0),
-      foreign_currency.rounding,
+      rounding,
     );
   },
 //   get_foreign_total_discount() {
@@ -223,6 +240,9 @@ get_foreign_currency(){
 //   },
   get_foreign_total_tax() {
     const orderlines = this.get_orderlines();
+    const foreign_currency = this.get_foreign_currency();
+    const foreignRounding = Number(foreign_currency?.rounding);
+    const rounding = Number.isFinite(foreignRounding) && foreignRounding > 0 ? foreignRounding : 0.01;
     if (this.company.tax_calculation_rounding_method === "round_globally") {
       // As always, we need:
       // 1. For each tax, sum their amount across all order lines
@@ -244,11 +264,10 @@ get_foreign_currency(){
 
       var sum = 0;
       var taxIds = Object.keys(groupTaxes);
-      const foreign_currency = this.get_foreign_currency();
       
       for (var j = 0; j < taxIds.length; j++) {
         var taxAmount = groupTaxes[taxIds[j]];
-        sum += round_pr(taxAmount, foreign_currency.rounding);
+        sum += round_pr(taxAmount, rounding);
       }
       return sum;
     } else {
@@ -261,7 +280,7 @@ get_foreign_currency(){
               return sum;
           }
         }, 0),
-        foreign_currency.rounding,
+        rounding,
       );
     }
   },
