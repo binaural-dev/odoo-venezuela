@@ -113,10 +113,6 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
-    @api.onchange("move_type")
-    def _onchange_move_type(self):
-        if self.move_type == "out_invoice":
-            self.invoice_date = fields.Date.today()
 
     def action_post(self):
         
