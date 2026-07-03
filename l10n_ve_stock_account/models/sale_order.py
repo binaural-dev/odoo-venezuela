@@ -80,7 +80,7 @@ class SaleOrder(models.Model):
     def _compute_document(self):
         for order in self:
             order.compute_document = "invoice"
-            if order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide'):
+            if order.env.user.has_group('l10n_ve_stock_account.group_not_dispatch_guide') and order.state == "draft":
                 order.document = "invoice"
 
 
