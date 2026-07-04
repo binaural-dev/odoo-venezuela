@@ -346,10 +346,194 @@ QUnit.test("Impresión de factura con impuestos y métodos de pago", async (asse
     assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>iS*EMPRESA TEST<ETX>")), "Razón social enviada");
     assert.ok(asciiHistory.some((cmd) => cmd.startsWith("<STX> 0000001000")), "Línea exenta enviada (tax code 0)");
     assert.ok(asciiHistory.some((cmd) => cmd.startsWith("<STX>\"0000002000")), "Línea reducida enviada (tax code 2)");
-    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>201000000001000<ETX>")), "Pago parcial método 01 enviado");
-    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>202000000002000<ETX>")), "Pago parcial método 02 enviado");
-    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>101<ETX>")), "Cierre fiscal final 101 enviado");
-    assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>102<ETX>")), "No se envía 1XX para pago múltiple");
+    // El método de mayor monto (02, 20.00) es el que cierra con 1XX; el otro (01) va como 2XX.
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>201000000001000<ETX>")), "Pago parcial método 01 (no-cierre) enviado como 2XX");
+    assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>202000000002000<ETX>")), "El método de cierre (02) NO se envía como 2XX");
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>102<ETX>")), "Cierre fiscal con 1XX (102, mayor monto)");
+    assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>101<ETX>")), "No cierra con 101 (el método de mayor monto es 02, no 01)");
+});
+
+// ============ TESTS DE IGTF (manual TFHKA v1.1.0) ============
+
+QUnit.test("_isDivisaPaymentMethod clasifica códigos 01-19 como nacional y 20-24 como divisa", (assert) => {
+    const driver = new TfhkaDriver();
+
+    assert.notOk(driver._isDivisaPaymentMethod("01"), "01 es nacional");
+    assert.notOk(driver._isDivisaPaymentMethod("19"), "19 es nacional (límite superior)");
+    assert.notOk(driver._isDivisaPaymentMethod("00"), "00 es nacional");
+    assert.ok(driver._isDivisaPaymentMethod("20"), "20 es divisa (límite inferior)");
+    assert.ok(driver._isDivisaPaymentMethod("24"), "24 es divisa (límite superior)");
+    assert.notOk(driver._isDivisaPaymentMethod("25"), "25 fuera de rango IGTF, no es divisa");
+    assert.ok(driver._isDivisaPaymentMethod(20), "Acepta número además de string");
+});
+
+QUnit.test("_hasDivisaPayment detecta si algún pago de la orden es en divisa", (assert) => {
+    const driver = new TfhkaDriver();
+
+    assert.notOk(
+        driver._hasDivisaPayment([{ payment_method_code: "01" }, { payment_method_code: "02" }]),
+        "Sin divisa si todos los métodos son 01-19"
+    );
+    assert.ok(
+        driver._hasDivisaPayment([{ payment_method_code: "01" }, { payment_method_code: "20" }]),
+        "Detecta divisa si al menos un método está en 20-24"
+    );
+    assert.notOk(driver._hasDivisaPayment([]), "Sin pagos, no hay divisa");
+    assert.notOk(driver._hasDivisaPayment(undefined), "payment_lines undefined no rompe, retorna false");
+});
+
+QUnit.test("IGTF: pago con divisa cierra con 199 (no con 1XX) y envía TODOS los métodos como 2XX", async (assert) => {
+    const driver = new TfhkaDriver();
+    driver.connection = new MockSerialConnection();
+    driver.retryDelay = 0;
+
+    await driver.connection.requestPort();
+    driver.isConnected = true;
+
+    const mockOrder = {
+        partner: { vat: "J123456789", name: "EMPRESA DIVISA TEST" },
+        lines: [
+            { product_name: "Producto Gravado", fiscal_code: "1", quantity: 1, price_unit: 100.0 },
+        ],
+        payment_lines: [
+            { payment_method_code: "01", amount: 40.0 },  // nacional (mayor monto, normalmente cerraría con 1XX)
+            { payment_method_code: "20", amount: 60.0 },  // DIVISA -> dispara IGTF
+        ],
+        additional_lines: [],
+        flag_21: "00",
+        has_cashbox: false,
+    };
+
+    driver.connection.setNextResponse("STATUS");
+    driver.connection.setResponseSequence(new Array(20).fill("ACK"));
+    driver.connection.setS1Payload(buildS1Payload({
+        lastInvoiceNumber: 900,
+        dailyClosureCounter: 20,
+        serialMachine: "Z1F0022949",
+    }));
+
+    const result = await driver.printInvoice(mockOrder);
+    assert.ok(result.success, "Factura con pago en divisa impresa exitosamente");
+
+    const asciiHistory = driver.connection.getSentCommands().map((cmd) => cmd.ascii);
+
+    // Ambos métodos deben ir como 2XX (incluyendo el de mayor monto, que normalmente
+    // cerraría con 1XX si no hubiera divisa involucrada)
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>201000000004000<ETX>")), "Pago nacional 01 enviado como 2XX");
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>220000000006000<ETX>")), "Pago en divisa 20 enviado como 2XX");
+
+    // NO debe enviarse ningún cierre directo 1XX (ni 101 ni 120)
+    assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>101<ETX>")), "No se envía 1XX (101) con divisa presente");
+    assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>120<ETX>")), "No se envía 1XX (120) con divisa presente");
+
+    // El cierre debe ser el 199 final (siempre presente al cerrar el documento)
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>199<ETX>")), "Cierre con 199 (obligatorio con IGTF)");
+});
+
+QUnit.test("Sin divisa: comportamiento normal se mantiene (cierre con 1XX, no 199 de pago)", async (assert) => {
+    const driver = new TfhkaDriver();
+    driver.connection = new MockSerialConnection();
+    driver.retryDelay = 0;
+
+    await driver.connection.requestPort();
+    driver.isConnected = true;
+
+    const mockOrder = {
+        partner: { vat: "J123456789", name: "EMPRESA NACIONAL TEST" },
+        lines: [
+            { product_name: "Producto Gravado", fiscal_code: "1", quantity: 1, price_unit: 100.0 },
+        ],
+        payment_lines: [
+            { payment_method_code: "01", amount: 40.0 },
+            { payment_method_code: "02", amount: 60.0 },
+        ],
+        additional_lines: [],
+        flag_21: "00",
+        has_cashbox: false,
+    };
+
+    driver.connection.setNextResponse("STATUS");
+    driver.connection.setResponseSequence(new Array(20).fill("ACK"));
+    driver.connection.setS1Payload(buildS1Payload({
+        lastInvoiceNumber: 901,
+        dailyClosureCounter: 20,
+        serialMachine: "Z1F0022949",
+    }));
+
+    const result = await driver.printInvoice(mockOrder);
+    assert.ok(result.success, "Factura sin divisa impresa exitosamente");
+
+    const asciiHistory = driver.connection.getSentCommands().map((cmd) => cmd.ascii);
+
+    // El de mayor monto (02, 60.00) debe cerrar con 1XX; el otro (01) va como 2XX
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>201000000004000<ETX>")), "Pago no-cierre 01 enviado como 2XX");
+    assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>202000000006000<ETX>")), "El método de cierre NO se envía como 2XX");
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>102<ETX>")), "Cierre directo con 1XX (102, mayor monto)");
+});
+
+QUnit.test("_parseS25Data calcula el monto de IGTF como diferencia entre total con y sin IGTF", (assert) => {
+    const driver = new TfhkaDriver();
+
+    // Campos: bases, impuesto, totalConIgtf, cantArticulos, totalSinIgtf, cantPagos, tipoDocumento
+    const payload = "S2\n0000000010000\n0000000001600\n0000000014980\n000001\n0000000011600\n0001\n1";
+    const data = driver._parseS25Data(payload);
+
+    assert.ok(data, "Parseo exitoso");
+    assert.strictEqual(data.subtotalBases, 100.0, "Subtotal de bases imponibles correcto");
+    assert.strictEqual(data.subtotalTax, 16.0, "Subtotal de impuesto correcto");
+    assert.strictEqual(data.totalWithoutIgtf, 116.0, "Monto a pagar sin IGTF correcto");
+    assert.strictEqual(data.totalWithIgtf, 149.8, "Monto a pagar incluyendo IGTF correcto");
+    assert.strictEqual(data.igtfAmount, 33.8, "IGTF calculado como diferencia (149.80 - 116.00)");
+    assert.strictEqual(data.documentType, "1", "Tipo de documento: Factura");
+    assert.strictEqual(data.documentTypeLabel, "Factura", "Label de tipo de documento correcto");
+});
+
+QUnit.test("_parseS25Data retorna null con payload vacío o insuficiente", (assert) => {
+    const driver = new TfhkaDriver();
+    assert.strictEqual(driver._parseS25Data(""), null, "Payload vacío retorna null");
+    assert.strictEqual(driver._parseS25Data("S2\n123"), null, "Payload con muy pocos campos retorna null");
+});
+
+QUnit.test("Nota de crédito con pago en divisa también cierra con 199 (no 1XX)", async (assert) => {
+    const driver = new TfhkaDriver();
+    driver.connection = new MockSerialConnection();
+    driver.retryDelay = 0;
+
+    await driver.connection.requestPort();
+    driver.isConnected = true;
+
+    const creditNoteOrder = {
+        partner: { vat: "V17527041", name: "Cliente NC Divisa" },
+        invoice_affected: {
+            number: "900",
+            serial_machine: "Z1F0022949",
+            date: "20/06/2026",
+        },
+        lines: [
+            { product_name: "Producto Devuelto", product_code: "P001", fiscal_code: "1", quantity: 1, price_unit: 60 },
+        ],
+        payment_lines: [{ payment_method_code: "20", amount: 60 }],
+        additional_lines: [],
+        flag_21: "00",
+        has_cashbox: false,
+    };
+
+    driver.connection.setNextResponse("STATUS");
+    driver.connection.setResponseSequence(new Array(20).fill("ACK"));
+    driver.connection.setS1Payload(buildS1Payload({
+        lastInvoiceNumber: 900,
+        lastNCNumber: 1235,
+        dailyClosureCounter: 20,
+        serialMachine: "Z1F0022949",
+    }));
+
+    const result = await driver.printCreditNote(creditNoteOrder);
+    assert.ok(result.success, "NC con pago en divisa impresa exitosamente");
+
+    const asciiHistory = driver.connection.getSentCommands().map((cmd) => cmd.ascii);
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>220000000006000<ETX>")), "Pago en divisa enviado como 2XX");
+    assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>120<ETX>")), "No se envía cierre directo 1XX con divisa");
+    assert.ok(asciiHistory.some((cmd) => cmd.includes("<STX>199<ETX>")), "Cierre con 199");
 });
 
 QUnit.test("Impresión de nota de crédito con secuencia fiscal correcta", async (assert) => {

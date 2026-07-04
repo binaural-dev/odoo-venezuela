@@ -38,6 +38,9 @@ export class MfFiscalizadorDialog extends Component {
                 <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="readS4">
                     <i class="fa fa-credit-card me-1"/>Medios de Pago (S4)
                 </button>
+                <button class="btn btn-info" t-att-disabled="state.busy" t-on-click="readIgtfInfo">
+                    <i class="fa fa-globe me-1"/>Info IGTF (S3+S25)
+                </button>
                 <button class="btn btn-warning" t-att-disabled="state.busy" t-on-click="reportX">
                     <i class="fa fa-file-text-o me-1"/>Reporte X
                 </button>
@@ -182,6 +185,83 @@ export class MfFiscalizadorDialog extends Component {
                 const code = m.code || "??";
                 const name = m.name || "(sin nombre)";
                 this.log(`  [${code}] ${name}`);
+            }
+        });
+    }
+
+    /**
+     * Muestra información de configuración IGTF (Impuesto a las Grandes
+     * Transacciones Financieras), según el manual TFHKA v1.1.0:
+     * - Tasa IGTF programada (S3, 4ta línea de tasas)
+     * - Flags de sistema crudos (S3) — buscar Flag 50 (habilita IGTF/divisas)
+     *   y Flag 63 (formato de extracción de reportes con IGTF)
+     * - Desglose IGTF del documento fiscal EN CURSO, si hay uno abierto (S25)
+     * - Clasificación de medios de pago programados (S4) en Nacional (01-19)
+     *   vs Divisa (20-24, dispara cálculo de IGTF)
+     */
+    async readIgtfInfo() {
+        await this.withBusy(async () => {
+            const driver = getBackendFiscalPrinter();
+            if (!(await ensureConnected(driver))) {
+                this.log(_t("No se pudo conectar"), "danger");
+                return;
+            }
+
+            // 1. Tasa IGTF y flags de sistema (S3)
+            const s3Result = await driver.readS3Data();
+            if (!s3Result.success) {
+                this.log(s3Result.error || _t("No se pudo leer S3"), "danger");
+                return;
+            }
+            const igtf = s3Result.data.igtf;
+            this.log(
+                `Tasa IGTF programada: ${igtf.value.toFixed(2)}% (tipo: ${igtf.typeLabel})`,
+                "success"
+            );
+            this.log(
+                _t("Flags de sistema (S3, crudo): ") + (s3Result.data.systemFlags || []).join(", "),
+                "info"
+            );
+            this.log(
+                _t("⚠️ Verifica manualmente que Flag 50 = 01 en la impresora para habilitar IGTF y medios de pago 20-24 (usa comando raw 'S3' o consulta programación física)."),
+                "warning"
+            );
+
+            // 2. Desglose IGTF del documento en curso (S25) — 0 si no hay transacción abierta
+            const s25Result = await driver.readS25Data();
+            if (s25Result.success) {
+                const d = s25Result.data;
+                this.log(
+                    `S25 (documento en curso: ${d.documentTypeLabel}) — Base: ${d.subtotalBases.toFixed(2)} | ` +
+                        `Impuesto: ${d.subtotalTax.toFixed(2)} | Monto sin IGTF: ${d.totalWithoutIgtf.toFixed(2)} | ` +
+                        `Monto con IGTF: ${d.totalWithIgtf.toFixed(2)} | IGTF calculado: ${d.igtfAmount.toFixed(2)}`,
+                    "success"
+                );
+            } else {
+                this.log(_t("No se pudo leer S25 (puede ser normal si no hay documento fiscal abierto): ") + s25Result.error, "warning");
+            }
+
+            // 3. Clasificación de medios de pago (S4) — Nacional (01-19) vs Divisa (20-24)
+            const s4Result = await driver.readS4Data();
+            if (s4Result.success) {
+                const methods = s4Result.data.methods || [];
+                const divisaMethods = methods.filter((m) => driver._isDivisaPaymentMethod(m.code));
+                const nacionalMethods = methods.filter((m) => !driver._isDivisaPaymentMethod(m.code));
+
+                this.log(_t("Medios NACIONALES (01-19, sin IGTF): ") + nacionalMethods.length, "info");
+                this.log(
+                    _t("Medios en DIVISA (20-24, disparan IGTF si Flag 50=01): ") + divisaMethods.length,
+                    divisaMethods.length ? "success" : "warning"
+                );
+                for (const m of divisaMethods) {
+                    this.log(`  [${m.code}] ${m.name} → DIVISA (IGTF)`, "success");
+                }
+                if (!divisaMethods.length) {
+                    this.log(
+                        _t("No hay medios de pago en divisa (20-24) programados. Si el cliente cobra en USD, deben programarse en la impresora."),
+                        "warning"
+                    );
+                }
             }
         });
     }

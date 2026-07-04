@@ -711,6 +711,98 @@ export class TfhkaDriver {
         return { success: true, data, error: "" };
     }
 
+    /**
+     * Parsea la respuesta del comando S25 (manual IGTF TFHKA v1.1.0, Tabla 10).
+     * S25 informa el desglose IGTF del documento fiscal EN CURSO (factura,
+     * NC o ND abierta). Si no hay documento abierto, los valores vienen en 0.
+     *
+     * Campos (en orden, separados por 0x0A al igual que S1/S3):
+     *   1. Subtotal de bases imponibles
+     *   2. Subtotal de Impuesto
+     *   3. Monto a Pagar Incluyendo IGTF
+     *   4. Cantidad de Artículos
+     *   5. Monto a Pagar (sin IGTF)
+     *   6. Cantidad de pagos realizados
+     *   7. Tipo de Documento (0=Ninguno, 1=Factura, 2=NC, 3=ND)
+     *
+     * El monto de IGTF se calcula como la diferencia entre "Monto a Pagar
+     * Incluyendo IGTF" y "Monto a Pagar".
+     * @param {string} rawData
+     * @returns {Object|null}
+     */
+    _parseS25Data(rawData) {
+        if (!rawData) {
+            return null;
+        }
+
+        const payload = String(rawData)
+            .replace(/^\u0002/, "")
+            .replace(/\u0003$/, "")
+            .replace(/^S2/, "");
+
+        const fields = payload
+            .split("\n")
+            .map((value) => value.replace(/\r/g, "").trim())
+            .filter((value) => value.length > 0);
+
+        if (fields.length < 6) {
+            return null;
+        }
+
+        const documentTypeLabels = {
+            "0": "Ninguno",
+            "1": "Factura",
+            "2": "Nota de Crédito",
+            "3": "Nota de Débito",
+        };
+
+        const subtotalBases = this._decodeImplicit2Decimals(fields[0]);
+        const subtotalTax = this._decodeImplicit2Decimals(fields[1]);
+        const totalWithIgtf = this._decodeImplicit2Decimals(fields[2]);
+        const itemCount = parseInt(fields[3], 10) || 0;
+        const totalWithoutIgtf = this._decodeImplicit2Decimals(fields[4]);
+        const paymentCount = parseInt(fields[5], 10) || 0;
+        const documentTypeCode = fields[6] !== undefined ? String(fields[6]).trim() : "";
+        const igtfAmount = Number((totalWithIgtf - totalWithoutIgtf).toFixed(2));
+
+        return {
+            subtotalBases,
+            subtotalTax,
+            totalWithIgtf,
+            totalWithoutIgtf,
+            igtfAmount,
+            itemCount,
+            paymentCount,
+            documentType: documentTypeCode,
+            documentTypeLabel: documentTypeLabels[documentTypeCode] || "Desconocido",
+            raw: fields,
+        };
+    }
+
+    /**
+     * Lee el status S25 (desglose IGTF del documento fiscal en curso).
+     * Solo tiene datos significativos si hay una transacción fiscal abierta
+     * (factura/NC/ND iniciada). Fuera de una transacción retorna ceros.
+     * @returns {Promise<Object>} - { success, data, error }
+     */
+    async readS25Data() {
+        const response = await this.sendCommand("S25", 5000, false);
+        if (!response.success) {
+            return { success: false, data: null, error: response.error || "No se pudo leer S25" };
+        }
+
+        const data = this._parseS25Data(response.data);
+        if (!data) {
+            return {
+                success: false,
+                data: null,
+                error: "No se pudo parsear la respuesta S25 de la impresora",
+            };
+        }
+
+        return { success: true, data, error: "" };
+    }
+
     _parseS4Data(rawData) {
         if (!rawData) {
             return null;
@@ -914,6 +1006,33 @@ export class TfhkaDriver {
         return true;
     }
 
+    /**
+     * Determina si un código de método de pago corresponde a un medio en
+     * DIVISAS según el manual IGTF de TFHKA (v1.1.0, sección 7):
+     *   - 01 a 19: PAGO EN MONEDA NACIONAL (no aplica IGTF)
+     *   - 20 a 24: PAGO EN DIVISAS (aplica IGTF si Flag 50 = 01)
+     * @param {string|number} methodCode
+     * @returns {boolean}
+     */
+    _isDivisaPaymentMethod(methodCode) {
+        const code = parseInt(String(methodCode).replace(/[^0-9]/g, ""), 10);
+        return Number.isInteger(code) && code >= 20 && code <= 24;
+    }
+
+    /**
+     * Determina si el conjunto de pagos de la orden contiene al menos un
+     * medio de pago en divisas (códigos 20-24). Si es así, el cierre fiscal
+     * DEBE usar el comando "199" (obligatorio con Flag 50=01) en vez del
+     * cierre directo "1XX", según el manual IGTF de TFHKA.
+     * @param {Array} payments - orderData.payment_lines
+     * @returns {boolean}
+     */
+    _hasDivisaPayment(payments) {
+        return (payments || []).some((payment) =>
+            this._isDivisaPaymentMethod(payment.payment_method_code)
+        );
+    }
+
     _appendPaymentCommands(commands, orderData, config) {
         const payments = orderData.payment_lines || [];
         const groupedPayments = {};
@@ -934,6 +1053,25 @@ export class TfhkaDriver {
 
         if (!paymentEntries.length) {
             commands.push("101");
+            return;
+        }
+
+        // IGTF (manual TFHKA v1.1.0): si hay pago en divisas (20-24), el
+        // cierre NO puede ser "1XX" — se deben enviar TODOS los métodos
+        // como "2XX" (incluido el que normalmente cerraría) y dejar que el
+        // comando "199" final (ya emitido al final de cada documento fiscal
+        // en printInvoice/printCreditNote/printDebitNote) haga el cierre.
+        // Sin esto, la impresora rechaza el documento o no calcula el IGTF.
+        if (this._hasDivisaPayment(payments)) {
+            for (const { methodCode, amount } of paymentEntries) {
+                const amountStr = this._formatAmount(
+                    amount,
+                    config.max_payment_amount_int,
+                    config.max_payment_amount_decimal
+                );
+                commands.push(`2${methodCode}${amountStr}`);
+            }
+            // NO se envía "1XX": el "199" final cierra el documento con IGTF.
             return;
         }
 
