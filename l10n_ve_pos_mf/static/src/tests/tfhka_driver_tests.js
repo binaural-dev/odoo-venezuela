@@ -494,6 +494,18 @@ QUnit.test("_parseS25Data retorna null con payload vacío o insuficiente", (asse
     assert.strictEqual(driver._parseS25Data("S2\n123"), null, "Payload con muy pocos campos retorna null");
 });
 
+QUnit.test("_formatDisplayAmount formatea con punto de miles y coma decimal (formato venezolano)", (assert) => {
+    const driver = new TfhkaDriver();
+
+    assert.strictEqual(driver._formatDisplayAmount(15), "15,00", "Monto simple sin miles");
+    assert.strictEqual(driver._formatDisplayAmount(50), "50,00", "Monto simple sin miles (2)");
+    assert.strictEqual(driver._formatDisplayAmount(39290.94), "39.290,94", "Monto con miles y decimales");
+    assert.strictEqual(driver._formatDisplayAmount(1234567.89), "1.234.567,89", "Monto con múltiples separadores de miles");
+    assert.strictEqual(driver._formatDisplayAmount(0), "0,00", "Monto cero");
+    assert.strictEqual(driver._formatDisplayAmount(999.5), "999,50", "Redondeo a 2 decimales");
+    assert.strictEqual(driver._formatDisplayAmount(1000), "1.000,00", "Límite exacto de mil");
+});
+
 QUnit.test("Nota de crédito con pago en divisa también cierra con 199 (no 1XX)", async (assert) => {
     const driver = new TfhkaDriver();
     driver.connection = new MockSerialConnection();
@@ -705,8 +717,8 @@ QUnit.test("Descuento global (Strategy A) no envía q- y refleja monto en línea
     const close101Count = asciiHistory.filter((cmd) => cmd.includes("<STX>101<ETX>")).length;
     assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>q-")), "No se envía q- con Strategy A");
     assert.ok(
-        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL = 15.00<ETX>")),
-        "Línea informativa de descuento global con porcentaje y monto presentes"
+        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL = 15,00<ETX>")),
+        "Línea informativa de descuento global con porcentaje y monto presentes (formato venezolano: coma decimal)"
     );
     assert.notOk(asciiHistory.some((cmd) => cmd.includes("Descuento Global<ETX>")), "No hay línea negativa enviada como item");
     assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>201000000008500<ETX>")), "Pago único no se envía como parcial 2XX");
@@ -760,8 +772,8 @@ QUnit.test("Descuento global (Strategy A) emite aviso adicional cuando es clampa
 
     const asciiHistory = driver.connection.getSentCommands().map((cmd) => cmd.ascii);
     assert.ok(
-        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL = 50.00<ETX>")),
-        "Línea informativa del descuento clampado presente"
+        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL = 50,00<ETX>")),
+        "Línea informativa del descuento clampado presente (formato venezolano: coma decimal)"
     );
     assert.ok(
         asciiHistory.some((cmd) => cmd.includes("i01DESC. GLOBAL EXCEDIO SUBTOTAL<ETX>")),

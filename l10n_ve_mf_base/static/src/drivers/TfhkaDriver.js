@@ -973,6 +973,21 @@ export class TfhkaDriver {
      * @param {Object} counter - { value: number } mutable; índice actual
      * @returns {boolean} true si al menos una línea fue emitida
      */
+
+    /**
+     * Formatea un monto para mostrar en líneas informativas del ticket
+     * (NO usar para comandos de protocolo tipo 2XX, esos usan _formatAmount
+     * con dígitos crudos). Formato venezolano: punto para miles, coma para
+     * decimales. Ej: 39290.94 -> "39.290,94"
+     * @param {number} value
+     * @returns {string}
+     */
+    _formatDisplayAmount(value) {
+        const [intPart, decPart] = Number(value).toFixed(2).split(".");
+        const intWithThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return `${intWithThousands},${decPart}`;
+    }
+
     _appendDiscountInfoLine(commands, orderData, counter) {
         const rate = Number(orderData?.global_discount_rate || 0);
         const amount = Number(orderData?.global_discount_amount || 0);
@@ -991,7 +1006,7 @@ export class TfhkaDriver {
             return false;
         }
 
-        const amountStr = amount.toFixed(2);
+        const amountStr = this._formatDisplayAmount(amount);
         const text = `DESC. GLOBAL = ${amountStr}`;
         commands.push(`i${String(startIndex).padStart(2, '0')}${text.substring(0, 127)}`);
         counter.value++;
