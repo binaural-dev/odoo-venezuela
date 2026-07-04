@@ -73,6 +73,17 @@ export function toDriverOrder(payload) {
         payment_method_code: String(payment.payment_method || "01").padStart(2, "0"),
     }));
 
+    // `payload.info`: líneas informativas opcionales devueltas por
+    // check_print_out_invoice/refund/debit_note (ej. NUMERO DE CONTROL,
+    // REFERENCIA, tasa del día) usadas por customizaciones de cliente
+    // (ej. solumedica_mf). En el flujo IoT legado estas líneas viajaban
+    // dentro del payload hacia el IoT Box y el SDK Python las imprimía
+    // como líneas "iXX". En Web Serial el navegador debe reenviarlas
+    // explícitamente como additional_lines para que el driver las envíe.
+    const additionalLines = Array.isArray(payload.info)
+        ? payload.info.filter((line) => !!line).map((line) => String(line))
+        : [];
+
     return {
         flag_21: String(payload.flag_21 || "00"),
         partner: {
@@ -88,7 +99,7 @@ export function toDriverOrder(payload) {
         has_cashbox: false,
         header_lines: [],
         footer_lines: [],
-        additional_lines: [],
+        additional_lines: additionalLines,
     };
 }
 
