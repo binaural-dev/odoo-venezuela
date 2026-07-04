@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import { FiscalProtocol } from "../core/FiscalProtocol";
+import { FiscalProtocol } from "@l10n_ve_mf_base/core/FiscalProtocol";
 
 /**
  * MockSerialConnection - Mock de SerialConnection para testing

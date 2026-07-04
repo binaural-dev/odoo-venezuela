@@ -32,7 +32,6 @@ export class LocalOrderBuffer {
         
         try {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(buffer));
-            console.log(`LocalOrderBuffer:: Pedido guardado (${buffer.length} pendientes)`);
         } catch (e) {
             console.error("LocalOrderBuffer:: Error guardando en localStorage", e);
         }

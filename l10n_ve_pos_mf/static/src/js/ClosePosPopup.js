@@ -6,6 +6,7 @@ import { useService } from "@web/core/utils/hooks";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { ConfirmPopup } from "@point_of_sale/app/utils/confirm_popup/confirm_popup";
 import { _t } from "@web/core/l10n/translation";
+import { InfoPopup } from "../components/InfoPopup/InfoPopup";
 
 patch(ClosePosPopup.prototype, {
   setup() {
@@ -107,11 +108,10 @@ patch(ClosePosPopup.prototype, {
       await this.orm.call("account.move", "report_z", [[], this.pos.config.serial_machine, value]);
       await this.orm.call("pos.session", "set_report_z", [this.pos.pos_session.id, value]);
 
-      await this.popup.add(ConfirmPopup, {
+      await this.popup.add(InfoPopup, {
         title: _t("Reporte Z impreso"),
         body: _t("Cierre fiscal diario completado y sincronizado con Odoo."),
         confirmText: _t("Aceptar"),
-        cancelText: false,
       });
     } catch (error) {
       await this.popup.add(ErrorPopup, {

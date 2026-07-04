@@ -2,8 +2,8 @@
 
 import { Component, useState, onMounted, onWillUnmount } from "@odoo/owl";
 import { AbstractAwaitablePopup } from "@point_of_sale/app/popup/abstract_awaitable_popup";
-import { FiscalProtocol } from "../../core/FiscalProtocol";
-import { StatusParser } from "../../core/StatusParser";
+import { FiscalProtocol } from "@l10n_ve_mf_base/core/FiscalProtocol";
+import { StatusParser } from "@l10n_ve_mf_base/core/StatusParser";
 import { _t } from "@web/core/l10n/translation";
 
 /**
@@ -109,7 +109,7 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
 
         const originalSendCommand = this.fiscalPrinter.sendCommand.bind(this.fiscalPrinter);
         
-        this.fiscalPrinter.sendCommand = async (command, timeout) => {
+        this.fiscalPrinter.sendCommand = async (command, timeout, ...rest) => {
             const startTime = Date.now();
             
             // Log comando enviado
@@ -120,7 +120,7 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
             });
 
             // Ejecutar comando original
-            const result = await originalSendCommand(command, timeout);
+            const result = await originalSendCommand(command, timeout, ...rest);
             
             const duration = Date.now() - startTime;
             

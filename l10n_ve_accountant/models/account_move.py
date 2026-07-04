@@ -367,7 +367,15 @@ class AccountMove(models.Model):
                 view_id = self.env.ref(
                     "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
                 ).id
-                doc = etree.XML(res["arch"])
+                arch = res.get("arch")
+                if isinstance(arch, bytes):
+                    arch = arch.decode()
+                elif arch is None:
+                    return res
+                elif not isinstance(arch, str):
+                    arch = etree.tostring(arch, encoding="unicode")
+
+                doc = etree.XML(arch)
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:
                     page[0].set(

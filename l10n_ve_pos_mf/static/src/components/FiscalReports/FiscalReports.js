@@ -6,6 +6,7 @@ import { useService } from "@web/core/utils/hooks";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { ConfirmPopup } from "@point_of_sale/app/utils/confirm_popup/confirm_popup";
 import { _t } from "@web/core/l10n/translation";
+import { InfoPopup } from "../InfoPopup/InfoPopup";
 
 /**
  * Componente para generar Reportes X y Z desde la UI del POS
@@ -50,7 +51,6 @@ export class FiscalReports extends Component {
                     body: _t(result.error || "Error desconocido"),
                 });
             } else {
-                console.log("FiscalReports:: Reporte X impreso exitosamente");
             }
         } catch (error) {
             console.error("FiscalReports:: Error al imprimir Reporte X", error);
@@ -97,14 +97,10 @@ export class FiscalReports extends Component {
                     body: _t(result.error || "Error desconocido"),
                 });
             } else {
-                console.log("FiscalReports:: Reporte Z impreso exitosamente");
-                
-                // Opcional: Mostrar confirmación visual
-                await this.popup.add(ConfirmPopup, {
+                await this.popup.add(InfoPopup, {
                     title: _t("Reporte Z impreso"),
                     body: _t("El cierre diario se ha realizado exitosamente"),
                     confirmText: _t("OK"),
-                    cancelText: false,
                 });
             }
         } catch (error) {

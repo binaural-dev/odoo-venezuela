@@ -1,9 +1,9 @@
 /** @odoo-module */
 
 import { registry } from "@web/core/registry";
-import { FiscalProtocol } from "../core/FiscalProtocol";
-import { StatusParser } from "../core/StatusParser";
-import { TfhkaDriver } from "../drivers/TfhkaDriver";
+import { FiscalProtocol } from "@l10n_ve_mf_base/core/FiscalProtocol";
+import { StatusParser } from "@l10n_ve_mf_base/core/StatusParser";
+import { TfhkaDriver } from "@l10n_ve_mf_base/drivers/TfhkaDriver";
 import { MockSerialConnection } from "./MockSerialConnection";
 
 function buildS1Payload({
@@ -521,7 +521,7 @@ QUnit.test("Descuento global (Strategy A) no envía q- y refleja monto en línea
     const close101Count = asciiHistory.filter((cmd) => cmd.includes("<STX>101<ETX>")).length;
     assert.notOk(asciiHistory.some((cmd) => cmd.includes("<STX>q-")), "No se envía q- con Strategy A");
     assert.ok(
-        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL 15% = 15.00<ETX>")),
+        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL = 15.00<ETX>")),
         "Línea informativa de descuento global con porcentaje y monto presentes"
     );
     assert.notOk(asciiHistory.some((cmd) => cmd.includes("Descuento Global<ETX>")), "No hay línea negativa enviada como item");
@@ -576,7 +576,7 @@ QUnit.test("Descuento global (Strategy A) emite aviso adicional cuando es clampa
 
     const asciiHistory = driver.connection.getSentCommands().map((cmd) => cmd.ascii);
     assert.ok(
-        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL 100% = 50.00<ETX>")),
+        asciiHistory.some((cmd) => cmd.includes("i00DESC. GLOBAL = 50.00<ETX>")),
         "Línea informativa del descuento clampado presente"
     );
     assert.ok(

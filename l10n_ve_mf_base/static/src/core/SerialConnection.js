@@ -46,21 +46,11 @@ export class SerialConnection {
 
             this.port = await navigator.serial.requestPort();
             
-            // Obtener info del puerto (útil para debug)
-            const info = this.port.getInfo();
-            console.log("SerialConnection:: Puerto seleccionado:", {
-                usbVendorId: info.usbVendorId ? `0x${info.usbVendorId.toString(16)}` : 'N/A',
-                usbProductId: info.usbProductId ? `0x${info.usbProductId.toString(16)}` : 'N/A',
-            });
-            
             await this.port.open(this.config);
             this.isConnected = true;
             
             // Guardar la configuración en localStorage para reconexión automática
             this._savePortConfig();
-            
-            console.log("SerialConnection:: Puerto serial conectado con config:", this.config);
-            console.log("SerialConnection:: TIP: Si tienes timeouts, prueba conectar la impresora directamente (sin hub USB)");
             
             return true;
         } catch (error) {
@@ -85,7 +75,6 @@ export class SerialConnection {
                 this.port = ports[0];
                 await this.port.open(this.config);
                 this.isConnected = true;
-                console.log("SerialConnection:: Reconexión automática exitosa");
                 return true;
             }
             return false;
@@ -106,9 +95,14 @@ export class SerialConnection {
             return false;
         }
 
-        // Esperar si hay un lock de escritura activo
-        while (this.writeLock) {
+        let waitCount = 0;
+        while (this.writeLock && waitCount < 500) {
             await new Promise(resolve => setTimeout(resolve, 10));
+            waitCount++;
+        }
+        if (waitCount >= 500) {
+            console.error("SerialConnection:: Timeout esperando writeLock");
+            this.writeLock = false;
         }
 
         try {
@@ -123,9 +117,7 @@ export class SerialConnection {
             if (this.writer) {
                 try {
                     this.writer.releaseLock();
-                } catch (e) {
-                    // Ignorar error de unlock si ya estaba liberado
-                }
+                } catch (e) {}
             }
             this.writeLock = false;
             return false;
@@ -145,10 +137,17 @@ export class SerialConnection {
         }
 
         // Esperar si hay un lock de lectura activo
-        while (this.readLock) {
+        let waitCount = 0;
+        while (this.readLock && waitCount < 500) {
             await new Promise(resolve => setTimeout(resolve, 10));
+            waitCount++;
+        }
+        if (waitCount >= 500) {
+            console.error("SerialConnection:: Timeout esperando readLock en read()");
+            this.readLock = false;
         }
 
+        let timeoutId = null;
         try {
             this.readLock = true;
             const chunks = [];
@@ -156,44 +155,46 @@ export class SerialConnection {
             let buffer = "";
 
             this.reader = this.port.readable.getReader();
-            
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Timeout")), timeout)
-            );
 
-            const readPromise = (async () => {
-                while (true) {
-                    const { value, done } = await this.reader.read();
-                    if (done) {
-                        console.log("SerialConnection:: Stream cerrado");
-                        break;
+            let readResolve;
+            const readPromise = new Promise((resolve) => { readResolve = resolve; });
+
+            timeoutId = setTimeout(() => {
+                readResolve(null);
+            }, timeout);
+
+            (async () => {
+                try {
+                    while (true) {
+                        const { value, done } = await this.reader.read();
+                        if (done) {
+                            break;
+                        }
+
+                        chunks.push(value);
+
+                        if (value.length === 1 && (value[0] === 0x06 || value[0] === 0x15)) {
+                            break;
+                        }
+
+                        buffer += decoder.decode(value, { stream: true });
+
+                        if (buffer.includes(delimiter)) {
+                            break;
+                        }
                     }
-                    
-                    console.log("SerialConnection:: Recibidos", value.length, "bytes:", 
-                        Array.from(value).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-                    
-                    chunks.push(value);
-                    
-                    // Si recibimos ACK (0x06) o NAK (0x15), retornar inmediatamente
-                    if (value.length === 1 && (value[0] === 0x06 || value[0] === 0x15)) {
-                        console.log(`SerialConnection:: Recibido ${value[0] === 0x06 ? 'ACK' : 'NAK'}`);
-                        break;
-                    }
-                    
-                    buffer += decoder.decode(value, { stream: true });
-                    
-                    // Salir si encontramos el delimitador
-                    if (buffer.includes(delimiter)) {
-                        console.log("SerialConnection:: Delimitador encontrado");
-                        break;
-                    }
+                } catch (e) {
+                    console.error("SerialConnection:: Error en read loop:", e);
                 }
+                readResolve();
             })();
 
-            await Promise.race([readPromise, timeoutPromise]);
-            
-            this.reader.releaseLock();
-            this.readLock = false;
+            await readPromise;
+
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
 
             // Concatenar todos los chunks en un solo Uint8Array
             const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
@@ -207,16 +208,20 @@ export class SerialConnection {
             return result;
         } catch (error) {
             console.error("SerialConnection:: Error al leer del puerto serial", error);
+            return null;
+        } finally {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
             if (this.reader) {
                 try {
                     await this.reader.cancel();
+                } catch (e) {}
+                try {
                     this.reader.releaseLock();
-                } catch (e) {
-                    // Ignorar error de unlock si ya estaba liberado
-                }
+                } catch (e) {}
             }
             this.readLock = false;
-            return null;
         }
     }
 
@@ -230,7 +235,6 @@ export class SerialConnection {
             return;
         }
 
-        // Esperar si hay locks activos
         let waitCount = 0;
         while ((this.readLock || this.writeLock) && waitCount < 50) {
             await new Promise(resolve => setTimeout(resolve, 10));
@@ -239,74 +243,63 @@ export class SerialConnection {
 
         if (waitCount >= 50) {
             console.warn("SerialConnection:: Timeout esperando locks para flush");
+            this.readLock = false;
+            this.writeLock = false;
             return;
         }
 
         let bytesDiscarded = 0;
+        let flushReader = null;
 
         try {
-            // PASO 1: Limpiar input buffer (lectura)
             this.readLock = true;
-            const reader = this.port.readable.getReader();
-            
-            // Intentar leer datos disponibles con timeout de 50ms
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Flush timeout")), 50)
-            );
-            
-            const flushPromise = (async () => {
+            flushReader = this.port.readable.getReader();
+
+            let flushResolve;
+            const flushDone = new Promise((resolve) => { flushResolve = resolve; });
+            let flushTimeoutId = setTimeout(() => { flushResolve(); }, 60);
+
+            (async () => {
                 try {
-                    // Leer hasta que no haya más datos inmediatamente disponibles
                     for (let i = 0; i < 10; i++) {
-                        const readPromise = reader.read();
-                        const shortTimeout = new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error("No more data")), 10)
-                        );
-                        
+                        const readPromise = flushReader.read();
+                        const shortTimeout = new Promise((resolve) => setTimeout(() => resolve(null), 15));
+
                         try {
-                            const { value, done } = await Promise.race([readPromise, shortTimeout]);
-                            if (done || !value || value.length === 0) {
+                            const result = await Promise.race([readPromise, shortTimeout]);
+                            if (!result || result.done || !result.value || result.value.length === 0) {
                                 break;
                             }
-                            bytesDiscarded += value.length;
+                            bytesDiscarded += result.value.length;
                         } catch (e) {
-                            // No más datos disponibles
                             break;
                         }
                     }
-                } catch (e) {
-                    // Ignorar errores de lectura durante flush
-                }
+                } catch (e) {}
+                flushResolve();
             })();
 
-            try {
-                await Promise.race([flushPromise, timeoutPromise]);
-            } catch (e) {
-                // Timeout es normal, significa que no hay datos
-            }
-            
-            // Cancelar cualquier lectura pendiente
-            try {
-                await reader.cancel();
-            } catch (e) {
-                // Ignorar error de cancel
-            }
-            
-            reader.releaseLock();
-            this.readLock = false;
-
-            if (bytesDiscarded > 0) {
-                console.log(`SerialConnection:: Buffer limpiado: ${bytesDiscarded} bytes descartados`);
+            await flushDone;
+            if (flushTimeoutId) {
+                clearTimeout(flushTimeoutId);
+                flushTimeoutId = null;
             }
 
         } catch (error) {
             console.warn("SerialConnection:: Error al limpiar buffer de lectura", error);
+        } finally {
+            if (flushReader) {
+                try {
+                    await flushReader.cancel();
+                } catch (e) {}
+                await new Promise(resolve => setTimeout(resolve, 10));
+                try {
+                    flushReader.releaseLock();
+                } catch (e) {}
+            }
             this.readLock = false;
         }
 
-        // PASO 2: Limpiar output buffer (escritura)
-        // En Web Serial API no hay equivalente directo a flushOutput(),
-        // pero podemos esperar a que el write lock esté liberado
         try {
             while (this.writeLock) {
                 await new Promise(resolve => setTimeout(resolve, 10));
@@ -351,7 +344,6 @@ export class SerialConnection {
             this.readLock = false;
             this.writeLock = false;
 
-            console.log("SerialConnection:: Puerto serial desconectado");
         } catch (error) {
             console.error("SerialConnection:: Error al desconectar puerto serial", error);
         }

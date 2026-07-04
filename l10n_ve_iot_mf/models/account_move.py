@@ -110,11 +110,92 @@ class AccountMoveInh(models.Model):
                         _("You cannot convert an invoice to credit if it has associated payments")
                     )
 
+    def _find_iot_mf_by_serial(self, serial):
+        """Busca el dispositivo IoT fiscal por serial de máquina."""
+        if not serial:
+            return self.env["iot.device"]
+        return self.env["iot.device"].search(
+            [("type", "=", "fiscal_data_module"), ("serial_machine", "=", serial)], limit=1
+        )
+
+    def _mf_persist_vals(self, result_data):
+        """Construye los vals fiscales a persistir tras una impresión Web Serial.
+
+        Incluye mf_invoice_number, mf_serial, mf_reportz (si viene) y asocia
+        iot_mf por serial. Si no existe iot.device con ese serial, no bloquea:
+        deja advertencia en el chatter.
+        """
+        self.ensure_one()
+        sequence = result_data.get("sequence")
+        serial_machine = result_data.get("serial_machine")
+
+        vals = {
+            "mf_invoice_number": sequence,
+            "mf_serial": serial_machine,
+        }
+        if result_data.get("mf_reportz"):
+            vals["mf_reportz"] = result_data["mf_reportz"]
+
+        iot_device = self._find_iot_mf_by_serial(serial_machine)
+        if iot_device:
+            vals["iot_mf"] = iot_device.id
+        else:
+            _logger.warning(
+                "l10n_ve_iot_mf: no se encontró iot.device fiscal con serial %s "
+                "para asociar en %s (id %s)",
+                serial_machine,
+                self.name,
+                self.id,
+            )
+            self.message_post(
+                body=_(
+                    "Se imprimió fiscalmente (Nro. %(sequence)s, serial %(serial)s), "
+                    "pero no se pudo asociar el dispositivo de máquina fiscal (iot_mf) "
+                    "porque no existe un dispositivo registrado con ese serial.",
+                    sequence=sequence or "-",
+                    serial=serial_machine or "-",
+                )
+            )
+        return vals
+
+    def log_mf_print_failure(self, action=None, reason=None):
+        """Deja constancia en el chatter de un intento fallido de impresión fiscal.
+
+        Llamado desde el frontend Web Serial cuando no hay conexión con la
+        máquina fiscal o el driver reporta un error.
+        """
+        action_labels = {
+            "print_out_invoice": _("Factura"),
+            "print_out_refund": _("Nota de crédito"),
+            "print_debit_note": _("Nota de débito"),
+            "reprint_document": _("Reimpresión"),
+        }
+        label = action_labels.get(action, action or _("Documento fiscal"))
+        body = _(
+            "No se ha impreso en máquina fiscal (%(label)s) porque no hay "
+            "máquina fiscal conectada.",
+            label=label,
+        )
+        if reason:
+            body += _(" Detalle: %(reason)s", reason=reason)
+        for move in self:
+            move.message_post(body=body)
+        return True
+
+    def _get_mf_flag21(self):
+        """Flag 21 (formato numérico TFHKA) para impresión Web Serial.
+
+        Prioridad: dispositivo IoT legacy (si existe) > configuración de la
+        compañía > default "00".
+        """
+        self.ensure_one()
+        if self.iot_mf and self.iot_mf.flag_21:
+            return self.iot_mf.flag_21
+        return self.company_id.mf_flag_21 or "00"
+
     def check_reprint(self):
         if not self.mf_invoice_number:
             raise ValidationError(_("The invoice has not already been printed"))
-        if not self.iot_mf:
-            raise ValidationError(_("The invoice has no fiscal machine assigned"))
         data = self
         if not data:
             return {"valid": False, "message": "No se envio datos"}
@@ -123,8 +204,9 @@ class AccountMoveInh(models.Model):
             return {"valid": False, "message": "La factura no tiene lineas"}
 
         _data = {
-            "identifier": data.iot_mf.identifier,
-            "iot_ip": data.iot_box.ip,
+            # identifier/iot_ip: legacy IoT, se mantienen por compatibilidad con overrides
+            "identifier": data.iot_mf.identifier if data.iot_mf else False,
+            "iot_ip": data.iot_box.ip if data.iot_box else False,
             "type": data.move_type,
             "mf_number": data.mf_invoice_number,
             "is_debit_note": data.is_debit_journal
@@ -137,11 +219,9 @@ class AccountMoveInh(models.Model):
         try:
             if self.mf_invoice_number:
                 raise ValidationError(_("The invoice has already been printed"))
-            if not self.iot_mf:
-                raise ValidationError(_("The invoice has no fiscal machine assigned"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
-            if self.invoice_date != fields.Date.today():
+            if self.invoice_date != fields.Date.context_today(self):
                 raise ValidationError(_("Cannot print an invoice with a future date"))
             if self.is_credit and self.amount_residual != self.amount_total:
                 raise ValidationError(_("You cannot print a credit invoice with associated payments"))
@@ -180,6 +260,10 @@ class AccountMoveInh(models.Model):
                 price_vef = line.price_unit
                 if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
                     price_vef = line.foreign_price
+                # Aplicar descuento % de la línea (Facturación/Contabilidad).
+                # El formateo/redondeo final lo hace el driver Web Serial.
+                if line.discount:
+                    price_vef = price_vef * (1 - line.discount / 100.0)
                 _invoice_lines.append(
                     {
                         "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
@@ -193,9 +277,9 @@ class AccountMoveInh(models.Model):
                 )
 
             _data = {
-                "flag_21": data.iot_mf.flag_21,
-                "identifier": data.iot_mf.identifier,
-                "iot_ip": data.iot_box.ip,
+                "flag_21": data._get_mf_flag21(),
+                "identifier": data.iot_mf.identifier if data.iot_mf else False,
+                "iot_ip": data.iot_box.ip if data.iot_box else False,
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
                     "name": self._normalize_product_name(data.partner_id.name),
@@ -215,14 +299,8 @@ class AccountMoveInh(models.Model):
         _logger.info("VALUE %s", values)
         result_data = values.get("data", {})
         sequence = result_data.get("sequence")
-        serial_machine = result_data.get("serial_machine")
 
-        self.write(
-            {
-                "mf_invoice_number": sequence,
-                "mf_serial": serial_machine,
-            }
-        )
+        self.write(self._mf_persist_vals(result_data))
 
         if self.has_printed(sequence):
             context = dict(self._context or {})
@@ -247,11 +325,11 @@ class AccountMoveInh(models.Model):
         Print out refund in fiscal machine
         """
         try:
-            if not self.iot_mf:
-                raise ValidationError(_("The invoice has no fiscal machine assigned"))
+            if self.mf_invoice_number:
+                raise ValidationError(_("The invoice has already been printed"))
             # if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
             #     raise ValidationError(_("The credit note must be made in the same fiscal machine"))
-            if self.invoice_date != fields.Date.today():
+            if self.invoice_date != fields.Date.context_today(self):
                 raise ValidationError(_("The credit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
@@ -289,6 +367,10 @@ class AccountMoveInh(models.Model):
                 price_vef = line.price_unit
                 if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
                     price_vef = line.foreign_price
+                # Aplicar descuento % de la línea (Facturación/Contabilidad).
+                # El formateo/redondeo final lo hace el driver Web Serial.
+                if line.discount:
+                    price_vef = price_vef * (1 - line.discount / 100.0)
                 _invoice_lines.append(
                     {
                         "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
@@ -302,9 +384,9 @@ class AccountMoveInh(models.Model):
                 )
 
             _data = {
-                "flag_21": data.iot_mf.flag_21,
-                "identifier": data.iot_mf.identifier,
-                "iot_ip": data.iot_box.ip,
+                "flag_21": data._get_mf_flag21(),
+                "identifier": data.iot_mf.identifier if data.iot_mf else False,
+                "iot_ip": data.iot_box.ip if data.iot_box else False,
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
                     "name": self._normalize_product_name(data.partner_id.name),
@@ -329,15 +411,8 @@ class AccountMoveInh(models.Model):
     def print_out_refund(self, values):
         _logger.info("VALUE %s", values)
         result_data = values.get("data", {})
-        sequence = result_data.get("sequence")
-        serial_machine = result_data.get("serial_machine")
-        
-        self.write(
-            {
-                "mf_invoice_number": sequence,
-                "mf_serial": serial_machine,
-            }
-        )
+
+        self.write(self._mf_persist_vals(result_data))
 
     def _get_reconciled_info_JSON_values(self):
         res = super()._get_reconciled_info_JSON_values()
@@ -356,11 +431,11 @@ class AccountMoveInh(models.Model):
         Print debit note in fiscal machine
         """
         try:
-            if not self.iot_mf:
-                raise ValidationError(_("The invoice has no fiscal machine assigned"))
+            if self.mf_invoice_number:
+                raise ValidationError(_("The invoice has already been printed"))
             # if self.iot_mf.serial_machine != self.debit_origin_id.mf_serial:
             #     raise ValidationError(_("The debit note must be made in the same fiscal machine"))
-            if self.invoice_date != fields.Date.today():
+            if self.invoice_date != fields.Date.context_today(self):
                 raise ValidationError(_("The debit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
@@ -398,6 +473,10 @@ class AccountMoveInh(models.Model):
                 price_vef = line.price_unit
                 if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
                     price_vef = line.foreign_price
+                # Aplicar descuento % de la línea (Facturación/Contabilidad).
+                # El formateo/redondeo final lo hace el driver Web Serial.
+                if line.discount:
+                    price_vef = price_vef * (1 - line.discount / 100.0)
                 _invoice_lines.append(
                     {
                         "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
@@ -411,9 +490,9 @@ class AccountMoveInh(models.Model):
                 )
 
             _data = {
-                "flag_21": data.iot_mf.flag_21,
-                "identifier": data.iot_mf.identifier,
-                "iot_ip": data.iot_box.ip,
+                "flag_21": data._get_mf_flag21(),
+                "identifier": data.iot_mf.identifier if data.iot_mf else False,
+                "iot_ip": data.iot_box.ip if data.iot_box else False,
                 "company_id": {"name": data.company_id.name},
                 "partner_id": {
                     "name": self._normalize_product_name(data.partner_id.name),
@@ -439,15 +518,8 @@ class AccountMoveInh(models.Model):
     def print_debit_note(self, values):
         _logger.info("VALUE %s", values)
         result_data = values.get("data", {})
-        sequence = result_data.get("sequence")
-        serial_machine = result_data.get("serial_machine")
-        
-        self.write(
-            {
-                "mf_invoice_number": sequence,
-                "mf_serial": serial_machine,
-            }
-        )
+
+        self.write(self._mf_persist_vals(result_data))
         
 
     def _normalize_product_name(self, name):

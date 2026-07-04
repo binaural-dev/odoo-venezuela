@@ -11,6 +11,7 @@
     "depends": [
         "point_of_sale",
         "l10n_ve_pos",
+        "l10n_ve_mf_base",
         # DEPRECATED: Eliminamos dependencias del IoT Box (ahora usamos Web Serial API)
         # "pos_iot",
         # "l10n_ve_iot_mf",
@@ -28,9 +29,9 @@
     ],
     "assets": {
         "point_of_sale._assets_pos": [
-            # Nueva arquitectura Web Serial API
-            "l10n_ve_pos_mf/static/src/core/*.js",
-            "l10n_ve_pos_mf/static/src/drivers/*.js",
+            # Nueva arquitectura Web Serial API (driver compartido en l10n_ve_mf_base)
+            "l10n_ve_mf_base/static/src/core/*.js",
+            "l10n_ve_mf_base/static/src/drivers/*.js",
             "l10n_ve_pos_mf/static/src/utils/*.js",
             "l10n_ve_pos_mf/static/src/overrides/*.js",
             "l10n_ve_pos_mf/static/src/components/**/*.js",
@@ -47,13 +48,8 @@
             "l10n_ve_pos_mf/static/src/css/*.css",
         ],
         "web.qunit_suite_tests": [
-            # Dependencias del driver necesarias para QUnit
-            "l10n_ve_pos_mf/static/src/core/FiscalProtocol.js",
-            "l10n_ve_pos_mf/static/src/core/StatusParser.js",
-            "l10n_ve_pos_mf/static/src/core/SerialConnection.js",
-            "l10n_ve_pos_mf/static/src/drivers/TfhkaDriver.js",
-
-            # Tests QUnit para el driver TFHKA
+            # NOTA: El driver (l10n_ve_mf_base) ya está en web.assets_backend,
+            # que se carga en la página de QUnit. Solo agregamos los tests.
             "l10n_ve_pos_mf/static/src/tests/*.js",
         ],
     },

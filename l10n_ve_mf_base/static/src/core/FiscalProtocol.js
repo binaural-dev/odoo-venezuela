@@ -190,8 +190,6 @@ export class FiscalProtocol {
             return null;
         }
 
-        console.log("FiscalProtocol:: ENQ parseado correctamente - STS1:", sts1.toString(16), "STS2:", sts2.toString(16));
-
         // Parsear usando StatusParser (que ya tiene toda la lógica de bits)
         // Construir un mock frame para StatusParser: STX|STS1|STS2|ETX|LRC
         const mockFrame = new Uint8Array([FiscalProtocol.STX, sts1, sts2, FiscalProtocol.ETX, lrc]);

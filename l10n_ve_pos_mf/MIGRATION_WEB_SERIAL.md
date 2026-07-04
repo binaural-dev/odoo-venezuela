@@ -215,9 +215,9 @@ La Web Serial API garantiza **exclusive lock** del puerto:
 ```python
 "assets": {
     "point_of_sale._assets_pos": [
-        # Nueva arquitectura Web Serial API
-        "l10n_ve_pos_mf/static/src/core/*.js",
-        "l10n_ve_pos_mf/static/src/drivers/*.js",
+        # Nueva arquitectura Web Serial API (driver compartido en l10n_ve_mf_base)
+        "l10n_ve_mf_base/static/src/core/*.js",
+        "l10n_ve_mf_base/static/src/drivers/*.js",
         "l10n_ve_pos_mf/static/src/overrides/*.js",
         "l10n_ve_pos_mf/static/src/components/**/*.js",
         

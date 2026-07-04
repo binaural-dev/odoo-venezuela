@@ -3,7 +3,7 @@
 import { Chrome } from "@point_of_sale/app/pos_app";
 import { patch } from "@web/core/utils/patch";
 import { onMounted, onWillUnmount } from "@odoo/owl";
-import { TfhkaDriver } from "../drivers/TfhkaDriver";
+import { TfhkaDriver } from "@l10n_ve_mf_base/drivers/TfhkaDriver";
 import { useService } from "@web/core/utils/hooks";
 import { LocalOrderBuffer } from "../utils/LocalOrderBuffer";
 
@@ -51,7 +51,6 @@ patch(Chrome.prototype, {
         this._clearAutoSyncInterval();
 
         if (!enableAutoSync) {
-            console.log("FiscalPrinter:: Sincronizacion automatica deshabilitada para esta caja");
             return;
         }
 
@@ -62,7 +61,6 @@ patch(Chrome.prototype, {
             await this._flushPendingOrders();
         }, intervalSeconds * 1000);
 
-        console.log(`FiscalPrinter:: Sincronizacion automatica activa cada ${intervalSeconds}s`);
     },
 
     _clearAutoSyncInterval() {
@@ -127,10 +125,8 @@ patch(Chrome.prototype, {
             if (connected) {
                 this._updateFiscalPrinterButtonStatus("connected");
                 window.fiscalPrinter = this.fiscalPrinter; // Exponer globalmente
-                console.log("FiscalPrinter:: Conexión automática exitosa");
             } else {
                 this._updateFiscalPrinterButtonStatus("disconnected");
-                console.log("FiscalPrinter:: No se pudo conectar automáticamente");
             }
         } catch (error) {
             console.error("FiscalPrinter:: Error en inicialización", error);
@@ -160,7 +156,6 @@ patch(Chrome.prototype, {
                     this.fiscalPrinter.isConnected = true;
                     this._updateFiscalPrinterButtonStatus("connected");
                     window.fiscalPrinter = this.fiscalPrinter;
-                    console.log("FiscalPrinter:: Conexión manual exitosa", status);
                 } else {
                     this._updateFiscalPrinterButtonStatus("error");
                     console.error("FiscalPrinter:: La impresora no responde");
@@ -185,7 +180,6 @@ patch(Chrome.prototype, {
                 window.fiscalPrinter = null;
             }
             this._updateFiscalPrinterButtonStatus("disconnected");
-            console.log("FiscalPrinter:: Desconectada");
         } catch (error) {
             console.error("FiscalPrinter:: Error al desconectar", error);
         }
@@ -205,7 +199,6 @@ patch(Chrome.prototype, {
 
         this.isFlushingPendingOrders = true;
         
-        console.log(`FiscalPrinter:: Intentando sincronizar ${buffer.length} pedidos offline...`);
         try {
             for (let i = buffer.length - 1; i >= 0; i--) {
                 const entry = buffer[i];
@@ -216,7 +209,6 @@ patch(Chrome.prototype, {
                     }]]);
                     
                     LocalOrderBuffer.remove(i);
-                    console.log(`FiscalPrinter:: Pedido offline #${i} sincronizado`);
                     
                 } catch (error) {
                     entry.retries = (entry.retries || 0) + 1;
@@ -229,10 +221,7 @@ patch(Chrome.prototype, {
                 }
             }
 
-            const remaining = LocalOrderBuffer.count();
-            if (remaining === 0) {
-                console.log("FiscalPrinter:: Todos los pedidos offline sincronizados");
-            }
+            LocalOrderBuffer.count();
         } finally {
             this.isFlushingPendingOrders = false;
         }

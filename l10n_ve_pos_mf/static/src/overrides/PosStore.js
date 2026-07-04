@@ -442,6 +442,155 @@ patch(PosStore.prototype, {
     return round_pr(value, this.currency?.rounding || 0.01);
   },
 
+  _composeDiscountRates(existingRate, extraRate) {
+    const base = Math.min(Math.max(Number(existingRate) || 0, 0), 100);
+    const extra = Math.min(Math.max(Number(extraRate) || 0, 0), 100);
+    return 100 - ((100 - base) * (100 - extra)) / 100;
+  },
+
+  _isGlobalDiscountProductLine(line) {
+    const discountProductId = this.config?.discount_product_id?.[0];
+    if (!discountProductId || !line?.get_product) {
+      return false;
+    }
+    return Number(line.get_product()?.id || 0) === Number(discountProductId);
+  },
+
+  _resetGlobalDiscountOnLines(order) {
+    for (const line of [...(order.orderlines || [])]) {
+      if (line._mf_base_discount === undefined) {
+        continue;
+      }
+
+      const baseDiscount = Math.min(Math.max(Number(line._mf_base_discount) || 0, 0), 100);
+      if (typeof line.set_discount === "function") {
+        line.set_discount(baseDiscount);
+      } else {
+        line.discount = baseDiscount;
+      }
+    }
+  },
+
+  _collectGlobalDiscountMeta(order) {
+    const allLines = [...(order.orderlines || [])];
+    const discountLines = [];
+    let globalDiscountAmount = 0;
+    let positiveBaseSum = 0;
+
+    for (const line of allLines) {
+      const quantity = Math.abs(Number(line.get_quantity?.() ?? line.quantity ?? 0));
+      if (!quantity) {
+        continue;
+      }
+
+      const unitPrice = Number(line.get_unit_price?.() ?? line.price ?? 0);
+
+      if (unitPrice < 0 && this._isGlobalDiscountProductLine(line)) {
+        globalDiscountAmount += Math.abs(unitPrice * quantity);
+        discountLines.push(line);
+        continue;
+      }
+
+      if (this._isGlobalDiscountProductLine(line)) {
+        continue;
+      }
+
+      const lineDiscount = Number(line.get_discount?.() ?? line.discount ?? 0);
+      const netAfterLineDiscount = this._applyDiscount(unitPrice, lineDiscount);
+      positiveBaseSum += Math.abs(netAfterLineDiscount * quantity);
+    }
+
+    if (globalDiscountAmount <= 0) {
+      return null;
+    }
+
+    let globalRate = 100;
+    let globalClamped = true;
+    if (positiveBaseSum > 0) {
+      const rawRate = (globalDiscountAmount / positiveBaseSum) * 100;
+      globalRate = rawRate > 100 ? 100 : rawRate;
+      globalClamped = rawRate > 100;
+    }
+
+    return {
+      discountLines,
+      global_discount_amount: globalDiscountAmount,
+      global_discount_rate: globalRate,
+      global_clamped: globalClamped,
+    };
+  },
+
+  _applyGlobalDiscountBeforeValidation(order, { force = false } = {}) {
+    const hasPendingDiscountLines = [...(order.orderlines || [])].some(
+      (line) => this._isGlobalDiscountProductLine(line) && Number(line.get_unit_price?.() ?? line.price ?? 0) < 0
+    );
+
+    if (!force && order._mf_global_discount_applied && !hasPendingDiscountLines) {
+      return order._mf_global_discount_meta || null;
+    }
+
+    if (hasPendingDiscountLines) {
+      this._resetGlobalDiscountOnLines(order);
+    }
+
+    const meta = this._collectGlobalDiscountMeta(order);
+    if (!meta) {
+      return order._mf_global_discount_meta || null;
+    }
+
+    const positiveLines = [...(order.orderlines || [])].filter((line) => {
+      const quantity = Math.abs(Number(line.get_quantity?.() ?? line.quantity ?? 0));
+      const unitPrice = Number(line.get_unit_price?.() ?? line.price ?? 0);
+      return quantity > 0 && unitPrice >= 0;
+    });
+
+    for (const line of positiveLines) {
+      const currentDiscount = Number(
+        line._mf_base_discount !== undefined
+          ? line._mf_base_discount
+          : (line.get_discount?.() ?? line.discount ?? 0)
+      );
+      const composedDiscount = this._composeDiscountRates(
+        currentDiscount,
+        meta.global_discount_rate
+      );
+
+      line._mf_base_discount = Math.min(Math.max(currentDiscount, 0), 100);
+
+      if (typeof line.set_discount === "function") {
+        line.set_discount(composedDiscount);
+      } else {
+        line.discount = composedDiscount;
+      }
+    }
+
+    for (const line of meta.discountLines) {
+      order.orderlines.remove(line);
+    }
+
+    order._mf_global_discount_applied = true;
+    order._mf_global_discount_meta = {
+      global_discount_amount: meta.global_discount_amount,
+      global_discount_rate: meta.global_discount_rate,
+      global_clamped: meta.global_clamped,
+    };
+
+    return order._mf_global_discount_meta;
+  },
+
+  _onReactiveOrderUpdated(order) {
+    if (!this._mf_global_discount_syncing) {
+      this._mf_global_discount_syncing = true;
+      try {
+        this._applyGlobalDiscountBeforeValidation(order, { force: true });
+      } finally {
+        this._mf_global_discount_syncing = false;
+      }
+    }
+
+    return super._onReactiveOrderUpdated(...arguments);
+  },
+
   /**
    * Convierte la orden de Odoo al formato esperado por el driver
    *
@@ -459,37 +608,44 @@ patch(PosStore.prototype, {
    * @returns {Object}
    */
   _convertOrderForDriver(order, invoiceData) {
-    let globalDiscountAmount = 0;
+    const preAppliedMeta = order?._mf_global_discount_meta || null;
+    let globalDiscountAmount = Number(preAppliedMeta?.global_discount_amount || 0);
+    let globalRate = Number(preAppliedMeta?.global_discount_rate || 0);
+    let globalClamped = Boolean(preAppliedMeta?.global_clamped);
     const POSITIVE_LINES = [];
     const allLines = (invoiceData.invoice_lines || []);
 
     for (const line of allLines) {
       const priceUnit = Number(line.price_unit || 0);
       if (priceUnit < 0) {
-        globalDiscountAmount += Math.abs(priceUnit);
+        if (!preAppliedMeta) {
+          globalDiscountAmount += Math.abs(priceUnit);
+        }
         continue;
       }
       POSITIVE_LINES.push(line);
     }
 
-    let positiveBaseSum = 0;
-    for (const line of POSITIVE_LINES) {
-      const priceUnit = Number(line.price_unit || 0);
-      const quantity = Math.abs(Number(line.quantity || 1));
-      const lineDiscount = Number(line.discount || 0);
-      const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);
-      positiveBaseSum += Math.abs(netAfterLineDiscount * quantity);
-    }
+    if (!preAppliedMeta) {
+      let positiveBaseSum = 0;
+      for (const line of POSITIVE_LINES) {
+        const priceUnit = Number(line.price_unit || 0);
+        const quantity = Math.abs(Number(line.quantity || 1));
+        const lineDiscount = Number(line.discount || 0);
+        const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);
+        positiveBaseSum += Math.abs(netAfterLineDiscount * quantity);
+      }
 
-    let globalRate = 0;
-    let globalClamped = false;
-    if (globalDiscountAmount > 0 && positiveBaseSum > 0) {
-      const rawRate = (globalDiscountAmount / positiveBaseSum) * 100;
-      if (rawRate > 100) {
-        globalRate = 100;
-        globalClamped = true;
-      } else {
-        globalRate = rawRate;
+      globalRate = 0;
+      globalClamped = false;
+      if (globalDiscountAmount > 0 && positiveBaseSum > 0) {
+        const rawRate = (globalDiscountAmount / positiveBaseSum) * 100;
+        if (rawRate > 100) {
+          globalRate = 100;
+          globalClamped = true;
+        } else {
+          globalRate = rawRate;
+        }
       }
     }
 
@@ -497,7 +653,9 @@ patch(PosStore.prototype, {
       const priceUnit = Number(line.price_unit || 0);
       const lineDiscount = Number(line.discount || 0);
       const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);
-      const finalUnitPrice = this._applyDiscount(netAfterLineDiscount, globalRate);
+      const finalUnitPrice = preAppliedMeta
+        ? netAfterLineDiscount
+        : this._applyDiscount(netAfterLineDiscount, globalRate);
       return {
         product_name: line.name,
         product_code: line.code || line.default_code,
@@ -538,6 +696,8 @@ patch(PosStore.prototype, {
    * 3. Sincronización con backend - con buffer offline si falla
    */
   async push_single_order(order, opts) {
+    this._applyGlobalDiscountBeforeValidation(order);
+
     // 1. Validación contable previa (dry-run) - tolerante a fallos de red
     try {
       const order_payload = [{
@@ -614,9 +774,7 @@ patch(PosStore.prototype, {
     const buffer = LocalOrderBuffer.getAll();
     
     if (buffer.length === 0) return;
-    
-    console.log(`PosStore:: Intentando sincronizar ${buffer.length} pedidos pendientes...`);
-    
+
     for (let i = buffer.length - 1; i >= 0; i--) {
       const entry = buffer[i];
       
@@ -629,10 +787,7 @@ patch(PosStore.prototype, {
         // Intentar crear la orden en el backend
         await this.orm.call("pos.order", "create_from_ui", [orderPayload]);
         
-        // Si llega aquí, la sincronización fue exitosa
         LocalOrderBuffer.remove(i);
-        console.log(`PosStore:: Pedido #${i} sincronizado correctamente`);
-        
       } catch (error) {
         entry.retries++;
         console.warn(`PosStore:: Pedido #${i} falló (intento ${entry.retries}):`, error.message);
@@ -646,10 +801,5 @@ patch(PosStore.prototype, {
     }
     
     const remaining = LocalOrderBuffer.count();
-    if (remaining > 0) {
-      console.log(`PosStore:: ${remaining} pedidos siguen pendientes`);
-    } else {
-      console.log("PosStore:: Todos los pedidos sincronizados");
-    }
   },
 })

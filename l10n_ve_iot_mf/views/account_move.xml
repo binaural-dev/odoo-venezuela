@@ -5,15 +5,14 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <button name="button_draft" position="after">
+            <xpath expr="//form/header" position="inside">
                 <field name='print_type' invisible="1"/>
                 <field name='mf_invoice_number' invisible="1"/>
-                <widget name="iot-mf-button" action="print_out_invoice" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != False or print_type != 'fiscal' or correlative != False"/>                
-                <widget name="iot-mf-button" action="reprint_document" invisible="mf_invoice_number == False or print_type != 'fiscal' or correlative != False"/>
-                <widget name="iot-mf-button" action="print_out_refund" invisible="state != 'posted' or move_type != 'out_refund' or mf_invoice_number or print_type != 'fiscal' or correlative != False"/>
-                <widget name="iot-mf-button" action="print_debit_note" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != True or print_type != 'fiscal' or correlative != False"/>
-
-            </button>
+                <widget name="mf-webserial-button" action="print_out_invoice" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != False or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="reprint_document" invisible="mf_invoice_number == False or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="print_out_refund" invisible="state != 'posted' or move_type != 'out_refund' or mf_invoice_number or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="print_debit_note" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != True or print_type != 'fiscal' or correlative != False"/>
+            </xpath>
             <xpath expr="//field[@name='ref']" position="after">
                 <field name='iot_mf' readonly="1"/>
             </xpath>

@@ -98,15 +98,14 @@ export class TfhkaDriver {
      * @param {string} command - Comando ASCII
      * @param {number} timeout - Timeout en ms
      * @param {boolean} checkStatus - Verificar status antes de enviar (default: true)
+     * @param {boolean} skipFlush - Saltar flushBuffer (para comandos dentro de una transacción)
      * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
      */
-    async sendCommand(command, timeout = null, checkStatus = true) {
+    async sendCommand(command, timeout = null, checkStatus = true, skipFlush = false) {
         if (!this.isConnected) {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
 
-        // Verificar status de la impresora antes de enviar (excepto para ENQ y 199)
-        // Los comandos de control de transacción (9, 199) se saltan la verificación
         const skipStatusCheck = ['9', '199', 'w'].includes(command);
         if (checkStatus && command !== 'ENQ' && !skipStatusCheck) {
             const status = await this.getStatus();
@@ -114,17 +113,12 @@ export class TfhkaDriver {
                 return { success: false, data: "", error: "No se pudo leer el estado de la impresora" };
             }
 
-            // Verificar errores críticos (STS2)
             if (status.errors && status.errors.length > 0) {
                 const errorMsg = status.errors.join(', ');
                 console.error("TfhkaDriver:: Impresora tiene errores:", errorMsg);
                 return { success: false, data: "", error: `Error de impresora: ${errorMsg}` };
             }
 
-            // Verificar que la impresora esté en estado "esperando" (STS1)
-            // Equivalente al check del SDK Python: status["code"] not in ["1", "4"]
-            // 0x40 = Test mode, waiting (code 1)
-            // 0x60 = Fiscal mode, waiting (code 4)
             const sts1 = status.raw?.sts1;
             const isWaiting = this._isWaitingState(sts1);
             const isInTransaction = this._isTransactionState(sts1);
@@ -144,57 +138,51 @@ export class TfhkaDriver {
             }
         }
 
-        // Auto-ajustar timeout según el tipo de comando
         if (timeout === null) {
             if (command.startsWith('PJ')) {
-                timeout = 60000; // 60s para programación (imprime varias páginas)
+                timeout = 60000;
             } else if (command.startsWith('I0X') || command.startsWith('I0Z')) {
-                timeout = 30000; // 30s para reportes X/Z
+                timeout = 30000;
+            } else if (command === '101' || command === '199' || command === '3') {
+                timeout = 15000;
             } else {
-                timeout = 5000; // 5s para comandos normales
+                timeout = 5000;
             }
         }
 
+        const isHeavyCommand = command === '101' || command === '199' || command === '3' || command.startsWith('2');
+        const cmdDelay = isHeavyCommand ? 500 : 100;
+
         for (let attempt = 0; attempt < this.retryAttempts; attempt++) {
             try {
-                // Limpiar buffer antes de enviar (solo en el primer intento)
-                if (attempt === 0) {
+                if (attempt === 0 && !skipFlush) {
                     await this.connection.flushBuffer();
                 }
-                
-                // Construir trama
+
                 const frame = FiscalProtocol.buildFrame(command);
-                
-                console.log(`TfhkaDriver:: Enviando comando [intento ${attempt + 1}/${this.retryAttempts}]:`, 
-                    FiscalProtocol.frameToASCII(frame));
-                
-                // Enviar
+
                 const sent = await this.connection.write(frame);
                 if (!sent) {
                     throw new Error("Error al escribir en puerto serial");
                 }
 
-                // Esperar respuesta
+                await new Promise(resolve => setTimeout(resolve, cmdDelay));
+
                 const response = await this.connection.read(timeout);
                 if (!response) {
                     throw new Error("No se recibió respuesta de la impresora");
                 }
 
-                console.log("TfhkaDriver:: Respuesta recibida:", FiscalProtocol.frameToASCII(response));
-
-                // Verificar si es ACK
                 if (FiscalProtocol.isACK(response)) {
                     return { success: true, data: "ACK", error: "" };
                 }
 
-                // Verificar si es NAK (reintentar)
                 if (FiscalProtocol.isNAK(response)) {
                     console.warn(`TfhkaDriver:: NAK recibido, reintentando...`);
                     await new Promise(resolve => setTimeout(resolve, this.retryDelay));
                     continue;
                 }
 
-                // Parsear respuesta normal
                 const parsed = FiscalProtocol.parseResponse(response);
                 if (parsed.valid) {
                     return { success: true, data: parsed.data, error: "" };
@@ -220,12 +208,9 @@ export class TfhkaDriver {
      */
     async abortTransaction() {
         try {
-            console.log("TfhkaDriver:: Intentando abortar transacción colgada...");
-
             const statusBefore = await this.getStatus();
             const stsBefore = statusBefore?.raw?.sts1;
             if (this._isWaitingState(stsBefore)) {
-                console.log("TfhkaDriver:: Impresora ya está en reposo (STS1=", this._formatSts(stsBefore), ")");
                 return true;
             }
             
@@ -237,7 +222,6 @@ export class TfhkaDriver {
             const response9 = await this.connection.read(3000);
             
             if (response9 && FiscalProtocol.isACK(response9)) {
-                console.log("TfhkaDriver:: Transacción cancelada con comando 9");
                 await new Promise(resolve => setTimeout(resolve, 500));
                 return true;
             }
@@ -245,7 +229,6 @@ export class TfhkaDriver {
             const statusAfter9 = await this.getStatus();
             const stsAfter9 = statusAfter9?.raw?.sts1;
             if (this._isWaitingState(stsAfter9)) {
-                console.log("TfhkaDriver:: Impresora en reposo tras comando 9 (STS1=", this._formatSts(stsAfter9), ")");
                 return true;
             }
 
@@ -256,7 +239,6 @@ export class TfhkaDriver {
             const response199 = await this.connection.read(3000);
 
             if (response199 && FiscalProtocol.isACK(response199)) {
-                console.log("TfhkaDriver:: Transacción cancelada con comando 199");
                 await new Promise(resolve => setTimeout(resolve, 500));
                 return true;
             }
@@ -268,7 +250,6 @@ export class TfhkaDriver {
                 const sts1 = statusCheck.raw?.sts1;
                 const isNowWaiting = this._isWaitingState(sts1);
                 if (isNowWaiting) {
-                    console.log("TfhkaDriver:: Impresora en reposo tras intentos de abort");
                     return true;
                 }
                 console.error("TfhkaDriver:: Abort falló. STS1 actual:", this._formatSts(sts1));
@@ -293,7 +274,6 @@ export class TfhkaDriver {
             await this.connection.flushBuffer();
             
             const enqFrame = new Uint8Array([FiscalProtocol.ENQ]);
-            console.log("TfhkaDriver:: Enviando ENQ (0x05)");
             await this.connection.write(enqFrame);
             
             // Esperar 50ms como hace el SDK Python
@@ -305,9 +285,6 @@ export class TfhkaDriver {
                 console.error("TfhkaDriver:: No se recibió respuesta al ENQ");
                 return null;
             }
-
-            console.log("TfhkaDriver:: Respuesta ENQ recibida:", response.length, "bytes:", 
-                Array.from(response).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
 
             // Parsear respuesta ENQ (formato especial, no es un frame normal)
             const status = FiscalProtocol.parseStatusENQ(response);
@@ -341,6 +318,51 @@ export class TfhkaDriver {
      */
     async openDrawer() {
         return await this.sendCommand("0");
+    }
+
+    /**
+     * Reimprime un documento fiscal ya emitido (paridad con flujo IoT legacy).
+     *
+     * Comandos TFHKA:
+     * - RF: reimpresión de facturas (out_invoice, incluye ND emitidas por diario débito)
+     * - RC: reimpresión de notas de crédito (out_refund)
+     *
+     * Formato legacy: MODE + número.zfill(7) + número.zfill(7) (rango desde/hasta).
+     *
+     * @param {Object} params
+     * @param {string} params.type - Tipo de documento Odoo ("out_invoice" | "out_refund")
+     * @param {string|number} params.number - Número fiscal del documento (mf_invoice_number)
+     * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
+     */
+    async reprintDocument({ type, number }) {
+        if (!this.isConnected) {
+            return { success: false, data: "", error: "Impresora no conectada" };
+        }
+
+        const MODES = {
+            out_invoice: "RF",
+            out_refund: "RC",
+        };
+        const mode = MODES[type];
+        if (!mode) {
+            return { success: false, data: "", error: `Tipo de documento no soportado para reimpresión: ${type}` };
+        }
+
+        const cleaned = String(number || "").replace(/[^0-9]/g, "");
+        if (!cleaned) {
+            return { success: false, data: "", error: "Número fiscal inválido para reimpresión" };
+        }
+
+        const n = cleaned.padStart(7, "0");
+        const command = `${mode}${n}${n}`;
+
+        // La reimpresión puede tardar (imprime el documento completo)
+        const result = await this.sendCommand(command, 30000);
+        if (!result.success) {
+            return { success: false, data: "", error: result.error || "Error al reimprimir documento" };
+        }
+
+        return { success: true, data: "Documento reimpreso correctamente", error: "" };
     }
 
     /**
@@ -689,6 +711,63 @@ export class TfhkaDriver {
         return { success: true, data, error: "" };
     }
 
+    _parseS4Data(rawData) {
+        if (!rawData) {
+            return null;
+        }
+
+        const payload = String(rawData)
+            .replace(/^\u0002/, "")
+            .replace(/\u0003$/, "")
+            .replace(/^S4/, "");
+
+        const lines = payload
+            .split("\n")
+            .map((value) => value.replace(/\r/g, "").trim())
+            .filter((value) => value.length > 0);
+
+        const methods = [];
+        for (const line of lines) {
+            const match = line.match(/^(\d{2})(.*)$/);
+            if (match) {
+                methods.push({
+                    code: match[1],
+                    name: match[2].trim(),
+                    raw: line,
+                });
+            } else {
+                methods.push({
+                    code: "",
+                    name: line,
+                    raw: line,
+                });
+            }
+        }
+
+        return {
+            methods,
+            raw: lines,
+        };
+    }
+
+    async readS4Data() {
+        const response = await this.sendCommand("S4", 5000, false);
+        if (!response.success) {
+            return { success: false, data: null, error: response.error || "No se pudo leer S4" };
+        }
+
+        const data = this._parseS4Data(response.data);
+        if (!data) {
+            return {
+                success: false,
+                data: null,
+                error: "No se pudo parsear la respuesta S4 de la impresora",
+            };
+        }
+
+        return { success: true, data, error: "" };
+    }
+
     _buildFiscalResponse(message, documentNumber, s1Data) {
         const invoiceNumber = documentNumber ? String(documentNumber) : "";
         const serial = s1Data?.registeredMachineNumber || "";
@@ -821,8 +900,7 @@ export class TfhkaDriver {
         }
 
         const amountStr = amount.toFixed(2);
-        const rateText = rate.toFixed(2).replace(/\.0+$/, "");
-        const text = `DESC. GLOBAL ${rateText}% = ${amountStr}`;
+        const text = `DESC. GLOBAL = ${amountStr}`;
         commands.push(`i${String(startIndex).padStart(2, '0')}${text.substring(0, 127)}`);
         counter.value++;
 
@@ -850,36 +928,33 @@ export class TfhkaDriver {
             groupedPayments[methodCode] = (groupedPayments[methodCode] || 0) + amount;
         }
 
-        const uniqueMethods = Object.keys(groupedPayments);
-        const allMethod20 = payments.length > 1 && payments.every(
-            (payment) => String(payment.payment_method_code || "01").padStart(2, '0') === "20"
-        );
-        const firstPaymentAmount = Math.abs(Number(payments[0]?.amount || 0));
-        const useDirectClose =
-            payments.length === 1 ||
-            (payments.length > 0 && firstPaymentAmount === 0) ||
-            allMethod20;
+        const paymentEntries = Object.entries(groupedPayments)
+            .filter(([, amount]) => amount > 0)
+            .map(([methodCode, amount]) => ({ methodCode, amount }));
 
-        if (useDirectClose) {
-            const closingMethod = String(payments[0]?.payment_method_code || uniqueMethods[0] || "01").padStart(2, '0');
-            commands.push(`1${closingMethod}`);
-            if (closingMethod !== "01") {
-                commands.push("101");
-            }
-        } else {
-            for (const [methodCode, amount] of Object.entries(groupedPayments)) {
-                if (amount <= 0) {
-                    continue;
-                }
-                const amountStr = this._formatAmount(
-                    amount,
-                    config.max_payment_amount_int,
-                    config.max_payment_amount_decimal
-                );
-                commands.push(`2${methodCode}${amountStr}`);
-            }
+        if (!paymentEntries.length) {
             commands.push("101");
+            return;
         }
+
+        const closingPayment = paymentEntries.reduce((max, current) =>
+            current.amount > max.amount ? current : max
+        );
+        const closingMethod = closingPayment.methodCode;
+
+        for (const { methodCode, amount } of paymentEntries) {
+            if (methodCode === closingMethod) {
+                continue;
+            }
+            const amountStr = this._formatAmount(
+                amount,
+                config.max_payment_amount_int,
+                config.max_payment_amount_decimal
+            );
+            commands.push(`2${methodCode}${amountStr}`);
+        }
+
+        commands.push(`1${closingMethod}`);
     }
 
     /**
@@ -969,17 +1044,18 @@ export class TfhkaDriver {
             // 8. Fin de documento
             commands.push("199");
 
-            // Enviar comandos secuencialmente — sin checkStatus (ya lo hicimos arriba)
-            console.log("TfhkaDriver:: Enviando factura con", commands.length, "comandos:", commands);
+            for (let i = 0; i < commands.length; i++) {
+                const cmd = commands[i];
+                const isFirst = i === 0;
+                const result = await this.sendCommand(cmd, null, false, !isFirst);
 
-            for (const cmd of commands) {
-                // Los comandos de datos (iR*, iS*, items, etc.) se envían sin checkStatus
-                // porque la impresora estará en medio de una transacción (STS1=0x61)
-                const result = await this.sendCommand(cmd, null, false);
-
+                const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
+                    if (is1xx) {
+                        console.warn("TfhkaDriver:: Comando 1XX falló (no fatal):", cmd, result.error);
+                        continue;
+                    }
                     console.error("TfhkaDriver:: Comando falló:", cmd, result.error);
-                    // Intentar cancelar con 9 y luego 199
                     await this.abortTransaction();
                     return {
                         success: false,
@@ -1007,7 +1083,6 @@ export class TfhkaDriver {
                 };
             }
 
-            console.log("TfhkaDriver:: Factura impresa correctamente. Nro:", invoiceNumber);
             const fiscalResponse = this._buildFiscalResponse(
                 "Factura impresa correctamente",
                 invoiceNumber,
@@ -1151,11 +1226,15 @@ export class TfhkaDriver {
             // 12. Fin de documento
             commands.push("199");
 
-            console.log("TfhkaDriver:: Enviando nota de crédito con", commands.length, "comandos:", commands);
-
-            for (const cmd of commands) {
-                const result = await this.sendCommand(cmd, null, false);
+            for (let i = 0; i < commands.length; i++) {
+                const cmd = commands[i];
+                const result = await this.sendCommand(cmd, null, false, i > 0);
+                const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
+                    if (is1xx) {
+                        console.warn("TfhkaDriver:: NC - Comando 1XX falló (no fatal):", cmd, result.error);
+                        continue;
+                    }
                     console.error("TfhkaDriver:: NC - Comando falló:", cmd, result.error);
                     await this.abortTransaction();
                     return { success: false, data: "", error: `Error en comando [${cmd}]: ${result.error}` };
@@ -1180,7 +1259,6 @@ export class TfhkaDriver {
                 };
             }
 
-            console.log("TfhkaDriver:: Nota de crédito impresa correctamente. Nro:", creditNoteNumber);
             return this._buildFiscalResponse("Nota de crédito impresa correctamente", creditNoteNumber, s1Result.data);
 
         } catch (error) {
@@ -1308,11 +1386,15 @@ export class TfhkaDriver {
             // 12. Fin de documento
             commands.push("199");
 
-            console.log("TfhkaDriver:: Enviando nota de débito con", commands.length, "comandos:", commands);
-
-            for (const cmd of commands) {
-                const result = await this.sendCommand(cmd, null, false);
+            for (let i = 0; i < commands.length; i++) {
+                const cmd = commands[i];
+                const result = await this.sendCommand(cmd, null, false, i > 0);
+                const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
+                    if (is1xx) {
+                        console.warn("TfhkaDriver:: ND - Comando 1XX falló (no fatal):", cmd, result.error);
+                        continue;
+                    }
                     console.error("TfhkaDriver:: ND - Comando falló:", cmd, result.error);
                     await this.abortTransaction();
                     return { success: false, data: "", error: `Error en comando [${cmd}]: ${result.error}` };
@@ -1337,7 +1419,6 @@ export class TfhkaDriver {
                 };
             }
 
-            console.log("TfhkaDriver:: Nota de débito impresa correctamente. Nro:", debitNoteNumber);
             return this._buildFiscalResponse("Nota de débito impresa correctamente", debitNoteNumber, s1Result.data);
 
         } catch (error) {
