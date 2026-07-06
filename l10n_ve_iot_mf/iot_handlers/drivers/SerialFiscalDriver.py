@@ -144,16 +144,14 @@ FiscalProtocol = SerialProtocol(
 
 def install_package(package_name):
     try:
-        # Intenta importar el paquete para verificar si ya está instalado
         __import__(package_name)
-        print("'%s' ya está instalado.", package_name)
+        _logger.info("'%s' ya está instalado.", package_name)
     except ImportError:
-        print("'%s' no está instalado. Instalando...", package_name)
-        # Instala el paquete usando pip
+        _logger.info("'%s' no está instalado. Instalando...", package_name)
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", package_name, "--user"])
         except subprocess.CalledProcessError as e:
-            print("Error al instalar el paquete: %s", e)
+            _logger.error("Error al instalar el paquete: %s", e)
 
 try:
     import clr
