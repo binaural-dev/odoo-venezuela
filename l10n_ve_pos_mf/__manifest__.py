@@ -3,10 +3,9 @@
     "version": "17.0.2.0.1",
     "category": "Accounting",
     "summary": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
-    "description": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
     "sequence": "1",
     "license": "LGPL-3",
-    "author": "Binaural.dev",
+    "author": "Binaural",
     "support": "contacto@binaural.dev",
     "depends": [
         "point_of_sale",

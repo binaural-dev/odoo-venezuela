@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=print-used
 """
 Genera los scripts SQL de reparación de ir_model_data para binaural_location.
 

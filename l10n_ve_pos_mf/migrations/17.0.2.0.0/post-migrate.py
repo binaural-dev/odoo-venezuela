@@ -48,10 +48,10 @@ def migrate(cr, version):
     
     for table, fields in required_fields.items():
         for field in fields:
-            cr.execute(f"""
+            cr.execute("""
                 SELECT column_name FROM information_schema.columns
-                WHERE table_name = '{table}' AND column_name = '{field}'
-            """)
+                WHERE table_name = %s AND column_name = %s
+            """, [table, field])
             exists = cr.fetchone()
             
             if exists:

@@ -6,8 +6,8 @@ class MfReportsWizard(models.TransientModel):
     _name = "l10n_ve.mf.reports.wizard"
     _description = "Fiscal Machine Reports Wizard"
 
-    date_from = fields.Date(string="Date From", required=True, default=fields.Date.today)
-    date_to = fields.Date(string="Date To", required=True, default=fields.Date.today)
+    date_from = fields.Date(required=True, default=fields.Date.today)
+    date_to = fields.Date(required=True, default=fields.Date.today)
 
     def _validate_date_range(self):
         self.ensure_one()
