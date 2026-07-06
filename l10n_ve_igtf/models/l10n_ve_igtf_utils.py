@@ -1,6 +1,6 @@
 from odoo import api, fields, models
 from odoo.tools import float_is_zero, float_compare
-
+from odoo.exceptions import UserError
 
 class IGTFUtils(models.AbstractModel):
     _name = "l10n_ve_igtf.utils"
@@ -24,6 +24,8 @@ class IGTFUtils(models.AbstractModel):
         )
 
         principal_amount = min(payment_amount, due_amount)
+
+
         igtf_unrounded = principal_amount * (company.igtf_percentage / 100)
 
         igtf_top = invoice.igtf_top_aply
