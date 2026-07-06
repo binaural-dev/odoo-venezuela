@@ -2,14 +2,13 @@ import logging
 from collections import defaultdict
 
 from lxml import etree
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager
 from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, index_exists
 from odoo.tools.sql import drop_index
 from odoo.tools.float_utils import float_round
 from odoo.tools.misc import formatLang
-from odoo.tools.misc import clean_context
 
 
 _logger = logging.getLogger(__name__)
