@@ -9,6 +9,22 @@ _logger = logging.getLogger(__name__)
 class PosPayment(models.Model):
     _inherit = "pos.payment"
 
+    # Odoo 19 frontend `PosPayment` expects these base fields when creating/
+    # mutating payment lines (e.g. setAmount -> pos_order_id.assertEditable()).
+    _POS_PAYMENT_CORE_FIELDS = (
+        "id",
+        "name",
+        "uuid",
+        "amount",
+        "payment_date",
+        "payment_method_id",
+        "payment_status",
+        "ticket",
+        "is_change",
+        "pos_order_id",
+        "currency_id",
+    )
+
     foreign_rate = fields.Float(
         help="The rate that is gonna be always shown to the user.",
         default=0.0,
@@ -24,11 +40,19 @@ class PosPayment(models.Model):
 
     @api.model
     def _load_pos_data_fields(self, config):
-        """Odoo 19 loader contract: extend the read with the Venezuelan
-        foreign-currency fields consumed by the PoS UI.
+        """Keep Odoo 19 core payment contract and extend it with Venezuelan
+        foreign-currency fields.
+
+        Important: returning only custom fields breaks frontend invariants
+        (`pos_order_id` is needed by PosPayment.setAmount).
         """
         res = super()._load_pos_data_fields(config) or []
-        for name in ("foreign_rate", "foreign_amount", "foreign_currency_id"):
+        required = list(self._POS_PAYMENT_CORE_FIELDS) + [
+            "foreign_rate",
+            "foreign_amount",
+            "foreign_currency_id",
+        ]
+        for name in required:
             if name not in res:
                 res.append(name)
         return res

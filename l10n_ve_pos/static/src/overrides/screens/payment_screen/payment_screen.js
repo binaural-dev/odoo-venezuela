@@ -16,19 +16,63 @@ patch(PaymentScreen.prototype, {
     this.utils = useEnv().utils,
      this.dialog = useService("dialog");
   },
+  _toNumber(value, fallback = 0) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : fallback;
+  },
+  _getConversionRate() {
+    const order = this.currentOrder;
+    const candidates = [
+      typeof order?.get_conversion_rate === "function" ? order.get_conversion_rate() : undefined,
+      order?.init_conversion_rate,
+      order?.config?.foreign_inverse_rate,
+      order?.pos?.config?.foreign_inverse_rate,
+      order?.config?.foreign_rate,
+      order?.pos?.config?.foreign_rate,
+    ];
+    for (const candidate of candidates) {
+      const numeric = Number(candidate);
+      if (Number.isFinite(numeric) && numeric > 0) {
+        return numeric;
+      }
+    }
+    return 0;
+  },
+  _convertLocalToForeign(amount) {
+    const localAmount = this._toNumber(amount, 0);
+    const rate = this._getConversionRate();
+    if (!rate) {
+      return localAmount;
+    }
+    return rate >= 1 ? localAmount / rate : localAmount * rate;
+  },
+  get foreignTotalDueText() {
+    const fromOrder = typeof this.currentOrder?.get_foreign_total_with_tax === "function"
+      ? this._toNumber(this.currentOrder.get_foreign_total_with_tax(), NaN)
+      : NaN;
+    const amount = Number.isFinite(fromOrder)
+      ? fromOrder
+      : this._convertLocalToForeign(this.currentOrder?.get_total_with_tax?.() || this.currentOrder?.totalDue || 0);
+    return this.env.utils.formatForeignCurrency(amount);
+  },
   shouldDownloadInvoice() {
     return false;
   },
   updateSelectedPaymentline(amount = false) {
     if (this.paymentLines.every((line) => line.paid)) {
-      this.currentOrder.add_paymentline(this.payment_methods_from_config[0]);
+      this.currentOrder.addPaymentline(this.payment_methods_from_config[0]);
     }
     if (!this.selectedPaymentLine) {
       return;
     } // do nothing if no selected payment line
 
+    const selectedMethod = this.selectedPaymentLine.payment_method_id;
+    if (!selectedMethod) {
+      return super.updateSelectedPaymentline(amount);
+    }
+
     // >>  BINAURAL
-    if (!this.selectedPaymentLine.payment_method.is_foreign_currency) {
+    if (!selectedMethod.is_foreign_currency) {
       return super.updateSelectedPaymentline(amount);
     }
 
@@ -43,7 +87,7 @@ patch(PaymentScreen.prototype, {
     }
 
     // disable changing amount on paymentlines with running or done payments on a payment terminal
-    const payment_terminal = this.selectedPaymentLine.payment_method.payment_terminal;
+    const payment_terminal = selectedMethod.payment_terminal;
     const hasCashPaymentMethod = this.payment_methods_from_config.some(
       (method) => method.type === "cash"
     );
@@ -58,17 +102,17 @@ patch(PaymentScreen.prototype, {
     }
     if (
       payment_terminal &&
-      !["pending", "retry"].includes(this.selectedPaymentLine.get_payment_status())
+      !["pending", "retry"].includes(this.selectedPaymentLine.getPaymentStatus())
     ) {
       return;
     }
     if (amount === null) {
-      this.deletePaymentLine(this.selectedPaymentLine.cid);
+      this.deletePaymentLine(this.selectedPaymentLine.uuid);
     } else {
-      if (this.selectedPaymentLine.payment_method.is_foreign_currency) {
+      if (selectedMethod.is_foreign_currency && typeof this.selectedPaymentLine.set_foreign_amount === "function") {
         this.selectedPaymentLine.set_foreign_amount(amount);
       } else {
-        this.selectedPaymentLine.set_amount(amount);
+        this.selectedPaymentLine.setAmount(amount);
       }
     }
   },
