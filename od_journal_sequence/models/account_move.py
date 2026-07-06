@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models, _
-
+from datetime import datetime, date
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -27,7 +27,14 @@ class AccountMove(models.Model):
                     seq = move.journal_id.refund_sequence_id
                 else:
                     seq = move.journal_id.sequence_id
-                name = seq.next_by_id(sequence_date=move.date)
+                if move.date:
+                    if isinstance(move.date, date) and not isinstance(move.date, datetime):
+                        sequence_date = datetime.combine(move.date, datetime.min.time())
+                    else:
+                        sequence_date = fields.Datetime.to_datetime(move.date)
+                    name = seq.next_by_id(sequence_date=sequence_date)
+                else:
+                    name = seq.next_by_id()
             move.name = name
             move._compute_payment_reference()
 

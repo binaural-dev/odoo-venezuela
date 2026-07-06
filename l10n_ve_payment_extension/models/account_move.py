@@ -1,6 +1,7 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
-
+from odoo.tools.safe_eval import safe_eval
+from collections import defaultdict
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -29,6 +30,8 @@ class AccountMoveRetention(models.Model):
         "move_id",
         string="ISLR Retention Lines",
         domain=[
+            "&", 
+            ("retention_id.state", "!=", "cancel"),
             "|",
             ("payment_concept_id", "!=", False),
             ("retention_id.type_retention", "=", "islr"),
@@ -39,7 +42,8 @@ class AccountMoveRetention(models.Model):
         "account.retention.line",
         "move_id",
         string="IVA Retention Lines",
-        domain=[("retention_id.type_retention", "=", "iva")],
+        domain=[("retention_id.type_retention", "=", "iva"),
+            ("retention_id.state", "!=", "cancel")],
     )
 
     retention_municipal_line_ids = fields.One2many(
@@ -47,6 +51,8 @@ class AccountMoveRetention(models.Model):
         "move_id",
         string="Municipal Retention Lines",
         domain=[
+            "&", 
+            ("retention_id.state", "!=", "cancel"),
             "|",
             ("economic_activity_id", "!=", False),
             ("retention_id.type_retention", "=", "municipal"),
@@ -56,6 +62,7 @@ class AccountMoveRetention(models.Model):
     generate_iva_retention = fields.Boolean(
         string="Generate IVA Retention?",
         default=False,
+        copy=False
     )
 
     is_third_party_retention = fields.Boolean(
@@ -82,6 +89,96 @@ class AccountMoveRetention(models.Model):
     not_edit_islr_retention_lines = fields.Boolean(
         string="Edit ISLR Retention Lines?", compute="_compute_state_retentions_lines"
     )
+
+    is_isrl_retention_available = fields.Boolean(
+        string="¿Is retention islr Available?", compute="_compute_retention_islr_avalability", store=True,copy=False
+    )
+
+    generate_islr_retention = fields.Boolean(
+        string="¿Generate ISLR Retention?",
+        default=False, copy=False
+    )
+
+    count_islr_retention = fields.Integer('count islr retention',compute="compute_count_retentions")
+    count_iva_retention = fields.Integer('count iva retention',compute="compute_count_retentions")
+    count_municipal_retention = fields.Integer('count iva retention', compute="compute_count_retentions")
+
+    has_emited_islr_retention = fields.Boolean('has emited islr_retention', compute="compute_count_retentions")
+    has_emited_municipal_retention = fields.Boolean('has emited municipal retention', compute="compute_count_retentions")
+    has_emited_iva_retention = fields.Boolean('has emited iva retention', compute="compute_count_retentions")
+
+    def compute_count_retentions(self):
+        
+        for rec in self:
+            lines = self.env['account.retention.line'].search([('move_id', 'in', rec.ids),("retention_id.state", "!=", "cancel")])
+            ret_all = lines.filtered(lambda l: l.move_id.id == rec.id).mapped('retention_id')
+
+            islr = ret_all.filtered(lambda r: r.type_retention == 'islr')
+            iva = ret_all.filtered(lambda r: r.type_retention == 'iva')
+            muni = ret_all.filtered(lambda r: r.type_retention == 'municipal')
+            
+            rec.count_islr_retention = len(islr)
+            rec.has_emited_islr_retention = any(r.state == 'emitted' for r in islr)
+            rec.count_iva_retention = len(iva)
+            rec.has_emited_iva_retention = any(r.state == 'emitted' for r in iva)
+            rec.count_municipal_retention = len(muni)
+            rec.has_emited_municipal_retention = any(r.state == 'emitted' for r in muni)
+
+    def action_view_retention(self):
+        self.ensure_one()
+        ret_type = self.env.context.get('retention_type')
+        
+        retentions = False
+        if ret_type == 'iva':
+           retentions = self.retention_iva_line_ids.mapped('retention_id')
+        elif ret_type == 'islr':
+            retentions = self.retention_islr_line_ids.mapped('retention_id')
+        else:
+            retentions = self.retention_municipal_line_ids.mapped('retention_id')
+
+        names = {
+            'iva': _('IVA Retentions'),
+            'islr': _('ISLR Retentions'),
+            'municipal': _('Municipal Retentions'),
+        }
+        action_name = names.get(ret_type, _('Retentions'))
+
+        if retentions:
+            if len(retentions) == 1:
+                
+                return {
+                    'name': action_name,
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'account.retention',
+                    'view_mode': 'form',
+                    'res_id': retentions.id,
+                    'target': 'current',
+                }
+            else:
+                return {
+                    'name': action_name,
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'account.retention',
+                    'view_mode': 'list,form',
+                    'domain': [('id', 'in', retentions.ids)],
+                    'target': 'current',
+                }
+        
+
+    @api.depends(
+        "invoice_line_ids",
+        "invoice_line_ids.product_id",
+    )
+    def _compute_retention_islr_avalability(self):
+        for record in self:
+            record.is_isrl_retention_available = any(
+                line.product_id.product_tmpl_id.type == 'service' and 
+                line.product_id.product_tmpl_id.payment_concept 
+                for line in record.invoice_line_ids
+            )
+
+            if not record.is_isrl_retention_available and record.generate_islr_retention:
+                record.generate_islr_retention = False
 
     def _compute_third_party_retention_counts(self):
         Retention = self.env["account.retention"]
@@ -222,22 +319,18 @@ class AccountMoveRetention(models.Model):
         """
         res = super().action_post()
         for move in self:
+            if (not move.islr_voucher_number and move.generate_islr_retention ):
+                move.auto_create_islr_retention()
+
+            if (move.generate_iva_retention and not move.iva_voucher_number):
+                move._validate_iva_retention()
+                retention = move._create_retention("iva")
+                if not move.company_id.create_retentions_of_suppliers_in_draft and move.move_type in ['in_invoice']:
+                    retention.action_post()
+                move.iva_voucher_number = retention.number
+
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
-            company = move.company_id or self.env.company
-            if (
-                move.retention_islr_line_ids
-                and not move.islr_voucher_number
-                and move.retention_islr_line_ids.filtered(
-                    lambda l: l.state != "emitted"
-                )
-            ):
-                move._validate_islr_retention()
-                retention = move._create_supplier_retention("islr")
-
-                if not company.create_retentions_of_suppliers_in_draft:
-                    retention.action_post()
-                move.islr_voucher_number = retention.number
 
             if (
                 move.retention_municipal_line_ids
@@ -247,58 +340,12 @@ class AccountMoveRetention(models.Model):
                 )
             ):
                 move._validate_municipal_retention()
-                retention = move._create_supplier_retention("municipal")
-                if not company.create_retentions_of_suppliers_in_draft:
+                retention = move._create_retention("municipal")
+                if not move.company_id.create_retentions_of_suppliers_in_draft and move.move_type in ['in_invoice']:
                     retention.action_post()
 
-            if (
-                move.generate_iva_retention
-                and not move.retention_iva_line_ids.filtered(
-                    lambda l: l.state != "cancel"
-                )
-            ):
-                move._validate_iva_retention()
-                retention = move._create_supplier_retention("iva")
-                if not company.create_retentions_of_suppliers_in_draft:
-                    retention.action_post()
-                move.iva_voucher_number = retention.number
+            
         return res
-
-    def _validate_islr_retention(self):
-        """
-        Validate that the company has a journal for ISLR supplier retention, the partner a type of
-        person and that the amount of the retention is greater than zero, in order for the ISLR
-        retention to be created.
-        """
-        self.ensure_one()
-        if not self.env.company.islr_supplier_retention_journal_id:
-            raise UserError(
-                _("The company must have a journal for ISLR supplier retention.")
-            )
-        islr_retention = self.retention_islr_line_ids
-        sum_invoice_amount = sum(
-            islr_retention.filtered(lambda rl: rl.state != "cancel").mapped(
-                "invoice_amount"
-            )
-        )
-        if sum_invoice_amount > self.tax_totals.get("base_amount", 0.0):
-            raise UserError(
-                _(
-                    "The amount of the retention is greater than the total amount of the invoice %s."
-                )
-            )
-        sum_invoice_amount = sum(
-            self.retention_islr_line_ids.filtered(
-                lambda rl: rl.state != "cancel"
-            ).mapped("invoice_amount")
-        )
-        self._check_retention_vs_move(islr_retention)
-
-        if not self.partner_id.type_person_id:
-            raise UserError(_("The partner must have a type of person"))
-        if sum_invoice_amount <= 0:
-            raise UserError(
-                _("The amount of the retention must be greater than zero."))
 
     @api.model
     def _check_retention_vs_move(self, islr_retention_lines):
@@ -317,16 +364,25 @@ class AccountMoveRetention(models.Model):
         Validate that the company has a journal for IVA supplier retention and that the invoice has
         at least one tax, in order for the IVA retention to be created.
         """
-        self.ensure_one()
-        if not self.env.company.iva_supplier_retention_journal_id:
-            raise UserError(
-                _("The company must have a journal for IVA supplier retention.")
-            )
+
+        is_supplier = self.move_type in ['in_invoice', 'in_refund']
+
+        if is_supplier:
+            if not self.env.company.iva_supplier_retention_journal_id:
+                raise UserError(
+                    _("The company must have a journal for IVA supplier retention.")
+                )
+        else:
+            if not self.env.company.iva_customer_retention_journal_id:
+                raise UserError(
+                    _("The company must have a journal for IVA customer retention.")
+                )
+            
         if not any(
             self.invoice_line_ids.mapped(
                 "tax_ids").filtered(lambda x: x.amount > 0)
         ):
-            raise UserError(_("The invoice has no tax."))
+            raise UserError(_("The invoice has no applicable taxes. IVA Retention cannot be generated."))
 
     def _validate_municipal_retention(self):
         """
@@ -339,102 +395,60 @@ class AccountMoveRetention(models.Model):
                 _("The company must have a journal for municipal supplier retention.")
             )
 
-    @api.model
-    def _create_supplier_retention(self, type_retention):
-        """
-        Calls the method to create the payment for the retention of the type specified in the
-        type_retention parameter.
 
-        Params
-        ------
-        invoice_id: account.move
-            The invoice to which the retention will be applied.
-        type_retention: tuple[str, str]
-            The type of retention and the type of invoice.
+    def _get_retention_journals(self, is_supplier):
+        if is_supplier:
+            return {
+                "iva": self.env.company.iva_supplier_retention_journal_id,
+                "municipal": self.env.company.municipal_supplier_retention_journal_id,
+            }
+        else:
+            return {
+                "iva": self.env.company.iva_customer_retention_journal_id,
+                "municipal": self.env.company.municipal_customer_retention_journal_id,
+            }
 
-        Returns
-        -------
-        account.retention
-            The retention created.
-        """
-        self.ensure_one()
-        if type_retention == "iva" and not self.partner_id.withholding_type_id:
-            raise UserError(_("The partner has no withholding type."))
 
-        retention = self.env["account.retention"]
-        payment_type = "outbound"
-        if self.move_type == "in_refund":
-            payment_type = "inbound"
-
-        journals = {
-            "iva": self.env.company.iva_supplier_retention_journal_id,
-            "islr": self.env.company.islr_supplier_retention_journal_id,
-            "municipal": self.env.company.municipal_supplier_retention_journal_id,
-        }
-
-        Payment = self.env["account.payment"]
-        Retention = self.env["account.retention"]
-        payment_vals = {
-            "payment_type": payment_type,
-            "partner_type": "supplier",
-            "partner_id": self.partner_id.id,
-            "journal_id": journals[type_retention].id,
-            "payment_type_retention": type_retention,
-            "payment_method_id": self.env.ref(
-                "account.account_payment_method_manual_in"
-            ).id,
-            "is_retention": True,
-            "foreign_rate": self.foreign_rate,
-            "foreign_inverse_rate": self.foreign_inverse_rate,
-            "currency_id": self.env.user.company_id.currency_id.id,
-        }
-        if 'subsidiary' in self.env.company._fields:
-                if self.env.company.subsidiary:
-                    payment_vals['account_analytic_id'] = self.account_analytic_id.id
-                else:
-                    payment_vals['account_analytic_id'] = False
-        if type_retention == "islr":
-            payment_vals["retention_line_ids"] = self.retention_islr_line_ids.filtered(
-                lambda rl: rl.state != "cancel"
-            ).ids
-        elif type_retention == "municipal":
-            payment_vals["retention_line_ids"] = (
-                self.retention_municipal_line_ids.filtered(
-                    lambda rl: rl.state != "cancel"
-                ).ids
-            )
-
-        payment = Payment.create(payment_vals)
+    def _prepare_retention_vals(self, type_retention, payment=False):
         retention_vals = {
-            "payment_ids": [Command.link(payment.id)],
             "date_accounting": self.date,
-            "date": self.date if self.move_type == "in_invoice" else False,
+            "date": self.date if self.move_type in ["in_invoice", "out_invoice"] else False,
             "type_retention": type_retention,
-            "type": "in_invoice",
+            "type": self.move_type, 
             "partner_id": self.partner_id.id,
         }
-
+    
+        # Validamos si existe el payment para agregarlo a los IDs de relación
+        if payment:
+            retention_vals["payment_ids"] = [Command.link(payment.id)]
+    
         if type_retention == "iva":
-            retention_lines_data = Retention.compute_retention_lines_data(
-                self, payment)
+            # Pasamos payment solo si existe, de lo contrario pasamos None o False según espere el método
+            retention_lines_data = self.env["account.retention"].compute_retention_lines_data(self, payment or False)
             retention_vals["retention_line_ids"] = [
                 Command.create(line) for line in retention_lines_data
             ]
         elif type_retention == "islr":
-            retention_vals["retention_line_ids"] = (
-                self.retention_islr_line_ids.filtered(
-                    lambda rl: rl.state != "cancel"
-                ).ids
-            )
+            retention_vals["retention_line_ids"] = self.retention_islr_line_ids.filtered(
+                lambda rl: rl.state != "cancel"
+            ).ids
         else:
-            retention_vals["retention_line_ids"] = (
-                self.retention_municipal_line_ids.filtered(
-                    lambda rl: rl.state != "cancel"
-                ).ids
-            )
+            retention_vals["retention_line_ids"] = self.retention_municipal_line_ids.filtered(
+                lambda rl: rl.state != "cancel"
+            ).ids
+    
+        return retention_vals
+    
+    @api.model
+    def _create_retention(self, type_retention):
+        
+        self.ensure_one()
 
-        retention = Retention.create(retention_vals)
-        payment.compute_retention_amount_from_retention_lines()
+        if type_retention == "iva" and not self.partner_id.withholding_type_id:
+            raise UserError(_("The partner has no withholding type."))
+
+        retention_vals = self._prepare_retention_vals(type_retention, False)
+        retention = self.env["account.retention"].create(retention_vals)
         return retention
 
     def action_register_payment(self):
@@ -485,3 +499,227 @@ class AccountMoveRetention(models.Model):
                 move.foreign_rate = move.origin_payment_id.foreign_rate
                 move.foreign_inverse_rate = move.origin_payment_id.foreign_rate
         return res
+        
+    def action_create_islr_from_invoice(self):
+
+        if len(self) > 1:
+            return self._action_create_multi_islr_retention()
+        self.ensure_one()
+    
+        for record in self:
+            retentions = record.validate_islr()
+
+            if retentions:
+                if len(retentions) == 1:
+                    return {
+                        'name': _('ISLR Retention'),
+                        'type': 'ir.actions.act_window',
+                        'res_model': 'account.retention',
+                        'view_mode': 'form',
+                        'res_id': retentions.id,
+                        'target': 'current',
+                    }
+                else:
+                    return {
+                        'name': _('ISLR Retention'),
+                        'type': 'ir.actions.act_window',
+                        'res_model': 'account.retention',
+                        'view_mode': 'list,form',
+                        'domain': [('id', 'in', retentions.ids)],
+                        'target': 'current',
+                    }
+            
+            payment_concepts = self._get_payment_concepts_from_invoice()
+                        
+            if record.move_type == 'in_invoice':
+                xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_supplier'
+            elif record.move_type == 'out_invoice':
+                xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_client'
+            else:
+                raise UserError(_("This action is only valid for customer or vendor invoices."))
+
+
+            action = self.env.ref(xml_action_id).read()[0]
+            ctx = safe_eval(action.get('context', '{}'))
+            ctx.update({
+                'default_partner_id': record.partner_id.id,
+                'default_invoice_id': record.id,
+                'default_date_accounting': fields.Date.today(),
+                'default_type': record.move_type,
+                'default_type_retention': 'islr',
+                'default_islr_lines': payment_concepts,
+            })
+
+            action['context'] = ctx
+            action['views'] = [(self.env.ref('l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension').id, 'form')]
+            action['view_mode'] = 'form'
+            action['target'] = 'current'
+            
+            return action
+    
+    def _get_payment_concepts_from_invoice(self):
+
+        for rec in self:
+            payment_concepts = []
+
+            valid_lines = rec.invoice_line_ids.filtered(
+                lambda l: l.product_id.product_tmpl_id.type == 'service' and 
+                        l.product_id.product_tmpl_id.payment_concept
+            )
+            use_price_unit = len(valid_lines) > 1
+
+            for line in rec.invoice_line_ids:
+                if line.product_id.product_tmpl_id.type == 'service' and bool(line.product_id.product_tmpl_id.payment_concept):
+                    product_tmpl = line.product_id.product_tmpl_id
+                    if product_tmpl.type == 'service' and product_tmpl.payment_concept:
+
+                        concept_id = product_tmpl.payment_concept.id
+                        base_amount = abs(line.price_unit) if use_price_unit else abs(line.move_id.tax_totals["base_amount"])
+                        payment_concepts.append((
+                            concept_id,
+                            base_amount,
+                            line.id, 
+                        ))
+            return payment_concepts
+        
+    def auto_create_islr_retention(self):
+        for rec in self:
+
+            if not self.env.company.islr_supplier_retention_journal_id:
+                raise UserError(
+                    _("The company must have a journal for ISLR supplier retention.")
+                )
+            
+            if not self.partner_id.type_person_id:
+                raise UserError(_("The partner must have a type of person"))
+        
+            payment_concepts = rec._get_payment_concepts_from_invoice()
+
+            vals = {
+                'partner_id': rec.partner_id.id,
+                'date_accounting': fields.Date.today(),
+                'type_retention': 'islr',
+            }
+            ctx = {
+                'default_type': rec.move_type,
+                'default_invoice_id': rec.id,
+                'default_islr_lines': payment_concepts,
+            }
+            
+            retention = self.env['account.retention'].with_context(ctx).create(vals)
+            if not rec.company_id.create_retentions_of_suppliers_in_draft and rec.move_type in ['in_invoice']:
+                retention.action_post()
+            rec.islr_voucher_number = retention.number
+
+    def _action_create_multi_islr_retention(self):
+        
+        line_values = []
+        
+        for move in self:
+            line_values.append((0, 0, {
+                'move_id': move.id,
+            }))
+
+        wizard = self.env['batch.retentions.wizard'].create({
+            'type_retention': 'islr',
+            'line_ids': line_values
+        })
+        
+        return {
+            'name': _('Generate ISLR Retention'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'batch.retentions.wizard', 
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new'
+            
+        }
+
+    
+    def validate_islr(self):
+        all_retention_lines = self.env['account.retention.line'].search([
+            ('move_id', 'in', self.ids),
+            ('retention_id.type_retention', '=', 'islr'),
+            ('retention_id.state', "!=", "cancel")
+        ])
+
+        availables_retention = self.env['account.retention']
+
+        for record in self:
+            if record.state != 'posted':
+                raise UserError(_(
+                    "Invoice %s must be in 'Posted' state to generate a retention."
+                ) % record.name)
+            
+            
+            if not any(l.product_id.payment_concept for l in record.invoice_line_ids):
+                raise UserError(_(
+                    "No services with a configured 'Payment Concept' were found in the lines of invoice %s."
+                ) % record.name)
+            
+            target = False
+            if record.move_type == 'out_invoice':
+                target = record.company_id.partner_id
+                if not target:
+                    raise UserError(_("No company partner associated with this invoice."))
+                if not target.type_person_id:
+                    raise UserError(_(
+                        "The Company '%s' does not have an ISLR 'Type of Person' configured."
+                    ) % target.name)
+            else:
+                target = record.partner_id
+                if not target:
+                    raise UserError(_("No partner/vendor associated with this invoice."))
+                if not target.type_person_id:
+                    raise UserError(_(
+                        "The Partner/Vendor '%s' does not have an ISLR 'Type of Person' configured."
+                    ) % target.name)
+
+            retentions = all_retention_lines.filtered(lambda l: l.move_id.id == record.id)
+            
+            if any(l.retention_id.state == 'emitted' for l in retentions):
+                raise UserError(_(
+                    "Invoice %s already has a posted ISLR retention. You cannot create another one."
+                ) % record.name)
+            
+            availables_retention |= retentions.filtered(lambda l: l.state == 'draft').mapped('retention_id')
+
+            
+                
+        return availables_retention
+    
+    def js_remove_outstanding_partial(self, partial_id):
+        self.ensure_one()
+
+        partial = self.env["account.partial.reconcile"].browse(partial_id)
+        partial_move_id = next((m for m in (partial.credit_move_id.move_id, partial.debit_move_id.move_id) if m.origin_payment_id or m.origin_payment_advanced_payment_id), None)
+
+        payment_id = False
+        if partial_move_id:
+            payment_id = partial_move_id.origin_payment_id or partial_move_id.origin_payment_advanced_payment_id
+      
+        if payment_id and payment_id.is_retention:
+            raise UserError(_(
+                "You cannot unreconcile a payment that is linked to a retention. "
+                "Please cancel the retention document if you want to unreconcile this payment."
+            ))
+        
+        return super().js_remove_outstanding_partial(partial.id)
+    
+
+    def button_draft(self):
+        if self.env.context.get('bypass_retention_lock'):
+            return super().button_draft()
+        
+        for payment in self:
+            
+            if payment.origin_payment_id and payment.origin_payment_id.is_retention and payment.origin_payment_id.state != 'cancel':
+                raise UserError(_(
+                    "You cannot cancel this payment because it is a retention linked to voucher %s. "
+                    "You must void or cancel the retention document first."
+                ) % payment.origin_payment_id.retention_id.display_name)
+                
+        return super().button_draft()
+    
+
+    

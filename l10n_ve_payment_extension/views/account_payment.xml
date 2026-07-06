@@ -11,13 +11,60 @@
                     <field name="retention_ref" string="Retention ref" invisible="not is_retention"/>
                     <notebook invisible="not is_retention">
                         <page name="retention_lines" string="Retention lines">
-                            <field name="retention_line_ids" nolabel="1">
-                                <list editable="bottom">
+                            <field name="retention_line_ids" nolabel="1" readonly="1" force_save="1">
+                                <kanban class="o_kanban_mobile" sample="1" quick_create="false" can_open="False">
+                                    <field name="id"/>
                                     <field name="name"/>
                                     <field name="move_id"/>
                                     <field name="payment_concept_id"/>
                                     <field name="invoice_amount"/>
-                                </list>
+                                    <field name="retention_amount"/>
+                                    <field name="state"/>
+                                    <field name="company_currency_id" />
+                                    
+                                    <templates>
+                                        <t t-name="card" class="d-flex flex-row align-items-center p-3 gap-3 border-bottom o_kanban_no_click">
+                                            <div class="oe_kanban_card flex-grow-1 d-flex align-items-center justify-content-between w-100">
+                                                
+                                                <div class="d-flex flex-column align-items-start gap-1" style="min-width: 0; flex: 1;">
+                                                    <div class="w-100">
+                                                        <span class="fw-bold text-dark fs-6 d-block text-truncate" t-att-title="record.name.value">
+                                                            <t t-out="record.name.value"/>
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                                                        <small class="text-secondary fw-semibold">
+                                                            <i class="fa fa-file-text-o me-1" title="Document"/>
+                                                            <t t-out="record.move_id.value"/>
+                                                        </small>
+                                                        
+                                                        <t t-if="record.payment_concept_id.raw_value">
+                                                            <span class="badge bg-light text-dark border border-200 px-2" style="font-size: 0.75rem;">
+                                                                <t t-out="record.payment_concept_id.value"/>
+                                                            </span>
+                                                        </t>
+                                                    </div>
+                                                </div>
+
+                                                <div class="d-flex align-items-center gap-3 ms-2 flex-shrink-0">
+                                                    <div class="text-end">
+                                                        <small class="text-muted d-block" style="font-size: 0.75rem;">Retained</small>
+                                                        <div class="text-end">
+                                                            <div class="fw-bold text-dark fs-5">
+                                                                <field name="retention_amount" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                                                            </div>
+                                                            <span t-attf-class="badge rounded-pill #{record.state.raw_value == 'emitted' ? 'text-bg-success' : 'text-bg-info'}">
+                                                                <field name="state"/>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
                             </field>
                         </page>
                     </notebook>

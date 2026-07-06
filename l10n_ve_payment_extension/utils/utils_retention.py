@@ -53,21 +53,19 @@ def get_current_date_format(date):
     string
         The month and the year on the desired format.
     """
+    # 1. Definimos los meses de forma limpia (sin el _() aquí para evitar problemas de contexto)
     months = (
-        _("January"),
-        _("February"),
-        _("March"),
-        _("April"),
-        _("May"),
-        _("June"),
-        _("July"),
-        _("August"),
-        _("September"),
-        _("October"),
-        _("November"),
-        _("December"),
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
     )
-    month = months[date.month - 1]
+    
+    # 2. Obtenemos el mes en inglés
+    month_name = months[date.month - 1]
+    
+    # 3. Traducimos el mes individualmente usando el contexto de Odoo
+    translated_month = _(month_name)
     year = date.year
-    message = "{} {}".format(month, year)
-    return message
+    
+    # 4. RECOMENDADO: Traducir la estructura completa para permitir variaciones de idioma
+    # Esto permite que en español se traduzca como "%s de %s" (Enero de 2026) si fuera necesario.
+    return _("%(month)s %(year)s", month=translated_month, year=year)
