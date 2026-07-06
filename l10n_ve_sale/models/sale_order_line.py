@@ -87,28 +87,31 @@ class SaleOrderLine(models.Model):
 
             company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
-            if line.currency_id.id == company_currency.id:
-                line.foreign_price = line.currency_id._convert(
+            line_currency = line.currency_id or line.order_id.currency_id or line.company_id.currency_id
+
+            if not line_currency or not foreign_currency:
+                line.foreign_price = 0.0
+                continue
+
+            if line_currency.id == company_currency.id:
+                line.foreign_price = line_currency._convert(
                     line.price_unit,
                     foreign_currency,
                     line.company_id,
                     order_date,
                 )
-            elif line.currency_id.id == foreign_currency.id:
+                continue
+
+            if line_currency.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
-            else:
-                price_in_company = line.currency_id._convert(
-                    line.price_unit,
-                    company_currency,
-                    line.company_id,
-                    order_date,
-                )
-                line.foreign_price = company_currency._convert(
-                    price_in_company,
-                    foreign_currency,
-                    line.company_id,
-                    order_date,
-                )
+                continue
+
+            line.foreign_price = line.currency_id._convert(
+                line.price_unit,
+                foreign_currency,
+                line.company_id,
+                order_date,
+            )
 
     @api.depends("product_uom_qty", "foreign_price", "discount")
     def _compute_foreign_subtotal(self):
