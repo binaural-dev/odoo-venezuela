@@ -22,6 +22,17 @@ class PosPayment(models.Model):
         for record in self:
             record.foreign_currency_id = record.env.company.foreign_currency_id
 
+    @api.model
+    def _load_pos_data_fields(self, config):
+        """Odoo 19 loader contract: extend the read with the Venezuelan
+        foreign-currency fields consumed by the PoS UI.
+        """
+        res = super()._load_pos_data_fields(config) or []
+        for name in ("foreign_rate", "foreign_amount", "foreign_currency_id"):
+            if name not in res:
+                res.append(name)
+        return res
+
     def _export_for_ui(self, payment):
         res = super()._export_for_ui(payment)
         res["foreign_rate"] = payment.foreign_rate
