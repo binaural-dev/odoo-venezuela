@@ -504,11 +504,46 @@ class PosSession(models.Model):
             session._validate_cross_move()
         return res
 
+    def _resolve_pos_foreign_rates(self):
+        """Resolve and validate foreign rates used for POS payment posting.
+
+        Root fix: ensure split/combine payment postings never start with a
+        missing ``foreign_inverse_rate``, because IGTF computations divide by
+        this field while posting account moves.
+        """
+        self.ensure_one()
+
+        foreign_rate = self.config_id.foreign_rate
+        foreign_inverse_rate = self.config_id.foreign_inverse_rate
+
+        if (not foreign_rate or not foreign_inverse_rate) and self.config_id.foreign_currency_id:
+            rate_values = self.env["res.currency.rate"].compute_rate(
+                self.config_id.foreign_currency_id.id,
+                fields.Date.today(),
+            )
+            foreign_rate = foreign_rate or rate_values.get("foreign_rate")
+            foreign_inverse_rate = foreign_inverse_rate or rate_values.get("foreign_inverse_rate")
+
+        if not foreign_inverse_rate:
+            raise ValidationError(
+                _(
+                    "No valid foreign inverse rate was found for POS session %(session)s. "
+                    "Check exchange rates for company %(company)s."
+                )
+                % {
+                    "session": self.name,
+                    "company": self.company_id.name,
+                }
+            )
+
+        return foreign_rate, foreign_inverse_rate
+
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
         # Se sobreescribe esta funcion para poder reasignar la cuenta de destino del account_payment, ya que odoo base la sobreescribe luego de crearla
         outstanding_account = payment_method.outstanding_account_id or self.company_id.account_journal_payment_debit_account_id
         destination_account = self._get_receivable_account(payment_method)
         pos_receivable_account = destination_account
+        foreign_rate, foreign_inverse_rate = self._resolve_pos_foreign_rates()
 
         if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
             # revert the accounts because account.payment doesn't accept negative amount.
@@ -523,6 +558,8 @@ class PosSession(models.Model):
             'pos_payment_method_id': payment_method.id,
             'pos_session_id': self.id,
             'company_id': self.company_id.id,
+            'foreign_rate': foreign_rate,
+            'foreign_inverse_rate': foreign_inverse_rate,
         })
 
         diff_amount_compare_to_zero = self.currency_id.compare_amounts(diff_amount, 0)
@@ -532,8 +569,8 @@ class PosSession(models.Model):
         account_payment.action_post()
         account_payment.with_context(skip_account_move_synchronization=True).write(
             {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                "foreign_rate": foreign_rate,
+                "foreign_inverse_rate": foreign_inverse_rate,
                 "destination_account_id": destination_account.id,
             }
         )
@@ -558,15 +595,38 @@ class PosSession(models.Model):
         return res
 
     def _create_split_account_payment(self, payment, amounts):
-        res = super(
-            PosSession, self.with_context(from_pos=True)
-        )._create_split_account_payment(payment, amounts)
-        account_payment = res.move_id.payment_id
-        account_payment.with_context(skip_account_move_synchronization=True).write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-            }
+        payment_method = payment.payment_method_id
+        if not payment_method.journal_id:
+            return self.env['account.move.line']
+
+        outstanding_account = (
+            payment_method.outstanding_account_id
+            or self.company_id.account_journal_payment_debit_account_id
+        )
+        accounting_partner = self.env["res.partner"]._find_accounting_partner(payment.partner_id)
+        destination_account = accounting_partner.property_account_receivable_id
+        foreign_rate, foreign_inverse_rate = self._resolve_pos_foreign_rates()
+
+        if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
+            # revert the accounts because account.payment doesn't accept negative amount.
+            outstanding_account, destination_account = destination_account, outstanding_account
+
+        account_payment = self.env['account.payment'].with_context(from_pos=True, pos_payment=True).create({
+            'amount': abs(amounts['amount']),
+            'partner_id': accounting_partner.id,
+            'journal_id': payment_method.journal_id.id,
+            'force_outstanding_account_id': outstanding_account.id,
+            'destination_account_id': destination_account.id,
+            'ref': _('%s POS payment of %s in %s', payment_method.name, payment.partner_id.display_name, self.name),
+            'pos_payment_method_id': payment_method.id,
+            'pos_session_id': self.id,
+            'company_id': self.company_id.id,
+            'foreign_rate': foreign_rate,
+            'foreign_inverse_rate': foreign_inverse_rate,
+        })
+        account_payment.action_post()
+        res = account_payment.move_id.line_ids.filtered(
+            lambda line: line.account_id == account_payment.destination_account_id
         )
 
         for line in account_payment.move_id.line_ids:
