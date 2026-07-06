@@ -166,7 +166,7 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
-    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
+    foreign_amount_residual = fields.Monetary(copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
 
     @api.depends(
         'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',

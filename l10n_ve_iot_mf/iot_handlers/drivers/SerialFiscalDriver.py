@@ -31,8 +31,6 @@ from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
 
 from odoo.http import Response
 
-import json
-
 FLAG_21 = {
     "30": {
         "max_amount_int": 14,
@@ -799,7 +797,7 @@ class SerialFiscalDriver(SerialDriver):
             return status
         except Exception as e:
             _logger.error("Error al obtener estado de la impresora: %s", e)
-            raise UserError("Error al obtener estado de la impresora: %s", e)
+            raise UserError(_("Error al obtener estado de la impresora: %s") % (e,))
     
     def print_out_refund(self, invoice):        
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -827,11 +825,11 @@ class SerialFiscalDriver(SerialDriver):
             raise UserError(_(
                 "¡Error de impresora fiscal! "
                 "La impresora fiscal actual no coincide con la usada en la factura original. "
-                "Serial de la factura: %s. "
-                "Serial de la impresora conectada: %s."
-            ) % (
-                invoice['data']['invoice_affected']['serial_machine'],
-                machine_number,
+                "Serial de la factura: %(serial_factura)s. "
+                "Serial de la impresora conectada: %(serial_impresora)s."
+            ) % {
+                'serial_factura': invoice['data']['invoice_affected']['serial_machine'],
+                'serial_impresora': machine_number,
             ))
         
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -1570,7 +1568,7 @@ class SerialFiscalDriver(SerialDriver):
             return result
         
         except Exception as e:
-            raise UserError("Error al validar factura: %s", e)
+            raise UserError(_("Error al validar factura: %s") % (e,))
     
     def programacion(self, data):
         try:
