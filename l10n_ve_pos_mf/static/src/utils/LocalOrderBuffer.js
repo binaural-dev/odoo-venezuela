@@ -71,6 +71,19 @@ export class LocalOrderBuffer {
     }
 
     /**
+     * Actualiza un pedido específico del buffer (persiste en localStorage)
+     * @param {number} index - Índice del pedido a actualizar
+     * @param {Object} updates - Campos a actualizar (ej. { retries: 3 })
+     */
+    static update(index, updates) {
+        const buffer = this.getAll();
+        if (index >= 0 && index < buffer.length && updates) {
+            buffer[index] = { ...buffer[index], ...updates };
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(buffer));
+        }
+    }
+
+    /**
      * Limpia todo el buffer
      */
     static clear() {

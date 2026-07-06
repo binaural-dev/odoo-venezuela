@@ -36,6 +36,9 @@ patch(Order.prototype, {
   },
   assert_editable() { },
   get init_conversion_rate() {
+    if (this._original_conversion_rate) {
+      return this._original_conversion_rate;
+    }
     //FIXME :Buscar una manera de esto sea por id y no por name
     if (this.pos.currency.name == "VEF" || this.pos.currency.name == "VES") {
       // IMPORTANT: do not round inverse rate for Bolivar base.
@@ -50,7 +53,10 @@ patch(Order.prototype, {
     return this.pos.config.foreign_rate || this.pos.config.foreign_inverse_rate || 1;
   },
   get_display_rate() {
-    return round_di(this.pos.config.foreign_rate, this.pos.foreign_currency.decimal_places);
+    if (this._original_conversion_rate) {
+      return round_di(this._original_conversion_rate, this.pos.foreign_currency.decimal_places);
+    }
+    return parseFloat(this.pos.config.foreign_rate.toFixed(this.pos.dp["Tasa"]));
   },
 
   add_orderline(line) {
@@ -60,6 +66,9 @@ patch(Order.prototype, {
   },
   get_conversion_rate() {
     if (this.orderlines.length != 0) {
+      if (this.orderlines[0].foreign_currency_rate) {
+        return round_di(this.orderlines[0].foreign_currency_rate, this.pos.foreign_currency.decimal_places);
+      }
       return this.orderlines[0].currency_rate_display();
     }
     return this.init_conversion_rate || 1;
@@ -108,6 +117,12 @@ patch(Order.prototype, {
     super.set_orderline_options(...arguments);
     if (options.foreign_price !== undefined) {
       orderline.set_foreign_unit_price(options.foreign_price);
+    }
+    if (options.foreign_currency_rate !== undefined) {
+      orderline.foreign_currency_rate = options.foreign_currency_rate;
+      if (!this._original_conversion_rate) {
+        this._original_conversion_rate = options.foreign_currency_rate;
+      }
     }
   },
 

@@ -36,7 +36,7 @@ export class FiscalMachinePopup extends AbstractAwaitablePopup {
       await this.rpc({
         model: 'pos.session',
         method: 'set_report_z',
-        args: [this.env.pos.pos_session.id, data],
+        args: [[this.env.pos.pos_session.id], data],
       })
     }).finally(() => {
       this.env.services.ui.unblock()

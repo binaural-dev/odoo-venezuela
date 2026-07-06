@@ -60,13 +60,14 @@ export class TfhkaDriver {
      * Conecta con la impresora fiscal
      * @returns {Promise<boolean>}
      */
-    async connect() {
+    async connect({ requestPermission = false } = {}) {
         try {
             // Intentar reconexión automática primero
             let connected = await this.connection.autoConnect();
             
-            // Si falla, solicitar permiso al usuario
-            if (!connected) {
+            // Solo solicitar permiso si se indica explícitamente
+            // (requestPort() requiere un gesto del usuario)
+            if (!connected && requestPermission) {
                 connected = await this.connection.requestPort();
             }
             

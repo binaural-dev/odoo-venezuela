@@ -19,7 +19,7 @@ patch(Chrome.prototype, {
         this.autoSyncIntervalId = null;
         this.isFlushingPendingOrders = false;
         this.orm = useService("orm");
-        onMounted(this._onMountedFiscalPrinter);
+        onMounted(() => this._onMountedFiscalPrinter());
         onWillUnmount(() => this._clearAutoSyncInterval());
     },
 
@@ -147,7 +147,7 @@ patch(Chrome.prototype, {
             this._updateFiscalPrinterButtonStatus("connecting");
             
             // Esto solicitará permiso al usuario para seleccionar el puerto
-            const connected = await this.fiscalPrinter.connection.requestPort();
+            const connected = await this.fiscalPrinter.connect({ requestPermission: true });
             
             if (connected) {
                 // Verificar que la impresora responda
@@ -211,10 +211,11 @@ patch(Chrome.prototype, {
                     LocalOrderBuffer.remove(i);
                     
                 } catch (error) {
-                    entry.retries = (entry.retries || 0) + 1;
-                    console.warn(`FiscalPrinter:: Pedido offline #${i} fallo (intento ${entry.retries}):`, error.message);
+                    const newRetries = (entry.retries || 0) + 1;
+                    LocalOrderBuffer.update(i, { retries: newRetries });
+                    console.warn(`FiscalPrinter:: Pedido offline #${i} fallo (intento ${newRetries}):`, error.message);
                     
-                    if (entry.retries >= 5) {
+                    if (newRetries >= 5) {
                         LocalOrderBuffer.remove(i);
                         console.error(`FiscalPrinter:: Pedido offline #${i} abandonado`);
                     }

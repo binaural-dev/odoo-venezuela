@@ -106,7 +106,7 @@ patch(ClosePosPopup.prototype, {
       };
 
       await this.orm.call("account.move", "report_z", [[], this.pos.config.serial_machine, value]);
-      await this.orm.call("pos.session", "set_report_z", [this.pos.pos_session.id, value]);
+      await this.orm.call("pos.session", "set_report_z", [[this.pos.pos_session.id], value]);
 
       await this.popup.add(InfoPopup, {
         title: _t("Reporte Z impreso"),

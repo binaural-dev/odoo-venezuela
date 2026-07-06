@@ -407,6 +407,13 @@ class AccountMove(models.Model):
                     % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
 
+            if move.move_type in ('out_refund', 'in_refund') and move.reversed_entry_id:
+                original_journal = move.reversed_entry_id.journal_id
+                if original_journal != move.journal_id:
+                    move._update_invoice_lines_with_new_journal(
+                        original_journal.id, move.journal_id.id
+                    )
+
         return moves
 
   

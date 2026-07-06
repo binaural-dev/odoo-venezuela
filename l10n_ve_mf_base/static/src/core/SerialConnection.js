@@ -148,6 +148,7 @@ export class SerialConnection {
         }
 
         let timeoutId = null;
+        let timedOut = false;
         try {
             this.readLock = true;
             const chunks = [];
@@ -160,7 +161,8 @@ export class SerialConnection {
             const readPromise = new Promise((resolve) => { readResolve = resolve; });
 
             timeoutId = setTimeout(() => {
-                readResolve(null);
+                timedOut = true;
+                readResolve();
             }, timeout);
 
             (async () => {
@@ -194,6 +196,10 @@ export class SerialConnection {
             if (timeoutId) {
                 clearTimeout(timeoutId);
                 timeoutId = null;
+            }
+
+            if (timedOut) {
+                return null;
             }
 
             // Concatenar todos los chunks en un solo Uint8Array
