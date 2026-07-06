@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="l10n_ve_stock_account.stock_picking_form_view_inherited" />
         <field name="arch" type="xml">
             <!-- Add is_donation field in form (visible for editing) -->
-            <xpath expr="//field[@name='partner_id']" position="before">
+            <xpath expr="//field[@name='sale_id']" position="after">
                 <field name="is_donation" readonly="1" invisible="not is_donation" force_save="1"/>
             </xpath>
 
