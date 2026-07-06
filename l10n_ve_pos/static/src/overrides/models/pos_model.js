@@ -93,7 +93,7 @@ patch(PosStore.prototype, {
       if (company.country && company.country.code === "IN") {
         let total_tax_amount = 0.0;
         for (const [i, tax_factor] of incl_tax_amounts.percent_taxes) {
-          const tax_amount = round_pr(base_amount * tax_factor / (100 + percent_amount), currency_rounding);
+          const tax_amount = round_pr(base_amount * tax_factor / (100 + percent_amount), this.pos.foreign_currency.rounding);
           total_tax_amount += tax_amount;
           cached_tax_amounts[i] = tax_amount;
           fixed_amount += tax_amount;
@@ -117,7 +117,7 @@ patch(PosStore.prototype, {
       );
     };
 
-    var base = round_pr(price_unit * quantity, currency_rounding);
+    var base = round_pr(price_unit * quantity, initial_currency_rounding);
 
     var sign = 1;
     if (base < 0) {
@@ -175,7 +175,7 @@ patch(PosStore.prototype, {
 
     var total_excluded = round_pr(
       recompute_base(base, incl_tax_amounts),
-      currency_rounding
+      initial_currency_rounding
     );
     var total_included = total_excluded;
 
@@ -206,10 +206,10 @@ patch(PosStore.prototype, {
         var tax_amount = self._compute_all(tax, tax_base_amount, quantity, true);
       }
 
-      tax_amount = round_pr(tax_amount, currency_rounding);
+      tax_amount = round_pr(tax_amount, initial_currency_rounding);
       var factorized_tax_amount = round_pr(
         tax_amount * tax.sum_repartition_factor,
-        currency_rounding
+        initial_currency_rounding
       );
 
       if (tax.price_include && total_included_checkpoints[i] === undefined) {
@@ -220,7 +220,7 @@ patch(PosStore.prototype, {
         id: tax.id,
         name: tax.name,
         amount: sign * factorized_tax_amount,
-        base: sign * round_pr(tax_base_amount, currency_rounding),
+        base: sign * round_pr(tax_base_amount, initial_currency_rounding),
       });
 
       if (tax.include_base_amount) {
@@ -235,8 +235,8 @@ patch(PosStore.prototype, {
     });
     return {
       taxes: taxes_vals,
-      total_excluded: sign * total_excluded,
-      total_included: sign * total_included,
+      total_excluded: sign * round_pr(total_excluded, initial_currency_rounding),
+      total_included: sign * round_pr(total_included, initial_currency_rounding),
     };
   },
 

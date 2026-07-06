@@ -56,7 +56,7 @@ class ControllerMunicipalRetentionXlsx(http.Controller):
         else:
             name_document = _("Cancelled Municipal Ret")
 
-        filecontent = report_obj.xlsx_file(tabla, name_document, int(retention_id))
+        filecontent = report_obj.xlsx_file(tabla, name_document, int(retention_id), company_id=retention.company_id.id)
 
         if not filecontent:
             return Response(

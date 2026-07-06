@@ -143,14 +143,29 @@ patch(PosStore.prototype, {
           tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
         }
       })
-      invoice['payment_lines'] = order.paymentlines.map((el) => {
+      // Solo enviar pagos positivos a la MF.
+      // Las líneas negativas corresponden a cambio y no deben enviarse como método de pago.
+      const isRefund = invoice['type'] === 'out_refund'
+      invoice['payment_lines'] = order.paymentlines
+        .map((el) => {
+          return {
+            payment_method: el.payment_method?.code_fiscal_printer || false,
+            amount: vef_base ? el.amount : el.get_foreign_amount(),
+          }
+        })
+        .filter((line) => {
+          if (!line.payment_method) {
+            return false
+          }
+          return isRefund ? line.amount < 0 : line.amount > 0
+        })
 
-        let amount = vef_base ? el.amount : el.get_foreign_amount()
+      if (!invoice['payment_lines'].length) {
         return {
-          payment_method: el.payment_method.code_fiscal_printer,
-          amount: amount,
+          valid: false,
+          message: "No hay líneas de pago válidas para enviar a la máquina fiscal",
         }
-      })
+      }
     }
     invoice["valid"] = true
     return invoice
