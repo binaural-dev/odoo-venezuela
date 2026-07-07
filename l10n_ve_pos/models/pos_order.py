@@ -45,11 +45,10 @@ class PosOrder(models.Model):
     def get_payments_order_refund(self):
         return self.payment_ids.read()
 
-    def _get_invoice_lines_values(self, line_values, pos_order_line):
-        # NOTE: Odoo 19 added a third ``move_type`` arg to this hook
-        # (``addons/point_of_sale/models/pos_order.py:220``). The l10n_ve
-        # override intentionally keeps the legacy 2-arg signature because
-        # invoicing belongs to Slice E (see ``tasks.md``, E.2).
-        res = super()._get_invoice_lines_values(line_values, pos_order_line)
+    def _get_invoice_lines_values(self, line_values, pos_order_line, move_type):
+        # Odoo 19 added the ``move_type`` argument
+        # (`point_of_sale/models/pos_order.py:220`). Forward it verbatim
+        # and only inject the Venezuelan ``foreign_price``.
+        res = super()._get_invoice_lines_values(line_values, pos_order_line, move_type)
         res["foreign_price"] = pos_order_line.foreign_price
         return res
