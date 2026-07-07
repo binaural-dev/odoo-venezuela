@@ -224,6 +224,10 @@ patch(PosStore.prototype, {
           return {
             payment_method: el.payment_method?.code_fiscal_printer || false,
             amount: roundAmount(amount),
+            // Solo para logging/diagnostico (no se envia al driver): monto de
+            // IGTF que Odoo calculo para esta linea de pago, si aplica.
+            _debug_igtf_amount: el.igtf_amount || 0,
+            _debug_apply_igtf: Boolean(el.payment_method?.apply_igtf),
           }
         })
         .filter((line) => {
@@ -235,6 +239,23 @@ patch(PosStore.prototype, {
           }
           return isPositive(line.amount);
         })
+
+      // Logging de diagnostico IGTF: captura los montos calculados por Odoo
+      // (order.igtf_amount / bi_igtf, si el modulo l10n_ve_pos_igtf esta
+      // instalado) junto a las lineas de pago que se van a enviar a la
+      // maquina fiscal. Util para correlacionar con el rechazo NAK del
+      // comando 199 (el manual TFHKA indica que 199 solo se acepta si el
+      // documento fue pagado en su totalidad).
+      {
+        const sumPayments = invoice['payment_lines'].reduce((acc, l) => acc + Number(l.amount || 0), 0);
+        console.log("PosStore:: [IGTF-DEBUG] get_data_invoice para orden", order.uid);
+        console.log("PosStore:: [IGTF-DEBUG] order.get_total_with_tax():", order.get_total_with_tax());
+        console.log("PosStore:: [IGTF-DEBUG] order.igtf_amount:", order.igtf_amount, "| order.bi_igtf:", order.bi_igtf);
+        console.log("PosStore:: [IGTF-DEBUG] order.foreign_igtf_amount:", order.foreign_igtf_amount, "| order.foreign_bi_igtf:", order.foreign_bi_igtf);
+        console.log("PosStore:: [IGTF-DEBUG] payment_lines a enviar:", invoice['payment_lines']);
+        console.log("PosStore:: [IGTF-DEBUG] Suma de payment_lines a enviar:", sumPayments);
+        console.log("PosStore:: [IGTF-DEBUG] Diferencia (total_with_tax - suma_pagos):", Number(order.get_total_with_tax() || 0) - sumPayments);
+      }
 
       if (
         invoice.type === "out_refund" &&

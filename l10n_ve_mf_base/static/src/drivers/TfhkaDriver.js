@@ -1143,7 +1143,17 @@ export class TfhkaDriver {
             .filter(([, amount]) => amount > 0)
             .map(([methodCode, amount]) => ({ methodCode, amount }));
 
+        const hasDivisa = this._hasDivisaPayment(payments);
+        const sumRawPayments = paymentEntries.reduce((acc, p) => acc + p.amount, 0);
+        console.log(
+            "TfhkaDriver:: [PAGOS-DEBUG] payments recibidos:", payments,
+            "| agrupados:", paymentEntries,
+            "| hasDivisa:", hasDivisa,
+            "| suma cruda:", sumRawPayments
+        );
+
         if (!paymentEntries.length) {
+            console.log("TfhkaDriver:: [PAGOS-DEBUG] Sin lineas de pago, enviando cierre directo 101");
             commands.push("101");
             return;
         }
@@ -1153,16 +1163,31 @@ export class TfhkaDriver {
         // como "2XX" (incluido el que normalmente cerraría) y dejar que el
         // comando "199" final (ya emitido al final de cada documento fiscal
         // en printInvoice/printCreditNote/printDebitNote) haga el cierre.
-        // Sin esto, la impresora rechaza el documento o no calcula el IGTF.
-        if (this._hasDivisaPayment(payments)) {
+        //
+        // IMPORTANTE (ver manual impuesto_igtf.md, seccion 7, punto 5): el
+        // comando "199" SOLO es aceptado por la impresora si el documento
+        // fue pagado en su totalidad (según el cálculo interno de LA
+        // IMPRESORA, que incluye su propio cálculo de IGTF sobre el monto en
+        // divisas). Si la suma de los montos 2XX enviados no coincide
+        // exactamente con lo que la impresora espera (subtotal + IVA + IGTF
+        // calculado por ELLA), rechaza el "199" con NAK y el documento no se
+        // cierra (no se corta el papel). Este log permite comparar la suma
+        // enviada aquí contra order.get_total_with_tax() logueado en
+        // PosStore.get_data_invoice (que incluye el IGTF calculado por Odoo).
+        if (hasDivisa) {
+            let sumFormatted = 0;
             for (const { methodCode, amount } of paymentEntries) {
                 const amountStr = this._formatAmount(
                     amount,
                     config.max_payment_amount_int,
                     config.max_payment_amount_decimal
                 );
+                sumFormatted += amount;
+                console.log(`TfhkaDriver:: [PAGOS-DEBUG] 2XX método=${methodCode} monto_crudo=${amount} monto_formateado=${amountStr}`);
                 commands.push(`2${methodCode}${amountStr}`);
             }
+            console.log("TfhkaDriver:: [PAGOS-DEBUG] IGTF activo. Suma total enviada en 2XX (antes del IGTF que calculara la impresora):", sumFormatted);
+            console.log("TfhkaDriver:: [PAGOS-DEBUG] NO se envia 1XX. El cierre depende de que '199' calce con el total esperado por la impresora (incluyendo su propio IGTF).");
             // NO se envía "1XX": el "199" final cierra el documento con IGTF.
             return;
         }
@@ -1181,9 +1206,11 @@ export class TfhkaDriver {
                 config.max_payment_amount_int,
                 config.max_payment_amount_decimal
             );
+            console.log(`TfhkaDriver:: [PAGOS-DEBUG] 2XX (no-cierre) método=${methodCode} monto_crudo=${amount} monto_formateado=${amountStr}`);
             commands.push(`2${methodCode}${amountStr}`);
         }
 
+        console.log(`TfhkaDriver:: [PAGOS-DEBUG] Cierre directo con metodo=${closingMethod} (1${closingMethod})`);
         commands.push(`1${closingMethod}`);
     }
 
