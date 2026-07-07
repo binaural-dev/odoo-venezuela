@@ -165,6 +165,13 @@ patch(ClosePosPopup.prototype, {
         title: _t("No se puede cerrar la sesion"),
         body,
       });
+
+      // Tras aceptar el aviso, cerramos el popup de cierre y llevamos al
+      // cajero directo a la lista de pedidos, filtrada para mostrar solo
+      // los pendientes por facturar, de manera que pueda ubicarlos e
+      // imprimirlos sin tener que buscarlos manualmente.
+      this.cancel();
+      this.pos.showScreen("TicketScreen", { ui: { filter: "UNFISCALIZED" } });
       return;
     }
 
