@@ -71,6 +71,12 @@ patch(PosPayment.prototype, {
         //
         // If the foreign amount is a partial payment (< foreign due), fall
         // back to strict conversion.
+        //
+        // Combined payments (some lines in local, some in foreign) work
+        // because the foreign due is always derived from the LOCAL remaining
+        // due (totalDue - amountPaid across ALL payment lines, whatever their
+        // currency), then converted once. That way lines paid in local
+        // currency count correctly toward the foreign due.
         const order = this.pos_order_id;
         const requested = Number(amount) || 0;
         this.foreign_amount = requested;
@@ -80,40 +86,35 @@ patch(PosPayment.prototype, {
             return;
         }
 
-        // Foreign due of the order BEFORE this payment line.
-        // Sum foreign_amount of every OTHER done payment line and subtract
-        // from the foreign total. We exclude self so a re-edit of the same
-        // line doesn't cascade.
-        const foreignTotal = Number(order.get_foreign_total_with_tax?.() ?? 0) || 0;
-        const foreignPaidOthers = Array.from(order.payment_ids || []).reduce((sum, line) => {
+        // Local remaining due BEFORE this payment line.
+        // Uses core totalDue/amountPaid semantics but subtracts SELF so a
+        // re-edit of the same line doesn't cascade.
+        const localTotal = Number(order.totalDue ?? 0) || 0;
+        const localPaidOthers = Array.from(order.payment_ids || []).reduce((sum, line) => {
             if (line === this) return sum;
             const done = typeof line.isDone === "function" ? line.isDone() : true;
             if (!done) return sum;
-            return sum + (Number(line.get_foreign_amount?.() ?? 0) || 0);
+            const lineAmount = typeof line.getAmount === "function"
+                ? line.getAmount()
+                : (line.amount || 0);
+            return sum + (Number(lineAmount) || 0);
         }, 0);
-        const foreignDueBefore = Math.max(0, foreignTotal - foreignPaidOthers);
+        const localDueBefore = Math.max(0, localTotal - localPaidOthers);
+
+        // Convert local due to foreign ONCE (same rounding as
+        // get_foreign_total_with_tax → foreign_currency.round).
+        const foreignDueBefore = order.localToForeign(localDueBefore);
+
         const foreignCurrency = order.get_foreign_currency?.();
         const foreignRounding = Number(foreignCurrency?.rounding) || 0.01;
 
         // "Covers the due" means requested >= due, using foreign currency
         // rounding as tolerance (avoids float-noise misclassification).
-        const coversDue = (requested + foreignRounding / 2) >= foreignDueBefore
-                         && foreignDueBefore > 0;
+        const coversDue = foreignDueBefore > 0
+            && (requested + foreignRounding / 2) >= foreignDueBefore;
 
         if (coversDue) {
-            // Local amount = exact local remaining due + any overpayment
-            // (overpayment stays as change; core computes it from
-            // amountPaid - totalDue).
-            //
-            // Local remaining due BEFORE this payment line:
-            const localTotal = Number(order.totalDue ?? 0) || 0;
-            const localPaidOthers = Array.from(order.payment_ids || []).reduce((sum, line) => {
-                if (line === this) return sum;
-                const done = typeof line.isDone === "function" ? line.isDone() : true;
-                if (!done) return sum;
-                return sum + (Number(line.getAmount?.() ?? line.amount ?? 0) || 0);
-            }, 0);
-            const localDueBefore = Math.max(0, localTotal - localPaidOthers);
+            // Foreign amount pays the local due exactly, plus any overpay.
             const overpaymentForeign = Math.max(0, requested - foreignDueBefore);
             const overpaymentLocal = overpaymentForeign > 0
                 ? order.foreignToLocal(overpaymentForeign)

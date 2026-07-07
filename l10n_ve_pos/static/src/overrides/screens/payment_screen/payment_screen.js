@@ -41,15 +41,16 @@ patch(PaymentScreen.prototype, {
       const order = this.currentOrder;
       if (line && order && typeof line.set_foreign_amount === "function" &&
           typeof order.localToForeign === "function") {
-        // Use raw (unrounded) conversion, then FLOOR to the foreign
-        // currency's precision so the paid foreign amount never exceeds the
-        // local due (avoids off-by-one-cent overpayment).
-        const foreignDue = order.localToForeign(localDueBefore, false);
+        // Convert the LOCAL remaining due to foreign using the same
+        // rounding as get_foreign_total_with_tax() (foreign_currency.round).
+        // No manual floor: the "covers the due" branch in set_foreign_amount
+        // handles fx-noise and prevents real overpayment by clamping the
+        // local amount to the exact remainingDue. Truncating here would
+        // steal a cent whenever the natural round is up.
+        const foreignDue = order.localToForeign(localDueBefore);
         const dp = Number(order?.get_foreign_currency?.()?.decimal_places) || 2;
-        const factor = Math.pow(10, dp);
-        const floored = Math.floor(foreignDue * factor) / factor;
-        line.set_foreign_amount(floored);
-        this.numberBuffer.set(floored.toFixed(dp));
+        line.set_foreign_amount(foreignDue);
+        this.numberBuffer.set(foreignDue.toFixed(dp));
       }
     }
     return result;
