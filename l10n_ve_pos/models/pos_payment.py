@@ -1,9 +1,5 @@
-from odoo import api, fields, models, _
-from odoo.tools import float_is_zero, float_compare
-
-
-import logging
-_logger = logging.getLogger(__name__)
+from odoo import api, fields, models
+from odoo.tools import float_compare
 
 
 class PosPayment(models.Model):
@@ -55,12 +51,6 @@ class PosPayment(models.Model):
         for name in required:
             if name not in res:
                 res.append(name)
-        return res
-
-    def _export_for_ui(self, payment):
-        res = super()._export_for_ui(payment)
-        res["foreign_rate"] = payment.foreign_rate
-        res["foreign_amount"] = payment.foreign_amount
         return res
 
     def _create_payment_moves(self, is_reverse=False):
