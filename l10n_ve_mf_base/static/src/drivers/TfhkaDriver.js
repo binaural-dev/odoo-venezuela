@@ -36,6 +36,9 @@ import { FiscalProtocol } from "../core/FiscalProtocol";
 
 export class TfhkaDriver {
     
+    // Máximo de caracteres por línea que imprime la TFHKA
+    static MAX_LINE_LEN = 40;
+
     constructor() {
         this.connection = new SerialConnection();
         this.isConnected = false;
@@ -54,6 +57,39 @@ export class TfhkaDriver {
 
     _formatSts(sts1) {
         return typeof sts1 === "number" ? `0x${sts1.toString(16)}` : "N/A";
+    }
+
+    /**
+     * Divide un texto en líneas de máximo maxLen caracteres,
+     * respetando límites de palabra cuando sea posible.
+     * @param {string} text - texto a dividir
+     * @param {number} maxLen - caracteres máximos por línea
+     * @returns {string[]} - array de líneas
+     */
+    _wordWrap(text, maxLen) {
+        if (!text) return [""];
+        if (text.length <= maxLen) return [text];
+        const lines = [];
+        const words = text.split(" ");
+        let current = "";
+        for (const word of words) {
+            const candidate = current ? current + " " + word : word;
+            if (candidate.length > maxLen) {
+                if (current) lines.push(current);
+                // Si la palabra sola excede maxLen, partir por caracteres
+                if (word.length > maxLen) {
+                    for (let i = 0; i < word.length; i += maxLen) {
+                        lines.push(word.substring(i, i + maxLen));
+                    }
+                } else {
+                    current = word;
+                }
+            } else {
+                current = candidate;
+            }
+        }
+        if (current) lines.push(current);
+        return lines;
     }
 
     /**
@@ -915,8 +951,8 @@ export class TfhkaDriver {
         return TAX_MAP[normalizedCode] || "!";
     }
 
-    _appendHeaderInfo(commands, orderData) {
-        let infoIndex = 0;
+    _appendHeaderInfo(commands, orderData, startIndex = 0) {
+        let infoIndex = startIndex;
 
         if (orderData.partner?.address) {
             const addr = String(orderData.partner.address || "");
@@ -942,6 +978,8 @@ export class TfhkaDriver {
             commands.push(`i${String(infoIndex).padStart(2, '0')}${String(line).substring(0, 127)}`);
             infoIndex++;
         }
+
+        return infoIndex;
     }
 
     _appendFooterInfo(commands, orderData) {
@@ -1159,14 +1197,25 @@ export class TfhkaDriver {
             const vat = orderData.partner?.vat || "V00000000";
             commands.push(`iR*${vat}`);
 
-            // 2. Razón social del cliente
-            const name = (orderData.partner?.name || "CLIENTE GENERICO").substring(0, 127);
-            commands.push(`iS*${name}`);
+            // 2. Razón social del cliente (word-wrap: primera línea como iS*,
+            // continuaciones como informativas iNN ANTES del header)
+            const nameLines = this._wordWrap(
+                orderData.partner?.name || "CLIENTE GENERICO",
+                TfhkaDriver.MAX_LINE_LEN
+            );
+            commands.push(`iS*${nameLines[0]}`);
+            let nameInfoCount = 0;
+            const MAX_INFO_LINES = 10;
+            for (let i = 1; i < nameLines.length && nameInfoCount < MAX_INFO_LINES; i++) {
+                commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
+            }
 
-            // 3. Información adicional del encabezado (dirección, teléfono, encabezado POS)
-            this._appendHeaderInfo(commands, orderData);
+            // 3. Información adicional del encabezado (continúa después de las
+            // líneas del nombre)
+            this._appendHeaderInfo(commands, orderData, nameInfoCount);
 
-            // 4. Items de la orden
+            // 5. Items de la orden (truncado simple — el protocolo no permite
+            // continuar items en líneas informativas iNN)
             // Estrategia A: el descuento global ya viene prorrateado en
             // `price_unit` de cada línea positiva. No se emite `q-` aquí.
             for (const line of orderData.lines || []) {
@@ -1177,25 +1226,31 @@ export class TfhkaDriver {
                 const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
-                const desc  = (line.product_name || "PRODUCTO")
-                    .substring(0, 127)
+                let desc  = (line.product_name || "PRODUCTO")
                     .replace(/Ñ/g, 'N')
                     .replace(/ñ/g, 'n')
                     .trim();
 
+                // Calcular espacio disponible para la descripción en la línea
+                const overhead = 1 + price.length + qty.length + code.length;
+                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
+                if (available > 0 && desc.length > available) {
+                    desc = desc.substring(0, available);
+                }
+
                 commands.push(`${taxChar}${price}${qty}${code}${desc}`);
             }
 
-            // 5. Subtotal
+            // 7. Subtotal
             commands.push("3");
 
-            // 6. Pagos y cierre fiscal (1XX/2XX + 101)
+            // 8. Pagos y cierre fiscal (1XX/2XX + 101)
             this._appendPaymentCommands(commands, orderData, config);
 
-            // 7. Líneas al pie (footer de POS + operador/pedido)
+            // 9. Líneas al pie (footer de POS + operador/pedido)
             this._appendFooterInfo(commands, orderData);
 
-            // 8. Fin de documento
+            // 10. Fin de documento
             commands.push("199");
 
             for (let i = 0; i < commands.length; i++) {
@@ -1321,9 +1376,18 @@ export class TfhkaDriver {
             const vat = orderData.partner?.vat || "V00000000";
             commands.push(`iR*${vat}`);
 
-            // 2. Razón social del cliente
-            const name = (orderData.partner?.name || "CLIENTE GENERICO").substring(0, 127);
-            commands.push(`iS*${name}`);
+            // 2. Razón social del cliente (word-wrap: continuaciones como
+            // informativas ANTES del header)
+            const nameLines = this._wordWrap(
+                orderData.partner?.name || "CLIENTE GENERICO",
+                TfhkaDriver.MAX_LINE_LEN
+            );
+            commands.push(`iS*${nameLines[0]}`);
+            let nameInfoCount = 0;
+            const MAX_INFO_LINES = 10;
+            for (let i = 1; i < nameLines.length && nameInfoCount < MAX_INFO_LINES; i++) {
+                commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
+            }
 
             // 3. Número de factura afectada (8 dígitos con cero a la izquierda)
             const invoiceNumber = String(affected.number).padStart(8, '0');
@@ -1336,9 +1400,9 @@ export class TfhkaDriver {
             commands.push(`iD*${affected.date}`);
 
             // 6. Información adicional del encabezado (dirección, teléfono, encabezado POS)
-            this._appendHeaderInfo(commands, orderData);
+            this._appendHeaderInfo(commands, orderData, nameInfoCount);
 
-            // 8. Items de la devolución
+            // 8. Items de la devolución (truncado simple, sin iNN)
             // NC usa "d" + código_fiscal_numérico + precio + qty + desc
             let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
             for (const line of orderData.lines || []) {
@@ -1353,12 +1417,17 @@ export class TfhkaDriver {
                 const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
-                const desc  = (line.product_name || "PRODUCTO")
-                    .substring(0, 127)
+                let desc  = (line.product_name || "PRODUCTO")
                     .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
                     .trim();
 
-                // NC: prefijo "d" + código fiscal numérico (no carácter especial)
+                // Calcular espacio disponible para descripción
+                const overhead = 2 + price.length + qty.length + code.length;
+                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
+                if (available > 0 && desc.length > available) {
+                    desc = desc.substring(0, available);
+                }
+
                 commands.push(`d${fiscalCode}${price}${qty}${code}${desc}`);
             }
 
@@ -1481,9 +1550,18 @@ export class TfhkaDriver {
             const vat = orderData.partner?.vat || "V00000000";
             commands.push(`iR*${vat}`);
 
-            // 2. Razón social del cliente
-            const name = (orderData.partner?.name || "CLIENTE GENERICO").substring(0, 127);
-            commands.push(`iS*${name}`);
+            // 2. Razón social del cliente (word-wrap: continuaciones como
+            // informativas ANTES del header)
+            const nameLines = this._wordWrap(
+                orderData.partner?.name || "CLIENTE GENERICO",
+                TfhkaDriver.MAX_LINE_LEN
+            );
+            commands.push(`iS*${nameLines[0]}`);
+            let nameInfoCount = 0;
+            const MAX_INFO_LINES = 10;
+            for (let i = 1; i < nameLines.length && nameInfoCount < MAX_INFO_LINES; i++) {
+                commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
+            }
 
             // 3. Número de factura afectada
             const invoiceNumber = String(affected.number).padStart(8, '0');
@@ -1496,9 +1574,9 @@ export class TfhkaDriver {
             commands.push(`iD*${affected.date}`);
 
             // 6. Información adicional del encabezado (dirección, teléfono, encabezado POS)
-            this._appendHeaderInfo(commands, orderData);
+            this._appendHeaderInfo(commands, orderData, nameInfoCount);
 
-            // 8. Items de la nota de débito
+            // 8. Items de la nota de débito (truncado simple, sin iNN)
             // ND usa backtick (`) + código_fiscal_texto + precio + qty + desc
             let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
             for (const line of orderData.lines || []) {
@@ -1513,12 +1591,17 @@ export class TfhkaDriver {
                 const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
-                const desc  = (line.product_name || "PRODUCTO")
-                    .substring(0, 127)
+                let desc  = (line.product_name || "PRODUCTO")
                     .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
                     .trim();
 
-                // ND: backtick + código fiscal texto + precio + qty + desc
+                // Calcular espacio disponible para descripción
+                const overhead = 2 + price.length + qty.length + code.length;
+                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
+                if (available > 0 && desc.length > available) {
+                    desc = desc.substring(0, available);
+                }
+
                 commands.push(`\`${fiscalCode}${price}${qty}${code}${desc}`);
             }
 

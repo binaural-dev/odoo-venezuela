@@ -5,6 +5,9 @@
                 <t t-if="_selectedSyncedOrder &amp;&amp; _selectedSyncedOrder.get_total_with_tax() > 0">
                     <ReprintInvoiceButton order="_selectedSyncedOrder" />
                 </t>
+                <t t-if="!_selectedSyncedOrder.mf_invoice_number">
+                    <PrintPendingOrderButton order="_selectedSyncedOrder" onOrderFiscalized.bind="onOrderFiscalized" />
+                </t>
             </t>
         </xpath>
         <xpath expr="//InvoiceButton[1]" position="replace"> 

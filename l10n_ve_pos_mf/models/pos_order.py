@@ -78,6 +78,53 @@ class PosOrderInherit(models.Model):
         # Ya no usamos IoT Box, la máquina fiscal se conecta vía Web Serial API
         return res
 
+    def write_mf_invoice_data(self, mf_invoice_number, fiscal_machine, mf_reportz=False):
+        """Persiste los datos de impresion fiscal (mf_invoice_number,
+        fiscal_machine, mf_reportz) en el pedido y los propaga al
+        account.move asociado (si existe).
+
+        Caso de uso: "Imprimir pedido pendiente" desde el TicketScreen. El
+        pedido ya fue validado/sincronizado (y su factura contable, si
+        aplica, ya se creo) pero la impresion fiscal se omitio o fallo en
+        su momento. Al imprimirlo despues, hay que actualizar tanto el
+        pedido como la factura contable ya existente con los datos
+        fiscales resultantes.
+
+        Se usa sudo() porque estos campos son readonly=True a nivel de
+        modelo (solo deben poblarse mediante el flujo de impresion fiscal,
+        nunca editados manualmente por el usuario) y un write() normal
+        desde el ORM del frontend los ignora silenciosamente.
+
+        :return: dict con "success" y "account_move_updated" (bool)
+        """
+        self.ensure_one()
+        vals = {
+            "mf_invoice_number": mf_invoice_number,
+            "fiscal_machine": fiscal_machine,
+            "mf_reportz": mf_reportz,
+        }
+        self.sudo().write(vals)
+
+        account_move_updated = False
+        if self.account_move:
+            self.account_move.sudo().write({
+                "mf_invoice_number": mf_invoice_number,
+                "mf_serial": fiscal_machine,
+                "mf_reportz": mf_reportz,
+            })
+            account_move_updated = True
+        else:
+            _logger.warning(
+                "write_mf_invoice_data: pos.order %s no tiene account_move asociado, "
+                "no se propagaron los datos fiscales a la factura contable.",
+                self.id,
+            )
+
+        return {
+            "success": True,
+            "account_move_updated": account_move_updated,
+        }
+
     @api.model
     def validate_order_dry_run(self, orders):
         session_id = False
