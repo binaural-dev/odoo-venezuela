@@ -3,8 +3,8 @@
 **Change**: l10n-ve-pos-migration-plan
 **Mode**: Strict TDD
 **Module**: `l10n_ve_pos` (Odoo 19.0)
-**Status**: Slice A + Slice B complete (A.1 → A.6, B.1 → B.7) — ⏸️ Pending maintainer review before Slice C
-**Last run**: 2026-07-06
+**Status**: Slice A + Slice B complete (A.1 → A.6, B.1 → B.7) + post-Slice-B serialization hotfix — ⏸️ Pending maintainer review before Slice C
+**Last run**: 2026-07-07
 **Container**: `proj`
 **Run command**: `docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True --test-tags l10n_ve_pos --stop-after-init -d l10n_ve_pos_slice_b_final_<ts> -w odoo --db_port 5432`
 
@@ -30,6 +30,11 @@
 - [x] **B.5** — Migrated `pos.order.line._export_for_ui(orderline)` → `pos.order.line._load_pos_data_fields` (now lists `foreign_price`, `foreign_subtotal`, `foreign_total`, **`foreign_currency_rate`**). Consolidated the duplicate `PosOrderLine` class: the `_prepare_refund_data` override now lives in `pos_order_line.py` (its natural home) and the related `foreign_currency_rate` field is declared there once.
 - [x] **B.6** — End-to-end test (`tests/test_pos_serialization.py::test_pos_order_serialization_round_trip_preserves_foreign_fields`) creates a multi-currency order with two lines and one payment, exercises the Odoo 19 `pos.order.read_pos_data` path, asserts every foreign field round-trips. Companion test for the refund path (`test_pos_order_refund_copies_foreign_price_to_refund_line`) confirms the refund line keeps `foreign_price`.
 - [x] **B.7** — Defensive test `test_legacy_serialization_hooks_are_removed` fails fast if any of `_order_fields`, `_payment_fields`, `_export_for_ui` is reintroduced. Native Odoo evidence captured in §"Odoo 19 native evidence".
+
+### Post-Slice-B hotfix — Order persistence hook (✅ done 2026-07-07)
+
+- [x] **HB.1** — Fixed POS order foreign total persistence by moving custom serialization from legacy `export_as_JSON` into Odoo 19 `serializeForORM(opts)` on `PosOrder` frontend model. (`l10n_ve_pos/static/src/overrides/models/pos_order.js`)
+- [x] **HB.2** — Kept receipt payload parity (`export_for_printing`) while preserving fail-fast behavior (no silent fallback to legacy sync hooks).
 
 ---
 
@@ -148,11 +153,12 @@ This split does violate the `work-unit-commits` rule "Keep tests with code" — 
 - **Duplicate `PosOrderLine` class consolidation** (cleanup, not a contract change): the original `pos_order.py:55-70` declared a `PosOrderLine` class that duplicated the `foreign_price` field already declared in `pos_order_line.py` and the `foreign_currency_rate` related field. The duplicate did not crash (Odoo silently keeps the last declaration), but it was confusing. Slice B moves the canonical declaration to `pos_order_line.py` and removes the duplicate from `pos_order.py`. Behavior is unchanged.
 - **`_get_invoice_lines_values` signature still 2-arg** (intentional, out of scope): Odoo 19 added a third `move_type` parameter (`/home/binaural19/odoo/addons/point_of_sale/models/pos_order.py:220`). The legacy 2-arg override is preserved with a comment pointing at `tasks.md` Slice E (E.2). Forcing the 3-arg signature now would call `super()` with a missing arg, which is exactly the kind of silent contract violation the user wants avoided — but fixing it requires the invoicing flow (chart of accounts + journal), which Slice C / E owns. The defensive test `test_legacy_serialization_hooks_are_removed` does NOT cover this method because removing it would break invoicing until Slice E lands.
 - **Single PR for Slice B** (size:exception): production diff is 152 lines (within budget); the test file pushes the combined change over 400. Default recommendation is single PR + `size:exception`; alternative split boundary documented above for the maintainer's choice.
-- **No JS changes**: Slice B is Python-only per the design §"Slice B — Order/Payment Serialization" file map (`pos_order.py`, `pos_payment.py`, `pos_order_line.py`). The JS `export_as_JSON` patches in `static/src/overrides/models/pos_order.js:146-152` are commented out (Slice D concern).
+- **Hotfix crosses Slice B original file map (intentional)**: although Slice B was planned as Python-only, production evidence showed `foreign_amount_total` was still persisted as `0.0` because Odoo 19 sync uses `serializeForORM()` (frontend), not `export_as_JSON()`. We added a narrow JS hotfix in `static/src/overrides/models/pos_order.js` to align with the real Odoo 19 persistence path.
 
 ## Issues found
 
 - **Two `_get_invoice_lines_values` signature drift** (Odoo 19 vs. l10n_ve_pos) — left untouched, belongs to Slice E. Will crash with `TypeError` if invoicing is triggered before Slice E. Not in Slice B's read-back path.
+- **Odoo 19 persistence hook mismatch** — `foreign_amount_total` remained `0.0` until the frontend override moved from `export_as_JSON` to `serializeForORM()`. Evidence: Odoo 19 POS store sync path calls `order.serializeForORM({ keepCommands: true })` before `sync_from_ui`.
 - **`pos.order` has no base `_load_pos_data_fields`** (Odoo 19 returns `[]` from the base). Without the Slice B override, the entire `read_pos_data` payload for `pos.order` would be empty, which would silently lose every field — including Venezuelan values. This is the most impactful failure Slice B prevents. Captured in the TDD evidence (B.1 RED phase).
 - **`_create_payment_moves` override** in `pos_payment.py` overrides the Odoo 19 method to write `foreign_rate` on the payment move. Signature unchanged in Odoo 19 (`/home/binaural19/odoo/addons/point_of_sale/models/pos_payment.py:72`). No Slice B action needed; verified via the existing Slice A test surface.
 - **Downstream modules** in `integra-addons` (`binaural_pos_commissions`, `binaural_pos_mts_mto`, `binaural_pos_seller`, `binaural_subsidiary_pos`) still target `_order_fields` / `_export_for_ui`. Out of scope for this change but documented as the Slice C / E cleanup backlog.

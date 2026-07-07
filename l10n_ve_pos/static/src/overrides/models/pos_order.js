@@ -143,27 +143,30 @@ patch(PosOrder.prototype, {
 //     this.to_receipt = to_receipt;
 //     this.reload_taxes();
 //   },
-//   export_as_JSON() {
-//     let json = super.export_as_JSON();
-//     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
-//     json["foreign_currency_rate"] = this.get_conversion_rate();
-//     json["to_receipt"] = this.is_to_receipt();
-//     return json;
-//   },
+  serializeForORM(opts = {}) {
+    const data = super.serializeForORM(opts);
+    data["foreign_amount_total"] = this.get_foreign_total_with_tax();
+    data["foreign_currency_rate"] = Number(this.init_conversion_rate || 0);
+    if (typeof this.is_to_receipt === "function") {
+      data["to_receipt"] = this.is_to_receipt();
+    } else if ("to_receipt" in this) {
+      data["to_receipt"] = this.to_receipt;
+    }
+    return data;
+  },
 //   is_to_receipt() {
 //     return this.to_receipt;
 //   },
-//   export_for_printing() {
-//     let res = super.export_for_printing(...arguments);
-//     let new_res = {
-//       ...res,
-//       foreign_amount_total: this.get_foreign_total_with_tax(),
-//       foreign_total_without_tax: this.get_foreign_total_without_tax(),
-//       foreign_amount_tax: this.get_foreign_total_tax(),
-//       foreign_total_paid: this.get_foreign_total_paid(),
-//     };
-//     return new_res;
-//   },
+  export_for_printing() {
+    const res = super.export_for_printing(...arguments);
+    return {
+      ...res,
+      foreign_amount_total: this.get_foreign_total_with_tax(),
+      foreign_total_without_tax: this.get_foreign_total_without_tax(),
+      foreign_amount_tax: this.get_foreign_total_tax(),
+      foreign_total_paid: this.get_foreign_total_paid(),
+    };
+  },
 //   set_orderline_options(orderline, options) {
 //     super.set_orderline_options(...arguments);
 //     if (options.foreign_price !== undefined) {
