@@ -208,6 +208,23 @@ class TestPosSerialization(TransactionCase):
             "Odoo 19 POS device sync can compute the reload domain.",
         )
 
+    def test_pos_order_load_pos_data_fields_includes_access_token(self):
+        """Odoo 19's ``_process_order`` pops ``access_token`` unconditionally
+        (``point_of_sale/models/pos_order.py:131`` -> ``del order['access_token']``)
+        on every update of an existing (draft) order. If our load contract
+        does not expose ``access_token``, the frontend cannot round-trip it
+        back to the backend on subsequent syncs (e.g. adding a payment to
+        an existing draft order) and the whole ``sync_from_ui`` call fails
+        with ``KeyError: 'access_token'`` when validating the order.
+        """
+        fields = self.env["pos.order"]._load_pos_data_fields(self.config)
+        self.assertIn(
+            "access_token",
+            fields,
+            "pos.order._load_pos_data_fields must expose access_token so the "
+            "Odoo 19 _process_order del/pop path does not KeyError.",
+        )
+
     # ------------------------------------------------------------------
     # B.2 / B.4 — pos.payment._load_pos_data_fields exposes
     #       foreign_amount and foreign_rate.

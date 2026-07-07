@@ -53,6 +53,11 @@ Bandeja para que el mantenedor los repase antes de aceptar/mergear.
 - [x] **HB.4** — Root cause traced against Odoo 19 native code: `constructOrdersDomain` in `point_of_sale/static/src/app/utils/devices_synchronisation.js` calls `record.write_date.plus(...)`, so `write_date` MUST be exposed by the `pos.order` load contract. Added `write_date` to `_ODOO19_ORDER_SYNC_FIELDS` and to `_CRITICAL_LOAD_FIELDS`, mirroring what Odoo 19 already does for `pos.order.line._load_pos_data_fields` (`pos_order.py:1608`).
 - [x] **HB.5** — Added regression test `test_pos_order_load_pos_data_fields_includes_write_date` in `tests/test_pos_serialization.py` so any future change that removes `write_date` fails loudly.
 
+### Post-Slice-B hotfix — access_token in load contract (✅ done 2026-07-07)
+
+- [x] **HB.6** — Added `access_token` to `_ODOO19_ORDER_HEADER_FIELDS` in `pos.order._load_pos_data_fields`. Root cause verified in Odoo 19 native code: `pos_store.js::createNewOrder` sets `access_token: uuidv4()` on every new frontend order (`point_of_sale/static/src/app/services/pos_store.js:1364`), and `_process_order` pops it unconditionally on updates (`point_of_sale/models/pos_order.py:131` -> `del order['access_token']`). Without the field in the load contract, `serializeForORM` cannot round-trip it back and the backend raises `KeyError: 'access_token'` when a second sync happens against an existing draft order (e.g. adding a payment to a saved order).
+- [x] **HB.7** — Added regression test `test_pos_order_load_pos_data_fields_includes_access_token` in `tests/test_pos_serialization.py`. Suite verde: 32/32 (28 executed + 4 skipped for C2.3/C2.4/C2.5 and one existing skip).
+
 ### Slice C1 — Session Accounting Accumulators (✅ done 2026-07-07)
 
 - [x] **C1.1** — Data-key map documented at `specs/pos-odoo19-session-accounting/key-map.md`. Captures the Odoo 19 per-bucket contract (`amount` + `amount_converted`), the additive Venezuelan `foreign_amount`, and the `_get_closed_orders()` vs `self.order_ids` iteration source.

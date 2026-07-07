@@ -36,6 +36,15 @@ class PosOrder(models.Model):
         "id",
         "name",
         "uuid",
+        # ``access_token`` is set by the frontend at order creation
+        # (``pos_store.js::createNewOrder`` -> ``access_token: uuidv4()``)
+        # and unconditionally popped by ``pos.order._process_order``
+        # (``point_of_sale/models/pos_order.py:131`` -> ``del order['access_token']``).
+        # If it's not part of the load contract, ``serializeForORM`` cannot
+        # round-trip it back on the second sync (e.g. adding a payment to an
+        # already synced draft order) and the backend crashes with
+        # ``KeyError: 'access_token'`` on validation.
+        "access_token",
         "pos_reference",
         "date_order",
         "state",
