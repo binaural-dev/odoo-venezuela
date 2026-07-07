@@ -198,11 +198,48 @@ class TestPosDataLoading(TransactionCase):
         )
         self.assertIn("taxpayer_type", company_data)
 
-    def test_delete_opening_control_session_remains_a_safe_stub(self):
-        """A.4: ``delete_opening_control_session`` must still answer with
-        a success status without raising during a tab reload scenario."""
+    def test_delete_opening_control_session_delegates_to_core(self):
+        """A.4: the historical `l10n_ve_pos` override that turned
+        ``delete_opening_control_session`` into a no-op was removed as
+        part of Slice D. The native Odoo 19 behaviour is now expected:
+        a session in ``opening_control`` with no orders can be deleted
+        cleanly, while any session with orders must be rejected with
+        ``UserError`` (native guard at
+        ``point_of_sale/models/pos_session.py:207``).
+        """
+        from odoo.exceptions import UserError
+
+        # Fresh opening_control session (created in setUpClass) should
+        # be deletable without raising.
         result = self.session.delete_opening_control_session()
         self.assertEqual(result, {"status": "success"})
+        self.assertFalse(
+            self.session.exists(),
+            "the native core must actually delete the orphan opening_control session",
+        )
+
+        # A new session with an order attached must NOT be deletable.
+        guarded_session = self.env["pos.session"].create(
+            {
+                "config_id": self.config.id,
+                "user_id": self.env.ref("base.user_admin").id,
+            }
+        )
+        self.env["pos.order"].create(
+            {
+                "company_id": self.company.id,
+                "session_id": guarded_session.id,
+                "amount_total": 0.0,
+                "amount_tax": 0.0,
+                "amount_paid": 0.0,
+                "amount_return": 0.0,
+                "foreign_amount_total": 0.0,
+                "foreign_currency_rate": 0.0,
+                "last_order_preparation_change": "{}",
+            }
+        )
+        with self.assertRaises(UserError):
+            guarded_session.delete_opening_control_session()
 
     def test_lst_price_converted_when_currency_differs(self):
         """Triangulation: when the PoS config currency is the foreign

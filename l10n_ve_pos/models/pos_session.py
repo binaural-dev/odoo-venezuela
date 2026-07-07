@@ -26,14 +26,6 @@ class PosSession(models.Model):
         """
         return super().load_data(models_to_load)
 
-    def delete_opening_control_session(self):
-        """Odoo 19 borra sesiones en opening_control al recargar la pestaña.
-        En esta migración lo evitamos para no quedar con session_id huérfano durante reload.
-        """
-        self.ensure_one()
-        _logger.info("l10n_ve_pos: skipping delete_opening_control_session for session %s", self.id)
-        return {"status": "success"}
-
     def is_user_authorized(self):
         is_group = self.env.user.has_group("l10_ve_pos.group_authorized_discount_pos")
         return is_group

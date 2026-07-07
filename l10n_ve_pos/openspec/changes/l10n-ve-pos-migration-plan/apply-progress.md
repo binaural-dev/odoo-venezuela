@@ -3,7 +3,7 @@
 **Change**: l10n-ve-pos-migration-plan
 **Mode**: Strict TDD
 **Module**: `l10n_ve_pos` (Odoo 19.0)
-**Status**: Slice A + Slice B + Slice C1 + Slice C2.1 + Slice C2.2 complete (A.1 → A.6, B.1 → B.7, HB.1 → HB.5, C1.1 → C1.5, C2.1, C2.2) — ⏸️ Ready to proceed with Slice C2.3 (cash statement lines)
+**Status**: Slice A + Slice B + Slice C1 + Slice C2.1 + Slice C2.2 + Post-Slice-B/C hotfixes (HB.1 → HD.6) complete — ⏸️ Ready to proceed with Slice C2.3 (cash statement lines)
 **Last run**: 2026-07-07
 **Container**: `proj`
 **Run command**: `docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True --test-tags l10n_ve_pos --stop-after-init -d l10n_ve_pos_c2_2_green_<ts> -w odoo --db_port 5432`
@@ -17,7 +17,10 @@ Bandeja para que el mantenedor los repase antes de aceptar/mergear.
 | Commit | Título | Motivo de revisión |
 |--------|--------|--------------------|
 | `78d45e01c` | `[FIX] l10n_ve_pos: corrige persistencia foreign total` | Hotfix post-Slice-B: reemplaza el hook legacy `export_as_JSON` por `serializeForORM(opts)` en el frontend (`static/src/overrides/models/pos_order.js`) para que `foreign_amount_total`/`foreign_currency_rate` viajen realmente en el sync de Odoo 19. Revisar que no falten otros callers (`export_for_printing`, `to_receipt`) y confirmar consistencia con el contrato del backend. |
-| `d731aeb8e` | `[REF] l10n_ve_pos: contrato explícito de carga PoS` | Refactor de `pos.order._load_pos_data_fields` a un contrato explícito (tres tuplas + guard fail-fast). Revisar si conviene aplanar a una sola lista literal al estilo del core Odoo 19. |
+| `d731aeb8e` | `[REF] l10n_ve_pos: contrato explícito de carga PoS` | Refactor previo (ya reemplazado por `e9c57b489`) que enumeraba tres tuplas de contrato en `_load_pos_data_fields`. Se mantiene en el historial como referencia de por qué se abandonó ese enfoque. |
+| `e9c57b489` | `[REF] l10n_ve_pos: inyecta VE en _load_pos_data_read` | Reemplazo definitivo del anterior: mueve la extensión venezolana al hook `_load_pos_data_read`, delegando el contrato de campos al core Odoo 19. Verificar que no queden módulos downstream leyendo `foreign_amount_total`/`foreign_currency_rate` desde el field-list de `pos.order` en vez del payload de `read_pos_data`. |
+| `70752aa28` | `[FEAT] l10n_ve_pos: fuerza factura obligatoria en PoS` | Regla de negocio venezolana (SENIAT): toda venta del PoS debe emitir factura. Revisar si el mantenedor quiere una vía de escape controlada (ej. permiso especial) o si la política "sin excepciones" es aceptable. |
+| `f9bb592d9` | `[FIX] l10n_ve_pos: repara flujo de reembolso en PoS` | Elimina overrides muertos de v17 en `TicketScreen` y el componente `FullRefundButton` no renderizado. Revisar si se quiere reimplementar un botón "Reembolso total con un click" contra la API de Odoo 19 (queda documentado como TODO en el archivo JS). |
 
 ---
 
@@ -62,6 +65,28 @@ Bandeja para que el mantenedor los repase antes de aceptar/mergear.
 
 - [x] **HB.8** — Moved the Venezuelan extension from the `pos.order._load_pos_data_fields` override to `_load_pos_data_read`. The field contract stays fully owned by core Odoo 19 (we no longer enumerate `write_date`, `access_token`, `partner_id`, headers, sync fields, or critical guards). Our override loads whatever `super()._load_pos_data_read` returned and injects `foreign_amount_total` / `foreign_currency_rate` on top of it, per record. Rationale: the field-list override kept forcing us to mirror the core contract for unrelated flows (partner load domain, device sync, `_process_order`), which was reactive maintenance disguised as design.
 - [x] **HB.9** — Replaced the field-listing regression tests with a behaviour-first one that exercises the real flow: `test_pos_order_load_pos_data_read_injects_foreign_total_and_rate` (creates a draft order and calls `_load_pos_data_read` to assert the foreign fields appear on the returned payload). Kept the round-trip test `test_pos_order_sync_round_trip_survives_second_sync` untouched. Suite verde: 0 failed, 0 error(s) of 32 tests.
+
+### Post-Slice-B hotfix — Frontend UI fixes (✅ done 2026-07-07)
+
+Series of small hotfixes discovered by running the POS UI against Odoo 19 native. Each item is a separate commit with its own `References:` link.
+
+- [x] **HC.1** — Fixed BCV rate display in refund/order summary. `PosOrder.get_display_rate()` now normalizes inverse rates (< 1) into business format `1 foreign = X local` and `OrderSummary.getConversionRateForDisplay()` mirrors the same rule. Regression came from datasets that occasionally deliver the inverse rate; the UI must not surface it as `0.001…`. (`static/src/overrides/models/pos_order.js`, `static/src/overrides/screens/product_screen/order_summary/order_summary.js`, commit `5e477e2ca`.)
+- [x] **HC.2** — Reactivated TicketScreen `OrderDisplay` bindings (`conversion_rate`, `foreign_total`, `quantity_products`, `foreign_tax`) using `get_display_rate()` so the refund screen shows the Venezuelan summary again. Odoo 19 uses `OrderDisplay`, not the legacy `OrderWidget`. (`static/src/overrides/screens/ticket_screen/ticket_screen.xml`, commit `5e477e2ca`.)
+- [x] **HC.3** — Deleted the legacy XML override that replaced the native `PaymentScreen` "Invoice" button with a v17 markup relying on `useReceiptConfiguration`. Core Odoo 19 already renders the button correctly with the checkbox icon. (`static/src/overrides/screens/payment_screen/payment_screen_button.xml`, commit `1f2518134`.)
+- [x] **HC.4** — Removed the JS `toggleIsToInvoice` override that still called `toggle_receipt_invoice` / `is_to_receipt` (deleted in Odoo 19). Core `PaymentScreen` uses `setToInvoice()` / `isToInvoice()` directly. (`static/src/overrides/screens/payment_screen/payment_screen.js`, commit `0b6c9afb5`.)
+- [x] **HC.5** — Forced mandatory invoice on every POS order for SENIAT compliance: `PosOrder.setup()` sets `to_invoice = true` and `setToInvoice()` is locked to always keep it true. The Invoice button was removed from `PaymentScreenButtons` via inherit-mode extension so the cashier cannot toggle it off. `es_VE.po` overrides the `es_419` core translation of "Invoice" to render as "Factura" only. (`static/src/overrides/models/pos_order.js`, `static/src/overrides/screens/payment_screen/payment_screen_button.xml`, `i18n/es_VE.po`, commit `70752aa28`.)
+- [x] **HC.6** — Adapted `PosOrder._get_invoice_lines_values` to the Odoo 19 signature `(line_values, pos_order_line, move_type)`. The v17 2-arg signature crashed with `TypeError: takes 3 positional arguments but 4 were given` the moment mandatory invoicing kicked in. Still injects `foreign_price` unchanged. (`models/pos_order.py`, commit `cedead22b`.)
+- [x] **HC.7** — Fixed missing `is_refund` key on the invoice payments widget in two IGTF overrides. When the report engine rendered `account.report_invoice_document`, both overrides crashed with `KeyError: 'is_refund'` because they had cloned the v17 core method without the Odoo 19 additions. Both fixes now mirror the native contract (`is_refund = counterpart_line.move_id.move_type in ['in_refund', 'out_refund']`). (`l10n_ve_igtf/models/account_move.py` — commit `22057ab8e`; `integra-addons/binaural_advance_payment_igtf/models/account_move.py` — commit `624c5244e` on new branch `maint-19.0_fix-ta_73181_igtf_is_refund` off `maintenance-19.0`.)
+
+### Post-Slice-B hotfix — Refund flow cleanup (✅ done 2026-07-07)
+
+- [x] **HD.1** — Deleted the dead v17 refund override on `TicketScreen`: `_getToRefundDetail` / `_prepareRefundOrderlineOptions` / `addAdditionalRefundInfo` (copying the removed `to_receipt` field) all disappeared from Odoo 19. The Refund flow now delegates entirely to the native `onDoRefund` (`point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:309`). (`static/src/overrides/screens/ticket_screen/ticket_screen.js`, commit `f9bb592d9`.)
+- [x] **HD.2** — Removed the dead `FullRefundButton` component (`static/src/app/components/full_refund/full_refund.{js,xml}`) which was never rendered by any template of the module and whose internals referenced `order.orderlines` (renamed to `order.lines` in Odoo 19). Documented in the model file that a future "full refund shortcut" must be rewritten against the current API (`order.lines`, `pos.linesToRefund`). (Same commit `f9bb592d9`.)
+
+### Post-Slice-B rollback — Retire the `delete_opening_control_session` no-op (✅ done 2026-07-07)
+
+- [x] **HE.1** — Removed the temporary override that turned `pos.session.delete_opening_control_session` into a no-op. Introduced as a stability hotfix during the initial migration (`beforeunload` race causing `MissingError`), it was documented as pending removal in Engram (`#301 decision`, 2026-06-23). Keeping it caused orphan sessions to accumulate in `opening_control` state after every tab reload/close (verified in DB `POS`: sessions `id=6` and `id=7` without `start_at`). Native Odoo 19 already guards the delete with `if state != 'opening_control' or order_ids > 0: raise UserError` at `point_of_sale/models/pos_session.py:207`, so removing the override is safe. (`l10n_ve_pos/models/pos_session.py`.)
+- [x] **HE.2** — Updated `test_delete_opening_control_session_delegates_to_core` in `tests/test_pos_data_loading.py` to assert the two branches of the native contract: an orphan `opening_control` session must delete cleanly, and a session with attached orders must raise `UserError`.
 
 ### Slice C1 — Session Accounting Accumulators (✅ done 2026-07-07)
 
