@@ -3,7 +3,7 @@
 **Change**: l10n-ve-pos-migration-plan
 **Mode**: Strict TDD
 **Module**: `l10n_ve_pos` (Odoo 19.0)
-**Status**: Slice A + Slice B + Slice C1 + Slice C2.1 + Slice C2.2 + Post-Slice-B/C hotfixes (HB.1 → HD.6) complete — ⏸️ Ready to proceed with Slice C2.3 (cash statement lines)
+**Status**: Slice A + Slice B + Slice C1 + Slice C2.1 + Slice C2.2 + Post-Slice-B/C hotfixes (HB.1 → HE.2) complete — ⏸️ Ready to proceed with Slice C2.3 (cash statement lines)
 **Last run**: 2026-07-07
 **Container**: `proj`
 **Run command**: `docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True --test-tags l10n_ve_pos --stop-after-init -d l10n_ve_pos_c2_2_green_<ts> -w odoo --db_port 5432`
@@ -87,6 +87,11 @@ Series of small hotfixes discovered by running the POS UI against Odoo 19 native
 
 - [x] **HE.1** — Removed the temporary override that turned `pos.session.delete_opening_control_session` into a no-op. Introduced as a stability hotfix during the initial migration (`beforeunload` race causing `MissingError`), it was documented as pending removal in Engram (`#301 decision`, 2026-06-23). Keeping it caused orphan sessions to accumulate in `opening_control` state after every tab reload/close (verified in DB `POS`: sessions `id=6` and `id=7` without `start_at`). Native Odoo 19 already guards the delete with `if state != 'opening_control' or order_ids > 0: raise UserError` at `point_of_sale/models/pos_session.py:207`, so removing the override is safe. (`l10n_ve_pos/models/pos_session.py`.)
 - [x] **HE.2** — Updated `test_delete_opening_control_session_delegates_to_core` in `tests/test_pos_data_loading.py` to assert the two branches of the native contract: an orphan `opening_control` session must delete cleanly, and a session with attached orders must raise `UserError`.
+
+### Slice D hotfix — PosPayment foreign-currency model migration (✅ done 2026-07-07)
+
+- [x] **HD.3** — Rewrote `payment_model.js` (`static/src/overrides/models/payment_model.js`) from the fully-commented v17 stub to a live Odoo 19 patch. Added: `setup(vals)` to read `foreign_amount`/`foreign_rate` from the payload; `serializeForORM(opts)` to inject them back into the sync (same pattern as the already-migrated `pos_order.js`); `get_foreign_amount()` and `set_foreign_amount(amount)` with conversion to local currency using `pos_order_id.init_conversion_rate` (rate = "1 foreign = X local"). Before this, selecting a method with `is_foreign_currency=true` on the PaymentScreen did nothing because all the foreign-currency code was dead.
+- [x] **HD.4** — Fixed a pre-existing bug in `payment_line.js` (`formatLineAmount`): the non-selected branch always appended `foreign_amount + " / " + amount` regardless of whether the method is foreign currency. Now only appends the dual format when `is_foreign_currency` is true; otherwise returns the local amount alone.
 
 ### Slice C1 — Session Accounting Accumulators (✅ done 2026-07-07)
 

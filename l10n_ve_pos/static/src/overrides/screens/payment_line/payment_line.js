@@ -18,7 +18,7 @@ patch(PaymentScreenPaymentLines.prototype, {
     if (paymentline.payment_method.is_foreign_currency) {
       return foreign_amount + " / " + amount
     } else {
-      return foreign_amount + " / " + amount
+      return amount
     }
   }
 })
