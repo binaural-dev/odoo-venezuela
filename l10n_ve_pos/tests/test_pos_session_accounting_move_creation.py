@@ -26,6 +26,7 @@ Native Odoo 19 references:
 
 import unittest
 
+from odoo import fields
 from odoo.tests import tagged
 
 from .test_pos_session_accounting_common import TestPosSessionAccountingBase
@@ -239,9 +240,182 @@ class TestPosSessionAccountingMoveCreation(TestPosSessionAccountingBase):
     # skipped here so this batch stays scoped to the critical
     # ``_create_split_account_payment`` return-type mismatch.
     # ==================================================================
-    @unittest.skip("Slice C2.2 — pending next batch (bank payment moves)")
+    # ==================================================================
+    # C2.2 — ``_create_bank_payment_moves`` (HIGH RISK)
+    # ------------------------------------------------------------------
+    # Odoo 19 native reference:
+    #   ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1050-1072``.
+    #
+    # Contract preserved from Odoo 17 (verified line-by-line against
+    # the Odoo 19 native code — no renames):
+    #   - ``data`` is mutated IN-PLACE and returned as-is.
+    #   - ``payment_method_to_receivable_lines`` is keyed by
+    #     ``pos.payment.method`` (combined bank).
+    #   - ``payment_to_receivable_lines`` is keyed by ``pos.payment``
+    #     records (split bank).
+    #   - Each value is a UNION of two ``account.move.line`` records:
+    #     the receivable line on ``session.move_id`` (created here)
+    #     plus the receivable line on ``account_payment.move_id``
+    #     (created by ``_create_combine_account_payment`` /
+    #     ``_create_split_account_payment``).
+    #
+    # The Venezuelan write contract MUST hold across BOTH branches:
+    # each receivable line must carry the matching
+    # ``foreign_debit`` / ``foreign_credit`` (matching the payment's
+    # ``foreign_amount``) and ``not_foreign_recalculate=True``.
+    # ==================================================================
     def test_create_bank_payment_moves_writes_foreign_fields_on_receivable_lines(self):
-        pass
+        """C2.2 — bank payment moves preserve Venezuelan foreign fields.
+
+        Triangulation covers the TWO branches of ``_create_bank_payment_moves``:
+        the ``combine_receivables_bank`` loop (keyed by
+        ``pos.payment.method``) AND the ``split_receivables_bank`` loop
+        (keyed by ``pos.payment`` records). A regression in either accessor
+        would make one bucket lose its foreign write.
+
+        We stop the pipeline BEFORE ``_create_pay_later_receivable_lines``
+        so this test isolates C2.2 from C2.3 / C2.4 (still pending).
+        """
+        session = self.env["pos.session"].create(
+            {
+                "config_id": self.config.id,
+                "user_id": self.env.ref("base.user_admin").id,
+            }
+        )
+        combined_order = self._create_paid_order(
+            session,
+            method=self.combined_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/C2.2/COMB",
+        )
+        split_order = self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=87.0,
+            tax_amount=12.0,
+            name="OL/C2.2/SPLT",
+        )
+        combined_payment = combined_order.payment_ids[0]
+        split_payment = split_order.payment_ids[0]
+
+        # Force the distinctive foreign_rate so a Fake It / hardcoded
+        # implementation is ruled out.
+        self.config.write({"foreign_rate": 42.5, "foreign_inverse_rate": 1 / 42.5})
+
+        # Seed ``session.move_id`` mimicking the first step of
+        # ``_create_account_move`` (native lines 820-825).
+        session_move = self.env["account.move"].create(
+            {
+                "journal_id": self.config.journal_id.id,
+                "date": fields.Date.context_today(session),
+                "ref": session.name,
+            }
+        )
+        session.write({"move_id": session_move.id})
+
+        session_scoped = session.with_company(self.company)
+        data = {"bank_payment_method_diffs": {}}
+        data = session_scoped._accumulate_amounts(data)
+        # We skip ``_create_non_reconciliable_move_lines`` (not needed for
+        # the C2.2 inputs) and jump directly to the target.
+        data = session_scoped._create_bank_payment_moves(data)
+
+        payment_method_to_receivable_lines = data["payment_method_to_receivable_lines"]
+        payment_to_receivable_lines = data["payment_to_receivable_lines"]
+
+        # ---- Combine branch (keyed by pos.payment.method) ----
+        self.assertIn(
+            self.combined_bank_method,
+            payment_method_to_receivable_lines,
+            "combine bucket must be keyed by pos.payment.method (Odoo 19 contract)",
+        )
+        combine_lines = payment_method_to_receivable_lines[self.combined_bank_method]
+        self.assertTrue(combine_lines, "combine receivable lines must not be empty")
+        self.assertEqual(
+            combine_lines._name,
+            "account.move.line",
+            "payment_method_to_receivable_lines values must be account.move.line",
+        )
+        expected_combine_foreign = abs(combined_payment.foreign_amount)
+        for line in combine_lines:
+            if line.credit > 0:
+                self.assertTrue(
+                    line.not_foreign_recalculate,
+                    "combine receivable credit line must have not_foreign_recalculate=True",
+                )
+                self.assertAlmostEqual(
+                    line.foreign_credit,
+                    expected_combine_foreign,
+                    places=2,
+                    msg="combine receivable credit line must carry the Venezuelan foreign_credit",
+                )
+            if line.debit > 0:
+                self.assertTrue(
+                    line.not_foreign_recalculate,
+                    "combine receivable debit line must have not_foreign_recalculate=True",
+                )
+                self.assertAlmostEqual(
+                    line.foreign_debit,
+                    expected_combine_foreign,
+                    places=2,
+                    msg="combine receivable debit line must carry the Venezuelan foreign_debit",
+                )
+
+        # ---- Split branch (keyed by pos.payment record) ----
+        self.assertIn(
+            split_payment,
+            payment_to_receivable_lines,
+            "split bucket must be keyed by pos.payment records (Odoo 19 contract)",
+        )
+        split_lines = payment_to_receivable_lines[split_payment]
+        self.assertTrue(split_lines, "split receivable lines must not be empty")
+        self.assertEqual(
+            split_lines._name,
+            "account.move.line",
+            "payment_to_receivable_lines values must be account.move.line",
+        )
+        expected_split_foreign = abs(split_payment.foreign_amount)
+        for line in split_lines:
+            if line.credit > 0:
+                self.assertTrue(
+                    line.not_foreign_recalculate,
+                    "split receivable credit line must have not_foreign_recalculate=True",
+                )
+                self.assertAlmostEqual(
+                    line.foreign_credit,
+                    expected_split_foreign,
+                    places=2,
+                    msg="split receivable credit line must carry the Venezuelan foreign_credit",
+                )
+            if line.debit > 0:
+                self.assertTrue(
+                    line.not_foreign_recalculate,
+                    "split receivable debit line must have not_foreign_recalculate=True",
+                )
+                self.assertAlmostEqual(
+                    line.foreign_debit,
+                    expected_split_foreign,
+                    places=2,
+                    msg="split receivable debit line must carry the Venezuelan foreign_debit",
+                )
+
+        # Sanity: at least ONE line per branch actually carried a
+        # non-zero foreign write (guards against ghost-line pass).
+        combine_touched = any(
+            (line.foreign_credit or line.foreign_debit) for line in combine_lines
+        )
+        split_touched = any(
+            (line.foreign_credit or line.foreign_debit) for line in split_lines
+        )
+        self.assertTrue(
+            combine_touched,
+            "combine branch must have written at least one foreign_credit/foreign_debit",
+        )
+        self.assertTrue(
+            split_touched,
+            "split branch must have written at least one foreign_credit/foreign_debit",
+        )
 
     @unittest.skip("Slice C2.3 — pending next batch (cash statement lines)")
     def test_create_cash_statement_lines_writes_foreign_fields_on_cash_receivable(self):

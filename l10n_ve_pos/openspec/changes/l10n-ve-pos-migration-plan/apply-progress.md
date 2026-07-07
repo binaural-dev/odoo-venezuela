@@ -3,10 +3,10 @@
 **Change**: l10n-ve-pos-migration-plan
 **Mode**: Strict TDD
 **Module**: `l10n_ve_pos` (Odoo 19.0)
-**Status**: Slice A + Slice B + Slice C1 + Slice C2.1 complete (A.1 → A.6, B.1 → B.7, HB.1 → HB.5, C1.1 → C1.5, C2.1) — ⏸️ Ready to proceed with Slice C2.2 (bank payment moves)
+**Status**: Slice A + Slice B + Slice C1 + Slice C2.1 + Slice C2.2 complete (A.1 → A.6, B.1 → B.7, HB.1 → HB.5, C1.1 → C1.5, C2.1, C2.2) — ⏸️ Ready to proceed with Slice C2.3 (cash statement lines)
 **Last run**: 2026-07-07
 **Container**: `proj`
-**Run command**: `docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True --test-tags l10n_ve_pos --stop-after-init -d l10n_ve_pos_c2_1_full_<ts> -w odoo --db_port 5432`
+**Run command**: `docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True --test-tags l10n_ve_pos --stop-after-init -d l10n_ve_pos_c2_2_green_<ts> -w odoo --db_port 5432`
 
 ---
 
@@ -358,13 +358,149 @@ $ docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True \
 - **Test-env company crossover**: `res.partner.property_account_receivable_id` is a company-dependent field; without a fixed env.company, the accounting-partner lookup crosses companies and Odoo 19 `_check_company` on `account.payment.create` refuses the move. The workaround (`.with_company()` at the call site) is applied consistently across the two active C2.1 tests and will need to be re-applied in C2.2 → C2.5 when they wake up.
 - **Duplicate `_build_session_with_paid_orders` helper**: the pre-existing C2 test skeleton (from the previous batch, uncommitted) referenced a `_build_session_with_paid_orders` method local to `TestPosSessionAccountingMoveCreation`. In this batch we removed it because C2.1 doesn't need the four-order scenario (it hits the split-bank path in isolation with one order). C2.2 → C2.5 will re-add a lean version scoped to their specific needs when they wake up.
 
+## Slice C2.2 — `_create_bank_payment_moves` verified against Odoo 19 (✅ done 2026-07-07)
+
+Scope: adapt `_create_bank_payment_moves` to the Odoo 19 return contract and
+close the C2.2 stub in `test_pos_session_accounting_move_creation.py`. The
+tasks planning note "re-map `payment_to_receivable_lines` keys" turned out
+to be a false alarm once the Odoo 19 native code was read line-by-line:
+Odoo 19 super keeps the same keying as Odoo 17 (`pos.payment.method` for
+combine, `pos.payment` records for split) — see native reference below.
+The real work in this slice was (a) proving the contract with an end-to-end
+test that exercises BOTH branches, and (b) collapsing the two duplicated
+credit/debit loops into a single helper so future accountants can find the
+Venezuelan write in exactly one place.
+
+### Completed checklist
+
+- [x] **C2.2** — `_create_bank_payment_moves` (`l10n_ve_pos/models/pos_session.py:581`):
+  - Verified Odoo 19 native return contract via
+    `/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1050-1072`:
+    the method MUTATES `data` in-place and returns the same dict; keying
+    is unchanged from Odoo 17.
+  - Replaced the legacy `res = super(); res.get(...)` pattern with the
+    idiomatic Odoo 19 `data = super(); data["..."]` (super never omits
+    those keys, so the `.get()` was masking contract drift the same way
+    it did in C1.2).
+  - Extracted the duplicated `for line in lines: if credit/debit: write`
+    logic into `_set_foreign_amount_on_receivable_lines(lines, foreign_amount)`
+    so combine and split both go through one code path.
+  - Added a contract docstring documenting the two buckets, the value
+    shape (union of session-side receivable + payment-move receivable),
+    and the additive Venezuelan write.
+- [x] **Test scaffold**: reused `TestPosSessionAccountingBase` from
+  `l10n_ve_pos/tests/test_pos_session_accounting_common.py` (same
+  `setUpClass` that C1 and C2.1 already use — zero additional setup cost
+  per the maintainer's setup-time complaint).
+- [x] **Test (Strict TDD)**: enabled the previously skipped
+  `test_create_bank_payment_moves_writes_foreign_fields_on_receivable_lines`
+  in `test_pos_session_accounting_move_creation.py`:
+  - Builds ONE combined-bank order + ONE split-bank order in the shared
+    session, then replicates the first three lines of
+    `_create_account_move` (session_move seed + `_accumulate_amounts`)
+    and jumps straight into `_create_bank_payment_moves`.
+  - Asserts the Odoo 19 keying contract on BOTH buckets
+    (`pos.payment.method` for combine, `pos.payment` for split).
+  - Asserts `foreign_credit`/`foreign_debit` and
+    `not_foreign_recalculate=True` on every receivable line in both
+    buckets — the two branches ARE the triangulation.
+  - Distinctive `foreign_rate=42.5` at test time rules out any hardcoded
+    Fake It path.
+
+### Odoo 19 native evidence (Slice C2.2)
+
+| Decision | Native Odoo 19 reference | Note |
+|----------|--------------------------|------|
+| `_create_bank_payment_moves` mutates `data` in place and returns the SAME dict | `/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1070-1072` — `data['payment_method_to_receivable_lines'] = ...`, `data['payment_to_receivable_lines'] = ...`, `return data` | The old pattern (`res = super(); res.get(...)`) worked by accident because `res is data`. Migrated to the idiomatic `data = super(); data["..."]` for clarity and to match the C1 refactor. |
+| Combine bucket keyed by `pos.payment.method` | Native line 1057-1060 — `for payment_method, amounts in combine_receivables_bank.items(): ... payment_method_to_receivable_lines[payment_method] = ...` | Odoo 19 uses the SAME keying as Odoo 17. The tasks-plan note about "re-mapping keys" was speculative and turned out to be unnecessary once the Odoo 19 source was inspected. |
+| Split bucket keyed by `pos.payment` records | Native line 1062-1065 — `for payment, amounts in split_receivables_bank.items(): ... payment_to_receivable_lines[payment] = ...` | Same as above — no key rename in Odoo 19. Our override reads `payment.foreign_amount` (direct attribute) rather than `payment["foreign_amount"]` for clarity; both are equivalent because `pos.payment.__getitem__` proxies to the field. |
+| Value shape: union of two `account.move.line` records | Native line 1058-1060 — `combine_receivable_line | payment_receivable_line`; native line 1063-1065 — `split_receivable_line | payment_receivable_line` | Our helper iterates the union so both the session-side receivable (created in this method) and the payment-move receivable (created by `_create_combine_account_payment` / `_create_split_account_payment`) get their Venezuelan write. |
+| `_create_combine_account_payment` return is `account.move.line` (receivable line) | Native line 1120 — `return account_payment.move_id.line_ids.filtered(lambda line: line.account_id == self._get_receivable_account(payment_method))` | Confirms the union-of-two-move-lines shape holds symmetrically for combine and split (C2.1 already handled the split return contract). |
+
+### TDD Cycle Evidence (Slice C2.2)
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| **C2.2** — `_create_bank_payment_moves` writes foreign fields on both combine + split receivable buckets | `test_pos_session_accounting_move_creation.py::test_create_bank_payment_moves_writes_foreign_fields_on_receivable_lines` | Unit (Odoo ORM in-process) | ✅ 30/30 (Slice A+B+C1+C2.1) still pass after this change | ✅ Failed: `psycopg2.errors.NotNullViolation: null value in column "date" of relation "account_move"` (scaffold gap — `session.stop_at` / `start_at` are null for an unposted session; fixed by seeding `date` with `fields.Date.context_today(session)`) | ✅ Passed after the scaffold fix — confirmed the current override IS already Odoo 19-compatible | ✅ Both branches exercised in ONE test: combine (keyed by `pos.payment.method`) and split (keyed by `pos.payment`) — a regression on either accessor would fail; distinctive `foreign_rate=42.5` rules out Fake It | ✅ Collapsed two duplicated credit/debit loops into `_set_foreign_amount_on_receivable_lines(lines, foreign_amount)`; migrated from `res.get(...)` to `data["..."]` (idiomatic Odoo 19); added contract docstring |
+
+**Transparency note on the RED**: the RED came from the test scaffold
+(nullable `date` on the session_move seed), not from the production
+override. The override was **already correct** after C1+C2.1 landed — no
+functional regression to fix. The **new value** delivered by this slice
+is: (a) an end-to-end regression guard that would fail if a future
+refactor drifted the combine or split accessors, (b) removal of the
+duplicated credit/debit block in favor of one helper, and (c) explicit
+Odoo 19 evidence recorded here for the reviewer. This is the strict-TDD
+"function already exists → test the NEW behavior not yet implemented"
+path: the new behavior is the observable regression guard.
+
+### Test Summary (Slice C2.2 only)
+
+- **Total tests written**: 1 (enabled from the skip stub)
+- **Total tests passing**: 1/1
+- **Skipped in this batch** (pending next batch): 3 (C2.3, C2.4, C2.5)
+- **Full suite result**: `0 failed, 0 error(s) of 31 tests` (28 executed + 3 skipped)
+- **Layers used**: Unit — Odoo ORM in-process
+- **Pure functions created**: 0 (Odoo ORM hook override, not a pure function)
+- **Refactor step**: extracted `_set_foreign_amount_on_receivable_lines` (single write path); migrated `res.get(...)` → `data["..."]` to match the C1 refactor.
+
+### Strict-TDD verification evidence (Slice C2.2)
+
+```
+$ DB=l10n_ve_pos_c2_2_green_1783444991
+$ docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True \
+    --test-tags l10n_ve_pos --stop-after-init -d "$DB" \
+    -w odoo --db_port 5432 --workers=0 --http-port=8173
+…
+2026-07-07 17:24:41,943 INFO odoo.service.server: 31 post-tests in 5.28s, 6453 queries
+2026-07-07 17:24:41,943 INFO odoo.tests.stats: l10n_ve_pos: 39 tests 5.15s 6453 queries
+2026-07-07 17:24:41,943 INFO odoo.tests.result: 0 failed, 0 error(s) of 31 tests
+```
+
+### Diff budget (Slice C2.2)
+
+| Group | Files | +lines | -lines | Notes |
+|-------|-------|--------|--------|-------|
+| Production — `pos_session.py` (C2.2) | `l10n_ve_pos/models/pos_session.py` | 45 | 21 | Rewrote `_create_bank_payment_moves` with contract docstring + Odoo 19 idiomatic `data[...]`; added `_set_foreign_amount_on_receivable_lines` helper. |
+| Tests (enabled stub, C2.2 behaviour) | `l10n_ve_pos/tests/test_pos_session_accounting_move_creation.py` | ~180 | 3 | Replaced the `@unittest.skip` stub with the real regression test; added `from odoo import fields`. |
+| Tasks list | `openspec/changes/.../tasks.md` | 1 | 1 | Marked C2.2 as `[x]`. |
+| Apply progress | `openspec/changes/.../apply-progress.md` | +~150 | -0 | Added the Slice C2.2 section. |
+| **Production diff (per `git diff --numstat`, production only)** | 1 file | **45** | **21** | **66 changed lines** — well within the 400-line review budget. |
+| Production + test | 2 files | ~225 | 24 | ~249 changed lines — within budget for a work-unit commit. |
+
+### Deviations from design (Slice C2.2)
+
+- **`payment["foreign_amount"]` → `payment.foreign_amount`**: cosmetic
+  cleanup while refactoring. Both forms are equivalent because
+  `pos.payment.__getitem__(str)` proxies to the field getter (verified in
+  `/home/binaural19/odoo/odoo/orm/models.py:6674-6688`). The attribute
+  form is clearer at the call site and matches how C2.1 accesses the
+  same field.
+- **Task-plan note "re-map keys" turned out to be a false alarm**: after
+  reading Odoo 19 native code line-by-line, the keying is unchanged from
+  Odoo 17. Recorded transparently in the Odoo 19 evidence table above so
+  future reviewers don't reintroduce a fictitious rename.
+
+### Issues found (Slice C2.2)
+
+- **Test scaffold gap (fixed here)**: `session.stop_at` and
+  `session.start_at` are null for an unposted session; seeding the
+  session's `account.move` with either of those directly triggers a
+  `NotNullViolation`. Fixed by using `fields.Date.context_today(session)`.
+  This is scaffolding lore that C2.3 (cash statement lines) will need to
+  reuse — noted here rather than being rediscovered next slice.
+- **Duplicate credit/debit loops (fixed here)**: the pre-C2.2 override
+  had two near-identical loops, one per bucket, each with its own
+  `if credit / if debit` branching. That structure invited copy-paste
+  drift (imagine one branch reading `foreign_credit`, the other
+  `foreign_debit`). Centralized in `_set_foreign_amount_on_receivable_lines`.
+
 ## Next slice recommended
 
-**Slice C2.2 — `_create_bank_payment_moves`**. Depends on: nothing further (C2.1 done). Remaining C2 items:
+**Slice C2.3 — `_create_cash_statement_lines_and_cash_move_lines`**. Depends on: nothing further (C2.2 done). Remaining C2 items:
 
-- `_create_bank_payment_moves` (`pos_session.py::_create_bank_payment_moves`): re-map `payment_to_receivable_lines` keys (Odoo 19 keys by `pos.payment` record — dict access via `payment["foreign_amount"]` would raise `TypeError`); preserve `foreign_debit`/`foreign_credit` writes.
 - `_create_cash_statement_lines_and_cash_move_lines` (`pos_session.py::_create_cash_statement_lines_and_cash_move_lines`): re-map response dict; keep `set_foreign_amount_in_line` helper.
 - `_create_invoice_receivable_lines` (`pos_session.py::_create_invoice_receivable_lines`): align to `combine_inv_payment_receivable_lines` record sets; preserve foreign aggregation.
 - `_create_payment_moves` (`pos_payment.py::_create_payment_moves`): foreign-field writes on matching move; float-compare filter still valid.
 
-The 4 `@unittest.skip` stubs in `test_pos_session_accounting_move_creation.py` mark exactly these targets; they read from the C1 accumulator data-key map (`specs/pos-odoo19-session-accounting/key-map.md`).
+The 3 remaining `@unittest.skip` stubs in `test_pos_session_accounting_move_creation.py` mark exactly these targets; they read from the C1 accumulator data-key map (`specs/pos-odoo19-session-accounting/key-map.md`).

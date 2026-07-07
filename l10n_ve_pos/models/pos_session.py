@@ -579,31 +579,66 @@ class PosSession(models.Model):
         return res
 
     def _create_bank_payment_moves(self, data):
-        res = super()._create_bank_payment_moves(data)
-        payment_to_receivable_lines = res.get("payment_to_receivable_lines")
-        payment_method_to_receivable_lines = res.get("payment_method_to_receivable_lines")
-        combine_receivables_bank = data.get("combine_receivables_bank")
+        """Odoo 19 l10n_ve_pos extension of ``_create_bank_payment_moves``.
+
+        Migration contract (Slice C2.2, spec
+        ``pos-odoo19-session-accounting/spec.md``):
+
+        - Odoo 19 super MUTATES ``data`` in-place and returns the same
+          dict — see
+          ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1050-1072``.
+        - ``payment_method_to_receivable_lines`` is keyed by
+          ``pos.payment.method`` (combined bank bucket).
+        - ``payment_to_receivable_lines`` is keyed by ``pos.payment``
+          records (split bank bucket).
+        - Each value is a UNION of two ``account.move.line`` records:
+          the session-side receivable line (created here) plus the
+          receivable line on the ``account.payment.move_id`` (created
+          by ``_create_combine_account_payment`` /
+          ``_create_split_account_payment``).
+
+        For every receivable line in both buckets we set the matching
+        Venezuelan ``foreign_debit`` / ``foreign_credit`` and mark it
+        ``not_foreign_recalculate=True`` so the base compute in
+        ``l10n_ve_accountant`` does not overwrite it.
+        """
+        data = super()._create_bank_payment_moves(data)
+        combine_receivables_bank = data["combine_receivables_bank"]
+        payment_method_to_receivable_lines = data["payment_method_to_receivable_lines"]
+        payment_to_receivable_lines = data["payment_to_receivable_lines"]
 
         for payment_method, amounts in combine_receivables_bank.items():
-            lines = payment_method_to_receivable_lines[payment_method]
-            for line in lines:
-                if line.credit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_credit = abs(amounts["foreign_amount"])
-                if line.debit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_debit = abs(amounts["foreign_amount"])
+            self._set_foreign_amount_on_receivable_lines(
+                payment_method_to_receivable_lines[payment_method],
+                amounts["foreign_amount"],
+            )
 
-        for payment in payment_to_receivable_lines.keys():
-            lines = payment_to_receivable_lines[payment]
-            for line in lines:
-                if line.credit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_credit = abs(payment["foreign_amount"])
-                if line.debit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_debit = abs(payment["foreign_amount"])
-        return res
+        for payment, lines in payment_to_receivable_lines.items():
+            # Split bucket keys are ``pos.payment`` records; read the
+            # foreign amount directly from the payment to keep the
+            # Venezuelan write aligned with the accumulator source.
+            self._set_foreign_amount_on_receivable_lines(
+                lines, payment.foreign_amount
+            )
+        return data
+
+    def _set_foreign_amount_on_receivable_lines(self, lines, foreign_amount):
+        """Write the Venezuelan ``foreign_debit`` / ``foreign_credit`` on
+        every receivable ``account.move.line`` in ``lines``.
+
+        This helper is the single place where the Venezuelan write
+        contract for bank payment moves is materialized. It centralizes
+        the two loops that used to duplicate the credit/debit branching
+        for the combine and split buckets.
+        """
+        abs_foreign = abs(foreign_amount)
+        for line in lines:
+            if line.credit > 0:
+                line.not_foreign_recalculate = True
+                line.foreign_credit = abs_foreign
+            if line.debit > 0:
+                line.not_foreign_recalculate = True
+                line.foreign_debit = abs_foreign
 
     def _create_cash_statement_lines_and_cash_move_lines(self, data):
         res = super()._create_cash_statement_lines_and_cash_move_lines(data)
