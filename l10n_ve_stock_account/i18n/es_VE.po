@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20260318\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260702\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-01 11:19+0000\n"
-"PO-Revision-Date: 2026-04-01 11:19+0000\n"
+"POT-Creation-Date: 2026-07-07 23:06+0000\n"
+"PO-Revision-Date: 2026-07-07 23:06+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -75,57 +75,57 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Ciudad:</span>"
-msgstr "<span class=\"fw-bold\">Ciudad:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Cliente:</span>"
-msgstr "<span class=\"fw-bold\">Cliente:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Dirección de entrega:</span>"
-msgstr "<span class=\"fw-bold\">Dirección de entrega:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Dirección fiscal:</span>"
-msgstr "<span class=\"fw-bold\">Dirección fiscal:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Estado:</span>"
-msgstr "<span class=\"fw-bold\">Estado:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Fecha de emisión:</span>"
-msgstr "<span class=\"fw-bold\">Fecha de emisión:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Fecha programada de entrega:</span>"
-msgstr "<span class=\"fw-bold\">Fecha programada de entrega:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Motivo de traslado:</span>"
-msgstr "<span class=\"fw-bold\">Motivo de traslado:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Número de documento:</span>"
-msgstr "<span class=\"fw-bold\">Número de documento:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Número de guía:</span>"
-msgstr "<span class=\"fw-bold\">Número de guía:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Número de pedido:</span>"
-msgstr "<span class=\"fw-bold\">Número de pedido:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
@@ -135,12 +135,12 @@ msgstr "<span class=\"fw-bold\">RIF:</span>"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Razón Social:</span>"
-msgstr "<span class=\"fw-bold\">Razón Social:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">Teléfono:</span>"
-msgstr "<span class=\"fw-bold\">Teléfono:</span>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
@@ -154,12 +154,12 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "<strong>CONTRIBUYENTE FORMAL</strong>"
-msgstr "<strong>CONTRIBUYENTE FORMAL</strong>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid "<strong>Nombre:</strong> <br/> C.I: <br/> Fecha: <br/>"
-msgstr "<strong>Nombre:</strong> <br/> C.I: <br/> Fecha: <br/>"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
@@ -167,8 +167,6 @@ msgid ""
 "<strong>Nombre:</strong> <br/> C.I: <br/> Marca vehículo: <br/>\n"
 "                                    Placa batea: <br/> Placa chasis: <br/>"
 msgstr ""
-"<strong>Nombre:</strong> <br/> C.I: <br/> Marca vehículo: <br/>\n"
-"                                    Placa batea: <br/> Placa chasis: <br/>"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account
@@ -191,9 +189,19 @@ msgid "A consignation warehouse must have an assigned customer."
 msgstr "Un almacén de consignación debe tener un cliente asignado."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__code
+msgid "A unique code to identify the transfer reason."
+msgstr "Un código único para identificar la motivo de traslado."
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
 msgid "Accept"
 msgstr "Aceptar"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__active
+msgid "Active"
+msgstr "Activo"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
@@ -211,14 +219,24 @@ msgstr ""
 "factura para crear una sola factura."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__allowed_reason_ids
+msgid "Allowed Reasons"
+msgstr "Razones Permitidas"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_location__partner_id
+msgid "Assigned Customer"
+msgstr "Cliente asignado"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid "Autorizado por"
-msgstr "Autorizado por"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account
 msgid "COPIA"
-msgstr "COPIA"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
@@ -256,6 +274,11 @@ msgid "Cod."
 msgstr "Cód."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__code
+msgid "Code"
+msgstr "Código"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_res_company
 msgid "Companies"
 msgstr "Empresas"
@@ -276,6 +299,12 @@ msgstr "Ajustes de configuración"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 msgid "Consignation Report"
 msgstr "Informe de Consignación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_location__is_consignation_warehouse
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__is_consignation_warehouse
+msgid "Consignation Warehouse"
+msgstr "Almacén de consignación"
 
 #. module: l10n_ve_stock_account
 #: model:ir.ui.menu,name:l10n_ve_stock_account.menu_stock_report_consignation_account
@@ -315,14 +344,14 @@ msgid "Create Invoice/Bill"
 msgstr "Crear Factura/Recibo"
 
 #. module: l10n_ve_stock_account
+#: model:ir.actions.act_window,name:l10n_ve_stock_account.action_picking_multi_invoice
+msgid "Create Invoices"
+msgstr "Crear facturas"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Create Vendor Credit"
 msgstr "Crear crédito de proveedor"
-
-#. module: l10n_ve_stock_account
-#: model:ir.model,website_form_label:l10n_ve_stock_account.model_res_partner
-msgid "Create a Customer"
-msgstr "Crear un cliente"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__create_uid
@@ -366,14 +395,26 @@ msgid "Date done"
 msgstr "Fecha realizada"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_partner__default_document
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_users__default_document
+msgid "Default Document"
+msgstr "Documento predeterminado"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_partner__default_document
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_users__default_document
+msgid "Default document for importing documents."
+msgstr ""
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Descripción"
-msgstr "Descripción"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid "Despachado por"
-msgstr "Despachado por"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.actions.report,name:l10n_ve_stock_account.action_dispatch_guide
@@ -383,6 +424,11 @@ msgid "Dispatch Guide"
 msgstr "Guía de Despacho"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__dispatch_guide_controls
+msgid "Dispatch Guide Controls"
+msgstr "Controles de guía de despacho"
+
+#. module: l10n_ve_stock_account
 #: model:ir.ui.menu,name:l10n_ve_stock_account.menuitem_stock_dispatch_guides
 msgid "Dispatch Guides"
 msgstr "Guías de Despacho"
@@ -390,7 +436,7 @@ msgstr "Guías de Despacho"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move_line__display_name
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_product_template__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_partner__display_name
@@ -400,10 +446,10 @@ msgstr "Guías de Despacho"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__display_name
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_type__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_return_picking__display_name
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_scrap__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__display_name
 msgid "Display Name"
 msgstr "Nombre para mostrar"
 
@@ -445,6 +491,19 @@ msgid "Free Form"
 msgstr "Imprimir Factura"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__free_form_copy_number
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__free_form_copy_number
+msgid "Free Form Copy Number"
+msgstr "Nro. de copia de formulario libre"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__from_picking
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__from_picking
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move_line__from_picking_line
+msgid "From Picking"
+msgstr "Desde traslado"
+
+#. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
@@ -468,6 +527,10 @@ msgid "Guide Dispatch"
 msgstr "Guía de Despacho"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__guide_number
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__guide_number
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__guide_number
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__guide_number
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_account_stock_move_line_search
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
@@ -478,12 +541,29 @@ msgstr "​Nro de Guía de Despacho"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "Guía de Despacho"
-msgstr "Guía de Despacho"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__has_document
+msgid "Has Document"
+msgstr "Tiene documento"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__hide_disc_field_dispatch_guide
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__hide_disc_field_dispatch_guide
+msgid "Hide discount field in dispatch guide"
+msgstr "Ocultar campo de descuento en la guía"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__hide_weight_field_dispatch_guide
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
+msgid "Hide weight field in dispatch guide"
+msgstr "Ocultar campo de peso en la guía"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move_line__id
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_product_template__id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_partner__id
@@ -493,17 +573,17 @@ msgstr "Guía de Despacho"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__id
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_type__id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_return_picking__id
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_scrap__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__id
 msgid "ID"
 msgstr "ID"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "IVA"
-msgstr "IVA"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
@@ -517,14 +597,84 @@ msgid "If checked, the weight field will be hidden in the dispatch guide."
 msgstr "Si está marcado, el campo de peso se ocultará en la guía de despacho."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__indexed_dispatch_guide
+msgid ""
+"If enabled, dispatch guide amounts will use the date of the stock picking "
+"for currency conversion."
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_disc_field_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_disc_field_dispatch_guide
+msgid "If enabled, the discount field will be hidden in the dispatch guide."
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_weight_field_dispatch_guide
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
+msgid "If enabled, the weight field will be hidden in the dispatch guide."
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__pricelist_id
+msgid "If you change the pricelist, only newly added lines will be affected."
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__indexed_dispatch_guide
+msgid "Indexed Dispatch Guide"
+msgstr "Guía de despacho indexada"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_sale_order__is_consignation
+msgid "Indicates if this sale order is a consignation sale."
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_warehouse__is_consignation_warehouse
+msgid "Indicates if this warehouse is used for consignation purposes."
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__active
+msgid "Indicates whether the transfer reason is active or archived."
+msgstr "Indica si el motivo de traslado está activa o archivada."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__internal_consigned_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__internal_consigned_journal_id
+msgid "Internal Journal"
+msgstr "Diario interno"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_location
 msgid "Inventory Locations"
 msgstr "Ubicaciones de inventario"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_partner__default_document__invoice
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__sale_order__document__invoice
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__invoice_cron_time
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__invoice_cron_time
+msgid "Invoice Cron Time"
+msgstr "Hora del cron de facturación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_state
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Invoice State"
 msgstr "Estado de la factura"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__invoice_type_selection
+msgid "Invoice Type Selection"
+msgstr "Selección de tipo de factura"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.picking_invoice_wizard_view_form
@@ -540,8 +690,45 @@ msgstr "Facturada"
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_count
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_ids
 msgid "Invoices"
 msgstr "Facturas"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_sale_order__is_consignation
+msgid "Is Consignation"
+msgstr "Es consignación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_consignment
+msgid "Is Consignment"
+msgstr "Es consignación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_consignment_readonly
+msgid "Is Consignment Readonly"
+msgstr "Es consignación (solo lectura)"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_dispatch_guide
+msgid "Is Dispatch Guide"
+msgstr "Es guía de despacho"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_donation
+msgid "Is Donation"
+msgstr "Es Donación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_return
+msgid "Is Return"
+msgstr "Es devolución"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_transfer_between_warehouses
+msgid "Is Transfer Between Warehouses"
+msgstr "Es traslado entre almacenes"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_account_move
@@ -551,7 +738,7 @@ msgstr "Asiento contable"
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_account_move_line
 msgid "Journal Item"
-msgstr "Apuntes contables"
+msgstr "Apunte contable"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
@@ -577,8 +764,23 @@ msgstr "Último día hábil del mes"
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/res_company.py:0
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_company__invoice_cron_type__last_day
 msgid "Last Day"
 msgstr "Último día del mes"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__write_date
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__write_date
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__write_date
+msgid "Last Updated on"
+msgstr "Última actualización en"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
@@ -589,7 +791,12 @@ msgstr "Ubicación"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "Los datos del cliente no existen"
-msgstr "Los datos del cliente no existen"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__match_guide_dispatch_domain
+msgid "Match Guide Dispatch Domain"
+msgstr "Dominio coincidente de guía de despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__n/a
@@ -621,6 +828,11 @@ msgstr ""
 "y seleccione un almacén como 'Almacén Predeterminado'."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__unique
+msgid "One invoice for all stock pickings"
+msgstr "Una factura para todos los traslados"
+
+#. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_location.py:0
 msgid ""
@@ -628,6 +840,11 @@ msgid ""
 msgstr ""
 "Solo se pueden crear ubicaciones 'Internas' dentro de un almacén de "
 "consignación."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__order_is_consignment
+msgid "Order Is Consignment"
+msgstr "La orden es consignación"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__partial
@@ -647,9 +864,20 @@ msgid "Partner"
 msgstr "Cliente"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__partner_required
+msgid "Partner Required"
+msgstr "Cliente requerido"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Peso"
-msgstr "Peso"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__picking_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__picking_ids
+msgid "Picking"
+msgstr "Traslado"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_picking_invoice_wizard
@@ -657,9 +885,9 @@ msgid "Picking Invoice Wizard"
 msgstr "Asistente de facturación de traslado"
 
 #. module: l10n_ve_stock_account
-#: model:ir.model,name:l10n_ve_stock_account.model_stock_picking_type
-msgid "Picking Type"
-msgstr "Tipo de recolección"
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__picking_type_domain
+msgid "Picking Type Domain"
+msgstr "Dominio del tipo de operación"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
@@ -667,12 +895,18 @@ msgid "Picking list"
 msgstr "Lista de traslados"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__pickings_ids
+msgid "Pickings"
+msgstr "Traslados"
+
+#. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid ""
 "Please configure the income account for the product '%s' or its category."
 msgstr ""
-"Por favor configure la cuenta de ingresos para el producto '%s' o su categoría."
+"Por favor configure la cuenta de ingresos para el producto '%s' o su "
+"categoría."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -693,17 +927,22 @@ msgid "Please select single type transfer"
 msgstr "Por favor seleccione un solo tipo de transferencia."
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
-msgid "Precio"
-msgstr "Precio"
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__invoice_state__posted
+msgid "Posted"
+msgstr "Publicada"
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
+msgid "Precio"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__pricelist_id
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Pricelist"
 msgstr "Tarifa"
 
 #. module: l10n_ve_stock_account
-#: model:ir.model,name:l10n_ve_stock_account.model_product_template
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 msgid "Product"
 msgstr "Producto"
@@ -711,7 +950,7 @@ msgstr "Producto"
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_move_line
 msgid "Product Moves (Stock Move Line)"
-msgstr "Movimientos de producto (línea de movimiento de inventario)"
+msgstr "Movimientos de producto (línea de movimiento de stock)"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
@@ -729,9 +968,39 @@ msgid "Quantity Dispatched"
 msgstr "Cantidad despachada"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__qty_invoiced
+msgid "Quantity Invoiced"
+msgstr "Cantidad facturada"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move__qty_return
+msgid "Quantity Return"
+msgstr "Cantidad devuelta"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__readonly_is_consignation_warehouse
+msgid "Readonly Consignation Warehouse"
+msgstr "Almacén de consignación (solo lectura)"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__name
+msgid "Reason"
+msgstr "Razón"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transfer_reason_id
+msgid "Reason for Transfer"
+msgstr "Motivo de traslado"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__other_causes_transfer_reason
+msgid "Reason for transfer for other reasons"
+msgstr "Motivo de traslado por otras causas"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid "Recibido por"
-msgstr "Recibido por"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.actions.act_window,name:l10n_ve_stock_account.action_picking_guide_dispatch
@@ -746,7 +1015,7 @@ msgstr "Recolección de devolución"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account
 msgid "SIN DERECHO A CRÉDITO FISCAL"
-msgstr "SIN DERECHO A CRÉDITO FISCAL"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
@@ -756,28 +1025,12 @@ msgstr "Diario de ventas"
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_sale_order
 msgid "Sales Order"
-msgstr "Pedidos de venta"
+msgstr "Orden de venta"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_sale_order_line
 msgid "Sales Order Line"
 msgstr "Línea de la orden de venta"
-
-#. module: l10n_ve_stock_account
-#: model:ir.model,name:l10n_ve_stock_account.model_stock_scrap
-msgid "Scrap"
-msgstr "Desechar"
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_scrap__scrap_location_id
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_scrap_form_inherit
-msgid "Scrap Location"
-msgstr "Ubicación de desecho"
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_scrap_form_inherit
-msgid "Scrap Reason"
-msgstr "Motivo de Desecho"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
@@ -800,11 +1053,43 @@ msgid "Self-Consumption Validation Alert"
 msgstr "Autocomsumo Validación Alerta"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_bill
+msgid "Show Create Bill"
+msgstr "Mostrar crear factura de compra"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_customer_credit
+msgid "Show Create Customer Credit"
+msgstr "Mostrar crear nota de crédito de cliente"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_invoice
+msgid "Show Create Invoice"
+msgstr "Mostrar crear factura"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_invoice_internal
+msgid "Show Create Invoice Internal"
+msgstr "Mostrar crear factura interna"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_create_vendor_credit
+msgid "Show Create Vendor Credit"
+msgstr "Mostrar crear nota de crédito de proveedor"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__show_other_causes_transfer_reason
+msgid "Show Other Causes Transfer Reason"
+msgstr "Mostrar motivo de traslado por otras causas"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__location_id
 msgid "Source Location"
 msgstr "Ubicación de origen"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__state_guide_dispatch
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__state_guide_dispatch
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "State Guide Dispatch"
 msgstr "Estado de Guía"
@@ -817,7 +1102,12 @@ msgstr "Estado de Guía"
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_move
 msgid "Stock Move"
-msgstr "Movimiento de inventario"
+msgstr "Movimiento de stock"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__has_document
+msgid "Technical field to check if the related sale order has a document."
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -828,6 +1118,12 @@ msgid ""
 msgstr ""
 "El campo 'Motivo de Traslado' es obligatorio cuando el 'Código de Operación'"
 " es 'interno'."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__name
+msgid "The name of the transfer reason (e.g., Sale, Donation, Return)."
+msgstr ""
+"El nombre del motivo de traslado (por ejemplo, Venta, Donación, Devolución)."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -859,17 +1155,43 @@ msgstr ""
 "Esta guía tiene al menos una factura publicada, consulte sus facturas."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_location__partner_id
+msgid "This location is assigned to a specific customer for consignation."
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__to_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 msgid "To Invoice"
 msgstr "Por facturar"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__customer_journal_id
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__customer_journal_id
+msgid "To add customer journal"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__internal_consigned_journal_id
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__internal_consigned_journal_id
+msgid "To add internal journal"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__vendor_journal_id
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__vendor_journal_id
+msgid "To add vendor journal"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__total
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Total"
-msgstr "Total"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_picking
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__picking_id
 msgid "Transfer"
 msgstr "Transferir"
 
@@ -882,12 +1204,22 @@ msgstr "Transferencias"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid "Transporte (Conductor)"
-msgstr "Transporte (Conductor)"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__operation_code
+msgid "Operation Code"
+msgstr "Código de operación"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__type_of_return
+msgid "Type of Return"
+msgstr "Tipo de devolución"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Unidad"
-msgstr "Unidad"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__picking_invoice_wizard__invoice_type_selection__multiple
@@ -910,9 +1242,15 @@ msgstr ""
 "autoconsumo."
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__vendor_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__vendor_journal_id
+msgid "Vendor Journal"
+msgstr "Diario de proveedores"
+
+#. module: l10n_ve_stock_account
 #: model:res.groups,name:l10n_ve_stock_account.group_stock_account
 msgid "Ver botón \"Crear Factura\""
-msgstr "Ver botón \"Crear Factura\""
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_warehouse
@@ -970,3 +1308,4 @@ msgstr "Último día del mes"
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid "transfer_ids"
+msgstr ""
