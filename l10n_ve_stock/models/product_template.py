@@ -57,14 +57,26 @@ class ProductTemplate(models.Model):
             if product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
 
-    @api.constrains("taxes_id")
-    def _check_taxes_id(self):
+    def write(self, vals):
+        res = super().write(vals)
+        if "taxes_id" in vals:
+            self._validate_single_sale_tax()
+        return res
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        # Always validate after creation because default taxes can come from multiple sources
+        records._validate_single_sale_tax()
+        return records
+
+    def _validate_single_sale_tax(self):
         for product in self:
             taxes_by_company = defaultdict(int)
             for tax in product.taxes_id.sudo():
                 taxes_by_company[tax.company_id] += 1
                 if taxes_by_company[tax.company_id] > 1:
-                    raise ValidationError(_("This product must have only one tax."))                
+                    raise ValidationError(_("This product must have only one tax."))   
 
     @api.depends("list_price")
     def _compute_prices_with_tax(self):
