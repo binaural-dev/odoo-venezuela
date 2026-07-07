@@ -26,19 +26,26 @@ patch(PosOrder.prototype, {
  get_foreign_currency(){
         return this.config.foreign_currency_id;
     },
- get_display_rate() {
-    const foreignCurrencyId = this.config?.foreign_currency_id?.id ?? this.config?.foreign_currency_id;
-    const orderCurrencyId = this.currency?.id ?? this.currency;
-    const configCurrencyId = this.config?.currency_id?.id ?? this.config?.currency_id;
-    if (orderCurrencyId && foreignCurrencyId) {
-      if (orderCurrencyId === foreignCurrencyId) {
-        return this.config.foreign_rate;
-      }
-      if (configCurrencyId && orderCurrencyId === configCurrencyId) {
-        return this.config.foreign_inverse_rate;
-      }
+  get_display_rate() {
+    const rateCandidates = [
+      this.config?.foreign_inverse_rate,
+      this.pos?.config?.foreign_inverse_rate,
+      this.config?.foreign_rate,
+      this.pos?.config?.foreign_rate,
+      this.foreign_currency_rate,
+    ];
+
+    const rawRate = rateCandidates
+      .map((value) => Number(value))
+      .find((value) => Number.isFinite(value) && value > 0);
+
+    if (!Number.isFinite(rawRate) || rawRate <= 0) {
+      return _t("N/D");
     }
-    return this.config?.foreign_inverse_rate ?? this.pos?.config?.foreign_inverse_rate;
+
+    // UI semantic: show "1 foreign = X local". Some datasets provide the
+    // inverse (e.g. 0.001) for serialization math; normalize for display.
+    return rawRate < 1 ? 1 / rawRate : rawRate;
   },
 
 //   _isValidEmptyOrder() {

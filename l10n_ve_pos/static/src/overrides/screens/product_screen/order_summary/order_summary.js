@@ -20,7 +20,8 @@ patch(OrderSummary.prototype, {
       : 6;
     const configRate = Number(this.pos?.config?.foreign_rate || order?.config?.foreign_rate || 0);
     if (Number.isFinite(configRate) && configRate > 0) {
-      return configRate.toFixed(ratePrecision);
+      const normalizedConfigRate = configRate < 1 ? 1 / configRate : configRate;
+      return normalizedConfigRate.toFixed(ratePrecision);
     }
 
     const conversionRate = order.get_conversion_rate?.();
