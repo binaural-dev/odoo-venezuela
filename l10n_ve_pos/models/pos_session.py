@@ -424,16 +424,38 @@ class PosSession(models.Model):
         return res
 
     def _accumulate_amounts(self, data):
+        """Odoo 19 l10n_ve_pos extension of ``_accumulate_amounts``.
+
+        Migration contract (Slice C1, spec
+        ``pos-odoo19-session-accounting/spec.md``):
+
+        - Call ``super()`` first to materialize the Odoo 19 dict shape
+          (every entry has ``amount`` + ``amount_converted``).
+        - Iterate the SAME source the Odoo 19 super uses
+          (``self._get_closed_orders()``) — NEVER ``self.order_ids`` —
+          so a ``draft`` / ``cancel`` order with a payment cannot
+          create a ghost entry in the Odoo 19 defaultdict (C2 would
+          then try to post a zero-amount move).
+        - For each non-pay-later payment of a closed order, find the
+          same bucket the super populated and add the Venezuelan
+          ``foreign_amount`` via ``_update_amounts``. We pass
+          ``{"amount": 0, "foreign_amount": foreign_amount}`` so the
+          additive contract holds: ``amount`` / ``amount_converted``
+          are preserved from super; ``foreign_amount`` is accumulated.
+        - For invoiced orders, mirror the same additive update into
+          ``split_invoice_receivables`` / ``combine_invoice_receivables``
+          (keyed the same way as super does).
+        """
         data = super()._accumulate_amounts(data)
-        split_receivables_bank = data.get("split_receivables_bank")
-        split_receivables_cash = data.get("split_receivables_cash")
-        combine_receivables_bank = data.get("combine_receivables_bank")
-        combine_receivables_cash = data.get("combine_receivables_cash")
-        combine_invoice_receivables = data.get("combine_invoice_receivables")
-        split_invoice_receivables = data.get("split_invoice_receivables")
+        split_receivables_bank = data["split_receivables_bank"]
+        split_receivables_cash = data["split_receivables_cash"]
+        combine_receivables_bank = data["combine_receivables_bank"]
+        combine_receivables_cash = data["combine_receivables_cash"]
+        combine_invoice_receivables = data["combine_invoice_receivables"]
+        split_invoice_receivables = data["split_invoice_receivables"]
 
         currency_rounding = self.currency_id.rounding
-        for order in self.order_ids:
+        for order in self._get_closed_orders():
             order_is_invoiced = order.is_invoiced
             for payment in order.payment_ids:
                 amount = payment.amount
@@ -442,66 +464,53 @@ class PosSession(models.Model):
                     continue
                 date = payment.payment_date
                 payment_method = payment.payment_method_id
-                is_split_payment = payment.payment_method_id.split_transactions
+                is_split_payment = payment_method.split_transactions
                 payment_type = payment_method.type
 
-                if payment_type != "pay_later":
-                    if is_split_payment and payment_type == "cash":
-                        split_receivables_cash[payment] = self._update_amounts(
-                            split_receivables_cash[payment],
+                if payment_type == "pay_later":
+                    continue
+
+                if is_split_payment and payment_type == "cash":
+                    split_receivables_cash[payment] = self._update_amounts(
+                        split_receivables_cash[payment],
+                        {"amount": 0, "foreign_amount": foreign_amount},
+                        date,
+                    )
+                elif not is_split_payment and payment_type == "cash":
+                    combine_receivables_cash[payment_method] = self._update_amounts(
+                        combine_receivables_cash[payment_method],
+                        {"amount": 0, "foreign_amount": foreign_amount},
+                        date,
+                    )
+                elif is_split_payment and payment_type == "bank":
+                    split_receivables_bank[payment] = self._update_amounts(
+                        split_receivables_bank[payment],
+                        {"amount": 0, "foreign_amount": foreign_amount},
+                        date,
+                    )
+                elif not is_split_payment and payment_type == "bank":
+                    combine_receivables_bank[payment_method] = self._update_amounts(
+                        combine_receivables_bank[payment_method],
+                        {"amount": 0, "foreign_amount": foreign_amount},
+                        date,
+                    )
+
+                # Create the vals to create the pos receivables that will
+                # balance the pos receivables from invoice payment moves.
+                if order_is_invoiced:
+                    if is_split_payment:
+                        split_invoice_receivables[payment] = self._update_amounts(
+                            split_invoice_receivables[payment],
                             {"amount": 0, "foreign_amount": foreign_amount},
-                            date,
+                            order.date_order,
                         )
-                    elif not is_split_payment and payment_type == "cash":
-                        combine_receivables_cash[payment_method] = self._update_amounts(
-                            combine_receivables_cash[payment_method],
+                    else:
+                        combine_invoice_receivables[payment_method] = self._update_amounts(
+                            combine_invoice_receivables[payment_method],
                             {"amount": 0, "foreign_amount": foreign_amount},
-                            date,
-                        )
-                    elif is_split_payment and payment_type == "bank":
-                        split_receivables_bank[payment] = self._update_amounts(
-                            split_receivables_bank[payment],
-                            {"amount": 0, "foreign_amount": foreign_amount},
-                            date,
-                        )
-                    elif not is_split_payment and payment_type == "bank":
-                        combine_receivables_bank[payment_method] = self._update_amounts(
-                            combine_receivables_bank[payment_method],
-                            {"amount": 0, "foreign_amount": foreign_amount},
-                            date,
+                            order.date_order,
                         )
 
-                    # Create the vals to create the pos receivables that will balance the pos receivables from invoice payment moves.
-                    if order_is_invoiced:
-                        if is_split_payment:
-                            split_invoice_receivables[payment] = self._update_amounts(
-                                split_invoice_receivables[payment],
-                                {
-                                    "amount": 0,
-                                    "foreign_amount": payment.foreign_amount,
-                                },
-                                order.date_order,
-                            )
-                        else:
-                            combine_invoice_receivables[payment_method] = self._update_amounts(
-                                combine_invoice_receivables[payment_method],
-                                {
-                                    "amount": 0,
-                                    "foreign_amount": payment.foreign_amount,
-                                },
-                                order.date_order,
-                            )
-
-        data.update(
-            {
-                "split_receivables_cash": split_receivables_cash,
-                "combine_receivables_cash": combine_receivables_cash,
-                "split_receivables_bank": split_receivables_bank,
-                "combine_receivables_bank": combine_receivables_bank,
-                "combine_invoice_receivables": combine_invoice_receivables,
-                "split_invoice_receivables": split_invoice_receivables,
-            }
-        )
         return data
 
     def _update_amounts(

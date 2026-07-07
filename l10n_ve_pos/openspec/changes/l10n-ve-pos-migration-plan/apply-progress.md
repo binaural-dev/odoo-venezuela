@@ -3,10 +3,10 @@
 **Change**: l10n-ve-pos-migration-plan
 **Mode**: Strict TDD
 **Module**: `l10n_ve_pos` (Odoo 19.0)
-**Status**: Slice A + Slice B complete (A.1 → A.6, B.1 → B.7) + post-Slice-B serialization hotfix — ⏸️ Pending maintainer review before Slice C
+**Status**: Slice A + Slice B + Slice C1 complete (A.1 → A.6, B.1 → B.7, HB.1 → HB.2, C1.1 → C1.5) — ⏸️ Ready to proceed with Slice C2 (move creation)
 **Last run**: 2026-07-07
 **Container**: `proj`
-**Run command**: `docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True --test-tags l10n_ve_pos --stop-after-init -d l10n_ve_pos_slice_b_final_<ts> -w odoo --db_port 5432`
+**Run command**: `docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True --test-tags l10n_ve_pos --stop-after-init -d l10n_ve_pos_c1_full_<ts> -w odoo --db_port 5432`
 
 ---
 
@@ -35,6 +35,14 @@
 
 - [x] **HB.1** — Fixed POS order foreign total persistence by moving custom serialization from legacy `export_as_JSON` into Odoo 19 `serializeForORM(opts)` on `PosOrder` frontend model. (`l10n_ve_pos/static/src/overrides/models/pos_order.js`)
 - [x] **HB.2** — Kept receipt payload parity (`export_for_printing`) while preserving fail-fast behavior (no silent fallback to legacy sync hooks).
+
+### Slice C1 — Session Accounting Accumulators (✅ done 2026-07-07)
+
+- [x] **C1.1** — Data-key map documented at `specs/pos-odoo19-session-accounting/key-map.md`. Captures the Odoo 19 per-bucket contract (`amount` + `amount_converted`), the additive Venezuelan `foreign_amount`, and the `_get_closed_orders()` vs `self.order_ids` iteration source.
+- [x] **C1.2** — `_accumulate_amounts` now uses `self._get_closed_orders()` instead of `self.order_ids` (matches Odoo 19 super). Restructured: removed the trailing `data.update({...})` (the dicts are mutated in place by `_update_amounts`); replaced the `if payment_type != "pay_later": ... [nested branches]` shape with a flat `if payment_type == "pay_later": continue` early-return; dropped the `.get(...)` default lookups in favor of `data["..."]` direct access (super always populates these keys, so the `.get(...)` was masking contract drift). (`l10n_ve_pos/models/pos_session.py`)
+- [x] **C1.3** — `_update_amounts` already preserves Odoo 19 keys (`amount` / `amount_converted`) and adds `foreign_amount`; no change required, covered by the new `test_update_amounts_returns_odoo19_keys_plus_foreign_amount` test.
+- [x] **C1.4** — `tests/test_pos_session_accounting_accumulators.py` (7 unit tests, all green): combine/split cash, combine/split invoice receivables, Odoo 19 key regression guard, foreign-amount aggregation across payments on the same method, and the critical ghost-entry guard (draft order with payment must NOT pollute the Odoo 19 defaultdict).
+- [x] **C1.5** — Native Odoo 19 references captured in `key-map.md` §5 (per-bucket defaultdict lambdas, `_get_closed_orders()` source, `_update_amounts` round contract, Odoo 19 super return shape).
 
 ---
 
@@ -68,13 +76,14 @@
 
 ### Test Summary
 
-- **Total tests written (Slice A + B)**: 11 (Slice A) + 6 (Slice B) = 17
-- **Total tests passing**: 17/17 (`0 failed, 0 error(s) of 17 tests when loading database`)
+- **Total tests written (Slice A + B + C1)**: 11 (Slice A) + 6 (Slice B) + 7 (Slice C1) = 24
+- **Total tests passing**: 24/24 (`0 failed, 0 error(s) of 24 tests when loading database`)
 - **Tests failed on RED baseline (Slice B)**: 4 (B.1 base field list, B.5 missing `foreign_currency_rate`, B.6 round trip on the same field, B.7 legacy hooks present)
+- **Tests failed on RED baseline (Slice C1)**: 1 (C1.2 ghost-entry test — draft order with payment polluted the Odoo 19 defaultdict)
 - **Tests already passing on RED baseline (pre-impl Slice B)**: 2 (B.2/B.4 from Slice A; B.5 refund hook from pre-Slice-B code)
-- **Tests passing on TRIANGULATE after fix**: 17/17
-- **Layers used**: Unit (15), Integration / Odoo ORM read-back flow (1), Unit regression guard (1)
-- **Approval tests** (refactoring): 0 — Slice B did not refactor any existing behavior; it migrated hooks and added field exposure.
+- **Tests passing on TRIANGULATE after fix**: 24/24
+- **Layers used**: Unit (22), Integration / Odoo ORM read-back flow (1), Unit regression guard (1)
+- **Approval tests** (refactoring): 0 — Slices B + C1 did not refactor any existing behavior; they migrated hooks / adapted the accumulator to the Odoo 19 dict shape.
 - **Pure functions created**: 0 (Odoo ORM hook overrides, not pure functions)
 
 ### Strict-TDD verification evidence
@@ -91,6 +100,57 @@ $ docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True \
 ```
 
 Container note: same `proj` container used in Slice A; the orchestrator prompt named `proj19`; the actual container is `proj`. Run command adjusted accordingly.
+
+---
+
+## Odoo 19 native evidence (Slice C1 decisions)
+
+| Decision | Native Odoo 19 reference | Note |
+|----------|--------------------------|------|
+| Odoo 19 super iterates `self._get_closed_orders()` (filters `draft` / `cancel`) | `/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1907-1908` | The pre-C1 l10n_ve_pos override iterated `self.order_ids`, which could create ghost entries in the Odoo 19 defaultdict for non-closed orders. C1.2 fixes this. |
+| Odoo 19 per-bucket default is `{'amount': 0.0, 'amount_converted': 0.0}` | `/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:847-857` (the `amounts` / `tax_amounts` lambdas) | Our `foreign_amount` MUST be additive only; super's `amount` / `amount_converted` are computed from `payment.amount` and MUST NOT be re-derived by l10n_ve_pos. |
+| Odoo 19 super's `_accumulate_amounts` returns these keys (we must NOT rename or drop) | `/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:991-1009` (`data.update({...})` block) | Confirmed via `inspect.getsource`: `taxes`, `sales`, `stock_expense`, `split_receivables_bank`, `combine_receivables_bank`, `split_receivables_cash`, `combine_receivables_cash`, `combine_invoice_receivables`, `split_invoice_receivables`, `combine_inv_payment_receivable_lines`, `split_inv_payment_receivable_lines`, `split_receivables_pay_later`, `combine_receivables_pay_later`, `stock_return`, `stock_valuation`, `rounding_difference`, `MoveLine`. |
+| `_update_amounts` returns a NEW dict with `amount` / `amount_converted` always present | `/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1486-1545` | Our override extends the return dict with `foreign_amount`; we never replace the Odoo 19 keys. |
+| Invoice receivables keying: split → `split_invoice_receivables[payment]`; non-split → `combine_invoice_receivables[payment_method]` | `/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:897-903` | Our override mirrors this exact keying; the new test `test_combine_invoice_receivables_keeps_foreign_amount_for_invoiced_orders` exercises the non-split branch. |
+
+---
+
+## TDD Cycle Evidence (Slice C1)
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| **C1.1** — Odoo 19 data-key map documented | `specs/pos-odoo19-session-accounting/key-map.md` | Doc | n/a | ➖ Single (documentation, not code) | n/a | n/a | n/a |
+| **C1.2 (split cash)** — `split_receivables_cash` keeps Odoo 19 keys + adds `foreign_amount` | `test_pos_session_accounting_accumulators.py::test_split_receivables_cash_preserves_odoo19_keys_and_adds_foreign_amount` | Unit (Orm flow) | ✅ 17/17 (Slice A+B) | ➖ Already passing on the structural keys (l10n_ve_pos already extended `defaultdict` with `foreign_amount`) | ✅ Passed | ✅ 3-order helper (combined + split + invoiced) covers all four bucket types in one scenario | ✅ Lifted `_get_closed_orders()` instead of `self.order_ids` (RED-driven by the ghost-entry test) |
+| **C1.2 (combine cash)** — `combine_receivables_cash` aggregates `amount` + `foreign_amount` across multiple orders | `test_pos_session_accounting_accumulators.py::test_combine_receivables_cash_preserves_odoo19_keys_and_adds_foreign_amount` | Unit | ✅ 17/17 | ➖ Already passing (initial implementation worked) | ✅ | ✅ 2 orders (1 non-invoiced + 1 invoiced) on the same method — combined `amount` = 174, combined `foreign_amount` = 6351 | ➖ None needed |
+| **C1.2 (combine invoice)** — `combine_invoice_receivables` carries `foreign_amount` for invoiced orders | `test_pos_session_accounting_accumulators.py::test_combine_invoice_receivables_keeps_foreign_amount_for_invoiced_orders` | Unit | ✅ 17/17 | ➖ Already passing (initial implementation worked) | ✅ | ➖ Single (verified separately by the aggregation test) | ➖ None needed |
+| **C1.2 (regression)** — NO bucket loses Odoo 19 keys after l10n_ve_pos extension | `test_pos_session_accounting_accumulators.py::test_no_receivable_bucket_loses_odoo19_keys` | Unit (regression guard) | ✅ 17/17 | ➖ Already passing | ✅ | ➖ Single (regression guard, not feature behavior) | ➖ None needed |
+| **C1.2 (ghost entry)** — Draft order with payment must NOT create a ghost entry in the Odoo 19 defaultdict | `test_pos_session_accounting_accumulators.py::test_draft_order_with_payment_does_not_create_ghost_accumulator_entry` | Unit (regression guard, Odoo 19 contract) | ✅ 17/17 | ✅ **Failed**: `split_receivables_cash` had 2 entries (paid + draft); the draft payment's `foreign_amount=2117.0` created a ghost `{amount: 0, amount_converted: 0, foreign_amount: 2117.0}` that would feed C2 a zero-amount receivable | ✅ Passed after `self._get_closed_orders()` | ✅ Second case (paid + draft) makes the contract observable: with only paid orders (other tests), the bug is hidden | ✅ Replaced `self.order_ids` + `.get(...)` with `_get_closed_orders()` + `data["..."]` direct access (matches Odoo 19 super exactly) |
+| **C1.3** — `_update_amounts` returns dict with Odoo 19 keys + `foreign_amount` | `test_pos_session_accounting_accumulators.py::test_update_amounts_returns_odoo19_keys_plus_foreign_amount` | Unit (pure-function-ish) | ✅ 17/17 | ➖ Already passing (initial implementation worked) | ✅ | ✅ 2nd call accumulates (100→150, foreign 3650→5475) | ➖ None needed |
+| **C1.4 (aggregation)** — `foreign_amount` aggregates across multiple payments on the same method | `test_pos_session_accounting_accumulators.py::test_foreign_amount_aggregates_across_payments_for_same_method` | Unit | ✅ 17/17 | ➖ Already passing (initial implementation worked) | ✅ | ✅ 2 payments on the same method → `foreign_amount` is the sum (4234 + 4234 = 8468) | ➖ None needed |
+
+### Test Summary (Slice C1 only)
+- **Total tests written**: 7
+- **Total tests passing**: 7/7
+- **Layers used**: Unit (7)
+- **Pure functions created**: 0 (Odoo ORM hook override, not a pure function)
+- **Tests failed on RED baseline**: 1 (C1.2 ghost-entry test) — the rest passed on the existing structural contract; the refactor was driven by the C1.2 ghost-entry RED.
+
+### Strict-TDD verification evidence (Slice C1)
+
+```
+$ DB=l10n_ve_pos_c1_full_1783437809
+$ docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True \
+    --test-tags l10n_ve_pos --stop-after-init -d "$DB" \
+    -w odoo --db_port 5432 --workers=0 --http-port=8169
+…
+2026-07-07 15:25:04,220 660 INFO l10n_ve_pos_c1_full_1783437809 odoo.service.server: 24 post-tests in 4.13s, 5014 queries
+2026-07-07 15:25:04,220 660 INFO l10n_ve_pos_c1_full_1783437809 odoo.tests.stats: l10n_ve_pos: 30 tests 3.99s 5014 queries
+2026-07-07 15:25:04,220 660 INFO l10n_ve_pos_c1_full_1783437809 odoo.tests.result: 0 failed, 0 error(s) of 24 tests when loading database 'l10n_ve_pos_c1_full_1783437809'
+```
+
+The `30 tests` line counts both ``-at_install`` (pre-install, counted in module load) and
+``post_install`` tests; the 24 ``post-tests`` line is the one that ran our suite (17 from
+Slice A+B + 7 from Slice C1).
 
 ---
 
@@ -146,6 +206,13 @@ This split does violate the `work-unit-commits` rule "Keep tests with code" — 
 - `l10n_ve_pos/tests/test_pos_serialization.py` (new) — 6 TDD tests for Slice B.
 - `l10n_ve_pos/tests/__init__.py` (modified) — registers the new test file.
 
+### Slice C1 (this run)
+
+- `l10n_ve_pos/openspec/changes/l10n-ve-pos-migration-plan/specs/pos-odoo19-session-accounting/key-map.md` (new) — Odoo 17 → Odoo 19 data-key map for `_accumulate_amounts`; documents the per-bucket dict shape, the additive `foreign_amount` contract, the `_get_closed_orders()` vs `self.order_ids` migration rule, and the 5-step reviewer checklist.
+- `l10n_ve_pos/models/pos_session.py` (modified) — `_accumulate_amounts` now uses `self._get_closed_orders()` (was `self.order_ids`); restructured to early-return on `pay_later`; replaced `data.get("...")` with `data["..."]` (super always populates the keys); dropped the trailing `data.update({...})` (the dicts are the same `defaultdict` instances that super returned, mutated in place by `_update_amounts`). Added a contract docstring at the top of the method.
+- `l10n_ve_pos/tests/test_pos_session_accounting_accumulators.py` (new) — 7 TDD tests for Slice C1: 5 contract tests (combine / split / combine-invoice / regression / aggregation) and the critical ghost-entry regression test.
+- `l10n_ve_pos/tests/__init__.py` (modified) — registers the new test file.
+
 ---
 
 ## Deviations from design
@@ -162,9 +229,48 @@ This split does violate the `work-unit-commits` rule "Keep tests with code" — 
 - **`pos.order` has no base `_load_pos_data_fields`** (Odoo 19 returns `[]` from the base). Without the Slice B override, the entire `read_pos_data` payload for `pos.order` would be empty, which would silently lose every field — including Venezuelan values. This is the most impactful failure Slice B prevents. Captured in the TDD evidence (B.1 RED phase).
 - **`_create_payment_moves` override** in `pos_payment.py` overrides the Odoo 19 method to write `foreign_rate` on the payment move. Signature unchanged in Odoo 19 (`/home/binaural19/odoo/addons/point_of_sale/models/pos_payment.py:72`). No Slice B action needed; verified via the existing Slice A test surface.
 - **Downstream modules** in `integra-addons` (`binaural_pos_commissions`, `binaural_pos_mts_mto`, `binaural_pos_seller`, `binaural_subsidiary_pos`) still target `_order_fields` / `_export_for_ui`. Out of scope for this change but documented as the Slice C / E cleanup backlog.
+- **C1.2 ghost-entry bug** (now FIXED): pre-C1 l10n_ve_pos `_accumulate_amounts` iterated `self.order_ids` (not `self._get_closed_orders()`). A draft order with a payment would access the Odoo 19 defaultdict via `split_receivables_cash[payment]`, creating a fresh `{'amount': 0.0, 'amount_converted': 0.0}` entry. The l10n_ve_pos override then added `foreign_amount` to it, producing a ghost entry that C2's `_create_cash_statement_lines_and_cash_move_lines` would have tried to post as a zero-amount receivable. Captured in `test_draft_order_with_payment_does_not_create_ghost_accumulator_entry` (RED → GREEN via `_get_closed_orders()`).
+
+## Diff budget (Slice C1 only)
+
+| Group | Files | +lines | -lines | Notes |
+|-------|-------|--------|--------|-------|
+| Production — `pos_session.py` (C1.2) | `l10n_ve_pos/models/pos_session.py` | 78 | 51 | Refactor: `_get_closed_orders()`, early-return on `pay_later`, direct `data["..."]` access, dropped trailing `data.update`. No behavior change beyond the ghost-entry fix. |
+| Production — doc artifact (C1.1) | `specs/pos-odoo19-session-accounting/key-map.md` | 137 | 0 | New doc: Odoo 17 → Odoo 19 data-key map. |
+| Test loader | `l10n_ve_pos/tests/__init__.py` | 1 | 0 | Registers the new test file. |
+| Tests (new file, Slice C1 behaviour) | `l10n_ve_pos/tests/test_pos_session_accounting_accumulators.py` | 596 | 0 | 7 tests, strict TDD. |
+| Apply progress | `openspec/changes/.../apply-progress.md` | +~120 | -0 | Updated task list, Odoo 19 evidence, TDD cycle evidence, diff budget. |
+| Tasks list | `openspec/changes/.../tasks.md` | 1 (5 `[ ]`→`[x]`) | 1 | Marked C1.1 → C1.5 as complete. |
+| **Production diff (per `git diff --numstat`, production + loader only)** | 3 files | **216** | **51** | **267 changed lines — within the 400-line review budget** (key-map.md counted in this bucket because it is a planning artifact under the same `openspec/` change folder, not runtime code). |
+| Tests (new file, Slice C1 behaviour) | `l10n_ve_pos/tests/test_pos_session_accounting_accumulators.py` | 596 | 0 | 7 tests, strict TDD. |
+
+### Review budget analysis (Slice C1)
+
+- **Production + key-map + tests loader**: 267 changed lines → **within** the 400-line budget.
+- **Production + key-map + tests loader + tests**: 863 changed lines → **over** the 400-line budget.
+- **Production + key-map + tests loader + tests + apply-progress + tasks**: ~990 changed lines → **over** the 400-line budget.
+
+### Split boundary (recommended if maintainer wants strict <400-line per PR)
+
+Because the test file alone is 596 lines (it carries the setUpClass scaffold for the chart-of-accounts, two-currency session, three-order paid+invoiced scenario), Slice C1 can be split into a feature-branch-chain of two stacked PRs if the maintainer prefers a hard <400 line per PR boundary:
+
+| Sub-PR | Scope | Files | Lines (add+del) |
+|--------|-------|-------|-----------------|
+| **PR3.1** | Production refactor + key-map (C1.1, C1.2) | `models/pos_session.py`, `specs/.../key-map.md`, `tests/__init__.py` | **267** |
+| **PR3.2** | Test coverage (C1.3, C1.4) | `tests/test_pos_session_accounting_accumulators.py` | **596** |
+
+This split does violate the `work-unit-commits` rule "Keep tests with code" — so the **default recommendation is a single PR + size:exception**, and the split is the fallback if the maintainer requires strict budget. Decision needed from reviewer.
 
 ## Next slice recommended
 
-**Slice C — Session Accounting (C1 + C2, HIGH RISK)** per `tasks.md`. C1 adapts `_accumulate_amounts` / `_update_amounts` to the Odoo 19 dict shape (must keep `foreign_amount` aggregation). C2 adapts the move-creation paths (`_create_split_account_payment`, `_create_bank_payment_moves`, `_create_cash_statement_lines_and_cash_move_lines`, `_create_invoice_receivable_lines`) plus the `_get_invoice_lines_values` signature drift surfaced above. Both slices MUST be reviewed against the Odoo 19 native return types before merge (already called out in the design §3.3 "Migration Rule" + §6.2 critical controls).
+**Slice C2 — Move Creation (HIGH RISK)** per `tasks.md`. C2 adapts:
 
-**Reviewer-in-the-loop check** before Slice C starts: confirm whether the `size:exception` (single PR for Slice B) is accepted, or whether the maintainer prefers the PR2.1 + PR2.2 feature-branch-chain split.
+- `_create_split_account_payment` (`pos_session.py:451-475`): Odoo 19 returns `account.move.line` recordset, not move object. The current l10n_ve_pos override calls `res.move_id.payment_id` which would fail on Odoo 19 (line records don't have a `payment_id` chain). This is the most critical C2 fix.
+- `_create_bank_payment_moves` (`pos_session.py:698`): re-map `payment_to_receivable_lines` keys; preserve `foreign_debit`/`foreign_credit` writes.
+- `_create_cash_statement_lines_and_cash_move_lines` (`pos_session.py:725`): re-map response dict; keep `set_foreign_amount_in_line` helper.
+- `_create_invoice_receivable_lines` (`pos_session.py:672`): align to `combine_inv_payment_receivable_lines` record sets; preserve foreign aggregation.
+- `_create_payment_moves` (`pos_payment.py:31`): foreign-field writes on matching move; float-compare filter still valid (verified by Slice A test surface).
+
+Both halves of the C slice MUST be reviewed against the Odoo 19 native return types before merge (already called out in `design.md` §3.3 "Migration Rule" + §6.2 critical controls). The data-key map produced by C1 is the authoritative reference for what each C2 method reads.
+
+**Reviewer-in-the-loop check** before Slice C2 starts: confirm whether the `size:exception` (single PR for Slice C1) is accepted, or whether the maintainer prefers the PR3.1 + PR3.2 feature-branch-chain split.

@@ -84,11 +84,11 @@ Chain strategy: pending
 
 **Forecast**: ~180 lines | **Rollback**: revert C1; A+B remain valid; C2 not yet started.
 
-- [ ] C1.1 Build before/after data-key map for `_accumulate_amounts` (Odoo 17 keys → Odoo 19 `amount`/`amount_converted` + custom `foreign_*`). Doc artifact in change folder. (~40 lines)
-- [ ] C1.2 Adapt `_accumulate_amounts` (`pos_session.py:579-658`) to Odoo 19 dict shape; preserve `foreign_amount` aggregation for split/combine cash, bank, invoice receivables. (~100 lines)
-- [ ] C1.3 Adapt `_update_amounts` (`pos_session.py:660`) to write both native amount keys and custom foreign keys. (~30 lines)
-- [ ] C1.4 **Verify**: split cash + invoiced bank → accumulated dict has `amount`/`amount_converted` AND `foreign_amount`; multi-currency session close balances. Spec: `pos-odoo19-session-accounting`.
-- [ ] C1.5 **Evidence**: attach Odoo 19 native reference for accumulator key structure consumed by closing methods.
+- [x] C1.1 Build before/after data-key map for `_accumulate_amounts` (Odoo 17 keys → Odoo 19 `amount`/`amount_converted` + custom `foreign_*`). Doc artifact in change folder. (~40 lines)
+- [x] C1.2 Adapt `_accumulate_amounts` (`pos_session.py:579-658`) to Odoo 19 dict shape; preserve `foreign_amount` aggregation for split/combine cash, bank, invoice receivables. (~100 lines)
+- [x] C1.3 Adapt `_update_amounts` (`pos_session.py:660`) to write both native amount keys and custom foreign keys. (~30 lines)
+- [x] C1.4 **Verify**: split cash + invoiced bank → accumulated dict has `amount`/`amount_converted` AND `foreign_amount`; multi-currency session close balances. Spec: `pos-odoo19-session-accounting`.
+- [x] C1.5 **Evidence**: attach Odoo 19 native reference for accumulator key structure consumed by closing methods.
 
 ### Slice C2 — Move Creation (PR 4)
 
