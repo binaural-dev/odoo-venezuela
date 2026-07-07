@@ -19,14 +19,21 @@ patch(PaymentScreen.prototype, {
   async addNewPaymentLine(method) {
     const result = await super.addNewPaymentLine(method);
     if (method?.is_foreign_currency) {
-      // Core just auto-filled the line with the local due via setAmount.
-      // Replace with the foreign due so the cashier sees the amount in USD.
       const line = this.selectedPaymentLine;
       if (line && typeof line.set_foreign_amount === "function") {
-        const foreignDue = this.currentOrder?.get_foreign_due?.() || 0;
-        if (foreignDue > 0) {
-          line.set_foreign_amount(foreignDue);
-          this.numberBuffer.set(foreignDue.toString());
+        const rate = this.currentOrder?.init_conversion_rate;
+        if (rate && rate > 0) {
+          const localDue = this.currentOrder?.get_due?.() || 0;
+          const foreignDue = localDue / rate;
+          // Truncate (floor) so the payment never exceeds the local due.
+          // Floor avoids double-rounding drift producing $0.02 in change.
+          const dp = Number((
+            this.currentOrder?.get_foreign_currency?.()?.decimal_places
+          )) || 2;
+          const factor = Math.pow(10, dp);
+          const floored = Math.floor(foreignDue * factor) / factor;
+          line.set_foreign_amount(floored);
+          this.numberBuffer.set(floored.toFixed(dp));
         }
       }
     }
