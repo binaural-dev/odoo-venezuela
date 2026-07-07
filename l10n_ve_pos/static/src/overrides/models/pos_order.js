@@ -11,18 +11,15 @@ patch(PosOrder.prototype, {
   setup() {
       super.setup(...arguments);
       this._missingConversionRateWarningShown = false;
-//   this.set_to_invoice(true);
-//   if (props.json) {
-//     if (props.json.account_move === undefined) {
-//       this.set_to_invoice(true);
-//       this.lock_toggle_receipt_invoice = false;
-//     }
-//     this.reload_taxes();
-//   } else {
-//     let always_invoice = !this.pos.config.always_invoice;
-//     this.to_receipt = always_invoice;
-//   }
-},
+      // l10n_ve_pos: en Venezuela toda venta del PoS debe emitir factura.
+      // Forzamos to_invoice=true en cada orden y bloqueamos el toggle
+      // del PaymentScreen desde el template.
+      this.to_invoice = true;
+  },
+  setToInvoice() {
+      // Ignora cualquier intento de desactivar la facturación.
+      this.to_invoice = true;
+  },
  get_foreign_currency(){
         return this.config.foreign_currency_id;
     },
