@@ -116,9 +116,6 @@ patch(PaymentScreen.prototype, {
       }
     }
   },
-  toggleIsToInvoice() {
-    this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
-  },
   async _isOrderValid(isForceValidate) {
     let res = await super._isOrderValid(isForceValidate)
     if (!this.currentOrder) {
