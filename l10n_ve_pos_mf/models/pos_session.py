@@ -20,15 +20,4 @@ class PosSession(models.Model):
         return res
 
     def _loader_params_pos_config(self):
-        res = super()._loader_params_pos_config()
-        res["search_params"]["fields"] += [
-            "serial_machine",
-            "flag_21",
-            "traditional_line",
-            "has_cashbox",
-            "access_button_mf",
-            "message_in_head",
-            "enable_auto_sync",
-            "auto_sync_interval",
-        ]
-        return res
+        return super()._loader_params_pos_config()
