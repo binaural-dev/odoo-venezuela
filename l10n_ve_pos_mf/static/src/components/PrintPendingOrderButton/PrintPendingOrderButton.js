@@ -98,36 +98,29 @@ export class PrintPendingOrderButton extends Component {
             // 1. Actualizar el objeto local (UI reactiva)
             this.pos.set_data_from_fiscal_machine(order, response);
 
-            // 2. Persistir en pos.order
-            const mfVals = {
-                mf_invoice_number: order.mf_invoice_number,
-                fiscal_machine: order.fiscal_machine,
-                mf_reportz: order.mf_reportz || false,
-            };
-            await this.orm.call("pos.order", "write", [[order.backendId], mfVals]);
+            // 2. Persistir en pos.order (via sudo en backend, ya que estos
+            // campos son readonly=True a nivel de modelo) y propagar los
+            // mismos datos al account.move asociado, si existe. La factura
+            // contable pudo haberse creado antes sin estos datos si la
+            // impresion fiscal se omitio o fallo en su momento.
+            const mfResult = await this.orm.call("pos.order", "write_mf_invoice_data", [
+                [order.backendId],
+                order.mf_invoice_number,
+                order.fiscal_machine,
+                order.mf_reportz || false,
+            ]);
 
-            // 3. Propagar al account.move asociado (la factura contable pudo
-            // haberse creado antes sin estos datos si la impresión fiscal
-            // se omitió en su momento).
-            const [orderRead] = await this.orm.searchRead(
-                "pos.order",
-                [["id", "=", order.backendId]],
-                ["account_move"]
-            );
-            if (orderRead?.account_move) {
-                await this.orm.call("account.move", "write", [
-                    [orderRead.account_move[0]],
-                    {
-                        mf_invoice_number: order.mf_invoice_number,
-                        mf_serial: order.fiscal_machine,
-                        mf_reportz: order.mf_reportz || false,
-                    },
-                ]);
+            let successBody = _t("El pedido se imprimio correctamente en la maquina fiscal.");
+            if (!mfResult?.account_move_updated) {
+                successBody += _t(
+                    "\n\nAviso: este pedido no tiene una factura contable (account.move) " +
+                    "asociada, por lo que los datos fiscales solo se guardaron en el pedido."
+                );
             }
 
             await this.popup.add(InfoPopup, {
                 title: _t("Pedido facturado"),
-                body: _t("El pedido se imprimio correctamente en la maquina fiscal."),
+                body: successBody,
                 confirmText: _t("Aceptar"),
             });
 
