@@ -6,7 +6,7 @@
     "author": "",
     "website": "",
     "depends": [
-        "l10n_ve_accountant",
+
         "l10n_ve_stock",
         "l10n_ve_invoice",
         "l10n_ve_sale",
