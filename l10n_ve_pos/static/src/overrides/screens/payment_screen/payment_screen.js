@@ -16,22 +16,36 @@ patch(PaymentScreen.prototype, {
     this.utils = useEnv().utils,
      this.dialog = useService("dialog");
   },
+  get foreignTotalDueText() {
+    // Delegates to pos.order.get_foreign_total_with_tax (single source of
+    // truth for foreign totals; see rounding-rule engram memory).
+    const order = this.currentOrder;
+    const amount = order && typeof order.get_foreign_total_with_tax === "function"
+      ? Number(order.get_foreign_total_with_tax()) || 0
+      : 0;
+    return this.env.utils.formatForeignCurrency(amount);
+  },
   async addNewPaymentLine(method) {
     // Snapshot the local due BEFORE super attaches the new payment line
-    // (after attachment get_due() drops to zero).
-    const localDueBefore = this.currentOrder?.get_due?.() || 0;
-    const rate = this.currentOrder?.init_conversion_rate;
-
+    // (after attachment remainingDue drops to zero).
+    // Odoo 19: remainingDue getter replaces get_due().
+    const order = this.currentOrder;
+    const localDueBefore = Number(
+      order?.remainingDue ??
+      (typeof order?.get_due === "function" ? order.get_due() : 0)
+    ) || 0;
     const result = await super.addNewPaymentLine(method);
 
-    if (method?.is_foreign_currency && localDueBefore > 0 && rate > 0) {
+    if (method?.is_foreign_currency && localDueBefore > 0) {
       const line = this.selectedPaymentLine;
-      if (line && typeof line.set_foreign_amount === "function") {
-        const foreignDue = localDueBefore / rate;
-        // Truncate (floor) so the payment never exceeds the local due.
-        const dp = Number((
-          this.currentOrder?.get_foreign_currency?.()?.decimal_places
-        )) || 2;
+      const order = this.currentOrder;
+      if (line && order && typeof line.set_foreign_amount === "function" &&
+          typeof order.localToForeign === "function") {
+        // Use raw (unrounded) conversion, then FLOOR to the foreign
+        // currency's precision so the paid foreign amount never exceeds the
+        // local due (avoids off-by-one-cent overpayment).
+        const foreignDue = order.localToForeign(localDueBefore, false);
+        const dp = Number(order?.get_foreign_currency?.()?.decimal_places) || 2;
         const factor = Math.pow(10, dp);
         const floored = Math.floor(foreignDue * factor) / factor;
         line.set_foreign_amount(floored);
@@ -39,45 +53,6 @@ patch(PaymentScreen.prototype, {
       }
     }
     return result;
-  },
-  _toNumber(value, fallback = 0) {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : fallback;
-  },
-  _getConversionRate() {
-    const order = this.currentOrder;
-    const candidates = [
-      typeof order?.get_conversion_rate === "function" ? order.get_conversion_rate() : undefined,
-      order?.init_conversion_rate,
-      order?.config?.foreign_inverse_rate,
-      order?.pos?.config?.foreign_inverse_rate,
-      order?.config?.foreign_rate,
-      order?.pos?.config?.foreign_rate,
-    ];
-    for (const candidate of candidates) {
-      const numeric = Number(candidate);
-      if (Number.isFinite(numeric) && numeric > 0) {
-        return numeric;
-      }
-    }
-    return 0;
-  },
-  _convertLocalToForeign(amount) {
-    const localAmount = this._toNumber(amount, 0);
-    const rate = this._getConversionRate();
-    if (!rate) {
-      return localAmount;
-    }
-    return rate >= 1 ? localAmount / rate : localAmount * rate;
-  },
-  get foreignTotalDueText() {
-    const fromOrder = typeof this.currentOrder?.get_foreign_total_with_tax === "function"
-      ? this._toNumber(this.currentOrder.get_foreign_total_with_tax(), NaN)
-      : NaN;
-    const amount = Number.isFinite(fromOrder)
-      ? fromOrder
-      : this._convertLocalToForeign(this.currentOrder?.get_total_with_tax?.() || this.currentOrder?.totalDue || 0);
-    return this.env.utils.formatForeignCurrency(amount);
   },
   shouldDownloadInvoice() {
     return false;
@@ -115,13 +90,18 @@ patch(PaymentScreen.prototype, {
     const hasCashPaymentMethod = this.payment_methods_from_config.some(
       (method) => method.type === "cash"
     );
+    // Odoo 19: remainingDue getter replaces get_due().
+    const currentDue = Number(
+      this.currentOrder?.remainingDue ??
+      (typeof this.currentOrder?.get_due === "function" ? this.currentOrder.get_due() : 0)
+    ) || 0;
     if (
       !hasCashPaymentMethod &&
-      amount > this.currentOrder.get_due() + this.selectedPaymentLine.amount
+      amount > currentDue + this.selectedPaymentLine.amount
     ) {
       this.selectedPaymentLine.setAmount(0);
-      this.numberBuffer.set(this.currentOrder.get_due().toString());
-      amount = this.currentOrder.get_due();
+      this.numberBuffer.set(currentDue.toString());
+      amount = currentDue;
       this.showMaxValueError();
     }
     if (
@@ -146,8 +126,16 @@ patch(PaymentScreen.prototype, {
       return res
     }
 
-    let amounts = this.currentOrder.get_paymentlines().map((el) => el.amount)
-    if (!amounts.every((el) => el != 0 && this.currentOrder.get_total_with_tax() !== 0)) {
+    // Odoo 19: get_paymentlines() → payment_ids; get_total_with_tax() → totalDue.
+    const paymentLines = typeof this.currentOrder.get_paymentlines === "function"
+      ? this.currentOrder.get_paymentlines()
+      : Array.from(this.currentOrder.payment_ids || []);
+    const orderTotal = Number(
+      this.currentOrder.totalDue ??
+      (typeof this.currentOrder.get_total_with_tax === "function" ? this.currentOrder.get_total_with_tax() : 0)
+    ) || 0;
+    let amounts = paymentLines.map((el) => el.amount)
+    if (!amounts.every((el) => el != 0 && orderTotal !== 0)) {
       this.dialog.add(AlertDialog, {
         title: _t('Empty Paymentline'),
         body: _t(
