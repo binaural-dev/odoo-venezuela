@@ -3,10 +3,20 @@
 **Change**: l10n-ve-pos-migration-plan
 **Mode**: Strict TDD
 **Module**: `l10n_ve_pos` (Odoo 19.0)
-**Status**: Slice A + Slice B + Slice C1 + Slice C2.1 complete (A.1 → A.6, B.1 → B.7, HB.1 → HB.2, C1.1 → C1.5, C2.1) — ⏸️ Ready to proceed with Slice C2.2 (bank payment moves)
+**Status**: Slice A + Slice B + Slice C1 + Slice C2.1 complete (A.1 → A.6, B.1 → B.7, HB.1 → HB.5, C1.1 → C1.5, C2.1) — ⏸️ Ready to proceed with Slice C2.2 (bank payment moves)
 **Last run**: 2026-07-07
 **Container**: `proj`
 **Run command**: `docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True --test-tags l10n_ve_pos --stop-after-init -d l10n_ve_pos_c2_1_full_<ts> -w odoo --db_port 5432`
+
+---
+
+## Commits pendientes de revisión
+
+Bandeja para que el mantenedor los repase antes de aceptar/mergear.
+
+| Commit | Título | Motivo de revisión |
+|--------|--------|--------------------|
+| `d731aeb8e` | `[REF] l10n_ve_pos: contrato explícito de carga PoS` | Refactor de `pos.order._load_pos_data_fields` a un contrato explícito (tres tuplas + guard fail-fast). Revisar si conviene aplanar a una sola lista literal al estilo del core Odoo 19. |
 
 ---
 
