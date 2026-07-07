@@ -39,6 +39,7 @@
         "point_of_sale._assets_pos": [
             "l10n_ve_pos/static/src/**/**",
             "l10n_ve_pos/static/src/**/**/**/*",
+            "l10n_ve_pos/static/src/overrides/models/payment_model.js",
         ],
     },
 }
