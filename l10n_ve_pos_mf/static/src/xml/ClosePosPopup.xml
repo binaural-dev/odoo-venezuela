@@ -1,16 +1,21 @@
 <templates id="template" xml:space="preserve">
     <t t-name="ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
-        <xpath expr="//footer[hasclass('footer')]" position="inside">
-            <button 
-                class="button btn btn-lg btn-secondary" 
-                t-on-click="generate_report_z" 
-                t-att-disabled="state.isPrintingReport"
-                title="Generar Reporte Z para cierre fiscal">
+        <!-- Reemplaza el botón nativo "Close Session" por uno que primero
+             valida pedidos sin facturar, luego imprime el Reporte Z, y solo
+             si todo fue exitoso continúa con el cierre nativo de la sesión. -->
+        <xpath expr="//button[hasclass('highlight')]" position="replace">
+            <button
+                class="button highlight btn btn-lg btn-primary"
+                t-on-click="closeSessionAndPrintZ"
+                t-att-disabled="!canConfirm() or state.isPrintingReport"
+                title="Imprime el Reporte Z y cierra la sesion de POS">
                 <t t-if="state.isPrintingReport">
-                    <i class="fa fa-spinner fa-spin me-1"/>Imprimiendo...
+                    <i class="fa fa-spinner fa-spin me-1"/>Procesando...
                 </t>
-                <t t-else="">Reporte Z</t>
+                <t t-else="">Cerrar sesion e imprimir Z</t>
             </button>
+        </xpath>
+        <xpath expr="//footer[hasclass('footer')]" position="inside">
             <button 
                 class="button btn btn-lg btn-secondary" 
                 t-on-click="generate_report_x" 
