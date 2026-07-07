@@ -17,24 +17,25 @@ patch(PaymentScreen.prototype, {
      this.dialog = useService("dialog");
   },
   async addNewPaymentLine(method) {
+    // Snapshot the local due BEFORE super attaches the new payment line
+    // (after attachment get_due() drops to zero).
+    const localDueBefore = this.currentOrder?.get_due?.() || 0;
+    const rate = this.currentOrder?.init_conversion_rate;
+
     const result = await super.addNewPaymentLine(method);
-    if (method?.is_foreign_currency) {
+
+    if (method?.is_foreign_currency && localDueBefore > 0 && rate > 0) {
       const line = this.selectedPaymentLine;
       if (line && typeof line.set_foreign_amount === "function") {
-        const rate = this.currentOrder?.init_conversion_rate;
-        if (rate && rate > 0) {
-          const localDue = this.currentOrder?.get_due?.() || 0;
-          const foreignDue = localDue / rate;
-          // Truncate (floor) so the payment never exceeds the local due.
-          // Floor avoids double-rounding drift producing $0.02 in change.
-          const dp = Number((
-            this.currentOrder?.get_foreign_currency?.()?.decimal_places
-          )) || 2;
-          const factor = Math.pow(10, dp);
-          const floored = Math.floor(foreignDue * factor) / factor;
-          line.set_foreign_amount(floored);
-          this.numberBuffer.set(floored.toFixed(dp));
-        }
+        const foreignDue = localDueBefore / rate;
+        // Truncate (floor) so the payment never exceeds the local due.
+        const dp = Number((
+          this.currentOrder?.get_foreign_currency?.()?.decimal_places
+        )) || 2;
+        const factor = Math.pow(10, dp);
+        const floored = Math.floor(foreignDue * factor) / factor;
+        line.set_foreign_amount(floored);
+        this.numberBuffer.set(floored.toFixed(dp));
       }
     }
     return result;
