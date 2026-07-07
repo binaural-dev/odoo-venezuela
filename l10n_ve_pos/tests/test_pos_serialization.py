@@ -188,6 +188,27 @@ class TestPosSerialization(TransactionCase):
         )
 
     # ------------------------------------------------------------------
+    # Odoo 19 sync contract — write_date must be part of the pos.order
+    # payload, otherwise ``devices_synchronisation.constructOrdersDomain``
+    # crashes with "Cannot read properties of undefined (reading 'plus')"
+    # on the frontend the moment a synced open order is refreshed.
+    # ------------------------------------------------------------------
+    def test_pos_order_load_pos_data_fields_includes_write_date(self):
+        """The Odoo 19 POS device sync calls ``record.write_date.plus(...)``
+        on synced open orders (see
+        ``point_of_sale/static/src/app/utils/devices_synchronisation.js``
+        -> ``constructOrdersDomain``). If our override drops ``write_date``,
+        the whole POS UI crashes when the sync loop kicks in.
+        """
+        fields = self.env["pos.order"]._load_pos_data_fields(self.config)
+        self.assertIn(
+            "write_date",
+            fields,
+            "pos.order._load_pos_data_fields must expose write_date so the "
+            "Odoo 19 POS device sync can compute the reload domain.",
+        )
+
+    # ------------------------------------------------------------------
     # B.2 / B.4 — pos.payment._load_pos_data_fields exposes
     #       foreign_amount and foreign_rate.
     # ------------------------------------------------------------------

@@ -36,6 +36,12 @@
 - [x] **HB.1** — Fixed POS order foreign total persistence by moving custom serialization from legacy `export_as_JSON` into Odoo 19 `serializeForORM(opts)` on `PosOrder` frontend model. (`l10n_ve_pos/static/src/overrides/models/pos_order.js`)
 - [x] **HB.2** — Kept receipt payload parity (`export_for_printing`) while preserving fail-fast behavior (no silent fallback to legacy sync hooks).
 
+### Post-Slice-B refactor — pos.order load contract (✅ done 2026-07-07)
+
+- [x] **HB.3** — Refactored `pos.order._load_pos_data_fields` to a contract-driven design: three named class-level tuples (`_ODOO19_ORDER_HEADER_FIELDS`, `_ODOO19_ORDER_SYNC_FIELDS`, `_L10N_VE_ORDER_FIELDS`) plus `_CRITICAL_LOAD_FIELDS` for the fail-fast guard. Removed the fragile `self._fields` heuristic and the loose `dependency_fields` list.
+- [x] **HB.4** — Root cause traced against Odoo 19 native code: `constructOrdersDomain` in `point_of_sale/static/src/app/utils/devices_synchronisation.js` calls `record.write_date.plus(...)`, so `write_date` MUST be exposed by the `pos.order` load contract. Added `write_date` to `_ODOO19_ORDER_SYNC_FIELDS` and to `_CRITICAL_LOAD_FIELDS`, mirroring what Odoo 19 already does for `pos.order.line._load_pos_data_fields` (`pos_order.py:1608`).
+- [x] **HB.5** — Added regression test `test_pos_order_load_pos_data_fields_includes_write_date` in `tests/test_pos_serialization.py` so any future change that removes `write_date` fails loudly.
+
 ### Slice C1 — Session Accounting Accumulators (✅ done 2026-07-07)
 
 - [x] **C1.1** — Data-key map documented at `specs/pos-odoo19-session-accounting/key-map.md`. Captures the Odoo 19 per-bucket contract (`amount` + `amount_converted`), the additive Venezuelan `foreign_amount`, and the `_get_closed_orders()` vs `self.order_ids` iteration source.
