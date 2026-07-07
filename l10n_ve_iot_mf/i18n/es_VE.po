@@ -139,9 +139,8 @@ msgstr "Puertos De Lista negra"
 #, python-format
 msgid "Cannot print an invoice with a future date"
 msgstr ""
-"No puede emitir una Nota de credito por Maquina fiscal con una fecha "
-"distinta a la de hoy, por favor edite la fecha de la factura, la tasa y "
-"verifique montos en  Bs"
+"No se puede imprimir la factura en máquina fiscal porque la fecha de la "
+"factura no es la de hoy. Por favor verifique la fecha de la factura."
 
 #. module: l10n_ve_iot_mf
 #. odoo-python
@@ -209,9 +208,19 @@ msgid "Date from"
 msgstr "Fecha Inicio"
 
 #. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_l10n_ve_mf_reports_wizard__date_from
+msgid "Date From"
+msgstr "Fecha desde"
+
+#. module: l10n_ve_iot_mf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_iot_mf.iot_device_view_form
 msgid "Date to"
 msgstr "Fecha Fin"
+
+#. module: l10n_ve_iot_mf
+#: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_l10n_ve_mf_reports_wizard__date_to
+msgid "Date To"
+msgstr "Fecha hasta"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,help:l10n_ve_iot_mf.field_res_config_settings__invoice_print_type

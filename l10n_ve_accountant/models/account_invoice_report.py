@@ -80,7 +80,15 @@ class AccountInvoiceReport(models.Model):
                 [("id", "=", int(foreign_currency_id))]
             )
             foreign_currency_symbol = foreign_currency_record.symbol
-            doc = etree.XML(res["arch"])
+            arch = res.get("arch")
+            if isinstance(arch, bytes):
+                arch = arch.decode()
+            elif arch is None:
+                return res
+            elif not isinstance(arch, str):
+                arch = etree.tostring(arch, encoding="unicode")
+
+            doc = etree.XML(arch)
             foreign_total_billed = doc.xpath("//field[@name='foreign_subtotal']")
             foreign_rate = doc.xpath("//field[@name='foreign_rate']")
             foreign_price_total = doc.xpath("//field[@name='foreign_price_total']")

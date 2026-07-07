@@ -18,7 +18,30 @@ class PosOrderInherit(models.Model):
     )
 
     def get_order_by_uid(self, uid):
-        return self.env["pos.order"].search_read([("pos_reference", "ilike", uid)])
+        orders = self.env["pos.order"].search([("pos_reference", "ilike", uid)])
+        if not orders:
+            return []
+
+        result = orders.read([
+            "pos_reference",
+            "date_order",
+            "fiscal_machine",
+            "mf_invoice_number",
+            "mf_reportz",
+        ])
+
+        for values, order in zip(result, orders):
+            values["payment_lines"] = [
+                {
+                    "payment_method_code": payment.payment_method_id.code_fiscal_printer,
+                    "payment_method_name": payment.payment_method_id.name,
+                    "amount": payment.amount,
+                }
+                for payment in order.payment_ids
+                if payment.payment_method_id
+            ]
+
+        return result
 
     @api.model
     def _order_fields(self, ui_order):
@@ -35,6 +58,15 @@ class PosOrderInherit(models.Model):
         res["mf_reportz"] = order.mf_reportz
         return res
 
+    @api.model
+    def _load_pos_data_fields(self, config):
+        fields = list(super()._load_pos_data_fields(config))
+        extra_fields = ["fiscal_machine", "mf_invoice_number", "mf_reportz"]
+        for field_name in extra_fields:
+            if field_name not in fields:
+                fields.append(field_name)
+        return fields
+
     def _prepare_invoice_vals(self):
         self.ensure_one()
         res = super()._prepare_invoice_vals()
@@ -42,7 +74,8 @@ class PosOrderInherit(models.Model):
         res["mf_serial"] = self.fiscal_machine
         res["mf_invoice_number"] = self.mf_invoice_number
         res["mf_reportz"] = self.mf_reportz
-        res["iot_mf"] = self.config_id.iface_fiscal_data_module.id
+        # DEPRECATED: res["iot_mf"] = self.config_id.iface_fiscal_data_module.id
+        # Ya no usamos IoT Box, la máquina fiscal se conecta vía Web Serial API
         return res
 
     @api.model
