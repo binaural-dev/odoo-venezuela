@@ -16,6 +16,7 @@ Bandeja para que el mantenedor los repase antes de aceptar/mergear.
 
 | Commit | Título | Motivo de revisión |
 |--------|--------|--------------------|
+| `78d45e01c` | `[FIX] l10n_ve_pos: corrige persistencia foreign total` | Hotfix post-Slice-B: reemplaza el hook legacy `export_as_JSON` por `serializeForORM(opts)` en el frontend (`static/src/overrides/models/pos_order.js`) para que `foreign_amount_total`/`foreign_currency_rate` viajen realmente en el sync de Odoo 19. Revisar que no falten otros callers (`export_for_printing`, `to_receipt`) y confirmar consistencia con el contrato del backend. |
 | `d731aeb8e` | `[REF] l10n_ve_pos: contrato explícito de carga PoS` | Refactor de `pos.order._load_pos_data_fields` a un contrato explícito (tres tuplas + guard fail-fast). Revisar si conviene aplanar a una sola lista literal al estilo del core Odoo 19. |
 
 ---
