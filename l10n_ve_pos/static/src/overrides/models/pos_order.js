@@ -227,6 +227,31 @@ patch(PosOrder.prototype, {
 //   get_foreign_total_discount() {
 //     const ignored_product_ids = this._get_ignored_product_ids_total_discount();
 //     return round_pr(
+
+  // ---- Foreign payment helpers (Odoo 19 migration) ----
+
+  get_foreign_total_paid() {
+    const foreignCurrency = this.get_foreign_currency();
+    const rounding = Number.isFinite(Number(foreignCurrency?.rounding)) && Number(foreignCurrency?.rounding) > 0
+      ? Number(foreignCurrency.rounding)
+      : 0.01;
+    return round_pr(
+      Array.from(this.payment_ids).reduce((sum, line) => {
+        return sum + (line.isDone() ? line.get_foreign_amount() : 0);
+      }, 0),
+      rounding,
+    );
+  },
+
+  get_foreign_due() {
+    const foreignCurrency = this.get_foreign_currency();
+    const rounding = Number.isFinite(Number(foreignCurrency?.rounding)) && Number(foreignCurrency?.rounding) > 0
+      ? Number(foreignCurrency.rounding)
+      : 0.01;
+    const total = this.get_foreign_total_with_tax();
+    const paid = this.get_foreign_total_paid();
+    return round_pr(Math.max(0, total - paid), rounding);
+  },
 //       this.orderlines.reduce((sum, orderLine) => {
 //         if (!ignored_product_ids.includes(orderLine.product.id)) {
 //           sum +=

@@ -80,7 +80,8 @@ patch(PaymentScreen.prototype, {
       if (this.numberBuffer.get() === null) {
         amount = null;
       } else if (this.numberBuffer.get() === "") {
-        amount = 0;
+        // Auto-fill the foreign remaining due (same behaviour as core auto-fill in local currency).
+        amount = this.currentOrder?.get_foreign_due?.() || 0;
       } else {
         amount = this.numberBuffer.getFloat();
       }
@@ -95,7 +96,7 @@ patch(PaymentScreen.prototype, {
       !hasCashPaymentMethod &&
       amount > this.currentOrder.get_due() + this.selectedPaymentLine.amount
     ) {
-      this.selectedPaymentLine.set_amount(0);
+      this.selectedPaymentLine.setAmount(0);
       this.numberBuffer.set(this.currentOrder.get_due().toString());
       amount = this.currentOrder.get_due();
       this.showMaxValueError();

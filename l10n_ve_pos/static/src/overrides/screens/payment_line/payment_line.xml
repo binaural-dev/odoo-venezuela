@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!-- l10n_ve_pos: when is_foreign_currency, format the amount in USD -->
+    <t t-name="l10n_ve_pos.PaymentScreenPaymentLines"
+       t-inherit="point_of_sale.PaymentScreenPaymentLines"
+       t-inherit-mode="extension">
+        <xpath expr="//PriceFormatter" position="attributes">
+            <attribute name="t-if">!line.payment_method_id?.is_foreign_currency</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('payment-amount')]" position="inside">
+            <PriceFormatter t-if="line.payment_method_id?.is_foreign_currency"
+                            price="env.utils.formatForeignCurrency(line.get_foreign_amount())" />
+        </xpath>
+    </t>
+</templates>
