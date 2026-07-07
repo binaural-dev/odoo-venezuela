@@ -12,11 +12,13 @@ and ``:1486-1545``.
 """
 
 from odoo import Command
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
+
+from .test_pos_session_accounting_common import TestPosSessionAccountingBase
 
 
 @tagged("post_install", "-at_install", "l10n_ve_pos", "slice_c1")
-class TestPosSessionAccountingAccumulators(TransactionCase):
+class TestPosSessionAccountingAccumulators(TestPosSessionAccountingBase):
     """Spec: ``pos-odoo19-session-accounting/spec.md`` (C1.2 + C1.3 + C1.4).
 
     The accumulators produce the data dict consumed by C2
@@ -28,173 +30,13 @@ class TestPosSessionAccountingAccumulators(TransactionCase):
     The test layer is **Unit** (Odoo ORM in-process) because we are
     verifying the contract of two methods against the real Odoo 19 super;
     no chart of accounts or move creation is required.
+
+    The shared VES-as-foreign environment (company, chart of accounts,
+    cash/bank journals, payment methods, tax, product, POS config) lives
+    in :class:`TestPosSessionAccountingBase` so Slice C2 can reuse it
+    without re-creating the entire setup.
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        # --- Isolated VES-as-foreign environment (same pattern as Slice A/B) ---
-        usd = cls.env.ref("base.USD")
-        cls.company = cls.env["res.company"].create(
-            {
-                "name": "Test VE Slice C1 Co",
-                "currency_id": usd.id,
-                "country_id": cls.env.ref("base.ve").id,
-            }
-        )
-        vef = cls.env["res.currency"].with_context(active_test=False).search(
-            [("name", "=", "VEF")], limit=1
-        )
-        if vef and not vef.active:
-            vef.active = True
-        cls.foreign_currency = vef
-        cls.company.write({"foreign_currency_id": cls.foreign_currency.id})
-
-        # --- Minimal chart of accounts so a session can be opened ---
-        Account = cls.env["account.account"]
-        cls.account_receivable = Account.create(
-            {
-                "name": "C1 Receivable",
-                "code": "120000C1",
-                "account_type": "asset_receivable",
-                "company_ids": [(6, 0, [cls.company.id])],
-                "reconcile": True,
-            }
-        )
-        cls.account_income = Account.create(
-            {
-                "name": "C1 Income",
-                "code": "400000C1",
-                "account_type": "income",
-                "company_ids": [(6, 0, [cls.company.id])],
-            }
-        )
-        cls.account_cash = Account.create(
-            {
-                "name": "C1 Cash",
-                "code": "100000C1",
-                "account_type": "asset_cash",
-                "company_ids": [(6, 0, [cls.company.id])],
-            }
-        )
-
-        # --- Two payment methods: combined cash and split cash.
-        # Both use cash journals to keep the test setup simple (l10n_ve_accountant
-        # requires bank journals to have payment method lines with accounts;
-        # the C1 accumulator contract does not depend on journal type).
-        cls.cash_journal = cls.env["account.journal"].create(
-            {
-                "name": "C1 Cash Journal",
-                "type": "cash",
-                "code": "CSC1",
-                "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
-                "default_account_id": cls.account_cash.id,
-            }
-        )
-        cls.split_cash_journal = cls.env["account.journal"].create(
-            {
-                "name": "C1 Split Cash Journal",
-                "type": "cash",
-                "code": "SCC1",
-                "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
-                "default_account_id": cls.account_cash.id,
-            }
-        )
-        # Combined cash method (no split_transactions) → combine_receivables_cash
-        cls.combined_cash_method = cls.env["pos.payment.method"].create(
-            {
-                "name": "C1 Combined Cash",
-                "is_cash_count": True,
-                "split_transactions": False,
-                "company_id": cls.company.id,
-                "journal_id": cls.cash_journal.id,
-            }
-        )
-        cls.combined_cash_method.write({"is_foreign_currency": True})
-        # Split cash method (split_transactions=True) → split_receivables_cash
-        cls.split_cash_method = cls.env["pos.payment.method"].create(
-            {
-                "name": "C1 Split Cash",
-                "is_cash_count": True,
-                "split_transactions": True,
-                "company_id": cls.company.id,
-                "journal_id": cls.split_cash_journal.id,
-            }
-        )
-        cls.split_cash_method.write({"is_foreign_currency": True})
-
-        # --- Product + tax (needed for the order to compute totals) ---
-        cls.tax_group = cls.env["account.tax.group"].create(
-            {"name": "C1 Tax Group", "company_id": cls.company.id}
-        )
-        cls.tax = cls.env["account.tax"].create(
-            {
-                "name": "C1 Tax",
-                "amount": 16.0,
-                "type_tax_use": "sale",
-                "tax_group_id": cls.tax_group.id,
-                "company_id": cls.company.id,
-            }
-        )
-        cls.product_category = cls.env["product.category"].create(
-            {
-                "name": "C1 Category",
-                "property_account_income_categ_id": cls.account_income.id,
-                "property_account_expense_categ_id": cls.account_income.id,
-            }
-        )
-        cls.product = cls.env["product.product"].create(
-            {
-                "name": "C1 Product",
-                "lst_price": 100.0,
-                "standard_price": 50.0,
-                "available_in_pos": True,
-                "company_id": cls.company.id,
-                "categ_id": cls.product_category.id,
-                "taxes_id": [(6, 0, cls.tax.ids)],
-            }
-        )
-        cls.product.with_company(cls.company).write(
-            {"property_account_income_id": cls.account_income.id}
-        )
-
-        # --- POS config in foreign currency ---
-        cls.sale_journal = cls.env["account.journal"].create(
-            {
-                "name": "C1 Sale Journal",
-                "type": "sale",
-                "code": "SJC1",
-                "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
-            }
-        )
-        cls.invoice_journal = cls.env["account.journal"].create(
-            {
-                "name": "C1 Invoice Journal",
-                "type": "sale",
-                "code": "IJC1",
-                "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
-            }
-        )
-        cls.config = cls.env["pos.config"].create(
-            {
-                "name": "C1 Config",
-                "company_id": cls.company.id,
-                "currency_id": cls.foreign_currency.id,
-                "journal_id": cls.sale_journal.id,
-                "invoice_journal_id": cls.invoice_journal.id,
-                "payment_method_ids": [
-                    (6, 0, [cls.combined_cash_method.id, cls.split_cash_method.id])
-                ],
-            }
-        )
-
-    # ----------------------------------------------------------------------
-    # Helper: build a closed session with two paid orders.
-    # ----------------------------------------------------------------------
     @classmethod
     def _build_session_with_paid_orders(cls):
         """Create one session with three paid orders in foreign currency.
@@ -217,157 +59,33 @@ class TestPosSessionAccountingAccumulators(TransactionCase):
         )
 
         # ---- Order 1: combined cash, non-invoiced ----
-        order1 = cls.env["pos.order"].create(
-            {
-                "company_id": cls.company.id,
-                "session_id": session.id,
-                "pricelist_id": cls.company.partner_id.property_product_pricelist.id,
-                "foreign_amount_total": 116.0,
-                "foreign_currency_rate": 36.5,
-                "lines": [
-                    Command.create(
-                        {
-                            "name": "OL/C1/0001",
-                            "product_id": cls.product.id,
-                            "price_unit": 100.0,
-                            "discount": 0.0,
-                            "qty": 1.0,
-                            "price_subtotal": 100.0,
-                            "price_subtotal_incl": 116.0,
-                            "tax_ids": [(6, 0, cls.tax.ids)],
-                            "foreign_price": 3650.0,
-                        }
-                    )
-                ],
-                "amount_total": 116.0,
-                "amount_tax": 16.0,
-                "amount_paid": 0.0,
-                "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
-            }
+        order1 = cls._create_paid_order(
+            session,
+            method=cls.combined_cash_method,
+            amount=116.0,
+            tax_amount=16.0,
+            name="OL/C1/0001",
         )
-        order1.add_payment(
-            {
-                "name": "P1",
-                "pos_order_id": order1.id,
-                "amount": 116.0,
-                "payment_method_id": cls.combined_cash_method.id,
-                "payment_date": order1.date_order,
-                "foreign_rate": 36.5,
-                "foreign_amount": 4234.0,
-            }
-        )
-
         # ---- Order 2: split cash, non-invoiced ----
-        order2 = cls.env["pos.order"].create(
-            {
-                "company_id": cls.company.id,
-                "session_id": session.id,
-                "pricelist_id": cls.company.partner_id.property_product_pricelist.id,
-                "foreign_amount_total": 58.0,
-                "foreign_currency_rate": 36.5,
-                "lines": [
-                    Command.create(
-                        {
-                            "name": "OL/C1/0002",
-                            "product_id": cls.product.id,
-                            "price_unit": 50.0,
-                            "discount": 0.0,
-                            "qty": 1.0,
-                            "price_subtotal": 50.0,
-                            "price_subtotal_incl": 58.0,
-                            "tax_ids": [(6, 0, cls.tax.ids)],
-                            "foreign_price": 1825.0,
-                        }
-                    )
-                ],
-                "amount_total": 58.0,
-                "amount_tax": 8.0,
-                "amount_paid": 0.0,
-                "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
-            }
+        order2 = cls._create_paid_order(
+            session,
+            method=cls.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/C1/0002",
         )
-        order2.add_payment(
-            {
-                "name": "P2",
-                "pos_order_id": order2.id,
-                "amount": 58.0,
-                "payment_method_id": cls.split_cash_method.id,
-                "payment_date": order2.date_order,
-                "foreign_rate": 36.5,
-                "foreign_amount": 2117.0,
-            }
-        )
-
         # ---- Order 3: combined cash, INVOICED ----
-        # To exercise the ``combine_invoice_receivables`` bucket we need
-        # ``order.is_invoiced = True``. The cleanest way without running
-        # the full invoicing flow is to set a real (but DRAFT — we must
-        # NOT post it because ``pos.payment`` blocks creation on a posted
-        # order) ``account.move`` on the order — this triggers the
-        # ``_compute_is_invoiced`` Boolean and is enough for the
-        # accumulator path.
-        #
-        # CRITICAL: ``pos.payment._check_amount`` raises
-        # ``You cannot edit a payment for a posted order.`` if the order
-        # has an ``account_move`` at payment-creation time. We must
-        # therefore: (1) create the order WITHOUT the invoice, (2) add
-        # the payment, (3) attach the invoice afterwards.
-        order3 = cls.env["pos.order"].create(
-            {
-                "company_id": cls.company.id,
-                "session_id": session.id,
-                "pricelist_id": cls.company.partner_id.property_product_pricelist.id,
-                "foreign_amount_total": 50.0,
-                "foreign_currency_rate": 36.5,
-                "lines": [
-                    Command.create(
-                        {
-                            "name": "OL/C1/0003",
-                            "product_id": cls.product.id,
-                            "price_unit": 50.0,
-                            "discount": 0.0,
-                            "qty": 1.0,
-                            "price_subtotal": 50.0,
-                            "price_subtotal_incl": 58.0,
-                            "tax_ids": [(6, 0, cls.tax.ids)],
-                            "foreign_price": 1825.0,
-                        }
-                    )
-                ],
-                "amount_total": 58.0,
-                "amount_tax": 8.0,
-                "amount_paid": 0.0,
-                "amount_return": 0.0,
-                "last_order_preparation_change": "{}",
-            }
+        # ``_create_paid_order`` accepts ``invoiced=True``; it attaches a
+        # DRAFT ``account.move`` to flip ``is_invoiced`` without tripping
+        # ``pos.payment._check_amount`` (which blocks edits on posted orders).
+        order3 = cls._create_paid_order(
+            session,
+            method=cls.combined_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            invoiced=True,
+            name="OL/C1/0003",
         )
-        order3.add_payment(
-            {
-                "name": "P3",
-                "pos_order_id": order3.id,
-                "amount": 58.0,
-                "payment_method_id": cls.combined_cash_method.id,
-                "payment_date": order3.date_order,
-                "foreign_rate": 36.5,
-                "foreign_amount": 2117.0,
-            }
-        )
-        # Now attach the invoice (draft, so pos_payment blocks nothing).
-        invoice = cls.env["account.move"].create(
-            {
-                "move_type": "out_invoice",
-                "journal_id": cls.invoice_journal.id,
-                "partner_id": cls.company.partner_id.id,
-            }
-        )
-        order3.write({"account_move": invoice.id})
-        # Force ``paid`` so ``_get_closed_orders()`` picks them up. The
-        # accumulator contract is consumed from there.
-        order1.write({"state": "paid"})
-        order2.write({"state": "paid"})
-        order3.write({"state": "paid"})
         return session
 
     # ----------------------------------------------------------------------

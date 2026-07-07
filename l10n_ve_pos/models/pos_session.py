@@ -296,30 +296,57 @@ class PosSession(models.Model):
     #     return res
 
     def _create_split_account_payment(self, payment, amounts):
-        res = super(PosSession, self.with_context(from_pos=True))._create_split_account_payment(
-            payment, amounts
-        )
-        account_payment = res.move_id.payment_id
+        """Odoo 19-compatible override.
 
-        account_payment.write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-            }
-        )
+        Migration contract (Slice C2.1, spec
+        ``pos-odoo19-session-accounting/spec.md``):
 
-        for line in account_payment.move_id.line_ids:
+        - Odoo 19 super returns an ``account.move.line`` recordset (the
+          receivable line on the ``account.payment.move_id``), NOT an
+          ``account.payment`` — see
+          ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1170``.
+        - When the payment method has no journal, super short-circuits
+          and returns ``self.env['account.move.line']`` (empty recordset)
+          — see native line 1147-1148. We MUST handle the empty case
+          without touching non-existent records.
+        - The pre-C2 override accessed ``res.move_id.payment_id`` which
+          raised ``AttributeError`` in Odoo 19 (the field on
+          ``account.move`` was renamed to ``origin_payment_id`` —
+          ``/home/binaural19/odoo/addons/account/models/account_move.py:206``).
+
+        The Venezuelan write contract is preserved: the originating
+        ``account.payment`` receives ``foreign_rate`` and
+        ``foreign_inverse_rate``, and every line of its move receives
+        the matching ``foreign_debit`` / ``foreign_credit``.
+        """
+        receivable_lines = super(
+            PosSession, self.with_context(from_pos=True)
+        )._create_split_account_payment(payment, amounts)
+
+        if not receivable_lines:
+            # Odoo 19 early-return: payment method without journal.
+            return receivable_lines
+
+        payment_move = receivable_lines.move_id
+        account_payment = payment_move.origin_payment_id
+        if account_payment:
+            account_payment.write(
+                {
+                    "foreign_rate": self.config_id.foreign_rate,
+                    "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                }
+            )
+
+        foreign_amount = abs(payment.foreign_amount)
+        for line in payment_move.line_ids:
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = abs(payment.foreign_amount)
-
+                line.foreign_credit = foreign_amount
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = abs(payment.foreign_amount)
+                line.foreign_debit = foreign_amount
 
-        # if account_payment.pos_payment_method_id.apply_one_cross_move:
-        #     self._create_cross_move_payment(res)
-        return res
+        return receivable_lines
 
     # def _create_cross_move_payment(self, move):
     #     move = self.env["account.move"].create(
