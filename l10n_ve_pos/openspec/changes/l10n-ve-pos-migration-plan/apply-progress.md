@@ -23,6 +23,7 @@ Bandeja para que el mantenedor los repase antes de aceptar/mergear.
 | `f9bb592d9` | `[FIX] l10n_ve_pos: repara flujo de reembolso en PoS` | Elimina overrides muertos de v17 en `TicketScreen` y el componente `FullRefundButton` no renderizado. Revisar si se quiere reimplementar un botón "Reembolso total con un click" contra la API de Odoo 19 (queda documentado como TODO en el archivo JS). |
 | `557401085` | `[FIX] l10n_ve_pos: centraliza conversión foránea con contrato único` | ⚠️ **Requiere revisión + pruebas unitarias antes de mergear (ver HD.5).** Introduce `pos.config._convert` (Python) y `PosOrder._convert` (JS) como único mecanismo de conversión foránea, mirror de `res.currency._convert` con tasa POS. Reescribe `pos_order.js`, `pos_order_line.js`, `payment_model.js`, `payment_screen.js`, `payment_status.js`, `payment_line.js`, `orderline.js`. Aplica regla de redondeo: `foreign_price` → `dp["Foreign Product Price"]`; todo otro monto foráneo → `foreign_currency_id.round()`. Corrige compatibilidad Odoo 19 (`totalDue`/`remainingDue`/`change` en vez de métodos v17). Agrega liquidación foránea nativa (`set_foreign_amount` ajusta `amount` local al `remainingDue` exacto cuando el pago cubre `foreign_due`). Excede budget de 400 líneas (net +201, gross 705/504) → aplicar `size:exception` o considerar chained PR. |
 | `bf3bbf9fe` | `[DOCS] l10n_ve_pos: tabla de referencia v17->O19 en apply-progress` | Documentación de soporte para HD.5. Agrega la sección "Odoo 19 API changes reference (v17 → 19)" en `apply-progress.md` con la tabla canónica de mapeo (`get_total_with_tax` → `totalDue`, `get_due` → `remainingDue`, `get_change` → `change`, `get_paymentlines` → `payment_ids`, `orderline.get_all_prices()` → `line.prices`, etc.). Incluye ubicación exacta en el core (`pos_order_accounting.js`, `pos_order_line_accounting.js`) y warning sobre la trampa silenciosa `x?.method?.() \|\| 0` que causa cálculos en 0 sin errores visibles. Sirve de referencia para migrar los otros módulos VE. |
+| `a133e08ac` | `[FIX] l10n_ve_pos: pago foráneo combinado y redondeo consistente` | Follow-up de HD.5 (ver HD.6). Corrige dos bugs del refactor centralizado: (1) `Math.floor` en `addNewPaymentLine` que robaba un centavo cuando el redondeo natural iba hacia arriba (ej: `$6,83` en el panel pero `$6,82` al agregar la línea); (2) `set_foreign_amount` calculaba `foreignDueBefore` restando sólo `foreign_amount` de otras líneas, lo que fallaba en pagos combinados donde una línea en moneda local (Bs efectivo) tenía `foreign_amount = 0` y no se restaba de la deuda foránea. Fix: derivar `foreign_due = localToForeign(local_remaining_due)` para que TODOS los pagos anteriores (independiente de moneda) se descuenten correctamente. Cubre todos los escenarios combinados. **Los tests requeridos en HD.5 §Pruebas requeridas ítem 5 ahora deben incluir explícitamente los escenarios (a) 100% USD que cubre, (b) combinado Bs+USD, (c) USD parciales acumulados, (d) USD parcial + Bs completar, (e) sobrepago USD (change).** |
 
 ---
 
@@ -113,6 +114,33 @@ Series of small hotfixes discovered by running the POS UI against Odoo 19 native
     5. Liquidación foránea: pago que cubre foreign_due → remainingDue local = 0; pago parcial → conversión matemática estricta; sobrepago → cambio calculado correcto; múltiples pagos foráneos → cada uno resta lo suyo de foreign_due sin doble-conteo; re-edición de una línea → exclusión de self funciona.
     6. Regresión O19: `get_foreign_total_with_tax` funciona con `totalDue` getter y con fallback `get_total_with_tax()` (si aparece).
   * Archivos afectados (net +201, gross +705/-504): `models/pos_config.py`, `static/src/overrides/models/pos_order.js`, `static/src/overrides/models/pos_order_line.js`, `static/src/overrides/models/payment_model.js`, `static/src/overrides/components/orderline/orderline.js`, `static/src/overrides/screens/payment_screen/payment_screen.js`, `static/src/overrides/screens/payment_status/payment_status.js`, `static/src/overrides/screens/payment_line/payment_line.js`. **Excede budget de 400 líneas** → aplicar `size:exception` o dividir en chained PRs (recomendado: PR1 = helpers `_convert` en Python + JS; PR2 = migración de consumidores; PR3 = liquidación foránea nativa + tests).
+- [x] **HD.6** — ⚠️ **POR REVISAR + PRUEBAS UNITARIAS PENDIENTES** (follow-up crítico de HD.5). Corrige dos bugs residuales que aparecieron en QA visual:
+
+  **Bug 1 — Truncado con `Math.floor` en `addNewPaymentLine`**:
+  * Síntoma: en orden de 4605,32 Bs con tasa 0,001481634 el panel mostraba `Foreign Total = $6,83` pero al seleccionar el método de pago USD la línea llegaba con `$6,82` (un centavo menos).
+  * Causa raíz: `addNewPaymentLine` calculaba `foreignDue = localToForeign(localDueBefore, false)` (sin redondear) y luego aplicaba `Math.floor(x * 100) / 100`. Ese floor era una vieja prevención contra sobrepago que se hizo obsoleta cuando `set_foreign_amount` ganó la lógica de "cubre la deuda → ajusta local al `remainingDue` exacto" (HD.5). Con esa lógica ya no hay sobrepago real posible: si `$6,83 * inversa = 4605,32... Bs`, la rama "cubre" pone `amount = 4605,32 Bs` exacto y no importa que la conversión matemática dé un decimal más.
+  * Fix: usar `localToForeign(localDueBefore)` con redondeo natural (`foreign_currency.round()`), el mismo cálculo que `get_foreign_total_with_tax()`. Consistencia display ↔ input.
+
+  **Bug 2 — `set_foreign_amount` no contaba pagos en moneda local para la deuda foránea**:
+  * Síntoma: pago combinado (ej: 1000 Bs efectivo + resto USD) dejaba un restante local de ~1,32 Bs en lugar de saldar la orden.
+  * Causa raíz: `foreignDueBefore` se calculaba como `foreignTotal − foreignPaidOthers`, donde `foreignPaidOthers = sum(otherLine.foreign_amount)`. Una línea pagada en Bs efectivo tiene `foreign_amount = 0`, así que sus 1000 Bs no se descontaban de la deuda foránea. Al agregar el USD para "el resto", la deuda foránea aparecía inflada y `requested < foreignDueBefore`, cayendo en la rama de conversión estricta que pone `amount = requested/rate` — matemáticamente correcto pero contablemente incorrecto para el caso combinado.
+  * Fix: derivar el `foreign_due` del `local_remaining_due` (que ya cuenta TODOS los pagos anteriores independiente de su moneda, gracias al core O19) convertido una sola vez a foreign:
+    ```js
+    const localDueBefore = totalDue - sum(otherLine.getAmount());
+    const foreignDueBefore = order.localToForeign(localDueBefore);
+    ```
+    Con eso el bug queda resuelto sin importar la mezcla de métodos.
+
+  * **Regla general aprendida (documentar en tests)**: la deuda restante SIEMPRE se calcula en moneda local primero (donde el core hace `totalDue - amountPaid` correctamente), y después se convierte a foreign. Nunca al revés. La fórmula `foreign_total − foreign_paid_others` es incorrecta cuando puede haber líneas en moneda local con `foreign_amount = 0`.
+  * **Escenarios de prueba requeridos** (extienden HD.5 §Pruebas requeridas ítem 5):
+    - (a) 100% USD que cubre la deuda foránea → `remainingDue = 0`.
+    - (b) 100% USD parcial → conversión estricta, resto pendiente.
+    - (c) Combinado 1000 Bs + resto USD → orden saldada exacta.
+    - (d) USD parcial primero + Bs completar → orden saldada exacta.
+    - (e) Múltiples USD parciales acumulados → cada uno ajusta correctamente.
+    - (f) Sobrepago USD → `change` calculado correctamente.
+    - (g) Re-edición de una línea (llamar `set_foreign_amount` dos veces en la misma línea) → exclusión de `self` funciona, no hay doble-conteo.
+  * Archivos afectados (gross +33/-31): `static/src/overrides/models/payment_model.js`, `static/src/overrides/screens/payment_screen/payment_screen.js`. Delta bajo el budget de 400 líneas.
 
 ### Slice C1 — Session Accounting Accumulators (✅ done 2026-07-07)
 
