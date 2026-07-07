@@ -16,6 +16,22 @@ patch(PaymentScreen.prototype, {
     this.utils = useEnv().utils,
      this.dialog = useService("dialog");
   },
+  async addNewPaymentLine(method) {
+    const result = await super.addNewPaymentLine(method);
+    if (method?.is_foreign_currency) {
+      // Core just auto-filled the line with the local due via setAmount.
+      // Replace with the foreign due so the cashier sees the amount in USD.
+      const line = this.selectedPaymentLine;
+      if (line && typeof line.set_foreign_amount === "function") {
+        const foreignDue = this.currentOrder?.get_foreign_due?.() || 0;
+        if (foreignDue > 0) {
+          line.set_foreign_amount(foreignDue);
+          this.numberBuffer.set(foreignDue.toString());
+        }
+      }
+    }
+    return result;
+  },
   _toNumber(value, fallback = 0) {
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : fallback;
@@ -80,8 +96,7 @@ patch(PaymentScreen.prototype, {
       if (this.numberBuffer.get() === null) {
         amount = null;
       } else if (this.numberBuffer.get() === "") {
-        // Auto-fill the foreign remaining due (same behaviour as core auto-fill in local currency).
-        amount = this.currentOrder?.get_foreign_due?.() || 0;
+        amount = 0;
       } else {
         amount = this.numberBuffer.getFloat();
       }
