@@ -21,7 +21,8 @@ Bandeja para que el mantenedor los repase antes de aceptar/mergear.
 | `e9c57b489` | `[REF] l10n_ve_pos: inyecta VE en _load_pos_data_read` | Reemplazo definitivo del anterior: mueve la extensión venezolana al hook `_load_pos_data_read`, delegando el contrato de campos al core Odoo 19. Verificar que no queden módulos downstream leyendo `foreign_amount_total`/`foreign_currency_rate` desde el field-list de `pos.order` en vez del payload de `read_pos_data`. |
 | `70752aa28` | `[FEAT] l10n_ve_pos: fuerza factura obligatoria en PoS` | Regla de negocio venezolana (SENIAT): toda venta del PoS debe emitir factura. Revisar si el mantenedor quiere una vía de escape controlada (ej. permiso especial) o si la política "sin excepciones" es aceptable. |
 | `f9bb592d9` | `[FIX] l10n_ve_pos: repara flujo de reembolso en PoS` | Elimina overrides muertos de v17 en `TicketScreen` y el componente `FullRefundButton` no renderizado. Revisar si se quiere reimplementar un botón "Reembolso total con un click" contra la API de Odoo 19 (queda documentado como TODO en el archivo JS). |
-| _HEAD (este commit)_ | `[FIX] l10n_ve_pos: centraliza conversión foránea con contrato único` | ⚠️ **Requiere revisión + pruebas unitarias antes de mergear (ver HD.5).** Introduce `pos.config._convert` (Python) y `PosOrder._convert` (JS) como único mecanismo de conversión foránea, mirror de `res.currency._convert` con tasa POS. Reescribe `pos_order.js`, `pos_order_line.js`, `payment_model.js`, `payment_screen.js`, `payment_status.js`, `payment_line.js`, `orderline.js`. Aplica regla de redondeo: `foreign_price` → `dp["Foreign Product Price"]`; todo otro monto foráneo → `foreign_currency_id.round()`. Corrige compatibilidad Odoo 19 (`totalDue`/`remainingDue`/`change` en vez de métodos v17). Agrega liquidación foránea nativa (`set_foreign_amount` ajusta `amount` local al `remainingDue` exacto cuando el pago cubre `foreign_due`). Excede budget de 400 líneas (net +201, gross 705/504) → aplicar `size:exception` o considerar chained PR. |
+| `557401085` | `[FIX] l10n_ve_pos: centraliza conversión foránea con contrato único` | ⚠️ **Requiere revisión + pruebas unitarias antes de mergear (ver HD.5).** Introduce `pos.config._convert` (Python) y `PosOrder._convert` (JS) como único mecanismo de conversión foránea, mirror de `res.currency._convert` con tasa POS. Reescribe `pos_order.js`, `pos_order_line.js`, `payment_model.js`, `payment_screen.js`, `payment_status.js`, `payment_line.js`, `orderline.js`. Aplica regla de redondeo: `foreign_price` → `dp["Foreign Product Price"]`; todo otro monto foráneo → `foreign_currency_id.round()`. Corrige compatibilidad Odoo 19 (`totalDue`/`remainingDue`/`change` en vez de métodos v17). Agrega liquidación foránea nativa (`set_foreign_amount` ajusta `amount` local al `remainingDue` exacto cuando el pago cubre `foreign_due`). Excede budget de 400 líneas (net +201, gross 705/504) → aplicar `size:exception` o considerar chained PR. |
+| `bf3bbf9fe` | `[DOCS] l10n_ve_pos: tabla de referencia v17->O19 en apply-progress` | Documentación de soporte para HD.5. Agrega la sección "Odoo 19 API changes reference (v17 → 19)" en `apply-progress.md` con la tabla canónica de mapeo (`get_total_with_tax` → `totalDue`, `get_due` → `remainingDue`, `get_change` → `change`, `get_paymentlines` → `payment_ids`, `orderline.get_all_prices()` → `line.prices`, etc.). Incluye ubicación exacta en el core (`pos_order_accounting.js`, `pos_order_line_accounting.js`) y warning sobre la trampa silenciosa `x?.method?.() \|\| 0` que causa cálculos en 0 sin errores visibles. Sirve de referencia para migrar los otros módulos VE. |
 
 ---
 
@@ -120,6 +121,73 @@ Series of small hotfixes discovered by running the POS UI against Odoo 19 native
 - [x] **C1.3** — `_update_amounts` already preserves Odoo 19 keys (`amount` / `amount_converted`) and adds `foreign_amount`; no change required, covered by the new `test_update_amounts_returns_odoo19_keys_plus_foreign_amount` test.
 - [x] **C1.4** — `tests/test_pos_session_accounting_accumulators.py` (7 unit tests, all green): combine/split cash, combine/split invoice receivables, Odoo 19 key regression guard, foreign-amount aggregation across payments on the same method, and the critical ghost-entry guard (draft order with payment must NOT pollute the Odoo 19 defaultdict).
 - [x] **C1.5** — Native Odoo 19 references captured in `key-map.md` §5 (per-bucket defaultdict lambdas, `_get_closed_orders()` source, `_update_amounts` round contract, Odoo 19 super return shape).
+
+---
+
+## Odoo 19 API changes reference (v17 → 19)
+
+**Contexto**: Odoo 19 movió gran parte del cálculo de pos.order/pos.order.line a un mixin de accounting (`point_of_sale/static/src/app/models/accounting/`). Métodos históricos v17 (`get_*`) fueron reemplazados por **getters** (nombres camelCase, sin paréntesis). Llamar el método viejo con `?.()` devuelve `undefined` → `|| 0` → **cálculos rotos silenciosamente**.
+
+Esta tabla es la referencia canónica para cualquier caller de l10n_ve_pos (y para el próximo dev que migre otro módulo). Todo caller nuevo DEBE leer el getter O19; el método v17 puede quedar como fallback defensivo, no como fuente primaria.
+
+### Métodos v17 → getters/propiedades O19
+
+| v17 (roto en O19) | O19 (canónico) | Ubicación en el core | Notas |
+|-------------------|----------------|----------------------|-------|
+| `order.get_total_with_tax()` | `order.totalDue` | `accounting/pos_order_accounting.js:166` | Total con impuestos + cash rounding aplicado. |
+| `order.get_total_without_tax()` | `order.priceExcl` | `accounting/pos_order_accounting.js:163` | Base sin impuestos. |
+| `order.get_total_paid()` | `order.amountPaid` | `accounting/pos_order_accounting.js:177` | Suma de `payment_ids.getAmount()` de pagos `isDone()` que no son cambio. |
+| `order.get_due()` | `order.remainingDue` | `accounting/pos_order_accounting.js:82` | `currency.round(totalDue - amountPaid)`. Devuelve 0 si el pago cubre el total. |
+| `order.get_change()` | `order.change` | `accounting/pos_order_accounting.js:99` | Sobrepago para devolver. |
+| `order.get_paymentlines()` | `order.payment_ids` | Colección directa | Ya NO es método, es la relación. Se itera con `Array.from(order.payment_ids)` o `for..of`. |
+| `order.get_orderlines()` | `order.lines` | Colección directa | Idem. |
+| `orderline.get_all_prices(qty)` | `line.prices` / `line.unitPrices` (getters, sin arg) | `accounting/pos_order_line_accounting.js:110-121` | Devuelven tax details desde el cálculo global del order (rounded globally). Ya no hay parámetro `qty`. |
+| `orderline.get_price_with_tax()` | `line.priceIncl` | `accounting/pos_order_line_accounting.js:84` | `currency.round(prices.total_included * orderSign)`. |
+| `orderline.get_price_without_tax()` | `line.priceExcl` | `accounting/pos_order_line_accounting.js:87` | Idem sin impuestos. |
+| `orderline.get_price_with_tax_before_discount()` | `line.priceInclNoDiscount` | `accounting/pos_order_line_accounting.js:95` | Precio incluido sin aplicar descuento. |
+| `orderline.get_display_price()` | `line.displayPrice` | `accounting/pos_order_line_accounting.js:43` | Respeta `config.iface_tax_included`. |
+| `orderline.get_unit_price()` | `line.displayPriceUnit` / `line.priceUnitInclNoDiscount` | `accounting/pos_order_line_accounting.js:67-93` | Varias variantes según con/sin IVA y con/sin descuento. |
+| `payment.get_amount()` | `payment.getAmount()` | `pos_payment.js:26` (core) | Sigue siendo método, pero renombrado a camelCase. `get_amount()` v17 NO existe. |
+| `payment.set_amount(x)` | `payment.setAmount(x)` | `pos_payment.js:21` | Idem. |
+| `payment.payment_method` | `payment.payment_method_id` | Campo Many2one | v17 tenía alias, O19 solo el nombre real del ORM. `is_foreign_currency` se accede via `payment_method_id.is_foreign_currency`. |
+| `payment.is_done()` | `payment.isDone()` | `pos_payment.js:38` | Renombrado. |
+
+### Notas de implementación
+
+1. **Fallback defensivo**: los overrides de `l10n_ve_pos` usan el patrón:
+   ```js
+   const value = Number(
+     order.totalDue ??
+     (typeof order.get_total_with_tax === "function" ? order.get_total_with_tax() : 0)
+   ) || 0;
+   ```
+   Esto permite que si un módulo downstream (o un future patch) restaura el método viejo, siga funcionando. **NO es para depender del método viejo** — es un red-de-seguridad.
+
+2. **Trampa silenciosa**: `x?.method?.() || 0` es EXTREMADAMENTE peligrosa en migración v17→O19. Si `method` fue renombrado a getter, `x.method` es `undefined`, `undefined?.()` es `undefined`, `undefined || 0` es `0`. **El código nunca falla, solo devuelve 0**. Grep obligatorio antes de asumir que un método existe: buscar TODO uso de `get_total_`, `get_price_`, `get_due`, `get_change`, `get_paid`, `get_paymentlines`, `get_orderlines`, `.is_done()`, `.set_amount(`, `.get_amount()` en cada módulo v17.
+
+3. **`pos_order_accounting.js` es la fuente de verdad**: cualquier duda sobre "cuánto vale el total/restante/cambio de una orden en O19" se resuelve leyendo `point_of_sale/static/src/app/models/accounting/pos_order_accounting.js`. Los cálculos están centralizados ahí como getters computados desde `this.prices.taxDetails`.
+
+4. **`pos_order_line_accounting.js` es el equivalente para líneas**: cualquier duda sobre precio/impuesto por línea → `point_of_sale/static/src/app/models/accounting/pos_order_line_accounting.js`. En particular `line.prices` (getter, sin paréntesis) devuelve el shape `{ total_included, total_excluded, taxes_data, ... }` que reemplaza al viejo `get_all_prices()`.
+
+### Consumidores migrados en este slice (HD.5)
+
+Todos los usos v17 en `l10n_ve_pos` fueron migrados con fallback defensivo:
+
+| Archivo | Línea/función | Cambio |
+|---------|---------------|--------|
+| `static/src/overrides/models/pos_order.js` | `get_foreign_total_with_tax` | Lee `this.totalDue` primero, fallback a `get_total_with_tax()`. |
+| `static/src/overrides/models/pos_order.js` | `_localTotalWithoutTax` / `_localTotalTax` | Leen `this.prices.taxDetails.base_amount` y `tax_amount_currency` (getter O19). |
+| `static/src/overrides/models/pos_order.js` | `get_foreign_total_paid` | Itera `Array.from(this.payment_ids)`, usa `line.isDone()` y `line.get_foreign_amount()` (nuestro método snake preservado). |
+| `static/src/overrides/models/pos_order_line.js` | `get_foreign_price_without_tax` / `_with_tax` / `_total_tax` | Leen `this.priceExcl` / `priceIncl` (getters O19). |
+| `static/src/overrides/models/pos_order_line.js` | `get_all_foreign_prices` | Lee `this.prices.taxes_data` (getter O19). |
+| `static/src/overrides/models/payment_model.js` | `setAmount` override | Llama `super.setAmount(value)` (camelCase O19), agrega recompute foráneo. |
+| `static/src/overrides/models/payment_model.js` | `get_amount()` alias | Delega a `this.getAmount()` para preservar snake_case en templates. |
+| `static/src/overrides/models/payment_model.js` | `set_foreign_amount` | Itera `Array.from(order.payment_ids)` (colección O19), usa `line.isDone()` y `line.getAmount() ?? line.amount`. |
+| `static/src/overrides/screens/payment_screen/payment_screen.js` | `addNewPaymentLine` | Lee `order.remainingDue` con fallback a `get_due()`. |
+| `static/src/overrides/screens/payment_screen/payment_screen.js` | `updateSelectedPaymentline` | Idem para `remainingDue`. |
+| `static/src/overrides/screens/payment_screen/payment_screen.js` | `_isOrderValid` | Lee `currentOrder.totalDue` y `Array.from(currentOrder.payment_ids)` con fallback a `get_paymentlines()`/`get_total_with_tax()`. |
+| `static/src/overrides/screens/payment_line/payment_line.js` | `formatLineAmount` | Lee `paymentline.getAmount()` con fallback a `.amount`; lee `paymentline.payment_method_id` con fallback a `.payment_method`. |
+| `static/src/overrides/screens/payment_status/payment_status.js` | `_hasIgtfPaymentMethod` | Lee `order.get_paymentlines()` con fallback a `Array.from(order.payment_ids)`; accede `payment_method_id.apply_igtf`. |
 
 ---
 
