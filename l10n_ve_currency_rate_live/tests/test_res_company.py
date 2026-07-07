@@ -87,6 +87,16 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         self.assertEqual(result, {"USD": (1.0, saturday)})
         mock_get_rate.assert_not_called()
 
+    def test_bcv_update_window_includes_seven_oclock(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 7, 0, 0)
+
+        self.assertTrue(self.company._is_bcv_update_window(current_time))
+
+    def test_bcv_update_window_excludes_after_seven_oclock(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 7, 1, 0)
+
+        self.assertFalse(self.company._is_bcv_update_window(current_time))
+
     def test_parse_bcv_data_skips_future_published_date(self):
         current_date = date(2026, 6, 23)
         future_date = date(2026, 6, 24)
@@ -228,6 +238,42 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         self.assertEqual(published_date, current_date)
         mock_api.assert_called_once_with(expected_date=current_date)
         mock_scrape.assert_called_once()
+
+    def test_run_update_bcv_currency_does_not_abort_on_company_error(self):
+        with patch.object(
+            type(self.company),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            type(self.company),
+            "search",
+            return_value=self.company,
+        ), patch.object(
+            type(self.env["res.currency"]),
+            "search",
+            return_value=self.company.currency_id,
+        ), patch.object(
+            type(self.env["res.currency.rate"]),
+            "search_count",
+            return_value=0,
+        ), patch.object(
+            type(self.company),
+            "update_currency_rates",
+            side_effect=RuntimeError("boom"),
+        ):
+            self.company.run_update_bcv_currency()
+
+    def test_run_update_bcv_currency_swallows_unexpected_errors(self):
+        with patch.object(
+            type(self.company),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            type(self.company),
+            "search",
+            side_effect=RuntimeError("search failed"),
+        ):
+            self.company.run_update_bcv_currency()
 
     def test_compute_currency_provider_sets_bcv_for_venezuela(self):
         self.company.country_id = self.country_ve
