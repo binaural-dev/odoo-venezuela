@@ -8,7 +8,7 @@ through the Odoo 19 read-back flow (``_load_pos_data_fields`` +
 ``_payment_fields`` / ``_export_for_ui`` hooks (removed upstream).
 """
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -162,68 +162,227 @@ class TestPosSerialization(TransactionCase):
         )
 
     # ------------------------------------------------------------------
-    # B.1 — pos.order._load_pos_data_fields exposes the Venezuelan
-    #       foreign-currency contract (foreign_amount_total,
-    #       foreign_currency_rate).
+    # B.1 — pos.order._load_pos_data_read injects the Venezuelan
+    #       foreign-currency values (foreign_amount_total,
+    #       foreign_currency_rate) on top of whatever core returns.
     # ------------------------------------------------------------------
-    def test_pos_order_load_pos_data_fields_includes_foreign_total_and_rate(self):
-        """B.1 / Spec: ``pos.order._load_pos_data_fields`` MUST include
-        ``foreign_amount_total`` and ``foreign_currency_rate``.
+    def test_pos_order_load_pos_data_read_injects_foreign_total_and_rate(self):
+        """B.1 / Spec: ``pos.order._load_pos_data_read`` MUST inject
+        ``foreign_amount_total`` and ``foreign_currency_rate`` into every
+        returned record.
 
-        The Odoo 19 base returns an empty list (the model relies on
-        ``read_pos_data`` consumers to call our override). Without these
-        fields in the override, ``read_pos_data`` would return an order
-        payload with no Venezuelan foreign-currency fields.
+        We override ``_load_pos_data_read`` instead of
+        ``_load_pos_data_fields`` on purpose: the field contract belongs
+        to core Odoo 19 and we do not want to enumerate its fields here.
+        Our only job is to add the Venezuelan values to the payload the
+        frontend gets back.
         """
-        fields = self.env["pos.order"]._load_pos_data_fields(self.config)
-        self.assertIn(
-            "foreign_amount_total",
-            fields,
-            "pos.order._load_pos_data_fields must expose foreign_amount_total",
+        session = self.env["pos.session"].create(
+            {
+                "config_id": self.config.id,
+                "user_id": self.env.ref("base.user_admin").id,
+            }
         )
-        self.assertIn(
-            "foreign_currency_rate",
-            fields,
-            "pos.order._load_pos_data_fields must expose foreign_currency_rate",
+        order = self.env["pos.order"].create(
+            {
+                "company_id": self.company.id,
+                "session_id": session.id,
+                "partner_id": False,
+                "pricelist_id": (
+                    self.company.partner_id.property_product_pricelist.id
+                ),
+                "foreign_amount_total": 4234.0,
+                "foreign_currency_rate": 36.5,
+                "amount_total": 116.0,
+                "amount_tax": 16.0,
+                "amount_paid": 0.0,
+                "amount_return": 0.0,
+                "last_order_preparation_change": "{}",
+            }
         )
+        read_records = self.env["pos.order"]._load_pos_data_read(order, self.config)
+        self.assertEqual(len(read_records), 1)
+        payload = read_records[0]
+        self.assertIn("foreign_amount_total", payload)
+        self.assertEqual(payload["foreign_amount_total"], 4234.0)
+        self.assertIn("foreign_currency_rate", payload)
+        self.assertEqual(payload["foreign_currency_rate"], 36.5)
 
     # ------------------------------------------------------------------
-    # Odoo 19 sync contract — write_date must be part of the pos.order
-    # payload, otherwise ``devices_synchronisation.constructOrdersDomain``
-    # crashes with "Cannot read properties of undefined (reading 'plus')"
-    # on the frontend the moment a synced open order is refreshed.
+    # End-to-end sync contract — exercises the real Odoo 19 flow instead
+    # of guessing which fields need to be exposed. If a core change ever
+    # requires a new field in the ``_load_pos_data_fields`` contract,
+    # this test fails loudly instead of the frontend crashing in
+    # production. See OpenSpec HB.8 for the rationale (implement only the
+    # Venezuelan extension, delegate everything else to core Odoo 19 +
+    # keep this regression test as the safety net).
     # ------------------------------------------------------------------
-    def test_pos_order_load_pos_data_fields_includes_write_date(self):
-        """The Odoo 19 POS device sync calls ``record.write_date.plus(...)``
-        on synced open orders (see
-        ``point_of_sale/static/src/app/utils/devices_synchronisation.js``
-        -> ``constructOrdersDomain``). If our override drops ``write_date``,
-        the whole POS UI crashes when the sync loop kicks in.
+    def test_pos_order_sync_round_trip_survives_second_sync(self):
+        """Simulate the real Odoo 19 POS sync: first ``sync_from_ui`` creates
+        the draft order, the frontend reads it back, and a second
+        ``sync_from_ui`` (as if the cashier added a payment) must NOT
+        crash inside ``_process_order`` (which does
+        ``del order['uuid']`` and ``del order['access_token']``).
+
+        Rationale: our override does not need to enumerate every field
+        Odoo 19 expects. Instead this test drives the actual flow so any
+        missing field surfaces here.
         """
-        fields = self.env["pos.order"]._load_pos_data_fields(self.config)
-        self.assertIn(
-            "write_date",
-            fields,
-            "pos.order._load_pos_data_fields must expose write_date so the "
-            "Odoo 19 POS device sync can compute the reload domain.",
+        session = self.env["pos.session"].create(
+            {
+                "config_id": self.config.id,
+                "user_id": self.env.ref("base.user_admin").id,
+            }
         )
 
-    def test_pos_order_load_pos_data_fields_includes_access_token(self):
-        """Odoo 19's ``_process_order`` pops ``access_token`` unconditionally
-        (``point_of_sale/models/pos_order.py:131`` -> ``del order['access_token']``)
-        on every update of an existing (draft) order. If our load contract
-        does not expose ``access_token``, the frontend cannot round-trip it
-        back to the backend on subsequent syncs (e.g. adding a payment to
-        an existing draft order) and the whole ``sync_from_ui`` call fails
-        with ``KeyError: 'access_token'`` when validating the order.
-        """
-        fields = self.env["pos.order"]._load_pos_data_fields(self.config)
-        self.assertIn(
-            "access_token",
-            fields,
-            "pos.order._load_pos_data_fields must expose access_token so the "
-            "Odoo 19 _process_order del/pop path does not KeyError.",
+        order_uuid = "e2e-sync-uuid-0001"
+        access_token = "e2e-sync-access-token-0001"
+
+        def _order_payload(payment_ids):
+            return {
+                "id": False,
+                "name": "Order/E2E/0001",
+                "uuid": order_uuid,
+                "access_token": access_token,
+                "session_id": session.id,
+                "company_id": self.company.id,
+                "config_id": self.config.id,
+                "currency_id": self.foreign_currency.id,
+                "pricelist_id": (
+                    self.company.partner_id.property_product_pricelist.id
+                ),
+                "partner_id": False,
+                "date_order": False,
+                "state": "draft",
+                "amount_total": 116.0,
+                "amount_tax": 16.0,
+                "amount_paid": 0.0,
+                "amount_return": 0.0,
+                "foreign_amount_total": 4234.0,
+                "foreign_currency_rate": 36.5,
+                "lines": [
+                    [0, 0, {
+                        "name": "OL/E2E/0001",
+                        "uuid": "e2e-sync-line-0001",
+                        "product_id": self.product.id,
+                        "price_unit": 100.0,
+                        "discount": 0.0,
+                        "qty": 1.0,
+                        "price_subtotal": 100.0,
+                        "price_subtotal_incl": 116.0,
+                        "tax_ids": [(6, 0, self.tax.ids)],
+                        "foreign_price": 3650.0,
+                        "foreign_subtotal": 3650.0,
+                        "foreign_total": 4234.0,
+                    }],
+                ],
+                "payment_ids": payment_ids,
+                "last_order_preparation_change": "{}",
+            }
+
+        # First sync: create the draft order.
+        first_payload = _order_payload(payment_ids=[])
+        first_result = self.env["pos.order"].sync_from_ui([first_payload])
+        self.assertIn("pos.order", first_result)
+        self.assertEqual(
+            len(first_result["pos.order"]),
+            1,
+            "first sync must return exactly one pos.order",
         )
+
+        # Simulate what the frontend does when it wants to add a payment:
+        # it takes the reloaded payload, appends a payment, and calls
+        # ``sync_from_ui`` again with the same uuid/access_token.
+        second_payload = _order_payload(
+            payment_ids=[
+                [0, 0, {
+                    "name": "Payment 1",
+                    "uuid": "e2e-sync-payment-0001",
+                    "amount": 116.0,
+                    "payment_method_id": self.payment_method.id,
+                    "payment_date": fields.Datetime.now(),
+                    "foreign_rate": 36.5,
+                    "foreign_amount": 4234.0,
+                }],
+            ],
+        )
+        # Regression: previously this crashed with
+        # ``KeyError: 'access_token'`` because our load contract did not
+        # expose it. Now we delegate to super() and drive the whole flow
+        # to detect any similar core-required field.
+        second_result = self.env["pos.order"].sync_from_ui([second_payload])
+        self.assertIn("pos.order", second_result)
+        self.assertEqual(
+            len(second_result["pos.order"]),
+            1,
+            "second sync must return the same order updated in place",
+        )
+        stored_order = self.env["pos.order"].search(
+            [("uuid", "=", order_uuid)], limit=1
+        )
+        self.assertTrue(stored_order, "the order must exist after the second sync")
+        self.assertEqual(
+            len(stored_order.payment_ids),
+            1,
+            "second sync must have attached the payment to the existing order",
+        )
+        self.assertEqual(stored_order.foreign_amount_total, 4234.0)
+        self.assertEqual(stored_order.foreign_currency_rate, 36.5)
+
+    def test_load_data_does_not_crash_with_draft_order(self):
+        """Regression: opening the POS frontend calls
+        ``pos.session.load_data``, which in turn calls every model's
+        ``_load_pos_data_search_read``. ``res.partner._load_pos_data_domain``
+        iterates over ``data['pos.order']`` to read ``partner_id`` on each
+        one (``point_of_sale/models/res_partner.py:59``). If our
+        ``pos.order._load_pos_data_fields`` override does not expose
+        ``partner_id``, ``load_data`` crashes with ``KeyError: 'partner_id'``
+        and the frontend crashes downstream with
+        ``Cannot read properties of undefined (reading 'map')``.
+
+        This test drives ``pos.session.load_data`` with at least one draft
+        order in the session so any missing core-required field surfaces
+        here instead of in the browser.
+        """
+        session = self.env["pos.session"].create(
+            {
+                "config_id": self.config.id,
+                "user_id": self.env.ref("base.user_admin").id,
+            }
+        )
+
+        # A draft order MUST exist for res.partner's domain to iterate.
+        self.env["pos.order"].create(
+            {
+                "company_id": self.company.id,
+                "session_id": session.id,
+                "partner_id": False,
+                "pricelist_id": (
+                    self.company.partner_id.property_product_pricelist.id
+                ),
+                "foreign_amount_total": 0.0,
+                "foreign_currency_rate": 36.5,
+                "amount_total": 0.0,
+                "amount_tax": 0.0,
+                "amount_paid": 0.0,
+                "amount_return": 0.0,
+                "last_order_preparation_change": "{}",
+            }
+        )
+
+        # Should not raise. Under the previous VE-only override this
+        # crashed inside res.partner._load_pos_data_domain because
+        # pos.order did not expose partner_id.
+        response = session.load_data(models_to_load=[])
+        self.assertIn("pos.order", response)
+        self.assertIn("res.partner", response)
+        for order_payload in response["pos.order"]:
+            self.assertIn(
+                "partner_id",
+                order_payload,
+                "pos.order payload must expose partner_id so "
+                "res.partner._load_pos_data_domain can build its domain.",
+            )
 
     # ------------------------------------------------------------------
     # B.2 / B.4 — pos.payment._load_pos_data_fields exposes
