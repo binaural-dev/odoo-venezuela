@@ -34,6 +34,8 @@ patch(PaymentScreenStatus.prototype, {
   },
 
   _getForeignTotalDueAmount() {
+    // Leer payment_ids para que Odoo/OWL trackee cambios reactivos
+    const _paymentWatch = this.props?.order?.payment_ids;
     let amount = this._callOrder("get_foreign_total_with_tax", 0);
     if (this._hasIgtfPaymentMethod()) {
       amount += this._callOrder("get_foreign_igtf_amount", 0);
@@ -42,10 +44,12 @@ patch(PaymentScreenStatus.prototype, {
   },
 
   _getForeignRemainingAmount() {
+    const _paymentWatch = this.props?.order?.payment_ids;
     return Math.max(0, this._callOrder("get_foreign_due", 0));
   },
 
   _getForeignChangeAmount() {
+    const _paymentWatch = this.props?.order?.payment_ids;
     return Math.max(0, this._callOrder("get_foreign_change", 0));
   },
 
