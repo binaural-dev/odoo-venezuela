@@ -1091,6 +1091,15 @@ class AccountMove(models.Model):
                         line.account_id = move.journal_id.default_account_id
 
     def action_post(self):
+        if not self.env.user.has_group('l10n_ve_accountant.group_fiscal_config_support'):
+            for move in self:
+                if move.move_type == 'out_refund' and move.reversed_entry_id:
+                    if abs(move.amount_total) > abs(move.reversed_entry_id.amount_total):
+                        raise ValidationError(_(
+                            "The credit note amount (%s) cannot exceed the original invoice amount (%s).",
+                            formatLang(self.env, abs(move.amount_total), currency_obj=move.currency_id),
+                            formatLang(self.env, abs(move.reversed_entry_id.amount_total), currency_obj=move.reversed_entry_id.currency_id),
+                        ))
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
                 if move.move_type in ("out_invoice", "out_refund"):
