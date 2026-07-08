@@ -1089,12 +1089,60 @@ export class TfhkaDriver {
 
     _appendPaymentCommands(commands, orderData, config) {
         const payments = orderData.payment_lines || [];
-        const groupedPayments = {};
 
         if (orderData.has_cashbox) {
             commands.push("w");
         }
 
+        const hasDivisa = this._hasDivisaPayment(payments);
+
+        if (!payments.length) {
+            commands.push("101");
+            return;
+        }
+
+        // IGTF (manual TFHKA v1.1.0): si hay pago en divisas (20-24), el
+        // cierre NO puede ser "1XX" — se deben enviar TODOS los métodos
+        // como "2XX" (incluido el que normalmente cerraría) y dejar que el
+        // comando "199" final (ya emitido al final de cada documento fiscal
+        // en printInvoice/printCreditNote/printDebitNote) haga el cierre.
+        //
+        // IMPORTANTE (ver manual impuesto_igtf.md, seccion 7, punto 5): el
+        // comando "199" SOLO es aceptado por la impresora si el documento
+        // fue pagado en su totalidad (según el cálculo interno de LA
+        // IMPRESORA, que incluye su propio cálculo de IGTF sobre el monto en
+        // divisas). Si la suma de los montos 2XX enviados no coincide
+        // exactamente con lo que la impresora espera (subtotal + IVA + IGTF
+        // calculado por ELLA), rechaza el "199" con NAK y el documento no se
+        // cierra (no se corta el papel).
+        //
+        // NO se agrupan los pagos por método aquí: el IGTF se calcula por
+        // cada pago en divisa que la impresora recibe individualmente. Si
+        // hay 2 pagos con el mismo método en divisa, deben enviarse como 2
+        // comandos "2XX" separados (no sumados en uno solo), para que el
+        // cálculo de IGTF de la impresora sea fiel a cómo se recibieron los
+        // pagos realmente.
+        if (hasDivisa) {
+            for (const payment of payments) {
+                const amount = Math.abs(Number(payment.amount || 0));
+                if (amount <= 0) {
+                    continue;
+                }
+                const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
+                const amountStr = this._formatAmount(
+                    amount,
+                    config.max_payment_amount_int,
+                    config.max_payment_amount_decimal
+                );
+                commands.push(`2${methodCode}${amountStr}`);
+            }
+            // NO se envía "1XX": el "199" final cierra el documento con IGTF.
+            return;
+        }
+
+        // Sin divisas: se puede agrupar por método de pago con seguridad,
+        // ya que no hay cálculo de IGTF involucrado.
+        const groupedPayments = {};
         for (const payment of payments) {
             const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
             const amount = Math.abs(Number(payment.amount || 0));
@@ -1107,25 +1155,6 @@ export class TfhkaDriver {
 
         if (!paymentEntries.length) {
             commands.push("101");
-            return;
-        }
-
-        // IGTF (manual TFHKA v1.1.0): si hay pago en divisas (20-24), el
-        // cierre NO puede ser "1XX" — se deben enviar TODOS los métodos
-        // como "2XX" (incluido el que normalmente cerraría) y dejar que el
-        // comando "199" final (ya emitido al final de cada documento fiscal
-        // en printInvoice/printCreditNote/printDebitNote) haga el cierre.
-        // Sin esto, la impresora rechaza el documento o no calcula el IGTF.
-        if (this._hasDivisaPayment(payments)) {
-            for (const { methodCode, amount } of paymentEntries) {
-                const amountStr = this._formatAmount(
-                    amount,
-                    config.max_payment_amount_int,
-                    config.max_payment_amount_decimal
-                );
-                commands.push(`2${methodCode}${amountStr}`);
-            }
-            // NO se envía "1XX": el "199" final cierra el documento con IGTF.
             return;
         }
 

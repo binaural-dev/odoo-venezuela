@@ -226,8 +226,8 @@ patch(Order.prototype, {
     }
     return this.igtf_amount;
   },
-  compute_igtf_amount(amount) {
-    var rounding = this.pos.currency.rounding;
+  compute_igtf_amount(amount, use_foreign_rounding = false) {
+    var rounding = use_foreign_rounding ? this.pos.foreign_currency.rounding : this.pos.currency.rounding;
     return round_pr(amount * (this.pos.config.igtf_percentage / 100), rounding);
   },
 
