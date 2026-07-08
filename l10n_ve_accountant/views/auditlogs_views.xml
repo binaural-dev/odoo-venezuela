@@ -18,10 +18,10 @@
     <field name="model">auditlog.log</field>
     <field name="inherit_id" ref="auditlog.view_auditlog_log_tree" />
     <field name="arch" type="xml">
-      <xpath expr="//tree" position="attributes">
+      <xpath expr="//list" position="attributes">
         <attribute name="delete">0</attribute>
       </xpath>
-      <xpath expr="//tree" position="attributes" groups="l10n_ve_accountant.group_fiscal_config_support">
+      <xpath expr="//list" position="attributes" groups="l10n_ve_accountant.group_fiscal_config_support">
         <attribute name="delete">1</attribute>
       </xpath>
     </field>
