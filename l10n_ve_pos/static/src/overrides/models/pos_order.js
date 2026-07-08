@@ -17,20 +17,13 @@ patch(PosOrder.prototype, {
       if (!Array.isArray(this.lines)) {
         this.lines = [];
       }
-      // l10n_ve_pos: toda venta del PoS (Venezuela) debe emitir factura.
-      // Forzamos to_invoice=true SOLO en órdenes de venta, NO en reembolsos.
-      // Los reembolsos tienen flujo de facturación propio (credit note) y
-      // forzar to_invoice=true rompe la validación de invoice en Odoo 19.
-      if (!this.isRefund) {
-        this.to_invoice = true;
-      }
+      // l10n_ve_pos: SENIAT — toda venta y nota de crédito del PoS debe emitir factura.
+      // Forzamos to_invoice=true en TODAS las órdenes, incluyendo reembolsos.
+      this.to_invoice = true;
   },
   setToInvoice() {
-      // Solo permite activar facturación; nunca desactivar.
-      // En reembolsos no se aplica la regla SENIAT.
-      if (!this.isRefund) {
-        this.to_invoice = true;
-      }
+      // SENIAT: toda orden del PoS debe emitir factura, incluyendo notas de crédito.
+      this.to_invoice = true;
   },
  get_foreign_currency(){
         return this.config.foreign_currency_id;
@@ -57,6 +50,20 @@ patch(PosOrder.prototype, {
     return rawRate < 1 ? 1 / rawRate : rawRate;
   },
 
+  get_display_rate_formatted() {
+    // Same as get_display_rate but formatted with the "Tasa" decimal
+    // precision (same as order_summary's getConversionRateForDisplay).
+    const rate = this.get_display_rate();
+    if (typeof rate !== "number") return rate; // "N/D" o similar
+    const rateDp = this.pos?.models?.["decimal.precision"]?.find?.(
+      (dp) => dp.name === "Tasa"
+    );
+    const precision = Number.isFinite(Number(rateDp?.digits))
+      ? Number(rateDp.digits)
+      : 6;
+    return rate.toFixed(precision);
+  },
+
 //   _isValidEmptyOrder() {
 //     let res = super._isValidEmptyOrder(...arguments);
 //     if (this.get_change() != 0) {
@@ -69,23 +76,27 @@ patch(PosOrder.prototype, {
   // -------- POS-scoped currency conversion (Venezuela) --------
   //
   // MIRROR CONTRACT:
-  //   This mirrors pos.config._convert in Python (models/pos_config.py) in
-  //   shape and precision semantics. Same inputs → same outputs on both
-  //   sides. Multiply by the RAW rate (all digits from `digits="Tasa"`),
-  //   round only the final result via to_currency.round().
+  //   This mirrors pos.config._convert in Python (models/pos_config.py).
+  //   Same inputs → same outputs on both sides. Multiply by the RAW rate
+  //   (all 15 digits from `digits=(16,15)`), round only the final result
+  //   via to_currency.round().
   //
-  // BUSINESS RULE (from l10n_ve_rate.compute_rate):
-  //   `foreign_rate` is ALWAYS the multiplier to go main → foreign.
-  //     - main=VEF, foreign=USD → foreign_rate ≈ 0.001481634035
-  //         (VEF * foreign_rate = USD)
-  //     - main=USD, foreign=VEF → foreign_rate ≈ 675
-  //         (USD * foreign_rate = VEF)
-  //   `foreign_inverse_rate` is a reporting-only value (stored on
-  //   account.move.line), NOT a conversion factor. Do NOT use it here.
-  //   Never round the rate before multiplying.
+  // SEMÁNTICA REAL (verificada en DB pos + core Odoo 19 res_currency.py):
+  //   l10n_ve_rate.compute_rate para foreign=USD, main=VEF devuelve:
+  //     pos.config.foreign_rate         = rate.inverse_company_rate  (~675, GRANDE)
+  //     pos.config.foreign_inverse_rate = rate.company_rate          (~0.001481, CHICO)
+  //
+  //   Conversión correcta (regla del usuario):
+  //     main (VEF) → foreign (USD): multiplicar por foreign_inverse_rate (0.001481)
+  //     foreign (USD) → main (VEF): multiplicar por foreign_rate         (675)
+  //
+  //   Caso foreign=VEF, main=USD: ambos campos son iguales (company_rate).
+  //
+  //   NUNCA redondear la tasa antes de multiplicar; redondear solo el
+  //   resultado con to_currency.round() en _convert.
   //
   // KEEP IN SYNC WITH:
-  //   models/pos_config.py :: PosConfig._convert / _get_pos_conversion_rate
+  //   models/pos_config.py :: PosConfig._get_pos_conversion_rate
 
   _getMainCurrency() {
     return (
@@ -112,54 +123,52 @@ patch(PosOrder.prototype, {
   },
 
   _getPosConversionRate(fromCurrency, toCurrency) {
-    // Semantics (from res_currency_rate.compute_rate in l10n_ve_rate):
+    // SEMÁNTICA REAL (verificada en DB pos + core Odoo 19 res_currency.py):
     //
-    //   pos.config exposes two rates whose meaning DEPENDS on which currency
-    //   is foreign:
-    //     * main=VEF, foreign=USD (classic VE):
-    //         foreign_rate         = inverse_company_rate  (small, ~0.00148)
-    //         foreign_inverse_rate = company_rate          (big,    ~675)
-    //     * main=USD, foreign=VEF:
-    //         foreign_rate         = company_rate          (big,    ~675)
-    //         foreign_inverse_rate = company_rate          (big,    ~675)
-    //     * foreign=VEF (any main): both fields equal company_rate.
+    //   l10n_ve_rate.compute_rate para foreign=USD, main=VEF devuelve:
+    //     pos.config.foreign_rate         = inverse_company_rate  (~675, GRANDE)
+    //     pos.config.foreign_inverse_rate = company_rate          (~0.001481, CHICO)
     //
-    //   The invariant enforced by compute_rate is:
-    //     `foreign_rate` is ALWAYS the multiplier to go main → foreign
-    //     (i.e. multiply the local amount by foreign_rate to get the
-    //     foreign amount). It is also the "user-facing" rate shown in UI.
+    //   El CHICO es el multiplicador REAL main→foreign:
+    //     VEF * 0.001481 = USD ✓
+    //   El GRANDE es para foreign→main:
+    //     USD * 675 = VEF ✓
     //
-    //   Therefore the mirror rule for _convert is:
-    //     local (main) → foreign  ==>  multiply by foreign_rate
-    //     foreign → local (main)  ==>  divide by foreign_rate
-    //                                  (a.k.a. multiply by 1 / foreign_rate)
+    //   Caso foreign=VEF, main=USD: ambos campos valen company_rate y
+    //   son idénticos, cualquiera funciona.
     //
-    //   We do NOT use foreign_inverse_rate directly for arithmetic: its
-    //   meaning is context-dependent and only stable as "the value stored
-    //   on account.move.line for reporting", not as a conversion factor.
+    // PRECISION: foreign_inverse_rate está con digits=(16,15). NUNCA
+    // redondear la tasa; redondear solo el resultado con
+    // to_currency.round() en _convert.
     //
-    // PRECISION: foreign_rate is stored with digits="Tasa" (custom high
-    // precision). Read the raw value, never round the rate itself; round
-    // only the final result via to_currency.round() in _convert.
+    // KEEP IN SYNC WITH:
+    //   models/pos_config.py :: PosConfig._get_pos_conversion_rate
     const fromId = this._currencyId(fromCurrency);
     const toId = this._currencyId(toCurrency);
     if (fromId != null && toId != null && fromId === toId) {
       return 1;
     }
     const foreignId = this._currencyId(this._getForeignCurrencyRecord());
-    const rate = Number(
-      this.config?.foreign_rate ?? this.pos?.config?.foreign_rate ?? 0
-    );
-    if (!(rate > 0)) {
+    if (!foreignId) {
       return 0;
     }
-    // main → foreign
-    if (foreignId != null && toId === foreignId && fromId !== foreignId) {
-      return rate;
+    // main → foreign: multiplicar por foreign_inverse_rate (CHICO)
+    if (toId === foreignId && fromId !== foreignId) {
+      const rate = Number(
+        this.config?.foreign_inverse_rate ??
+        this.pos?.config?.foreign_inverse_rate ??
+        0
+      );
+      return rate > 0 ? rate : 0;
     }
-    // foreign → main
-    if (foreignId != null && fromId === foreignId && toId !== foreignId) {
-      return 1 / rate;
+    // foreign → main: multiplicar por foreign_rate (GRANDE)
+    if (fromId === foreignId && toId !== foreignId) {
+      const rate = Number(
+        this.config?.foreign_rate ??
+        this.pos?.config?.foreign_rate ??
+        0
+      );
+      return rate > 0 ? rate : 0;
     }
     return 0;
   },
@@ -346,21 +355,9 @@ patch(PosOrder.prototype, {
     } else if ("to_receipt" in this) {
       data["to_receipt"] = this.to_receipt;
     }
-    // l10n_ve_pos: los reembolsos NUNCA deben sincronizar to_invoice=true.
-    //
-    // Por qué esto NO se puede resolver en setup(): el core (ticket_screen.js
-    // ::onDoRefund) crea la orden vacía PRIMERO (dispara nuestro setup(),
-    // donde is_refund todavía es false) y recién DESPUÉS asigna
-    // `destinationOrder.is_refund = true`. Nuestro guard en setup() ya
-    // corrió con is_refund=false y forzó to_invoice=true antes de que la
-    // orden supiera que era un reembolso.
-    //
-    // serializeForORM corre justo antes de sync_from_ui, cuando is_refund
-    // ya está definitivamente seteado. Es el único punto confiable para
-    // esta corrección.
-    if (this.isRefund) {
-      data["to_invoice"] = false;
-    }
+    // l10n_ve_pos: SENIAT exige factura también en notas de crédito.
+    // La facturación obligatoria aplica a TODAS las órdenes, incluyendo
+    // reembolsos (isRefund).
     return data;
   },
 //   is_to_receipt() {

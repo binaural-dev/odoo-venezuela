@@ -36,7 +36,7 @@ patch(PaymentScreen.prototype, {
     ) || 0;
     const result = await super.addNewPaymentLine(method);
 
-    if (method?.is_foreign_currency && localDueBefore > 0) {
+    if (method?.is_foreign_currency && localDueBefore !== 0) {
       const line = this.selectedPaymentLine;
       const order = this.currentOrder;
       if (line && order && typeof line.set_foreign_amount === "function" &&
@@ -48,9 +48,27 @@ patch(PaymentScreen.prototype, {
         // local amount to the exact remainingDue. Truncating here would
         // steal a cent whenever the natural round is up.
         const foreignDue = order.localToForeign(localDueBefore);
-        const dp = Number(order?.get_foreign_currency?.()?.decimal_places) || 2;
         line.set_foreign_amount(foreignDue);
-        this.numberBuffer.set(foreignDue.toFixed(dp));
+        // Use locale-aware formatting (e.g. "-0,01" in es_VE) for the
+        // number buffer. NEVER use toFixed() which produces "." decimal
+        // separators — Odoo's oParseFloat in es_VE locale treats "." as
+        // a thousands separator, turning "3.88" into 388.
+        this.numberBuffer.set(
+          this.env.utils.formatForeignCurrency(foreignDue, false)
+        );
+      }
+    } else {
+      // For LOCAL (non-foreign) methods, the core auto-filled the buffer
+      // via result.data.amount.toString() which uses "." as decimal (e.g.
+      // "3.88"). Fix: reformat with locale-aware formatting.
+      const line = this.selectedPaymentLine;
+      if (line && localDueBefore !== 0) {
+        const amount = typeof line.getAmount === "function"
+          ? line.getAmount()
+          : (line.amount || 0);
+        this.numberBuffer.set(
+          this.env.utils.formatCurrency(amount, false)
+        );
       }
     }
     return result;
@@ -91,18 +109,20 @@ patch(PaymentScreen.prototype, {
     const hasCashPaymentMethod = this.payment_methods_from_config.some(
       (method) => method.type === "cash"
     );
+    // Comparación que funciona con montos negativos (reembolsos):
     // Odoo 19: remainingDue getter replaces get_due().
     const currentDue = Number(
       this.currentOrder?.remainingDue ??
       (typeof this.currentOrder?.get_due === "function" ? this.currentOrder.get_due() : 0)
     ) || 0;
+    // Math.abs(amount) > Math.abs(currentDue + selectedPaymentLine.amount)
     if (
       !hasCashPaymentMethod &&
-      amount > currentDue + this.selectedPaymentLine.amount
+      Math.abs(amount) > Math.abs(currentDue + this.selectedPaymentLine.amount)
     ) {
       this.selectedPaymentLine.setAmount(0);
-      this.numberBuffer.set(currentDue.toString());
-      amount = currentDue;
+      this.numberBuffer.set(Math.abs(currentDue).toString());
+      amount = Math.abs(currentDue);
       this.showMaxValueError();
     }
     if (
