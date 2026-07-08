@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <record id="l10n_ve_auditlog_view" model="ir.ui.view">
     <field name="name">l10n_ve.auditlog.view</field>
@@ -12,12 +13,14 @@
       </list>
     </field>
   </record>
+
   <record id="l10n_ve_auditlog_action" model="ir.actions.act_window">
     <field name="name">Audit logs</field>
     <field name="res_model">mail.message</field>
     <field name="view_mode">list,form</field>
     <field name="domain">[('model', 'in', ('account.move','account.payment','account.retention'))]</field>
   </record>
+
   <record id="l10n_ve_auditlog_search" model="ir.ui.view">
     <field name="name">l10n_ve.mail.tracking.value.audits.search</field>
     <field name="model">mail.message</field>
@@ -30,9 +33,32 @@
     </field>
   </record>
 
-  <menuitem name="Audit logs" id="l10n_ve_auditlog_menu" action="l10n_ve_auditlog_action"
-    sequence="61" web_icon="l10n_ve_auditlog,static/description/icon.png">
-    <menuitem name="Audit logs lines" id="menu_l10n_ve_auditlogs_lines"
-      action="l10n_ve_mail_tracking_value_audits_action" />
-  </menuitem>
+  <menuitem
+    id="l10n_ve_auditlog_menu"
+    name="Audit logs"
+    parent="account.account_logs_menu"
+    action="l10n_ve_auditlog_action"
+    sequence="20"
+  />
+
+  <menuitem
+    id="menu_l10n_ve_auditlogs_lines"
+    name="Audit logs lines"
+    parent="account.account_logs_menu"
+    action="l10n_ve_mail_tracking_value_audits_action"
+    sequence="30"
+  />
+
+  <record id="auditlog.menu_action_auditlog_rule_tree" model="ir.ui.menu">
+    <field name="parent_id" ref="account.account_logs_menu"/>
+    <field name="sequence">40</field>
+    <field name="group_ids" eval="[(4, ref('l10n_ve_auditlog.group_audit_report_seniat'))]"/>
+  </record>
+
+  <record id="auditlog.menu_audit_logs" model="ir.ui.menu">
+    <field name="parent_id" ref="account.account_logs_menu"/>
+    <field name="sequence">50</field>
+    <field name="group_ids" eval="[(4, ref('l10n_ve_auditlog.group_audit_report_seniat'))]"/>
+  </record>
+
 </odoo>
