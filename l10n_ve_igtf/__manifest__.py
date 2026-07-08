@@ -19,7 +19,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.2.10",
+    "version": "19.0.1.2.11",
 
     "depends": [
         "base",
@@ -31,6 +31,7 @@
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",
+        "report/invoice_free_form.xml",
         "views/account_journal.xml",
         "views/account_account.xml",
         "views/account_move.xml",

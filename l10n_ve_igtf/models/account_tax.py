@@ -1,6 +1,7 @@
 from odoo import models, api, _
 from odoo.tools.misc import formatLang
 from odoo.tools.float_utils import float_round, float_is_zero
+from odoo.exceptions import UserError
 
 
 import logging
@@ -38,13 +39,7 @@ class AccountTax(models.Model):
         res = super()._get_tax_totals_summary(base_lines, currency, company, cash_rounding)
 
         invoice = self.env["account.move"]
-        order = False
-        apply_igtf = False
-        type_model = ""
-        base_igtf = 0
-        foreign_base_igtf = 0
-        is_igtf_suggested = False
-      
+
         for base_line in base_lines:
             type_model = base_line["record"]._name
             if base_line["record"]._name == "account.move.line":
@@ -52,92 +47,141 @@ class AccountTax(models.Model):
             if base_line["record"]._name == "sale.order.line":
                 order = base_line["record"].order_id
 
-        foreign_currency = self.env.company.foreign_currency_id
-        rate = 0
 
-        if type_model == "account.move.line":
-            rate = invoice.foreign_inverse_rate
-        if type_model == "sale.order.line":
-            rate = order.foreign_inverse_rate
+        apply_igtf = False
+        igtf_show = False
+        base_igtf = 0
+        foreign_base_igtf = 0
 
+        foreign_currency = invoice.company_id.currency_id
+        
         float_igtf_percentage = self.env.company.igtf_percentage
+        show_igtf_suggested_account_move =  self.env.company.show_igtf_suggested_account_move
 
         igtf_percentage = (float_igtf_percentage or 0) / 100
-
-        if (
-            type_model == "account.move.line"
-            and self.env.company.show_igtf_suggested_account_move
-            and invoice.payment_state == "not_paid"
-        ):
-            is_igtf_suggested = True
-            base_igtf = res.get("amount_total", 0)
-            foreign_base_igtf = res.get("foreign_amount_total", 0)
-        if (
-            type_model == "sale.order.line"
-            and self.env.company.show_igtf_suggested_sale_order
-        ):
-            is_igtf_suggested = True
-            base_igtf = res.get("amount_total", 0)
-            foreign_base_igtf = res.get("foreign_amount_total", 0)
-
-        if invoice.bi_igtf:
+        
+        if invoice.bi_igtf > 0.0:
+            apply_igtf = True
             if invoice.currency_id.id != invoice.company_id.currency_id.id:
                 base_igtf = invoice.foreign_bi_igtf
                 foreign_base_igtf = invoice.bi_igtf
             else:
                 base_igtf = invoice.bi_igtf
                 foreign_base_igtf = invoice.foreign_bi_igtf
+        else:
+            if invoice.move_type == "out_invoice" and invoice.payment_state == "not_paid":
+                igtf_show = True
+
+            if invoice.currency_id.id != invoice.company_id.currency_id.id:
+                base_igtf = invoice.amount_total
+                foreign_base_igtf = invoice.amount_total_signed 
+            else:
+
+                if invoice.invoice_date_due and invoice.invoice_date and invoice.invoice_date_due > invoice.invoice_date:
+                    base_igtf = invoice.amount_total_signed 
+                    foreign_base_igtf = invoice.amount_total
+                    igtf_show = True
+                else:
+                    igtf_show = False
+
+        base_igtf_free = 0.0
+        foreign_base_igtf_free = 0.0
+        if invoice.move_type == "out_invoice":
+            if invoice.currency_id.id != invoice.company_id.currency_id.id:
+                base_igtf_free = invoice.amount_total
+                foreign_base_igtf_free = invoice.amount_total_signed 
+            else:
+                if invoice.invoice_date_due and invoice.invoice_date and invoice.invoice_date_due > invoice.invoice_date:
+                    base_igtf_free = invoice.amount_total_signed 
+                    foreign_base_igtf_free = invoice.amount_total
+                else:
+                    base_igtf_free = 0.0 
+                    foreign_base_igtf_free = 0.0
+
 
         igtf_base_amount = base_igtf 
         igtf_foreign_base_amount = foreign_base_igtf 
 
-        if (
-            igtf_base_amount > 0
-        ):
-            
-            apply_igtf = True
+        igtf_amount = igtf_base_amount * igtf_percentage 
+        foreign_igtf_base_amount = igtf_foreign_base_amount * igtf_percentage 
 
-        foreign_igtf_base_amount = igtf_foreign_base_amount 
 
-        igtf_amount = igtf_base_amount * igtf_percentage
+        igtf_base_amount_free = base_igtf_free 
+        igtf_foreign_base_amount_free = foreign_base_igtf_free 
 
-        foreign_igtf_amount = igtf_foreign_base_amount * igtf_percentage
-            
+        igtf_amount_free = igtf_base_amount_free * igtf_percentage 
+        foreign_igtf_base_amount_free = igtf_foreign_base_amount_free * igtf_percentage 
+        
 
         res["igtf"] = {}
         res["igtf"]["apply_igtf"] = apply_igtf
+        res["igtf"]["igtf_show"] = igtf_show
         res["igtf"]["name"] = f"{float_igtf_percentage} %"
 
-        res["igtf"]["igtf_base_amount"] = igtf_base_amount
-        res["igtf"]["formatted_igtf_base_amount"] = formatLang(
+        res["igtf"]["igtf_base_amount"] = igtf_base_amount 
+        res["igtf"]["formatted_igtf_base_amount"] = formatLang( 
             self.env, igtf_base_amount, currency_obj=currency
         )
-        res["igtf"]["foreign_igtf_base_amount"] = foreign_igtf_base_amount
-        res["igtf"]["formatted_foreign_igtf_base_amount"] = formatLang(
+        res["igtf"]["foreign_igtf_base_amount"] = igtf_foreign_base_amount 
+        res["igtf"]["formatted_foreign_igtf_base_amount"] = formatLang( 
+            self.env, igtf_foreign_base_amount, currency_obj=foreign_currency
+        )
+
+        res["igtf"]["igtf_amount"] = igtf_amount 
+        res["igtf"]["formatted_igtf_amount"] = formatLang( 
+             self.env, igtf_amount, currency_obj=currency
+         )
+
+        res["igtf"]["foreign_igtf_amount"] = foreign_igtf_base_amount 
+        res["igtf"]["formatted_foreign_igtf_amount"] = formatLang( 
             self.env, foreign_igtf_base_amount, currency_obj=foreign_currency
         )
 
-        res["igtf"]["igtf_amount"] = igtf_amount
-        res["igtf"]["formatted_igtf_amount"] = formatLang(
-            self.env, igtf_amount, currency_obj=currency
-        )
-
-        res["igtf"]["foreign_igtf_amount"] = foreign_igtf_amount
-        res["igtf"]["formatted_foreign_igtf_amount"] = formatLang(
-            self.env, foreign_igtf_amount, currency_obj=foreign_currency
-        )
-        
-
-        res["amount_total_igtf"] = res["total_amount_currency"] + igtf_amount
-        
+        res["amount_total_igtf"] = invoice.amount_total + igtf_amount
         res["formatted_amount_total_igtf"] = formatLang(
             self.env, res["amount_total_igtf"], currency_obj=currency
         )
-        res["foreign_amount_total_igtf"] = res["total_amount_currency"] + foreign_igtf_amount
-        
+
+        res["foreign_amount_total_igtf"] = invoice.amount_total_signed + foreign_igtf_base_amount
         res["formatted_foreign_amount_total_igtf"] = formatLang(
             self.env, res["foreign_amount_total_igtf"], currency_obj=foreign_currency
         )
-        res["igtf"]["is_igtf_suggested"] = is_igtf_suggested
+
+        # Free-Form Values
+        if invoice.move_type == "out_invoice": 
+            res["igtf_free_form"] = {}
+            res["igtf_free_form"]["show_igtf_suggested_account_move"] = show_igtf_suggested_account_move
+            res["igtf_free_form"]["name"] = f"{float_igtf_percentage} %"
+
+            res["igtf_free_form"]["igtf_base_amount_free"] = igtf_base_amount_free 
+            res["igtf_free_form"]["formatted_igtf_base_amount_free"] = formatLang( 
+                self.env, igtf_base_amount_free, currency_obj=currency
+            )
+            res["igtf_free_form"]["foreign_igtf_base_amount_free"] = igtf_foreign_base_amount_free 
+            res["igtf_free_form"]["formatted_foreign_igtf_base_amount_free"] = formatLang( 
+                self.env, igtf_foreign_base_amount_free, currency_obj=foreign_currency
+            )
+
+            res["igtf_free_form"]["igtf_amount_free"] = igtf_amount_free 
+            res["igtf_free_form"]["formatted_igtf_amount_free"] = formatLang( 
+                self.env, igtf_amount_free, currency_obj=currency
+            )
+
+            res["igtf_free_form"]["foreign_igtf_amount_free"] = foreign_igtf_base_amount_free 
+            res["igtf_free_form"]["formatted_foreign_igtf_amount_free"] = formatLang( 
+                self.env, foreign_igtf_base_amount_free, currency_obj=foreign_currency
+            )
+
+            res["igtf_free_form"]["amount_total_igtf_free"] = invoice.amount_total + igtf_amount_free
+            res["igtf_free_form"]["formatted_amount_total_igtf_free"] = formatLang(
+                self.env, res["igtf_free_form"]["amount_total_igtf_free"], currency_obj=currency
+            )
+
+            res["igtf_free_form"]["foreign_amount_total_igtf_free"] = invoice.amount_total_signed + foreign_igtf_base_amount_free
+            res["igtf_free_form"]["formatted_foreign_amount_total_igtf_free"] = formatLang(
+                self.env, res["igtf_free_form"]["foreign_amount_total_igtf_free"], currency_obj=foreign_currency
+            )
+
+        
 
         return res
