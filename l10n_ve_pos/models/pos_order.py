@@ -46,12 +46,7 @@ class PosOrder(models.Model):
         return self.payment_ids.read()
 
     def _prepare_refund_values(self, current_session):
-        res = super()._prepare_refund_values(current_session)
-        # l10n_ve_pos: los reembolsos NO deben emitir factura automática.
-        # El copy() del original hereda to_invoice=True de la orden de venta,
-        # y _prepare_refund_values del core no lo sobrescribe.
-        res["to_invoice"] = False
-        return res
+        return super()._prepare_refund_values(current_session)
 
     def _get_invoice_lines_values(self, line_values, pos_order_line, move_type):
         # Odoo 19 added the ``move_type`` argument

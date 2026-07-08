@@ -17,20 +17,13 @@ patch(PosOrder.prototype, {
       if (!Array.isArray(this.lines)) {
         this.lines = [];
       }
-      // l10n_ve_pos: toda venta del PoS (Venezuela) debe emitir factura.
-      // Forzamos to_invoice=true SOLO en órdenes de venta, NO en reembolsos.
-      // Los reembolsos tienen flujo de facturación propio (credit note) y
-      // forzar to_invoice=true rompe la validación de invoice en Odoo 19.
-      if (!this.isRefund) {
-        this.to_invoice = true;
-      }
+      // l10n_ve_pos: SENIAT — toda venta y nota de crédito del PoS debe emitir factura.
+      // Forzamos to_invoice=true en TODAS las órdenes, incluyendo reembolsos.
+      this.to_invoice = true;
   },
   setToInvoice() {
-      // Solo permite activar facturación; nunca desactivar.
-      // En reembolsos no se aplica la regla SENIAT.
-      if (!this.isRefund) {
-        this.to_invoice = true;
-      }
+      // SENIAT: toda orden del PoS debe emitir factura, incluyendo notas de crédito.
+      this.to_invoice = true;
   },
  get_foreign_currency(){
         return this.config.foreign_currency_id;
@@ -348,21 +341,9 @@ patch(PosOrder.prototype, {
     } else if ("to_receipt" in this) {
       data["to_receipt"] = this.to_receipt;
     }
-    // l10n_ve_pos: los reembolsos NUNCA deben sincronizar to_invoice=true.
-    //
-    // Por qué esto NO se puede resolver en setup(): el core (ticket_screen.js
-    // ::onDoRefund) crea la orden vacía PRIMERO (dispara nuestro setup(),
-    // donde is_refund todavía es false) y recién DESPUÉS asigna
-    // `destinationOrder.is_refund = true`. Nuestro guard en setup() ya
-    // corrió con is_refund=false y forzó to_invoice=true antes de que la
-    // orden supiera que era un reembolso.
-    //
-    // serializeForORM corre justo antes de sync_from_ui, cuando is_refund
-    // ya está definitivamente seteado. Es el único punto confiable para
-    // esta corrección.
-    if (this.isRefund) {
-      data["to_invoice"] = false;
-    }
+    // l10n_ve_pos: SENIAT exige factura también en notas de crédito.
+    // La facturación obligatoria aplica a TODAS las órdenes, incluyendo
+    // reembolsos (isRefund).
     return data;
   },
 //   is_to_receipt() {
