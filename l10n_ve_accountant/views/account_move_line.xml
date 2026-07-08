@@ -30,7 +30,7 @@
 		<field name="foreign_debit_adjustment" optional="hide" options="{'precision': 'Foreign Product Price'}"/>
 		<field name="foreign_credit" readonly="1" optional="show" sum="Total Foreign Credit" widget="monetary" options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"/>
 		<field name="foreign_credit_adjustment" optional="hide" options="{'precision': 'Foreign Product Price'}"/>
-		<field name="foreign_balance" readonly="1" optional="hide" widget="monetary" options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"/>
+		<field name="foreign_balance" readonly="1" optional="hide" sum="Total Foreign Balance" widget="monetary" options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"/>
                     
 
 	    </xpath>
