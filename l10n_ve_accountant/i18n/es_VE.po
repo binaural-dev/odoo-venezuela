@@ -1628,12 +1628,6 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #. odoo-python
-#: code:addons/l10n_ve_accountant/models/auditlog_log.py:0
-msgid "It is not possible to delete audit records."
-msgstr "No es posible eliminar los registros de auditoría."
-
-#. module: l10n_ve_accountant
-#. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_journal.py:0
 msgid "You do not have permissions to create/update a journal with this type."
 msgstr "No tienes permisos para crear/actualizar un diario de este tipo."
