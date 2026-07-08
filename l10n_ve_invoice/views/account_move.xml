@@ -220,4 +220,22 @@
         </field>
     </record>
 
+    <record id="l10n_ve_invoice_view_invoice_tree_datetime" model="ir.ui.view">
+        <field name="name">account.move.list.l10n.ve.invoice.datetime</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree" />
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_date_display']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_date_display']" position="before">
+                <field name="invoice_date_display_datetime"
+                       optional="show"
+                       string="Invoice Date"
+                       readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>
