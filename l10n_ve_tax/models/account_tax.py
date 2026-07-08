@@ -212,6 +212,12 @@ class AccountTax(models.Model):
         if foreign_tax_lines:
             for tax_line in foreign_tax_lines:
                 tax_line["currency"] = currency
+                record = tax_line.get("record")
+                rate = getattr(record, "foreign_inverse_rate", 0.0) if record is not None else 0.0
+                if rate:
+                    tax_line["tax_amount"] = abs(record.balance) * rate
+                    continue
+
                 tax_line["tax_amount"] = 0.0
                 amount = 0.0
                 for tax in tax_values_list:
