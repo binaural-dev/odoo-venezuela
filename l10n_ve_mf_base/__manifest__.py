@@ -13,6 +13,9 @@
             "l10n_ve_mf_base/static/src/core/*.js",
             "l10n_ve_mf_base/static/src/drivers/*.js",
         ],
+        "web.assets_unit_tests": [
+            "l10n_ve_mf_base/static/tests/unit/**/*",
+        ],
     },
     "installable": True,
     "application": False,
