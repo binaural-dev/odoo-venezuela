@@ -16,6 +16,9 @@
         "l10n_ve_tax",
         "l10n_ve_contact",
         "l10n_ve_rate",
+        "account_invoice_pricelist",
+        "account_invoice_pricelist_sale",
+        "account_debit_note"
     ],
     "data": [
         "security/res_groups.xml",

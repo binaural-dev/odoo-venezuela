@@ -16,6 +16,7 @@
             </xpath>
             <xpath expr="//button[@name='action_reverse']" position="attributes">
                 <attribute name="string">Add Credit Note</attribute>
+                <attribute name="invisible">move_type not in ('out_invoice', 'in_invoice') or state != 'posted' or debit_origin_id</attribute>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="replace">
                 <field name="partner_id" nolabel="1"
@@ -156,4 +157,17 @@
         </field>
     </record>
 
+    <record id="view_move_form_debit_inherit_l10n_ve" model="ir.ui.view">
+        <field name="name">account.move.form.debit.inherit.l10n.ve</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account_debit_note.view_move_form_debit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="debit_origin_id" invisible="1" />
+            </xpath>
+            <button name="action_debit_note" position="attributes">
+                <attribute name="invisible">move_type not in ('out_invoice', 'in_invoice') or state != 'posted' or debit_origin_id</attribute>
+            </button>
+        </field>
+    </record>
 </odoo>
