@@ -1127,32 +1127,18 @@ export class TfhkaDriver {
 
     _appendPaymentCommands(commands, orderData, config) {
         const payments = orderData.payment_lines || [];
-        const groupedPayments = {};
 
         if (orderData.has_cashbox) {
             commands.push("w");
         }
 
-        for (const payment of payments) {
-            const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
-            const amount = Math.abs(Number(payment.amount || 0));
-            groupedPayments[methodCode] = (groupedPayments[methodCode] || 0) + amount;
-        }
-
-        const paymentEntries = Object.entries(groupedPayments)
-            .filter(([, amount]) => amount > 0)
-            .map(([methodCode, amount]) => ({ methodCode, amount }));
-
         const hasDivisa = this._hasDivisaPayment(payments);
-        const sumRawPayments = paymentEntries.reduce((acc, p) => acc + p.amount, 0);
         console.log(
             "TfhkaDriver:: [PAGOS-DEBUG] payments recibidos:", payments,
-            "| agrupados:", paymentEntries,
-            "| hasDivisa:", hasDivisa,
-            "| suma cruda:", sumRawPayments
+            "| hasDivisa:", hasDivisa
         );
 
-        if (!paymentEntries.length) {
+        if (!payments.length) {
             console.log("TfhkaDriver:: [PAGOS-DEBUG] Sin lineas de pago, enviando cierre directo 101");
             commands.push("101");
             return;
@@ -1171,24 +1157,53 @@ export class TfhkaDriver {
         // divisas). Si la suma de los montos 2XX enviados no coincide
         // exactamente con lo que la impresora espera (subtotal + IVA + IGTF
         // calculado por ELLA), rechaza el "199" con NAK y el documento no se
-        // cierra (no se corta el papel). Este log permite comparar la suma
-        // enviada aquí contra order.get_total_with_tax() logueado en
-        // PosStore.get_data_invoice (que incluye el IGTF calculado por Odoo).
+        // cierra (no se corta el papel).
+        //
+        // NO se agrupan los pagos por método aquí: el IGTF se calcula por
+        // cada pago en divisa que la impresora recibe individualmente. Si
+        // hay 2 pagos con el mismo método en divisa, deben enviarse como 2
+        // comandos "2XX" separados (no sumados en uno solo), para que el
+        // cálculo de IGTF de la impresora sea fiel a cómo se recibieron los
+        // pagos realmente.
         if (hasDivisa) {
             let sumFormatted = 0;
-            for (const { methodCode, amount } of paymentEntries) {
+            for (const payment of payments) {
+                const amount = Math.abs(Number(payment.amount || 0));
+                if (amount <= 0) {
+                    continue;
+                }
+                const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
                 const amountStr = this._formatAmount(
                     amount,
                     config.max_payment_amount_int,
                     config.max_payment_amount_decimal
                 );
                 sumFormatted += amount;
-                console.log(`TfhkaDriver:: [PAGOS-DEBUG] 2XX método=${methodCode} monto_crudo=${amount} monto_formateado=${amountStr}`);
+                console.log(`TfhkaDriver:: [PAGOS-DEBUG] 2XX (sin agrupar) método=${methodCode} monto_crudo=${amount} monto_formateado=${amountStr}`);
                 commands.push(`2${methodCode}${amountStr}`);
             }
             console.log("TfhkaDriver:: [PAGOS-DEBUG] IGTF activo. Suma total enviada en 2XX (antes del IGTF que calculara la impresora):", sumFormatted);
             console.log("TfhkaDriver:: [PAGOS-DEBUG] NO se envia 1XX. El cierre depende de que '199' calce con el total esperado por la impresora (incluyendo su propio IGTF).");
             // NO se envía "1XX": el "199" final cierra el documento con IGTF.
+            return;
+        }
+
+        // Sin divisas: se puede agrupar por método de pago con seguridad,
+        // ya que no hay cálculo de IGTF involucrado.
+        const groupedPayments = {};
+        for (const payment of payments) {
+            const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
+            const amount = Math.abs(Number(payment.amount || 0));
+            groupedPayments[methodCode] = (groupedPayments[methodCode] || 0) + amount;
+        }
+
+        const paymentEntries = Object.entries(groupedPayments)
+            .filter(([, amount]) => amount > 0)
+            .map(([methodCode, amount]) => ({ methodCode, amount }));
+
+        if (!paymentEntries.length) {
+            console.log("TfhkaDriver:: [PAGOS-DEBUG] Sin lineas de pago validas, enviando cierre directo 101");
+            commands.push("101");
             return;
         }
 
