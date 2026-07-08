@@ -1,0 +1,29 @@
+<odoo>
+  <record id="view_auditlog_log_form_restrict_delete" model="ir.ui.view">
+    <field name="name">auditlog.log.form.restrict.delete</field>
+    <field name="model">auditlog.log</field>
+    <field name="inherit_id" ref="auditlog.view_auditlog_log_form" />
+    <field name="arch" type="xml">
+      <xpath expr="//form" position="attributes">
+        <attribute name="delete">0</attribute>
+      </xpath>
+      <xpath expr="//form" position="attributes" groups="l10n_ve_accountant.group_fiscal_config_support">
+        <attribute name="delete">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_auditlog_log_tree_restrict_delete" model="ir.ui.view">
+    <field name="name">auditlog.log.tree.restrict.delete</field>
+    <field name="model">auditlog.log</field>
+    <field name="inherit_id" ref="auditlog.view_auditlog_log_tree" />
+    <field name="arch" type="xml">
+      <xpath expr="//tree" position="attributes">
+        <attribute name="delete">0</attribute>
+      </xpath>
+      <xpath expr="//tree" position="attributes" groups="l10n_ve_accountant.group_fiscal_config_support">
+        <attribute name="delete">1</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>
