@@ -50,6 +50,20 @@ patch(PosOrder.prototype, {
     return rawRate < 1 ? 1 / rawRate : rawRate;
   },
 
+  get_display_rate_formatted() {
+    // Same as get_display_rate but formatted with the "Tasa" decimal
+    // precision (same as order_summary's getConversionRateForDisplay).
+    const rate = this.get_display_rate();
+    if (typeof rate !== "number") return rate; // "N/D" o similar
+    const rateDp = this.pos?.models?.["decimal.precision"]?.find?.(
+      (dp) => dp.name === "Tasa"
+    );
+    const precision = Number.isFinite(Number(rateDp?.digits))
+      ? Number(rateDp.digits)
+      : 6;
+    return rate.toFixed(precision);
+  },
+
 //   _isValidEmptyOrder() {
 //     let res = super._isValidEmptyOrder(...arguments);
 //     if (this.get_change() != 0) {

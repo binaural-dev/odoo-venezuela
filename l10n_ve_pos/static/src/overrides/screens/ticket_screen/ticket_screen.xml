@@ -1,7 +1,7 @@
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
         <xpath expr="//OrderDisplay" position="attributes">
-            <attribute name="conversion_rate">_selectedSyncedOrder.get_display_rate()</attribute>
+            <attribute name="conversion_rate">_selectedSyncedOrder.get_display_rate_formatted()</attribute>
             <attribute name="foreign_total">env.utils.formatForeignCurrency(_selectedSyncedOrder.get_foreign_total_with_tax())</attribute>
             <attribute name="quantity_products">_selectedSyncedOrder.get_qty_products()</attribute>
             <attribute name="foreign_tax">env.utils.formatForeignCurrency(_selectedSyncedOrder.get_foreign_total_tax())</attribute>
