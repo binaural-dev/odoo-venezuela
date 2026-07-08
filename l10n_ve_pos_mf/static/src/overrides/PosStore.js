@@ -442,12 +442,6 @@ patch(PosStore.prototype, {
     return round_pr(value, this.currency?.rounding || 0.01);
   },
 
-  _composeDiscountRates(existingRate, extraRate) {
-    const base = Math.min(Math.max(Number(existingRate) || 0, 0), 100);
-    const extra = Math.min(Math.max(Number(extraRate) || 0, 0), 100);
-    return 100 - ((100 - base) * (100 - extra)) / 100;
-  },
-
   _isGlobalDiscountProductLine(line) {
     const discountProductId = this.config?.discount_product_id?.[0];
     if (!discountProductId || !line?.get_product) {
@@ -456,17 +450,23 @@ patch(PosStore.prototype, {
     return Number(line.get_product()?.id || 0) === Number(discountProductId);
   },
 
+  /**
+   * Resetea el descuento de TODAS las líneas positivas a 0%.
+   *
+   * El descuento global POS siempre sobreescribe cualquier descuento previo
+   * (manual o de una asignación global anterior) en vez de componerse con
+   * él. Esto evita que las líneas agregadas después de un descuento global
+   * queden con una tasa distinta a las líneas originales.
+   */
   _resetGlobalDiscountOnLines(order) {
     for (const line of [...(order.orderlines || [])]) {
-      if (line._mf_base_discount === undefined) {
+      if (this._isGlobalDiscountProductLine(line)) {
         continue;
       }
-
-      const baseDiscount = Math.min(Math.max(Number(line._mf_base_discount) || 0, 0), 100);
       if (typeof line.set_discount === "function") {
-        line.set_discount(baseDiscount);
+        line.set_discount(0);
       } else {
-        line.discount = baseDiscount;
+        line.discount = 0;
       }
     }
   },
@@ -545,22 +545,10 @@ patch(PosStore.prototype, {
     });
 
     for (const line of positiveLines) {
-      const currentDiscount = Number(
-        line._mf_base_discount !== undefined
-          ? line._mf_base_discount
-          : (line.get_discount?.() ?? line.discount ?? 0)
-      );
-      const composedDiscount = this._composeDiscountRates(
-        currentDiscount,
-        meta.global_discount_rate
-      );
-
-      line._mf_base_discount = Math.min(Math.max(currentDiscount, 0), 100);
-
       if (typeof line.set_discount === "function") {
-        line.set_discount(composedDiscount);
+        line.set_discount(meta.global_discount_rate);
       } else {
-        line.discount = composedDiscount;
+        line.discount = meta.global_discount_rate;
       }
     }
 

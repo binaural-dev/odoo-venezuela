@@ -81,7 +81,7 @@ Strategy A is **not** propagated to Notas de Crédito / Débito. NC/ND retain th
 
 - **Math**: Total printed by the fiscal printer matches what Odoo computes for an equivalent line-discount situation. Eliminates the "tax discrepancy" complaint.
 - **Ticket readability**: The single line `DESC. GLOBAL 15% = 15.00` preserves audit visibility.
-- **Cascade**: Line discounts and global discounts compose cleanly via the helper `_applyDiscount`. If a cashier edits `line.discount` and then adjusts global, both apply in well-defined order (line first, then global on the net of line).
+- **Overwrite policy**: A newly assigned global discount always overwrites the discount on every positive line (reset to 0% then set to the flat global rate). It does **not** compose with any pre-existing per-line discount or with a previously applied global discount. This avoids uneven rates between lines added before vs. after a global discount is set (previously caused "split"/unequal discounts when a new line was added and the global discount was reassigned).
 - **No new fiscal commands introduced** — still uses only `!`, `iXX`, `3`, `1XX`, `2XX`, `101`, `199`. No `p-` per-line or negative-priced items. Compatible with the existing printer firmware.
 - **No firmware-specific assumptions** beyond what was already working.
 
@@ -104,7 +104,7 @@ The legacy IoT reference implementation (`SerialFiscalDriver.py`) follows the sa
 
 - **10-line info buffer**: TFHKA limits informational `iXX` lines to ~10 per document. Each header line (address/phone) and footer line consumes one slot. With Strategy A, we get 1 (info) + 1 (clamp warning if needed) + headers + footers. For a document with > 7 header lines + 8 footer lines, the discount info line may be skipped (logged warning in browser console).
 - **Clamp >100%**: Treated as a soft cap with pop-up rather than a hard rejection. Discuss with business if they prefer strict rejection.
-- **Coexistence with line discount**: Tested via the `_applyDiscount` helper; composition order is "line first, then global on the net". Earlier work treats `line.discount` as the primary discount mechanism; Strategy A only changes how the global discount is converted into per-line base delta.
+- **Coexistence with line discount**: The global discount always overwrites `line.discount` on every positive line (no composition). Assigning a global discount is a flat, idempotent operation: every time it is (re)applied, all lines are reset to 0% first, then set to the same rate.
 
 ## Tests
 
