@@ -736,26 +736,15 @@ patch(PosOrder.prototype, {
 // -----------------------------------------------------------------------------
 patch(PosOrderAccounting.prototype, {
     _computeAllPrices(opts = {}) {
-        const lines = opts.lines || this.lines;
-        if (!Array.isArray(lines)) {
-            return {
-                taxDetails: {
-                    lines: [],
-                    taxes_data: [],
-                    total_amount: 0,
-                    total_amount_no_rounding: 0,
-                    total_amount_currency: 0,
-                    total_excluded: 0,
-                    total_included: 0,
-                    total_included_currency: 0,
-                    total_excluded_currency: 0,
-                    base_amount: 0,
-                    tax_amount_currency: 0,
-                    order_sign: 1,
-                },
-                baseLines: [],
-                baseLineByLineUuids: {},
-            };
+        // Odoo 19 core bug: lines puede ser undefined/null en órdenes
+        // huérfanas o sincronizadas sin líneas. Forzamos array vacío para
+        // que lines.map() no crashee y el resto del método produzca
+        // taxDetails válidos (aunque con ceros).
+        if (!Array.isArray(this.lines)) {
+            this.lines = [];
+        }
+        if (!Array.isArray(opts.lines)) {
+            opts = { ...opts, lines: this.lines };
         }
         return super._computeAllPrices(opts);
     },
