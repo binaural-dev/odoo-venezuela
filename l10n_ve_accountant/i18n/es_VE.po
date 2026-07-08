@@ -1607,8 +1607,8 @@ msgstr ""
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/res_currency.py:0
-msgid "You are not authorized to delete currency records."
-msgstr "No está autorizado para eliminar registros de monedas."
+msgid "It is not possible to delete currency records."
+msgstr "No es posible eliminar los registros de monedas."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1629,8 +1629,8 @@ msgstr ""
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/auditlog_log.py:0
-msgid "You do not have permission to delete audit records."
-msgstr "No tiene permiso para eliminar registros de auditoría."
+msgid "It is not possible to delete audit records."
+msgstr "No es posible eliminar los registros de auditoría."
 
 #. module: l10n_ve_accountant
 #. odoo-python
