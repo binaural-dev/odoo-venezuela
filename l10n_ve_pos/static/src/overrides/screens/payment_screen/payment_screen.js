@@ -57,6 +57,19 @@ patch(PaymentScreen.prototype, {
           this.env.utils.formatForeignCurrency(foreignDue, false)
         );
       }
+    } else {
+      // For LOCAL (non-foreign) methods, the core auto-filled the buffer
+      // via result.data.amount.toString() which uses "." as decimal (e.g.
+      // "3.88"). Fix: reformat with locale-aware formatting.
+      const line = this.selectedPaymentLine;
+      if (line && localDueBefore !== 0) {
+        const amount = typeof line.getAmount === "function"
+          ? line.getAmount()
+          : (line.amount || 0);
+        this.numberBuffer.set(
+          this.env.utils.formatCurrency(amount, false)
+        );
+      }
     }
     return result;
   },
