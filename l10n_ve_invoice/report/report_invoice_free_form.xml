@@ -111,6 +111,10 @@
                                 <strong>Pedido: </strong><t t-out="o.invoice_origin or 'N/A'"/>
                                 <br/>
                                 <strong>Fecha de emisión:</strong> <t t-if="o.date" t-out="o.date.strftime('%d/%m/%Y')"/>
+                                <t t-if="o.invoice_payment_term_id">
+                                    <strong>Termino de Pago: </strong><t t-out="o.invoice_payment_term_id.name"/>
+                                </t>
+                                
                             </div>
                         </div>
 
