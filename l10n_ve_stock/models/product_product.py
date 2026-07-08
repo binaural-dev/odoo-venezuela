@@ -25,7 +25,7 @@ class ProductProduct(models.Model):
 
     def _validate_list_price(self):
         for product in self:
-            if product.list_price <= 0:
+            if product.list_price < 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     @api.model_create_multi
