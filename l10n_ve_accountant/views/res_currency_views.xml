@@ -1,22 +1,17 @@
 <odoo>
-  <!-- Vista Formulario de Monedas (Por defecto restrictiva) -->
   <record id="l10n_ve_accountant_res_currency" model="ir.ui.view">
     <field name="name">res.currency.form.l10n.ve</field>
     <field name="model">res.currency</field>
     <field name="inherit_id" ref="base.view_currency_form" />
     <field name="arch" type="xml">
-      <!-- <xpath expr="//form[1]/field[1]" position="after">
+      <!--  Homologación: No permitir eliminar el registro de una moneda, ni modificar, agregar o eliminar sus tasas de cambio, a menos que pertenezca al grupo  -->
+      <xpath expr="//field[1]" position="after">
         <field name="edit_rate" invisible="1" />
-      </xpath> -->
+      </xpath>
       <xpath expr="//page[1]/field[1]" position="attributes">
         <attribute name="readonly">not edit_rate</attribute>
       </xpath>
-
-      <xpath expr="//field[@name='rate_ids']/list" position="attributes">
-        <attribute name="create">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
-        <attribute name="delete">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
-        <attribute name="edit">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
-      </xpath>
+       <!-- Cierre de código homologado. En caso de requerir cambios o ajustes consultar con la Gerencia de Producto -->
     </field>
   </record>
 </odoo>
