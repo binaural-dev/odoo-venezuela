@@ -99,7 +99,7 @@ patch(PosPayment.prototype, {
                 : (line.amount || 0);
             return sum + (Number(lineAmount) || 0);
         }, 0);
-        const localDueBefore = Math.max(0, localTotal - localPaidOthers);
+        const localDueBefore = localTotal - localPaidOthers;
 
         // Convert local due to foreign ONCE (same rounding as
         // get_foreign_total_with_tax → foreign_currency.round).
@@ -108,14 +108,15 @@ patch(PosPayment.prototype, {
         const foreignCurrency = order.get_foreign_currency?.();
         const foreignRounding = Number(foreignCurrency?.rounding) || 0.01;
 
-        // "Covers the due" means requested >= due, using foreign currency
-        // rounding as tolerance (avoids float-noise misclassification).
-        const coversDue = foreignDueBefore > 0
-            && (requested + foreignRounding / 2) >= foreignDueBefore;
+        // "Covers the due" means |requested| >= |due|. Works for both
+        // positive (sales) and negative (refunds) amounts.
+        // Uses foreign currency rounding as tolerance.
+        const coversDue = foreignDueBefore !== 0
+            && Math.abs(requested) + foreignRounding / 2 >= Math.abs(foreignDueBefore);
 
         if (coversDue) {
-            // Foreign amount pays the local due exactly, plus any overpay.
-            const overpaymentForeign = Math.max(0, requested - foreignDueBefore);
+            // Payment covers the local due exactly, plus any overpay.
+            const overpaymentForeign = Math.abs(requested) - Math.abs(foreignDueBefore);
             const overpaymentLocal = overpaymentForeign > 0
                 ? order.foreignToLocal(overpaymentForeign)
                 : 0;
