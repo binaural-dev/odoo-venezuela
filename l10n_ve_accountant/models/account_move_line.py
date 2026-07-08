@@ -75,7 +75,7 @@ class AccountMoveLine(models.Model):
     international_purchase_exent_product = fields.Boolean(string="International Purchase Exent Product")
     is_purchase_international = fields.Boolean(related="move_id.journal_id.is_purchase_international")
 
-    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
+    @api.depends("price_unit", "foreign_inverse_rate", "move_id.currency_id")
     def _compute_price_unit_ves(self):
         for line in self:
             if line.currency_id and line.currency_id == line.company_id.currency_id:
@@ -126,7 +126,7 @@ class AccountMoveLine(models.Model):
             line.name = line.move_id.name
         return res
 
-    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
+    @api.depends("price_unit", "foreign_inverse_rate", "move_id.currency_id")
     def _compute_foreign_price(self):
         for line in self:
             company_currency = line.company_id.currency_id

@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.0.9",
     "depends": [
         "base",
         "web",
@@ -19,7 +19,8 @@
         "l10n_ve_rate",
         "l10n_ve_contact",
         "account_invoice_pricelist",
-        "account_invoice_pricelist_sale"
+        "account_invoice_pricelist_sale",
+        "account_debit_note"
     ],
     "data": [
         "security/res_groups.xml",
@@ -35,7 +36,7 @@
         "views/account_move_line.xml",
         "views/account_payment.xml",
         "views/res_partner.xml",
-        # "views/res_currency_views.xml",
+        "views/res_currency_views.xml",
         # "views/ir_property.xml",
         "views/res_company_views.xml",
         "views/tax_unit.xml",

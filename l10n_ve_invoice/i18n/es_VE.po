@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20260512\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260702\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-27 13:59+0000\n"
-"PO-Revision-Date: 2026-05-27 13:59+0000\n"
+"POT-Creation-Date: 2026-07-08 04:19+0000\n"
+"PO-Revision-Date: 2026-07-08 04:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -240,6 +240,16 @@ msgid "BORRADOR"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model:res.groups,name:l10n_ve_invoice.group_show__button
+msgid "Binaural - Mostrar campo nativo \"Cancelar\" en facturación de ventas"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model:res.groups,name:l10n_ve_invoice.group_show_preview_button
+msgid "Binaural - Mostrar campo nativo \"Vista previa\" en facturación de ventas"
+msgstr ""
+
+#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__block_invoice_display_date_upper_than_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__block_invoice_display_date_upper_than_date
 msgid "Block Invoice Display Date Upper Than Date"
@@ -249,6 +259,11 @@ msgstr "Evitar que la fecha de factura sea mayor a la fecha contable"
 #: model:ir.model.fields.selection,name:l10n_ve_invoice.selection__wizard_accounting_reports__report__purchase
 msgid "Book Purchase"
 msgstr "Libro de Compras"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
+msgid "Cancel"
+msgstr "Cancelar"
 
 #. module: l10n_ve_invoice
 #. odoo-python
@@ -317,7 +332,9 @@ msgstr "Fecha de Inicio"
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__invoice_date
 msgid "Date of the invoice. Defaults to today when creating a new invoice."
-msgstr "Fecha de la factura. Por defecto, al crear una nueva factura, se toma la fecha de hoy."
+msgstr ""
+"Fecha de la factura. Por defecto, al crear una nueva factura, se toma la "
+"fecha de hoy."
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__declaration_unique_of_customs
@@ -654,6 +671,16 @@ msgstr ""
 msgid "Tax base for international purchase to show in purchase book"
 msgstr ""
 "Base imponible para compras internacionales a mostrar en el libro de compras"
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"The control number %(correlative)s is already in use by the confirmed "
+"invoice %(invoice)s."
+msgstr ""
+"El número de control %(correlative)s ya está siendo usado "
+"por la factura confirmada %(invoice)s."
 
 #. module: l10n_ve_invoice
 #. odoo-python

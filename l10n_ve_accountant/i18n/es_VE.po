@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20260313\n"
+"Project-Id-Version: Odoo Server 19.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-10 20:16+0000\n"
-"PO-Revision-Date: 2026-04-10 20:16+0000\n"
+"POT-Creation-Date: 2026-07-08 08:19+0000\n"
+"PO-Revision-Date: 2026-07-08 08:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -1606,9 +1606,31 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_currency.py:0
+msgid "It is not possible to delete currency records."
+msgstr "No es posible eliminar los registros de monedas."
+
+#. module: l10n_ve_accountant
+#. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "You can only register payments for one foreign rate at a time."
 msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"You cannot delete a journal item that is posted, cancelled, or has been "
+"previously posted."
+msgstr ""
+"No puede borrar apuntes ya publicados, cancelados o anteriormente "
+"publicados."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/auditlog_log.py:0
+msgid "It is not possible to delete audit records."
+msgstr "No es posible eliminar los registros de auditoría."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1764,9 +1786,3 @@ msgstr "Importe alterno"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__amount_residual_company
 msgid "residual amount"
 msgstr "Importe adeudado"
-
-#. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
-msgid "You cannot delete a journal item that is posted, cancelled, or has been previously posted."
-msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente publicados."

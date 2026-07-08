@@ -13,3 +13,4 @@ from . import res_currency
 from . import res_config_settings
 from . import account_journal
 from . import product_template
+from . import auditlog_log

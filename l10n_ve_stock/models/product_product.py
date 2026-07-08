@@ -17,13 +17,26 @@ class ProductProduct(models.Model):
         # Variante del maldito Raiver e.e
         return True
 
+    def write(self, vals):
+        res = super().write(vals)
+        if "list_price" in vals:
+            self._validate_list_price()
+        return res
+
+    def _validate_list_price(self):
+        for product in self:
+            if product.list_price <= 0:
+                raise ValidationError(_("Price cannot be negative or zero."))
+
     @api.model_create_multi
     def create(self, vals_list):
         if self.env.user.has_group(
             "l10n_ve_stock.group_block_type_inventory_transfers_expeditions"
         ):
             raise UserError(_("You can't create products"))
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        records._validate_list_price()
+        return records
 
     @api.constrains("barcode")
     def _check_barcode_uniqueness(self):
@@ -241,4 +254,3 @@ class ProductProduct(models.Model):
             )
 
         return res
-

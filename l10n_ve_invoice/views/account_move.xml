@@ -82,6 +82,20 @@
                 <attribute name="invisible">move_type in ['out_invoice', 'out_refund'] or state == 'draft'</attribute>
             </button>
 
+            <xpath expr="//header/button[@name='preview_invoice']" position="attributes">
+                <attribute name="groups">l10n_ve_invoice.group_show_preview_button</attribute>
+            </xpath>
+
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="attributes">
+                <attribute name="groups">l10n_ve_invoice.group_show_cancel_button</attribute>
+            </xpath>
+
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="after">
+                <button name="button_cancel" string="Cancel" type="object"
+                    invisible="not entry_in_period and (not id or state != 'draft') or move_type in ('out_invoice', 'out_refund', 'out_receipt', 'entry')"
+                    groups="!l10n_ve_invoice.group_show_cancel_button"
+                    data-hotkey="x"/>
+            </xpath>
 
         </field>
     </record>
