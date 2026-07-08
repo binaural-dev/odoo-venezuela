@@ -736,16 +736,12 @@ patch(PosOrder.prototype, {
 // -----------------------------------------------------------------------------
 patch(PosOrderAccounting.prototype, {
     _computeAllPrices(opts = {}) {
-        // Odoo 19 core bug: lines puede ser undefined/null en órdenes
-        // huérfanas o sincronizadas sin líneas. Forzamos array vacío para
-        // que lines.map() no crashee y el resto del método produzca
-        // taxDetails válidos (aunque con ceros).
-        if (!Array.isArray(this.lines)) {
-            this.lines = [];
-        }
-        if (!Array.isArray(opts.lines)) {
-            opts = { ...opts, lines: this.lines };
-        }
-        return super._computeAllPrices(opts);
+        // Odoo 19 core bug: lines.map() sin guard cuando this.lines es
+        // undefined/null (órdenes huérfanas). No tocamos this.lines para
+        // no desestabilizar el modelo reactivo; solo aseguramos que el
+        // método reciba un array vía opts.
+        const source = Array.isArray(this.lines) ? this.lines : [];
+        const safeOpts = Array.isArray(opts.lines) ? opts : { ...opts, lines: source };
+        return super._computeAllPrices(safeOpts);
     },
 });
