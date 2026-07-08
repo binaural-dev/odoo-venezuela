@@ -12,38 +12,10 @@
         <attribute name="readonly">not edit_rate</attribute>
       </xpath>
 
-      <xpath expr="//form" position="attributes">
-        <attribute name="delete">0</attribute>
-      </xpath>
-
-      <xpath expr="//form" position="attributes" groups="l10n_ve_accountant.group_fiscal_config_support">
-        <attribute name="delete">1</attribute>
-      </xpath>
-
       <xpath expr="//field[@name='rate_ids']/list" position="attributes">
-        <attribute name="create">0</attribute>
-        <attribute name="delete">0</attribute>
-        <attribute name="edit">0</attribute>
-      </xpath>
-
-      <xpath expr="//field[@name='rate_ids']/list" position="attributes" groups="l10n_ve_accountant.group_fiscal_config_support">
-        <attribute name="create">1</attribute>
-        <attribute name="delete">1</attribute>
-        <attribute name="edit">1</attribute>
-      </xpath>
-    </field>
-  </record>
-
-  <record id="l10n_ve_accountant_res_currency_tree" model="ir.ui.view">
-    <field name="name">res.currency.tree.l10n.ve</field>
-    <field name="model">res.currency</field>
-    <field name="inherit_id" ref="base.view_currency_tree" />
-    <field name="arch" type="xml">
-      <xpath expr="//list" position="attributes">
-        <attribute name="delete">0</attribute>
-      </xpath>
-      <xpath expr="//list" position="attributes" groups="l10n_ve_accountant.group_fiscal_config_support">
-        <attribute name="delete">1</attribute>
+        <attribute name="create">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
+        <attribute name="delete">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
+        <attribute name="edit">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
       </xpath>
     </field>
   </record>
