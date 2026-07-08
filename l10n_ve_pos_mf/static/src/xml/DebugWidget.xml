@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf.DebugWidget" t-inherit="point_of_sale.DebugWidget" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('debug-widget')]" position="inside">
+            <div class="d-flex flex-column gap-1 mt-2 border-top pt-2">
+                <span class="badge o_colorlist_item_color_3 rounded">Binaural — Máquina Fiscal</span>
+                <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <button class="btn btn-secondary btn-sm text-nowrap" t-on-click="programacion">PROGRAMACION</button>
+                    <button class="btn btn-secondary btn-sm text-nowrap" t-on-click="report_x">REPORT X</button>
+                    <button class="btn btn-secondary btn-sm text-nowrap" t-on-click="get_order">GET ACTUAL ORDER</button>
+                    <button class="btn btn-secondary btn-sm text-nowrap" t-on-click="logger">LOGGER THIS</button>
+                    <button class="btn btn-danger btn-sm text-nowrap fiscal-debugger-button" t-on-click="openFiscalDebugger">
+                        🔍 FISCALIZADOR (Debugger)
+                    </button>
+                </div>
+            </div>
+        </xpath>
+    </t>
+</templates>

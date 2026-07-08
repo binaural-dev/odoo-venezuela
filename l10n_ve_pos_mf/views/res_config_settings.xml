@@ -1,0 +1,42 @@
+<odoo>
+    <!--
+        Web Serial API Settings for Fiscal Printer
+
+        En Odoo 19 el bloque l10n_ve_pos_block (l10n_ve_pos) contiene
+        directamente divs o_setting_box; insertamos al final del bloque.
+    -->
+    <record id="view_res_config_settings_pos_mf" model="ir.ui.view">
+        <field name="name">view.res.config.setting.pos.mf</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_pos.res_config_settings_l10n_ve_pos"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='l10n_ve_pos_block']" position="inside">
+                <!-- Campo: Botón de acceso a MF -->
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_mf_pos_access_button_mf">
+                    <div class="o_setting_left_pane">
+                        <field name="pos_access_button_mf"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="pos_access_button_mf"/>
+                        <div class="text-muted">
+                            Show connection button for fiscal printer in POS
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campo: Mensaje en encabezado -->
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_mf_message_in_head">
+                    <div class="o_setting_left_pane">
+                        <field name="message_in_head"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="message_in_head"/>
+                        <div class="text-muted">
+                            Custom message to print in invoice header
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

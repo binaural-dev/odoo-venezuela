@@ -1,0 +1,75 @@
+<odoo>
+    <!--
+        Configuración de Máquina Fiscal (Web Serial API)
+
+        En Odoo 19 el formulario de pos.config usa un <notebook> con páginas
+        que contienen <setting> dentro de div.o_settings_container. Agregamos
+        una página propia "Máquina Fiscal".
+    -->
+
+    <record id="view_pos_config_inherit_fiscal_mf" model="ir.ui.view">
+        <field name="name">pos.config.form.inherit.fiscal.mf</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Máquina Fiscal" name="fiscal_mf">
+                    <div class="row mt16 o_settings_container">
+
+                        <setting string="Flag 21 - Formato de Números"
+                                 help="Determina el formato de montos en la impresora TFHKA. Usar '00' (Estándar) para la mayoría de impresoras.">
+                            <field name="flag_21"/>
+                            <div class="text-muted mt-2">
+                                <strong>00</strong> = Estándar (8+2 enteros, 5+3 cantidad) - Recomendado<br/>
+                                <strong>30</strong> = Montos grandes (14+2 enteros, 14+3 cantidad)
+                            </div>
+                        </setting>
+
+                        <setting string="Serial de Máquina Fiscal"
+                                 help="Serial detectado automáticamente al conectar la impresora">
+                            <field name="serial_machine" readonly="1" placeholder="Se detecta al conectar"/>
+                        </setting>
+
+                        <setting string="Gaveta de Efectivo"
+                                 help="Si está activado, la gaveta se abre automáticamente al cobrar en efectivo">
+                            <field name="has_cashbox"/>
+                        </setting>
+
+                        <setting string="Mostrar Botón de Conexión"
+                                 help="Muestra el botón de conexión de la máquina fiscal en la barra superior del POS">
+                            <field name="access_button_mf"/>
+                        </setting>
+
+                        <setting string="Sincronización Offline en Segundo Plano"
+                                 help="Configura la sincronización automática de pedidos impresos offline para esta caja">
+                            <field name="enable_auto_sync"/>
+                            <div class="content-group" invisible="not enable_auto_sync">
+                                <div class="mt-2">
+                                    <label for="auto_sync_interval" string="Intervalo (segundos)"/>
+                                    <field name="auto_sync_interval" class="oe_inline ms-2"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting string="Línea Tradicional"
+                                 help="Activar si la impresora usa formato de línea tradicional (solo para modelos antiguos)">
+                            <field name="traditional_line"/>
+                        </setting>
+
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <strong>📋 Configuración Rápida:</strong>
+                                <ul class="mb-0">
+                                    <li><strong>Impuestos:</strong> Configurar <code>fiscal_code</code> en Contabilidad → Impuestos (0=Exento, 1=General, 2=Reducido, 3=Adicional)</li>
+                                    <li><strong>Métodos de Pago:</strong> Configurar <code>code_fiscal_printer</code> en Punto de Venta → Métodos de Pago (01=Efectivo, 02=Cheque, 03=Débito, 04=Crédito, etc.)</li>
+                                    <li><strong>Conexión:</strong> En el POS, hacer clic en el botón 🖨️ para conectar la impresora fiscal vía Web Serial API</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
