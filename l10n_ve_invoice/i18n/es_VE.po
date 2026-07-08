@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260702\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-08 04:19+0000\n"
-"PO-Revision-Date: 2026-07-08 04:19+0000\n"
+"POT-Creation-Date: 2026-07-08 21:34+0000\n"
+"PO-Revision-Date: 2026-07-08 21:34+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -181,6 +181,11 @@ msgid "<strong>Teléfono:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "<strong>Termino de Pago: </strong>"
+msgstr ""
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals_ve
 msgid "<strong>Total en BS</strong>"
 msgstr ""
@@ -240,7 +245,7 @@ msgid "BORRADOR"
 msgstr ""
 
 #. module: l10n_ve_invoice
-#: model:res.groups,name:l10n_ve_invoice.group_show__button
+#: model:res.groups,name:l10n_ve_invoice.group_show_cancel_button
 msgid "Binaural - Mostrar campo nativo \"Cancelar\" en facturación de ventas"
 msgstr ""
 
@@ -441,7 +446,10 @@ msgstr "Configuración de Facturación"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date_display_datetime
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date_display_datetime
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.l10n_ve_invoice_view_invoice_tree_datetime
 msgid "Invoice Date"
 msgstr "Fecha de factura"
 
