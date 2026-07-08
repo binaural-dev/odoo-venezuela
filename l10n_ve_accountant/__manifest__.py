@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.9",
+    "version": "19.0.1.0.10",
     "depends": [
         "base",
         "web",
@@ -56,7 +56,10 @@
     ],
     "images": ["static/description/icon.png"],
     "assets": {
-        "web.assets_backend": ["l10n_ve_accountant/static/src/components/**/*"],
+        "web.assets_backend": [
+            "l10n_ve_accountant/static/src/components/**/*",
+            "l10n_ve_accountant/static/src/views/**/*",
+        ],
     },
     "application": True,
     "pre_init_hook": "pre_init_hook",
