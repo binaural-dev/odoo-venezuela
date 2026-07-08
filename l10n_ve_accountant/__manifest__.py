@@ -36,7 +36,6 @@
         "views/account_payment.xml",
         "views/res_partner.xml",
         "views/res_currency_views.xml",
-        "views/auditlogs_views.xml",
         # "views/ir_property.xml",
         "views/res_company_views.xml",
         "views/tax_unit.xml",

@@ -1770,3 +1770,9 @@ msgstr "Importe adeudado"
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "You cannot delete a journal item that is posted, cancelled, or has been previously posted."
 msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente publicados."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_currency.py:0
+msgid "You are not authorized to delete currency records."
+msgstr "No está autorizado para eliminar registros de monedas."
