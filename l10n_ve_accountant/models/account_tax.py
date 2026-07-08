@@ -148,7 +148,7 @@ class AccountTax(models.Model):
         )
         res['formatted_total_amount_currency_ves'] = formatLang(
             env=self.env,
-            value=res.get('total_amount', 0.0),
+            value=abs(record.amount_total_signed),
             currency_obj=ves_currency
         )
     
