@@ -494,7 +494,7 @@ msgstr "Imprimir Factura"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__free_form_copy_number
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__free_form_copy_number
 msgid "Free Form Copy Number"
-msgstr "Nro. de copia de formulario libre"
+msgstr "Número de copia de factura"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__from_picking
