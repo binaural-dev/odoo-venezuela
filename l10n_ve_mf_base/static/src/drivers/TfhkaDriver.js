@@ -139,14 +139,7 @@ export class TfhkaDriver {
      * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
      */
     async sendCommand(command, timeout = null, checkStatus = true, skipFlush = false) {
-        const startedAt = Date.now();
-        const isEndOfDoc = command === '199';
-        const logPrefix = isEndOfDoc ? "TfhkaDriver:: [199/CIERRE]" : `TfhkaDriver:: [${command}]`;
-
-        console.log(`${logPrefix} >> Enviando comando. timeout=${timeout} checkStatus=${checkStatus} skipFlush=${skipFlush}`);
-
         if (!this.isConnected) {
-            console.error(`${logPrefix} << Abortado: impresora no conectada`);
             return { success: false, data: "", error: "Impresora no conectada" };
         }
 
@@ -154,11 +147,8 @@ export class TfhkaDriver {
         if (checkStatus && command !== 'ENQ' && !skipStatusCheck) {
             const status = await this.getStatus();
             if (!status) {
-                console.error(`${logPrefix} << No se pudo leer el estado de la impresora antes de enviar`);
                 return { success: false, data: "", error: "No se pudo leer el estado de la impresora" };
             }
-
-            console.log(`${logPrefix} STS1 antes de enviar:`, this._formatSts(status.raw?.sts1), "errores:", status.errors);
 
             if (status.errors && status.errors.length > 0) {
                 const errorMsg = status.errors.join(', ');
@@ -183,8 +173,6 @@ export class TfhkaDriver {
             } else if (!isWaiting && sts1 !== undefined) {
                 console.warn("TfhkaDriver:: Estado inesperado STS1:", this._formatSts(sts1), "- continuando de todas formas");
             }
-        } else {
-            console.log(`${logPrefix} (sin chequeo de status previo: skipStatusCheck=${skipStatusCheck} checkStatus=${checkStatus})`);
         }
 
         if (timeout === null) {
@@ -202,8 +190,6 @@ export class TfhkaDriver {
         const isHeavyCommand = command === '101' || command === '199' || command === '3' || command.startsWith('2');
         const cmdDelay = isHeavyCommand ? 500 : 100;
 
-        console.log(`${logPrefix} timeout=${timeout}ms cmdDelay=${cmdDelay}ms isHeavyCommand=${isHeavyCommand}`);
-
         for (let attempt = 0; attempt < this.retryAttempts; attempt++) {
             try {
                 if (attempt === 0 && !skipFlush) {
@@ -211,7 +197,6 @@ export class TfhkaDriver {
                 }
 
                 const frame = FiscalProtocol.buildFrame(command);
-                console.log(`${logPrefix} >> Trama (intento ${attempt + 1}/${this.retryAttempts}):`, FiscalProtocol.frameToASCII(frame), "|", FiscalProtocol.frameToHex(frame));
 
                 const sent = await this.connection.write(frame);
                 if (!sent) {
@@ -225,54 +210,31 @@ export class TfhkaDriver {
                     throw new Error("No se recibió respuesta de la impresora");
                 }
 
-                console.log(`${logPrefix} << Respuesta cruda:`, FiscalProtocol.frameToASCII(response), "|", FiscalProtocol.frameToHex(response));
-
                 if (FiscalProtocol.isACK(response)) {
-                    console.log(`${logPrefix} << ACK recibido (${Date.now() - startedAt}ms)`);
-                    if (isEndOfDoc) {
-                        // El 199 cierra el documento fiscal y dispara el corte de
-                        // papel en el hardware. Leemos el status inmediatamente
-                        // despues del ACK para detectar si la impresora reporta
-                        // algun error (papel, gaveta, mecanico) que pudiera haber
-                        // impedido el corte aunque el comando fue aceptado.
-                        try {
-                            const postStatus = await this.getStatus();
-                            console.log(
-                                `${logPrefix} Status post-ACK (posible causa de no-corte si hay error):`,
-                                "STS1:", this._formatSts(postStatus?.raw?.sts1),
-                                "errores:", postStatus?.errors
-                            );
-                        } catch (statusError) {
-                            console.warn(`${logPrefix} No se pudo leer status post-199:`, statusError);
-                        }
-                    }
                     return { success: true, data: "ACK", error: "" };
                 }
 
                 if (FiscalProtocol.isNAK(response)) {
-                    console.warn(`${logPrefix} << NAK recibido, reintentando... (intento ${attempt + 1}/${this.retryAttempts})`);
+                    console.warn(`TfhkaDriver:: NAK recibido, reintentando...`);
                     await new Promise(resolve => setTimeout(resolve, this.retryDelay));
                     continue;
                 }
 
                 const parsed = FiscalProtocol.parseResponse(response);
                 if (parsed.valid) {
-                    console.log(`${logPrefix} << Datos parseados (${Date.now() - startedAt}ms):`, parsed.data);
                     return { success: true, data: parsed.data, error: "" };
                 } else {
-                    console.error(`${logPrefix} << Error al parsear respuesta:`, parsed.error);
                     return { success: false, data: "", error: parsed.error };
                 }
 
             } catch (error) {
-                console.error(`${logPrefix} Error en intento ${attempt + 1}/${this.retryAttempts}:`, error);
+                console.error(`TfhkaDriver:: Error en intento ${attempt + 1}:`, error);
                 if (attempt < this.retryAttempts - 1) {
                     await new Promise(resolve => setTimeout(resolve, this.retryDelay));
                 }
             }
         }
 
-        console.error(`${logPrefix} << FALLO tras ${this.retryAttempts} intentos (${Date.now() - startedAt}ms)`);
         return { success: false, data: "", error: "Máximo de reintentos alcanzado" };
     }
 
@@ -1133,13 +1095,8 @@ export class TfhkaDriver {
         }
 
         const hasDivisa = this._hasDivisaPayment(payments);
-        console.log(
-            "TfhkaDriver:: [PAGOS-DEBUG] payments recibidos:", payments,
-            "| hasDivisa:", hasDivisa
-        );
 
         if (!payments.length) {
-            console.log("TfhkaDriver:: [PAGOS-DEBUG] Sin lineas de pago, enviando cierre directo 101");
             commands.push("101");
             return;
         }
@@ -1166,7 +1123,6 @@ export class TfhkaDriver {
         // cálculo de IGTF de la impresora sea fiel a cómo se recibieron los
         // pagos realmente.
         if (hasDivisa) {
-            let sumFormatted = 0;
             for (const payment of payments) {
                 const amount = Math.abs(Number(payment.amount || 0));
                 if (amount <= 0) {
@@ -1178,12 +1134,8 @@ export class TfhkaDriver {
                     config.max_payment_amount_int,
                     config.max_payment_amount_decimal
                 );
-                sumFormatted += amount;
-                console.log(`TfhkaDriver:: [PAGOS-DEBUG] 2XX (sin agrupar) método=${methodCode} monto_crudo=${amount} monto_formateado=${amountStr}`);
                 commands.push(`2${methodCode}${amountStr}`);
             }
-            console.log("TfhkaDriver:: [PAGOS-DEBUG] IGTF activo. Suma total enviada en 2XX (antes del IGTF que calculara la impresora):", sumFormatted);
-            console.log("TfhkaDriver:: [PAGOS-DEBUG] NO se envia 1XX. El cierre depende de que '199' calce con el total esperado por la impresora (incluyendo su propio IGTF).");
             // NO se envía "1XX": el "199" final cierra el documento con IGTF.
             return;
         }
@@ -1202,7 +1154,6 @@ export class TfhkaDriver {
             .map(([methodCode, amount]) => ({ methodCode, amount }));
 
         if (!paymentEntries.length) {
-            console.log("TfhkaDriver:: [PAGOS-DEBUG] Sin lineas de pago validas, enviando cierre directo 101");
             commands.push("101");
             return;
         }
@@ -1221,11 +1172,9 @@ export class TfhkaDriver {
                 config.max_payment_amount_int,
                 config.max_payment_amount_decimal
             );
-            console.log(`TfhkaDriver:: [PAGOS-DEBUG] 2XX (no-cierre) método=${methodCode} monto_crudo=${amount} monto_formateado=${amountStr}`);
             commands.push(`2${methodCode}${amountStr}`);
         }
 
-        console.log(`TfhkaDriver:: [PAGOS-DEBUG] Cierre directo con metodo=${closingMethod} (1${closingMethod})`);
         commands.push(`1${closingMethod}`);
     }
 
@@ -1333,15 +1282,10 @@ export class TfhkaDriver {
             // 10. Fin de documento
             commands.push("199");
 
-            console.log(`TfhkaDriver:: [FACTURA] Secuencia completa (${commands.length} comandos):`, commands);
-            const printStartedAt = Date.now();
-
             for (let i = 0; i < commands.length; i++) {
                 const cmd = commands[i];
                 const isFirst = i === 0;
-                console.log(`TfhkaDriver:: [FACTURA] Comando ${i + 1}/${commands.length}: ${cmd}`);
                 const result = await this.sendCommand(cmd, null, false, !isFirst);
-                console.log(`TfhkaDriver:: [FACTURA] Resultado ${i + 1}/${commands.length}:`, result.success ? "OK" : `FALLO (${result.error})`);
 
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
@@ -1350,7 +1294,6 @@ export class TfhkaDriver {
                         continue;
                     }
                     console.error("TfhkaDriver:: Comando falló:", cmd, result.error);
-                    console.error(`TfhkaDriver:: [FACTURA] Secuencia abortada en comando ${i + 1}/${commands.length} tras ${Date.now() - printStartedAt}ms`);
                     await this.abortTransaction();
                     return {
                         success: false,
@@ -1359,8 +1302,6 @@ export class TfhkaDriver {
                     };
                 }
             }
-
-            console.log(`TfhkaDriver:: [FACTURA] Secuencia completa enviada exitosamente en ${Date.now() - printStartedAt}ms`);
 
             const s1Result = await this._readS1Data();
             if (!s1Result.success) {
@@ -1537,14 +1478,9 @@ export class TfhkaDriver {
             // 12. Fin de documento
             commands.push("199");
 
-            console.log(`TfhkaDriver:: [NC] Secuencia completa (${commands.length} comandos):`, commands);
-            const ncStartedAt = Date.now();
-
             for (let i = 0; i < commands.length; i++) {
                 const cmd = commands[i];
-                console.log(`TfhkaDriver:: [NC] Comando ${i + 1}/${commands.length}: ${cmd}`);
                 const result = await this.sendCommand(cmd, null, false, i > 0);
-                console.log(`TfhkaDriver:: [NC] Resultado ${i + 1}/${commands.length}:`, result.success ? "OK" : `FALLO (${result.error})`);
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
                     if (is1xx) {
@@ -1552,13 +1488,10 @@ export class TfhkaDriver {
                         continue;
                     }
                     console.error("TfhkaDriver:: NC - Comando falló:", cmd, result.error);
-                    console.error(`TfhkaDriver:: [NC] Secuencia abortada en comando ${i + 1}/${commands.length} tras ${Date.now() - ncStartedAt}ms`);
                     await this.abortTransaction();
                     return { success: false, data: "", error: `Error en comando [${cmd}]: ${result.error}` };
                 }
             }
-
-            console.log(`TfhkaDriver:: [NC] Secuencia completa enviada exitosamente en ${Date.now() - ncStartedAt}ms`);
 
             const s1Result = await this._readS1Data();
             if (!s1Result.success) {
@@ -1719,14 +1652,9 @@ export class TfhkaDriver {
             // 12. Fin de documento
             commands.push("199");
 
-            console.log(`TfhkaDriver:: [ND] Secuencia completa (${commands.length} comandos):`, commands);
-            const ndStartedAt = Date.now();
-
             for (let i = 0; i < commands.length; i++) {
                 const cmd = commands[i];
-                console.log(`TfhkaDriver:: [ND] Comando ${i + 1}/${commands.length}: ${cmd}`);
                 const result = await this.sendCommand(cmd, null, false, i > 0);
-                console.log(`TfhkaDriver:: [ND] Resultado ${i + 1}/${commands.length}:`, result.success ? "OK" : `FALLO (${result.error})`);
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
                     if (is1xx) {
@@ -1734,13 +1662,10 @@ export class TfhkaDriver {
                         continue;
                     }
                     console.error("TfhkaDriver:: ND - Comando falló:", cmd, result.error);
-                    console.error(`TfhkaDriver:: [ND] Secuencia abortada en comando ${i + 1}/${commands.length} tras ${Date.now() - ndStartedAt}ms`);
                     await this.abortTransaction();
                     return { success: false, data: "", error: `Error en comando [${cmd}]: ${result.error}` };
                 }
             }
-
-            console.log(`TfhkaDriver:: [ND] Secuencia completa enviada exitosamente en ${Date.now() - ndStartedAt}ms`);
 
             const s1Result = await this._readS1Data();
             if (!s1Result.success) {
