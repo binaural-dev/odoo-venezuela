@@ -10,6 +10,13 @@ patch(PosOrder.prototype, {
   setup() {
       super.setup(...arguments);
       this._missingConversionRateWarningShown = false;
+      // Guard contra bug del core Odoo 19: _computeAllPrices (pos_order_accounting.js:295)
+      // hace lines.map(...) sin verificar que lines no sea undefined. Aparece
+      // cuando órdenes sincronizadas llegan al frontend sin líneas inicializadas
+      // (común en DBs restauradas/copiadas con órdenes huérfanas).
+      if (!Array.isArray(this.lines)) {
+        this.lines = [];
+      }
       // l10n_ve_pos: toda venta del PoS (Venezuela) debe emitir factura.
       // Forzamos to_invoice=true SOLO en órdenes de venta, NO en reembolsos.
       // Los reembolsos tienen flujo de facturación propio (credit note) y
