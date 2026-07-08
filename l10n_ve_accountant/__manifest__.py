@@ -7,7 +7,7 @@
     "author": "Binaural",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.0.0.52",
+    "version": "17.0.0.0.53",
     "depends": [
         "base",
         "web",
@@ -17,7 +17,6 @@
         "l10n_ve_contact",
         "l10n_ve_rate",
         "account_invoice_pricelist",
-        "account_invoice_pricelist_sale",
         "account_debit_note"
     ],
     "data": [
