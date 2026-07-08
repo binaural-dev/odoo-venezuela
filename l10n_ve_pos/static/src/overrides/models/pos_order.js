@@ -10,14 +10,20 @@ patch(PosOrder.prototype, {
   setup() {
       super.setup(...arguments);
       this._missingConversionRateWarningShown = false;
-      // l10n_ve_pos: en Venezuela toda venta del PoS debe emitir factura.
-      // Forzamos to_invoice=true en cada orden y bloqueamos el toggle
-      // del PaymentScreen desde el template.
-      this.to_invoice = true;
+      // l10n_ve_pos: toda venta del PoS (Venezuela) debe emitir factura.
+      // Forzamos to_invoice=true SOLO en órdenes de venta, NO en reembolsos.
+      // Los reembolsos tienen flujo de facturación propio (credit note) y
+      // forzar to_invoice=true rompe la validación de invoice en Odoo 19.
+      if (!this.isRefund) {
+        this.to_invoice = true;
+      }
   },
   setToInvoice() {
-      // Ignora cualquier intento de desactivar la facturación.
-      this.to_invoice = true;
+      // Solo permite activar facturación; nunca desactivar.
+      // En reembolsos no se aplica la regla SENIAT.
+      if (!this.isRefund) {
+        this.to_invoice = true;
+      }
   },
  get_foreign_currency(){
         return this.config.foreign_currency_id;
@@ -332,6 +338,21 @@ patch(PosOrder.prototype, {
       data["to_receipt"] = this.is_to_receipt();
     } else if ("to_receipt" in this) {
       data["to_receipt"] = this.to_receipt;
+    }
+    // l10n_ve_pos: los reembolsos NUNCA deben sincronizar to_invoice=true.
+    //
+    // Por qué esto NO se puede resolver en setup(): el core (ticket_screen.js
+    // ::onDoRefund) crea la orden vacía PRIMERO (dispara nuestro setup(),
+    // donde is_refund todavía es false) y recién DESPUÉS asigna
+    // `destinationOrder.is_refund = true`. Nuestro guard en setup() ya
+    // corrió con is_refund=false y forzó to_invoice=true antes de que la
+    // orden supiera que era un reembolso.
+    //
+    // serializeForORM corre justo antes de sync_from_ui, cuando is_refund
+    // ya está definitivamente seteado. Es el único punto confiable para
+    // esta corrección.
+    if (this.isRefund) {
+      data["to_invoice"] = false;
     }
     return data;
   },
