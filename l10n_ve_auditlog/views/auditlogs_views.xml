@@ -3,13 +3,13 @@
     <field name="name">l10n_ve.auditlog.view</field>
     <field name="model">mail.message</field>
     <field name="arch" type="xml">
-      <tree string="Audit logs">
+      <list string="Audit logs">
         <field name="author_id" />
         <field name="model" />
         <field name="subject" />
         <field name="res_id" />
         <field name="date" />
-      </tree>
+      </list>
     </field>
   </record>
   <record id="l10n_ve_auditlog_action" model="ir.actions.act_window">

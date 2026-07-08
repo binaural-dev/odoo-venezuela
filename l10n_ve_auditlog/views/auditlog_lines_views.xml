@@ -3,24 +3,21 @@
     <field name="name">mail.tracking.value.audit.logs</field>
     <field name="model">mail.tracking.value</field>
     <field name="arch" type="xml">
-      <tree string="Audit logs lines">
+      <list string="Audit logs lines">
         <field name="model" />
-        <field name="field" />
+        <field name="field_id" />
         <field name="author_id" />
-        <field name="field_type" />
-        <field name="new_value_char" />
         <field name="old_value_char" />
-        <field name="new_value_datetime" />
+        <field name="new_value_char" />
         <field name="old_value_datetime" />
-        <field name="new_value_float" />
+        <field name="new_value_datetime" />
         <field name="old_value_float" />
-        <field name="new_value_integer" />
+        <field name="new_value_float" />
         <field name="old_value_integer" />
-        <field name="new_value_text" />
+        <field name="new_value_integer" />
         <field name="old_value_text" />
-        <field name="new_value_monetary" />
-        <field name="old_value_monetary" />
-      </tree>
+        <field name="new_value_text" />
+      </list>
     </field>
   </record>
 
