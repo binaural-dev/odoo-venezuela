@@ -6,8 +6,13 @@ class MoveActionPostAlertWizard(models.TransientModel):
 
     def action_confirm(self):
         res = super(MoveActionPostAlertWizard, self).action_confirm()
+        
         if self.move_id and self.env.company.invoice_digital_tfhka:
-            for record in self.move_id :
+            for record in self.move_id:
+                # 1. Validar que la factura pertenezca a un diario digital antes de procesar lógicas de TFHKA
+                if not record.journal_id.digital_invoice:
+                    continue
+                    
                 if record.sequence_number > 1:
                     previous_invoice = self.env["account.move"].search(
                         [
@@ -22,14 +27,14 @@ class MoveActionPostAlertWizard(models.TransientModel):
                     if previous_invoice and not previous_invoice.is_digitalized:
                         move_type = previous_invoice.move_type
                         if move_type == "out_invoice" and not previous_invoice.debit_origin_id:
-                            raise UserError(_("The invoice %s has not been digitized") % (previous_invoice.name))
+                            raise UserError(_("The invoice %s has not been digitized", previous_invoice.name))
                         if move_type == "out_invoice" and previous_invoice.debit_origin_id:
-                            raise UserError(_("The debit note %s has not been digitized") % (previous_invoice.name))
+                            raise UserError(_("The debit note %s has not been digitized", previous_invoice.name))
                         if move_type == "out_refund":
-                            raise UserError(_("The credit note %s has not been digitized") % (previous_invoice.name))
+                            raise UserError(_("The credit note %s has not been digitized", previous_invoice.name))
                         
-        if self.move_id and not self.move_id.company_id.digitalization_with_payment_tfhka:
-            self.move_id.generate_document_digital()
+                if not record.company_id.digitalization_with_payment_tfhka:
+                    record.generate_document_digital()
 
         return res
 

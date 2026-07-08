@@ -23,6 +23,55 @@ class AccountMove(models.Model):
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
+    def action_post(self):
+        for invoice in self:
+            invoice._tfhka_validate_mixed_invoicing()
+
+        res = super(AccountMove, self).action_post()
+        return res
+
+    def _is_eligible_for_tfhka(self):
+        """Check if the invoice should process TFHKA logic."""
+        self.ensure_one()
+        config_invoice_can_be_digitalized = self.company_id.invoice_digital_tfhka
+        if not self.journal_id.digital_invoice or not config_invoice_can_be_digitalized:
+            return False
+        if self.move_type not in ("out_invoice", "out_refund"):
+            return False
+        return True
+
+    def _tfhka_validate_mixed_invoicing(self):
+        """Validates if mixed invoicing is allowed."""
+        self.ensure_one()
+        config_invoice_can_be_digitalized = self.company_id.invoice_digital_tfhka
+        config_mix_invoicing = self.company_id.mix_invoicing_tfhka
+
+        if not self.journal_id.digital_invoice and config_invoice_can_be_digitalized and not config_mix_invoicing:
+            if self.move_type in ['out_invoice', 'out_refund']:
+                raise ValidationError(_(
+                    "The company is configured for strict digital invoicing (mixed invoicing is disabled). "
+                    "Only journals with digital invoicing enabled are allowed for this operation. "
+                    "Please check the company configuration or select a valid digital journal."
+                ))
+
+    def _tfhka_get_document_type_and_series(self):
+        """Returns the TFHKA document type and series."""
+        self.ensure_one()
+        document_type = ""
+        if self.move_type == "out_invoice":
+            document_type = "03" if self.debit_origin_id else "01"
+        elif self.move_type == "out_refund" and self.reversed_entry_id:
+            document_type = "02"
+        
+        series = ""
+        if self.company_id.group_sales_invoicing_series and self.journal_id.series_correlative_sequence_id:
+            if self.journal_id.sequence_id and self.journal_id.sequence_id.prefix:
+                series = re.sub(r'[^a-zA-Z0-9]', '', self.journal_id.sequence_id.prefix)
+            else:
+                raise UserError(_("The selected series is not configured"))
+                
+        return document_type, series
+
     def generate_document_digital(self):
         if not self.company_id.invoice_digital_tfhka:
             return
@@ -47,12 +96,13 @@ class AccountMove(models.Model):
             
         self.query_numbering(series)
         document_number = self.get_last_document_number(document_type, series)
-        document_number = document_number + 1
-        current_number = self.sequence_number
-
-        if document_number != current_number and self.company_id.sequence_validation_tfhka:
-            raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
-
+        
+        try:
+            document_number_int = int(document_number)
+        except (ValueError, TypeError):
+            document_number_int = 0
+            
+        document_number = document_number_int + 1
         document_number = str(document_number)
 
         self.generate_document_data(document_number, document_type, series)
@@ -72,14 +122,14 @@ class AccountMove(models.Model):
         endpoint = EndPoints.BASE_ENDPOINTS.get(endpoint_key)
 
         if not endpoint:
-            raise UserError(_("Endpoint '%(endpoint_key)s' is not defined.") % {'endpoint_key': endpoint_key})
+            raise UserError(_("Endpoint '%(endpoint_key)s' is not defined.", endpoint_key=endpoint_key))
 
         url = f"{base_url}{endpoint}"
         headers = {"Authorization": f"Bearer {self.get_token()}"}
 
         try:
-            response = requests.post(url, json=payload, headers=headers)
-        
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+
             if response.status_code == 200:
                 data = response.json()
                 if data.get("codigo") == "200":
@@ -87,18 +137,18 @@ class AccountMove(models.Model):
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
                     return 0
                 else:
-                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
-                    raise UserError(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
+                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s", message=data.get('mensaje'), validation=data.get('validaciones')))
+                    raise UserError(_("Error in the API response: %(message)s \n%(validation)s", message=data.get('mensaje'), validation=data.get('validaciones')))
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()
                 return self.call_tfhka_api(endpoint_key, payload)
             else:
-                _logger.error(_("HTTP error %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
-                raise UserError(_("HTTP error %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
+                _logger.error(_("HTTP error %(status_code)s: %(text)s", status_code=response.status_code, text=response.text))
+                raise UserError(_("HTTP error %(status_code)s: %(text)s", status_code=response.status_code, text=response.text))
         except requests.exceptions.RequestException as e:
-            _logger.error(_("Error connecting to the API: %(error)s") % {'error': e})
-            raise UserError(_("Error connecting to the API: %(error)s") % {'error': e})
+            _logger.error(_("Error connecting to the API: %(error)s", error=e))
+            raise UserError(_("Error connecting to the API: %(error)s", error=e))
 
     def generate_document_data(self, document_number, document_type, series):
         document_identification = self.get_document_identification(document_type, document_number, series)
@@ -131,11 +181,24 @@ class AccountMove(models.Model):
             self.is_digitalized = True
             emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             self.message_post(
-                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
+                body=_("Document successfully digitized on %(date)s", date=emission_date),
                 message_type='comment',
             )
             num_control_tfhka = response.get("resultado").get("numeroControl")
             self.correlative = num_control_tfhka
+            
+            # Autocorrección reactiva de secuencia local posterior a la generación
+            if self.company_id.sequence_validation_tfhka:
+                nuevo_correlativo_tfhka = int(document_number) + 1
+                try:
+                    if self.move_type == "out_refund":
+                        self.journal_id.sudo().write({"refund_sequence_number_next": nuevo_correlativo_tfhka})
+                    else:
+                        self.journal_id.sudo().write({"sequence_number_next": nuevo_correlativo_tfhka})
+                    _logger.info("Secuencia actualizada localmente a %s basada en la última generación a TFHKA", nuevo_correlativo_tfhka)
+                except Exception as e:
+                    _logger.error("No se pudo actualizar la secuencia post-generación TFHKA: %s", e)
+                    
             return
 
     def get_last_document_number(self, document_type, series):
@@ -176,7 +239,7 @@ class AccountMove(models.Model):
                     break
                 
             if not found_series:
-                raise UserError(_("The series '%(series)s' is not configured in The Factory HKA. Please contact the administrator.") % {'series': series})
+                raise UserError(_("The series '%(series)s' is not configured in The Factory HKA. Please contact the administrator.", series=series))
             
             if not approves:
                 raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
@@ -646,7 +709,7 @@ class AccountMove(models.Model):
             record.show_digital_debit_note = True
             record.show_digital_credit_note = True
 
-            if record.state != "posted" or record.is_digitalized or not self.company_id.invoice_digital_tfhka:
+            if record.state != "posted" or record.is_digitalized or not self.company_id.invoice_digital_tfhka or not record.journal_id.digital_invoice:
                 continue
 
             if (
