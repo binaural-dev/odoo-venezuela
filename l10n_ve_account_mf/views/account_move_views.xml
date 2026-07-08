@@ -1,0 +1,14 @@
+<odoo>
+    <record id="l10n_ve_account_mf_account_move_form_view" model="ir.ui.view">
+        <field name="name">l10n.ve.account.mf.account.move.form.view</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_ve_stock_account.l10n_ve_stock_account_account_move_form_view"/>
+        <field name="arch" type="xml">
+            <!-- El botón de impresión forma libre solo aplica cuando la
+                 compañía imprime en forma libre (no máquina fiscal) -->
+            <xpath expr="//form//header//button[@name='print_invoice_free_form']" position="attributes">
+                <attribute name="invisible">(move_type not in ('out_invoice', 'out_refund')) or state != 'posted' or print_type != 'free' or correlative == False</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
