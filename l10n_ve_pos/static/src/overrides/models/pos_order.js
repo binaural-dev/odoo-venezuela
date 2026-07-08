@@ -1,6 +1,7 @@
 /** @odoo-module */
 
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
+import { PosOrderAccounting } from "@point_of_sale/app/models/accounting/pos_order_accounting";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 
@@ -720,4 +721,42 @@ patch(PosOrder.prototype, {
     }
     return qty;
   },
+});
+
+// -----------------------------------------------------------------------------
+// Fix: Odoo 19 core bug — _computeAllPrices lines.map() sin guard.
+//
+// PosOrderAccounting.setup() llama _doRecomputeAllPrices() → _computeAllPrices()
+// donde hace lines.map(...) sin verificar que lines no sea undefined/null.
+// El Base.setup() propio del mixin setea this.lines = vals.lines (que el server
+// puede mandar como null para órdenes huérfanas). El guard en PosOrder.setup()
+// corre demasiado tarde (después de super.setup), cuando el crash ya ocurrió.
+//
+// Patch directo al método que crashea, en lugar del setup.
+// -----------------------------------------------------------------------------
+patch(PosOrderAccounting.prototype, {
+    _computeAllPrices(opts = {}) {
+        const lines = opts.lines || this.lines;
+        if (!Array.isArray(lines)) {
+            return {
+                taxDetails: {
+                    lines: [],
+                    taxes_data: [],
+                    total_amount: 0,
+                    total_amount_no_rounding: 0,
+                    total_amount_currency: 0,
+                    total_excluded: 0,
+                    total_included: 0,
+                    total_included_currency: 0,
+                    total_excluded_currency: 0,
+                    base_amount: 0,
+                    tax_amount_currency: 0,
+                    order_sign: 1,
+                },
+                baseLines: [],
+                baseLineByLineUuids: {},
+            };
+        }
+        return super._computeAllPrices(opts);
+    },
 });
