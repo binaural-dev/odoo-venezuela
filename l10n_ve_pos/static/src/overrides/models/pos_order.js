@@ -736,12 +736,13 @@ patch(PosOrder.prototype, {
 // -----------------------------------------------------------------------------
 patch(PosOrderAccounting.prototype, {
     _computeAllPrices(opts = {}) {
-        // Odoo 19 core bug: lines.map() sin guard cuando this.lines es
-        // undefined/null (órdenes huérfanas). No tocamos this.lines para
-        // no desestabilizar el modelo reactivo; solo aseguramos que el
-        // método reciba un array vía opts.
-        const source = Array.isArray(this.lines) ? this.lines : [];
-        const safeOpts = Array.isArray(opts.lines) ? opts : { ...opts, lines: source };
-        return super._computeAllPrices(safeOpts);
+        try {
+            return super._computeAllPrices(opts);
+        } catch (_e) {
+            // Odoo 19 core bug: lines.map() sin guard cuando lines es
+            // undefined/null. Forzamos array vacío y reintentamos.
+            const safeOpts = { ...opts, lines: [] };
+            return super._computeAllPrices(safeOpts);
+        }
     },
 });
