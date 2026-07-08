@@ -77,52 +77,60 @@ class PosConfig(models.Model):
         """Return the raw rate to convert 1 unit of ``from_currency`` to
         ``to_currency`` using this POS config's operative rates.
 
-        Semantics (see l10n_ve_rate.res_currency_rate.compute_rate):
+        SEMÁNTICA REAL (verificada en DB pos + core Odoo 19 res_currency.py):
 
-            pos.config exposes two rates whose meaning depends on which
-            currency is foreign:
-              * main=VEF, foreign=USD (classic VE):
-                  foreign_rate         = inverse_company_rate (~0.00148)
-                  foreign_inverse_rate = company_rate         (~675)
-              * main=USD, foreign=VEF:
-                  foreign_rate         = company_rate         (~675)
-                  foreign_inverse_rate = company_rate         (~675)
+            pos.config._compute_rate delega a l10n_ve_rate.compute_rate,
+            que para foreign=USD, main=VEF devuelve:
+              foreign_rate         = rate.inverse_company_rate  (~675, GRANDE)
+              foreign_inverse_rate = rate.company_rate          (~0.001481, CHICO)
 
-            The invariant enforced by compute_rate is:
-              ``foreign_rate`` is ALWAYS the multiplier to go
-              main → foreign (i.e. local_amount * foreign_rate = foreign_amount).
-              It is also the "user-facing" rate shown in the UI.
+            Del core Odoo:
+              company_rate         = rate / company_currency_rate
+              inverse_company_rate = 1 / company_rate
 
-            Therefore:
-              main → foreign  ==>  return foreign_rate
-              foreign → main  ==>  return 1 / foreign_rate
+            Para USD el 2026-07-07 con res.currency.rate.rate = 0.0014816340...:
+              company_rate         = 0.001481 / 1 (VEF=base) = 0.001481 (CHICO)
+              inverse_company_rate = 1 / 0.001481           = 674.93   (GRANDE)
 
-            We do NOT use ``foreign_inverse_rate`` directly for arithmetic:
-            its meaning is context-dependent and only stable as "the value
-            stored on account.move.line for reporting", not as a conversion
-            factor.
+            Entonces l10n_ve_rate expone:
+              pos_config.foreign_rate         = 674.93   ("USD per VEF" — lo que el usuario VE en la UI si compra en dólares)
+              pos_config.foreign_inverse_rate = 0.001481 ("VEF per USD" — el multiplicador REAL para pasar de VEF a USD)
 
-        PRECISION: ``foreign_rate`` is stored with digits="Tasa" (custom
-        high precision). Read the raw value; never round the rate itself.
-        Rounding is done by ``_convert`` at the final result via
+        CONVERSIÓN CORRECTA (regla del usuario):
+            main (VEF) → foreign (USD): usar foreign_inverse_rate (0.001481)
+              VEF * 0.001481 = USD ✓
+            foreign (USD) → main (VEF): usar foreign_rate (674.93)
+              USD * 674.93 = VEF ✓
+
+        En el caso foreign=VEF, main=USD:
+            compute_rate devuelve foreign_rate = foreign_inverse_rate = company_rate.
+            Ambos coinciden, cualquiera funciona.
+
+        PRECISION: ``foreign_inverse_rate`` está definido con digits=(16,15)
+        para preservar los 15 dígitos de precisión de la tasa BCV.
+        Nunca redondear la tasa; redondear solo el resultado con
         ``to_currency.round()``.
 
         Returns 0.0 when neither side is the foreign currency; callers must
         treat 0.0 as "no conversion possible" and NOT silently proceed.
+
+        KEEP IN SYNC WITH:
+          static/src/overrides/models/pos_order.js :: _getPosConversionRate
         """
         self.ensure_one()
         if from_currency == to_currency:
             return 1.0
         foreign = self.foreign_currency_id
-        rate = self.foreign_rate
-        if not rate:
+        if not foreign:
             return 0.0
-        # main → foreign
-        if foreign and to_currency == foreign and from_currency != foreign:
-            return rate
-        # foreign → main
-        if foreign and from_currency == foreign and to_currency != foreign:
-            return 1.0 / rate
+        # main → foreign: multiplicar por foreign_inverse_rate (CHICO)
+        if to_currency == foreign and from_currency != foreign:
+            rate = self.foreign_inverse_rate
+            return rate if rate else 0.0
+        # foreign → main: multiplicar por foreign_rate (GRANDE)
+        if from_currency == foreign and to_currency != foreign:
+            rate = self.foreign_rate
+            return rate if rate else 0.0
         return 0.0
 
     def _convert(self, from_amount, from_currency, to_currency, round=True):  # noqa: A002

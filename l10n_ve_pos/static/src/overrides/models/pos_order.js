@@ -69,23 +69,27 @@ patch(PosOrder.prototype, {
   // -------- POS-scoped currency conversion (Venezuela) --------
   //
   // MIRROR CONTRACT:
-  //   This mirrors pos.config._convert in Python (models/pos_config.py) in
-  //   shape and precision semantics. Same inputs → same outputs on both
-  //   sides. Multiply by the RAW rate (all digits from `digits="Tasa"`),
-  //   round only the final result via to_currency.round().
+  //   This mirrors pos.config._convert in Python (models/pos_config.py).
+  //   Same inputs → same outputs on both sides. Multiply by the RAW rate
+  //   (all 15 digits from `digits=(16,15)`), round only the final result
+  //   via to_currency.round().
   //
-  // BUSINESS RULE (from l10n_ve_rate.compute_rate):
-  //   `foreign_rate` is ALWAYS the multiplier to go main → foreign.
-  //     - main=VEF, foreign=USD → foreign_rate ≈ 0.001481634035
-  //         (VEF * foreign_rate = USD)
-  //     - main=USD, foreign=VEF → foreign_rate ≈ 675
-  //         (USD * foreign_rate = VEF)
-  //   `foreign_inverse_rate` is a reporting-only value (stored on
-  //   account.move.line), NOT a conversion factor. Do NOT use it here.
-  //   Never round the rate before multiplying.
+  // SEMÁNTICA REAL (verificada en DB pos + core Odoo 19 res_currency.py):
+  //   l10n_ve_rate.compute_rate para foreign=USD, main=VEF devuelve:
+  //     pos.config.foreign_rate         = rate.inverse_company_rate  (~675, GRANDE)
+  //     pos.config.foreign_inverse_rate = rate.company_rate          (~0.001481, CHICO)
+  //
+  //   Conversión correcta (regla del usuario):
+  //     main (VEF) → foreign (USD): multiplicar por foreign_inverse_rate (0.001481)
+  //     foreign (USD) → main (VEF): multiplicar por foreign_rate         (675)
+  //
+  //   Caso foreign=VEF, main=USD: ambos campos son iguales (company_rate).
+  //
+  //   NUNCA redondear la tasa antes de multiplicar; redondear solo el
+  //   resultado con to_currency.round() en _convert.
   //
   // KEEP IN SYNC WITH:
-  //   models/pos_config.py :: PosConfig._convert / _get_pos_conversion_rate
+  //   models/pos_config.py :: PosConfig._get_pos_conversion_rate
 
   _getMainCurrency() {
     return (
@@ -112,54 +116,52 @@ patch(PosOrder.prototype, {
   },
 
   _getPosConversionRate(fromCurrency, toCurrency) {
-    // Semantics (from res_currency_rate.compute_rate in l10n_ve_rate):
+    // SEMÁNTICA REAL (verificada en DB pos + core Odoo 19 res_currency.py):
     //
-    //   pos.config exposes two rates whose meaning DEPENDS on which currency
-    //   is foreign:
-    //     * main=VEF, foreign=USD (classic VE):
-    //         foreign_rate         = inverse_company_rate  (small, ~0.00148)
-    //         foreign_inverse_rate = company_rate          (big,    ~675)
-    //     * main=USD, foreign=VEF:
-    //         foreign_rate         = company_rate          (big,    ~675)
-    //         foreign_inverse_rate = company_rate          (big,    ~675)
-    //     * foreign=VEF (any main): both fields equal company_rate.
+    //   l10n_ve_rate.compute_rate para foreign=USD, main=VEF devuelve:
+    //     pos.config.foreign_rate         = inverse_company_rate  (~675, GRANDE)
+    //     pos.config.foreign_inverse_rate = company_rate          (~0.001481, CHICO)
     //
-    //   The invariant enforced by compute_rate is:
-    //     `foreign_rate` is ALWAYS the multiplier to go main → foreign
-    //     (i.e. multiply the local amount by foreign_rate to get the
-    //     foreign amount). It is also the "user-facing" rate shown in UI.
+    //   El CHICO es el multiplicador REAL main→foreign:
+    //     VEF * 0.001481 = USD ✓
+    //   El GRANDE es para foreign→main:
+    //     USD * 675 = VEF ✓
     //
-    //   Therefore the mirror rule for _convert is:
-    //     local (main) → foreign  ==>  multiply by foreign_rate
-    //     foreign → local (main)  ==>  divide by foreign_rate
-    //                                  (a.k.a. multiply by 1 / foreign_rate)
+    //   Caso foreign=VEF, main=USD: ambos campos valen company_rate y
+    //   son idénticos, cualquiera funciona.
     //
-    //   We do NOT use foreign_inverse_rate directly for arithmetic: its
-    //   meaning is context-dependent and only stable as "the value stored
-    //   on account.move.line for reporting", not as a conversion factor.
+    // PRECISION: foreign_inverse_rate está con digits=(16,15). NUNCA
+    // redondear la tasa; redondear solo el resultado con
+    // to_currency.round() en _convert.
     //
-    // PRECISION: foreign_rate is stored with digits="Tasa" (custom high
-    // precision). Read the raw value, never round the rate itself; round
-    // only the final result via to_currency.round() in _convert.
+    // KEEP IN SYNC WITH:
+    //   models/pos_config.py :: PosConfig._get_pos_conversion_rate
     const fromId = this._currencyId(fromCurrency);
     const toId = this._currencyId(toCurrency);
     if (fromId != null && toId != null && fromId === toId) {
       return 1;
     }
     const foreignId = this._currencyId(this._getForeignCurrencyRecord());
-    const rate = Number(
-      this.config?.foreign_rate ?? this.pos?.config?.foreign_rate ?? 0
-    );
-    if (!(rate > 0)) {
+    if (!foreignId) {
       return 0;
     }
-    // main → foreign
-    if (foreignId != null && toId === foreignId && fromId !== foreignId) {
-      return rate;
+    // main → foreign: multiplicar por foreign_inverse_rate (CHICO)
+    if (toId === foreignId && fromId !== foreignId) {
+      const rate = Number(
+        this.config?.foreign_inverse_rate ??
+        this.pos?.config?.foreign_inverse_rate ??
+        0
+      );
+      return rate > 0 ? rate : 0;
     }
-    // foreign → main
-    if (foreignId != null && fromId === foreignId && toId !== foreignId) {
-      return 1 / rate;
+    // foreign → main: multiplicar por foreign_rate (GRANDE)
+    if (fromId === foreignId && toId !== foreignId) {
+      const rate = Number(
+        this.config?.foreign_rate ??
+        this.pos?.config?.foreign_rate ??
+        0
+      );
+      return rate > 0 ? rate : 0;
     }
     return 0;
   },
