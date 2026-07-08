@@ -240,7 +240,7 @@ msgid "BORRADOR"
 msgstr ""
 
 #. module: l10n_ve_invoice
-#: model:res.groups,name:l10n_ve_invoice.group_show__button
+#: model:res.groups,name:l10n_ve_invoice.group_show_cancel_button
 msgid "Binaural - Mostrar campo nativo \"Cancelar\" en facturación de ventas"
 msgstr ""
 
