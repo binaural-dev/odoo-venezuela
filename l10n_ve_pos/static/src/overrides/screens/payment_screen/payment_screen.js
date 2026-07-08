@@ -48,9 +48,14 @@ patch(PaymentScreen.prototype, {
         // local amount to the exact remainingDue. Truncating here would
         // steal a cent whenever the natural round is up.
         const foreignDue = order.localToForeign(localDueBefore);
-        const dp = Number(order?.get_foreign_currency?.()?.decimal_places) || 2;
         line.set_foreign_amount(foreignDue);
-        this.numberBuffer.set(foreignDue.toFixed(dp));
+        // Use locale-aware formatting (e.g. "-0,01" in es_VE) for the
+        // number buffer. NEVER use toFixed() which produces "." decimal
+        // separators — Odoo's oParseFloat in es_VE locale treats "." as
+        // a thousands separator, turning "3.88" into 388.
+        this.numberBuffer.set(
+          this.env.utils.formatForeignCurrency(foreignDue, false)
+        );
       }
     }
     return result;
