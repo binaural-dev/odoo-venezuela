@@ -249,12 +249,14 @@ msgstr "Fecha:"
 msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
 
+#. module: stock
+#: model:stock.picking.type,name:stock.picking_type_out
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
 #, python-format
 msgid "Delivery Orders"
-msgstr "Órdenes de Despacho"
+msgstr "Entregas"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
