@@ -365,7 +365,7 @@ msgstr "Dispositivo IoT"
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_wizard_accounting_reports__all_documents
 msgid "Include all issued documents"
-msgstr "Incluir todos los documentos emitidos"
+msgstr "Incluir todos los documentos emitidos (Fact contingencia)"
 
 #. module: l10n_ve_iot_mf
 #: model:ir.model.fields.selection,name:l10n_ve_iot_mf.selection__iot_device__reprint_type_date__rf
