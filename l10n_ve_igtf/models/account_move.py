@@ -89,6 +89,10 @@ class AccountMove(models.Model):
                         'account_payment_id': counterpart_line.payment_id.id,
                         'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
                         'move_id': counterpart_line.move_id.id,
+                        # ``is_refund`` es requerido por account/views/report_invoice.xml en Odoo 19
+                        # (template account.report_invoice_document itera payments_vals y accede
+                        # a payment_vals['is_refund']).
+                        'is_refund': counterpart_line.move_id.move_type in ['in_refund', 'out_refund'],
                         'ref': reconciliation_ref,
                         # these are necessary for the views to change depending on the values
                         'is_exchange': reconciled_partial['is_exchange'],

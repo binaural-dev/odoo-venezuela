@@ -422,9 +422,8 @@ msgid "ID"
 msgstr ""
 
 #. module: l10n_ve_pos
-#. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen_button.xml:0
-#, python-format
+#. Override es_419 core translation ("Recibo/Factura") for the POS
+#. Invoice button so Venezuelan installations show "Factura" only.
 msgid "Invoice"
 msgstr "Factura"
 

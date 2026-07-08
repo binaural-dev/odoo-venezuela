@@ -3,35 +3,45 @@
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
-import {
-  formatFloat,
-  roundDecimals as round_di,
-  roundPrecision as round_pr,
-  floatIsZero,
-} from "@web/core/utils/numbers";
 
 
 // New orders are now associated with the current table, if any.
 patch(PosOrder.prototype, {
   setup() {
       super.setup(...arguments);
-//   this.set_to_invoice(true);
-//   if (props.json) {
-//     if (props.json.account_move === undefined) {
-//       this.set_to_invoice(true);
-//       this.lock_toggle_receipt_invoice = false;
-//     }
-//     this.reload_taxes();
-//   } else {
-//     let always_invoice = !this.pos.config.always_invoice;
-//     this.to_receipt = always_invoice;
-//   }
-},
-get_foreign_currency(){
+      this._missingConversionRateWarningShown = false;
+      // l10n_ve_pos: en Venezuela toda venta del PoS debe emitir factura.
+      // Forzamos to_invoice=true en cada orden y bloqueamos el toggle
+      // del PaymentScreen desde el template.
+      this.to_invoice = true;
+  },
+  setToInvoice() {
+      // Ignora cualquier intento de desactivar la facturación.
+      this.to_invoice = true;
+  },
+ get_foreign_currency(){
         return this.config.foreign_currency_id;
     },
- get_display_rate() {
-    return this.env.pos.config.foreign_rate;
+  get_display_rate() {
+    const rateCandidates = [
+      this.config?.foreign_inverse_rate,
+      this.pos?.config?.foreign_inverse_rate,
+      this.config?.foreign_rate,
+      this.pos?.config?.foreign_rate,
+      this.foreign_currency_rate,
+    ];
+
+    const rawRate = rateCandidates
+      .map((value) => Number(value))
+      .find((value) => Number.isFinite(value) && value > 0);
+
+    if (!Number.isFinite(rawRate) || rawRate <= 0) {
+      return _t("N/D");
+    }
+
+    // UI semantic: show "1 foreign = X local". Some datasets provide the
+    // inverse (e.g. 0.001) for serialization math; normalize for display.
+    return rawRate < 1 ? 1 / rawRate : rawRate;
   },
 
 //   _isValidEmptyOrder() {
@@ -43,13 +53,206 @@ get_foreign_currency(){
 //   },
 //   assert_editable() {},
 
+  // -------- POS-scoped currency conversion (Venezuela) --------
+  //
+  // MIRROR CONTRACT:
+  //   This mirrors pos.config._convert in Python (models/pos_config.py) in
+  //   shape and precision semantics. Same inputs → same outputs on both
+  //   sides. Multiply by the RAW rate (all digits from `digits="Tasa"`),
+  //   round only the final result via to_currency.round().
+  //
+  // BUSINESS RULE (from l10n_ve_rate.compute_rate):
+  //   `foreign_rate` is ALWAYS the multiplier to go main → foreign.
+  //     - main=VEF, foreign=USD → foreign_rate ≈ 0.001481634035
+  //         (VEF * foreign_rate = USD)
+  //     - main=USD, foreign=VEF → foreign_rate ≈ 675
+  //         (USD * foreign_rate = VEF)
+  //   `foreign_inverse_rate` is a reporting-only value (stored on
+  //   account.move.line), NOT a conversion factor. Do NOT use it here.
+  //   Never round the rate before multiplying.
+  //
+  // KEEP IN SYNC WITH:
+  //   models/pos_config.py :: PosConfig._convert / _get_pos_conversion_rate
+
+  _getMainCurrency() {
+    return (
+      this.currency ??
+      this.config?.currency_id ??
+      this.pos?.config?.currency_id ??
+      null
+    );
+  },
+
+  _getForeignCurrencyRecord() {
+    // May return a res.currency record (with .round, .id) or a bare id
+    // depending on the model cache path. Callers must handle both.
+    return (
+      this.config?.foreign_currency_id ??
+      this.pos?.config?.foreign_currency_id ??
+      null
+    );
+  },
+
+  _currencyId(currency) {
+    if (currency == null) return null;
+    return typeof currency === "object" ? (currency.id ?? null) : currency;
+  },
+
+  _getPosConversionRate(fromCurrency, toCurrency) {
+    // Semantics (from res_currency_rate.compute_rate in l10n_ve_rate):
+    //
+    //   pos.config exposes two rates whose meaning DEPENDS on which currency
+    //   is foreign:
+    //     * main=VEF, foreign=USD (classic VE):
+    //         foreign_rate         = inverse_company_rate  (small, ~0.00148)
+    //         foreign_inverse_rate = company_rate          (big,    ~675)
+    //     * main=USD, foreign=VEF:
+    //         foreign_rate         = company_rate          (big,    ~675)
+    //         foreign_inverse_rate = company_rate          (big,    ~675)
+    //     * foreign=VEF (any main): both fields equal company_rate.
+    //
+    //   The invariant enforced by compute_rate is:
+    //     `foreign_rate` is ALWAYS the multiplier to go main → foreign
+    //     (i.e. multiply the local amount by foreign_rate to get the
+    //     foreign amount). It is also the "user-facing" rate shown in UI.
+    //
+    //   Therefore the mirror rule for _convert is:
+    //     local (main) → foreign  ==>  multiply by foreign_rate
+    //     foreign → local (main)  ==>  divide by foreign_rate
+    //                                  (a.k.a. multiply by 1 / foreign_rate)
+    //
+    //   We do NOT use foreign_inverse_rate directly for arithmetic: its
+    //   meaning is context-dependent and only stable as "the value stored
+    //   on account.move.line for reporting", not as a conversion factor.
+    //
+    // PRECISION: foreign_rate is stored with digits="Tasa" (custom high
+    // precision). Read the raw value, never round the rate itself; round
+    // only the final result via to_currency.round() in _convert.
+    const fromId = this._currencyId(fromCurrency);
+    const toId = this._currencyId(toCurrency);
+    if (fromId != null && toId != null && fromId === toId) {
+      return 1;
+    }
+    const foreignId = this._currencyId(this._getForeignCurrencyRecord());
+    const rate = Number(
+      this.config?.foreign_rate ?? this.pos?.config?.foreign_rate ?? 0
+    );
+    if (!(rate > 0)) {
+      return 0;
+    }
+    // main → foreign
+    if (foreignId != null && toId === foreignId && fromId !== foreignId) {
+      return rate;
+    }
+    // foreign → main
+    if (foreignId != null && fromId === foreignId && toId !== foreignId) {
+      return 1 / rate;
+    }
+    return 0;
+  },
+
+  _resolveCurrencyRecord(currency) {
+    // Accepts a res.currency record OR a bare id, returns a record with
+    // a working .round() when possible. Falls back to the input.
+    if (currency == null) return null;
+    if (typeof currency === "object" && typeof currency.round === "function") {
+      return currency;
+    }
+    const id = this._currencyId(currency);
+    if (id == null) return currency;
+    const models = this.pos?.models || this.models;
+    if (models && typeof models["res.currency"]?.get === "function") {
+      const rec = models["res.currency"].get(id);
+      if (rec) return rec;
+    }
+    return currency;
+  },
+
+  _roundWithCurrency(currency, amount) {
+    // Money-rounding using res.currency.rounding step (the ONLY correct way
+    // to round monetary amounts in Odoo). Do NOT use for unit prices from
+    // the catalog — those use dp["Foreign Product Price"].
+    const resolved = this._resolveCurrencyRecord(currency);
+    if (resolved && typeof resolved.round === "function") {
+      return resolved.round(amount);
+    }
+    // Last-resort rounding using decimal_places if present, else 2 dp.
+    const dp = Number(resolved?.decimal_places);
+    const digits = Number.isInteger(dp) && dp >= 0 ? dp : 2;
+    const factor = Math.pow(10, digits);
+    return Math.round(amount * factor) / factor;
+  },
+
+  // ---- Public helpers ----
+
+  roundForeignMoney(amount) {
+    // Canonical way to round any FOREIGN MONETARY amount. Use for subtotals,
+    // taxes, totals, due, change, payment amounts. NOT for unit prices.
+    return this._roundWithCurrency(this._getForeignCurrencyRecord(), amount);
+  },
+
+  roundLocalMoney(amount) {
+    // Canonical way to round any LOCAL (main) MONETARY amount.
+    return this._roundWithCurrency(this._getMainCurrency(), amount);
+  },
+
+  _convert(fromAmount, fromCurrency, toCurrency, doRound = true) {
+    if (!fromAmount) {
+      return 0;
+    }
+    const fromId = this._currencyId(fromCurrency);
+    const toId = this._currencyId(toCurrency);
+    if (fromId != null && toId != null && fromId === toId) {
+      return doRound ? this._roundWithCurrency(toCurrency, fromAmount) : fromAmount;
+    }
+    const rate = this._getPosConversionRate(fromCurrency, toCurrency);
+    if (!rate) {
+      if (!this._posConvertWarningShown) {
+        this._posConvertWarningShown = true;
+        // eslint-disable-next-line no-console
+        console.warn(
+          "[l10n_ve_pos] _convert: no rate available",
+          {
+            fromId,
+            toId,
+            foreignId: this._currencyId(this._getForeignCurrencyRecord()),
+            foreignRate: this.config?.foreign_rate,
+            foreignInverseRate: this.config?.foreign_inverse_rate,
+          }
+        );
+      }
+      return 0;
+    }
+    const result = fromAmount * rate;
+    return doRound ? this._roundWithCurrency(toCurrency, result) : result;
+  },
+
+  // ---- Convenience shortcuts used by payment lines and templates ----
+
+  localToForeign(amount, doRound = true) {
+    return this._convert(amount, this._getMainCurrency(), this._getForeignCurrencyRecord(), doRound);
+  },
+
+  foreignToLocal(amount, doRound = true) {
+    return this._convert(amount, this._getForeignCurrencyRecord(), this._getMainCurrency(), doRound);
+  },
+
+  // ---- Backwards-compatibility shims (do NOT use in new code) ----
+  // Existing callers (orderline.js, payment_status.js, some templates) still
+  // reference these. They now delegate to the new API so all math is unified.
+
+  get_foreign_multiplier() {
+    // local → foreign; returns the raw multiplier (no rounding).
+    return this._getPosConversionRate(this._getMainCurrency(), this._getForeignCurrencyRecord());
+  },
+
+  get_local_multiplier() {
+    // foreign → local; returns the raw multiplier (no rounding).
+    return this._getPosConversionRate(this._getForeignCurrencyRecord(), this._getMainCurrency());
+  },
+
   get init_conversion_rate() {
-    if (this.currency.name == "VEF") {
-      return this.config.foreign_inverse_rate;
-    }
-    if (this.currency.name == "USD") {
-      return this.config.foreign_rate;
-    }
+    return this.get_foreign_multiplier();
   },
  
 
@@ -59,14 +262,11 @@ get_foreign_currency(){
 //     return res;
 //   },
   get_conversion_rate() {
-    const orderlines = this.currentOrder?.get_orderlines()?.length || [];
-    if (orderlines.length != 0) {
-      return orderlines[0].currency_rate_display();
-    }
+    // NOTE: currency_rate_display on line is a getter on the OWL component,
+    // not callable on PosOrderline model, so we removed the dead call to it.
     if (!this.init_conversion_rate) {
-      throw new Error(
-        "Conversion rate cannot be determined due to missing values.",
-      );
+      this._missingConversionRateWarningShown = true;
+      return _t("N/D");
     }
 
     return this.init_conversion_rate;
@@ -124,27 +324,30 @@ get_foreign_currency(){
 //     this.to_receipt = to_receipt;
 //     this.reload_taxes();
 //   },
-//   export_as_JSON() {
-//     let json = super.export_as_JSON();
-//     json["foreign_amount_total"] = this.get_foreign_total_with_tax();
-//     json["foreign_currency_rate"] = this.get_conversion_rate();
-//     json["to_receipt"] = this.is_to_receipt();
-//     return json;
-//   },
+  serializeForORM(opts = {}) {
+    const data = super.serializeForORM(opts);
+    data["foreign_amount_total"] = this.get_foreign_total_with_tax();
+    data["foreign_currency_rate"] = Number(this.init_conversion_rate || 0);
+    if (typeof this.is_to_receipt === "function") {
+      data["to_receipt"] = this.is_to_receipt();
+    } else if ("to_receipt" in this) {
+      data["to_receipt"] = this.to_receipt;
+    }
+    return data;
+  },
 //   is_to_receipt() {
 //     return this.to_receipt;
 //   },
-//   export_for_printing() {
-//     let res = super.export_for_printing(...arguments);
-//     let new_res = {
-//       ...res,
-//       foreign_amount_total: this.get_foreign_total_with_tax(),
-//       foreign_total_without_tax: this.get_foreign_total_without_tax(),
-//       foreign_amount_tax: this.get_foreign_total_tax(),
-//       foreign_total_paid: this.get_foreign_total_paid(),
-//     };
-//     return new_res;
-//   },
+  export_for_printing() {
+    const res = super.export_for_printing(...arguments);
+    return {
+      ...res,
+      foreign_amount_total: this.get_foreign_total_with_tax(),
+      foreign_total_without_tax: this.get_foreign_total_without_tax(),
+      foreign_amount_tax: this.get_foreign_total_tax(),
+      foreign_total_paid: this.get_foreign_total_paid(),
+    };
+  },
 //   set_orderline_options(orderline, options) {
 //     super.set_orderline_options(...arguments);
 //     if (options.foreign_price !== undefined) {
@@ -178,28 +381,68 @@ get_foreign_currency(){
 //       this.pos.foreign_currency.rounding,
 //     );
 //   },
-  get_foreign_total_with_tax() {
-    return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
+  // ---- Foreign totals: SINGLE POINT of conversion ----
+  //
+  // Each foreign total is `localToForeign(local_total)`, so per-line foreign
+  // amounts summed together match the total (no drift). All rounding uses
+  // foreign_currency_id.round() via order.localToForeign.
+  //
+  // Local sources (Odoo 19):
+  //   this.totalDue         → total including taxes
+  //   this.prices.taxDetails.base_amount    → total excluding taxes
+  //   this.prices.taxDetails.tax_amount_currency → tax amount
+
+  _localTotalWithTax() {
+    return Number(
+      this.totalDue ??
+      (typeof this.get_total_with_tax === "function" ? this.get_total_with_tax() : 0)
+    ) || 0;
   },
+
+  _localTotalWithoutTax() {
+    return Number(this.prices?.taxDetails?.base_amount ?? 0) || 0;
+  },
+
+  _localTotalTax() {
+    return Number(this.prices?.taxDetails?.tax_amount_currency ?? 0) || 0;
+  },
+
+  get_foreign_total_with_tax() {
+    return this.localToForeign(this._localTotalWithTax());
+  },
+
   get_foreign_total_without_tax() {
-    const lines = this.get_orderlines();
-    const foreign_currency = this.get_foreign_currency();
-    const digits = foreign_currency ? foreign_currency.decimal_places : 2;
-    return round_pr(
-      lines.reduce(function (sum, orderLine) {
-        if (typeof orderLine.get_foreign_price_without_tax === "function") {
-            return sum + orderLine.get_foreign_price_without_tax();
-        } else {
-            console.warn("get_foreign_price_without_tax is not a function on orderLine", orderLine);
-            return sum;
-        }
-      }, 0),
-      foreign_currency.rounding,
-    );
+    return this.localToForeign(this._localTotalWithoutTax());
+  },
+
+  get_foreign_total_tax() {
+    return this.localToForeign(this._localTotalTax());
   },
 //   get_foreign_total_discount() {
 //     const ignored_product_ids = this._get_ignored_product_ids_total_discount();
 //     return round_pr(
+
+  // ---- Foreign payment helpers (Odoo 19 migration) ----
+
+  get_foreign_total_paid() {
+    // Sum of paid foreign_amount across done payment lines, rounded with
+    // foreign_currency_id.round() (money-rounding).
+    const sum = Array.from(this.payment_ids).reduce((acc, line) => {
+      return acc + (line.isDone?.() ? Number(line.get_foreign_amount?.() ?? 0) : 0);
+    }, 0);
+    return this.roundForeignMoney(sum);
+  },
+
+  get_foreign_due() {
+    const remaining = this.get_foreign_total_with_tax() - this.get_foreign_total_paid();
+    return this.roundForeignMoney(Math.max(0, remaining));
+  },
+
+  get_foreign_change() {
+    // Change to return in foreign currency when overpaid.
+    const change = this.get_foreign_total_paid() - this.get_foreign_total_with_tax();
+    return this.roundForeignMoney(Math.max(0, change));
+  },
 //       this.orderlines.reduce((sum, orderLine) => {
 //         if (!ignored_product_ids.includes(orderLine.product.id)) {
 //           sum +=
@@ -218,50 +461,7 @@ get_foreign_currency(){
 //       this.pos.foreign_currency.rounding,
 //     );
 //   },
-  get_foreign_total_tax() {
-    const orderlines = this.get_orderlines();
-    if (this.company.tax_calculation_rounding_method === "round_globally") {
-      // As always, we need:
-      // 1. For each tax, sum their amount across all order lines
-      // 2. Round that result
-      // 3. Sum all those rounded amounts
-      
-      var groupTaxes = {};
-      orderlines.forEach(function (line) {
-        var taxDetails = line.get_foreign_tax_details();
-        var taxIds = Object.keys(taxDetails);
-        for (var t = 0; t < taxIds.length; t++) {
-          var taxId = taxIds[t];
-          if (!(taxId in groupTaxes)) {
-            groupTaxes[taxId] = 0;
-          }
-          groupTaxes[taxId] += taxDetails[taxId].amount;
-        }
-      });
-
-      var sum = 0;
-      var taxIds = Object.keys(groupTaxes);
-      const foreign_currency = this.get_foreign_currency();
-      
-      for (var j = 0; j < taxIds.length; j++) {
-        var taxAmount = groupTaxes[taxIds[j]];
-        sum += round_pr(taxAmount, foreign_currency.rounding);
-      }
-      return sum;
-    } else {
-      return round_pr(
-        orderlines.reduce(function (sum, orderLine) {
-          if (typeof orderLine.get_foreign_tax === "function") {
-              return sum + orderLine.get_foreign_tax();
-          } else {
-              console.warn("get_foreign_tax is not a function on orderLine", orderLine);
-              return sum;
-          }
-        }, 0),
-        foreign_currency.rounding,
-      );
-    }
-  },
+  // get_foreign_total_tax defined above using localToForeign(localTotalTax).
 //   get_foreign_tax_details() {
 //     var details = {};
 //     var fulldetails = [];

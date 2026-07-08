@@ -1,33 +1,67 @@
 /** @odoo-module */
+
 import { PaymentScreenStatus } from "@point_of_sale/app/screens/payment_screen/payment_status/payment_status";
 import { patch } from "@web/core/utils/patch";
-// New orders are now associated with the current table, if any.
+
+// -----------------------------------------------------------------------------
+// Foreign totals in the payment screen status panel.
+//
+// This override does NOT compute anything itself. All foreign math is
+// delegated to the pos.order helpers (get_foreign_total_with_tax,
+// get_foreign_due, get_foreign_change), which use the centralized
+// _convert/roundForeignMoney and respect the rounding rule
+// (see engram architecture/l10n-ve-pos/rounding-rule).
+// -----------------------------------------------------------------------------
+
 patch(PaymentScreenStatus.prototype, {
+  _num(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  },
+
+  _callOrder(methodName, fallback = 0) {
+    const order = this.props?.order;
+    if (!order || typeof order[methodName] !== "function") {
+      return fallback;
+    }
+    return this._num(order[methodName](), fallback);
+  },
+
+  _hasIgtfPaymentMethod() {
+    const paymentLines = this.props?.order?.get_paymentlines?.()
+      || Array.from(this.props?.order?.payment_ids || []);
+    return paymentLines.some((p) => p?.payment_method_id?.apply_igtf);
+  },
+
+  _getForeignTotalDueAmount() {
+    let amount = this._callOrder("get_foreign_total_with_tax", 0);
+    if (this._hasIgtfPaymentMethod()) {
+      amount += this._callOrder("get_foreign_igtf_amount", 0);
+    }
+    return amount;
+  },
+
+  _getForeignRemainingAmount() {
+    return Math.max(0, this._callOrder("get_foreign_due", 0));
+  },
+
+  _getForeignChangeAmount() {
+    return Math.max(0, this._callOrder("get_foreign_change", 0));
+  },
+
   get foreignTotalDueText() {
-    let igtf_payment_methods = this.props.order.get_paymentlines().filter(payment => payment.payment_method.apply_igtf);
+    return this.env.utils.formatForeignCurrency(this._getForeignTotalDueAmount());
+  },
 
-    if (igtf_payment_methods.length > 0) {
-      return this.env.utils.formatForeignCurrency(
-        this.props.order.get_foreign_total_with_tax() + this.props.order.get_foreign_rounding_applied() + this.props.order.get_foreign_igtf_amount()
-      );
-    } else {
-      return this.env.utils.formatForeignCurrency(
-        this.props.order.get_foreign_total_with_tax() + this.props.order.get_foreign_rounding_applied()
-      );
-
-  }},
   get foreignRemainingText() {
-    return this.env.utils.formatForeignCurrency(
-      this.props.order.get_foreign_due() > 0 ? this.props.order.get_foreign_due() : 0
-    );
+    return this.env.utils.formatForeignCurrency(this._getForeignRemainingAmount());
   },
+
   get foreignChangeText() {
-    let payment_lines = this.props.order.get_paymentlines();
-    return this.env.utils.formatForeignCurrency(
-      this.props.order.get_foreign_change(payment_lines)
-    );
+    return this.env.utils.formatForeignCurrency(this._getForeignChangeAmount());
   },
-  get currentOrder(){
-    return this.props.order
-  }
-})
+
+  get currentOrder() {
+    return this.props.order;
+  },
+});

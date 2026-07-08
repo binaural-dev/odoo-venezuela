@@ -8,7 +8,7 @@
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "1.1",
+    "version": "1.2",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -39,6 +39,7 @@
         "point_of_sale._assets_pos": [
             "l10n_ve_pos/static/src/**/**",
             "l10n_ve_pos/static/src/**/**/**/*",
+            "l10n_ve_pos/static/src/overrides/models/payment_model.js",
         ],
     },
 }
