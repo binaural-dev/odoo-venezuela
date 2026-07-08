@@ -471,11 +471,29 @@ patch(PosStore.prototype, {
     }
   },
 
-  _collectGlobalDiscountMeta(order) {
+  /**
+   * Infiere el porcentaje de descuento que el usuario realmente tecleó en
+   * el botón de descuento global, y los datos crudos necesarios para
+   * redistribuirlo.
+   *
+   * El botón de descuento (`pos_discount`/`binaural_pos_discount`) calcula
+   * el monto de la línea de descuento con `order.calculate_base_amount`,
+   * que suma los precios de línea YA netos de cualquier descuento previo
+   * (incluyendo un descuento global anterior convertido en descuento por
+   * línea). Por eso el monto de la línea de descuento NO representa
+   * `pc% del precio crudo`, sino `pc% del subtotal ya descontado`.
+   *
+   * Aquí revertimos ese cálculo: `pc = montoDescuento / subtotalActual *
+   * 100`. Ese `pc` es el que luego se aplica de forma plana sobre los
+   * precios crudos (después de resetear todas las líneas a 0%).
+   *
+   * @returns {{ discountLines: Array, pendingDiscountAmount: number, inferredPercent: number, clamped: boolean }|null}
+   */
+  _inferGlobalDiscountPercent(order) {
     const allLines = [...(order.orderlines || [])];
     const discountLines = [];
-    let globalDiscountAmount = 0;
-    let positiveBaseSum = 0;
+    let pendingDiscountAmount = 0;
+    let currentDiscountedTotal = 0;
 
     for (const line of allLines) {
       const quantity = Math.abs(Number(line.get_quantity?.() ?? line.quantity ?? 0));
@@ -485,39 +503,32 @@ patch(PosStore.prototype, {
 
       const unitPrice = Number(line.get_unit_price?.() ?? line.price ?? 0);
 
-      if (unitPrice < 0 && this._isGlobalDiscountProductLine(line)) {
-        globalDiscountAmount += Math.abs(unitPrice * quantity);
-        discountLines.push(line);
-        continue;
-      }
-
       if (this._isGlobalDiscountProductLine(line)) {
+        if (unitPrice < 0) {
+          pendingDiscountAmount += Math.abs(unitPrice * quantity);
+          discountLines.push(line);
+        }
         continue;
       }
 
       const lineDiscount = Number(line.get_discount?.() ?? line.discount ?? 0);
       const netAfterLineDiscount = this._applyDiscount(unitPrice, lineDiscount);
-      positiveBaseSum += Math.abs(netAfterLineDiscount * quantity);
+      currentDiscountedTotal += Math.abs(netAfterLineDiscount * quantity);
     }
 
-    if (globalDiscountAmount <= 0) {
+    if (pendingDiscountAmount <= 0) {
       return null;
     }
 
-    let globalRate = 100;
-    let globalClamped = true;
-    if (positiveBaseSum > 0) {
-      const rawRate = (globalDiscountAmount / positiveBaseSum) * 100;
-      globalRate = rawRate > 100 ? 100 : round_pr(rawRate, 0.01);
-      globalClamped = rawRate > 100;
+    let inferredPercent = 100;
+    let clamped = true;
+    if (currentDiscountedTotal > 0) {
+      const rawRate = (pendingDiscountAmount / currentDiscountedTotal) * 100;
+      inferredPercent = rawRate > 100 ? 100 : round_pr(rawRate, 0.01);
+      clamped = rawRate > 100;
     }
 
-    return {
-      discountLines,
-      global_discount_amount: globalDiscountAmount,
-      global_discount_rate: globalRate,
-      global_clamped: globalClamped,
-    };
+    return { discountLines, pendingDiscountAmount, inferredPercent, clamped };
   },
 
   _applyGlobalDiscountBeforeValidation(order, { force = false } = {}) {
@@ -529,14 +540,20 @@ patch(PosStore.prototype, {
       return order._mf_global_discount_meta || null;
     }
 
-    if (hasPendingDiscountLines) {
-      this._resetGlobalDiscountOnLines(order);
-    }
-
-    const meta = this._collectGlobalDiscountMeta(order);
-    if (!meta) {
+    if (!hasPendingDiscountLines) {
       return order._mf_global_discount_meta || null;
     }
+
+    // Inferir el % real ANTES de tocar ninguna línea (ver docstring de
+    // _inferGlobalDiscountPercent).
+    const inference = this._inferGlobalDiscountPercent(order);
+    if (!inference) {
+      return order._mf_global_discount_meta || null;
+    }
+
+    // Resetear todas las líneas a 0% para que la tasa se aplique sobre
+    // precios crudos, sin componerse con descuentos previos.
+    this._resetGlobalDiscountOnLines(order);
 
     const positiveLines = [...(order.orderlines || [])].filter((line) => {
       const quantity = Math.abs(Number(line.get_quantity?.() ?? line.quantity ?? 0));
@@ -546,21 +563,32 @@ patch(PosStore.prototype, {
 
     for (const line of positiveLines) {
       if (typeof line.set_discount === "function") {
-        line.set_discount(meta.global_discount_rate);
+        line.set_discount(inference.inferredPercent);
       } else {
-        line.discount = meta.global_discount_rate;
+        line.discount = inference.inferredPercent;
       }
     }
 
-    for (const line of meta.discountLines) {
+    for (const line of inference.discountLines) {
       order.orderlines.remove(line);
     }
 
+    let rawTotal = 0;
+    for (const line of positiveLines) {
+      const quantity = Math.abs(Number(line.get_quantity?.() ?? line.quantity ?? 0));
+      const unitPrice = Number(line.get_unit_price?.() ?? line.price ?? 0);
+      rawTotal += Math.abs(unitPrice * quantity);
+    }
+    const correctedAmount = round_pr(
+      (rawTotal * inference.inferredPercent) / 100,
+      this.currency?.rounding || 0.01
+    );
+
     order._mf_global_discount_applied = true;
     order._mf_global_discount_meta = {
-      global_discount_amount: meta.global_discount_amount,
-      global_discount_rate: meta.global_discount_rate,
-      global_clamped: meta.global_clamped,
+      global_discount_amount: correctedAmount,
+      global_discount_rate: inference.inferredPercent,
+      global_clamped: inference.clamped,
     };
 
     return order._mf_global_discount_meta;

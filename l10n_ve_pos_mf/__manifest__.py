@@ -9,7 +9,6 @@
     "support": "contacto@binaural.dev",
     "depends": [
         "point_of_sale",
-        "pos_discount",
         "l10n_ve_pos",
         "l10n_ve_mf_base",
         # DEPRECATED: Eliminamos dependencias del IoT Box (ahora usamos Web Serial API)
@@ -34,7 +33,6 @@
             "l10n_ve_mf_base/static/src/drivers/*.js",
             "l10n_ve_pos_mf/static/src/utils/*.js",
             "l10n_ve_pos_mf/static/src/overrides/*.js",
-            "l10n_ve_pos_mf/static/src/overrides/components/**/*.js",
             "l10n_ve_pos_mf/static/src/components/**/*.js",
             
             # Archivos legacy (mantenemos temporalmente por compatibilidad)
