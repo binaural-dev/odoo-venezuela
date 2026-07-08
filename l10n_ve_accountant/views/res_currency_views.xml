@@ -1,4 +1,5 @@
 <odoo>
+  <!-- Vista Formulario de Monedas (Por defecto restrictiva) -->
   <record id="l10n_ve_accountant_res_currency" model="ir.ui.view">
     <field name="name">res.currency.form.l10n.ve</field>
     <field name="model">res.currency</field>
@@ -9,6 +10,38 @@
       </xpath> -->
       <xpath expr="//page[1]/field[1]" position="attributes">
         <attribute name="readonly">not edit_rate</attribute>
+      </xpath>
+
+      <!-- 1. Restricciones por defecto para TODOS los usuarios -->
+      <!-- Evita eliminar la moneda (Desaparece del menú de Acción dentro del registro) -->
+      <xpath expr="//form" position="attributes">
+        <attribute name="delete">0</attribute>
+      </xpath>
+      <!-- Evita crear/eliminar/editar tasas -->
+      <xpath expr="//field[@name='rate_ids']/list" position="attributes">
+        <attribute name="create">0</attribute>
+        <attribute name="delete">0</attribute>
+        <attribute name="edit">0</attribute>
+      </xpath>
+
+      <!-- 2. Sobrescribe y habilita los permisos SOLO para el grupo de soporte (excepto eliminar la moneda, que queda bloqueado para todos) -->
+      <xpath expr="//field[@name='rate_ids']/list" position="attributes" groups="l10n_ve_accountant.group_fiscal_config_support">
+        <attribute name="create">1</attribute>
+        <attribute name="delete">1</attribute>
+        <attribute name="edit">1</attribute>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- Vista Lista de Monedas (Por defecto restrictiva) -->
+  <record id="l10n_ve_accountant_res_currency_tree" model="ir.ui.view">
+    <field name="name">res.currency.tree.l10n.ve</field>
+    <field name="model">res.currency</field>
+    <field name="inherit_id" ref="base.view_currency_tree" />
+    <field name="arch" type="xml">
+      <!-- 1. Restringe la eliminación para TODOS los usuarios por defecto -->
+      <xpath expr="//list" position="attributes">
+        <attribute name="delete">0</attribute>
       </xpath>
     </field>
   </record>
