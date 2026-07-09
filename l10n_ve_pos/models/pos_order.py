@@ -42,8 +42,16 @@ class PosOrder(models.Model):
         )
         return res
 
-    def get_payments_order_refund(self):
-        return self.payment_ids.read()
+    @api.model
+    def get_payments_order_refund(self, order_ids):
+        if not order_ids:
+            return []
+        if isinstance(order_ids, int):
+            order_ids = [order_ids]
+        orders = self.browse(order_ids).exists()
+        if not orders:
+            return []
+        return orders.mapped("payment_ids").read()
 
     def _prepare_refund_values(self, current_session):
         return super()._prepare_refund_values(current_session)

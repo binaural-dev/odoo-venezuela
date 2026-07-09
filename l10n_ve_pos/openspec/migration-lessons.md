@@ -83,3 +83,39 @@ Cuando se modifican archivos JS o XML de OWL templates:
 2. Los assets se regeneran con nuevo hash
 3. Si el hash no cambia, es porque Odoo no encontró cambios en los archivos
 4. Verificar que el archivo modificado está en el directorio correcto que el contenedor está montando
+
+## Foreign due/change: derivar del LOCAL, no de foreign_amount (2026-07-09)
+
+`get_foreign_due()` y `get_foreign_change()` se calculan como UNA conversión
+de su contraparte local (`localToForeign(remainingDue)` /
+`localToForeign(-sign * change)`), NO como `total foráneo - pagado foráneo`.
+Motivo: `get_foreign_total_paid()` suma `line.foreign_amount`, que es 0 en
+métodos locales (`_recomputeForeignFromLocal`), así que un pago en Bs nunca
+reducía el "restante alterno". `remainingDue`/`change` (core) descuentan
+TODOS los pagos vía `amountPaid`, y si otro módulo (l10n_ve_pos_igtf) los
+parchea, el panel foráneo lo refleja sin que este módulo lo conozca.
+
+## Pendientes por tratar (2026-07-10)
+
+### foreign_amount = 0 en líneas de métodos locales — NO debería pasar
+
+`_recomputeForeignFromLocal` (static/src/overrides/models/payment_model.js)
+fija `foreign_amount = 0` cuando el método no es `is_foreign_currency`.
+Jesús: eso no debería pasar; la línea en Bs debería llevar su equivalente
+foráneo (`localToForeign(amount)`).
+
+NO es meramente visual — consumidores de `pos.payment.foreign_amount` con 0:
+
+1. `models/pos_payment.py::_create_payment_moves` (y el de l10n_ve_pos_igtf):
+   `foreign_debit`/`foreign_credit` de los apuntes quedan en 0 para pagos en
+   Bs → la contabilidad dual foránea no registra esos pagos.
+2. `report/report_saledetails.py`: `sum(foreign_amount)` por método de pago
+   en SQL → f_total = 0 para métodos locales en el reporte.
+3. Frontend: `get_foreign_total_paid()` no ve pagos locales (ya desacoplado
+   de due/change el 2026-07-09, pero sigue exportándose en
+   `get_foreign_details`).
+
+Al cambiarlo, auditar TODOS esos consumidores: si `foreign_amount` pasa a
+venir siempre poblado, el split de `_create_payment_moves` y los reportes
+podrían double-contar o cambiar de significado. Decidir también el redondeo
+(una conversión, regla del módulo).

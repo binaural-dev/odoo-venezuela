@@ -7,14 +7,16 @@ import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { useService } from "@web/core/utils/hooks";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
 import { useEnv } from "@odoo/owl";
+import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 
 // New orders are now associated with the current table, if any.
 patch(PaymentScreen.prototype, {
 
   setup(){
     super.setup(...arguments)
-    this.utils = useEnv().utils,
-     this.dialog = useService("dialog");
+    this.utils = useEnv().utils;
+    this.dialog = useService("dialog");
+    this.orm = useService("orm");
   },
   get foreignTotalDueText() {
     // Delegates to pos.order.get_foreign_total_with_tax (single source of
@@ -167,31 +169,58 @@ patch(PaymentScreen.prototype, {
     return res
   },
   async showPaymentsOrigin() {
-    let id = []
-    if (Object.values(this.pos.toRefundLines).length == 0) {
-      return
+    // En Odoo 19, obtener las órdenes origen desde las líneas de reembolso
+    const order = this.currentOrder;
+    if (!order || !order.isRefund) {
+      return;
     }
-    Object.values(this.pos.toRefundLines).forEach(el => {
-      id = el.orderline.orderBackendId
-    })
 
-    const payments = await this.orm.call('pos.order', 'get_payments_order_refund', [id]);
+    // Recopilar IDs únicos de órdenes origen
+    const originOrderIds = new Set();
+    for (const line of order.lines) {
+      if (line.refunded_orderline_id?.order_id?.id) {
+        originOrderIds.add(line.refunded_orderline_id.order_id.id);
+      }
+    }
 
-    let payment_list = payments.map(el => {
-      return {
-        id: el.id,
-        label: el.payment_method_id[1] + " " + el.display_name + " / " + this.utils.formatForeignCurrency(el.foreign_amount),
-        isSelected: false,
-        item: el,
+    if (originOrderIds.size === 0) {
+      console.warn("No se encontraron órdenes origen para este reembolso");
+      return;
+    }
+
+    try {
+      // Obtener pagos de las órdenes origen
+      const payments = await this.orm.call("pos.order", "get_payments_order_refund", [
+        Array.from(originOrderIds),
+      ]);
+
+      if (!payments || payments.length === 0) {
+        this.dialog.add(AlertDialog, {
+          title: _t("Sin pagos"),
+          body: _t("No se encontraron pagos en la orden original"),
+        });
+        return;
       }
 
-    })
-    await this.popup.add(
-      SelectionPopup,
-      {
-        title: _t("Payments"),
+      const payment_list = payments.map(el => {
+        return {
+          id: el.id,
+          label: `${el.payment_method_id?.[1] || _t("Método desconocido")} ${el.display_name || ""} / ${this.utils.formatForeignCurrency(el.foreign_amount || el.amount || 0)}`,
+          isSelected: false,
+          item: el,
+        }
+      });
+
+      await makeAwaitable(this.dialog, SelectionPopup, {
+        title: _t("Pagos de la orden original"),
         list: payment_list,
-      }
-    )
+      });
+    } catch (error) {
+      console.error("Error obteniendo pagos origen:", error);
+      this.dialog.add(AlertDialog, {
+        title: _t("Error"),
+        body: _t("No se pudieron obtener los pagos de la orden original"),
+      });
+    }
   }
 })

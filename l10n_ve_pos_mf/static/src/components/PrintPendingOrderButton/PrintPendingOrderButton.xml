@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf.PrintPendingOrderButton">
+        <div class="control-button btn btn-light rounded-0 fw-bolder" t-on-click="_onClick" >
+            <t t-if="state.isPrinting">
+                <i class="fa fa-spinner fa-spin"></i>
+                <span>Imprimiendo...</span>
+            </t>
+            <t t-else="">
+                <i class="fa fa-print"></i>
+                <span>Imprimir pedido pendiente</span>
+            </t>
+        </div>
+    </t>
+</templates>
