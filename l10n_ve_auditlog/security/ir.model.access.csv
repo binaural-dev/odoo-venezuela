@@ -1,7 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_auditlog_log_seniat,auditlog.log.seniat,auditlog.model_auditlog_log,l10n_ve_auditlog.group_audit_report_seniat,1,1,1,1
+access_auditlog_log_seniat,auditlog.log.seniat,auditlog.model_auditlog_log,l10n_ve_auditlog.group_audit_report_seniat,1,0,0,0
 access_auditlog_rule_seniat,auditlog.rule.seniat,auditlog.model_auditlog_rule,l10n_ve_auditlog.group_audit_report_seniat,1,1,1,1
-access_auditlog_log_line_seniat,auditlog.log.line.seniat,auditlog.model_auditlog_log_line,l10n_ve_auditlog.group_audit_report_seniat,1,1,1,1
+access_auditlog_log_line_seniat,auditlog.log.line.seniat,auditlog.model_auditlog_log_line,l10n_ve_auditlog.group_audit_report_seniat,1,0,0,0
 access_ir_model_fields_seniat,ir.model.fields.seniat,base.model_ir_model_fields,l10n_ve_auditlog.group_audit_report_seniat,1,0,0,0
 access_ir_model_seniat,ir.model.seniat,base.model_ir_model,l10n_ve_auditlog.group_audit_report_seniat,1,0,0,0
 access_ir_actions_todo_seniat,ir.actions.todo.seniat,base.model_ir_actions_todo,l10n_ve_auditlog.group_audit_report_seniat,1,0,0,0
