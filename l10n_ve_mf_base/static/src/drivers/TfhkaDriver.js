@@ -1241,12 +1241,6 @@ export class TfhkaDriver {
                 console.log("TfhkaDriver::printInvoice - S25 result:", s25Result);
                 if (s25Result.success && s25Result.data) {
                     console.log("TfhkaDriver::printInvoice - S25 data:", JSON.stringify(s25Result.data));
-                    if (s25Result.data.igtfAmount > 0) {
-                        paymentLines = this._adjustPaymentsWithIGTF(paymentLines, s25Result.data);
-                        console.log("TfhkaDriver::printInvoice - payment_lines ajustados con IGTF:", JSON.stringify(paymentLines));
-                    } else {
-                        console.log("TfhkaDriver::printInvoice - S25 reporta IGTF=0, no se ajustan pagos");
-                    }
                 } else {
                     console.warn("TfhkaDriver::printInvoice - No se pudo leer S25, continuando sin ajuste IGTF:", s25Result.error);
                 }
@@ -1473,8 +1467,8 @@ export class TfhkaDriver {
             const hasDivisa = this._hasDivisaPayment(paymentLines);
             if (hasDivisa) {
                 const s25Result = await this.readS25Data();
-                if (s25Result.success && s25Result.data?.igtfAmount > 0) {
-                    paymentLines = this._adjustPaymentsWithIGTF(paymentLines, s25Result.data);
+                if (!s25Result.success) {
+                    console.warn("TfhkaDriver::printCreditNote - No se pudo leer S25:", s25Result.error);
                 }
             }
 
@@ -1667,8 +1661,8 @@ export class TfhkaDriver {
             const hasDivisa = this._hasDivisaPayment(paymentLines);
             if (hasDivisa) {
                 const s25Result = await this.readS25Data();
-                if (s25Result.success && s25Result.data?.igtfAmount > 0) {
-                    paymentLines = this._adjustPaymentsWithIGTF(paymentLines, s25Result.data);
+                if (!s25Result.success) {
+                    console.warn("TfhkaDriver::printDebitNote - No se pudo leer S25:", s25Result.error);
                 }
             }
 
