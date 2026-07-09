@@ -1793,3 +1793,9 @@ msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente public
 #, python-format
 msgid "The credit note amount (%s) cannot exceed the original invoice amount (%s)."
 msgstr "El monto de la nota de crédito (%s) no puede exceder el monto de la factura original (%s)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Changing between invoice and credit note is not allowed."
+msgstr "No está permitido cambiar entre factura y nota de crédito."

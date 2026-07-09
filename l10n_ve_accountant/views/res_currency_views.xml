@@ -14,8 +14,8 @@
 
       <xpath expr="//field[@name='rate_ids']/list" position="attributes">
         <attribute name="create">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
-        <attribute name="delete">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
-        <attribute name="edit">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
+        <attribute name="delete">false</attribute>
+        <attribute name="edit">false</attribute>
       </xpath>
     </field>
   </record>

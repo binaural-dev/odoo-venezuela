@@ -1090,6 +1090,10 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
+    def action_switch_move_type(self):
+        raise UserError(_("Changing between invoice and credit note is not allowed."))
+        return super(AccountMove, self).action_switch_move_type()
+
     def action_post(self):
         if not self.env.user.has_group('l10n_ve_accountant.group_fiscal_config_support'):
             for move in self:
