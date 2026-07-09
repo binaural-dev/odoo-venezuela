@@ -1,0 +1,24 @@
+<odoo>
+    <record id="res_config_settings_l10n_ve_auditlog_base" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n.ve.auditlog.base</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings" />
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                <block title="Outgoing Request Logging" name="l10n_ve_auditlog_block">
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_auditlog_log_outgoing_requests">
+                        <div class="o_setting_left_pane">
+                            <field name="log_outgoing_requests"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="log_outgoing_requests"/>
+                            <div class="text-muted">
+                                Controls logging of outgoing HTTP requests (API calls to Tesore, Megasoft, BCV, etc.)
+                            </div>
+                        </div>
+                    </div>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>
