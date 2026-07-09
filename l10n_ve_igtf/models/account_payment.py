@@ -165,8 +165,8 @@ class AccountPaymentAndIgtf(models.Model):
                     is_international = any(
                         m.journal_id.is_purchase_international for m in move_ids
                     )
-                    if not is_international:
-                        rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
+                    #if not is_international:
+                        #rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
                 if rec.igtf_amount <= 0.0: #Nativo
                     total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
                     if write_off_line_vals:
