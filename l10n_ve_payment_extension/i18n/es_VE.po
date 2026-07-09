@@ -23,7 +23,7 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
 msgid ""
-"\"Este comprobante se emite según lo establecido en el artículo 16 de la Providencia\n"
+"Este comprobante se emite según lo establecido en el artículo 16 de la Providencia\n"
 "                        Administrativa snat/2025/000054 de fecha 02/07/2025 publicada en Gaceta Oficial número\n"
 "                        43.171 de fecha 16 de julio de 2025."
 msgstr ""
