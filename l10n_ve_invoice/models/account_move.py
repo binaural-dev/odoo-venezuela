@@ -141,6 +141,18 @@ class AccountMove(models.Model):
             elif 'invoice_date_display' in vals and not vals.get('invoice_date_display'):
                 vals['invoice_date_display_datetime'] = False
         moves = super().create(vals_list)
+
+        # Synchronize invoice_date_display_datetime for created invoices
+        # from pickings, sales, POS, or other flows where invoice_date_display
+        # It is applied by default but was not explicitly passed in `vals`.
+        for move in moves:
+            if move.invoice_date_display and not move.invoice_date_display_datetime:
+                date_part = move.invoice_date_display
+                now = fields.Datetime.now()
+                move.invoice_date_display_datetime = now.replace(
+                    year=date_part.year, month=date_part.month, day=date_part.day
+                )
+
         for move in moves:
             if move.is_purchase_international and move.declaration_unique_of_customs and not move.correlative:
                 move.correlative = move.declaration_unique_of_customs
