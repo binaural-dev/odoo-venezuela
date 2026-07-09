@@ -89,6 +89,10 @@ class AccountMove(models.Model):
                         'account_payment_id': counterpart_line.payment_id.id,
                         'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
                         'move_id': counterpart_line.move_id.id,
+                        # ``is_refund`` es requerido por account/views/report_invoice.xml en Odoo 19
+                        # (template account.report_invoice_document itera payments_vals y accede
+                        # a payment_vals['is_refund']).
+                        'is_refund': counterpart_line.move_id.move_type in ['in_refund', 'out_refund'],
                         'ref': reconciliation_ref,
                         # these are necessary for the views to change depending on the values
                         'is_exchange': reconciled_partial['is_exchange'],
@@ -739,8 +743,8 @@ class AccountMove(models.Model):
             rec.foreign_bi_igtf = 0.0
             rec.bi_igtf = 0.0
 
-            if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']: 
-                rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
+            if abs(rec.amount_total_signed) > 0 or rec.payment_state in ['paid','in_payment']: 
+                rec.igtf_top_aply = abs(rec.amount_total_signed) * (rec.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
                 final_payment_moves = receivable_payable_lines.reconciled_lines_ids.mapped('move_id')
