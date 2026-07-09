@@ -73,10 +73,12 @@ class AccountTax(models.Model):
                                     if i < n_sub - 1:
                                         ratio = subtotal.get('base_amount', 0.0) / total_sub_base
                                         share = cc.round(ratio * diff)
-                                        subtotal['base_amount'] += share
+                                        subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + share
+                                        subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + share
                                         remaining_diff -= share
                                     else:
-                                        subtotal['base_amount'] += remaining_diff
+                                        subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + remaining_diff
+                                        subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + remaining_diff
                                     # Sync tax groups' base_amount with corrected subtotal
                                     tax_groups = subtotal.get('tax_groups', [])
                                     if tax_groups:
@@ -89,11 +91,13 @@ class AccountTax(models.Model):
                                                     tg_share = cc.round(tg_ratio * subtotal['base_amount'])
                                                     tg['base_amount'] = tg_share
                                                     tg['display_base_amount'] = tg_share
+                                                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg_share)
                                                 else:
                                                     tg['base_amount'] = subtotal['base_amount'] - sum(
                                                         tax_groups[k]['base_amount'] for k in range(j)
                                                     )
                                                     tg['display_base_amount'] = tg['base_amount']
+                                                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg['base_amount'])
 
         currency_id = self.env.company.currency_id or False
         foreign_currency_id = self.env.company.foreign_currency_id or False
@@ -194,9 +198,14 @@ class AccountTax(models.Model):
             value=res.get('tax_amount', 0.0),
             currency_obj=ves_currency
         )
+        total_ves = (
+            abs(record.amount_total_signed)
+            if record._name == 'account.move'
+            else abs(res.get('total_amount', 0.0))
+        )
         res['formatted_total_amount_currency_ves'] = formatLang(
             env=self.env,
-            value=abs(record.amount_total_signed),
+            value=total_ves,
             currency_obj=ves_currency
         )
     
