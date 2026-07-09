@@ -1576,7 +1576,7 @@ class AccountMove(models.Model):
             yield
         self._distribute_final_real_portion(container['records'])
         self._distribute_foreign_pt_residual(container['records'])
-        self._fix_company_currency_rounding(container['records'])
+       
 
     def _distribute_foreign_pt_residual(self, moves):
         """Distributes foreign_debit/foreign_credit across payment term lines
@@ -1706,21 +1706,17 @@ class AccountMove(models.Model):
         if not non_pt:
             return
 
-        total_currency = sum(non_pt.mapped('amount_currency'))
-        expected_total = cc.round(total_currency / rate)
         actual_non_pt = sum(non_pt.mapped('balance'))
-
-        total_balance = sum(move.line_ids.mapped('balance'))
-        if cc.is_zero(total_balance):
+        if cc.is_zero(actual_non_pt):
             return
 
         pt_lines = move.line_ids.filtered(
             lambda l: l.display_type == 'payment_term'
         )
         if pt_lines:
-            remaining = cc.round(
-                expected_total - actual_non_pt - (move.real_portion_amount or 0.0)
-            )
+            target_pt = -actual_non_pt
+            current_pt = sum(pt_lines.mapped('balance'))
+            remaining = cc.round(target_pt - current_pt)
             if cc.is_zero(remaining):
                 return
             self._distribute_to_lines(pt_lines, remaining, cc)
@@ -1729,7 +1725,7 @@ class AccountMove(models.Model):
             )
             move.real_portion_count += 1
         else:
-            remaining = cc.round(expected_total - actual_non_pt)
+            remaining = -actual_non_pt
             if cc.is_zero(remaining):
                 return
             target_lines = move.line_ids.filtered(
@@ -1791,17 +1787,21 @@ class AccountMove(models.Model):
                 expected = -expected
 
             diff = expected - actual
+            
             if cc.is_zero(diff):
+                
                 continue
 
             target_lines = non_pt.filtered(
                 lambda l: not l.tax_repartition_line_id
             )
             if not target_lines:
+                
                 continue
 
             self._distribute_to_lines(target_lines, diff, cc)
             self._distribute_to_lines(pt_lines, -diff, cc)
+            
 
     @api.model
     def _distribute_to_lines(self, lines, amount, currency):
