@@ -82,7 +82,6 @@ class AccountTax(models.Model):
                                     if tax_groups:
                                         tg_total = sum(tg.get('base_amount', 0.0) for tg in tax_groups)
                                         if not cc.is_zero(tg_total):
-                                            tg_remaining = subtotal['base_amount'] - tg_total
                                             n_tg = len(tax_groups)
                                             for j, tg in enumerate(tax_groups):
                                                 if j < n_tg - 1:
@@ -90,7 +89,6 @@ class AccountTax(models.Model):
                                                     tg_share = cc.round(tg_ratio * subtotal['base_amount'])
                                                     tg['base_amount'] = tg_share
                                                     tg['display_base_amount'] = tg_share
-                                                    tg_remaining -= tg_share
                                                 else:
                                                     tg['base_amount'] = subtotal['base_amount'] - sum(
                                                         tax_groups[k]['base_amount'] for k in range(j)
