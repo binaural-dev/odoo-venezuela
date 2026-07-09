@@ -22,6 +22,12 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         required=True,
         default=date.today().replace(day=1) + relativedelta(months=1, days=-1),
     )
+    company_id = fields.Many2one(
+        "res.company",
+        string="Company",
+        required=True,
+        default=lambda self: self.env.company,
+    )
 
     def print_xlsx(self):
         domain = self._get_municipal_retention_domain()
@@ -32,7 +38,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
 
         if (
             not do_not_validate_missing_tax_authorities_name_per_company
-            and not self.env.company.tax_authorities_name
+            and not self.company_id.tax_authorities_name
         ):
             raise ValidationError(_("The company has no tax authorities name"))
 
@@ -47,6 +53,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         }
 
     def _xlsx_file(self, table, nombre):
+        _logger.warning("aqui111111")
         data2 = BytesIO()
         workbook = xlsxwriter.Workbook(data2, {"in_memory": True})
         merge_format = workbook.add_format(
@@ -62,7 +69,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         bold = workbook.add_format({"bold": 1})
         worksheet2 = workbook.add_worksheet(nombre)
         worksheet2.set_column("A:Z", 20)
-        company = self.env.company
+        company = self.company_id
         tax_authorities_record = self._get_tax_authorities_record(company)
         if tax_authorities_record.tax_authorities_logo:
             tax_authorities_logo = BytesIO(base64.b64decode(tax_authorities_record.tax_authorities_logo))
@@ -162,7 +169,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
                 ("Monto Retenido", 0.00),
             ]
         )
-        base_currency = self.env.company.currency_id
+        base_currency = self.company_id.currency_id
         usd = self.env.ref("base.USD")
         numero = 1
         for retention in retentions:
@@ -218,4 +225,5 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
             ("state", "=", "emitted"),
             ("type", "=", "in_invoice"),
             ("type_retention", "=", "municipal"),
+            ("company_id", "=", self.company_id.id),
         ]
