@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from odoo import api, fields, models
 import pytz
@@ -23,8 +23,10 @@ API_TIMEOUT = 10
 SCRAPING_TIMEOUT = 10
 SOURCE_MAX_ATTEMPTS = 2
 BCV_TIMEZONE = "America/Caracas"
-BCV_WINDOW_START_HOUR = 4
+BCV_CRON_XMLID = "currency_rate_live.ir_cron_currency_update"
+BCV_WINDOW_START_HOUR = 5
 BCV_WINDOW_END_HOUR = 7
+BCV_RETRY_INTERVAL_MINUTES = 30
 VEF_CURRENCY_CODE = "VEF"
 
 _logger = logging.getLogger(__name__)
@@ -77,6 +79,52 @@ class ResCompany(models.Model):
         if BCV_WINDOW_START_HOUR <= now_local.hour < BCV_WINDOW_END_HOUR:
             return True
         return now_local.hour == BCV_WINDOW_END_HOUR and now_local.minute == 0
+
+    @api.model
+    def _get_bcv_cron(self):
+        return self.env.ref(BCV_CRON_XMLID, raise_if_not_found=False)
+
+    @api.model
+    def _get_next_bcv_retry_time(self, now_local):
+        if not self._is_bcv_update_window(now_local):
+            return None
+
+        retry_at = now_local.replace(second=0, microsecond=0)
+        minutes_to_add = BCV_RETRY_INTERVAL_MINUTES - (
+            retry_at.minute % BCV_RETRY_INTERVAL_MINUTES
+        )
+        if minutes_to_add == 0:
+            minutes_to_add = BCV_RETRY_INTERVAL_MINUTES
+        retry_at += timedelta(minutes=minutes_to_add)
+
+        window_limit = retry_at.replace(
+            hour=BCV_WINDOW_END_HOUR,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        return retry_at if retry_at <= window_limit else None
+
+    @api.model
+    def _schedule_bcv_retry(self, retry_at_local):
+        cron = self._get_bcv_cron()
+        if not cron or not retry_at_local:
+            return False
+
+        retry_at_utc = retry_at_local.astimezone(pytz.UTC).replace(tzinfo=None)
+        trigger_model = self.env["ir.cron.trigger"].sudo()
+        existing_trigger = trigger_model.search(
+            [
+                ("cron_id", "=", cron.id),
+                ("call_at", "=", fields.Datetime.to_string(retry_at_utc)),
+            ],
+            limit=1,
+        )
+        if existing_trigger:
+            return False
+
+        cron.sudo()._trigger(at=retry_at_utc)
+        return True
 
     @api.model
     def _is_valid_rate_date(self, current_date, published_date):
@@ -292,6 +340,7 @@ class ResCompany(models.Model):
                     ("parent_id", "=", False),
                 ]
             )
+            missing_rate = False
             for company in bcv_companies:
                 try:
                     already_today = Rate.search_count(
@@ -304,10 +353,28 @@ class ResCompany(models.Model):
                     if already_today:
                         continue
                     company.with_context(suppress_errors=True).update_currency_rates()
+                    company_updated = Rate.search_count(
+                        [
+                            ("company_id", "=", company.id),
+                            ("currency_id", "=", vef.id),
+                            ("name", "=", today),
+                        ]
+                    )
+                    if not company_updated:
+                        missing_rate = True
                 except Exception:
+                    missing_rate = True
                     _logger.exception(
                         "BCV currency update failed for company %s",
                         company.display_name,
+                    )
+
+            if missing_rate:
+                retry_at = self._get_next_bcv_retry_time(now_local)
+                if retry_at and self._schedule_bcv_retry(retry_at):
+                    _logger.info(
+                        "Scheduled BCV currency retry for %s",
+                        retry_at.strftime("%Y-%m-%d %H:%M:%S %Z"),
                     )
         except Exception:
             _logger.exception("Unexpected error in BCV currency cron")

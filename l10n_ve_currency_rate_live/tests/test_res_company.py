@@ -97,6 +97,27 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
 
         self.assertFalse(self.company._is_bcv_update_window(current_time))
 
+    def test_get_next_bcv_retry_time_returns_next_half_hour_slot(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 5, 5, 0)
+
+        retry_at = self.company._get_next_bcv_retry_time(current_time)
+
+        self.assertEqual(retry_at, currency_res_company.datetime(2026, 6, 23, 5, 30, 0))
+
+    def test_get_next_bcv_retry_time_aligns_to_next_slot_boundary(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 5, 31, 0)
+
+        retry_at = self.company._get_next_bcv_retry_time(current_time)
+
+        self.assertEqual(retry_at, currency_res_company.datetime(2026, 6, 23, 6, 0, 0))
+
+    def test_get_next_bcv_retry_time_stops_after_window_end(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 7, 0, 0)
+
+        retry_at = self.company._get_next_bcv_retry_time(current_time)
+
+        self.assertIsNone(retry_at)
+
     def test_parse_bcv_data_skips_future_published_date(self):
         current_date = date(2026, 6, 23)
         future_date = date(2026, 6, 24)
@@ -274,6 +295,63 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
             side_effect=RuntimeError("search failed"),
         ):
             self.company.run_update_bcv_currency()
+
+    def test_run_update_bcv_currency_schedules_retry_when_rate_is_still_missing(self):
+        retry_at = currency_res_company.datetime(2026, 6, 23, 5, 30, 0)
+
+        with patch.object(
+            type(self.company),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            type(self.company),
+            "search",
+            return_value=self.company,
+        ), patch.object(
+            type(self.env["res.currency"]),
+            "search",
+            return_value=self.company.currency_id,
+        ), patch.object(
+            type(self.env["res.currency.rate"]),
+            "search_count",
+            side_effect=[0, 0],
+        ), patch.object(
+            type(self.company),
+            "_get_next_bcv_retry_time",
+            return_value=retry_at,
+        ), patch.object(
+            type(self.company),
+            "_schedule_bcv_retry",
+            return_value=True,
+        ) as mock_schedule:
+            self.company.run_update_bcv_currency()
+
+        mock_schedule.assert_called_once_with(retry_at)
+
+    def test_run_update_bcv_currency_does_not_schedule_retry_when_rate_is_created(self):
+        with patch.object(
+            type(self.company),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            type(self.company),
+            "search",
+            return_value=self.company,
+        ), patch.object(
+            type(self.env["res.currency"]),
+            "search",
+            return_value=self.company.currency_id,
+        ), patch.object(
+            type(self.env["res.currency.rate"]),
+            "search_count",
+            side_effect=[0, 1],
+        ), patch.object(
+            type(self.company),
+            "_schedule_bcv_retry",
+        ) as mock_schedule:
+            self.company.run_update_bcv_currency()
+
+        mock_schedule.assert_not_called()
 
     def test_compute_currency_provider_sets_bcv_for_venezuela(self):
         self.company.country_id = self.country_ve
