@@ -460,14 +460,32 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_due() {
-    const remaining = this.get_foreign_total_with_tax() - this.get_foreign_total_paid();
-    return this.roundForeignMoney(Math.max(0, remaining));
+    // Foreign amount remaining to be paid (always non-negative).
+    // Replica lógica de remainingDue nativa pero para moneda foránea.
+    const total = this.get_foreign_total_with_tax();
+    const paid = this.get_foreign_total_paid();
+    const remaining = total - paid;
+    const isNegative = total < 0;
+    // Amount paid covers the total due → remaining 0
+    if ((isNegative && remaining >= 0) || (!isNegative && remaining <= 0)) {
+      return this.roundForeignMoney(0);
+    }
+    // Still owed (absolute value always returned)
+    return this.roundForeignMoney(Math.abs(remaining));
   },
 
   get_foreign_change() {
-    // Change to return in foreign currency when overpaid.
-    const change = this.get_foreign_total_paid() - this.get_foreign_total_with_tax();
-    return this.roundForeignMoney(Math.max(0, change));
+    // Foreign change when overpaid (always non-negative).
+    const total = this.get_foreign_total_with_tax();
+    const paid = this.get_foreign_total_paid();
+    const isNegative = total < 0;
+    const remaining = total - paid;
+    // Underpaid or exact → no change
+    if ((isNegative && remaining <= 0) || (!isNegative && remaining >= 0)) {
+      return this.roundForeignMoney(0);
+    }
+    // Overpaid → return the excess
+    return this.roundForeignMoney(Math.abs(paid) - Math.abs(total));
   },
 //       this.orderlines.reduce((sum, orderLine) => {
 //         if (!ignored_product_ids.includes(orderLine.product.id)) {

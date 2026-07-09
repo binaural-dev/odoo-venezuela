@@ -31,6 +31,7 @@
                                 <!-- >>> BINAURAL: foreign currency display override <<< -->
                                 <t t-if="line.payment_method_id?.is_foreign_currency">
                                     <PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" />
+                                    <span class="text-muted fs-3"> / <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
                                 </t>
                                 <t t-else="">
                                     <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" />
@@ -160,6 +161,7 @@
                                 <!-- >>> BINAURAL: foreign currency display override <<< -->
                                 <t t-if="line.payment_method_id?.is_foreign_currency">
                                     <PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" />
+                                    <span class="text-muted fs-3"> / <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
                                 </t>
                                 <t t-else="">
                                     <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" />
