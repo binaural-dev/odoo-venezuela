@@ -22,6 +22,7 @@
         "data/dispatch_guide_paperformat.xml",
         "data/ir_cron.xml",
         "data/ir_sequence.xml",
+        "data/mail_template.xml",
         "data/transfer_reason.xml", 
         "views/account_move_views.xml",
         "wizard/picking_invoice_wizard.xml",
