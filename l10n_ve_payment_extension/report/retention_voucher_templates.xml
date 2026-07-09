@@ -15,7 +15,7 @@
                 <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8" style="text-align: left;">
                     <h6>COMPROBANTE DE RETENCIÓN DEL IMPUESTO AL VALOR AGREGADO</h6>
-                    <p>"Este comprobante se emite según lo establecido en el artículo 16 de la Providencia
+                    <p>Este comprobante se emite según lo establecido en el artículo 16 de la Providencia
                         Administrativa snat/2025/000054 de fecha 02/07/2025 publicada en Gaceta Oficial número
                         43.171 de fecha 16 de julio de 2025.
                     </p>
