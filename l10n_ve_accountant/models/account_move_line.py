@@ -506,6 +506,19 @@ class AccountMoveLine(models.Model):
 
     @api.model
     def _apply_product_real_portion(self, lines):
+        """Correct cross-currency rounding on product lines.
+
+        When an invoice is in a foreign currency, each product line's balance
+        (company currency) is independently rounded to the company currency's
+        precision. The sum of these rounded balances can differ by the currency
+        rounding unit from the rounded conversion of the total line amount at
+        the raw exchange rate. This method distributes that difference across
+        product lines proportionally so the entry remains balanced.
+
+        The expected total is computed via ``_convert`` (the raw rate from
+        ``res.currency.rate``), not from ``line.currency_rate`` (which is
+        derived from an already-rounded balance and amplifies the error).
+        """
         for move in lines.move_id:
             if not move.is_invoice(include_receipts=True):
                 continue
@@ -525,12 +538,11 @@ class AccountMoveLine(models.Model):
             if not product_lines:
                 continue
 
-            rate = product_lines[0].currency_rate
-            if not rate:
-                continue
-
             total_currency = sum(product_lines.mapped('amount_currency'))
-            expected = cc.round(total_currency / rate)
+            rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+            expected = cc.round(move.currency_id._convert(
+                total_currency, cc, move.company_id, rate_date
+            ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
 
