@@ -14,7 +14,7 @@
         "views/auditlogs_views.xml",
     ],
     "depends": [
-        "auditlog",
+        "l10n_ve_auditlog_base",
         "l10n_ve_accountant",
         "l10n_ve_payment_extension",
     ],
