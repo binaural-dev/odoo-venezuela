@@ -19,39 +19,44 @@ patch(PosPayment.prototype, {
     this.foreign_igtf_amount = amount
   },
   set_foreign_amount(amount) {
-    // Para métodos con apply_igtf, el clamp "cubre lo que se debe" de
-    // l10n_ve_pos no conoce el recargo IGTF: convertir el excedente foráneo
-    // de vuelta a local reintroduce ruido de redondeo (p.ej. 341 vs 348 Bs).
-    // Si el monto foráneo tecleado cubre el monto de cierre (base restante +
-    // deuda IGTF + IGTF de la nueva base), fijamos el monto local EXACTO
-    // calculado en moneda principal, sin ida y vuelta de conversión.
+    // El clamp "cubre lo que se debe" de l10n_ve_pos no conoce el recargo
+    // IGTF: calcula el due desde totalDue (sin deuda IGTF) y convertir el
+    // excedente foráneo de vuelta a local reintroduce ruido de redondeo
+    // (p.ej. 351 vs 348 Bs al pagar la deuda IGTF). Cuando la orden tiene
+    // contexto IGTF (método apply_igtf o deuda IGTF acumulada, con cualquier
+    // método), el due correcto es el RESTANTE actual: base de factura
+    // pendiente + deuda IGTF, SIN el IGTF que esta línea generará (ese nace
+    // después, en update_igtf — diseño 2026-07-09). Si el monto tecleado lo
+    // cubre, fijamos el local EXACTO sin ida y vuelta de conversión.
     const order = this.pos_order_id;
     const method = this.payment_method_id;
+    const hasIgtfContext =
+      Boolean(method?.apply_igtf) ||
+      (typeof order?._igtfRoundLocal === "function" &&
+        order._igtfRoundLocal(order.igtf_amount || 0) !== 0);
     if (
       order?.to_invoice &&
-      method?.apply_igtf &&
+      hasIgtfContext &&
       typeof order._igtfBaseState === "function" &&
       typeof order.localToForeign === "function"
     ) {
       const requested = Number(amount) || 0;
       const { sign, remainingBase, unpaidIgtf } = order._igtfBaseState(this);
-      const closingLocal = order._igtfRoundLocal(
-        sign * (remainingBase + unpaidIgtf + order.compute_igtf_amount(remainingBase))
-      );
-      const closingForeign = order.localToForeign(closingLocal);
+      const dueLocal = order._igtfRoundLocal(sign * (remainingBase + unpaidIgtf));
+      const dueForeign = order.localToForeign(dueLocal);
       // Espacio normalizado por signo (montos de pago positivos), sin
       // Math.abs; comparación con tolerancia de la moneda foránea vía
       // roundForeignMoney (equivalente JS de float_compare).
       const requestedN = sign * requested;
-      const closingN = sign * closingForeign;
-      const overpayForeign = order.roundForeignMoney(requestedN - closingN);
-      if (closingN > 0 && requestedN > 0 && overpayForeign >= 0) {
+      const dueN = sign * dueForeign;
+      const overpayForeign = order.roundForeignMoney(requestedN - dueN);
+      if (dueN > 0 && requestedN > 0 && overpayForeign >= 0) {
         this.foreign_amount = order.roundForeignMoney(requested);
         const overpayLocal =
           overpayForeign > 0 && typeof order.foreignToLocal === "function"
             ? order.foreignToLocal(overpayForeign)
             : 0;
-        this.amount = order._igtfRoundLocal(closingLocal + sign * overpayLocal);
+        this.amount = order._igtfRoundLocal(dueLocal + sign * overpayLocal);
         return;
       }
     }
