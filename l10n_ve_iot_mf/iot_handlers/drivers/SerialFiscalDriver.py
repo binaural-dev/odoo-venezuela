@@ -799,7 +799,8 @@ class SerialFiscalDriver(SerialDriver):
             return status
         except Exception as e:
             _logger.error("Error al obtener estado de la impresora: %s", e)
-            raise UserError(_("Error al obtener estado de la impresora: %s") % e)
+            msg = _("Error al obtener estado de la impresora: %s")
+            raise UserError(msg % e)
     
     def print_out_refund(self, invoice):        
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -1579,7 +1580,8 @@ class SerialFiscalDriver(SerialDriver):
             return result
         
         except Exception as e:
-            raise UserError(_("Error al validar factura: %s") % e)
+            msg = _("Error al validar factura: %s")
+            raise UserError(msg % e)
     
     def programacion(self, data):
         try:
