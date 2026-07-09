@@ -23,8 +23,10 @@ API_TIMEOUT = 10
 SCRAPING_TIMEOUT = 10
 SOURCE_MAX_ATTEMPTS = 2
 BCV_TIMEZONE = "America/Caracas"
-BCV_WINDOW_START_HOUR = 4
+BCV_CRON_XMLID = "currency_rate_live.ir_cron_currency_update"
+BCV_WINDOW_START_HOUR = 5
 BCV_WINDOW_END_HOUR = 7
+BCV_RETRY_INTERVAL_MINUTES = 30
 VEF_CURRENCY_CODE = "VEF"
 
 _logger = logging.getLogger(__name__)
@@ -338,6 +340,7 @@ class ResCompany(models.Model):
                     ("parent_id", "=", False),
                 ]
             )
+            missing_rate = False
             for company in bcv_companies:
                 try:
                     already_today = Rate.search_count(
@@ -350,10 +353,28 @@ class ResCompany(models.Model):
                     if already_today:
                         continue
                     company.with_context(suppress_errors=True).update_currency_rates()
+                    company_updated = Rate.search_count(
+                        [
+                            ("company_id", "=", company.id),
+                            ("currency_id", "=", vef.id),
+                            ("name", "=", today),
+                        ]
+                    )
+                    if not company_updated:
+                        missing_rate = True
                 except Exception:
+                    missing_rate = True
                     _logger.exception(
                         "BCV currency update failed for company %s",
                         company.display_name,
+                    )
+
+            if missing_rate:
+                retry_at = self._get_next_bcv_retry_time(now_local)
+                if retry_at and self._schedule_bcv_retry(retry_at):
+                    _logger.info(
+                        "Scheduled BCV currency retry for %s",
+                        retry_at.strftime("%Y-%m-%d %H:%M:%S %Z"),
                     )
         except Exception:
             _logger.exception("Unexpected error in BCV currency cron")
