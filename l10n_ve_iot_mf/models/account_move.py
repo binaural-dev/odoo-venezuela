@@ -205,6 +205,7 @@ class AccountMoveInh(models.Model):
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,
+                "max_razon_social": data.iot_mf.max_razon_social or 40,
             }
             return _data
         
@@ -319,6 +320,7 @@ class AccountMoveInh(models.Model):
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,
+                "max_razon_social": data.iot_mf.max_razon_social or 40,
             }
 
             return _data
@@ -428,6 +430,7 @@ class AccountMoveInh(models.Model):
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,
+                "max_razon_social": data.iot_mf.max_razon_social or 40,
             }
 
             return _data
@@ -435,7 +438,7 @@ class AccountMoveInh(models.Model):
         except ValidationError as ae:
             raise ValidationError(str(ae))
         
-    
+        
     def print_debit_note(self, values):
         _logger.info("VALUE %s", values)
         result_data = values.get("data", {})

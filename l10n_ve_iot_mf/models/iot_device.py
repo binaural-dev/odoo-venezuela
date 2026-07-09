@@ -27,6 +27,14 @@ class IotDeviceInherit(models.Model):
     max_payment_amount_int = fields.Integer(compute="_compute_max_amounts")  # deprecated
     max_payment_amount_decimal = fields.Integer(compute="_compute_max_amounts")  # deprecated
     max_description = fields.Integer(default=127)  # deprecated
+    max_razon_social = fields.Integer(
+        string="Máx. caracteres Razón Social",
+        default=40,
+        help="Máximo de caracteres para la razón social según el modelo de impresora fiscal.\n"
+             "SRP-812/HKA-80/DT-230/SRP-280: 40 | PP9/PP9-PLUS: 34 | "
+             "P3100DL(V80): 20 | SRP-350/HSP7000/KUBE: 32 | TALLY1125: 32 | "
+             "TALLY1140: 25 | HKA-112: 20",
+    )
     traditional_line = fields.Boolean(default=True)
     flag_21 = fields.Selection(
         [("30", "30"), ("00", "00"), ("01", "01"), ("02", "02")], default="00"
