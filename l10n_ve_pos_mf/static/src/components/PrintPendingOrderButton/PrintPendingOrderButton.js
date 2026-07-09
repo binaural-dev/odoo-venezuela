@@ -113,18 +113,17 @@ export class PrintPendingOrderButton extends Component {
                 order.mf_reportz || false,
             ]);
 
-            let successBody = _t("El pedido se imprimio correctamente en la maquina fiscal.");
-            if (!mfResult?.account_move_updated) {
-                successBody += _t(
-                    "\n\nAviso: este pedido no tiene una factura contable (account.move) " +
-                        "asociada, por lo que los datos fiscales solo se guardaron en el pedido."
+            // 3. Redirigir a finalización inmediatamente
+            // (el refresco de pendientes se hace en segundo plano)
+            const orderUuid = order.uuid;
+            this.pos.navigate("ReceiptScreen", { orderUuid });
+
+            this.props.onOrderFiscalized(order.id).catch((refreshError) => {
+                console.warn(
+                    "PrintPendingOrderButton:: No se pudo refrescar la lista de pendientes",
+                    refreshError
                 );
-            }
-
-            this._alert(_t("Pedido facturado"), successBody);
-
-            // 3. Refrescar la lista de pendientes
-            await this.props.onOrderFiscalized(order.id);
+            });
         } catch (error) {
             console.error("PrintPendingOrderButton:: Error al imprimir pedido pendiente", error);
             this._alert(

@@ -56,6 +56,11 @@
                             <field name="traditional_line"/>
                         </setting>
 
+                        <setting string="Omitir PDF de Factura"
+                                 help="No genera ni descarga el PDF de la factura al validar un pedido fiscal (evita dependencia de wkhtmltopdf)">
+                            <field name="mf_skip_invoice_pdf"/>
+                        </setting>
+
                         <div class="col-12">
                             <div class="alert alert-info" role="alert">
                                 <strong>📋 Configuración Rápida:</strong>

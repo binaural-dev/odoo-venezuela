@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+import pytz
 
 import logging
 
@@ -61,6 +62,23 @@ class PosOrderInherit(models.Model):
     def _prepare_invoice_vals(self):
         self.ensure_one()
         res = super()._prepare_invoice_vals()
+        invoice_datetime = fields.Datetime.now()
+        if self.session_id.state != "closed" and self.date_order:
+            invoice_datetime = self.date_order
+
+        invoice_datetime = fields.Datetime.to_datetime(invoice_datetime)
+        if invoice_datetime and invoice_datetime.tzinfo is None:
+            invoice_datetime = pytz.UTC.localize(invoice_datetime)
+
+        tz_name = self.user_id.tz or self.env.user.tz or "America/Caracas"
+        try:
+            timezone = pytz.timezone(tz_name)
+        except Exception:
+            timezone = pytz.timezone("America/Caracas")
+
+        if invoice_datetime:
+            res["invoice_date"] = invoice_datetime.astimezone(timezone).date()
+
         res["cashbox_id"] = self.config_id.id
         res["mf_serial"] = self.fiscal_machine
         res["mf_invoice_number"] = self.mf_invoice_number
@@ -133,7 +151,9 @@ class PosOrderInherit(models.Model):
         self.env.cr.execute("SAVEPOINT pos_dry_run")
 
         try:
-            self.sync_from_ui(orders)
+            # Agregamos generate_pdf=False para evitar la generación de PDF durante
+            # el dry-run, que causa el error de wkhtmltopdf no instalado
+            self.with_context(generate_pdf=False).sync_from_ui(orders)
         except Exception:
             self.env.cr.execute("ROLLBACK TO SAVEPOINT pos_dry_run")
             raise
@@ -141,3 +161,20 @@ class PosOrderInherit(models.Model):
         self.env.cr.execute("ROLLBACK TO SAVEPOINT pos_dry_run")
 
         return True
+
+    def _generate_pos_order_invoice(self):
+        """Override para evitar generación de PDF cuando está configurado.
+        
+        Si la caja tiene mf_skip_invoice_pdf activado, generamos la factura
+        sin crear el PDF (evita dependencia de wkhtmltopdf).
+
+        NOTA: No se puede usar super().with_context(...).method() porque
+        with_context retorna un recordset de la misma clase hija, y al
+        llamar .method() sobre él, Odoo resuelve de nuevo este override,
+        causando recursión infinita.
+        """
+        if self.config_id.mf_skip_invoice_pdf:
+            _logger.info("MF:: Generando factura sin PDF para orden %s", self.id)
+            ctx_self = self.with_context(generate_pdf=False)
+            return super(PosOrderInherit, ctx_self)._generate_pos_order_invoice()
+        return super()._generate_pos_order_invoice()

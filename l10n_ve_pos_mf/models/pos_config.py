@@ -58,3 +58,35 @@ class PosConfigInherit(models.Model):
         default=60,
         help="Intervalo en segundos para sincronizar pedidos offline con Odoo"
     )
+    
+    mf_skip_invoice_pdf = fields.Boolean(
+        string="Omitir PDF de Factura",
+        default=True,
+        help="Si está activo, no genera ni descarga el PDF de la factura al validar un pedido fiscal"
+    )
+    
+    @api.model
+    def _load_pos_data_fields(self, config):
+        """Exponer campos de configuración fiscal al frontend POS"""
+        fields_list = list(super()._load_pos_data_fields(config))
+        # Si el core devuelve [] significa "todos los campos"
+        if not fields_list:
+            return fields_list
+        
+        fiscal_fields = [
+            'serial_machine',
+            'flag_21',
+            'traditional_line',
+            'has_cashbox',
+            'access_button_mf',
+            'message_in_head',
+            'enable_auto_sync',
+            'auto_sync_interval',
+            'mf_skip_invoice_pdf',
+        ]
+        
+        for field_name in fiscal_fields:
+            if field_name not in fields_list:
+                fields_list.append(field_name)
+        
+        return fields_list
