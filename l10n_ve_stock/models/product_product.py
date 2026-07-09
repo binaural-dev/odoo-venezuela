@@ -24,6 +24,10 @@ class ProductProduct(models.Model):
         return res
 
     def _validate_list_price(self):
+
+        if self.env.context.get('install_mode'):
+            return
+
         for product in self:
             if product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
