@@ -41,6 +41,29 @@ class AccountMove(models.Model):
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
     origin_payment_advanced_payment_id = fields.Many2one("account.payment",copy=False)
+
+    has_pending_igtf_debit_note = fields.Boolean(
+        compute='_compute_has_pending_igtf_debit_note',
+        store=False # No se guarda en BD para que se calcule en tiempo real al abrir el form
+    )
+
+    @api.depends('debit_note_ids', 'debit_note_ids.state', 'debit_note_ids.payment_state', 'amount_residual')
+    def _compute_has_pending_igtf_debit_note(self):
+        for move in self:
+            move.has_pending_igtf_debit_note = False
+            
+            # Verificamos si la factura tiene notas de débito en su relación 'debit_note_ids'
+            if move.debit_note_ids:
+                # Filtramos las notas de débito asociadas que estén publicadas y no pagadas
+                pending_igtf_notes = move.debit_note_ids.filtered(
+                    lambda dn: dn.state == 'posted' and 
+                               dn.payment_state not in ('paid', 'reversed') and
+                               any(line.product_id.name == 'Igtf Percibido' for line in dn.invoice_line_ids)
+                )
+                
+                if pending_igtf_notes:
+                    move.has_pending_igtf_debit_note = True
+ 
  
 
     @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
@@ -980,3 +1003,74 @@ class AccountMove(models.Model):
         self.line_ids.analytic_line_ids.with_context(skip_analytic_sync=True).unlink()
         self.mapped('line_ids').remove_move_reconcile()
         return super().button_draft()
+
+
+    def create_igtf_debit_note(self, igtf_amount, invoice, payment):
+        """
+        Crea una nota de débito por el monto de IGTF utilizando el asistente account.debit.note.
+        Se asegura de que solo se añade la línea de IGTF y se postea.
+        """
+        self.ensure_one()
+
+        is_customer = invoice.move_type in ["out_invoice", "in_refund"]
+        debit_journal = False
+        if is_customer:
+        
+            debit_journal= self.env['account.journal'].search([('is_debit', '=', True),('type','=','sale')], limit=1)
+        else:
+            debit_journal= self.env['account.journal'].search([('is_debit', '=', True),('type','=','purchase')], limit=1)
+
+        product = self.env['product.product'].search([('name', '=', 'Igtf Percibido')], limit=1)
+        if not product:
+            raise UserError(_('No se encontró un producto con Igtf Percivido.'))
+
+        account = product.property_account_income_id or product.categ_id.property_account_income_categ_id
+        if not account:
+            raise UserError(_('No se encontró cuenta de ingreso para el producto IGTF.'))
+        
+        
+        if is_customer:
+            partner_account = invoice.partner_id.property_account_receivable_id
+            if not partner_account:
+                raise UserError(_('El cliente no tiene una cuenta por cobrar configurada.'))
+        
+        else:
+
+            partner_account = invoice.partner_id.property_account_payable_id
+            if not partner_account:
+                raise UserError(_('El cliente no tiene una cuenta por pagar configurada.'))
+            
+
+        debit_note_wizard_vals = {
+            'date': invoice.date or fields.Date.context_today(self),
+            'reason': 'IGTF Adjustment',
+            'journal_id': debit_journal.id,
+            'move_ids': [(4, invoice.id)],
+        }
+        
+        move_debit_note_wiz = self.env['account.debit.note'].with_context(active_model = 'account.move',active_ids = invoice.ids).create(debit_note_wizard_vals)
+        
+        res = move_debit_note_wiz.create_debit() 
+
+        debit_note_id = res.get('res_id')
+        if not debit_note_id:
+            raise UserError(_('El asistente de nota de débito no devolvió un ID válido.'))
+            
+        debit_note = self.env['account.move'].browse(debit_note_id)
+        igtf_line_vals = {
+            'product_id': product.id,
+            'quantity': 1.0,
+            'price_unit': igtf_amount,
+            'date_maturity':invoice.date or fields.Date.today(self),
+        }
+
+        write_vals = {
+            'pricelist_id':2,
+            'invoice_line_ids': [(0, 0, igtf_line_vals)], 
+        }
+        
+        debit_note.write(write_vals)
+        
+        
+        return debit_note
+    

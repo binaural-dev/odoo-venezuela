@@ -55,6 +55,16 @@
                     </div>
             </xpath>
 
+            <xpath expr="//div[hasclass('alert', 'alert-info')][3]" position="after">
+                <field name="has_pending_igtf_debit_note" invisible="1"/>
+                <div groups="account.group_account_invoice,account.group_account_readonly"
+                         class="alert alert-info" role="alert"
+                         invisible="not has_pending_igtf_debit_note">
+                     
+                        <a class="alert-link" href="#outstanding" role="button">Tienes notas pendientes a pagar de IGTF</a>.
+                    </div>
+            </xpath>
+
         </field>
     </record>
 </odoo>

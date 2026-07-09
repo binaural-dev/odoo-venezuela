@@ -189,7 +189,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         continue
                     if (
                         payment.partner_id._check_igtf_apply_improved(move_id.move_type)
-                        and payment.currency_id != self.env.ref("base.VEF")
+                        and payment.currency_id != self.env.ref("base.VEF") and not move_id.debit_origin_id
                     ):
                         payment.is_igtf = True
             
@@ -473,6 +473,12 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         ignore_gtf = self.env.context.get("ignore_igtf", False)
 
+        move_id = (
+            self.env.context.get("active_id", False)
+        )
+
+        invoice = self.env['account.move'].browse(move_id)
+
         
         is_provider =  self.partner_type == 'supplier'
 
@@ -486,36 +492,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                 amount = payment.amount
             
-                if not ignore_gtf:
-                    
-                    due_amount += payment.igtf_amount 
-
-
-                self.group_payment = False
-                
-                if (
-                    float_compare(amount, due_amount, precision_rounding=self.currency_id.rounding) == 1
-                    and payment.igtf_amount 
-                    and self.payment_difference_handling != 'reconcile' 
-                    and not self.group_payment
-                ):
-                    difference = amount - due_amount
-                    
-                    move_to_reconcile_with_payment_difference = (
-                        self._create_move_to_reconcile_with_payment_difference(payment,difference,due_currency_id)
-                    )
-                    if move_to_reconcile_with_payment_difference:
-                        move_to_reconcile_with_payment_difference.action_post()
-                    
-                        if is_provider:
-                            self._reconcile_payment_provider_and_move_lines(
-                                payment, move_to_reconcile_with_payment_difference
-                            )
-                        else:
-                            self._reconcile_payment_and_move_lines(
-                                payment, move_to_reconcile_with_payment_difference
-                            )
-                        payment.write({"advanced_move_ids": [(4, move_to_reconcile_with_payment_difference.id)]})
+                if invoice and payment.igtf_amount and not invoice.debit_origin_id:
+                    debit_note= invoice.create_igtf_debit_note(payment.igtf_amount, invoice, payment.move_id)
+                    debit_note.with_context(move_action_post_alert=True).action_post()
+        
         return payments
 
     def _create_move_to_reconcile_with_payment_difference(self, payment, diff,due_currency_id):
