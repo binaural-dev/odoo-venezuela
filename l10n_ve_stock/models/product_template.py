@@ -53,6 +53,10 @@ class ProductTemplate(models.Model):
 
     @api.constrains("list_price")
     def _check_list_price(self):
+
+        if self.env.context.get('install_mode'):
+            return
+
         for product in self:
             if product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
