@@ -39,6 +39,7 @@
     parent="account.account_logs_menu"
     action="l10n_ve_auditlog_action"
     sequence="20"
+    groups="l10n_ve_auditlog.group_audit_report_seniat" 
   />
 
   <menuitem
@@ -47,6 +48,7 @@
     parent="account.account_logs_menu"
     action="l10n_ve_mail_tracking_value_audits_action"
     sequence="30"
+    groups="l10n_ve_auditlog.group_audit_report_seniat"
   />
 
   <record id="auditlog.menu_action_auditlog_rule_tree" model="ir.ui.menu">
