@@ -209,30 +209,44 @@ patch(PosOrder.prototype, {
 
   // --- O19: remainingDue must include IGTF surcharge ---
   //
-  // Core O19's remainingDue = totalDue - amountPaid. It doesn't know about
-  // IGTF. So the "Remaining" shown by the core PaymentScreenStatus (which
-  // reads this.order.remainingDue) is wrong when IGTF applies.
+  // Core O19's remainingDue = totalDue - amountPaid, CLAMPADO a 0 en cuanto
+  // amountPaid >= totalDue. No sirve como base para componer: cuando una
+  // línea absorbe deuda IGTF, amountPaid excede totalDue y el clamp pierde
+  // ese exceso — sumarle igtf_amount completo devolvía la deuda IGTF TOTAL
+  // (426,60) en vez de la pendiente (21,64) en el repro de la factura
+  // 14.220: Zelle 13.498,61 (IGTF 404,96) + Zelle 1.126,35 (absorbe los
+  // 404,96 y su base genera 21,64).
   //
-  // We override the getter to add this.igtf_amount on top of the core value,
-  // but only when the IGTF debt hasn't been fully paid yet (amountPaid <
-  // totalDue + igtf_amount). This prevents the infinite-IGTF-debt scenario:
-  // when the user pays the IGTF too, remainingDue correctly goes to 0.
+  // Fórmula directa: (totalDue + igtf_amount) - amountPaid, que descuenta
+  // TODO lo pagado (deuda IGTF saldada incluida). Sin IGTF delegamos en el
+  // core intacto.
   //
   // The anti-infinite-3%-loop lives in _igtfBaseState: IGTF is 3% of the
-  // BASE portion each line covers, so the IGTF debt included in a closing
-  // line never generates more IGTF.
+  // BASE portion each line covers, so a line that pays IGTF debt never
+  // generates more IGTF.
+  //
+  // Este getter es también la PRECARGA de toda línea nueva: el core
+  // (getDefaultAmountDueToPayIn) lo lee, así que una línea nueva toma la
+  // deuda de factura + la deuda IGTF acumulada, nunca su propio IGTF futuro.
   get remainingDue() {
-    const base = _coreRemainingDue ? _coreRemainingDue.call(this) : 0;
-    const igtf = this.igtf_amount || 0;
+    const igtf = this._igtfRoundLocal(this.igtf_amount || 0);
+    if (igtf === 0) {
+      return _coreRemainingDue ? _coreRemainingDue.call(this) : 0;
+    }
     const sign = this.totalDue < 0 ? -1 : 1;
-    // Espacio normalizado por signo: en reembolsos base e igtf son negativos.
-    const paidVsTotal = this._igtfRoundLocal(
-      sign * (this.amountPaid - (this.totalDue + igtf))
-    );
-    if (sign * base <= 0 && paidVsTotal >= 0) {
+    const remaining = this._igtfRoundLocal(this.totalDue + igtf - this.amountPaid);
+    if (sign * remaining <= 0) {
       return 0;
     }
-    return this._igtfRoundLocal(base + igtf);
+    // Tolerancia de cash rounding, espejo del core (orderIsRounded +
+    // asymmetricRound sobre el restante normalizado).
+    if (
+      this.orderIsRounded &&
+      this.config.rounding_method?.asymmetricRound(sign * remaining) == 0
+    ) {
+      return 0;
+    }
+    return remaining;
   },
 
   // --- O19: change must respect the IGTF-inclusive effective total ---
@@ -305,63 +319,16 @@ patch(PosOrder.prototype, {
       (line) => line.uuid === this.uiState?.selected_paymentline_uuid
     ) ?? null;
   },
+  // La precarga es SIEMPRE la del core: remainingDue (deuda de factura +
+  // deuda IGTF ya acumulada), sin importar el método. El IGTF que genere la
+  // base cubierta por esta línea NO se incluye en su monto: nace después, en
+  // update_igtf(), como nuevo restante que se paga en otra línea (decisión de
+  // diseño 2026-07-09: separar la generación del IGTF de la línea de pago;
+  // pagar una factura completa con un método apply_igtf son SIEMPRE dos
+  // líneas). No restaurar el "cierre en una línea".
   addPaymentline(payment_method) {
-    const sign = this.get_total_without_igtf() < 0 ? -1 : 1;
-    const is_change = sign * this.get_due() < 0;
-    // Solo queda deuda IGTF por cobrar (la base está cubierta): la línea no
-    // debe generar IGTF nuevo, el fill normal del core (remainingDue) basta.
-    const only_igtf_debt_left =
-      this._igtfRoundLocal(sign * (this.get_due() - this.get_igtf_amount())) <= 0;
-
-    if (
-      !this.to_invoice ||
-      !payment_method.apply_igtf ||
-      only_igtf_debt_left ||
-      is_change
-    ) {
-      // Non-IGTF case: delegate to O19 original addPaymentline
-      let res = super.addPaymentline(...arguments);
-      this.update_igtf();
-      return res;
-    }
-    // IGTF case: create payment prefilled with the closing amount
-    let newPaymentline = this.add_paymentline_without_igtf(...arguments);
+    const res = super.addPaymentline(...arguments);
     this.update_igtf();
-    if (!newPaymentline) {
-      return { status: false, data: "Electronic payment in progress" };
-    }
-    return { status: true, data: newPaymentline };
-  },
-
-  add_paymentline_without_igtf(payment_method) {
-    this.assert_editable();
-    if (this.electronic_payment_in_progress()) {
-      return false;
-    }
-    const newPaymentline = this.models["pos.payment"].create({
-      pos_order_id: this,
-      payment_method_id: payment_method,
-      amount: 0,
-    });
-    this.select_paymentline(newPaymentline);
-    if (this.config.cash_rounding) {
-      newPaymentline.setAmount(0);
-    }
-
-    // Monto de cierre en UNA línea: base restante + deuda IGTF pendiente
-    // + IGTF que genera la nueva base. La porción IGTF no genera IGTF
-    // (ver _igtfBaseState). Todo en moneda local; para métodos foráneos
-    // setAmount recalcula foreign_amount con una sola conversión.
-    const { sign, remainingBase, unpaidIgtf } =
-      this._igtfBaseState(newPaymentline);
-    const totalPayment = this._igtfRoundLocal(
-      sign * (remainingBase + unpaidIgtf + this.compute_igtf_amount(remainingBase))
-    );
-    newPaymentline.setAmount(totalPayment);
-
-    if (payment_method.payment_terminal) {
-      newPaymentline.setPaymentStatus("pending");
-    }
-    return newPaymentline;
+    return res;
   },
 });

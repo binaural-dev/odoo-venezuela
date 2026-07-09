@@ -104,12 +104,15 @@ Resumen (ver specs para detalle y escenarios con números reales):
    normalización `amt = sign * amount`.
 4. Algoritmo central: `_igtfBaseState(excludeLine)` en `order_model.js`
    (rastrea base cubierta vs deuda IGTF línea a línea). Lo consumen
-   `update_igtf`, `add_paymentline_without_igtf` (cierre = base restante +
-   deuda + IGTF de la nueva base) y el patch de `set_foreign_amount`.
-5. Al seleccionar un método `apply_igtf`, la línea se autocompleta con el
-   cierre completo y la orden queda en 0 (pedido explícito de Jesús,
-   2026-07; reemplaza el diseño O17 de "la deuda IGTF se paga en línea
-   aparte").
+   `update_igtf` y el patch de `set_foreign_amount` (clamp al restante).
+5. **Precarga separada del IGTF (pedido explícito de Jesús, 2026-07-09,
+   2ª iteración — reemplaza al "cierre en una línea" que duró unas horas):**
+   toda línea nueva precarga `remainingDue` (deuda de factura + deuda IGTF
+   acumulada), NUNCA el IGTF que ella misma generará; ese nace después en
+   `update_igtf()` como nuevo restante, pagable con cualquier método. Pagar
+   una factura completa con método `apply_igtf` son SIEMPRE dos líneas
+   (parcial: tres). No hay rama especial en `addPaymentline` ni bypass en
+   `addNewPaymentLine`; `add_paymentline_without_igtf` fue eliminado.
 
 ### Lecciones nuevas (2026-07-09)
 
@@ -143,12 +146,61 @@ Resumen (ver specs para detalle y escenarios con números reales):
   (locale-aware, 2º arg `false`), nunca `String(amount)`/`toFixed` — es_VE
   parsea `.` como separador de miles. Para métodos foráneos el buffer lleva
   el monto FORÁNEO, no el local.
-- **Bypass de l10n_ve_pos en addNewPaymentLine**: para métodos `apply_igtf`
-  se llama `order.addPaymentline` directo; dejar pasar el super haría que
-  `set_foreign_amount(localToForeign(dueBefore))` pise el cierre con drift
-  ida-vuelta y sin recargo.
+- **Sin bypass en addNewPaymentLine** (el bypass existió solo para el diseño
+  de "cierre en una línea", ya retirado): la precarga deseada es
+  `remainingDue`, exactamente lo que maneja l10n_ve_pos. El drift foráneo lo
+  resuelve el clamp IGTF-aware de `set_foreign_amount`, que aplica con método
+  `apply_igtf` O cuando la orden tiene deuda IGTF (sin el segundo caso, pagar
+  la deuda 348 con foráneo sin apply_igtf daría 351 por reconversión).
+- **El `remainingDue` del core CLAMPA a 0** en cuanto `amountPaid >= totalDue`
+  y pierde el exceso. No sirve como base para componer (`core + igtf`): cuando
+  una línea absorbe deuda IGTF, la composición devolvía la deuda COMPLETA
+  (426,60) en vez de la pendiente (21,64). Usar la fórmula directa
+  `totalDue + igtf_amount - amountPaid` (getter en order_model.js). Y las
+  simulaciones deben modelar el clamp del core: una sim con `total - paid`
+  sin clamp validó la versión rota.
+- **`get_foreign_due`/`get_foreign_change` (l10n_ve_pos) derivan del LOCAL**
+  con una conversión (`localToForeign(remainingDue/change)`): la versión que
+  restaba `get_foreign_total_paid` no veía los pagos de métodos locales
+  (foreign_amount = 0 vía `_recomputeForeignFromLocal`) y el restante alterno
+  no bajaba al pagar en Bs. Bonus: al delegar en getters del core que este
+  módulo parchea, el panel foráneo refleja el IGTF sin que l10n_ve_pos lo
+  conozca.
 - **Verificación por simulación**: los escenarios (tasa 675, factura 11.600)
   están en scripts node desechables; reproducirlos ante cualquier cambio:
-  pago completo 11.948/$17,70; $10 + cierre 5.198/$7,70 (IGTF 348 exacto);
+  A) Zelle 11.600 → restante 348 → segunda línea 348 sin IGTF nuevo;
+  B) Zelle $10 (6.750, IGTF 202,50) → restante 5.052,50 → Zelle → IGTF 145,50
+  → restante 145,50 → tercera línea (IGTF total 348 exacto);
   pagar deuda 348 con Zelle no genera IGTF; sobrepago $20 da vuelto sin IGTF
-  extra; reembolso espejo (-11.948, IGTF -348).
+  extra; reembolso espejo (IGTF -348); `amount_paid` final siempre
+  `amount_total + igtf_amount`.
+
+## Pendientes por tratar (2026-07-10)
+
+### El foráneo bajo el total nativo muestra 21,70 en vez de 21,07
+
+Este módulo parchea `get_foreign_total_with_tax()` para incluir el IGTF (una
+conversión del total efectivo). Pero ese getter también alimenta el subtítulo
+foráneo que se muestra DEBAJO del total nativo del POS (que NO incluye IGTF):
+`l10n_ve_pos/payment_screen.js::foreignTotalDueText` (payment_screen_top.xml),
+`order_display.xml` vía ticket/summary (`order_sumarry.xml`). Resultado: el
+número grande dice 14.220 Bs y el subtítulo $21,70 — pares inconsistentes.
+
+Jesús: quizá ese campo no es el mejor para mostrar bajo el total nativo; lo
+del summary de abajo se tratará aparte. Opciones a decidir:
+- Subtítulo = conversión pura del total nativo ($21,07) y dejar el recargo
+  solo en el panel TOTAL + IGTF (payment_status del IGTF), o
+- Ambos números IGTF-inclusive (cambiaría el total nativo mostrado), o
+- Un getter separado para display "total factura foráneo" vs "total efectivo
+  foráneo" y que cada pantalla elija.
+
+Ojo al decidir: recibo (`order_receipt.xml`), ticket screen y
+`serializeForORM.foreign_amount_total` (backend) también leen
+`get_foreign_total_with_tax` — revisar qué semántica espera cada consumidor.
+
+### foreign_amount = 0 en líneas de métodos locales
+
+Detalle y consumidores afectados en
+`l10n_ve_pos/openspec/migration-lessons.md` (Pendientes 2026-07-10). Afecta a
+este módulo en `_create_payment_moves`: los apuntes foráneos del split IGTF
+quedan en 0 cuando el pago fue en Bs.
