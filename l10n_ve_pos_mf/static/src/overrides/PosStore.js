@@ -61,6 +61,53 @@ patch(PosStore.prototype, {
     return Boolean(fiscalPrinter && fiscalPrinter.isConnected);
   },
 
+  async applyDiscount(percent, order = this.getOrder(), options = {}) {
+    if (!order || order.state !== "draft") {
+      return;
+    }
+
+    if (order._mf_applying_global_discount) {
+      return;
+    }
+
+    const discountPercent = Number(percent || 0);
+    const isManualTrigger = Boolean(
+      options?.mfManualTrigger || this._mf_manual_discount_trigger
+    );
+    const hasPendingDiscountLines = [...(order.lines || [])].some(
+      (line) =>
+        this._isGlobalDiscountProductLine(line) &&
+        Number(line.getUnitPrice?.() ?? line.price_unit ?? 0) < 0
+    );
+
+    // Evita loops por re-disparos debounced del pos_discount cuando
+    // ya normalizamos la orden al modo descuento por línea.
+    if (!isManualTrigger && !hasPendingDiscountLines) {
+      return;
+    }
+
+    order._mf_applying_global_discount = true;
+    try {
+      const result = await super.applyDiscount(percent, order);
+
+      if (discountPercent <= 0) {
+        this._resetGlobalDiscountOnLines(order);
+        order._mf_global_discount_applied = false;
+        order._mf_global_discount_meta = null;
+        order._mf_last_applied_discount_percent = 0;
+        return result;
+      }
+
+      this._applyGlobalDiscountBeforeValidation(order, {
+        force: true,
+        expectedPercent: discountPercent,
+      });
+      return result;
+    } finally {
+      order._mf_applying_global_discount = false;
+    }
+  },
+
   aditionalInfo(order) {
     const res = [];
     const cashier = this.getCashier();
@@ -584,7 +631,11 @@ patch(PosStore.prototype, {
     return { discountLines, pendingDiscountAmount, inferredPercent, clamped };
   },
 
-  _applyGlobalDiscountBeforeValidation(order, { force = false } = {}) {
+  _applyGlobalDiscountBeforeValidation(order, { force = false, expectedPercent = null } = {}) {
+    if (!order || order.state !== "draft") {
+      return order?._mf_global_discount_meta || null;
+    }
+
     const hasPendingDiscountLines = [...(order.lines || [])].some(
       (line) =>
         this._isGlobalDiscountProductLine(line) &&
@@ -605,6 +656,13 @@ patch(PosStore.prototype, {
       return order._mf_global_discount_meta || null;
     }
 
+    // Remover primero las líneas de descuento global para que
+    // globalDiscountPc sea 0 antes de modificar líneas y evitar
+    // re-disparos del debounce de pos_discount.
+    for (const line of inference.discountLines) {
+      order.removeOrderline(line);
+    }
+
     // Resetear todas las líneas a 0% para aplicar la tasa sobre precios crudos
     this._resetGlobalDiscountOnLines(order);
 
@@ -620,10 +678,6 @@ patch(PosStore.prototype, {
       } else {
         line.discount = inference.inferredPercent;
       }
-    }
-
-    for (const line of inference.discountLines) {
-      order.removeOrderline(line);
     }
 
     let rawTotal = 0;
@@ -643,6 +697,9 @@ patch(PosStore.prototype, {
       global_discount_rate: inference.inferredPercent,
       global_clamped: inference.clamped,
     };
+    order._mf_last_applied_discount_percent = Number(
+      expectedPercent ?? inference.inferredPercent ?? 0
+    );
 
     return order._mf_global_discount_meta;
   },
