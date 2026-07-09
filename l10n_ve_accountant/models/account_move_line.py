@@ -539,9 +539,9 @@ class AccountMoveLine(models.Model):
                 continue
 
             total_currency = sum(product_lines.mapped('amount_currency'))
+            rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
             expected = cc.round(move.currency_id._convert(
-                total_currency, cc, move.company_id,
-                move.invoice_date or fields.Date.today()
+                total_currency, cc, move.company_id, rate_date
             ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
