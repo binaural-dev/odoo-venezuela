@@ -60,34 +60,36 @@ Consumidores:
   `_create_payment_moves`), `include_igtf = true` en líneas apply_igtf no-cambio.
   Orden: `igtf_amount = Σ newIgtf`, `bi_igtf = Σ base` (solo líneas apply_igtf),
   foráneos = `localToForeign(local)`.
-- `add_paymentline_without_igtf()`: monto de cierre de una nueva línea.
-- `PosPayment.set_foreign_amount` (patch IGTF): clamp exacto al cierre.
+- `PosPayment.set_foreign_amount` (patch IGTF): clamp exacto al restante
+  (`sign * (remainingBase + unpaidIgtf)`), ver frontend-payment-creation.md.
 
 ## Requirements
 
-### Requirement: Closing amount in a single line
+### Requirement: la precarga nunca incluye el IGTF de la propia línea
 
-Al seleccionar un método `apply_igtf` con base pendiente, la línea se
-autocompleta con el **cierre completo**:
-
-```
-cierre = sign * (remainingBase + unpaidIgtf + compute_igtf_amount(remainingBase))
-```
+> Rediseño 2026-07-09 (2ª iteración): reemplaza al requirement "Closing
+> amount in a single line". La precarga es SIEMPRE `remainingDue` (deuda de
+> factura + deuda IGTF acumulada); el IGTF de la base que cubre la línea se
+> genera DESPUÉS en `update_igtf()` y queda como nuevo restante. Detalle y
+> escenarios A/B en frontend-payment-creation.md.
 
 #### Scenario: pago completo (números reales de la DB pos, tasa 675)
 
 - GIVEN factura 11.600 Bs (= $17,19), IGTF 3%, Zelle apply_igtf + foránea
 - WHEN se selecciona Zelle sin pagos previos
-- THEN la línea queda en 11.948 Bs (11.600 + 348) = $17,70
-- AND `remainingDue` = 0, cambio = 0, IGTF total 348, BI 11.600
+- THEN la línea queda en 11.600 Bs = $17,19 (sin su IGTF)
+- AND tras asociarse, `remainingDue` = 348 ($0,52), IGTF total 348, BI 11.600
+- AND una segunda línea (cualquier método) precarga 348 y NO genera IGTF
 
-#### Scenario: pago parcial $10 + cierre
+#### Scenario: pago parcial $10 + restante completo
 
 - GIVEN la misma factura, línea 1 Zelle $10 (6.750 Bs, todo base, genera
   202,50 Bs de deuda IGTF)
 - WHEN se selecciona Zelle de nuevo
-- THEN la línea 2 queda en 4.850 + 202,50 + 145,50 = 5.198 Bs = $7,70
-- AND IGTF total 348 exacto (no 341), restante 0
+- THEN la línea 2 precarga el restante completo: 4.850 + 202,50 = 5.052,50 Bs
+  ($7,49); solo la porción de base (4.850) genera 145,50 después
+- AND `remainingDue` queda en 145,50 ($0,22); una tercera línea lo salda
+- AND IGTF total 348 exacto
 
 #### Scenario: pagar solo deuda IGTF con método apply_igtf
 
@@ -95,12 +97,12 @@ cierre = sign * (remainingBase + unpaidIgtf + compute_igtf_amount(remainingBase)
 - WHEN se paga 348 con Zelle
 - THEN base = min(348, remainingBase=0) = 0 → NO genera IGTF nuevo
 
-#### Scenario: método sin apply_igtf cierra la orden
+#### Scenario: método sin apply_igtf
 
 - GIVEN deuda IGTF pendiente
 - WHEN se selecciona un método sin apply_igtf
-- THEN el fill del core usa `remainingDue` (que incluye la deuda IGTF);
-  la línea no genera IGTF y su excedente sobre la base salda la deuda
+- THEN precarga `remainingDue` (incluye la deuda IGTF); la línea no genera
+  IGTF y su excedente sobre la base salda la deuda
 
 ### Requirement: Foreign totals are single conversions
 
@@ -111,11 +113,22 @@ cierre = sign * (remainingBase + unpaidIgtf + compute_igtf_amount(remainingBase)
 - `get_foreign_due` (l10n_ve_pos) cuadra a 0 porque total y líneas usan la
   misma conversión.
 
-### Requirement: remainingDue / change incluyen IGTF
+### Requirement: remainingDue / change incluyen IGTF (fórmula DIRECTA)
 
-- `remainingDue` = core remaining + `igtf_amount`; devuelve 0 cuando
-  `roundLocal(amountPaid - (totalDue + igtf)) >= 0`.
-- `change` solo existe cuando se paga más que `totalDue + igtf_amount`.
+- Con IGTF: `remainingDue = roundLocal(totalDue + igtf_amount - amountPaid)`,
+  clampeado a 0 con normalización de signo (`sign * remaining <= 0`), con la
+  tolerancia de cash rounding del core. Sin IGTF: delega en el core intacto.
+- **PROHIBIDO componer sobre el `remainingDue` del core** (`core + igtf`):
+  el core clampa a 0 en cuanto `amountPaid >= totalDue`, y cuando una línea
+  absorbe deuda IGTF ese exceso se pierde → devolvía la deuda IGTF COMPLETA.
+  Caso real (factura 14.220, Zelle 13.498,61 con IGTF 404,96 + Zelle 1.126,35
+  que absorbe la deuda y genera 21,64): la fórmula compuesta daba 426,60
+  (IGTF total) en vez de los 21,64 pendientes, y esa cifra se precargaba en
+  la siguiente línea. La fórmula directa descuenta TODO lo pagado.
+- `change` solo existe cuando se paga más que `totalDue + igtf_amount`
+  (también con fórmula directa; nunca dependió del clamp del core).
+- Las simulaciones de verificación DEBEN modelar el clamp real del core; una
+  simulación con `total - paid` sin clamp dio por buena la versión rota.
 
 ### Requirement: compute_igtf_amount rounds with main currency
 

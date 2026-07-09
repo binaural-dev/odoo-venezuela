@@ -461,31 +461,27 @@ patch(PosOrder.prototype, {
 
   get_foreign_due() {
     // Foreign amount remaining to be paid (always non-negative).
-    // Replica lógica de remainingDue nativa pero para moneda foránea.
-    const total = this.get_foreign_total_with_tax();
-    const paid = this.get_foreign_total_paid();
-    const remaining = total - paid;
-    const isNegative = total < 0;
-    // Amount paid covers the total due → remaining 0
-    if ((isNegative && remaining >= 0) || (!isNegative && remaining <= 0)) {
-      return this.roundForeignMoney(0);
-    }
-    // Still owed (absolute value always returned)
-    return this.roundForeignMoney(Math.abs(remaining));
+    //
+    // Deriva del restante LOCAL con UNA conversión (regla de redondeo del
+    // módulo), NO de `total foráneo - pagado foráneo`: get_foreign_total_paid
+    // suma line.foreign_amount, que es 0 en métodos locales
+    // (_recomputeForeignFromLocal), así que un pago en Bs nunca reducía el
+    // restante alterno. remainingDue (core, IGTF-aware si l10n_ve_pos_igtf
+    // está instalado) ya descuenta TODOS los pagos vía amountPaid.
+    const localDue = Number(this.remainingDue ?? 0) || 0;
+    // remainingDue lleva el signo del total; normalizamos a magnitud.
+    const sign = Number(this.totalDue ?? 0) < 0 ? -1 : 1;
+    return this.localToForeign(sign * localDue);
   },
 
   get_foreign_change() {
     // Foreign change when overpaid (always non-negative).
-    const total = this.get_foreign_total_with_tax();
-    const paid = this.get_foreign_total_paid();
-    const isNegative = total < 0;
-    const remaining = total - paid;
-    // Underpaid or exact → no change
-    if ((isNegative && remaining <= 0) || (!isNegative && remaining >= 0)) {
-      return this.roundForeignMoney(0);
-    }
-    // Overpaid → return the excess
-    return this.roundForeignMoney(Math.abs(paid) - Math.abs(total));
+    // Misma regla que get_foreign_due: una conversión del vuelto LOCAL.
+    // El change del core lleva signo OPUESTO al total (negativo en ventas),
+    // por eso la magnitud es -sign * change.
+    const localChange = Number(this.change ?? 0) || 0;
+    const sign = Number(this.totalDue ?? 0) < 0 ? -1 : 1;
+    return this.localToForeign(-sign * localChange);
   },
 //       this.orderlines.reduce((sum, orderLine) => {
 //         if (!ignored_product_ids.includes(orderLine.product.id)) {
