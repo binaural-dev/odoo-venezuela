@@ -635,12 +635,12 @@ class SerialFiscalDriver(SerialDriver):
             max_payment_amount_int, max_payment_amount_decimal =  flag_21_config["max_payment_amount_int"], flag_21_config["max_payment_amount_decimal"]
             disc_int, disc_decimal =  flag_21_config["disc_int"], flag_21_config["disc_decimal"]
 
+            max_rs = invoice_data.get("max_razon_social", 40) or 40
+            partner_name = invoice_data["partner_id"]["name"]
             cmd.append(f"iR*{invoice_data['partner_id']['vat']}")
-            cmd.append(f"iS*{invoice_data['partner_id']['name']}")
+            cmd.append(f"iS*{partner_name[:max_rs]}")
 
             next_index = 0
-            partner_name = invoice_data["partner_id"]["name"]
-            max_rs = invoice_data.get("max_razon_social", 40) or 40
             if len(partner_name) > max_rs:
                 chunks = [partner_name[i:i+max_rs] for i in range(max_rs, len(partner_name), max_rs)]
                 for chunk in chunks:
@@ -648,8 +648,14 @@ class SerialFiscalDriver(SerialDriver):
                     next_index += 1
 
             if invoice_data["partner_id"]["address"]:
-                cmd.append(f"i{next_index:02d}Direccion:{invoice_data['partner_id']['address']}")
+                address = invoice_data["partner_id"]["address"]
+                first_line = address[:30]
+                cmd.append(f"i{next_index:02d}Direccion:{first_line}")
                 next_index += 1
+                remaining = address[30:70]
+                if remaining:
+                    cmd.append(f"i{next_index:02d}{remaining}")
+                    next_index += 1
 
             if invoice_data["partner_id"]["phone"]:
                 cmd.append(f"i{next_index:02d}Telefono:{invoice_data['partner_id']['phone']}")
@@ -876,15 +882,15 @@ class SerialFiscalDriver(SerialDriver):
                 raise Exception(status["data"]["status"]["msg"])
 
             _logger.warning("print_out_refound %s", invoice)
+            next_index = 0
+            max_rs = invoice.get("max_razon_social", 40) or 40
+            partner_name = invoice["partner_id"]["name"]
             cmd.append(str("iR*" + invoice["partner_id"]["vat"]))
-            cmd.append(str("iS*" + invoice["partner_id"]["name"]))
+            cmd.append(str("iS*" + partner_name[:max_rs]))
             cmd.append(str("iF*" + invoice["invoice_affected"]["number"]))
             cmd.append(str("iI*" + invoice["invoice_affected"]["serial_machine"]))
             cmd.append(str("iD*" + invoice["invoice_affected"]["date"]))
 
-            next_index = 0
-            partner_name = invoice["partner_id"]["name"]
-            max_rs = invoice.get("max_razon_social", 40) or 40
             if len(partner_name) > max_rs:
                 chunks = [partner_name[i:i+max_rs] for i in range(max_rs, len(partner_name), max_rs)]
                 for chunk in chunks:
@@ -892,8 +898,14 @@ class SerialFiscalDriver(SerialDriver):
                     next_index += 1
 
             if invoice["partner_id"]["address"]:
-                cmd.append(f"i{next_index:02d}Direccion:{invoice['partner_id']['address']}")
+                address = invoice["partner_id"]["address"]
+                first_line = address[:30]
+                cmd.append(f"i{next_index:02d}Direccion:{first_line}")
                 next_index += 1
+                remaining = address[30:70]
+                if remaining:
+                    cmd.append(f"i{next_index:02d}{remaining}")
+                    next_index += 1
 
             if invoice["partner_id"]["phone"]:
                 cmd.append(f"i{next_index:02d}Telefono:{invoice['partner_id']['phone']}")
@@ -1125,14 +1137,14 @@ class SerialFiscalDriver(SerialDriver):
             
             name_partnet = invoice.get('partner_id', {}).get('name', '')
 
-            if name_partnet:
-                cmd_name = f"iS*{name_partnet}"
-            else:
+            if not name_partnet:
                 return {"valid": False, "message": "No se encontró el serial de la máquina fiscal de la factura afectada."}
 
             aditional_lines = []
             next_index = 0
             max_rs = invoice.get("max_razon_social", 40) or 40
+            cmd_name = f"iS*{name_partnet[:max_rs]}"
+
             if len(name_partnet) > max_rs:
                 chunks = [name_partnet[i:i+max_rs] for i in range(max_rs, len(name_partnet), max_rs)]
                 for chunk in chunks:
@@ -1141,15 +1153,19 @@ class SerialFiscalDriver(SerialDriver):
 
             address_partner = invoice.get('partner_id', {}).get('address', '')
             if address_partner:
-                aditional_lines.append(f"i{next_index:02d}Direccion:{address_partner}")
+                first_line = address_partner[:30]
+                aditional_lines.append(f"i{next_index:02d}Direccion:{first_line}")
                 next_index += 1
+                remaining = address_partner[30:70]
+                if remaining:
+                    aditional_lines.append(f"i{next_index:02d}{remaining}")
+                    next_index += 1
 
             phone_partner = invoice.get('partner_id', {}).get('phone', '')
             if phone_partner:
                 aditional_lines.append(f"i{next_index:02d}Telefono:{phone_partner}")
                 next_index += 1
 
-            next_index = 1 + len(aditional_lines)
             for info in invoice.get("info", []):
                 aditional_lines.append(f"i{next_index:02d}{info}")
                 next_index += 1
