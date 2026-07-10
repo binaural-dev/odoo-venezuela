@@ -63,6 +63,7 @@ class AccountTax(models.Model):
                     diff = cc.round(correct_base - current_base)
                     if not cc.is_zero(diff):
                         res['base_amount'] = correct_base
+                        res['total_amount'] = cc.round(res.get('total_amount', 0.0) + diff)
                         subtotals = res.get('subtotals', [])
                         if subtotals:
                             total_sub_base = sum(s.get('base_amount', 0.0) for s in subtotals)
