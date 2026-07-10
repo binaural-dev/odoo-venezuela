@@ -1137,13 +1137,16 @@ class AccountMove(models.Model):
                 continue
             if not invoice.is_invoice(include_receipts=True) or not invoice.invoice_line_ids:
                 continue
-            rate = invoice.foreign_inverse_rate
-            if not rate:
+            if not invoice.foreign_currency_id:
                 continue
+            rate_date = invoice._get_invoice_currency_rate_date() or fields.Date.context_today(invoice)
             for key in invoice.needed_terms:
                 balance = invoice.needed_terms[key].get('balance', 0)
                 invoice.needed_terms[key]['foreign_balance'] = \
-                    invoice.company_id.currency_id.round(balance * rate)
+                    invoice.company_id.currency_id._convert(
+                        balance, invoice.foreign_currency_id,
+                        invoice.company_id, rate_date
+                    )
         return res
 
    
@@ -1523,6 +1526,8 @@ class AccountMove(models.Model):
                 lambda l: l.display_type != "payment_term"
             )
             fc = move.company_id.foreign_currency_id
+            if not fc:
+                continue
 
             # For third currency use aggregate (total conversion),
             # for base/alternate currency use line-by-line sum
