@@ -188,7 +188,7 @@ class TestAccumulatedRate(TransactionCase):
     def _create_retention(self, type_retention, invoice):
         today = fields.Date.today()
 
-        with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":type_retention})) as retention_form:
+        with Form(self.env["account.retention"].with_context(default_type='in_invoice', default_type_retention=type_retention)) as retention_form:
             retention_form.partner_id = self.partner_a
             retention_form.date_accounting = today
 

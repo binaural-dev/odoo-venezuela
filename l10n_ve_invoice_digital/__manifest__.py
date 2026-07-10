@@ -1,10 +1,10 @@
 {
     "name": "Venezuela - Facturación Digital",
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.17",
+    "version": "17.0.0.0.18",
     "depends": [
         "account",
         "l10n_ve_igtf",

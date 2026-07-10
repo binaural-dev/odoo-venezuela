@@ -19,7 +19,7 @@ class AccountMove(models.Model):
     _inherit = 'account.move'
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
-    show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_invisible_check", copy=False)
+    show_digital_invoice = fields.Boolean(compute="_compute_invisible_check", copy=False)
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
@@ -102,7 +102,7 @@ class AccountMove(models.Model):
     line_currency = fields.Selection([
         ('VES', 'VES'),
         ('USD', 'USD'),
-    ], string='Line Currency', default='VES',
+    ], default='VES',
        help="VES: precios de líneas en Bolívares, totales solo en VES.\n"
             "USD: precios de líneas en dólares, totales en ambas monedas.")
 
@@ -443,7 +443,7 @@ class AccountMove(models.Model):
                 amounts["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
 
-                taxes_subtotal, _ = self.get_tax_subtotals(currency)
+                taxes_subtotal, _dummy = self.get_tax_subtotals(currency)
                 currency_tfhka_code = record.company_id.currency_id.code_tfhka
 
                 # TotalesOtraMoneda activo: factura VEF/VES con tipo de cambio.
@@ -479,7 +479,7 @@ class AccountMove(models.Model):
                         abs(round(float(amounts["totalDescuento"]) / rate, 2))
                     )
                     # Impuestos desglosados en ambas monedas para ImpuestosSubtotal.
-                    _, taxes_subtotal_foreign = self.get_tax_subtotals(
+                    _dummy, taxes_subtotal_foreign = self.get_tax_subtotals(
                         currency, multi_currency=True
                     )
                     # Código de moneda extranjera (ej. "USD") para TotalesOtraMoneda.
