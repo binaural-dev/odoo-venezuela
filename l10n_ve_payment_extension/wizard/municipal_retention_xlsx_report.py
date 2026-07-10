@@ -53,7 +53,6 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         }
 
     def _xlsx_file(self, table, nombre):
-        _logger.warning("aqui111111")
         data2 = BytesIO()
         workbook = xlsxwriter.Workbook(data2, {"in_memory": True})
         merge_format = workbook.add_format(
