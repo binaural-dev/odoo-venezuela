@@ -151,7 +151,7 @@ def install_package(package_name):
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", package_name, "--user"])
         except subprocess.CalledProcessError as e:
-            _logger.error("Error installing package: %s", e)
+            _logger.error("Error al instalar el paquete: %s", e)
 
 try:
     import clr
