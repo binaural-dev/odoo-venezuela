@@ -1138,7 +1138,7 @@ class SerialFiscalDriver(SerialDriver):
             name_partnet = invoice.get('partner_id', {}).get('name', '')
 
             if not name_partnet:
-                return {"valid": False, "message": "No se encontró el serial de la máquina fiscal de la factura afectada."}
+                return {"valid": False, "message": "No se encontró la razón social del cliente en la factura afectada."}
 
             aditional_lines = []
             next_index = 0
