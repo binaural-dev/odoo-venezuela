@@ -211,11 +211,18 @@ export class TfhkaDriver {
                 }
 
                 if (FiscalProtocol.isACK(response)) {
+                    if (command === "199") {
+                        console.log("TfhkaDriver::sendCommand - 199 ACK (cierre aceptado)");
+                    }
                     return { success: true, data: "ACK", error: "" };
                 }
 
                 if (FiscalProtocol.isNAK(response)) {
-                    console.warn(`TfhkaDriver:: NAK recibido, reintentando...`);
+                    if (command === "199") {
+                        console.error("TfhkaDriver::sendCommand - 199 NAK: la impresora rechazó el cierre. Los montos 2XX no coinciden con subtotal+IVA+IGTF calculado por la impresora.");
+                    } else {
+                        console.warn(`TfhkaDriver:: NAK recibido para [${command}], reintentando...`);
+                    }
                     await new Promise(resolve => setTimeout(resolve, this.retryDelay));
                     continue;
                 }
@@ -1090,11 +1097,17 @@ export class TfhkaDriver {
     _appendPaymentCommands(commands, orderData, config) {
         const payments = orderData.payment_lines || [];
 
+        console.log("TfhkaDriver::PaymentCommands - payment_lines recibidos:", JSON.stringify(payments));
+        const totalPayments = payments.reduce((sum, p) => sum + Math.abs(Number(p.amount || 0)), 0);
+        console.log("TfhkaDriver::PaymentCommands - suma total de pagos:", totalPayments);
+
         if (orderData.has_cashbox) {
             commands.push("w");
         }
 
         const hasDivisa = this._hasDivisaPayment(payments);
+        console.log("TfhkaDriver::PaymentCommands - hasDivisa:", hasDivisa,
+            "codigos:", (payments || []).map(p => p.payment_method_code));
 
         if (!payments.length) {
             commands.push("101");
@@ -1134,8 +1147,24 @@ export class TfhkaDriver {
                     config.max_payment_amount_int,
                     config.max_payment_amount_decimal
                 );
-                commands.push(`2${methodCode}${amountStr}`);
+                const paymentCmd = `2${methodCode}${amountStr}`;
+                console.log("TfhkaDriver::PaymentCommands - enviando pago:", {
+                    metodo: methodCode,
+                    monto: amount,
+                    cmd: paymentCmd
+                });
+                commands.push(paymentCmd);
             }
+            const sent2xx = (commands || []).filter(c => c.startsWith("2"));
+            const total2xxAmount = sent2xx.reduce((sum, cmd) => {
+                const amountStr = cmd.substring(3);
+                return sum + parseInt(amountStr, 10);
+            }, 0);
+            console.log("TfhkaDriver::PaymentCommands - resumen 2XX:", {
+                cantidad: sent2xx.length,
+                comandos: sent2xx,
+                suma_cruda: total2xxAmount,
+            });
             // NO se envía "1XX": el "199" final cierra el documento con IGTF.
             return;
         }
@@ -1210,8 +1239,6 @@ export class TfhkaDriver {
         }
 
         try {
-            const commands = [];
-
             // Formato de números según flag 21 (default: "00" = estándar)
             const FLAG21_CONFIGS = {
                 "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
@@ -1222,9 +1249,15 @@ export class TfhkaDriver {
             const flag21Key = String(orderData.flag_21 || "00");
             const config = flag21Config || FLAG21_CONFIGS[flag21Key] || FLAG21_CONFIGS["00"];
 
+            // ================================================================
+            // FASE 1: Construir y enviar comandos de apertura (RIF, nombre,
+            // encabezado, items, subtotal)
+            // ================================================================
+            const phase1Commands = [];
+
             // 1. RIF del cliente
             const vat = orderData.partner?.vat || "V00000000";
-            commands.push(`iR*${vat}`);
+            phase1Commands.push(`iR*${vat}`);
 
             // 2. Razón social del cliente (word-wrap: primera línea como iS*,
             // continuaciones como informativas iNN ANTES del header)
@@ -1232,21 +1265,19 @@ export class TfhkaDriver {
                 orderData.partner?.name || "CLIENTE GENERICO",
                 TfhkaDriver.MAX_LINE_LEN
             );
-            commands.push(`iS*${nameLines[0]}`);
+            phase1Commands.push(`iS*${nameLines[0]}`);
             let nameInfoCount = 0;
             const MAX_INFO_LINES = 10;
             for (let i = 1; i < nameLines.length && nameInfoCount < MAX_INFO_LINES; i++) {
-                commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
+                phase1Commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
             }
 
             // 3. Información adicional del encabezado (continúa después de las
             // líneas del nombre)
-            this._appendHeaderInfo(commands, orderData, nameInfoCount);
+            this._appendHeaderInfo(phase1Commands, orderData, nameInfoCount);
 
             // 5. Items de la orden (truncado simple — el protocolo no permite
             // continuar items en líneas informativas iNN)
-            // Estrategia A: el descuento global ya viene prorrateado en
-            // `price_unit` de cada línea positiva. No se emite `q-` aquí.
             for (const line of orderData.lines || []) {
                 const linePrice = Number(line.price_unit || 0);
                 if (linePrice <= 0) continue;
@@ -1260,38 +1291,62 @@ export class TfhkaDriver {
                     .replace(/ñ/g, 'n')
                     .trim();
 
-                // Calcular espacio disponible para la descripción en la línea
                 const overhead = 1 + price.length + qty.length + code.length;
                 const available = TfhkaDriver.MAX_LINE_LEN - overhead;
                 if (available > 0 && desc.length > available) {
                     desc = desc.substring(0, available);
                 }
 
-                commands.push(`${taxChar}${price}${qty}${code}${desc}`);
+                phase1Commands.push(`${taxChar}${price}${qty}${code}${desc}`);
             }
 
             // 7. Subtotal
-            commands.push("3");
+            phase1Commands.push("3");
+            console.log("TfhkaDriver::printInvoice - FASE 1: items:", orderData.lines?.length, "comandos:", phase1Commands.length);
 
-            // 8. Pagos y cierre fiscal (1XX/2XX + 101)
-            this._appendPaymentCommands(commands, orderData, config);
+            // Enviar FASE 1 a la impresora
+            for (let i = 0; i < phase1Commands.length; i++) {
+                const result = await this.sendCommand(phase1Commands[i], null, false, i > 0);
+                if (!result.success) {
+                    console.error("TfhkaDriver:: FASE 1 - comando falló:", phase1Commands[i], result.error);
+                    await this.abortTransaction();
+                    return { success: false, data: "", error: `Error en comando FASE 1 [${phase1Commands[i]}]: ${result.error}` };
+                }
+            }
 
-            // 9. Líneas al pie (footer de POS + operador/pedido)
-            this._appendFooterInfo(commands, orderData);
+            // ================================================================
+            // FASE 2: Construir y enviar pagos + footer + cierre
+            // ================================================================
+            const phase2Commands = [];
+            console.log("TfhkaDriver::printInvoice - payment_lines a enviar:", JSON.stringify(orderData.payment_lines));
+            this._appendPaymentCommands(phase2Commands, orderData, config);
+            this._appendFooterInfo(phase2Commands, orderData);
+            phase2Commands.push("199");
 
-            // 10. Fin de documento
-            commands.push("199");
+            const payment2xxCommands = phase2Commands.filter(c => c.startsWith("2"));
+            const total2xx = payment2xxCommands.reduce((sum, cmd) => {
+                const raw = cmd.substring(3) || "0";
+                return sum + parseInt(raw, 10);
+            }, 0) / 100;
+            console.log("TfhkaDriver::printInvoice - total 2XX enviados a impresora:", total2xx, "cantidad:", payment2xxCommands.length);
 
-            for (let i = 0; i < commands.length; i++) {
-                const cmd = commands[i];
-                const isFirst = i === 0;
-                const result = await this.sendCommand(cmd, null, false, !isFirst);
+            let payment199Result = null;
+            for (let i = 0; i < phase2Commands.length; i++) {
+                const cmd = phase2Commands[i];
+                const result = await this.sendCommand(cmd, null, false, true);
+
+                if (cmd === "199") {
+                    payment199Result = result;
+                }
 
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
                     if (is1xx) {
                         console.warn("TfhkaDriver:: Comando 1XX falló (no fatal):", cmd, result.error);
                         continue;
+                    }
+                    if (cmd === "199") {
+                        console.error("TfhkaDriver:: Comando 199 falló (NAK) — la impresora rechazó el cierre. Montos 2XX no coinciden con su cálculo interno (subtotal+IVA+IGTF).");
                     }
                     console.error("TfhkaDriver:: Comando falló:", cmd, result.error);
                     await this.abortTransaction();
@@ -1302,6 +1357,8 @@ export class TfhkaDriver {
                     };
                 }
             }
+
+            console.log("TfhkaDriver::printInvoice - resultado del 199:", payment199Result);
 
             const s1Result = await this._readS1Data();
             if (!s1Result.success) {
@@ -1391,8 +1448,6 @@ export class TfhkaDriver {
         }
 
         try {
-            const commands = [];
-
             const FLAG21_CONFIGS = {
                 "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
                 "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
@@ -1401,38 +1456,41 @@ export class TfhkaDriver {
             };
             const config = FLAG21_CONFIGS[String(orderData.flag_21 || "00")] || FLAG21_CONFIGS["00"];
 
+            // ================================================================
+            // FASE 1: Construir y enviar comandos de apertura
+            // ================================================================
+            const phase1Commands = [];
+
             // 1. RIF del cliente
             const vat = orderData.partner?.vat || "V00000000";
-            commands.push(`iR*${vat}`);
+            phase1Commands.push(`iR*${vat}`);
 
-            // 2. Razón social del cliente (word-wrap: continuaciones como
-            // informativas ANTES del header)
+            // 2. Razón social del cliente
             const nameLines = this._wordWrap(
                 orderData.partner?.name || "CLIENTE GENERICO",
                 TfhkaDriver.MAX_LINE_LEN
             );
-            commands.push(`iS*${nameLines[0]}`);
+            phase1Commands.push(`iS*${nameLines[0]}`);
             let nameInfoCount = 0;
             const MAX_INFO_LINES = 10;
             for (let i = 1; i < nameLines.length && nameInfoCount < MAX_INFO_LINES; i++) {
-                commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
+                phase1Commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
             }
 
-            // 3. Número de factura afectada (8 dígitos con cero a la izquierda)
+            // 3. Número de factura afectada
             const invoiceNumber = String(affected.number).padStart(8, '0');
-            commands.push(`iF*${invoiceNumber}`);
+            phase1Commands.push(`iF*${invoiceNumber}`);
 
-            // 4. Serial de la máquina fiscal de la factura afectada
-            commands.push(`iI*${affected.serial_machine}`);
+            // 4. Serial de la máquina fiscal
+            phase1Commands.push(`iI*${affected.serial_machine}`);
 
-            // 5. Fecha de factura afectada (formato DD/MM/YYYY)
-            commands.push(`iD*${affected.date}`);
+            // 5. Fecha de factura afectada
+            phase1Commands.push(`iD*${affected.date}`);
 
-            // 6. Información adicional del encabezado (dirección, teléfono, encabezado POS)
-            this._appendHeaderInfo(commands, orderData, nameInfoCount);
+            // 6. Encabezado
+            this._appendHeaderInfo(phase1Commands, orderData, nameInfoCount);
 
-            // 8. Items de la devolución (truncado simple, sin iNN)
-            // NC usa "d" + código_fiscal_numérico + precio + qty + desc
+            // 8. Items de la devolución ("d" + código_fiscal + precio + qty + desc)
             let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
             for (const line of orderData.lines || []) {
                 const linePrice = Number(line.price_unit || 0);
@@ -1450,37 +1508,57 @@ export class TfhkaDriver {
                     .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
                     .trim();
 
-                // Calcular espacio disponible para descripción
                 const overhead = 2 + price.length + qty.length + code.length;
                 const available = TfhkaDriver.MAX_LINE_LEN - overhead;
                 if (available > 0 && desc.length > available) {
                     desc = desc.substring(0, available);
                 }
 
-                commands.push(`d${fiscalCode}${price}${qty}${code}${desc}`);
+                phase1Commands.push(`d${fiscalCode}${price}${qty}${code}${desc}`);
             }
 
             // 9. Subtotal
-            commands.push("3");
+            phase1Commands.push("3");
 
-            // 9.1 Descuento global absoluto (q-)
+            // 9.1 Descuento global
             if (globalDiscountAmount > 0) {
                 const discount = this._formatAmount(globalDiscountAmount, config.disc_int, config.disc_decimal);
-                commands.push(`q-${discount}`);
+                phase1Commands.push(`q-${discount}`);
             }
 
-            // 10. Pagos y cierre fiscal (1XX/2XX + 101)
-            this._appendPaymentCommands(commands, orderData, config);
+            // Enviar FASE 1
+            for (let i = 0; i < phase1Commands.length; i++) {
+                const result = await this.sendCommand(phase1Commands[i], null, false, i > 0);
+                if (!result.success) {
+                    console.error("TfhkaDriver:: NC FASE 1 - comando falló:", phase1Commands[i], result.error);
+                    await this.abortTransaction();
+                    return { success: false, data: "", error: `Error NC [${phase1Commands[i]}]: ${result.error}` };
+                }
+            }
 
-            // 11. Líneas al pie (footer de POS + operador/pedido)
-            this._appendFooterInfo(commands, orderData);
+            // ================================================================
+            // FASE 1.5: Leer S25 para IGTF
+            // ================================================================
+            let paymentLines = orderData.payment_lines || [];
+            const hasDivisa = this._hasDivisaPayment(paymentLines);
+            if (hasDivisa) {
+                const s25Result = await this.readS25Data();
+                if (s25Result.success && s25Result.data?.igtfAmount > 0) {
+                    paymentLines = this._adjustPaymentsWithIGTF(paymentLines, s25Result.data);
+                }
+            }
 
-            // 12. Fin de documento
-            commands.push("199");
+            // ================================================================
+            // FASE 2: Pagos + footer + cierre
+            // ================================================================
+            const phase2Commands = [];
+            this._appendPaymentCommands(phase2Commands, { ...orderData, payment_lines: paymentLines }, config);
+            this._appendFooterInfo(phase2Commands, orderData);
+            phase2Commands.push("199");
 
-            for (let i = 0; i < commands.length; i++) {
-                const cmd = commands[i];
-                const result = await this.sendCommand(cmd, null, false, i > 0);
+            for (let i = 0; i < phase2Commands.length; i++) {
+                const cmd = phase2Commands[i];
+                const result = await this.sendCommand(cmd, null, false, true);
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
                     if (is1xx) {
@@ -1489,7 +1567,7 @@ export class TfhkaDriver {
                     }
                     console.error("TfhkaDriver:: NC - Comando falló:", cmd, result.error);
                     await this.abortTransaction();
-                    return { success: false, data: "", error: `Error en comando [${cmd}]: ${result.error}` };
+                    return { success: false, data: "", error: `Error NC [${cmd}]: ${result.error}` };
                 }
             }
 
@@ -1565,8 +1643,6 @@ export class TfhkaDriver {
         }
 
         try {
-            const commands = [];
-
             const FLAG21_CONFIGS = {
                 "00": { max_amount_int: 8,  max_amount_decimal: 2, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
                 "01": { max_amount_int: 7,  max_amount_decimal: 3, max_qty_int: 5,  max_qty_decimal: 3, max_payment_amount_int: 10, max_payment_amount_decimal: 2, disc_int: 7, disc_decimal: 2 },
@@ -1575,38 +1651,41 @@ export class TfhkaDriver {
             };
             const config = FLAG21_CONFIGS[String(orderData.flag_21 || "00")] || FLAG21_CONFIGS["00"];
 
+            // ================================================================
+            // FASE 1: RIF, razón social, factura afectada, encabezado, items
+            // ================================================================
+            const phase1Commands = [];
+
             // 1. RIF del cliente (ND: va primero, antes de la factura afectada)
             const vat = orderData.partner?.vat || "V00000000";
-            commands.push(`iR*${vat}`);
+            phase1Commands.push(`iR*${vat}`);
 
-            // 2. Razón social del cliente (word-wrap: continuaciones como
-            // informativas ANTES del header)
+            // 2. Razón social del cliente
             const nameLines = this._wordWrap(
                 orderData.partner?.name || "CLIENTE GENERICO",
                 TfhkaDriver.MAX_LINE_LEN
             );
-            commands.push(`iS*${nameLines[0]}`);
+            phase1Commands.push(`iS*${nameLines[0]}`);
             let nameInfoCount = 0;
             const MAX_INFO_LINES = 10;
             for (let i = 1; i < nameLines.length && nameInfoCount < MAX_INFO_LINES; i++) {
-                commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
+                phase1Commands.push(`i${String(nameInfoCount++).padStart(2, '0')}${nameLines[i]}`);
             }
 
             // 3. Número de factura afectada
             const invoiceNumber = String(affected.number).padStart(8, '0');
-            commands.push(`iF*${invoiceNumber}`);
+            phase1Commands.push(`iF*${invoiceNumber}`);
 
             // 4. Serial de la máquina fiscal afectada
-            commands.push(`iI*${affected.serial_machine}`);
+            phase1Commands.push(`iI*${affected.serial_machine}`);
 
             // 5. Fecha de factura afectada
-            commands.push(`iD*${affected.date}`);
+            phase1Commands.push(`iD*${affected.date}`);
 
-            // 6. Información adicional del encabezado (dirección, teléfono, encabezado POS)
-            this._appendHeaderInfo(commands, orderData, nameInfoCount);
+            // 6. Encabezado
+            this._appendHeaderInfo(phase1Commands, orderData, nameInfoCount);
 
-            // 8. Items de la nota de débito (truncado simple, sin iNN)
-            // ND usa backtick (`) + código_fiscal_texto + precio + qty + desc
+            // 8. Items de la nota de débito (backtick + código_fiscal + precio + qty + desc)
             let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
             for (const line of orderData.lines || []) {
                 const linePrice = Number(line.price_unit || 0);
@@ -1624,37 +1703,56 @@ export class TfhkaDriver {
                     .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
                     .trim();
 
-                // Calcular espacio disponible para descripción
                 const overhead = 2 + price.length + qty.length + code.length;
                 const available = TfhkaDriver.MAX_LINE_LEN - overhead;
                 if (available > 0 && desc.length > available) {
                     desc = desc.substring(0, available);
                 }
 
-                commands.push(`\`${fiscalCode}${price}${qty}${code}${desc}`);
+                phase1Commands.push(`\`${fiscalCode}${price}${qty}${code}${desc}`);
             }
 
             // 9. Subtotal
-            commands.push("3");
+            phase1Commands.push("3");
 
-            // 9.1 Descuento global absoluto (q-)
+            // 9.1 Descuento global
             if (globalDiscountAmount > 0) {
                 const discount = this._formatAmount(globalDiscountAmount, config.disc_int, config.disc_decimal);
-                commands.push(`q-${discount}`);
+                phase1Commands.push(`q-${discount}`);
             }
 
-            // 10. Pagos y cierre fiscal (1XX/2XX + 101)
-            this._appendPaymentCommands(commands, orderData, config);
+            for (let i = 0; i < phase1Commands.length; i++) {
+                const result = await this.sendCommand(phase1Commands[i], null, false, i > 0);
+                if (!result.success) {
+                    console.error("TfhkaDriver:: ND FASE 1 - comando falló:", phase1Commands[i], result.error);
+                    await this.abortTransaction();
+                    return { success: false, data: "", error: `Error ND [${phase1Commands[i]}]: ${result.error}` };
+                }
+            }
 
-            // 11. Líneas al pie (footer de POS + operador/pedido)
-            this._appendFooterInfo(commands, orderData);
+            // ================================================================
+            // FASE 1.5: Leer S25 para IGTF
+            // ================================================================
+            let paymentLines = orderData.payment_lines || [];
+            const hasDivisa = this._hasDivisaPayment(paymentLines);
+            if (hasDivisa) {
+                const s25Result = await this.readS25Data();
+                if (s25Result.success && s25Result.data?.igtfAmount > 0) {
+                    paymentLines = this._adjustPaymentsWithIGTF(paymentLines, s25Result.data);
+                }
+            }
 
-            // 12. Fin de documento
-            commands.push("199");
+            // ================================================================
+            // FASE 2: Pagos + footer + cierre
+            // ================================================================
+            const phase2Commands = [];
+            this._appendPaymentCommands(phase2Commands, { ...orderData, payment_lines: paymentLines }, config);
+            this._appendFooterInfo(phase2Commands, orderData);
+            phase2Commands.push("199");
 
-            for (let i = 0; i < commands.length; i++) {
-                const cmd = commands[i];
-                const result = await this.sendCommand(cmd, null, false, i > 0);
+            for (let i = 0; i < phase2Commands.length; i++) {
+                const cmd = phase2Commands[i];
+                const result = await this.sendCommand(cmd, null, false, true);
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
                     if (is1xx) {
@@ -1663,7 +1761,7 @@ export class TfhkaDriver {
                     }
                     console.error("TfhkaDriver:: ND - Comando falló:", cmd, result.error);
                     await this.abortTransaction();
-                    return { success: false, data: "", error: `Error en comando [${cmd}]: ${result.error}` };
+                    return { success: false, data: "", error: `Error ND [${cmd}]: ${result.error}` };
                 }
             }
 

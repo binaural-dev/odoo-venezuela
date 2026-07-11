@@ -296,6 +296,8 @@ patch(PosStore.prototype, {
     }
     
     invoice["valid"] = true
+    console.log("MF::get_data_invoice - payment_lines generados:", JSON.stringify(invoice.payment_lines));
+    console.log("MF::get_data_invoice - tipo:", invoice.type, "total:", total);
     return invoice
   },
 
@@ -686,6 +688,8 @@ patch(PosStore.prototype, {
       payment_method_code: payment.payment_method,
       amount: Math.abs(payment.amount)
     }));
+
+    console.log("MF::_convertOrderForDriver - payment_lines:", JSON.stringify(payment_lines));
 
     return {
       partner: invoiceData.partner_id || null,
