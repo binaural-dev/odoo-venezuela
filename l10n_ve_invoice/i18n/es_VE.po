@@ -762,3 +762,23 @@ msgstr "Número de control"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "por"
 msgstr ""
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/ir_actions_report.py:0
+msgid ""
+"None of the selected documents are posted.\n"
+"Only posted documents can be printed."
+msgstr ""
+"Ninguno de los documentos seleccionados está publicado.\n"
+"Solo los documentos publicados se pueden imprimir."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/ir_actions_report.py:0
+msgid ""
+"None of the selected sale orders are confirmed.\n"
+"Only confirmed orders can be printed."
+msgstr ""
+"Ninguna de las órdenes de venta seleccionadas está confirmada.\n"
+"Solo las órdenes confirmadas se pueden imprimir."
