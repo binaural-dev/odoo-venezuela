@@ -3,7 +3,7 @@
     "summary": "Implementación de DLLs de The Factory HKA (VE) y desarrollos PnP para Internet of Things (IoT) y compatibilidad con Odoo.",
     "license": "LGPL-3",
     "category": "Accounting",
-    "version": "17.0.0.3.0",
+    "version": "17.0.0.4.0",
     "author": "Binaural",
     "website": "https://binauraldev.com",
     "depends": [
