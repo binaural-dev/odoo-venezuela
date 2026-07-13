@@ -25,9 +25,11 @@
         <t t-call="web.basic_layout">
             <t t-call="l10n_ve_accountant.payment_receipt_header"/>
             <t t-out="0"/>
-            <div t-attf-class="footer o_company_#{company.id}_layout">
-                <t t-call="l10n_ve_accountant.payment_receipt_footer"/>
-            </div>
+<div class="footer">
+    <div t-attf-class="o_company_#{company.id}_layout">
+        <t t-call="l10n_ve_accountant.payment_receipt_footer"/>
+    </div>
+</div>
         </t>
     </template>
 
