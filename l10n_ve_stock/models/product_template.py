@@ -34,7 +34,6 @@ class ProductTemplate(models.Model):
     )
 
     alternate_code = fields.Char(
-        string="Alternate Code",
         help="Alternate code for the product",
         tracking=True,
     )

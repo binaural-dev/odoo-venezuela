@@ -4,7 +4,7 @@
         Inventario para la localización en Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
     "version": "17.0.0.1.3",

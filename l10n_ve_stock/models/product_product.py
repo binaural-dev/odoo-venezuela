@@ -61,9 +61,9 @@ class ProductProduct(models.Model):
 
             duplicates_as_str = "\n".join(
                 _(
-                    '- Barcode "%s" already assigned to product(s): %s',
-                    barcode,
-                    ", ".join(p.display_name for p in products),
+                    '- Barcode "%(barcode)s" already assigned to product(s): %(names)s',
+                    barcode=barcode,
+                    names=", ".join(p.display_name for p in products),
                 )
                 for barcode, products in products_by_barcode.items()
                 if len(products) > 1
