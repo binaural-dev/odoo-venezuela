@@ -1,36 +1,210 @@
 <odoo>
-	<data>
-		<template id="binaural_accountant_inherit_report_payment_receipt_document" inherit_id="account.report_payment_receipt_document">
-			<xpath expr="//table" position="before">
-				<div class="row mb64">
-					<div class="col-6" t-if="o.partner_bank_id">
-						<strong>Cuenta Receptora: </strong>
-						<t t-if="o.partner_bank_id.bank_id">
-								<span t-esc="o.partner_bank_id.bank_id.name + ' - ' + o.partner_bank_id.acc_number"/>
-						</t>
-						<t t-else="">
-								<span t-field="o.partner_bank_id"/>
-						</t>
-					</div>
-					<div class="col-6" t-if="o.journal_id.default_account_id">
-						<strong>Cuenta Emisora: </strong>
-						<span t-field="o.journal_id.default_account_id"/>
-					</div>
-				</div>
+    <record id="account.action_report_payment_receipt" model="ir.actions.report">
+        <field name="name">Recibo de Pago</field>
+        <field name="report_name">l10n_ve_accountant.report_payment_receipt_custom</field>
+        <field name="report_file">l10n_ve_accountant.report_payment_receipt_custom</field>
+        <field name="print_report_name">"Recibo de Pago " + object.name</field>
+        <field name="paperformat_id" ref="l10n_ve_accountant.payment_receipt_paperformat"/>
+    </record>
 
-				<div class="row">
-					<div class="col-12 my-2 ">
-						<p>La cantidad de <span t-out="o.currency_id.amount_to_text(o.amount)"/> (<span t-field="o.amount"/>)</p>
-					</div>
-				</div>
-			</xpath>
-				<xpath expr="//table" position="after">
+    <template id="report_payment_receipt_custom">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="lang" t-value="o.partner_id.lang or o.company_id.partner_id.lang"/>
+                <t t-set="o" t-value="o.with_context(lang=lang)"/>
+                <t t-set="values" t-value="o._get_payment_receipt_report_values()"/>
+                <t t-call="l10n_ve_accountant.payment_receipt_custom_layout" t-lang="lang">
+                    <t t-call="l10n_ve_accountant.payment_receipt_body"/>
+                </t>
+            </t>
+        </t>
+    </template>
 
-				<div style="position:fixed;top:850px;page-break-inside:avoid;left:34.5%;">
-					<center>____________________________________________</center>
-					<center>Firma Autorizada</center>
-				</div>
-			</xpath>
-		</template>
-	</data>
+    <template id="payment_receipt_custom_layout">
+        <t t-set="company" t-value="o.company_id.sudo()"/>
+        <t t-call="web.basic_layout">
+            <t t-call="l10n_ve_accountant.payment_receipt_header"/>
+            <t t-out="0"/>
+            <div t-attf-class="footer o_company_#{company.id}_layout">
+                <t t-call="l10n_ve_accountant.payment_receipt_footer"/>
+            </div>
+        </t>
+    </template>
+
+    <template id="payment_receipt_header">
+        <div class="container-fluid dispatch-header">
+            <div class="row mb-4">
+                <div class="col-12 d-flex align-items-center flex-wrap">
+                    <div class="me-3 flex-shrink-0">
+                        <img t-if="o.company_id.logo"
+                            t-att-src="image_data_uri(o.company_id.logo)"
+                            style="max-height:95pt; max-width:150px; min-width:100px;"
+                            alt="Company Logo"/>
+                    </div>
+                    <div class="text-container">
+                        <p style="min-width: 600px;" class="m-0 w-50">
+                            <span class="fw-bold">Razón Social:</span>
+                            <span t-out="o.company_id.name"/>
+                            <br/>
+                            <span class="fw-bold">Dirección Fiscal:</span>
+                            <span t-out="o.company_id.street"/>
+                            <br/>
+                            <span class="fw-bold">RIF: <t t-out="o.company_id.vat"/></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12 text-center">
+                    <h4>Recibo de Pago</h4>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12 d-flex">
+                    <div class="border-bottom border-2 ms-auto w-100"></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="payment_receipt_body">
+        <div class="container-fluid">
+            <table class="table table-borderless w-100">
+                <tbody>
+                    <tr>
+                        <td class="w-50">
+                            <span class="fw-bold">Número de Pago:</span>
+                            <span t-field="o.name"/>
+                        </td>
+                        <td class="w-50" t-if="o.date">
+                            <span class="fw-bold">Fecha de Pago:</span>
+                            <span t-field="o.date"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="w-50" t-if="o.partner_type">
+                            <t t-if="o.partner_type == 'customer'">
+                                <span class="fw-bold">Cliente:</span>
+                            </t>
+                            <t t-else="">
+                                <span class="fw-bold">Proveedor:</span>
+                            </t>
+                            <span t-field="o.partner_id"/>
+                        </td>
+                        <td class="w-50" t-if="values['display_payment_method'] and o.payment_method_id">
+                            <span class="fw-bold">Método de Pago:</span>
+                            <span t-field="o.payment_method_id.name"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="w-50" t-if="o.amount">
+                            <span class="fw-bold">Importe de pago:</span>
+                            <span t-field="o.amount" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                        </td>
+                        <td class="w-50" t-if="o.memo">
+                            <span class="fw-bold">Memo:</span>
+                            <span t-field="o.memo"/>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="row mt-3">
+                <div class="col-6" t-if="o.partner_bank_id">
+                    <strong>Cuenta Receptora: </strong>
+                    <t t-if="o.partner_bank_id.bank_id">
+                        <span t-out="o.partner_bank_id.bank_id.name + ' - ' + o.partner_bank_id.acc_number"/>
+                    </t>
+                    <t t-else="">
+                        <span t-field="o.partner_bank_id"/>
+                    </t>
+                </div>
+                <div class="col-6" t-if="o.journal_id.default_account_id">
+                    <strong>Cuenta Emisora: </strong>
+                    <span t-field="o.journal_id.default_account_id"/>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12 my-2">
+                    <p>La cantidad de <span t-out="o.currency_id.amount_to_text(o.amount)"/> (<span t-field="o.amount"/>)</p>
+                </div>
+            </div>
+
+            <table name="invoices" t-if="values['display_invoices']" class="table table-borderless mt-3">
+                <t t-set="invoices" t-value="o.reconciled_invoice_ids or o.reconciled_bill_ids"/>
+                <t t-foreach="invoices" t-as="inv">
+                    <t t-if="any(inv.currency_id != par[2].currency_id for par in inv._get_reconciled_invoices_partials()[0])" t-set="otherCurrency" t-value="True"/>
+                </t>
+                <thead>
+                    <tr>
+                        <th class="border-bottom">Fecha de factura</th>
+                        <th class="border-bottom">Número de factura</th>
+                        <th class="border-bottom">Referencia</th>
+                        <th t-if="otherCurrency" class="border-bottom text-end">Monto en Moneda</th>
+                        <th class="border-bottom text-end">Importe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="invoices" t-as="inv">
+                        <t t-if="inv.move_type != 'entry'">
+                            <tr>
+                                <td><span t-field="inv.invoice_date"/></td>
+                                <td><span t-field="inv.name"/></td>
+                                <td><span t-field="inv.ref"/></td>
+                                <td t-if="otherCurrency"/>
+                                <td class="text-end"><span t-field="inv.amount_total"/></td>
+                            </tr>
+                            <tr t-foreach="inv._get_reconciled_invoices_partials()[0]" t-as="par">
+                                <t t-set="payment" t-value="par[2]"/>
+                                <td><span t-field="payment.move_id.date"/></td>
+                                <td><span t-field="payment.move_id.name"/></td>
+                                <td><span t-field="payment.payment_id.memo"/></td>
+                                <t t-set="amountPayment" t-value="-(par[0].debit_amount_currency if par[2].debit > 0 else par[0].credit_amount_currency)"/>
+                                <t t-set="amountInvoice" t-value="-par[1]"/>
+                                <t t-set="currencyPayment" t-value="payment.currency_id"/>
+                                <t t-set="currencyInvoice" t-value="inv.currency_id"/>
+                                <td t-if="otherCurrency" class="text-end">
+                                    <span t-if="currencyPayment != currencyInvoice" t-out="amountPayment" t-options="{'widget': 'monetary', 'display_currency': currencyPayment}"/>
+                                </td>
+                                <td class="text-end">
+                                    <span t-out="amountInvoice" t-options="{'widget': 'monetary', 'display_currency': currencyInvoice}"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td/>
+                                <td><strong>Importe debido para <span t-field="inv.name"/></strong></td>
+                                <td/>
+                                <td t-if="otherCurrency"/>
+                                <td class="text-end"><strong><span t-field="inv.amount_residual"/></strong></td>
+                            </tr>
+                        </t>
+                    </t>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="payment_receipt_footer">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12 text-center">
+
+                    <p>____________________________________________</p>
+                    <p>Firma Autorizada</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="o_footer_content d-flex border-top pt-2" style="margin-top: 25px;">
+            <div class="flex-grow-1 text-start me-2" t-field="company.report_footer"/>
+            <div class="text-end text-muted">
+                <div t-if="report_type == 'pdf'" class="text-nowrap">
+                    Página <span class="page"/> / <span class="topage"/>
+                </div>
+            </div>
+        </div>
+    </template>
 </odoo>
