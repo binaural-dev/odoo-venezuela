@@ -2,6 +2,8 @@
 Venezuela - Integración de Punto de Venta con Máquina Fiscal
 ===============================================================
 
+**Web Serial API** — Conexión directa navegador ↔ impresora fiscal TFHKA vía USB (sin IoT Box).
+
 .. |badge1| image:: https://img.shields.io/badge/licence-LGPL--3-blue.png
     :target: http://www.gnu.org/licenses/lgpl-3.0-standalone.html
     :alt: License: LGPL-3
