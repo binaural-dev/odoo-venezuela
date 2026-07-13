@@ -810,19 +810,11 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         journals = {
             ("islr", "in_invoice"): self.env.company.islr_supplier_retention_journal_id,
-            (
-                "islr",
-                "out_invoice",
-            ): self.env.company.islr_customer_retention_journal_id,
-            (
-                "municipal",
-                "in_invoice",
-            ): self.env.company.municipal_supplier_retention_journal_id,
-            (
-                "municipal",
-                "out_invoice",
-            ): self.env.company.municipal_customer_retention_journal_id,
+            ("islr", "out_invoice"): self.env.company.islr_customer_retention_journal_id,
+            ("municipal", "in_invoice"): self.env.company.municipal_supplier_retention_journal_id,
+            ("municipal", "out_invoice"): self.env.company.municipal_customer_retention_journal_id,
         }
+
         journal_id = journals[(self.type_retention, self.type)].id
 
         if self.type_retention == "islr":
@@ -833,10 +825,10 @@ class AccountRetention(models.Model):
         payment_vals = []
 
         for line in self.retention_line_ids:
-            if line.move_id.move_type == "in_refund":
-                payment_type = "inbound" if self.type == "in_invoice" else "outbound"
-            if line.move_id.move_type == "out_refund":
-                payment_type = "outbound" if self.type == "out_invoice" else "inbound"
+            if self.type == "in_invoice":
+                payment_type = "inbound" if line.move_id.move_type == "in_refund" else "outbound"
+            else:
+                payment_type = "outbound" if line.move_id.move_type == "out_refund" else "inbound"
 
             payment_method_ref = (
                 "account.account_payment_method_manual_in"
