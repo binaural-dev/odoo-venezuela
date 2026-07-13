@@ -3,7 +3,10 @@ import logging
 _logger = logging.getLogger(__name__)
 
 COLUMNS = {
-    "res_company": ["mf_flag_21"],
+    "res_company": [
+        "mf_flag_21",
+        "invoice_print_type",
+    ],
 }
 
 
