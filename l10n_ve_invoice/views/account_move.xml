@@ -92,6 +92,7 @@
     <record id="view_account_move_od_journal_sequence" model="ir.ui.view">
         <field name="name">view.account.move.od.journal.sequence</field>
         <field name="model">account.move</field>
+        <field name="priority" eval="100"/>
         <field name="inherit_id" ref="od_journal_sequence.view_move_form" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="attributes">

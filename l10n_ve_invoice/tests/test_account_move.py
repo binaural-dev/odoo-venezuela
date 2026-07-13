@@ -168,6 +168,7 @@ class TestAccountMove(TransactionCase):
         journal=None,
         company=None,
         correlative=None,
+        name=None,
     ):
         """Helper function to create an invoice with given parameters.
         Args:
@@ -194,16 +195,19 @@ class TestAccountMove(TransactionCase):
             if move_type == "in_invoice":
                 journal = self.purchase_journal
 
-        name = journal.sequence_id.next_by_id()
+        if name is None:
+            move_name = journal.sequence_id.next_by_id()
 
-        if move_type == "out_refund" and reversed_entry_id:
-            name = journal.refund_sequence_id.next_by_id()
+            if move_type == "out_refund" and reversed_entry_id:
+                move_name = journal.refund_sequence_id.next_by_id()
 
-        if move_type == "out_invoice" and debit_origin_id:
-            name = self.debit_journal.sequence_id.next_by_id()
+            if move_type == "out_invoice" and debit_origin_id:
+                move_name = self.debit_journal.sequence_id.next_by_id()
+        else:
+            move_name = name
 
         invoice_vals = {
-            "name": name,
+            "name": move_name,
             "move_type": move_type,
             "partner_id": self.partner_a.id,
             "foreign_currency_id": self.currency_vef.id,
@@ -219,6 +223,9 @@ class TestAccountMove(TransactionCase):
             "journal_id": journal.id,
             "correlative": 1,
         }
+
+        if name is not None:
+            invoice_vals["name"] = name
 
         if correlative is not None:
             invoice_vals["correlative"] = correlative
@@ -236,21 +243,31 @@ class TestAccountMove(TransactionCase):
 
         return invoice
 
-    def _get_or_create_invoice_correlative_sequence(self, company=None, number_next_actual=1, padding=5):
+    def _get_or_create_invoice_correlative_sequence(
+        self, company=None, number_next_actual=1, padding=5
+    ):
         company = company or self.env.company
-        sequence = self.env["ir.sequence"].sudo().search(
-            [("code", "=", "invoice.correlative"), ("company_id", "=", company.id)],
-            limit=1,
+        sequence = (
+            self.env["ir.sequence"]
+            .sudo()
+            .search(
+                [("code", "=", "invoice.correlative"), ("company_id", "=", company.id)],
+                limit=1,
+            )
         )
         if not sequence:
-            sequence = self.env["ir.sequence"].sudo().create(
-                {
-                    "name": f"Control {company.name}",
-                    "code": "invoice.correlative",
-                    "padding": padding,
-                    "number_next_actual": number_next_actual,
-                    "company_id": company.id,
-                }
+            sequence = (
+                self.env["ir.sequence"]
+                .sudo()
+                .create(
+                    {
+                        "name": f"Control {company.name}",
+                        "code": "invoice.correlative",
+                        "padding": padding,
+                        "number_next_actual": number_next_actual,
+                        "company_id": company.id,
+                    }
+                )
             )
         else:
             sequence.write(
@@ -261,7 +278,9 @@ class TestAccountMove(TransactionCase):
             )
         return sequence
 
-    def _assert_entry_in_period(self, invoice_date, today_date, taxpayer_type, expected):
+    def _assert_entry_in_period(
+        self, invoice_date, today_date, taxpayer_type, expected
+    ):
         """Helper to create a move, patch today's date and assert entry_in_period."""
         self.company.write({"taxpayer_type": taxpayer_type})
 
@@ -277,23 +296,29 @@ class TestAccountMove(TransactionCase):
             invoice_date=invoice_date,
             journal=self.sales_journal,
         )
-        move.state = 'posted'
+        move.state = "posted"
 
         class FakeDate(real_date):
             @classmethod
             def today(cls):
                 return today_date
 
-        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date', FakeDate):
+        with patch("odoo.addons.l10n_ve_invoice.models.account_move.date", FakeDate):
             move._compute_entry_in_period()
 
         if expected:
-            self.assertTrue(move.entry_in_period, f"Falló: Se esperaba True para hoy {today_date} e invoice {invoice_date}")
+            self.assertTrue(
+                move.entry_in_period,
+                f"Falló: Se esperaba True para hoy {today_date} e invoice {invoice_date}",
+            )
         else:
-            self.assertFalse(move.entry_in_period, f"Falló: Se esperaba False para hoy {today_date} e invoice {invoice_date}")
+            self.assertFalse(
+                move.entry_in_period,
+                f"Falló: Se esperaba False para hoy {today_date} e invoice {invoice_date}",
+            )
 
     def test_01_create_in_invoice(self):
-        
+
         invoice = self._create_invoice(
             products=[
                 {
@@ -343,24 +368,24 @@ class TestAccountMove(TransactionCase):
         today = real_date.today()
         invoice_date = today.replace(day=1)
         today_date = today.replace(day=2)
-        
-        self._assert_entry_in_period(invoice_date, today_date, 'formal', True)
+
+        self._assert_entry_in_period(invoice_date, today_date, "formal", True)
 
     def test_04_special_taxpayer_before_15_in_period(self):
         """Special taxpayer, today < 15 -> deadline period day 15 -> invoice day 10 considered IN period (True)"""
         today = real_date.today()
         invoice_date = today.replace(day=10)
         today_date = today.replace(day=12)
-        
-        self._assert_entry_in_period(invoice_date, today_date, 'special', True)
+
+        self._assert_entry_in_period(invoice_date, today_date, "special", True)
 
     def test_05_special_taxpayer_after_15_out_of_period(self):
         """Special taxpayer, today >= 15 -> last day of the deadline period -> invoice date <15 remains OUT period (False)"""
         today = real_date.today()
         invoice_date = today.replace(day=10)
         today_date = today.replace(day=20)
-        
-        self._assert_entry_in_period(invoice_date, today_date, 'special', False)
+
+        self._assert_entry_in_period(invoice_date, today_date, "special", False)
 
     def test_06_invoice_different_month_not_in_period(self):
         """Invoice from previous month -> outside the fiscal period"""
@@ -368,10 +393,10 @@ class TestAccountMove(TransactionCase):
 
         first_day_this_month = today.replace(day=1)
         last_day_prev_month = first_day_this_month - timedelta(days=1)
-        
+
         invoice_date = last_day_prev_month
         today_date = today
-        
+
         self._assert_entry_in_period(invoice_date, today_date, False, False)
 
     def test_07_action_post_raises_when_sale_move_has_same_correlative(self):
@@ -416,7 +441,10 @@ class TestAccountMove(TransactionCase):
         )
         with self.assertRaises(ValidationError) as cm:
             invoice.action_post()
-        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))
+        self.assertIn(
+            "It is not possible to confirm with a date posterior to the current one",
+            str(cm.exception),
+        )
 
         original_invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100}],
@@ -436,7 +464,10 @@ class TestAccountMove(TransactionCase):
         )
         with self.assertRaises(ValidationError) as cm:
             credit_note.action_post()
-        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))
+        self.assertIn(
+            "It is not possible to confirm with a date posterior to the current one",
+            str(cm.exception),
+        )
 
         debit_note = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100}],
@@ -448,4 +479,66 @@ class TestAccountMove(TransactionCase):
         )
         with self.assertRaises(ValidationError) as cm:
             debit_note.action_post()
-        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))
+        self.assertIn(
+            "It is not possible to confirm with a date posterior to the current one",
+            str(cm.exception),
+        )
+
+    def test_09_contingency_credit_note_keeps_manual_name_and_correlative(self):
+        self.company.write({"group_sales_invoicing_series": False})
+
+        name_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "Contingency Credit Note Name",
+                "code": "test.contingency.credit.name",
+                "prefix": "NC-HIST/",
+                "padding": 4,
+                "number_next_actual": 7,
+                "company_id": self.company.id,
+            }
+        )
+        refund_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "Contingency Credit Note Refund",
+                "code": "test.contingency.credit.refund",
+                "prefix": "NC-SEQ/",
+                "padding": 4,
+                "number_next_actual": 7,
+                "company_id": self.company.id,
+            }
+        )
+        contingency_journal = self.env["account.journal"].create(
+            {
+                "name": "Nota de Crédito Contingencia",
+                "code": "NCC",
+                "type": "sale",
+                "sequence_id": name_sequence.id,
+                "refund_sequence": True,
+                "refund_sequence_id": refund_sequence.id,
+                "is_contingency": True,
+                "company_id": self.company.id,
+            }
+        )
+        control_sequence = self._get_or_create_invoice_correlative_sequence(
+            number_next_actual=11
+        )
+
+        credit_note = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_refund",
+            journal=contingency_journal,
+            name="NC-HIST-0001",
+            correlative="CTRL-HIST-0001",
+        )
+
+        refund_next_before = refund_sequence.number_next_actual
+        name_next_before = name_sequence.number_next_actual
+        control_next_before = control_sequence.number_next_actual
+
+        credit_note.action_post()
+
+        self.assertEqual(credit_note.name, "NC-HIST-0001")
+        self.assertEqual(credit_note.correlative, "CTRL-HIST-0001")
+        self.assertEqual(name_sequence.number_next_actual, name_next_before)
+        self.assertEqual(refund_sequence.number_next_actual, refund_next_before)
+        self.assertEqual(control_sequence.number_next_actual, control_next_before)
