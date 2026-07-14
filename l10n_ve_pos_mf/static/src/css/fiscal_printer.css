@@ -1,0 +1,450 @@
+/* Estilos para el botón de estado de la máquina fiscal */
+
+.fiscal-printer-action {
+    padding: 8px 12px;
+    margin: 4px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.fiscal-printer-disconnected {
+    background-color: #6c757d;
+    color: white;
+}
+
+.fiscal-printer-disconnected:hover {
+    background-color: #5a6268;
+}
+
+.fiscal-printer-connecting {
+    background-color: #ffc107;
+    color: black;
+    animation: pulse 1.5s infinite;
+}
+
+.fiscal-printer-connected {
+    background-color: #28a745;
+    color: white;
+}
+
+.fiscal-printer-connected:hover {
+    background-color: #218838;
+}
+
+.fiscal-printer-error {
+    background-color: #dc3545;
+    color: white;
+    animation: shake 0.5s;
+}
+
+.fiscal-printer-error:hover {
+    background-color: #c82333;
+}
+
+/* Animación de pulso para estado "connecting" */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Animación de shake para estado "error" */
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/* Estilos para el componente de Reportes Fiscales */
+.fiscal-reports-container {
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+.fiscal-reports-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.fiscal-reports-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fiscal-report-btn {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.fiscal-report-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fiscal-report-btn:active {
+    transform: translateY(0);
+}
+
+.fiscal-report-btn i {
+    margin-right: 8px;
+}
+
+/* ==================== FISCAL DEBUGGER POPUP ==================== */
+
+.fiscal-debugger-popup {
+    width: 90vw;
+    max-width: 1200px;
+    height: 80vh;
+    max-height: 800px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.fiscal-debugger-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+}
+
+.fiscal-debugger-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.fiscal-debugger-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0 16px;
+}
+
+.fiscal-debugger-tabs button {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: #6c757d;
+    transition: all 0.2s;
+}
+
+.fiscal-debugger-tabs button:hover {
+    color: #495057;
+    background: #e9ecef;
+}
+
+.fiscal-debugger-tabs button.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background: white;
+}
+
+.fiscal-debugger-content {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+}
+
+/* Monitor de Tramas */
+.monitor-controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.auto-scroll-toggle {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fiscal-debugger-log {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 16px;
+    border-radius: 4px;
+    height: 500px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.log-entry {
+    padding: 8px 0;
+    border-bottom: 1px solid #333;
+}
+
+.log-timestamp {
+    color: #858585;
+    margin-right: 8px;
+}
+
+.log-direction {
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.log-sent .log-direction {
+    color: #4fc3f7;
+}
+
+.log-received .log-direction {
+    color: #81c784;
+}
+
+.log-command {
+    color: #ffeb3b;
+}
+
+.log-success {
+    color: #81c784;
+}
+
+.log-error {
+    color: #e57373;
+}
+
+.log-duration {
+    color: #858585;
+    font-size: 11px;
+}
+
+.log-info .log-message {
+    color: #4fc3f7;
+}
+
+.log-error .log-message {
+    color: #e57373;
+}
+
+/* Status Parser */
+.status-controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.auto-refresh-toggle {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-display {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.status-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.status-card h4 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #495057;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 24px;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.status-raw {
+    font-family: 'Courier New', monospace;
+    color: #6c757d;
+    margin-top: 12px;
+}
+
+.status-indicators {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.status-indicator {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.indicator-icon {
+    font-size: 24px;
+}
+
+.indicator-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+}
+
+/* Consola Raw */
+.console-panel {
+    max-width: 800px;
+}
+
+.quick-actions {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.quick-actions h5 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #495057;
+}
+
+.quick-actions-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.quick-actions-buttons .btn {
+    padding: 12px 16px;
+    font-weight: 500;
+    transition: transform 0.2s;
+}
+
+.quick-actions-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.quick-actions-buttons .btn i {
+    margin-right: 8px;
+}
+
+.console-input-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.console-input-group label {
+    font-weight: bold;
+    min-width: 100px;
+}
+
+.console-input-group input {
+    flex: 1;
+}
+
+.console-output {
+    margin-top: 24px;
+}
+
+.console-output label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.console-output textarea {
+    font-family: 'Courier New', monospace;
+    background: #f8f9fa;
+    resize: vertical;
+}
+
+/* Flags Panel */
+.flags-panel {
+    max-width: 700px;
+}
+
+.flag-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.flag-form .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.flag-form label {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.flag-form input {
+    width: 150px;
+}
+
+.flags-reference {
+    padding: 20px;
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    border-radius: 4px;
+}
+
+.flags-reference h5 {
+    margin-top: 0;
+    color: #856404;
+}
+
+.flags-reference ul {
+    margin-bottom: 16px;
+}
+
+.flags-reference li {
+    margin-bottom: 8px;
+}

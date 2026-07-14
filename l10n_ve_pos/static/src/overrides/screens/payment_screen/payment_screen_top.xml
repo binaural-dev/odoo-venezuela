@@ -4,12 +4,15 @@
             <div class="total text-center text-muted fs-3">
                 <t t-out="foreignTotalDueText"/>
             </div>
-            <div class="button ms-1 back btn btn-lg btn-secondary"
-                t-on-click="() => this.showPaymentsOrigin()"
-                > 
-                <i class="fa fa-angle-double-left me-2" />
-                <span class="back_text">View Payments Origin</span>
-            </div>
+            <!-- Solo mostrar botón en reembolsos -->
+            <t t-if="currentOrder.isRefund">
+                <div class="button ms-1 back btn btn-lg btn-secondary"
+                    t-on-click="() => this.showPaymentsOrigin()"
+                    > 
+                    <i class="fa fa-angle-double-left me-2" />
+                    <span class="back_text">View Payments Origin</span>
+                </div>
+            </t>
         </xpath>
     </t>
 </templates>
