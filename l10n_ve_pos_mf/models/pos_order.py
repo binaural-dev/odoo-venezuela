@@ -17,6 +17,18 @@ class PosOrderInherit(models.Model):
         string="Sequencia en maquina fiscal", default=False, copy=False, readonly=True
     )
 
+    @api.model
+    def create_from_ui(self, orders, draft=False):
+        # generate_pdf=False: la factura fiscal se imprime vía Web Serial API
+        # directo en la máquina fiscal, no depende del PDF/envío automático
+        # que genera point_of_sale._generate_pos_order_invoice() (wkhtmltopdf).
+        # El PDF sigue disponible bajo demanda (Contabilidad/portal) si alguien
+        # lo abre o descarga; solo se deja de generar/enviar de forma eager en
+        # cada venta. Aplica a todos los clientes con máquina fiscal.
+        return super(
+            PosOrderInherit, self.with_context(generate_pdf=False)
+        ).create_from_ui(orders, draft=draft)
+
     def get_order_by_uid(self, uid):
         orders = self.env["pos.order"].search([("pos_reference", "ilike", uid)])
         if not orders:
@@ -145,13 +157,9 @@ class PosOrderInherit(models.Model):
         self.env.cr.execute('SAVEPOINT pos_dry_run')
 
         try:
-            # generate_pdf=False: evita que Odoo renderice y envíe el PDF de la
-            # factura (wkhtmltopdf, ver point_of_sale._generate_pos_order_invoice)
-            # durante este pase de prueba que de todas formas se descarta con el
-            # ROLLBACK de abajo. Sin esto, cada validación de un pedido facturado
-            # generaba el PDF dos veces (una aquí, otra en la sincronización real),
-            # lo cual podía superar el timeout del proxy en Odoo.sh.
-            self.with_context(generate_pdf=False).create_from_ui(orders)
+            # create_from_ui ya fuerza generate_pdf=False (ver override arriba),
+            # así que este pase de prueba tampoco genera/envía el PDF.
+            self.create_from_ui(orders)
         except Exception as e:
             self.env.cr.execute('ROLLBACK TO SAVEPOINT pos_dry_run')
             if sequence and last_next_number:
