@@ -143,9 +143,15 @@ class PosOrderInherit(models.Model):
             last_next_number = sequence.number_next_actual
 
         self.env.cr.execute('SAVEPOINT pos_dry_run')
-        
+
         try:
-            self.create_from_ui(orders)
+            # generate_pdf=False: evita que Odoo renderice y envíe el PDF de la
+            # factura (wkhtmltopdf, ver point_of_sale._generate_pos_order_invoice)
+            # durante este pase de prueba que de todas formas se descarta con el
+            # ROLLBACK de abajo. Sin esto, cada validación de un pedido facturado
+            # generaba el PDF dos veces (una aquí, otra en la sincronización real),
+            # lo cual podía superar el timeout del proxy en Odoo.sh.
+            self.with_context(generate_pdf=False).create_from_ui(orders)
         except Exception as e:
             self.env.cr.execute('ROLLBACK TO SAVEPOINT pos_dry_run')
             if sequence and last_next_number:
