@@ -161,13 +161,14 @@ class AccountMove(models.Model):
                     )
 
             if (
-                move.correlative
+                move.correlative and not move.is_contingency
                 and move.state == "posted"
                 and move.move_type in ("out_invoice", "out_refund")
             ):
                 repeated_moves = AccountMove.search(
                     [
                         ("id", "!=", move.id),
+                        ("company_id", "=", move.company_id.id),
                         ("correlative", "=", move.correlative),
                         ("state", "=", "posted"),
                         ("move_type", "in", ("out_invoice", "out_refund")),
