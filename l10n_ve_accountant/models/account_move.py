@@ -166,7 +166,7 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
-    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
+    foreign_amount_residual = fields.Monetary(copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
 
     @api.depends(
         'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',
@@ -367,7 +367,15 @@ class AccountMove(models.Model):
                 view_id = self.env.ref(
                     "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
                 ).id
-                doc = etree.XML(res["arch"])
+                arch = res.get("arch")
+                if isinstance(arch, bytes):
+                    arch = arch.decode()
+                elif arch is None:
+                    return res
+                elif not isinstance(arch, str):
+                    arch = etree.tostring(arch, encoding="unicode")
+
+                doc = etree.XML(arch)
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:
                     page[0].set(

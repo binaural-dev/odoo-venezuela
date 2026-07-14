@@ -17,6 +17,16 @@
                         <field name="invoice_print_type"/>
                     </div>
                 </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_iot_mf_mf_flag_21">
+                    <div class="o_setting_left_pane"/>
+                    <div class="o_setting_right_pane">
+                        <label for="mf_flag_21" class="col-lg-6 o_light_label"/>
+                        <div class="text-muted">
+                            Formato numérico (Flag 21) de la impresora fiscal TFHKA (Web Serial)
+                        </div>
+                        <field name="mf_flag_21"/>
+                    </div>
+                </div>
             </xpath>
         </field>
     </record>
