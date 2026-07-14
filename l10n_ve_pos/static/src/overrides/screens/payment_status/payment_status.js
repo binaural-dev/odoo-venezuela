@@ -27,6 +27,18 @@ patch(PaymentScreenStatus.prototype, {
     return this._num(order[methodName](), fallback);
   },
 
+  _clampToZeroForeign(value) {
+    // No mostrar restante/cambio negativo. Usa isPositive() de la moneda
+    // foránea (AbstractNumbers): un residuo por debajo del rounding
+    // (p.ej. -0.004) cuenta como cero, no como negativo.
+    const order = this.props?.order;
+    const fc = order?._resolveCurrencyRecord?.(order?._getForeignCurrencyRecord?.());
+    if (fc && typeof fc.isPositive === "function") {
+      return fc.isPositive(value) ? value : 0;
+    }
+    return value > 0 ? value : 0;
+  },
+
   _getForeignTotalDueAmount() {
     // Leer payment_ids para que Odoo/OWL trackee cambios reactivos
     const _paymentWatch = this.props?.order?.payment_ids;
@@ -39,12 +51,12 @@ patch(PaymentScreenStatus.prototype, {
 
   _getForeignRemainingAmount() {
     const _paymentWatch = this.props?.order?.payment_ids;
-    return Math.max(0, this._callOrder("get_foreign_due", 0));
+    return this._clampToZeroForeign(this._callOrder("get_foreign_due", 0));
   },
 
   _getForeignChangeAmount() {
     const _paymentWatch = this.props?.order?.payment_ids;
-    return Math.max(0, this._callOrder("get_foreign_change", 0));
+    return this._clampToZeroForeign(this._callOrder("get_foreign_change", 0));
   },
 
   get foreignTotalDueText() {

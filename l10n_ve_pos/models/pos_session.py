@@ -3,7 +3,6 @@ from odoo.tools import float_is_zero, float_compare
 from odoo.osv.expression import AND, OR
 from odoo.exceptions import ValidationError
 import logging
-import math
 
 _logger = logging.getLogger(__name__)
 

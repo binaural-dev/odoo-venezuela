@@ -41,5 +41,8 @@
             "l10n_ve_pos/static/src/**/**/**/*",
             "l10n_ve_pos/static/src/overrides/models/payment_model.js",
         ],
+        "web.assets_unit_tests": [
+            "l10n_ve_pos/static/tests/unit/**/*",
+        ],
     },
 }

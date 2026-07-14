@@ -157,7 +157,7 @@
 //             ]);
 //           } else if (tax.amount_type === "fixed") {
 //             incl_tax_amounts.fixed_amount +=
-//               Math.abs(quantity) * tax.amount * tax.sum_repartition_factor;
+//               (quantity < 0 ? -quantity : quantity) * tax.amount * tax.sum_repartition_factor;
 //           } else {
 //             var tax_amount = self._compute_all(tax, base, quantity);
 //             incl_tax_amounts.fixed_amount += tax_amount;
