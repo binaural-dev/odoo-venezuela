@@ -824,12 +824,7 @@ msgstr "Producto de importación exento"
 msgid "International purchase"
 msgstr "Es Compra Internacional"
 
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
-msgid "Invoice Date"
-msgstr "Fecha de factura"
+
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1736,6 +1731,9 @@ msgstr "Fecha de tasa"
 
 #. module: account
 #: model:ir.model.fields,field_description:account.field_account_invoice_report__invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
 #: model_terms:ir.ui.view,arch_db:account.portal_my_invoices
 #: model_terms:ir.ui.view,arch_db:account.view_account_invoice_filter
 #: model_terms:ir.ui.view,arch_db:account.view_account_move_filter
@@ -1834,3 +1832,29 @@ msgstr "Tipo de Indexación"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Enable this to indexation payment in wizard of payment not grouping"
 msgstr "Active esto para indexar los pagos individuales en el asistente de pago sin agrupar"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "The unit price cannot be negative."
+msgstr "El precio unitario no puede ser negativo."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"You are not allowed to add new products ('%s') that were not present in the "
+"original invoice."
+msgstr ""
+"No está permitido agregar productos nuevos ('%s') que no "
+"estuvieran presentes en la factura de origen."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"Product '%s':\n"
+"The unit price (%s) cannot be greater than the original unit price in the source invoice (%s)."
+msgstr ""
+"Producto '%s':\n"
+"El precio unitario (%s) no puede ser mayor que el precio original de la factura de origen (%s)."

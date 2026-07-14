@@ -1827,4 +1827,59 @@ class AccountMove(models.Model):
     def _unlink_except_posted_or_was_posted(self):
         for move in self:
             if move.posted_before and not self._context.get('force_delete'):
-                raise UserError(_("You can't delete a posted or cancel journal item. Don’t play games with your accounting records; reset the journal entry to draft before deleting it."))
+                raise UserError(_("You cannot delete a journal item that is posted, cancelled, or has been previously posted."))
+            
+
+    @api.onchange('invoice_line_ids')
+    def _onchange_invoice_line_ids_refund_validation(self):
+        """
+        Validate and synchronize invoice lines in credit notes (refunds) against 
+        their corresponding original invoice lines from the source document.
+
+        This method triggers in real-time when changes are made to the invoice lines.
+        It performs the following:
+        1. Verifies the document is a credit note with an active source invoice link.
+        2. Disallows the addition of new products not present in the original invoice.
+        3. Maps source invoice lines using a composite key (sequence, product_id)
+           to handle duplicate products accurately.
+        4. Restricts validation to consumable ('consu') and service ('service') products.
+        5. Automatically reverts any modified quantities back to the original values.
+        6. Validates that the unit price is non-negative and does not exceed 
+           the original invoice unit price.
+        """
+        
+        if not self.reversed_entry_id or self.move_type not in ['out_refund', 'in_refund']:
+            return
+
+        origin_lines_by_key = {
+            (line.sequence, line.product_id.id): line
+            for line in self.reversed_entry_id.invoice_line_ids
+            if line.product_id and line.product_type in ('consu', 'service')
+        }
+
+        for line in self.invoice_line_ids:
+
+            line_key = (line.sequence, line.product_id.id)
+
+            if line_key not in origin_lines_by_key:
+                raise ValidationError(_(
+                    "You are not allowed to add new products ('%s') "
+                    "that were not present in the original invoice."
+                ) % line.product_id.name)
+
+            origin_line = origin_lines_by_key[line_key]
+
+            if float_compare(line.quantity, origin_line.quantity, precision_digits=2) != 0:
+                line.update({
+                    'quantity': origin_line.quantity
+                })
+
+            if line.price_unit < 0.0:
+                raise ValidationError(_("The unit price cannot be negative."))
+
+            if line.price_unit > origin_line.price_unit:
+                raise ValidationError(_(
+                    "Product '%s':\n"
+                    "The unit price (%s) cannot be greater than the original "
+                    "unit price in the source invoice (%s)."
+                ) % (line.product_id.name, line.price_unit, origin_line.price_unit))
