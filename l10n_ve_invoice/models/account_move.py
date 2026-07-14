@@ -168,6 +168,7 @@ class AccountMove(models.Model):
                 repeated_moves = AccountMove.search(
                     [
                         ("id", "!=", move.id),
+                        ("company_id", "=", move.company_id.id),
                         ("correlative", "=", move.correlative),
                         ("state", "=", "posted"),
                         ("move_type", "in", ("out_invoice", "out_refund")),
