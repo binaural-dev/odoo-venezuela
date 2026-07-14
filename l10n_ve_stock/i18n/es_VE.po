@@ -32,7 +32,7 @@ msgstr "'Etiqueta de Cajas- %s' % (object.name)"
 #: code:addons/l10n_ve_stock/models/product_product.py:0
 #, python-format
 msgid "- Barcode \"%(barcode)s\" already assigned to product(s): %(names)s"
-msgstr "- Còdigo de barras \"%(barcode)s\" ya ha sido asignado al producto(s): %(names)s"
+msgstr "- Código de barras \"%(barcode)s\" ya ha sido asignado al producto(s): %(names)s"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_form_view_procurement_button
