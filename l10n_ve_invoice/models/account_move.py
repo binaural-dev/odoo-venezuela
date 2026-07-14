@@ -161,7 +161,7 @@ class AccountMove(models.Model):
                     )
 
             if (
-                move.correlative
+                move.correlative and not move.is_contingency
                 and move.state == "posted"
                 and move.move_type in ("out_invoice", "out_refund")
             ):
