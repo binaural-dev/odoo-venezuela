@@ -169,7 +169,7 @@ class TestAccountMoveCore(TransactionCase):
         # entry -> invoice_date_display = False
         self.assertFalse(
             move_ent.invoice_date_display,
-            "invoice_date_display debe ser False para entry"
+            "invoice_date_display debe ser False siempre"
         )
 
     # ═══════════════════════════════════════════════════════════════
