@@ -104,14 +104,37 @@ Consumidores:
 - THEN precarga `remainingDue` (incluye la deuda IGTF); la línea no genera
   IGTF y su excedente sobre la base salda la deuda
 
-### Requirement: Foreign totals are single conversions
+### Requirement: get_foreign_total_with_tax nunca incluye el IGTF
 
-- `get_foreign_total_with_tax()` = `localToForeign(get_total_with_tax())`
-  (17,70), NUNCA `localToForeign(total) + foreign_igtf` (17,71).
-- `l10n_ve_pos/payment_status.js::_getForeignTotalDueAmount` NO debe volver
-  a sumar `get_foreign_igtf_amount` (producía $18,23 = 17,71 + 0,52).
+> **Corregido 2026-07-14.** Este módulo sobrescribía (sin `super()`)
+> `get_total_with_tax()`/`get_foreign_total_with_tax()` de `l10n_ve_pos` para
+> incluir el IGTF, asumiendo erróneamente que era el getter correcto para el
+> panel TOTAL + IGTF. Pero ese mismo getter alimenta el subtítulo foráneo
+> bajo el total nativo, el panel Restantes, el recibo, el ticket, el resumen
+> de venta y `pos.order.foreign_amount_total` (backend) — todos consumidores
+> que esperan el total de FACTURA puro (sin IGTF), igual que `amount_total`
+> nativo nunca lo incluye. Resultado del bug: el subtítulo mostraba 17,70 en
+> vez de 17,19 para una factura de 11.600 Bs (tasa 675).
+
+- `l10n_ve_pos_igtf` **NO redefine** `get_total_with_tax()` ni
+  `get_foreign_total_with_tax()`. Quedan intactos con la semántica de
+  `l10n_ve_pos` (`_localTotalWithTax()`/`get_foreign_total_with_tax()` en
+  `l10n_ve_pos/static/src/overrides/models/pos_order.js`): conversión pura
+  del total de factura, SIN IGTF.
+- El recargo IGTF (base, monto local y foráneo) se consulta exclusivamente
+  vía `get_bi_igtf()`, `get_igtf_amount()`, `get_foreign_igtf_amount()` —
+  usados solo en el desglose BI IGTF/IGTF/Foreign IGTF del panel de estado
+  de pago (`payment_status.js`/`.xml` de este módulo).
+- `l10n_ve_pos/payment_status.js::_getForeignTotalDueAmount` NO debe sumar
+  `get_foreign_igtf_amount` a `get_foreign_total_with_tax` (eso producía
+  $18,23 = 17,71 + 0,52 en el diseño anterior). Al no incluir IGTF en el
+  getter compartido, esta suma manual tampoco hace falta.
 - `get_foreign_due` (l10n_ve_pos) cuadra a 0 porque total y líneas usan la
   misma conversión.
+- Verificado además que `l10n_ve_pos_mf` (máquina fiscal) no depende de la
+  semántica IGTF-inclusive: su fallback de reembolso (`PosStore.js`) ya
+  usaba `order.totalDue` (sin IGTF) en la rama de moneda base VEF: este fix
+  alinea también la rama de moneda foránea con ese mismo comportamiento.
 
 ### Requirement: remainingDue / change incluyen IGTF (fórmula DIRECTA)
 

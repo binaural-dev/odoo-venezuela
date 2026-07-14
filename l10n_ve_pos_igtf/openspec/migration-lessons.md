@@ -175,28 +175,44 @@ Resumen (ver specs para detalle y escenarios con números reales):
   extra; reembolso espejo (IGTF -348); `amount_paid` final siempre
   `amount_total + igtf_amount`.
 
-## Pendientes por tratar (2026-07-10)
+## Resuelto (2026-07-14)
 
-### El foráneo bajo el total nativo muestra 21,70 en vez de 21,07
+### El foráneo bajo el total nativo mostraba 21,70 en vez de 21,07
 
-Este módulo parchea `get_foreign_total_with_tax()` para incluir el IGTF (una
-conversión del total efectivo). Pero ese getter también alimenta el subtítulo
-foráneo que se muestra DEBAJO del total nativo del POS (que NO incluye IGTF):
-`l10n_ve_pos/payment_screen.js::foreignTotalDueText` (payment_screen_top.xml),
-`order_display.xml` vía ticket/summary (`order_sumarry.xml`). Resultado: el
-número grande dice 14.220 Bs y el subtítulo $21,70 — pares inconsistentes.
+Decisión tomada por Jesús: **subtítulo = conversión pura del total nativo**
+(opción 1 de las tres planteadas abajo). Se eliminó por completo el override
+de `get_total_with_tax()`/`get_foreign_total_with_tax()` en
+`order_model.js` (este módulo ya no los redefine), dejando que
+`l10n_ve_pos` sea la única fuente de verdad de esos dos getters (pura
+conversión de factura, sin IGTF). El recargo IGTF solo se expone vía
+`get_bi_igtf()`/`get_igtf_amount()`/`get_foreign_igtf_amount()`, consumidos
+únicamente por el desglose BI IGTF/IGTF/Foreign IGTF del panel de estado de
+pago (la fila TOTAL+IGTF se eliminó de la UI a pedido de Jesús).
 
-Jesús: quizá ese campo no es el mejor para mostrar bajo el total nativo; lo
-del summary de abajo se tratará aparte. Opciones a decidir:
-- Subtítulo = conversión pura del total nativo ($21,07) y dejar el recargo
-  solo en el panel TOTAL + IGTF (payment_status del IGTF), o
-- Ambos números IGTF-inclusive (cambiaría el total nativo mostrado), o
-- Un getter separado para display "total factura foráneo" vs "total efectivo
-  foráneo" y que cada pantalla elija.
+Efecto en todos los consumidores que leían `get_foreign_total_with_tax`
+(antes inconsistentes entre sí): subtítulo bajo el total nativo, panel
+Restantes (`l10n_ve_pos/payment_status.js`), recibo, ticket, resumen de
+venta y `serializeForORM.foreign_amount_total` (backend) — todos muestran
+ahora, de forma consistente, el total de factura SIN IGTF.
 
-Ojo al decidir: recibo (`order_receipt.xml`), ticket screen y
-`serializeForORM.foreign_amount_total` (backend) también leen
-`get_foreign_total_with_tax` — revisar qué semántica espera cada consumidor.
+Verificado antes de aplicar que esto no rompe `l10n_ve_pos_mf` (máquina
+fiscal/Veri*factu): su fallback de reembolso en `PosStore.js` ya usaba
+`order.totalDue` (sin IGTF) en la rama de moneda base VEF; el fix alinea la
+rama de moneda foránea con ese mismo comportamiento (antes era una
+inconsistencia accidental entre ambas ramas, no un diseño intencional). El
+reparto proporcional del reembolso no depende de que el total cuadre con la
+suma de pagos originales, así que no hay riesgo de descuadre.
+
+Detalle completo en
+`openspec/changes/l10n-ve-pos-igtf-migration/specs/frontend-igtf-calculation.md`
+("Requirement: get_foreign_total_with_tax nunca incluye el IGTF").
+
+Las tres opciones originalmente planteadas (para referencia):
+- ~~Subtítulo = conversión pura del total nativo y dejar el recargo solo en
+  el panel TOTAL + IGTF~~ → **elegida**.
+- Ambos números IGTF-inclusive (cambiaría el total nativo mostrado).
+- Un getter separado para display "total factura foráneo" vs "total
+  efectivo foráneo" y que cada pantalla elija.
 
 ### foreign_amount = 0 en líneas de métodos locales
 
