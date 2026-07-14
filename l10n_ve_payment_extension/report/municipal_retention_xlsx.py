@@ -46,8 +46,8 @@ class MunicipalRetentionXlsx(models.AbstractModel):
             logo_data = BytesIO(base64.b64decode(tax_auth.tax_authorities_logo))
             worksheet.insert_image("A2", "logo.png", {"image_data": logo_data})
 
-        text1 = company.text_header_1_municipal_retention or ""
-        text2 = company.text_header_2_municipal_retention or ""
+        text1 = tax_auth.text_header_1_municipal_retention or ""
+        text2 = tax_auth.text_header_2_municipal_retention or ""
         tax_name = (tax_auth.tax_authorities_name or "").upper()
         worksheet.write("B2", text1, fmt_bold)
         worksheet.write("C3", text2, fmt_bold)
