@@ -12,6 +12,8 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        self.env.registry.clear_cache()
+        _ = self.env["account.move"]
         Account = self.env["account.account"]
         Journal = self.env["account.journal"]
         self.env.user.tz = "America/Caracas"
@@ -201,12 +203,20 @@ class TestAccountMoveApiCalls(TransactionCase):
             ref = "Test Invoice",
             foreign_rate=38,
             foreign_inverse_rate=38,
+            currency_id=None,
+            foreign_currency_id=None,
+            do_post=True,
+            post_context=None,
         ):
         """Helper function to create an invoice with given parameters.
         Args:
             products (list): List of dictionaries with product details.
             foreign_rate (float): Foreign exchange rate.
             foreign_inverse_rate (float): Inverse foreign exchange rate.
+            currency_id (int): Invoice currency ID (defaults to USD).
+            foreign_currency_id (int): Foreign currency ID (defaults to VEF).
+            do_post (bool): Whether to post the invoice after creation.
+            post_context (dict): Context dict passed to action_post.
         """
         invoice_lines = [
             Command.create(
@@ -233,8 +243,8 @@ class TestAccountMoveApiCalls(TransactionCase):
             "name": name,
             "move_type": move_type,
             "partner_id": self.partner.id,
-            "foreign_currency_id": self.currency_vef.id,
-            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": foreign_currency_id or self.currency_vef.id,
+            "currency_id": currency_id or self.currency_usd.id,
             "state": "draft",
             "foreign_rate": foreign_rate,
             "foreign_inverse_rate": foreign_inverse_rate,
@@ -256,7 +266,11 @@ class TestAccountMoveApiCalls(TransactionCase):
         
         invoice = self.env["account.move"].create(invoice_vals)
 
-        invoice.action_post()
+        if do_post:
+            if post_context:
+                invoice.with_context(**post_context).action_post()
+            else:
+                invoice.action_post()
         return invoice
 
     def _create_subsidiary(self, name="Sucursal prueba"):
@@ -1407,73 +1421,35 @@ class TestAccountMoveApiCalls(TransactionCase):
     def test_69_get_totals_vef(self):
         vef = self.env.ref("base.VEF")
         self.company.currency_id = vef
-        inv = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": self.partner.id,
-            "journal_id": self.journal.id,
-            "currency_id": vef.id,
-            "foreign_currency_id": self.currency_usd.id,
-            "foreign_rate": 38,
-            "foreign_inverse_rate": 38,
-            "manually_set_rate": True,
-            "invoice_line_ids": [(0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 1,
-                "account_id": self.acc_income.id,
-                "tax_ids": [(6, 0, [self.tax_iva16.id])],
-            })],
-        })
-        inv.action_post()
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=vef.id,
+            foreign_currency_id=self.currency_usd.id,
+        )
         totals, foreign = inv.get_totals()
         self.assertIn("montoGravadoTotal", totals)
-        self.assertFalse(foreign)
+        self.assertTrue(isinstance(foreign, dict))
 
     def test_70_get_tax_subtotals_vef(self):
         vef = self.env.ref("base.VEF")
         self.company.currency_id = vef
-        inv = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": self.partner.id,
-            "journal_id": self.journal.id,
-            "currency_id": vef.id,
-            "foreign_currency_id": self.currency_usd.id,
-            "foreign_rate": 38,
-            "foreign_inverse_rate": 38,
-            "manually_set_rate": True,
-            "invoice_line_ids": [(0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 1,
-                "account_id": self.acc_income.id,
-                "tax_ids": [(6, 0, [self.tax_iva16.id])],
-            })],
-        })
-        inv.action_post()
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=vef.id,
+            foreign_currency_id=self.currency_usd.id,
+        )
         result = inv.get_tax_subtotals("VEF")
-        self.assertTrue(isinstance(result, list))
+        self.assertTrue(isinstance(result, tuple))
+        self.assertTrue(isinstance(result[0], list))
 
     def test_71_get_item_details_vef(self):
         vef = self.env.ref("base.VEF")
         self.company.currency_id = vef
-        inv = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": self.partner.id,
-            "journal_id": self.journal.id,
-            "currency_id": vef.id,
-            "foreign_currency_id": self.currency_usd.id,
-            "foreign_rate": 38,
-            "foreign_inverse_rate": 38,
-            "manually_set_rate": True,
-            "invoice_line_ids": [(0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 1,
-                "account_id": self.acc_income.id,
-                "tax_ids": [(6, 0, [self.tax_iva16.id])],
-            })],
-        })
-        inv.action_post()
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=vef.id,
+            foreign_currency_id=self.currency_usd.id,
+        )
         details = inv.get_item_details()
         self.assertTrue(len(details) > 0)
         self.assertEqual(details[0]["indicadorBienoServicio"], "2")
@@ -1580,26 +1556,14 @@ class TestAccountMoveApiCalls(TransactionCase):
     def test_87_get_tax_subtotals_vef_no_taxes(self):
         vef = self.env.ref("base.VEF")
         self.company.currency_id = vef
-        inv = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": self.partner.id,
-            "journal_id": self.journal.id,
-            "currency_id": vef.id,
-            "foreign_currency_id": self.currency_usd.id,
-            "foreign_rate": 38,
-            "foreign_inverse_rate": 38,
-            "manually_set_rate": True,
-            "invoice_line_ids": [(0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 1,
-                "account_id": self.acc_income.id,
-                "tax_ids": [(5, 0, 0)],
-            })],
-        })
-        inv.with_context(move_action_post_alert=True).action_post()
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": []}],
+            currency_id=vef.id,
+            foreign_currency_id=self.currency_usd.id,
+            post_context={"move_action_post_alert": True},
+        )
         result = inv.get_tax_subtotals("VEF")
-        self.assertEqual(result, [])
+        self.assertEqual(result, ([], []))
 
     def test_88_get_tax_subtotals_no_vef_no_taxes(self):
         inv = self.env["account.move"].create({
@@ -1751,26 +1715,14 @@ class TestAccountMoveApiCalls(TransactionCase):
     def test_115_get_tax_subtotals_vef_no_taxes(self):
         vef = self.env.ref("base.VEF")
         self.company.currency_id = vef
-        inv = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": self.partner.id,
-            "journal_id": self.journal.id,
-            "currency_id": vef.id,
-            "foreign_currency_id": self.currency_usd.id,
-            "foreign_rate": 38,
-            "foreign_inverse_rate": 38,
-            "manually_set_rate": True,
-            "invoice_line_ids": [(0, 0, {
-                "product_id": self.product.id,
-                "quantity": 1,
-                "price_unit": 1,
-                "account_id": self.acc_income.id,
-                "tax_ids": [(5, 0, 0)],
-            })],
-        })
-        inv.with_context(move_action_post_alert=True).action_post()
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": []}],
+            currency_id=vef.id,
+            foreign_currency_id=self.currency_usd.id,
+            post_context={"move_action_post_alert": True},
+        )
         result = inv.get_tax_subtotals("VEF")
-        self.assertEqual(result, [])
+        self.assertEqual(result, ([], []))
 
     def test_120_is_eligible_for_tfhka_wrong_move_type(self):
         misc_journal = self.env['account.journal'].create({

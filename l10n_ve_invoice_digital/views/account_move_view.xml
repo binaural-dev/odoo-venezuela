@@ -27,7 +27,7 @@
                 <field name="multi_currency_invoice" invisible="not multi_currency_enabled"
                        readonly="is_digitalized"/>
                 <field name="line_currency" invisible="not multi_currency_invoice"
-                       readonly="is_digitalized"/>
+                       readonly="is_digitalized" required="1"/>
             </xpath>
         </field>
     </record>
