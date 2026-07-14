@@ -168,6 +168,22 @@ class AccountMove(models.Model):
 
     foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
 
+    @api.depends('amount_residual', 'company_currency_id', 'foreign_inverse_rate', 'foreign_total_billed')
+    def _compute_foreign_amount_residual(self):
+        for rec in self:
+            if not rec.is_invoice(include_receipts=True):
+                rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
+                continue
+            pay_term_line = rec.line_ids.filtered(
+                lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+            )
+            if not pay_term_line:
+                rec.foreign_amount_residual = 0.0
+                continue
+            partials = pay_term_line.matched_debit_ids | pay_term_line.matched_credit_ids
+            total_paid_foreign = sum(p.foreign_amount for p in partials)
+            rec.foreign_amount_residual = rec.foreign_total_billed - total_paid_foreign
+
     @api.depends(
         'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',
         'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
