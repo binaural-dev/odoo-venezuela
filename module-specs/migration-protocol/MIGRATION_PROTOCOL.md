@@ -152,7 +152,7 @@ Si no aparece, el `mf_flag_21` no se heredó — hay que ejecutarlo manualmente 
 
 ---
 
-### Hallazgo #2 — Drift de esquema en `l10n_ve_payment_extension` (esperado en TODOS los clientes)
+### Hallazgo #2 — Drift de esquema en `l10n_ve_payment_extension` (condicional por cliente, NO por defecto)
 
 **Síntoma**:
 ```
@@ -161,7 +161,15 @@ ERROR: column res_company.text_header_1_municipal_retention does not exist
 
 **Causa**: El backup del cliente tiene una versión de `l10n_ve_payment_extension` más antigua que el código actual (acumulación normal de meses sin actualizar). Esto NO es específico de la migración fiscal — ocurre en **cualquier** actualización de un backup viejo.
 
-**Fix**: Incluir `l10n_ve_payment_extension` en el `-u` junto con los módulos fiscales (ver sección 5).
+**`l10n_ve_payment_extension` NO tiene relación funcional con la migración Web Serial**: no depende de `l10n_ve_mf_base`/`l10n_ve_iot_mf`/`l10n_ve_pos_mf` ni es dependencia de ellos (confirmado — su `depends` es `base, account, product, stock, l10n_ve_rate, l10n_ve_accountant, l10n_ve_invoice, l10n_ve_location, l10n_ve_contact, l10n_ve_tax_payer`; es un módulo de retenciones IVA/ISLR/municipal, sin tocar `pos.payment.method`, `pos.order` ni nada de impresión fiscal). Por lo tanto **no debe incluirse por defecto** en el `-u` de la migración de otros clientes — solo si ese cliente puntual presenta este mismo drift.
+
+**Cómo detectarlo ANTES de correr el `-u`** (evita agregar un módulo innecesario al scope):
+```sql
+SELECT latest_version FROM ir_module_module WHERE name = 'l10n_ve_payment_extension';
+```
+Comparar contra la versión declarada en `src/odoo-venezuela-17/l10n_ve_payment_extension/__manifest__.py`. Si difieren, hay drift → incluir el módulo en el `-u` de ese cliente. Si coinciden, omitirlo.
+
+**Fix (solo si el cliente tiene el drift)**: incluir `l10n_ve_payment_extension` en el `-u` junto con los módulos fiscales de ese cliente (ver sección 5).
 
 ---
 
@@ -415,8 +423,10 @@ grep -rln "check_print_out_invoice\|check_print_out_refund\|check_print_debit_no
 
 ```bash
 docker exec -u root odoo-<cliente> odoo --stop-after-init --http-port=<puerto_libre> -d <cliente> \
-    -u l10n_ve_payment_extension,l10n_ve_pos,l10n_ve_iot_mf,l10n_ve_pos_mf,l10n_ve_mf_base
+    -u l10n_ve_pos,l10n_ve_iot_mf,l10n_ve_pos_mf,l10n_ve_mf_base
 ```
+
+`l10n_ve_payment_extension` **NO va en este scope por defecto** — no tiene relación con la migración fiscal (ver Hallazgo #2). Agrégalo al `-u` solo si ese cliente puntual tiene drift de esquema en ese módulo (chequeo de versión en Hallazgo #2).
 
 Si el cliente tiene módulo(s) custom de MF propio (ej. `solumedica_mf`), agregarlos al final del `-u`.
 
