@@ -616,7 +616,7 @@ msgstr "Si está habilitado, el campo de descuento se ocultará en la guía de d
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_weight_field_dispatch_guide
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
 msgid "If enabled, the weight field will be hidden in the dispatch guide."
-msgstr ""
+msgstr "Si está habilitado, el campo de peso se ocultará en la guía de despacho."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__pricelist_id
