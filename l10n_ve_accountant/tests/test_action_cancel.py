@@ -57,13 +57,21 @@ class TestAccountPaymentActionCancel(TransactionCase):
             "type": "bank",
             "code": "BNKT",
             "default_account_id": self.acc_bank.id,
+            "inbound_payment_method_line_ids": [(0, 0, {
+                "name": "Manual Out",
+                "payment_method_id": self.manual_out.id,
+                "payment_type": "inbound",
+                "payment_account_id": self.acc_bank.id,
+            })],
+            "outbound_payment_method_line_ids": [(0, 0, {
+                "name": "Manual Out",
+                "payment_method_id": self.manual_out.id,
+                "payment_type": "outbound",
+                "payment_account_id": self.acc_bank.id,
+            })],
         })
 
-        self.payment_method_line = self.env["account.payment.method.line"].create({
-            "name": "Manual Out",
-            "payment_method_id": self.manual_out.id,
-            "journal_id": self.bank_journal.id,
-        })
+        self.payment_method_line = self.bank_journal.inbound_payment_method_line_ids[:1]
 
     def _get_or_create(self, code, name, account_type, reconcile=False):
         account = self.env["account.account"].with_company(self.company).search([
