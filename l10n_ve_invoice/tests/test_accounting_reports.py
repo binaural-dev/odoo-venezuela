@@ -333,6 +333,7 @@ class TestAccountingReports(TransactionCase):
         refund = self._create_move(
             "out_refund", self.journal_sale, [self.tax_sale_16.id],
             reversed_entry_id=invoice.id,
+            correlative="00002",
         )
         refund.write({"state": "posted"})
         refund = self.env["account.move"].browse(refund.id)
