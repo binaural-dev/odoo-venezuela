@@ -404,7 +404,7 @@ msgstr "Documento predeterminado"
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_partner__default_document
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_users__default_document
 msgid "Default document for importing documents."
-msgstr ""
+msgstr "Documento predeterminado para importar documentos."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
