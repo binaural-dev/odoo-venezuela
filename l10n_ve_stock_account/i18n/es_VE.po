@@ -191,7 +191,7 @@ msgstr "Un almacén de consignación debe tener un cliente asignado."
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__code
 msgid "A unique code to identify the transfer reason."
-msgstr "Un código único para identificar la motivo de traslado."
+msgstr "Un código único para identificar el motivo de traslado."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
