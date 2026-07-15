@@ -1,3 +1,4 @@
+import logging
 from odoo import api, fields, models
 import pytz
 from urllib3.exceptions import InsecureRequestWarning
