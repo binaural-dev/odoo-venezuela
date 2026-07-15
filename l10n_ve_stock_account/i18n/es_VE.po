@@ -640,7 +640,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__active
 msgid "Indicates whether the transfer reason is active or archived."
-msgstr "Indica si el motivo de traslado está activa o archivada."
+msgstr "Indica si el motivo de traslado está activo o archivado."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__internal_consigned_journal_id
