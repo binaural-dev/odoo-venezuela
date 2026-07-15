@@ -1,14 +1,11 @@
-=============================
 Venezuela - IoT / Maquina Fiscal
-=============================
-
 .. |badge1| image:: https://img.shields.io/badge/licence-LGPL--3-blue.png
     :target: http://www.gnu.org/licenses/lgpl-3.0-standalone.html
     :alt: License: LGPL-3
 
 |badge1|
 
-Implementación de DLLs de The Factory HKA (VE) y desarrollos PnP para Internet of Things (IoT) y compatibilidad con Odoo.
+Módulo para la Integración de IoT con Maquinas Fiscales en Venezuela.
 
 **Tabla de Contenidos**
 
@@ -21,7 +18,7 @@ Créditos
 Autor/es
 ~~~~~~~~
 
-* Binauraldev
+* Binaural
 
 Mantenedor/es
 ~~~~~~~~~~~~~

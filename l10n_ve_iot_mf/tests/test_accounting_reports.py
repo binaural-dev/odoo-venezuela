@@ -32,8 +32,10 @@ class TestAccountingReports(TransactionCase):
                 }
             )
         except Exception:
-            # If the field doesn't exist, we might not need it, or we might fail later.
-            pass
+            _logger.warning(
+                "currency_foreign_id field not available or could not be set on company",
+                exc_info=True,
+            )
 
         # Create test moves
         self.partner = self.env["res.partner"].create({"name": "Test Partner"})
