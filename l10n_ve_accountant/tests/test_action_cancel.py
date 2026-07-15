@@ -143,6 +143,7 @@ class TestAccountPaymentActionCancel(TransactionCase):
             'partner_id': invoice.partner_id.id,
             'journal_id': self.bank_journal.id,
             'payment_method_id': self.manual_out.id,
+            'payment_method_line_id': self.payment_method_line.id,
             'company_id': self.company.id,
         })
         pay.action_post()
@@ -210,6 +211,7 @@ class TestAccountPaymentActionCancel(TransactionCase):
             'partner_id': invoice.partner_id.id,
             'journal_id': self.bank_journal.id,
             'payment_method_id': self.manual_out.id,
+            'payment_method_line_id': self.payment_method_line.id,
             'company_id': self.company.id,
         })
         # Payment is draft, move exists as draft but was NEVER posted
