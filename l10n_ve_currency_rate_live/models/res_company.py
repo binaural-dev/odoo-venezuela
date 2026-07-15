@@ -1,6 +1,3 @@
-import logging
-from datetime import datetime, timedelta
-
 from odoo import api, fields, models
 import pytz
 from urllib3.exceptions import InsecureRequestWarning
@@ -54,9 +51,6 @@ class ResCompany(models.Model):
         current_date = fields.Date.to_date(fields.Date.context_today(self))
         result = {"USD": (1.0, current_date)}
         fallback_rate = None
-
-        if self[:1].can_update_habil_days and current_date.isoweekday() > 5:
-            return result
 
         rate_value, published_date = self._get_bcv_rate(expected_date=current_date)
         if not rate_value or not published_date:
@@ -220,13 +214,22 @@ class ResCompany(models.Model):
                 )
                 if rate_value is None or not published_date:
                     return (None, None)
-                if expected_date and published_date != expected_date:
-                    _logger.warning(
-                        "DolarAPI returned stale rate date %s while expecting %s",
-                        published_date,
-                        expected_date,
-                    )
-                    return (None, None)
+                if expected_date:
+                    prefers_next_rate = bool(self[:1].can_update_habil_days)
+                    if prefers_next_rate and published_date < expected_date:
+                        _logger.warning(
+                            "DolarAPI returned stale rate date %s while expecting %s",
+                            published_date,
+                            expected_date,
+                        )
+                        return (None, None)
+                    if not prefers_next_rate and published_date > expected_date:
+                        _logger.warning(
+                            "DolarAPI returned future rate date %s while expecting %s",
+                            published_date,
+                            expected_date,
+                        )
+                        return (None, None)
                 return (float(rate_value), published_date)
             except Exception as exc:
                 _logger.warning(
