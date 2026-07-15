@@ -603,6 +603,8 @@ msgid ""
 "If enabled, dispatch guide amounts will use the date of the stock picking "
 "for currency conversion."
 msgstr ""
+"Si está habilitado, los montos de la guía de despacho usarán la fecha del traslado "
+"para la conversión de moneda."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_disc_field_dispatch_guide
