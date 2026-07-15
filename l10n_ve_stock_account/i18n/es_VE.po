@@ -404,7 +404,7 @@ msgstr "Documento predeterminado"
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_partner__default_document
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_users__default_document
 msgid "Default document for importing documents."
-msgstr ""
+msgstr "Documento predeterminado para importar documentos."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -603,23 +603,25 @@ msgid ""
 "If enabled, dispatch guide amounts will use the date of the stock picking "
 "for currency conversion."
 msgstr ""
+"Si está habilitado, los montos de la guía de despacho usarán la fecha del "
+"traslado para la conversión de moneda."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_disc_field_dispatch_guide
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_disc_field_dispatch_guide
 msgid "If enabled, the discount field will be hidden in the dispatch guide."
-msgstr ""
+msgstr "Si está habilitado, el campo de descuento se ocultará en la guía de despacho."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__hide_weight_field_dispatch_guide
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__hide_weight_field_dispatch_guide
 msgid "If enabled, the weight field will be hidden in the dispatch guide."
-msgstr ""
+msgstr "Si está habilitado, el campo de peso se ocultará en la guía de despacho."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__pricelist_id
 msgid "If you change the pricelist, only newly added lines will be affected."
-msgstr ""
+msgstr "Si cambia la tarifa, solo las líneas nuevas agregadas se verán afectadas."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__indexed_dispatch_guide
@@ -630,12 +632,12 @@ msgstr "Guía de despacho indexada"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_sale_order__is_consignation
 msgid "Indicates if this sale order is a consignation sale."
-msgstr ""
+msgstr "Indica si esta orden de venta es una venta de consignación."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_warehouse__is_consignation_warehouse
 msgid "Indicates if this warehouse is used for consignation purposes."
-msgstr ""
+msgstr "Indica si este almacén se utiliza para fines de consignación."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_transfer_reason__active
@@ -1107,7 +1109,7 @@ msgstr "Movimiento de stock"
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__has_document
 msgid "Technical field to check if the related sale order has a document."
-msgstr ""
+msgstr "Campo técnico para verificar si la orden de venta relacionada tiene un documento."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -1163,7 +1165,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_location__partner_id
 msgid "This location is assigned to a specific customer for consignation."
-msgstr ""
+msgstr "Esta ubicación está asignada a un cliente específico para consignación."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__to_invoice
@@ -1175,19 +1177,19 @@ msgstr "Por facturar"
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__customer_journal_id
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__customer_journal_id
 msgid "To add customer journal"
-msgstr ""
+msgstr "Para agregar diario de clientes"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__internal_consigned_journal_id
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__internal_consigned_journal_id
 msgid "To add internal journal"
-msgstr ""
+msgstr "Para agregar diario interno"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__vendor_journal_id
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__vendor_journal_id
 msgid "To add vendor journal"
-msgstr ""
+msgstr "Para agregar diario de proveedores"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__total
