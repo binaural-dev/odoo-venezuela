@@ -67,13 +67,14 @@ class TestAccountPaymentActionCancel(TransactionCase):
 
     def _get_or_create(self, code, name, account_type, reconcile=False):
         account = self.env["account.account"].with_company(self.company).search([
-            ("code", "=", code), ("company_id", "=", self.company.id),
+            ("code", "=", code), ("company_ids", "in", [self.company.id]),
         ], limit=1)
         if not account:
             account = self.env["account.account"].with_company(self.company).create({
                 "name": name, "code": code,
                 "account_type": account_type,
                 "reconcile": reconcile,
+                "company_ids": [(6, 0, [self.company.id])],
             })
         return account
 
