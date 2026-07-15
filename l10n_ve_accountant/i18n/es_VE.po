@@ -1766,3 +1766,9 @@ msgstr "Importe alterno"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__amount_residual_company
 msgid "residual amount"
 msgstr "Importe adeudado"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Changing between invoice and credit note is not allowed."
+msgstr "No está permitido cambiar entre factura y nota de crédito."

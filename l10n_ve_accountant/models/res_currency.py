@@ -23,7 +23,6 @@ class ResCurrency(models.Model):
             )
 
     def unlink(self):
-        if not self.env.user.has_group("l10n_ve_accountant.group_fiscal_config_support"):
-            raise UserError(_("It is not possible to delete currency records."))
+        raise UserError(_("It is not possible to delete currency records."))
         return super(ResCurrency, self).unlink()
     # Cierre de código homologado. En caso de requerir cambios o ajustes consultar con la Gerencia de Producto

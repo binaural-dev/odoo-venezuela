@@ -5,11 +5,16 @@
     <field name="inherit_id" ref="base.view_currency_form" />
     <field name="arch" type="xml">
       <!--  Homologación: No permitir eliminar el registro de una moneda, ni modificar, agregar o eliminar sus tasas de cambio, a menos que pertenezca al grupo  -->
-      <xpath expr="//field[1]" position="after">
+      <!-- <xpath expr="//form[1]/field[1]" position="after">
         <field name="edit_rate" invisible="1" />
-      </xpath>
+      </xpath> -->
       <xpath expr="//page[1]/field[1]" position="attributes">
         <attribute name="readonly">not edit_rate</attribute>
+      </xpath>
+      <xpath expr="//field[@name='rate_ids']/list" position="attributes">
+        <attribute name="create">env.user.hasGroup('l10n_ve_accountant.group_fiscal_config_support')</attribute>
+        <attribute name="delete">false</attribute>
+        <attribute name="edit">false</attribute>
       </xpath>
        <!-- Cierre de código homologado. En caso de requerir cambios o ajustes consultar con la Gerencia de Producto -->
     </field>
