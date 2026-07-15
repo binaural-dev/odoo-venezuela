@@ -1177,7 +1177,7 @@ msgstr "Por facturar"
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__customer_journal_id
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__customer_journal_id
 msgid "To add customer journal"
-msgstr ""
+msgstr "Para agregar el diario de clientes."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__internal_consigned_journal_id
