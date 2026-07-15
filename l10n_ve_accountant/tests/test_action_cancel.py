@@ -37,6 +37,27 @@ class TestAccountPaymentActionCancel(TransactionCase):
         self.acc_rec = self._get_or_create('120000', 'Receivable', 'asset_receivable', reconcile=True)
         self.acc_inc = self._get_or_create('400000', 'Income', 'income')
         self.acc_bank = self._get_or_create('100100', 'Bank', 'asset_cash', reconcile=True)
+        self.acc_tax = self._get_or_create('200000', 'Tax Payable', 'liability_current', reconcile=True)
+
+        self.tax_group = self.env['account.tax.group'].create({
+            'name': 'IVA', 'company_id': self.company.id,
+            'country_id': self.country_ve.id,
+        })
+        self.tax_16 = self.env["account.tax"].with_company(self.company).create({
+            "name": "IVA 16%", "amount": 16.0, "amount_type": "percent",
+            "type_tax_use": "sale", "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+            "invoice_repartition_line_ids": [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0,
+                        'account_id': self.acc_tax.id}),
+            ],
+            "refund_repartition_line_ids": [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0,
+                        'account_id': self.acc_tax.id}),
+            ],
+        })
 
         self.partner = self.env["res.partner"].with_company(self.company).create({
             "name": "Test Partner",
@@ -48,6 +69,8 @@ class TestAccountPaymentActionCancel(TransactionCase):
             "type": "consu",
             "list_price": 100.0,
             "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)],
+            "supplier_taxes_id": [(5, 0, 0)],
         })
 
         self.manual_out = self.env.ref("account.account_payment_method_manual_out")
@@ -94,8 +117,11 @@ class TestAccountPaymentActionCancel(TransactionCase):
                 "product_id": self.product.id,
                 "quantity": qty,
                 "price_unit": price,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
             }))
-        invoice = self.env["account.move"].with_company(self.company).create({
+        invoice = self.env["account.move"].with_company(self.company).with_context(
+            check_move_validity=False,
+        ).create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
             "currency_id": currency.id,
