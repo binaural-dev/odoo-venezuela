@@ -1165,7 +1165,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_location__partner_id
 msgid "This location is assigned to a specific customer for consignation."
-msgstr ""
+msgstr "Esta ubicación está asignada a un cliente específico para consignación."
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__to_invoice
