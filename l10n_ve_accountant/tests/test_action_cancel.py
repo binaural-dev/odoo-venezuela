@@ -158,7 +158,7 @@ class TestAccountPaymentActionCancel(TransactionCase):
         invoice = self._create_invoice(self.currency_vef, [(1, 1000.0)])
         pay = self._create_payment(invoice, self.currency_vef, 1000.0)
 
-        self.assertEqual(pay.state, 'posted')
+        self.assertEqual(pay.state, 'paid')
         self.assertEqual(pay.move_id.state, 'posted')
 
         pay.action_cancel()
@@ -174,7 +174,7 @@ class TestAccountPaymentActionCancel(TransactionCase):
         invoice = self._create_invoice(self.currency_vef, [(1, 1000.0)])
         pay = self._create_payment(invoice, self.currency_vef, 1000.0)
 
-        self.assertEqual(pay.state, 'posted')
+        self.assertEqual(pay.state, 'paid')
         move = pay.move_id
         self.assertTrue(move.posted_before,
                         "Move must have posted_before=True after posting")
@@ -213,19 +213,14 @@ class TestAccountPaymentActionCancel(TransactionCase):
             'payment_method_id': self.manual_in.id,
             'company_id': self.company.id,
         })
-        # Payment is draft, move exists as draft but was NEVER posted
+        # Payment is draft, no move yet in Odoo 19
         self.assertEqual(pay.state, 'draft')
-        self.assertTrue(pay.move_id, "Draft payment must have a move")
-        self.assertFalse(pay.move_id.posted_before,
-                         "Move never posted must have posted_before=False")
-        move_id = pay.move_id.id
+        self.assertFalse(pay.move_id,
+                         "Draft payment must NOT have a move in Odoo 19")
 
         pay.action_cancel()
 
         self.assertEqual(pay.state, 'canceled')
-        move_exists = self.env["account.move"].search([("id", "=", move_id)], limit=1)
-        self.assertFalse(move_exists,
-                         "Move never posted must be unlinked by native Odoo")
 
     def test_04_cancel_payment_consistency_posted_before(self):
         """After post → draft → cancel, both states must be consistent."""
@@ -233,7 +228,7 @@ class TestAccountPaymentActionCancel(TransactionCase):
         pay = self._create_payment(invoice, self.currency_vef, 500.0)
 
         # posted state
-        self.assertEqual(pay.state, 'posted')
+        self.assertEqual(pay.state, 'paid')
         self.assertEqual(pay.move_id.state, 'posted')
         self.assertTrue(pay.move_id.posted_before)
 
