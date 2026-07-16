@@ -4,6 +4,7 @@ import logging
 from odoo.tools.float_utils import float_round 
 from odoo.tools import float_is_zero , float_compare
 from odoo.tools.misc import clean_context
+import markupsafe
 
 _logger = logging.getLogger(__name__)
 
@@ -11,11 +12,21 @@ _logger = logging.getLogger(__name__)
 class AccountPaymentRegisterIgtf(models.TransientModel):
     _inherit = "account.payment.register"
 
+    amount = fields.Monetary(currency_field='currency_id', store=True, readonly=False,
+        compute='_compute_amount')
+    
     is_igtf = fields.Boolean(string="IGTF", 
-                             help="IGTF")
+                             help="IGTF",
+                             compute="_compute_check_igtf", store=True)
                              
     amount_with_igtf = fields.Float(
-        string="Amount with IGTF", 
+        string="Amount with IGTF",
+        
+    )
+
+    amount_without_difference = fields.Monetary(
+        string="Amount without Difference",
+        compute="_compute_amount", readonly=False 
     )
 
     def _default_igtf_percent_from_company(self):
@@ -30,8 +41,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     igtf_amount = fields.Float(
         string="IGTF Amount", 
-        help="IGTF Amount"
+        help="IGTF Amount",
+        compute="_compute_amount", readonly=False
+        
     )
+    igtf_to_show = fields.Monetary(string="Amount with IGTF",compute="_compute_amount", readonly=False)
 
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
@@ -40,15 +54,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
-    amount_without_difference = fields.Monetary(
-        string="Amount without Difference",
-    )
+    
 
     payment_difference = fields.Monetary(
         compute='_compute_payment_difference',readonly=False)
 
 
-    igtf_to_show = fields.Monetary(string="Amount with IGTF")
+    
 
     available_journal_ids = fields.Many2many(
         comodel_name='account.journal',
@@ -59,119 +71,83 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     last_computed_amount = fields.Float("Last Computed Amount", digits=(16, 2))
 
-    @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id', 'company_id', 'currency_id', 'payment_date')
-    def _compute_amount(self):
-        
-        for wizard in self:
-            batch_result = wizard.batches
-            base_amount = 0.0
-            if not wizard.journal_id or not wizard.currency_id or not wizard.payment_date :
-                base_amount = wizard._get_total_amounts_to_pay(wizard.batches)['amount_by_default'] or 0.0
-            elif wizard.source_currency_id and wizard.can_edit_wizard:
-                
-                if isinstance(batch_result, dict) and 'lines' in batch_result:
-                    amounts = wizard._get_total_amounts_to_pay(batch_result)
-                    base_amount = amounts[0] if amounts else 0.0
-                else:
-                    base_amount = wizard._get_total_amounts_to_pay(wizard.batches)['amount_by_default']
-            else:
-                base_amount = 0.0 
-
-            final_amount = base_amount
-            total_igtf_amount = 0.0
-            if wizard.is_igtf:
-
-                move_ids = wizard.get_moves()
-
-                for invoice in move_ids:
-                    igtf_for_invoice = wizard.calculate_igtf_for_payment(
-                        invoice, 
-                        base_amount, 
-                        self.currency_id
-                    )
-                    total_igtf_amount += abs(igtf_for_invoice)
-                final_amount = base_amount + total_igtf_amount
-            
-            wizard.amount = final_amount
-            wizard.igtf_amount = total_igtf_amount
-            wizard.igtf_to_show = total_igtf_amount
-            wizard.last_computed_amount = final_amount   
-
     def get_moves(self):
         return self.env["l10n_ve_igtf.utils"].get_moves_from_context()
     
+    @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id',
+                 'company_id', 'currency_id', 'payment_date', 'installments_mode', 'is_igtf',
+                 'custom_user_amount')
+    def _compute_amount(self):
+        igtf_wizards = self.filtered(lambda w: w.is_igtf)
+        other_wizards = self - igtf_wizards
 
-    @api.onchange('payment_difference')
-    def _onchange_diference(self):
-        for wizard in self:
-           
-            if wizard.can_edit_wizard and wizard.payment_date and wizard.is_igtf:
-                currency = wizard.currency_id 
-                precision = currency.rounding
-                batch_result = wizard.batches
-        
-                expected_amount = 0.0
-                if isinstance(batch_result, dict) and 'lines' in batch_result:
-                    amounts = wizard._get_total_amounts_to_pay(batch_result)
-                    total_residual = amounts[0] if amounts else 0.0
-                    expected_amount = abs(total_residual)
+        if other_wizards:
+            return super(AccountPaymentRegisterIgtf, other_wizards)._compute_amount()
 
-                else:
-                    total_residual =  wizard._get_total_amounts_to_pay(batch_result)['amount_by_default']
+        for wizard in igtf_wizards:
+            if not wizard.journal_id or not wizard.currency_id or not wizard.payment_date or not wizard.is_igtf:
+                wizard.amount = wizard.amount or 0.0
+                wizard.igtf_to_show = 0.0
+                wizard.igtf_amount = 0.0
+                wizard.amount_without_difference = 0.0
 
-                    expected_amount = abs(total_residual)
+            elif wizard.custom_user_amount:
+                move_ids = self.get_moves()
+                igtf = 0.0
+                for rec in move_ids:
+                    igtf += self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
+                        rec, wizard.amount, wizard.currency_id, wizard.payment_date,
+                    )
+                wizard.igtf_to_show = abs(igtf)
+                wizard.igtf_amount = abs(igtf)
+                wizard.amount_without_difference = wizard.amount - abs(igtf)
 
-                
-                if wizard.is_igtf and float_compare(wizard.igtf_to_show, 0.0, precision_rounding=precision) > 0.0:
-                    
-                    expected_amount += wizard.igtf_to_show
-                raw_difference = expected_amount - abs(wizard.amount)
-                
-               
-                rounded_difference = raw_difference
-                
-                
-                if abs(rounded_difference) < wizard.currency_id.rounding:
-                    wizard.payment_difference = 0.0
-                    wizard.show_payment_difference = False
-                else:
-                    
-                    wizard.payment_difference = rounded_difference
-                    wizard.show_payment_difference = True
-
-
-    @api.onchange("igtf_to_show","is_igtf")
-    def _compute_amount_without_difference(self):
-        for rec in self:
-            
-            amount_without_difference = 0.0
-            move_ids=self.get_moves()
-            if len(move_ids) == 1:
-                for move_id in move_ids:
-                    source_amount = self.source_amount
-                    due_currency_id = self.source_currency_id
-                    residual = due_currency_id._convert(source_amount,self.currency_id,company=move_id.company_id,date=self.payment_date) 
-                    
-                    if rec.amount <= residual + residual * (rec.igtf_percentage / 100):
-                        amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
-                    
-                    elif rec.amount > residual + residual * (rec.igtf_percentage / 100) :
-                        amount_without_difference = amount_without_difference + residual  
             else:
-                source_amount = self.source_amount
-                due_currency_id = self.source_currency_id
-                residual = due_currency_id._convert(source_amount,self.currency_id,company=self.company_id,date=self.payment_date) 
-                
-                if rec.amount <= residual + residual * (rec.igtf_percentage / 100):
-                    amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
-                
-                elif rec.amount > residual + residual * (rec.igtf_percentage / 100) :
-                    amount_without_difference = amount_without_difference + residual  
+                total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+                move_ids = self.get_moves()
+                igtf = 0.0
+                for rec in move_ids:
+                    igtf += self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
+                        rec, total_amount_values['amount_by_default'], wizard.currency_id, wizard.payment_date,
+                    )
+                wizard.amount_without_difference = total_amount_values['amount_by_default']
+                wizard.igtf_to_show = abs(igtf)
+                wizard.igtf_amount = abs(igtf)
+                wizard.amount = total_amount_values['amount_by_default'] + abs(igtf)
 
-            rec.amount_without_difference = amount_without_difference
+            wizard.last_computed_amount = wizard.amount
 
+    
+    @api.depends('can_edit_wizard', 'amount', 'installments_mode', 'is_igtf')
+    def _compute_payment_difference(self):
+        igtf_wizards = self.filtered(lambda w: w.is_igtf)
+        other_wizards = self - igtf_wizards
+
+        if other_wizards:
+            super(AccountPaymentRegisterIgtf, other_wizards)._compute_payment_difference()
+
+        for wizard in igtf_wizards:
+            if wizard.payment_date:
+                total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+                igtf = 0.0
+                move_ids = self.get_moves()
+                for rec in move_ids:
+                    igtf += self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
+                        rec, wizard.amount, wizard.currency_id, wizard.payment_date,
+                    )
+                efective_amount = abs(wizard.amount) - abs(igtf)
+                if wizard.installments_mode in ('overdue', 'next', 'before_date'):
+                    wizard.payment_difference = total_amount_values['amount_for_difference'] - efective_amount
+                elif wizard.installments_mode == 'full':
+                    wizard.payment_difference = total_amount_values['full_amount_for_difference'] - efective_amount
+                else:
+                    wizard.payment_difference = total_amount_values['amount_for_difference'] - efective_amount
+            else:
+                wizard.payment_difference = 0.0
+    
+   
                              
-    @api.onchange("journal_id","currency_id")
+    @api.depends("journal_id","currency_id")
     def _compute_check_igtf(self):
         """ Check if the company is a ordinary contributor.
 
@@ -180,6 +156,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         """
         for payment in self:
             payment.is_igtf = False
+            payment.is_igtf_on_foreign_exchange = False
             if payment.journal_id.is_igtf:
 
                 move_ids = self.get_moves()
@@ -189,45 +166,38 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         continue
                     if (
                         payment.partner_id._check_igtf_apply_improved(move_id.move_type)
-                        and payment.currency_id != self.env.ref("base.VEF")
+                        and payment.currency_id != self.env.ref("base.VEF") and not move_id.debit_origin_id
                     ):
                         payment.is_igtf = True
+                        payment.is_igtf_on_foreign_exchange = True
             
-    @api.onchange("is_igtf", "igtf_to_show")
-    def _compute_amount_with_igtf(self):
-        """Compute the amount with igtf of the payment"""
-        for payment in self:
-            if payment.is_igtf:
-                payment.amount_with_igtf = payment.amount + payment.igtf_to_show
 
-    @api.onchange("amount","payment_date")
+    @api.onchange("amount", "payment_date")
     def _onchange_amount(self):
-        for payment in self:
-            
-            
+        igtf_wizards = self.filtered(lambda w: w.is_igtf)
+        other_wizards = self - igtf_wizards
+
+        if other_wizards:
+            super(AccountPaymentRegisterIgtf, other_wizards)._onchange_amount()
+
+        for payment in igtf_wizards:
             diff = payment.amount - payment.last_computed_amount
             if float_is_zero(diff, precision_rounding=payment.currency_id.rounding):
-                return
-            move_ids=self.get_moves()
+                continue
 
-            amount = False
+            move_ids = self.get_moves()
+            igtf = 0.0
             for rec in move_ids:
-                if payment.is_igtf:
-                    invoice = rec
-                   
-                    amount = amount + self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
-                        invoice, payment.amount, payment.currency_id, payment.payment_date,
-                    )
-            if payment.is_igtf:
-                payment.igtf_to_show = abs(amount)
-                payment.igtf_amount = abs(amount)
-                
-            else:
-                payment.igtf_to_show = 0.0
-                payment.igtf_amount = 0.0
+                igtf += self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
+                    rec, payment.amount, payment.currency_id, payment.payment_date,
+                )
 
-            
+            payment.igtf_to_show = abs(igtf)
+            payment.igtf_amount = abs(igtf)
+            payment.amount_without_difference = payment.amount - abs(igtf)
             payment.last_computed_amount = payment.amount
+            payment.custom_user_amount = payment.amount
+            payment.custom_user_currency_id = payment.currency_id
 
     def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, base=False):
         return self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
@@ -246,13 +216,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             from_currency, amount, date, self.company_id,
         )
         
-    @api.onchange('journal_id')
-    def _compute_is_igtf_journal(self):
-        for record in self:
-            if record.journal_id.currency_id and record.journal_id.currency_id != self.env.ref("base.VEF"):
-                record.is_igtf_on_foreign_exchange = True
-            else:
-                record.is_igtf_on_foreign_exchange = False
+  
     
     @api.depends('available_journal_ids')
     def _compute_journal_id(self):
@@ -325,7 +289,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         final_amount_with_igtf = 0.0
         total_igtf_amount = 0.0
         if create and create.is_igtf:
-            
+            raise UserError(create.is_igtf)
             if currency != self.env.ref("base.VEF").id:
                
                 igtf_for_invoice = self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
@@ -471,51 +435,50 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         payments = super(AccountPaymentRegisterIgtf, self.with_context(skip_account_move_reversal=True))._create_payments()
         
-        ignore_gtf = self.env.context.get("ignore_igtf", False)
-
-        
         is_provider =  self.partner_type == 'supplier'
 
-        due_currency_id = self.source_currency_id
-        
-        due_amount = due_currency_id._convert(self.source_amount_currency,self.currency_id,company=self.company_id,date=self.payment_date)
-       
+        move_id = (
+            self.env.context.get("active_id", False)
+        )
+
+        invoice = self.env['account.move'].browse(move_id)
+
         for payment in payments:
-            
-            if payment.igtf_amount:
+            company_currency = payment.company_id.currency_id
+            payment_currency = payment.currency_id
+            reconcilable_lines = payment.move_id.line_ids.filtered(
+                lambda l: l.account_type in ('asset_receivable', 'liability_payable')
+            )
+            payment_total_base = payment.move_id.amount_total_signed
+            payment_residual_base = reconcilable_lines.amount_residual
 
-                amount = payment.amount
-            
-                if not ignore_gtf:
-                    
-                    due_amount += payment.igtf_amount 
 
 
-                self.group_payment = False
+            if payment.igtf_amount > 0 and invoice:
                 
-                if (
-                    float_compare(amount, due_amount, precision_rounding=self.currency_id.rounding) == 1
-                    and payment.igtf_amount 
-                    and self.payment_difference_handling != 'reconcile' 
-                    and not self.group_payment
-                ):
-                    difference = amount - due_amount
+                igtf_base = payment.currency_id._convert(
+                    payment.igtf_amount, company_currency, payment.company_id, payment.date,
+                )
+
+                if  abs(payment_residual_base) > 0: #hay residual en el pago
+                    supposted_fact_amount = payment_currency.round((abs(payment_total_base) - abs(igtf_base))) #supuesta base de la factura sin igtf
+                    #detectamos si lo q queda es el equivalente al igtf o es un apgo mayor
                     
-                    move_to_reconcile_with_payment_difference = (
-                        self._create_move_to_reconcile_with_payment_difference(payment,difference,due_currency_id)
-                    )
-                    if move_to_reconcile_with_payment_difference:
-                        move_to_reconcile_with_payment_difference.action_post()
-                    
-                        if is_provider:
-                            self._reconcile_payment_provider_and_move_lines(
-                                payment, move_to_reconcile_with_payment_difference
-                            )
-                        else:
-                            self._reconcile_payment_and_move_lines(
-                                payment, move_to_reconcile_with_payment_difference
-                            )
-                        payment.write({"advanced_move_ids": [(4, move_to_reconcile_with_payment_difference.id)]})
+                    if abs(supposted_fact_amount) - abs(invoice.amount_total_signed) <= 0.1: #comparacion si existe una diferencia de decimales por conversion
+                        igtf_base = abs(payment_residual_base)
+                                                
+                debit_note= invoice.create_igtf_debit_note(igtf_base, invoice, payment.move_id)
+                debit_note.with_context(move_action_post_alert=True).action_post()
+
+                debit_note_reconcilable_lines = debit_note.line_ids.filtered(
+                    lambda l: l.account_type in ('asset_receivable', 'liability_payable') and not l.reconciled
+                )
+
+                if debit_note_reconcilable_lines and reconcilable_lines:
+
+                    debit_note.js_assign_outstanding_line(reconcilable_lines.id)
+
+                   
         return payments
 
     def _create_move_to_reconcile_with_payment_difference(self, payment, diff,due_currency_id):
@@ -589,7 +552,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
           
             return move_to_reconcile_with_payment_difference
         
-
     def _reconcile_payment_and_move_lines(self, payment, move):
         """
         Reconcile payment and move lines
@@ -609,7 +571,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             payment_line_to_reconcile |= asset_receivable_lines
             payment_line_to_reconcile.reconcile()
 
-    
     def _reconcile_payment_provider_and_move_lines(self, payment, move):
         """
         Reconcile payment and move lines from provider.

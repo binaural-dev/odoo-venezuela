@@ -41,6 +41,30 @@ class AccountMove(models.Model):
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
     origin_payment_advanced_payment_id = fields.Many2one("account.payment",copy=False)
+
+    origin_payment_to_pay_igtf = fields.Many2one('account.move', string="Origin Payment to Pay IGTF",copy=False)
+
+    has_pending_igtf_debit_note = fields.Boolean(
+        compute='_compute_has_pending_igtf_debit_note',
+        store=False # No se guarda en BD para que se calcule en tiempo real al abrir el form
+    )
+
+    @api.depends('debit_note_ids', 'debit_note_ids.state', 'debit_note_ids.payment_state', 'amount_residual')
+    def _compute_has_pending_igtf_debit_note(self):
+        for move in self:
+            move.has_pending_igtf_debit_note = False
+            
+            # Verificamos si la factura tiene notas de débito en su relación 'debit_note_ids'
+            if move.debit_note_ids:
+                # Filtramos las notas de débito asociadas que estén publicadas y no pagadas
+                pending_igtf_notes = move.debit_note_ids.filtered(
+                    lambda dn: dn.state == 'posted' and 
+                               dn.payment_state not in ('paid', 'reversed') and
+                               any(line.product_id.name == 'Igtf Percibido' for line in dn.invoice_line_ids)
+                )
+                
+                if pending_igtf_notes:
+                    move.has_pending_igtf_debit_note = True
  
 
     @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
@@ -142,46 +166,52 @@ class AccountMove(models.Model):
 
             for line in self.env['account.move.line'].search(domain):
                 if line.account_id.is_advance_account or line.payment_id_advance:
+                    date_to_convert = max(move.invoice_date, line.date)
+                    amount = False
                     if line.currency_id == move.currency_id:
                         amount = abs(line.amount_residual_currency)
+                        date_to_convert = line.date
                     else:
-                        
+                    
                         if line.currency_id.id == line.move_id.company_currency_id.id: ## VEF payment
- 
-                            if line.date < move.invoice_date:
-                                if line.payment_id.keep_alter_value_vef:
-                                    
-                                    amount = line.currency_id._convert(
-                                        abs(line.amount_residual_currency),
-                                        move.currency_id,
-                                        move.company_id,
-                                        line.date,
-                                    )
+
+                            if line.payment_id.keep_alter_value_vef: #Keep values in alternate currency for VEF payments
+                                
+                                amount = line.currency_id._convert(
+                                    abs(line.amount_residual),
+                                    move.currency_id,
+                                    move.company_id,
+                                    line.date,
+                                )
+                                date_to_convert = line.date
+
+
+                            else:
+
+                                if line.currency_id == move.currency_id:
+                                    amount = abs(line.amount_residual)
+                                    date_to_convert = line.date
 
                                 else:
-                                    amount = line.currency_id._convert(
+
+                                    amount = line.currency_id._convert( #Not Keep values in alternate currency for VEF payments
                                         abs(line.amount_residual_currency),
                                         move.currency_id,
                                         move.company_id,
-                                        move.invoice_date,
+                                        date_to_convert
                                     )
-                                    
-                            else:
-                                amount = line.currency_id._convert(
-                                        abs(line.amount_residual_currency),
-                                        move.currency_id,
-                                        move.company_id,
-                                        line.date,
-                                    )
-                                
 
                         else:
-                            amount = move.company_currency_id._convert(
-                                abs(line.amount_residual),
+
+                            amount = line.currency_id._convert( #Not Keep values in alternate currency for VEF payments
+                                abs(line.amount_residual_currency),
                                 move.currency_id,
                                 move.company_id,
-                                line.date,
+                                date_to_convert
                             )
+                                
+                        
+                                
 
                     if move.currency_id.is_zero(amount):
                         continue
@@ -197,7 +227,8 @@ class AccountMove(models.Model):
                         "digits": [69, move.currency_id.decimal_places],
                         "payment_date": fields.Date.to_string(line.date),
                         "currency_id": move.currency_id.id,
-                        "amount_residual_currency":abs(line.amount_residual_currency)
+                        "amount_residual_currency":abs(line.amount_residual_currency),
+                        "date_to_convert": date_to_convert
                         
                     })
             
@@ -242,49 +273,51 @@ class AccountMove(models.Model):
             for line in self.env['account.move.line'].search(domain):
                 
                 if not line.account_id.is_advance_account and not line.move_id.is_advance_move:
+                    date_to_convert = max(move.invoice_date, line.date)
                     amount = False
                     if line.currency_id == move.currency_id:
                         amount = abs(line.amount_residual_currency)
+                        date_to_convert = line.date
                     else:
-                        
-                        if line.currency_id.id == line.move_id.company_currency_id.id: ## VEF payment
-                            
-                            if line.date < move.invoice_date:
-                                if line.payment_id.keep_alter_value_vef:
-                                    
-                                    amount = line.currency_id._convert(
-                                        abs(line.amount_residual_currency),
-                                        move.currency_id,
-                                        move.company_id,
-                                        line.date,
-                                    )
+                    
+                        if line.currency_id.id == move.company_currency_id.id: ## VEF payment
+
+                            if line.payment_id.keep_alter_value_vef: #Keep values in alternate currency for VEF payments
+                                
+                                amount = line.currency_id._convert(
+                                    abs(line.amount_residual),
+                                    move.currency_id,
+                                    move.company_id,
+                                    line.date,
+                                )
+                                date_to_convert = line.date
+
+
+                            else:
+                                if line.currency_id == move.currency_id:
+                                    amount = abs(line.amount_residual)
+                                    date_to_convert = line.date
 
                                 else:
-                                    amount = line.currency_id._convert(
-                                        abs(line.amount_residual_currency),
-                                        move.currency_id,
-                                        move.company_id,
-                                        move.invoice_date,
-                                    )
-                                    
-                            else:
-                                amount = line.currency_id._convert(
-                                        abs(line.amount_residual_currency),
-                                        move.currency_id,
-                                        move.company_id,
-                                        line.date,
-                                    )
-                                
 
+                                    amount = line.currency_id._convert( #Not Keep values in alternate currency for VEF payments
+                                        abs(line.amount_residual_currency),
+                                        move.currency_id,
+                                        move.company_id,
+                                        date_to_convert
+                                    )
+                        
                         else:
-                            amount = move.company_currency_id._convert(
-                                abs(line.amount_residual),
+
+                            amount = line.currency_id._convert( #Not Keep values in alternate currency for VEF payments
+                                abs(line.amount_residual_currency),
                                 move.currency_id,
                                 move.company_id,
-                                line.date,
+                                date_to_convert
                             )
-                            
-                                                      
+                                
+                      
+                                                   
                     if move.currency_id.is_zero(amount):
                         continue
                             
@@ -300,7 +333,8 @@ class AccountMove(models.Model):
                         "digits": [69, move.currency_id.decimal_places],
                         "payment_date": fields.Date.to_string(line.date),
                         "currency_id": move.currency_id.id,
-                        "amount_residual_currency":abs(line.amount_residual_currency)
+                        "amount_residual_currency":abs(line.amount_residual_currency),
+                        "date_to_convert": date_to_convert
                     })
 
 
@@ -312,19 +346,18 @@ class AccountMove(models.Model):
     def _create_advance_payment_move(self, amount_residual, lines):
         self.ensure_one()
         advance_amount = 0.0
-        advance_widget_value = getattr(self, 'invoice_outstanding_credits_debits_widget_advance_payment', False)
-        advance_widget = advance_widget_value if isinstance(advance_widget_value, dict) else {} 
-        widget_content = advance_widget.get('content') or []   
-        
-        advance_amount = next(
-            (content.get('amount') for content in widget_content if content.get('move_id') == lines.move_id.id),
-            0.0
-        ) 
+        widget = getattr(self, 'invoice_outstanding_credits_debits_widget_advance_payment', {}) or {}
+        widget_content = widget.get('content', []) if isinstance(widget, dict) else []
 
-        amount_residual_currency = next(
-            (content.get('amount_residual_currency') for content in widget_content if content.get('move_id') == lines.move_id.id),
-            0.0
-        ) 
+        target_move_id = lines.move_id.id
+        matched_content = next(
+            (c for c in widget_content if c.get('move_id') == target_move_id), 
+            None
+        )
+        
+        advance_amount = matched_content.get('amount', 0.0) if matched_content else 0.0
+        advance_amount_residual = matched_content.get('amount_residual_currency', 0.0) if matched_content else 0.0
+        conversion_date = matched_content.get('date_to_convert') if matched_content else False
 
         if not advance_amount or advance_amount == 0.0:
             raise UserError(_('The advance amount to apply was not found.'))            
@@ -333,6 +366,7 @@ class AccountMove(models.Model):
         
         if not payment:
             raise UserError(_('No associated Payment record found.'))
+        
         is_customer = self.move_type in ["out_invoice", "in_refund"]
         
         receivable_payable_line = self.line_ids.filtered(
@@ -342,7 +376,6 @@ class AccountMove(models.Model):
             raise UserError(_('No accounts receivable/payable line found on the invoice.'))            
         account_rp = receivable_payable_line.account_id.id
         
-      
         igtf_amount = 0.0
         is_igtf_journal = (
             payment.journal_id.is_igtf
@@ -352,123 +385,11 @@ class AccountMove(models.Model):
             )
             else False
         )
-        base_amount_applied = 0.0
-
-        base_amount_residual = self.amount_residual 
-
-        conversion_date = False
-        if payment.date <= self.invoice_date:
-            conversion_date = self.invoice_date
-        else:
-            conversion_date = payment.date
-
-        amount_residual = self.currency_id._convert(
-            base_amount_residual, 
-            payment.currency_id, 
-            self.company_id, 
-            conversion_date,
-            round = False
-        )
-
-        if payment.currency_id != self.currency_id :
-            if payment.currency_id == self.company_id.currency_id and payment.keep_alter_value_vef:
-
-                conversion_date = payment.date
-                advance_amount = self.currency_id._convert(
-                    advance_amount, 
-                    payment.currency_id, 
-                    self.company_id, 
-                    conversion_date,
-                    round = True
-                )
-            
-            else:
-
-                advance_amount = amount_residual_currency
-
-        if is_igtf_journal:
-            igtf_amount = abs(payment.calculate_igtf_for_payment(self, advance_amount,  payment.currency_id ,conversion_date))
-           
+   
             
         base_amount_applied = min(amount_residual, advance_amount)
 
-        amount_line1 = base_amount_applied
-
-        amount_line2 = amount_line1 + igtf_amount 
-
-        line_2 = 'credit' if is_customer else 'debit'
-        igtf_line = line_2
-        
-        if is_customer:
-            if  advance_amount > amount_residual + igtf_amount and is_igtf_journal:
-
-                base_amount_applied = amount_residual + igtf_amount
-                amount_line1 = base_amount_applied#ant/banck
-                amount_line2 = amount_residual  # cxc
-               
-            elif advance_amount < amount_residual + igtf_amount and is_igtf_journal:
-
-                amount_line1 = (advance_amount) #bank/ant
-                amount_line2 = (advance_amount - igtf_amount)  # cxc
-
-
-            elif  advance_amount == amount_residual + igtf_amount and is_igtf_journal:
-                
-                amount_line1 = advance_amount #bank/ant
-                amount_line2 = amount_residual # cxc
-
-             
-            else:
-                line_2 = 'credit'
-        else:
-
-            if  advance_amount > amount_residual + igtf_amount and is_igtf_journal:
-                base_amount_applied = amount_residual + igtf_amount
-                amount_line1 = base_amount_applied
-                amount_line2 = amount_residual  # cxc
-
-            elif advance_amount < amount_residual + igtf_amount and is_igtf_journal:
-
-                amount_line1 = (advance_amount) #bank/ant
-                amount_line2 = (advance_amount - igtf_amount)  # cxc
-
-            elif  advance_amount == amount_residual + igtf_amount and is_igtf_journal:
-                
-                amount_line1 = advance_amount #bank/ant
-                amount_line2 = amount_residual  # cxc
-        
-            else:
-                line_2 = 'debit'
-
-        def _to_vef(amount):
-            
-            return payment.currency_id._convert(
-                amount, self.company_currency_id, self.company_id, conversion_date,round=False
-            )
-        
-        vef_line1 = payment.currency_id.round(_to_vef(amount_line1))
-        vef_igtf = payment.currency_id.round(_to_vef(igtf_amount))
-
-        vef_line2 = abs(vef_line1) - abs(vef_igtf)
-
-        if abs(vef_line1) > abs(self.amount_residual_signed) and self.invoice_date == payment.date and igtf_amount == 0.0:
-            vef_line2 = abs(self.amount_residual_signed)
-
-        vef_igtf = float(float_repr(vef_igtf, precision_digits= payment.currency_id.decimal_places))
-
-        amount_currency_igtf = abs(amount_line1) - abs(amount_line2)
-        if is_customer:
-            amount_line2 = -amount_line2 if line_2 == 'credit' else amount_line2
-            amount_line1 = amount_line1 
-            amount_currency_igtf = -amount_currency_igtf if igtf_line == 'credit' else amount_currency_igtf
-        else:
-            
-            amount_line2 = amount_line2 if line_2 == 'debit' else -amount_line2
-            amount_line1 = -amount_line1
-            amount_currency_igtf = -amount_currency_igtf if igtf_line == 'credit' else amount_currency_igtf
-        
-
-        # --- Configuración de Cuentas ---
+         # --- Configuración de Cuentas ---
         advance_line = lines.filtered_domain([
             '|',
                 '&', ('account_id.account_type', '=', 'liability_current'), ('account_id.is_advance_account', '=', True),
@@ -484,6 +405,8 @@ class AccountMove(models.Model):
             else:
                 advance_line = self.partner_id.default_advance_supplier_account_id
         
+        advance_val = False
+        counter_part_val = False
         if is_customer:
             name_rp, name_adv = "CUENTA POR COBRAR CLIENTE", "ANTICIPO/CLIENTE"
             account_adv = advance_line.id
@@ -497,50 +420,36 @@ class AccountMove(models.Model):
             "partner_id": self.partner_id.id,
             "payment_id_advance": payment.id,
             "reconciled": False,
-            "date": conversion_date if not payment.keep_alter_value_vef else payment.date,
+            "date": conversion_date,
         }
 
-        # --- Construcción de las Líneas ---
-        line_vals = []
-
-        # 1. Línea CxC / CxP
-        line_vals.append(Command.create({
-            "name": name_rp,
-            "account_id": account_rp,
-            "amount_currency": amount_line2,
-            "currency_id": payment.currency_id.id,
-            **common_vals
-        }))
-
-        # 2. Advance Line
-        line_vals.append(Command.create({
+        advance_val = {
             "name": name_adv,
             "account_id": account_adv,
-            "amount_currency": amount_line1,
-            "currency_id": payment.currency_id.id,
-            **common_vals
-        }))
+            }
+        
+        counter_part_val = {
+            "name": name_rp,
+            "account_id": account_rp,
+        }   
+        if is_igtf_journal:
+            igtf_amount = abs(payment.calculate_igtf_for_payment(self, base_amount_applied,  payment.currency_id ,conversion_date))
 
-        # 3. IGTF Line (Only if there is a VEF value to avoid zero lines)
-        if not self.company_currency_id.is_zero(vef_igtf) and is_igtf_journal:
-            line_vals.append(Command.create({
-                "name": "IGTF",
-                "account_id": igtf_account,
-                "amount_currency": amount_currency_igtf,
-                "currency_id": payment.currency_id.id,
-                igtf_line:vef_igtf,
-                **common_vals
-            }))
+        if is_igtf_journal:
+            if (base_amount_applied + igtf_amount) < advance_amount: ## include igtf in base
+                base_amount_applied = base_amount_applied + igtf_amount
+                
 
-        # Always set debit/credit explicitly to prevent Odoo from inferring
-        # balance from amount_currency / rate, which can cause imbalances
-        # in foreign currency or unexpected interactions with modules like
-        # l10n_ve_porcion_real.
-        line_vals[0][2][line_2] = vef_line2
+        # --- Construcción de las Líneas base ---
+        line_vals = self.prepare_advance_payment_vals(
+            payment, base_amount_applied, advance_val, counter_part_val, conversion_date, common_vals,advance_amount_residual)
+        
+        #if is_igtf_journal and igtf_amount > 0.0:
 
-        line_vals[1][2]["debit"] = vef_line1 if is_customer else 0.0
-        line_vals[1][2]["credit"] = vef_line1 if not is_customer else 0.0
-
+        #    line_vals = self.prepare_igtf_payment_vals(
+        #        line_vals, payment, igtf_amount, igtf_account, conversion_date, common_vals
+        #    )
+               
         # --- Entry Creation ---
         advance_journal = self.env.company.advance_payment_igtf_journal_id
         
@@ -548,12 +457,47 @@ class AccountMove(models.Model):
             "journal_id": advance_journal.id,
             "date": conversion_date if not payment.keep_alter_value_vef else payment.date,
             "partner_id": self.partner_id.id,
-            "ref": "CRUCE DE ANTICIPO (IGTF)",
+            "ref": "CRUCE DE ANTICIPO",
             "line_ids": line_vals,
             "is_advance_move": True,
             "currency_id": payment.currency_id.id,
             "origin_payment_advanced_payment_id": payment.id, 
         })
+
+    def prepare_advance_payment_vals(self, payment , amount, advance_values, counter_part_values, date, common_vals,residual_amoun=False):
+        self.ensure_one()
+        amount_advance = 0.0
+        sign = 1 if payment.payment_type == 'inbound' else -1
+        amount_advance = amount * sign
+
+        if payment.currency_id == self.company_id.currency_id:
+            advance_balance = amount_advance
+        else:
+            
+            advance_balance = self.currency_id._convert(
+                amount_advance,  self.company_id.currency_id, self.company_id, date )  
+            
+        line_vals = []
+
+        line_vals.append(Command.create({
+            'name': advance_values['name'],
+            'account_id': advance_values['account_id'],
+            'currency_id': payment.currency_id.id,
+            'balance': advance_balance,          # Línea principal
+            'amount_currency': amount_advance,
+            **common_vals
+        }))
+
+        line_vals.append(Command.create({
+            'name': counter_part_values['name'],
+            'account_id': counter_part_values['account_id'],
+            'currency_id':  payment.currency_id.id,
+            'balance': -advance_balance,
+            'amount_currency': -amount_advance,
+            **common_vals
+        }))
+        
+        return line_vals
 
     def _reconcile_move_with_payment_difference(self, payment_move, cross_move):
         """
@@ -651,7 +595,7 @@ class AccountMove(models.Model):
         is_advance_payment = payment_move.is_advance_move or payment_move.origin_payment_advanced_payment_id or (
             payment_move.origin_payment_id and payment_move.origin_payment_id.is_advance_payment
         )
-        initial_residual = self.amount_residual_signed
+        initial_residual = self.amount_residual
         if is_advance_payment:
             
             
@@ -670,7 +614,7 @@ class AccountMove(models.Model):
         
         return super().js_assign_outstanding_line(line_id)
 
-    def js_remove_outstanding_partial(self, partial_id):
+    """def js_remove_outstanding_partial(self, partial_id):
         self.ensure_one()
 
         partial = self.env["account.partial.reconcile"].browse(partial_id)
@@ -718,7 +662,7 @@ class AccountMove(models.Model):
         partial = self.env["account.partial.reconcile"].browse(partial_id)
 
         if not executed and partial:
-            return super().js_remove_outstanding_partial(partial.id)
+            return super().js_remove_outstanding_partial(partial.id)"""
     
     def cancel_advance_payment_transaction(self, origin_payment_id, partial_reconcile):
         if not partial_reconcile:
@@ -733,6 +677,11 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self:
+            rec.igtf_top_aply = 0.0
+            rec.alter_bi_igtf = 0.0
+            rec.foreign_bi_igtf = 0.0
+            rec.bi_igtf = 0.0
+
             if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']: 
                 rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
@@ -980,3 +929,73 @@ class AccountMove(models.Model):
         self.line_ids.analytic_line_ids.with_context(skip_analytic_sync=True).unlink()
         self.mapped('line_ids').remove_move_reconcile()
         return super().button_draft()
+
+    def create_igtf_debit_note(self, igtf_amount, invoice, account_partner = False):
+        """
+        Crea una nota de débito por el monto de IGTF utilizando el asistente account.debit.note.Expand commentComment on lines R1008 to R1010
+        Se asegura de que solo se añade la línea de IGTF y se postea.
+        """
+        self.ensure_one()
+
+        is_customer = invoice.move_type in ["out_invoice", "in_refund"]
+        debit_journal = False
+        if is_customer:
+        
+            debit_journal= self.env['account.journal'].search([('is_debit', '=', True),('type','=','sale')], limit=1)
+        else:
+            debit_journal= self.env['account.journal'].search([('is_debit', '=', True),('type','=','purchase')], limit=1)
+
+        product = self.env['product.product'].search([('name', '=', 'Igtf Percibido')], limit=1)
+        if not product:
+            raise UserError(_('No se encontró un producto con Igtf Percivido.'))
+
+        account = product.property_account_income_id or product.categ_id.property_account_income_categ_id
+        if not account:
+            raise UserError(_('No se encontró cuenta de ingreso para el producto IGTF.'))
+        
+        
+        if is_customer:
+            partner_account = invoice.partner_id.property_account_receivable_id
+            if not partner_account:
+                raise UserError(_('El cliente no tiene una cuenta por cobrar configurada.'))
+        
+        else:
+
+            partner_account = invoice.partner_id.property_account_payable_id
+            if not partner_account:
+                raise UserError(_('El cliente no tiene una cuenta por pagar configurada.'))
+            
+
+        debit_note_wizard_vals = {
+            'date': fields.Date.context_today(self),
+            'reason': 'IGTF Adjustment',
+            'journal_id': debit_journal.id,
+            'move_ids': [(4, invoice.id)],
+        }
+        
+        move_debit_note_wiz = self.env['account.debit.note'].with_context(active_model = 'account.move',active_ids = invoice.ids).create(debit_note_wizard_vals)
+        
+        res = move_debit_note_wiz.create_debit() 
+        
+        debit_note_id = res.get('res_id')
+        if not debit_note_id:
+            raise UserError(_('El asistente de nota de débito no devolvió un ID válido.'))
+            
+        debit_note = self.env['account.move'].browse(debit_note_id)
+        
+        igtf_line_vals = {
+            'product_id': product.id,
+            'quantity': 1.0,
+            'price_unit': igtf_amount,
+            'date_maturity':fields.Date.today(self),
+        }
+
+        write_vals = {
+            'pricelist_id': 1,
+            'invoice_line_ids': [(0, 0, igtf_line_vals)]
+        }
+
+
+        debit_note.write(write_vals)
+        
+        return debit_note

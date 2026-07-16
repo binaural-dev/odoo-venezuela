@@ -156,7 +156,6 @@ class AccountPaymentAndIgtf(models.Model):
                 force_balance
             )
 
-            
             if rec.payment_from_wizard:
                 if rec.igtf_percentage and rec.igtf_amount > 0.0 :
                     # Check if any of the related invoices belongs to an
@@ -165,14 +164,15 @@ class AccountPaymentAndIgtf(models.Model):
                     is_international = any(
                         m.journal_id.is_purchase_international for m in move_ids
                     )
-                    if not is_international:
-                        rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
+                    #if not is_international:
+                        #rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
                 if rec.igtf_amount <= 0.0: #Nativo
                     total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
                     if write_off_line_vals:
                         
                         rec._fix_writeoff_balance(vals, write_off_line_vals)
                     else:
+
                         if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1:
                             # FIX balances when diference is decimal
                             if rec.partner_type == "customer":
@@ -246,7 +246,6 @@ class AccountPaymentAndIgtf(models.Model):
 
             # Actual residual in company currency from the invoices
             invoice_residual = sum(rec.invoices_origin_ids.mapped('amount_residual_signed'))
-            residual_abs = abs(invoice_residual) if invoice_residual else 0.0
 
             # Preserve the sign of the current counterpart line
             expected = -invoice_residual if invoice_residual else 0.0
