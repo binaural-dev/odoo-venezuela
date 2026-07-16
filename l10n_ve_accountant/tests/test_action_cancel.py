@@ -73,6 +73,7 @@ class TestAccountPaymentActionCancel(TransactionCase):
             "supplier_taxes_id": [(5, 0, 0)],
         })
 
+        self.manual_in = self.env.ref("account.account_payment_method_manual_in")
         self.manual_out = self.env.ref("account.account_payment_method_manual_out")
 
         self.bank_journal = self.env["account.journal"].with_company(self.company).create({
@@ -81,8 +82,8 @@ class TestAccountPaymentActionCancel(TransactionCase):
             "code": "BNKT",
             "default_account_id": self.acc_bank.id,
             "inbound_payment_method_line_ids": [(0, 0, {
-                "name": "Manual Out",
-                "payment_method_id": self.manual_out.id,
+                "name": "Manual In",
+                "payment_method_id": self.manual_in.id,
                 "payment_type": "inbound",
                 "payment_account_id": self.acc_bank.id,
             })],
@@ -142,8 +143,7 @@ class TestAccountPaymentActionCancel(TransactionCase):
             'partner_type': 'customer',
             'partner_id': invoice.partner_id.id,
             'journal_id': self.bank_journal.id,
-            'payment_method_id': self.manual_out.id,
-            'payment_method_line_id': self.payment_method_line.id,
+            'payment_method_id': self.manual_in.id,
             'company_id': self.company.id,
         })
         pay.action_post()
@@ -210,8 +210,7 @@ class TestAccountPaymentActionCancel(TransactionCase):
             'partner_type': 'customer',
             'partner_id': invoice.partner_id.id,
             'journal_id': self.bank_journal.id,
-            'payment_method_id': self.manual_out.id,
-            'payment_method_line_id': self.payment_method_line.id,
+            'payment_method_id': self.manual_in.id,
             'company_id': self.company.id,
         })
         # Payment is draft, move exists as draft but was NEVER posted
