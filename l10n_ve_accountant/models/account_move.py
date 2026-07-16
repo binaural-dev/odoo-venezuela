@@ -122,6 +122,7 @@ class AccountMove(models.Model):
         store=True,
         index=True,
         readonly=False,
+        digits=0
     )
 
     manually_set_rate = fields.Boolean(default=False)
@@ -441,8 +442,6 @@ class AccountMove(models.Model):
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
             
-
-
             new_journal_id = move.journal_id.id
             if old_journal_id and new_journal_id and old_journal_id != new_journal_id:
                 if move.is_invoice(include_receipts=True) and move.move_type in ('out_invoice', 'out_refund', 'out_receipt'):
@@ -755,8 +754,12 @@ class AccountMove(models.Model):
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.foreign_rate = rate_values.get("foreign_rate")
-            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
+            raw_rate = rate_values.get("foreign_rate")
+            raw_inverse_rate = rate_values.get("foreign_inverse_rate")
+            move.update({
+                'foreign_inverse_rate': float(raw_inverse_rate) if raw_inverse_rate else 0.0,
+                'foreign_rate': float(raw_rate) if raw_rate else 0.0
+            })
             
 
     @api.depends("tax_totals")
@@ -796,20 +799,6 @@ class AccountMove(models.Model):
     )
     def _compute_tax_totals(self):
         return super()._compute_tax_totals()
-
-    @api.onchange("foreign_rate","invoice_date")
-    def _onchange_foreign_rate(self):
-        """
-        Onchange the foreign rate and compute the foreign inverse rate
-        """
-        if self.invoice_date or self.date:
-            if self.foreign_rate < 0 or self.foreign_inverse_rate < 0:
-                raise ValidationError(_("The rate entered cannot be negative"))
-            Rate = self.env["res.currency.rate"]
-            for move in self:
-                if not move.foreign_rate:
-                    return
-                move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
 
     @api.onchange("foreign_inverse_rate","invoice_date")
     def _onchange_foreign_inverse_rate(self):
