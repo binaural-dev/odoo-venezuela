@@ -51,7 +51,7 @@ msgstr "Activar Modo Estricto Barcode"
 msgid ""
 "Activate product entry with barcode in\n"
 "                                                            strict mode"
-msgstr "Activar entrada de producto con código de barras en modo estricto""
+msgstr "Activar entrada de producto con código de barras en modo estricto"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__activate_barcode_strict_mode
