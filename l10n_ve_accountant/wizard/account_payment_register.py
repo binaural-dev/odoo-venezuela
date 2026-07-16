@@ -132,5 +132,3 @@ class AccountPaymentRegister(models.TransientModel):
         return payment_vals
 
     
-
-    

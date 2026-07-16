@@ -1,6 +1,6 @@
 from odoo import api, fields, models,  Command, _
 from odoo.tools.sql import column_exists, create_column
-from odoo.tools import  float_compare, formatLang ,float_repr
+from odoo.tools import formatLang, float_repr
 from odoo.exceptions import UserError
 
 import logging
@@ -33,34 +33,30 @@ class AccountMove(models.Model):
         store=True,
     )
 
-    igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
-    alter_bi_igtf = fields.Float('IGTF Apply',copy=False)
-    foreign_bi_igtf = fields.Float('Foreigh Base imp Igtf',copy=False)
+    igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False, compute='compute_bi_igtf',store=True)
+    alter_bi_igtf = fields.Float('IGTF Apply',copy=False ,compute='compute_bi_igtf',store=True)
+    foreign_bi_igtf = fields.Float('Foreigh Base imp Igtf',copy=False, compute='compute_bi_igtf',store=True)
 
     invoice_outstanding_credits_debits_widget_advance_payment = fields.Binary(
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
     origin_payment_advanced_payment_id = fields.Many2one("account.payment",copy=False)
-    @api.depends(
-        "bi_igtf",
-    )
-    def _compute_tax_totals(self):
-        return super()._compute_tax_totals()
+ 
 
     @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
     def _compute_invoice_has_outstanding(self):
-        #override
-        # Primero ejecutamos la lógica original de Odoo
+        # override
+        # First run Odoo's original logic
         super()._compute_invoice_has_outstanding()
         
         for move in self:
-            # Si el super ya lo puso en True, lo dejamos en True.
-            # Si está en False, revisamos nuestro nuevo campo.
+            # If super already set it to True, leave it as True.
+            # If it is False, check our new field.
             if not move.invoice_has_outstanding:
                 move.invoice_has_outstanding = bool(move.invoice_outstanding_credits_debits_widget_advance_payment)
 
 
-    #PAGOS y anticipos CONCILIADOS EN FACTURA
+    # RECONCILED PAYMENTS and advances ON INVOICE
     @api.depends('move_type', 'line_ids.amount_residual')
     def _compute_payments_widget_reconciled_info(self):
         
@@ -106,7 +102,7 @@ class AccountMove(models.Model):
             else:
                 move.invoice_payments_widget = False
     
-    #PAGOS NO CONCILIADOS DE ANTICIPO
+    # UNRECONCILED ADVANCE PAYMENTS
     def _compute_payments_widget_to_reconcile_info_advance_payment(self):
         for move in self:
             
@@ -150,8 +146,8 @@ class AccountMove(models.Model):
                         amount = abs(line.amount_residual_currency)
                     else:
                         
-                        if line.currency_id.id == line.move_id.company_currency_id.id: ##pago VEF
-                            
+                        if line.currency_id.id == line.move_id.company_currency_id.id: ## VEF payment
+ 
                             if line.date < move.invoice_date:
                                 if line.payment_id.keep_alter_value_vef:
                                     
@@ -210,7 +206,7 @@ class AccountMove(models.Model):
 
             move.invoice_outstanding_credits_debits_widget_advance_payment = payments_widget_vals
 
-    #Pagos no CONCILIADOS
+    # Unreconciled Payments
     @api.depends('move_type', 'line_ids.amount_residual')
     def _compute_payments_widget_to_reconcile_info(self):
         super()._compute_payments_widget_to_reconcile_info()
@@ -251,7 +247,7 @@ class AccountMove(models.Model):
                         amount = abs(line.amount_residual_currency)
                     else:
                         
-                        if line.currency_id.id == line.move_id.company_currency_id.id: ##pago VEF
+                        if line.currency_id.id == line.move_id.company_currency_id.id: ## VEF payment
                             
                             if line.date < move.invoice_date:
                                 if line.payment_id.keep_alter_value_vef:
@@ -360,29 +356,29 @@ class AccountMove(models.Model):
 
         base_amount_residual = self.amount_residual 
 
-        date_conver = False
+        conversion_date = False
         if payment.date <= self.invoice_date:
-            date_conver = self.invoice_date
+            conversion_date = self.invoice_date
         else:
-            date_conver = payment.date
+            conversion_date = payment.date
 
         amount_residual = self.currency_id._convert(
             base_amount_residual, 
             payment.currency_id, 
             self.company_id, 
-            date_conver,
+            conversion_date,
             round = False
         )
 
         if payment.currency_id != self.currency_id :
             if payment.currency_id == self.company_id.currency_id and payment.keep_alter_value_vef:
 
-                date_conver = payment.date
+                conversion_date = payment.date
                 advance_amount = self.currency_id._convert(
                     advance_amount, 
                     payment.currency_id, 
                     self.company_id, 
-                    date_conver,
+                    conversion_date,
                     round = True
                 )
             
@@ -391,7 +387,7 @@ class AccountMove(models.Model):
                 advance_amount = amount_residual_currency
 
         if is_igtf_journal:
-            igtf_amount = abs(payment.calculate_igtf_for_payment(self, advance_amount,  payment.currency_id ,date_conver))
+            igtf_amount = abs(payment.calculate_igtf_for_payment(self, advance_amount,  payment.currency_id ,conversion_date))
            
             
         base_amount_applied = min(amount_residual, advance_amount)
@@ -447,7 +443,7 @@ class AccountMove(models.Model):
         def _to_vef(amount):
             
             return payment.currency_id._convert(
-                amount, self.company_currency_id, self.company_id, date_conver,round=False
+                amount, self.company_currency_id, self.company_id, conversion_date,round=False
             )
         
         vef_line1 = payment.currency_id.round(_to_vef(amount_line1))
@@ -501,7 +497,7 @@ class AccountMove(models.Model):
             "partner_id": self.partner_id.id,
             "payment_id_advance": payment.id,
             "reconciled": False,
-            "date": date_conver if not payment.keep_alter_value_vef else payment.date,
+            "date": conversion_date if not payment.keep_alter_value_vef else payment.date,
         }
 
         # --- Construcción de las Líneas ---
@@ -516,7 +512,7 @@ class AccountMove(models.Model):
             **common_vals
         }))
 
-        # 2. Línea Anticipo
+        # 2. Advance Line
         line_vals.append(Command.create({
             "name": name_adv,
             "account_id": account_adv,
@@ -525,7 +521,7 @@ class AccountMove(models.Model):
             **common_vals
         }))
 
-        # 3. Línea IGTF (Sólo si hay valor en VEF para evitar líneas en 0)
+        # 3. IGTF Line (Only if there is a VEF value to avoid zero lines)
         if not self.company_currency_id.is_zero(vef_igtf) and is_igtf_journal:
             line_vals.append(Command.create({
                 "name": "IGTF",
@@ -536,17 +532,21 @@ class AccountMove(models.Model):
                 **common_vals
             }))
 
-            line_vals[0][2][line_2] = vef_line2
-    
-            line_vals[1][2]["debit"] = vef_line1 if is_customer else 0.0
-            line_vals[1][2]["credit"] = vef_line1 if not is_customer else 0.0
+        # Always set debit/credit explicitly to prevent Odoo from inferring
+        # balance from amount_currency / rate, which can cause imbalances
+        # in foreign currency or unexpected interactions with modules like
+        # l10n_ve_porcion_real.
+        line_vals[0][2][line_2] = vef_line2
 
-        # --- Creación del Asiento ---
+        line_vals[1][2]["debit"] = vef_line1 if is_customer else 0.0
+        line_vals[1][2]["credit"] = vef_line1 if not is_customer else 0.0
+
+        # --- Entry Creation ---
         advance_journal = self.env.company.advance_payment_igtf_journal_id
         
         return self.env["account.move"].create({
             "journal_id": advance_journal.id,
-            "date": date_conver if not payment.keep_alter_value_vef else payment.date,
+            "date": conversion_date if not payment.keep_alter_value_vef else payment.date,
             "partner_id": self.partner_id.id,
             "ref": "CRUCE DE ANTICIPO (IGTF)",
             "line_ids": line_vals,
@@ -595,7 +595,7 @@ class AccountMove(models.Model):
 
         if not advance_line:
             
-            if is_customer: # usa tu lógica de partner_type
+            if is_customer: # use your partner_type logic
                 advance_line = self.partner_id.default_advance_customer_account_id
             else:
                 advance_line = self.partner_id.default_advance_supplier_account_id
@@ -733,8 +733,13 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def compute_bi_igtf(self):
         for rec in self:
-            if abs(rec.amount_total_signed) > 0 or rec.payment_state in ['paid','in_payment']: 
-                rec.igtf_top_aply = rec.currency_id.round(abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100))
+            rec.igtf_top_aply = 0.0
+            rec.alter_bi_igtf = 0.0
+            rec.foreign_bi_igtf = 0.0
+            rec.bi_igtf = 0.0
+            
+            if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']: 
+                rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
                 final_payment_moves = receivable_payable_lines.reconciled_lines_ids.mapped('move_id')
@@ -813,12 +818,12 @@ class AccountMove(models.Model):
                         if igtf_line and partial:
                             alter_bi_igtf += igtf_amount
 
-                    date_conver = False
+                    conversion_date = False
 
                     if rec.invoice_date != False and payment_move.date <= rec.invoice_date:
-                        date_conver = rec.invoice_date
+                        conversion_date = rec.invoice_date
                     else:
-                        date_conver = payment_move.date
+                        conversion_date = payment_move.date
 
                     total_bi_igtf += amount_base_payment
 
@@ -829,7 +834,7 @@ class AccountMove(models.Model):
                         amount_base_payment, 
                         rec.currency_id, 
                         rec.company_id, 
-                        date_conver,
+                        conversion_date,
                     )
 
                     if foreign_bi_igtf > abs(rec.amount_total):
@@ -976,20 +981,7 @@ class AccountMove(models.Model):
     
 
     def button_draft(self):
-        """ Override Method to remove the reconciliation and set to draft the moves related to the advance payment when the invoice is reset to draft.
-        """
-        if any(move.state not in ('cancel', 'posted') for move in self):
-            raise UserError(_("Only posted/cancelled journal entries can be reset to draft."))
-        if any(move.need_cancel_request for move in self):
-            raise UserError(_("You can't reset to draft those journal entries. You need to request a cancellation instead."))
-
         self._check_draftable()
-        # We remove all the analytics entries for this journal
         self.line_ids.analytic_line_ids.with_context(skip_analytic_sync=True).unlink()
         self.mapped('line_ids').remove_move_reconcile()
-        self.state = 'draft'
-        self.sending_data = False
-
-        self._detach_attachments()
-
-      
+        return super().button_draft()
