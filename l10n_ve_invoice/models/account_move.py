@@ -108,11 +108,6 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
-    @api.onchange("move_type")
-    def _onchange_move_type(self):
-        if self.move_type == "out_invoice":
-            self.invoice_date = fields.Date.today()
-
     def action_post(self):
         
         for record in self:
@@ -137,29 +132,53 @@ class AccountMove(models.Model):
         AccountMove = self.env["account.move"]
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
         for move in self:
-            if not move.is_contingency:
-                continue
-            if not is_series_invoicing_enabled and not move.correlative:
-                raise ValidationError(
-                    _(
-                        "Contingency journal's invoices should always have a correlative if series "
-                        "invoicing is not enabled"
+            if move.is_contingency:
+                if not is_series_invoicing_enabled and not move.correlative:
+                    raise ValidationError(
+                        _(
+                            "Contingency journal's invoices should always have a correlative if series "
+                            "invoicing is not enabled"
+                        )
                     )
+                repeated_moves = AccountMove.search(
+                    [
+                        ("is_contingency", "=", True),
+                        ("id", "!=", move.id),
+                        ("correlative", "!=", False),
+                        ("correlative", "=", move.correlative),
+                        ("journal_id", "=", move.journal_id.id),
+                    ],
+                    limit=1,
                 )
-            repeated_moves = AccountMove.search(
-                [
-                    ("is_contingency", "=", True),
-                    ("id", "!=", move.id),
-                    ("correlative", "!=", False),
-                    ("correlative", "=", move.correlative),
-                    ("journal_id", "=", move.journal_id.id),
-                ],
-                limit=1,
-            )
-            if repeated_moves:
-                raise UserError(
-                    _("The correlative must be unique per journal when using a contingency journal")
+                if repeated_moves:
+                    raise UserError(
+                        _("The correlative must be unique per journal when using a contingency journal")
+                    )
+
+            if (
+                move.correlative and not move.is_contingency
+                and move.move_type in ("out_invoice", "out_refund")
+            ):
+                repeated_moves = AccountMove.search(
+                    [
+                        ("id", "!=", move.id),
+                        ("company_id", "=", move.company_id.id),
+                        ("correlative", "=", move.correlative),
+                        ("state", "=", "posted"),
+                        ("move_type", "in", ("out_invoice", "out_refund")),
+                    ],
+                    limit=1,
                 )
+                if repeated_moves:
+                    raise ValidationError(
+                        _(
+                            "The control number %(correlative)s is already in use "
+                            "by the confirmed invoice %(invoice)s.",
+                            correlative=move.correlative,
+                            invoice=repeated_moves.name,
+                        )
+                    )
+
     @api.depends('journal_id')
     def _compute_is_debit_journal(self):
         for move in self:
