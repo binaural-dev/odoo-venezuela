@@ -147,7 +147,7 @@ class ResPartner(models.Model):
             if "vat" and "prefix_vat" in vals:
                 self.check_duplicate_vat(
                     vals.get("prefix_vat"), vals.get("vat"))
-            if "email" in vals:
+            if "email" in vals and vals.get("type", "contact") == "contact":
                 self.check_duplicate_email(vals.get("email"))
         return super(ResPartner, self).create(vals_list)
 
@@ -159,7 +159,8 @@ class ResPartner(models.Model):
                     vals.get("prefix_vat"), vals.get("vat"))
         if "email" in vals:
             for record in self:
-                record.check_duplicate_email(vals.get("email"))
+                if record.type == "contact":
+                    record.check_duplicate_email(vals.get("email"))
         return res
 
     def _check_vat(self):
