@@ -108,7 +108,6 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
-
     def action_post(self):
         
         for record in self:
