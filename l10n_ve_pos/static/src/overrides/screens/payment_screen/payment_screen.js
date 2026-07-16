@@ -8,6 +8,7 @@ import { useService } from "@web/core/utils/hooks";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
 import { useEnv } from "@odoo/owl";
 import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
+import { GT } from "@point_of_sale/app/utils/numbers";
 
 // New orders are now associated with the current table, if any.
 patch(PaymentScreen.prototype, {
@@ -117,14 +118,18 @@ patch(PaymentScreen.prototype, {
       this.currentOrder?.remainingDue ??
       (typeof this.currentOrder?.get_due === "function" ? this.currentOrder.get_due() : 0)
     ) || 0;
-    // Math.abs(amount) > Math.abs(currentDue + selectedPaymentLine.amount)
-    if (
-      !hasCashPaymentMethod &&
-      Math.abs(amount) > Math.abs(currentDue + this.selectedPaymentLine.amount)
-    ) {
+    // "Excede lo adeudado" en valor absoluto, para ventas (positivos) y
+    // reembolsos (negativos). currency.comp() redondea ambos operandos a la
+    // precisión de la moneda local antes de comparar (AbstractNumbers).
+    const cur = this.pos.currency;
+    const limit = currentDue + this.selectedPaymentLine.amount;
+    const absAmount = amount < 0 ? -amount : amount;
+    const absLimit = limit < 0 ? -limit : limit;
+    if (!hasCashPaymentMethod && cur.comp(absAmount, absLimit) === GT) {
+      const maxAmount = currentDue < 0 ? -currentDue : currentDue;
       this.selectedPaymentLine.setAmount(0);
-      this.numberBuffer.set(Math.abs(currentDue).toString());
-      amount = Math.abs(currentDue);
+      this.numberBuffer.set(maxAmount.toString());
+      amount = maxAmount;
       this.showMaxValueError();
     }
     if (

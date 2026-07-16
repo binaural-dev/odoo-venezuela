@@ -2,6 +2,7 @@
 
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
+import { LT } from "@point_of_sale/app/utils/numbers";
 
 // Live patch for Odoo 19 PosPayment.
 //
@@ -105,19 +106,36 @@ patch(PosPayment.prototype, {
         // get_foreign_total_with_tax → foreign_currency.round).
         const foreignDueBefore = order.localToForeign(localDueBefore);
 
-        const foreignCurrency = order.get_foreign_currency?.();
-        const foreignRounding = Number(foreignCurrency?.rounding) || 0.01;
+        // Resolve the real ResCurrency record (AbstractNumbers) when
+        // possible; get_foreign_currency may return a bare id.
+        const fc = order._resolveCurrencyRecord?.(order.get_foreign_currency?.())
+            ?? order.get_foreign_currency?.();
+        const hasComp = Boolean(fc && typeof fc.comp === "function");
 
         // "Covers the due" means |requested| >= |due|. Works for both
-        // positive (sales) and negative (refunds) amounts.
-        // Uses foreign currency rounding as tolerance.
-        const coversDue = foreignDueBefore !== 0
-            && Math.abs(requested) + foreignRounding / 2 >= Math.abs(foreignDueBefore);
+        // positive (sales) and negative (refunds) amounts, and for mixed
+        // signs (comparison is on magnitudes).
+        const absRequested = requested < 0 ? -requested : requested;
+        const absDue = foreignDueBefore < 0 ? -foreignDueBefore : foreignDueBefore;
+
+        // currency.comp() rounds both operands to the foreign currency
+        // precision before comparing, so the half-rounding tolerance is
+        // built in. isZero() also treats sub-rounding residual due (fx
+        // noise) as "nothing due". Manual fallback for unresolved currency.
+        const coversDue = hasComp
+            ? !fc.isZero(foreignDueBefore) && fc.comp(absRequested, absDue) !== LT
+            : foreignDueBefore !== 0
+                && absRequested + (Number(fc?.rounding) || 0.01) / 2 >= absDue;
 
         if (coversDue) {
             // Payment covers the local due exactly, plus any overpay.
-            const overpaymentForeign = Math.abs(requested) - Math.abs(foreignDueBefore);
-            const overpaymentLocal = overpaymentForeign > 0
+            // isPositive() discards float-noise "overpay" below the
+            // currency precision instead of converting it.
+            const overpaymentForeign = absRequested - absDue;
+            const hasOverpay = hasComp
+                ? fc.isPositive(overpaymentForeign)
+                : overpaymentForeign > 0;
+            const overpaymentLocal = hasOverpay
                 ? order.foreignToLocal(overpaymentForeign)
                 : 0;
             this.amount = localDueBefore + overpaymentLocal;

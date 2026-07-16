@@ -4,6 +4,7 @@ import { PosOrder } from "@point_of_sale/app/models/pos_order";
 import { PosOrderAccounting } from "@point_of_sale/app/models/accounting/pos_order_accounting";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
+import { roundDecimals } from "@web/core/utils/numbers";
 
 
 // New orders are now associated with the current table, if any.
@@ -202,8 +203,7 @@ patch(PosOrder.prototype, {
     // Last-resort rounding using decimal_places if present, else 2 dp.
     const dp = Number(resolved?.decimal_places);
     const digits = Number.isInteger(dp) && dp >= 0 ? dp : 2;
-    const factor = Math.pow(10, digits);
-    return Math.round(amount * factor) / factor;
+    return roundDecimals(amount, digits);
   },
 
   // ---- Public helpers ----
@@ -636,11 +636,6 @@ patch(PosOrder.prototype, {
 //           // https://xkcd.com/217/
 //           return 0;
 //         } else if (
-//           Math.abs(this.get_foreign_total_with_tax()) <
-//           this.pos.cash_rounding[0].rounding
-//         ) {
-//           return 0;
-//         } else if (
 //           rounding_method === "UP" &&
 //           rounding_applied < 0 &&
 //           remaining > 0
@@ -705,7 +700,7 @@ patch(PosOrder.prototype, {
 //         }
 //       }
 //     }
-//     return round_pr(Math.max(0, change), this.pos.foreign_currency.rounding);
+//     return round_pr(change > 0 ? change : 0, this.pos.foreign_currency.rounding);
 //   },
 //   get_foreign_due(paymentline) {
 //     if (!paymentline) {

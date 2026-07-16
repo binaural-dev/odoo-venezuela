@@ -181,23 +181,6 @@ patch(PosOrder.prototype, {
   get_total_without_igtf() {
     return Number(this.totalDue ?? 0) || 0;
   },
-  get_foreign_total_without_igtf() {
-    const base = Number(this.totalDue ?? 0) || 0;
-    return typeof this.localToForeign === "function" ? this.localToForeign(base) : 0;
-  },
-  get_total_with_tax() {
-    // update_igtf garantiza igtf_amount = 0 cuando no hay líneas apply_igtf,
-    // así que basta sumar y redondear con la moneda principal.
-    const res = Number(this.totalDue ?? 0) || 0;
-    return this._igtfRoundLocal(res + (this.igtf_amount || 0));
-  },
-  get_foreign_total_with_tax() {
-    // Regla de redondeo l10n_ve_pos: cada total foráneo es UNA conversión
-    // de su contraparte local, nunca la suma de conversiones redondeadas
-    // (round(a) + round(b) != round(a + b) → diferencias de 0,01 entre el
-    // total, la línea de pago y el restante foráneo).
-    return this._igtfToForeign(this.get_total_with_tax());
-  },
 
   get_igtf_amount() {
     return this.igtf_amount;
