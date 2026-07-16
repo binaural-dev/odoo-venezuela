@@ -797,11 +797,9 @@ class AccountMove(models.Model):
 
                                 amount_base_payment = partial_amount
 
-                            elif 'pos_payment_ids' in bank_line[0].move_id._fields:
-                                if bank_line[0].move_id.pos_payment_ids:
-                                        amount_base_payment = rec.company_id.currency_id.round(igtf_amount / (rec.company_id.igtf_percentage / 100))
-                                else:
-                                    amount_base_payment = partial_amount
+                            elif 'pos_payment_ids' in bank_line[0].move_id._fields and getattr(bank_line[0].move_id, 'pos_payment_ids', False):
+                                amount_base_payment = rec.company_id.currency_id.round(igtf_amount / (rec.company_id.igtf_percentage / 100))
+                            
 
                             elif  rec.company_id.currency_id.round(partial_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
                                     
