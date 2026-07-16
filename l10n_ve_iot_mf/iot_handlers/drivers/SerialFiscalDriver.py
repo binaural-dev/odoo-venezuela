@@ -144,9 +144,9 @@ def install_package(package_name):
     try:
         # Intenta importar el paquete para verificar si ya está instalado
         __import__(package_name)
-        _logger.info("'%s' is already installed.", package_name)
+        _logger.info("'%s' ya está instalado.", package_name)
     except ImportError:
-        _logger.info("'%s' is not installed. Installing...", package_name)
+        _logger.info("'%s' no está instalado. Instalando...", package_name)
         # Instala el paquete usando pip
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", package_name, "--user"])
