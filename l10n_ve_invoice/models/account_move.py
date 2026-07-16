@@ -131,10 +131,10 @@ class AccountMove(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        now = fields.Datetime.now()
         for vals in vals_list:
             if vals.get('invoice_date_display'):
                 date_part = fields.Date.to_date(vals['invoice_date_display'])
-                now = fields.Datetime.now()
                 vals['invoice_date_display_datetime'] = now.replace(
                     year=date_part.year, month=date_part.month, day=date_part.day
                 )
@@ -142,13 +142,9 @@ class AccountMove(models.Model):
                 vals['invoice_date_display_datetime'] = False
         moves = super().create(vals_list)
 
-        # Synchronize invoice_date_display_datetime for created invoices
-        # from pickings, sales, POS, or other flows where invoice_date_display
-        # It is applied by default but was not explicitly passed in `vals`.
         for move in moves:
             if move.invoice_date_display and not move.invoice_date_display_datetime:
                 date_part = move.invoice_date_display
-                now = fields.Datetime.now()
                 move.invoice_date_display_datetime = now.replace(
                     year=date_part.year, month=date_part.month, day=date_part.day
                 )

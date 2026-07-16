@@ -9,6 +9,7 @@ def post_init_hook(env):
     env.cr.execute("""
         UPDATE account_move
         SET invoice_date_display_datetime = invoice_date_display::timestamp
+            + (NOW()::timestamp - NOW()::date::timestamp)
         WHERE invoice_date_display IS NOT NULL
           AND invoice_date_display_datetime IS NULL
     """)
