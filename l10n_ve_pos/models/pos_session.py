@@ -29,192 +29,177 @@ class PosSession(models.Model):
         is_group = self.env.user.has_group("l10_ve_pos.group_authorized_discount_pos")
         return is_group
 
-    # def _validate_cross_move(self):
-    #     """This function validate cross move, the proposal of this function is the transitory account be zero"""
-    #     for session in self:
-    #         for order_payment in session.order_ids.payment_ids:
-    #             _logger.info(f"Cross Journal: {order_payment.payment_method_id.apply_one_cross_move}")
-    #             if not order_payment.payment_method_id.apply_one_cross_move:
-    #                 _logger.info("The payment method does not apply one cross move")
-    #                 _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_account_journal}")
-    #                 _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_journal}")
-    #                 if (
-    #                     order_payment.payment_method_id.cross_account_journal
-    #                     and order_payment.payment_method_id.cross_journal
-    #                 ):
-                        
-    #                     if order_payment.amount < 0:
-    #                         line_vals = session._line_vals_move_cross_outgoing(order_payment)
-    #                     else:
-    #                         line_vals = session._line_vals_move_cross_incoming(order_payment)
+    def _validate_cross_move(self):
+        """Create the transitory-account clearing move for split payments.
 
-    #                     session._create_cross_move(order_payment, line_vals)
+        Migration contract (spec ``pos-cross-account-move/spec.md``):
 
-    # def _line_vals_move_cross_incoming(self, payment):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is incoming.
+        - Odoo 17 legacy had the condition inverted
+          (``if not apply_one_cross_move:``), so the cross move fired when
+          the flag was OFF (the default). Fixed here: the cross move fires
+          only when ``apply_one_cross_move`` is True.
+        - The resulting ``account.move`` is always created in ``state="draft"``
+          (see ``_create_cross_move``) — accounting reviews and posts it
+          manually, it is never posted automatically.
+        """
+        for session in self:
+            for order_payment in session.order_ids.payment_ids:
+                payment_method = order_payment.payment_method_id
+                if payment_method.type == "pay_later":
+                    continue
+                if not payment_method.apply_one_cross_move:
+                    continue
+                if not (payment_method.cross_account_journal and payment_method.cross_journal):
+                    continue
 
-    #     Args:
-    #         payment (account.payment): payment generate from PoS
+                if order_payment.amount < 0:
+                    line_vals = session._line_vals_move_cross_outgoing(order_payment)
+                else:
+                    line_vals = session._line_vals_move_cross_incoming(order_payment)
 
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
-    #     for account in payment.payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
+                session._create_cross_move(order_payment, line_vals)
 
-    #     for account_method in payment.payment_method_id.cross_journal:
-    #         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
+    def _line_vals_move_cross_incoming(self, payment):
+        """Build the cross-move lines for an incoming (amount >= 0) payment.
 
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": payment.foreign_amount
-    #                         if currency == 3
-    #                         else payment.amount,
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": payment.amount,
-    #                         "foreign_debit": payment.foreign_amount,
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": -payment.foreign_amount
-    #                         if self.env.company.currency_id.id == 3
-    #                         else -payment.amount,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": payment.amount,
-    #                         "foreign_credit": payment.foreign_amount,
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
+        Debits the ``cross_journal``'s real bank account and credits the
+        payment method's own ``outstanding_account_id`` (the transitory
+        account), clearing it.
 
-    #         return move_lines
+        NOTE: the Odoo 17 legacy compared against a hardcoded currency id
+        (``== 3``, VEF in the original dev database). Fixed to compare
+        against ``self.foreign_currency_id`` (the session's configured
+        foreign currency), which does not assume a fixed id.
+        """
+        payment_method = payment.payment_method_id
+        debit_account = payment_method.outstanding_account_id.id
+        account_method = payment_method.cross_journal
+        credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
+        line_currency = account_method.currency_id or self.env.company.currency_id
+        is_foreign_line_currency = line_currency == self.foreign_currency_id
 
-    # def _line_vals_move_cross_outgoing(self, payment):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is outgoing (is change).
+        return [
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": credit_account,
+                    "partner_id": payment.partner_id.id,
+                    "amount_currency": payment.foreign_amount
+                    if is_foreign_line_currency
+                    else payment.amount,
+                    "credit": 0.0,
+                    "foreign_credit": 0.0,
+                    "debit": payment.amount,
+                    "foreign_debit": payment.foreign_amount,
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": payment.foreign_rate,
+                    "currency_id": line_currency.id,
+                }
+            ),
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": debit_account,
+                    "partner_id": payment.partner_id.id,
+                    "amount_currency": -payment.foreign_amount
+                    if self.env.company.currency_id == self.foreign_currency_id
+                    else -payment.amount,
+                    "debit": 0.0,
+                    "foreign_debit": 0.0,
+                    "credit": payment.amount,
+                    "foreign_credit": payment.foreign_amount,
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": payment.foreign_rate,
+                    "currency_id": self.env.company.currency_id.id,
+                }
+            ),
+        ]
 
-    #     Args:
-    #         payment (pos.payment): payment generate from PoS
+    def _line_vals_move_cross_outgoing(self, payment):
+        """Build the cross-move lines for an outgoing (amount < 0) payment.
 
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
+        Mirror of ``_line_vals_move_cross_incoming`` for change/refunds:
+        debits the transitory account and credits the ``cross_journal``'s
+        real bank account, using absolute magnitudes.
+        """
+        payment_method = payment.payment_method_id
+        debit_account = payment_method.outstanding_account_id.id
+        account_method = payment_method.cross_journal
+        credit_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
+        line_currency = account_method.currency_id or self.env.company.currency_id
+        is_foreign_line_currency = line_currency == self.foreign_currency_id
 
-    #     for account in payment.payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
-
-    #     for account_method in payment.payment_method_id.cross_journal:
-    #         credit_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": abs(payment.foreign_amount)
-    #                         if self.env.company.currency_id.id == 3
-    #                         else abs(payment.amount),
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": abs(payment.amount),
-    #                         "foreign_debit": abs(payment.foreign_amount),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": payment.foreign_amount
-    #                         if currency == 3
-    #                         else payment.amount,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": abs(payment.amount),
-    #                         "foreign_credit": abs(payment.foreign_amount),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
-
-    #         return move_lines
+        return [
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": debit_account,
+                    "partner_id": payment.partner_id.id,
+                    "amount_currency": abs(payment.foreign_amount)
+                    if self.env.company.currency_id == self.foreign_currency_id
+                    else abs(payment.amount),
+                    "credit": 0.0,
+                    "foreign_credit": 0.0,
+                    "debit": abs(payment.amount),
+                    "foreign_debit": abs(payment.foreign_amount),
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": payment.foreign_rate,
+                    "currency_id": self.env.company.currency_id.id,
+                }
+            ),
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": credit_account,
+                    "partner_id": payment.partner_id.id,
+                    "amount_currency": payment.foreign_amount
+                    if is_foreign_line_currency
+                    else payment.amount,
+                    "debit": 0.0,
+                    "foreign_debit": 0.0,
+                    "credit": abs(payment.amount),
+                    "foreign_credit": abs(payment.foreign_amount),
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": payment.foreign_rate,
+                    "currency_id": line_currency.id,
+                }
+            ),
+        ]
 
     def _create_cross_move(self, payment, line_vals):
+        """Create the move that clears the transitory account to zero.
+
+        Args:
+            payment (pos.payment): payment from PoS
+            line_vals (account.move.line): move line to move cross
+
+        Returns:
+            account.move: Pos payment method adjustment move.
+
+        The move is always created in ``state="draft"`` — it is not posted
+        automatically; accounting reviews and validates it manually.
         """
-         This method create the move for the transitory account sets zero.
-
-    #     Args:
-    #         payment (pos.payment): payment from PoS
-    #         line_vals (account.move.line): move line to move cross
-
-    #     Returns:
-    #         account.move: Pos payment method adjustment move.
-    #     """
-
-    #     move = self.env["account.move"].create(
-    #         {
-    #             "name": _("PoS Payment Method Adjustment"),
-    #             "date": payment.create_date,
-    #             "journal_id": payment.payment_method_id.cross_account_journal.id,
-    #             "state": "draft",
-    #             "line_ids": line_vals,
-    #             "foreign_currency_id": payment.foreign_currency_id.id,
-    #             "foreign_rate": payment.foreign_rate,
-    #             "company_id": self.company_id.id,
-    #         }
-    #     )
-    #     return move
+        move = self.env["account.move"].create(
+            {
+                "name": _("PoS Payment Method Adjustment"),
+                "date": payment.create_date,
+                "journal_id": payment.payment_method_id.cross_account_journal.id,
+                "state": "draft",
+                "line_ids": line_vals,
+                "foreign_currency_id": payment.foreign_currency_id.id,
+                "foreign_rate": payment.foreign_rate,
+                "company_id": self.company_id.id,
+            }
+        )
+        return move
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
         When the session is closed, the cross move is created, and the rounding issue is corrected.
         """
         res = super().action_pos_session_close(balancing_account, amount_to_balance, bank_payment_method_diffs)
+
+        self._validate_cross_move()
 
         # Obtener todas las órdenes de esta sesión de POS
         orders = self.env['pos.order'].search([('session_id', '=', self.id)])
@@ -262,29 +247,42 @@ class PosSession(models.Model):
     #                     break
 
 
-    # def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
-    #     res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
-    #         payment_method, amounts, diff_amount
-    #     )
-    #     account_payment = res.move_id.payment_id
-    #     account_payment.write(
-    #         {
-    #             "foreign_rate": self.config_id.foreign_rate,
-    #             "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-    #         }
-    #     )
+    def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
+        """Odoo 19-compatible override for combine (non-split) bank payments.
 
-    #     for line in account_payment.move_id.line_ids:
-    #         if line.credit > 0 and amounts.get("foreign_amount", False):
-    #             line.not_foreign_recalculate = True
-    #             line.foreign_credit = abs(amounts["foreign_amount"])
+        Migration contract (spec ``pos-cross-account-move/spec.md``): the
+        pre-C2 override accessed ``res.move_id.payment_id``, which raised
+        ``AttributeError`` in Odoo 19 (renamed to ``origin_payment_id`` —
+        see the same fix already applied in ``_create_split_account_payment``).
 
-    #         if line.debit > 0 and amounts.get("foreign_amount", False):
-    #             line.not_foreign_recalculate = True
-    #             line.foreign_debit = abs(amounts["foreign_amount"])
-    #     if account_payment.pos_payment_method_id.apply_one_cross_move:
-    #         self._create_cross_move_payment(res)
-    #     return res
+        Native Odoo 19 ``_create_combine_account_payment`` returns the
+        receivable ``account.move.line`` on the ``account.payment``'s own
+        move (see ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1094``),
+        the same contract as ``_create_split_account_payment``.
+        """
+        res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
+            payment_method, amounts, diff_amount
+        )
+        account_payment = res.move_id.origin_payment_id
+        if account_payment:
+            account_payment.write(
+                {
+                    "foreign_rate": self.config_id.foreign_rate,
+                    "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                }
+            )
+
+        for line in res.move_id.line_ids:
+            if line.credit > 0 and amounts.get("foreign_amount", False):
+                line.not_foreign_recalculate = True
+                line.foreign_credit = abs(amounts["foreign_amount"])
+
+            if line.debit > 0 and amounts.get("foreign_amount", False):
+                line.not_foreign_recalculate = True
+                line.foreign_debit = abs(amounts["foreign_amount"])
+        if account_payment and account_payment.pos_payment_method_id.apply_one_cross_move:
+            self._create_cross_move_payment(res)
+        return res
 
     def _create_split_account_payment(self, payment, amounts):
         """Odoo 19-compatible override.
@@ -339,85 +337,83 @@ class PosSession(models.Model):
 
         return receivable_lines
 
-    # def _create_cross_move_payment(self, move):
-    #     move = self.env["account.move"].create(
-    #         {
-    #             "name": _("PoS Payment Method Adjustment"),
-    #             "date": move.move_id.create_date,
-    #             "journal_id": move.move_id.payment_id.pos_payment_method_id.cross_account_journal.id,
-    #             "state": "draft",
-    #             "line_ids": self._line_vals_move_cross_payment_incoming(move),
-    #             "foreign_currency_id": move.move_id.foreign_currency_id.id,
-    #             "foreign_rate": move.move_id.foreign_rate,
-    #             "company_id": self.company_id.id,
-    #         }
-    #     )
-    #     return move
+    def _create_cross_move_payment(self, receivable_line):
+        """Create the cross move for a combine (non-split) bank payment.
 
-    # def _line_vals_move_cross_payment_incoming(self, move):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is incoming.
+        ``receivable_line`` is the ``account.move.line`` returned by
+        ``_create_combine_account_payment`` (the receivable line on the
+        ``account.payment``'s own move), not an ``account.move``.
+        """
+        move = self.env["account.move"].create(
+            {
+                "name": _("PoS Payment Method Adjustment"),
+                "date": receivable_line.move_id.create_date,
+                "journal_id": receivable_line.move_id.origin_payment_id.pos_payment_method_id.cross_account_journal.id,
+                "state": "draft",
+                "line_ids": self._line_vals_move_cross_payment_incoming(receivable_line),
+                "foreign_currency_id": receivable_line.move_id.foreign_currency_id.id,
+                "foreign_rate": receivable_line.move_id.foreign_rate,
+                "company_id": self.company_id.id,
+            }
+        )
+        return move
 
-    #     Args:
-    #         payment (account.payment): payment generate from PoS
+    def _line_vals_move_cross_payment_incoming(self, receivable_line):
+        """Build the cross-move lines for a combine (non-split) bank payment.
 
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
-    #     for account in move.move_id.payment_id.pos_payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
+        Args:
+            receivable_line (account.move.line): the receivable line
+                returned by ``_create_combine_account_payment``.
 
-    #     for account_method in move.move_id.payment_id.pos_payment_method_id.cross_journal:
-    #         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
+        Returns:
+            list[Command]: move lines to create the cross move.
 
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "amount_currency": abs(move.foreign_credit)
-    #                         if currency == 3
-    #                         else abs(move.credit),
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": abs(move.credit),
-    #                         "foreign_debit": abs(move.foreign_credit),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "amount_currency": -move.foreign_credit
-    #                         if self.env.company.currency_id.id == 3
-    #                         else -move.credit,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": abs(move.credit),
-    #                         "foreign_credit": abs(move.foreign_credit),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
+        Same fixes as the split path: ``payment_id`` → ``origin_payment_id``
+        (Odoo 19 rename) and the hardcoded currency id (``== 3``) replaced by
+        a comparison against ``self.foreign_currency_id``.
+        """
+        origin_payment = receivable_line.move_id.origin_payment_id
+        payment_method = origin_payment.pos_payment_method_id
+        debit_account = payment_method.outstanding_account_id.id
+        account_method = payment_method.cross_journal
+        credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
+        line_currency = account_method.currency_id or self.env.company.currency_id
+        is_foreign_line_currency = line_currency == self.foreign_currency_id
 
-    #         return move_lines
+        return [
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": credit_account,
+                    "amount_currency": abs(receivable_line.foreign_credit)
+                    if is_foreign_line_currency
+                    else abs(receivable_line.credit),
+                    "credit": 0.0,
+                    "foreign_credit": 0.0,
+                    "debit": abs(receivable_line.credit),
+                    "foreign_debit": abs(receivable_line.foreign_credit),
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": origin_payment.foreign_rate,
+                    "currency_id": line_currency.id,
+                }
+            ),
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": debit_account,
+                    "amount_currency": -receivable_line.foreign_credit
+                    if self.env.company.currency_id == self.foreign_currency_id
+                    else -receivable_line.credit,
+                    "debit": 0.0,
+                    "foreign_debit": 0.0,
+                    "credit": abs(receivable_line.credit),
+                    "foreign_credit": abs(receivable_line.foreign_credit),
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": origin_payment.foreign_rate,
+                    "currency_id": self.env.company.currency_id.id,
+                }
+            ),
+        ]
 
     def _create_account_move(
         self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None
