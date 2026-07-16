@@ -22,7 +22,7 @@ class AccountMoveLine(models.Model):
     )
     foreign_rate = fields.Float(related="move_id.foreign_rate", store=True)
     foreign_inverse_rate = fields.Float(
-        related="move_id.foreign_inverse_rate", store=True, index=True
+        related="move_id.foreign_inverse_rate", store=True, index=True, digits=0
     )
 
     foreign_price = fields.Monetary(

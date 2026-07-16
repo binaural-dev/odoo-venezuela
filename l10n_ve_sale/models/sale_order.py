@@ -51,6 +51,7 @@ class SaleOrder(models.Model):
         compute="_compute_rate",
         store=True,
         readonly=False,
+        digits=0
     )
 
     last_foreign_rate = fields.Float(copy=False)
