@@ -165,10 +165,10 @@
                                 <th class="text-center">Cant.</th>
                                 <th class="text-center">Unidad</th>
                                 <th class="text-center" t-if='o.operation_code != "internal" and not o.company_id.hide_weight_field_dispatch_guide'>Peso</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">Precio</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">Dscto.</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">IVA</th>
-                                <th class="text-center" t-if="o.operation_code != 'internal'">Total</th>
+                                <!-- <th class="text-center" t-if="o.operation_code != 'internal'">Precio</th> -->
+                                <!-- <th class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">Dscto.</th> -->
+                                <!-- <th class="text-center" t-if="o.operation_code != 'internal'">IVA</th> -->
+                                <!-- <th class="text-center" t-if="o.operation_code != 'internal'">Total</th> -->
                             </tr>
                         </thead>
                         <tbody>
@@ -201,15 +201,15 @@
                                             t-out="(line.product_id.weight or 0) * (line.quantity or 0)" />
                                     </td>
                                     <!-- price -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                    <!-- <td class="text-center" t-if="o.operation_code != 'internal'">
                                         <t t-out="line_values['price_unit']"/>
-                                    </td>
+                                    </td> -->
                                     <!-- discount percentage -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">
+                                    <!-- <td class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">
                                         <t t-out="line_values['discount_percentage'] or 0" />%
-                                    </td>
+                                    </td> -->
                                     <!-- tax percentage  -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                    <!-- <td class="text-center" t-if="o.operation_code != 'internal'">
                                         <t t-set="tax" t-value="line_values['tax_percentage'] or 0"/>
                                         <t t-if="tax != 0.0">
                                             <t t-out="tax"/>%
@@ -218,11 +218,11 @@
                                             <t t-out="'0'"/>%
                                         </t>
                                         
-                                    </td>
+                                    </td> -->
                                     <!-- total -->
-                                    <td class="text-center" t-if="o.operation_code != 'internal'">
+                                    <!-- <td class="text-center" t-if="o.operation_code != 'internal'">
                                         <t t-out="line_values['total_with_tax']"/>
-                                    </td>
+                                    </td> -->
                                 </tr>
                             </t>
                         </tbody>

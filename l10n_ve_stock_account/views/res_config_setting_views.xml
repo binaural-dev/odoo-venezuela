@@ -74,7 +74,7 @@
         <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
         <field name="arch" type="xml">
             <xpath expr="//block[@name='l10n_ve_stock_block']" position="inside">
-                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_indexed_dispatch_guide">
+                <!-- <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_indexed_dispatch_guide">
                     <div class="o_setting_left_pane">
                         <field name="indexed_dispatch_guide" />
                     </div>
@@ -85,8 +85,8 @@
                             <strong>When unmarked:</strong> It will use the date of the sale order.
                         </div>
                     </div>
-                </div>
-                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_hide_disc_field_dispatch_guide">
+                </div> -->
+                <!-- <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_hide_disc_field_dispatch_guide">
                     <div class="o_setting_left_pane">
                         <field name="hide_disc_field_dispatch_guide"/>
                     </div>
@@ -96,7 +96,7 @@
                             If checked, the discount field will be hidden in the dispatch guide.
                         </div>
                     </div>
-                </div>
+                </div> -->
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_hide_weight_field_dispatch_guide">
                     <div class="o_setting_left_pane">
                         <field name="hide_weight_field_dispatch_guide"/>
