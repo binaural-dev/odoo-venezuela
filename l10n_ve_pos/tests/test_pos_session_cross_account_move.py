@@ -250,6 +250,55 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 # una sesion nueva sobre el mismo pos.config.
                 session.write({"state": "closed"})
 
+    def test_cross_move_cash_method_falls_back_to_default_pos_receivable_account(self):
+        """Metodo de pago CASH sin outstanding_account_id usa el fallback nativo.
+
+        ``outstanding_account_id`` es invisible/no editable en la UI nativa
+        para metodos que no son ``bank`` (ver
+        ``point_of_sale/views/pos_payment_method_views.xml:24``,
+        ``invisible="type != 'bank'"``) -- un metodo cash SIEMPRE lo tiene
+        vacio. Sin el fallback en ``_get_cross_transitory_account``, la linea
+        de cruce se creaba con ``account_id = NULL`` y Postgres rechazaba el
+        insert (``account_move_line_check_accountable_required_fields``).
+
+        ``split_cash_method`` (de ``TestPosSessionAccountingBase``) nunca
+        recibe ``outstanding_account_id`` en su fixture -- exactamente el
+        estado real de un metodo cash en produccion.
+        """
+        self.assertFalse(
+            self.split_cash_method.outstanding_account_id,
+            "fixture must mirror production: cash methods never have outstanding_account_id",
+        )
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/CASH-FALLBACK",
+        )
+        payment = order.payment_ids[0]
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1, "debe crearse el cruce usando la cuenta de fallback")
+        move = moves[0]
+        self.assertEqual(move.state, "draft")
+
+        transitory_line = move.line_ids.filtered(
+            lambda l: l.account_id == self.account_pos_receivable
+        )
+        self.assertTrue(
+            transitory_line,
+            "la pata transitoria debe caer en account_default_pos_receivable_account_id",
+        )
+        self.assertAlmostEqual(transitory_line.credit, payment.amount, places=2)
+        self.assertAlmostEqual(transitory_line.foreign_credit, payment.foreign_amount, places=2)
+        self.assertTrue(transitory_line.not_foreign_recalculate)
+
     def test_cross_move_amount_currency_uses_configured_foreign_currency_not_hardcoded_id(self):
         """Regresion del bug `currency == 3`: usa self.foreign_currency_id, no un id fijo.
 
