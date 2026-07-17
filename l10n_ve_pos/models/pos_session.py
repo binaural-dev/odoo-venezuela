@@ -406,37 +406,49 @@ class PosSession(models.Model):
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
-        other_lines = line.move_id.line_ids.filtered(
+        # La contrapartida solo se propaga en los asientos de extracto de caja
+        # (2 líneas). En el asiento de cierre de la sesión la "otra línea" es
+        # de otro método de pago (p.e. una cuenta intermediaria) y escribirle
+        # el monto foráneo descuadra el asiento. La línea propia sí recibe
+        # siempre el monto foráneo del pago, aunque no exista contrapartida,
+        # para que ambos lados del cierre usen la misma fuente y no queden
+        # diferencias de decimales contra el monto calculado por tasa.
+        other_line = line.move_id.line_ids.filtered(
             lambda x: x != line and x.account_id.account_type != "asset_receivable"
-        )
-        if other_lines:
-            other_line = other_lines[0]
+        )[:1]
+        propagate_to_other_line = other_line and line.move_id != self.move_id
+        if (
+            abs(line.credit) > 0
+            and float_compare(
+                line.credit,
+                abs(amount),
+                precision_rounding=self.currency_id.rounding,
+            )
+            == 0
+        ):
+            line.not_foreign_recalculate = True
+            line.foreign_credit = abs(foreign_amount)
             if (
-                abs(line.credit) > 0
-                and float_compare(
-                    line.credit,
-                    abs(amount),
-                    precision_rounding=self.currency_id.rounding,
-                )
-                == 0
+                propagate_to_other_line
+                and other_line.foreign_debit != line.foreign_credit
             ):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(foreign_amount)
-                if other_line.foreign_debit != line.foreign_credit:
-                    other_line.foreign_debit = abs(line.foreign_credit)
+                other_line.foreign_debit = abs(line.foreign_credit)
+        if (
+            abs(line.debit) > 0
+            and float_compare(
+                line.debit,
+                abs(amount),
+                precision_rounding=self.currency_id.rounding,
+            )
+            == 0
+        ):
+            line.not_foreign_recalculate = True
+            line.foreign_debit = abs(foreign_amount)
             if (
-                abs(line.debit) > 0
-                and float_compare(
-                    line.debit,
-                    abs(amount),
-                    precision_rounding=self.currency_id.rounding,
-                )
-                == 0
+                propagate_to_other_line
+                and other_line.foreign_credit != line.foreign_debit
             ):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(foreign_amount)
-                if other_line.foreign_credit != line.foreign_debit:
-                    other_line.foreign_credit = abs(line.foreign_debit)
+                other_line.foreign_credit = abs(line.foreign_debit)
 
     def _validate_cross_move(self):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
