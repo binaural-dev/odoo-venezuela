@@ -6,7 +6,7 @@
             <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
             <field name="arch" type="xml">
                 <xpath expr="//app[@name='l10n_ve_base']" position="inside">
-                    <block title="Configuration Taxes: IGTF" name="l10n_ve_tax_block_igtf" >
+                    <block title="Configuration Taxes:" name="l10n_ve_tax_block_igtf">
                         <separator string="Core Settings"/>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_unique_tax">
                             <div class="col-lg-6 o_setting_left_pane">
@@ -33,117 +33,90 @@
                         </div>
                     </block>
 
-
                     <block title="Configuration Taxes: Taxes Sales/Purchase" name="l10n_ve_tax_block_tax_rates">
-                        <h2>Sales Tax Rates</h2>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sales">
-
-                            <div class="o_setting_left_pane">
-                            </div>
                             <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="exent_aliquot_sale" class="col-lg-6 o_light_label"/>   
-                                        <field name="exent_aliquot_sale"/>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <label for="general_aliquot_sale" class="col-lg-6 o_light_label"/>
+                                <separator string="Sales Tax Rates"/>
+                                <group>
+                                    <field name="exent_aliquot_sale"/>
                                     <field name="general_aliquot_sale"/>
-                                </div>
-                                <div class="row">
-                                    <label for="reduced_aliquot_sale" class="col-lg-6 o_light_label"/>
                                     <field name="reduced_aliquot_sale"/>
-                                </div>
-                                <div class="row">
-                                    <label for="extend_aliquot_sale" class="col-lg-6 o_light_label"/>
                                     <field name="extend_aliquot_sale"/>
-                                </div>
+                                </group>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <br/>
-                                <br/>
-                                <br/>
-                                <field name="not_show_reduced_aliquot_sale"/>
-                                <field name="not_show_extend_aliquot_sale"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <br/>
-                                <br/>
-                                <br/>
-                                <label for="not_show_reduced_aliquot_sale"/>
-                                <br/>
-                                <label for="not_show_extend_aliquot_sale"/>
-                            </div>
-                        </div>
-
-                        <h2>Sale Tax International Rates</h2>
-                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sale_international">
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="zero_aliquot_sale_international" class="col-lg-6 o_light_label"/>   
-                                        <field name="zero_aliquot_sale_international"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h2>Purchases Tax Rates</h2>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_purchase">
-                            <div class="o_setting_left_pane">
-                            </div>
                             <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="exent_aliquot_purchase" class="col-lg-6 o_light_label"/>
-                                        <field name="exent_aliquot_purchase"/>
-                                    </div>
-                                    <div class="row">
-                                        <label for="general_aliquot_purchase" class="col-lg-6 o_light_label"/>
-                                        <field name="general_aliquot_purchase"/>
-                                    </div>
-                                    <div class="row">
-                                        <label for="reduced_aliquot_purchase" class="col-lg-6 o_light_label"/>
-                                        <field name="reduced_aliquot_purchase"/>
-                                    </div>
-                                    <div class="row">
-                                        <label for="extend_aliquot_purchase" class="col-lg-6 o_light_label"/>
-                                        <field name="extend_aliquot_purchase"/>
-                                    </div>
-                                </div>
+                                <separator string="Purchase Tax Rates"/>
+                                <group>
+                                    <field name="exent_aliquot_purchase"/>
+                                    <field name="general_aliquot_purchase"/>
+                                    <field name="reduced_aliquot_purchase"/>
+                                    <field name="extend_aliquot_purchase"/>
+                                </group>
                             </div>
                         </div>
-
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <field name="not_show_reduced_aliquot_purchase"/>
-                                <field name="not_show_extend_aliquot_purchase"/>
-                                <field name="not_show_total_purchases_with_iva" />
-                                <field name="not_show_national_exempt_total_purchases" />
-                                <field name="not_show_total_purchases_national" />
-                            </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sale_international">
                             <div class="o_setting_right_pane">
-                                <label for="not_show_reduced_aliquot_purchase"/>
-                                <label for="not_show_extend_aliquot_purchase"/>
-                                <label for="not_show_total_purchases_with_iva" />
-                                <label for="not_show_national_exempt_total_purchases" />
-                                <label for="not_show_total_purchases_national" />
+                                <separator string="Sale Tax International Rates"/>
+                                <group>
+                                    <field name="zero_aliquot_sale_international"/>
+                                </group>
                             </div>
                         </div>
+                    </block>
 
-                        <h2>Purchase Tax International Rates</h2>
+                    <block title="Configuration Taxes: Non-Deductible" name="l10n_ve_tax_block_non_deductible">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_deductibility">
+                            <div class="o_setting_right_pane">
+                                <separator string="Deductibility"/>
+                                <group>
+                                    <field name="config_deductible_tax"/>
+                                </group>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" invisible="not config_deductible_tax" id="l10n_ve_tax_div_non_deductible_rates">
+                            <div class="o_setting_right_pane">
+                                <separator string="Non-Deductible Rates"/>
+                                <group>
+                                    <field name="no_deductible_general_aliquot_purchase"/>
+                                    <field name="no_deductible_reduced_aliquot_purchase"/>
+                                    <field name="no_deductible_extend_aliquot_purchase"/>
+                                </group>
+                            </div>
+                        </div>
+                    </block>
+
+                    <block title="Configuration: Accountant Books" name="l10n_ve_tax_block_books">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_sales_book">
+                            <div class="o_setting_right_pane">
+                                <separator string="Sales Book"/>
+                                <group>
+                                    <field name="not_show_reduced_aliquot_sale"/>
+                                    <field name="not_show_extend_aliquot_sale"/>
+                                </group>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_purchase_book">
+                            <div class="o_setting_right_pane">
+                                <separator string="Purchase Book"/>
+                                <group>
+                                    <field name="not_show_reduced_aliquot_purchase"/>
+                                    <field name="not_show_extend_aliquot_purchase"/>
+                                    <field name="not_show_total_purchases_with_iva"/>
+                                    <field name="not_show_national_exempt_total_purchases"/>
+                                    <field name="not_show_total_purchases_national"/>
+                                </group>
+                            </div>
+                        </div>
+                    </block>
+
+                    <block title="Configuration Taxes: Purchase Tax International Rates" name="l10n_ve_tax_block_tax_rates_purchase_international">
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_purchase_international">
-                            <div class="o_setting_left_pane">
-                            </div>
                             <div class="o_setting_right_pane">
                                 <div class="content-group">
                                     <div class="row">
-                                        <label for="exent_aliquot_purchase_international" class="col-lg-6 o_light_label"/>   
+                                        <label for="exent_aliquot_purchase_international" class="col-lg-6 o_light_label"/>
                                         <field name="exent_aliquot_purchase_international"/>
                                     </div>
                                 </div>
@@ -161,50 +134,59 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <field name="not_show_general_aliquot_purchase_international" />
-                                <field name="not_show_reduced_aliquot_purchase_international" />
-                                <field name="not_show_extend_aliquot_purchase_international" />
-                                <field name="not_show_total_purchases_with_international_iva" />
-                                <field name="not_show_exempt_total_purchases" />
-                                <field name="not_show_total_purchases_international" />
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_general_aliquot_purchase_international"/>
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_general_aliquot_purchase_international"/>
+                                </div>
                             </div>
-                            <div class="o_setting_right_pane" >
-                                <label for="not_show_general_aliquot_purchase_international" />
-                                <label for="not_show_reduced_aliquot_purchase_international" />
-                                <label for="not_show_extend_aliquot_purchase_international" />
-                                <label for="not_show_total_purchases_with_international_iva" />
-                                <label for="not_show_exempt_total_purchases" />
-                                <label for="not_show_total_purchases_international" />
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_reduced_aliquot_purchase_international"/>
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_reduced_aliquot_purchase_international"/>
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_extend_aliquot_purchase_international"/>
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_extend_aliquot_purchase_international"/>
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_total_purchases_with_international_iva"/>
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_total_purchases_with_international_iva"/>
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_exempt_total_purchases"/>
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_exempt_total_purchases"/>
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <div class="col-1">
+                                    <field name="not_show_total_purchases_international"/>
+                                </div>
+                                <div class="col-11">
+                                    <label for="not_show_total_purchases_international"/>
+                                </div>
                             </div>
                         </div>
                     </block>
-
-                    <block title="Configuration Taxes: Non-Deductible " name="l10n_ve_tax_block_non_deductible" >
-                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_deductibility">
-                            <div class="o_setting_right_pane">
-                                <separator string="Deductibility"/>
-                                <group>
-                                    <field name="config_deductible_tax" string="Enable Non-Deductible Taxes"/>
-                                </group>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" invisible="not config_deductible_tax" id="l10n_ve_tax_div_non_deductible_rates">
-                            <div class="o_setting_right_pane">
-                                <separator string="Non-Deductible Rates" />
-                                <group>
-                                    <field name="no_deductible_general_aliquot_purchase" string="General Aliquot"/>
-                                    <field name="no_deductible_reduced_aliquot_purchase" string="Reduced Aliquot"/>
-                                    <field name="no_deductible_extend_aliquot_purchase" string="Extended Aliquot"/>
-                                </group>
-                            </div>
-                        </div>
-                    </block>
-                   
                 </xpath>
             </field>
         </record>
     </data>
-    </odoo>
+</odoo>
