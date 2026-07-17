@@ -7,3 +7,6 @@ class ResConfigSettings(models.TransientModel):
     log_outgoing_requests = fields.Selection(
         related="company_id.log_outgoing_requests", readonly=False
     )
+    response_body_max_chars = fields.Integer(
+        related="company_id.response_body_max_chars", readonly=False
+    )

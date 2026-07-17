@@ -21,8 +21,10 @@ def _log_failure(method, url, exception, kwargs):
         response = getattr(exception, "response", None)
         if response is not None:
             response_status = response.status_code
+        max_chars = request.env.company.response_body_max_chars or 0
         body = kwargs.get("data") or kwargs.get("json") or ""
-        request.env["auditlog.http.request"].create({
+        body_str = str(body)
+        vals = {
             "is_outgoing": True,
             "http_method": method.upper(),
             "request_url": url,
@@ -30,10 +32,17 @@ def _log_failure(method, url, exception, kwargs):
             "error_type": type(exception).__name__,
             "error_message": str(exception),
             "error_traceback": traceback.format_exc(),
-            "request_body": str(body)[:2000],
+            "request_body": body_str if max_chars == 0 else body_str[:max_chars],
             "user_id": request.env.uid,
-            "name": url,
-        })
+            "name": url
+        }
+
+        if response is not None:
+            vals["response_body"] = response.text if max_chars == 0 else response.text[:max_chars]
+            vals["response_headers"] = str(dict(response.headers))
+
+        request.env["auditlog.http.request"].create(vals)
+
     except Exception as log_error:
         _logger.warning("Failed to log outgoing request failure: %s", log_error)
 
@@ -42,16 +51,21 @@ def _log_success(method, url, response, kwargs):
     try:
         if not request or not request.env:
             return
+        max_chars = request.env.company.response_body_max_chars or 0
         body = kwargs.get("data") or kwargs.get("json") or ""
-        request.env["auditlog.http.request"].sudo().create({
+        body_str = str(body)
+        vals = {
             "is_outgoing": True,
             "http_method": method.upper(),
             "request_url": url,
             "response_status": response.status_code,
-            "request_body": str(body)[:2000],
+            "request_body": body_str if max_chars == 0 else body_str[:max_chars],
             "user_id": request.env.uid,
-            "name": url,
-        })
+            "name": url
+        }
+        vals["response_body"] = response.text if max_chars == 0 else response.text[:max_chars]
+        vals["response_headers"] = str(dict(response.headers))
+        request.env["auditlog.http.request"].sudo().create(vals)
     except Exception as log_error:
         _logger.warning("Failed to log outgoing request success: %s", log_error)
 

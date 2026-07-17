@@ -17,6 +17,17 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_auditlog_response_body_max_chars">
+                        <div class="o_setting_left_pane">
+                            <field name="response_body_max_chars"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="response_body_max_chars"/>
+                            <div class="text-muted">
+                                Maximum characters to store for the response body. Set to 0 for full content.
+                            </div>
+                        </div>
+                    </div>
                 </block>
             </xpath>
         </field>

@@ -4,6 +4,7 @@
         name="Auditoría"
         sequence="10"
         groups="auditlog.group_auditlog_user"
+        web_icon="l10n_ve_auditlog_base,static/description/icon.png"
     />
 
     <menuitem

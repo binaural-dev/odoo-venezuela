@@ -37,5 +37,7 @@ class AuditlogHTTPRequest(models.Model):
     )
     request_body = fields.Text(
         "Request Body",
-        help="Payload sent in the request body (truncated to 2000 characters).",
+        help="Payload sent in the request body (truncation is configurable via 'Response Body Max Chars' setting).",
     )
+    response_body = fields.Text("Response Body")
+    response_headers = fields.Text("Response Headers")

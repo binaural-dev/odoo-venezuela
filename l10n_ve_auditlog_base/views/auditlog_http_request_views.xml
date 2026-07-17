@@ -16,7 +16,9 @@
                     <field name="error_type" />
                     <field name="error_message" />
                     <field name="error_traceback" readonly="1" />
-                    <field name="request_body" readonly="1" />
+                    <field name="request_body" readonly="1" widget="text" style="max-height: 150px; overflow-y: auto; display: block;" />
+                    <field name="response_body" readonly="1" widget="text" style="max-height: 150px; overflow-y: auto; display: block;" />
+                    <field name="response_headers" readonly="1" widget="text" style="max-height: 150px; overflow-y: auto; display: block;" />
                 </group>
             </xpath>
         </field>
