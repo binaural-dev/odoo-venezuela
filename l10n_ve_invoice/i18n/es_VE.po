@@ -727,3 +727,9 @@ msgstr "Número de control"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "por"
 msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Changing between invoice and credit note is not allowed."
+msgstr "No está permitido cambiar entre factura y nota de crédito."

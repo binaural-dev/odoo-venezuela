@@ -113,6 +113,14 @@ class AccountMove(models.Model):
         if self.move_type == "out_invoice":
             self.invoice_date = fields.Date.today()
 
+    def action_switch_move_type(self):
+        for move in self:
+            if move.company_id.account_fiscal_country_id.code == 'VE':
+                raise ValidationError(_(
+                    "Changing between invoice and credit note is not allowed."
+                ))
+        return super().action_switch_move_type()
+
     def action_post(self):
         
         for record in self:
