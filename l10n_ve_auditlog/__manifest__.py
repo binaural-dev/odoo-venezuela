@@ -7,13 +7,12 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "1.1",
+    "version": "1.0",
     "data": [
         "views/auditlog_lines_views.xml",
         "views/auditlogs_views.xml",
     ],
     "depends": [
-        "l10n_ve_auditlog_base",
         "l10n_ve_accountant",
         "l10n_ve_payment_extension",
     ],
