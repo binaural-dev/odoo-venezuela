@@ -8,7 +8,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "1.0",
+    "version": "19.0.0.0.0",
     "depends": [
         "auditlog",
     ],
