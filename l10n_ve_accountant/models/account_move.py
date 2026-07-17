@@ -1030,42 +1030,9 @@ class AccountMove(models.Model):
                         untaxed_amount = untaxed_amount_currency
                         tax_amount = tax_amount_currency
                     else:
-                        tax_amount = (
-                            invoice.foreign_total_billed
-                            - invoice.foreign_taxable_income
-                        ) * sign
-                        untaxed_amount = (invoice.foreign_taxable_income) * sign
-
-                    invoice_payment_terms = (
-                        invoice.invoice_payment_term_id._compute_terms(
-                            date_ref=invoice.invoice_date
-                            or invoice.date
-                            or fields.Date.context_today(invoice),
-                            currency=invoice.foreign_currency_id,
-                            tax_amount_currency=tax_amount,
-                            tax_amount=tax_amount,
-                            untaxed_amount_currency=untaxed_amount,
-                            untaxed_amount=untaxed_amount,
-                            company=invoice.company_id,
-                            sign=sign,
-                        )
-                    )
-
-                    for term in invoice_payment_terms["line_ids"]:
-                        for key in list(invoice.needed_terms.keys()):
-                            if key["date_maturity"] == fields.Date.to_date(
-                                term.get("date")
-                            ):
-                                invoice.needed_terms[key] = {
-                                    **invoice.needed_terms[key],
-                                    "foreign_balance": term["company_amount"],
-                                }
+                        pass
                 else:
-                    for key in list(invoice.needed_terms.keys()):
-                        invoice.needed_terms[key] = {
-                            **invoice.needed_terms[key],
-                            "foreign_balance": sign * invoice.foreign_total_billed,
-                        }
+                    pass
         return res
 
     def button_draft(self):
