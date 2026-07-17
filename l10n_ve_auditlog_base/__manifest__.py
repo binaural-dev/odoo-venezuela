@@ -11,6 +11,7 @@
     "version": "19.0.0.0.0",
     "depends": [
         "auditlog",
+        "l10n_ve_base",
     ],
     "data": [
         "views/auditlog_http_request_views.xml",
