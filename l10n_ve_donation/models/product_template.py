@@ -14,7 +14,7 @@ class ProductTemplate(models.Model):
     def _check_unique_donation_product(self):
         for record in self:
             if record.is_donation_product:
-                donation_product = self.with_company(self.company_id).search(
+                donation_product = record.with_company(record.company_id).search(
                     [
                         ("is_donation_product", "=", True),
                         ("id", "!=", record.id),

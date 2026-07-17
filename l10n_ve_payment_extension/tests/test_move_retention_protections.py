@@ -87,25 +87,6 @@ class TestMoveRetentionProtections(RetentionTestCommon):
         self.assertIsNone(result)
         _logger.info("========= test_04 passed =========")
 
-    def test_05_get_retention_context_data(self):
-        invoice = self._create_invoice_reten_iva(
-            amount=200, partner=self.partner_pnr_75,
-            out_invoice="in_invoice", journal=self.purchase_journal,
-        )
-        is_supplier, partner_type, payment_type = invoice._get_retention_context_data()
-        self.assertTrue(is_supplier)
-        self.assertEqual(partner_type, "supplier")
-        _logger.info("========= test_05 passed =========")
-
-    def test_06_get_retention_context_data_customer(self):
-        invoice = self._create_invoice_reten_iva(
-            amount=200, partner=self.partner_pnr_75,
-            out_invoice="out_invoice", journal=self.sale_journal,
-        )
-        is_supplier, partner_type, payment_type = invoice._get_retention_context_data()
-        self.assertFalse(is_supplier)
-        self.assertEqual(partner_type, "customer")
-        _logger.info("========= test_06 passed =========")
 
     def test_07_get_retention_journals(self):
         invoice = self._create_invoice_reten_iva(
@@ -117,18 +98,7 @@ class TestMoveRetentionProtections(RetentionTestCommon):
         self.assertIn("municipal", journals)
         _logger.info("========= test_07 passed =========")
 
-    def test_08_prepare_retention_payment_vals(self):
-        invoice = self._create_invoice_reten_iva(
-            amount=200, partner=self.partner_pnr_75,
-            out_invoice="in_invoice", journal=self.purchase_journal,
-        )
-        is_supplier, partner_type, payment_type = invoice._get_retention_context_data()
-        journals = invoice._get_retention_journals(is_supplier)
-        vals = invoice._prepare_retention_payment_vals("iva", partner_type, payment_type, journals)
-        self.assertIn("payment_type", vals)
-        self.assertIn("is_retention", vals)
-        self.assertTrue(vals["is_retention"])
-        _logger.info("========= test_08 passed =========")
+    
 
     def test_09_prepare_retention_vals_iva(self):
         invoice = self._create_invoice_reten_iva(

@@ -65,12 +65,13 @@ class ResCompany(models.Model):
         string="Auto-fill IVA Client Retention Amount", default=False
     )
 
-    @api.onchange('condition_withholding_id')
-    def _onchange_condition_withholding_id(self):
-        for rec in self:
-            if rec.condition_withholding_id:
-                rec.partner_id.withholding_type_id = rec.condition_withholding_id
-            else:   
-                rec.partner_id.withholding_type_id = False
+    def write(self, vals):
+        if "condition_withholding_id" in vals:
+            for company in self:
+                if company.partner_id:
+                    company.partner_id.write(
+                        {"withholding_type_id": vals["condition_withholding_id"]}
+                    )
+        return super().write(vals)
 
     

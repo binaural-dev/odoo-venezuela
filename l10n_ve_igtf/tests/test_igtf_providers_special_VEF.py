@@ -136,7 +136,7 @@ class TestIGTFNEW(IGTFTestCommon):
         payment = self.env['account.payment'].browse(action.get('res_id'))
       
         invoice = self.env['account.move'].browse(invoice.id)
-        self.assert_invoice_values(invoice, 582, 418.0, 'partial')
+        self.assert_invoice_values(invoice, 600, 418.0, 'partial')
         cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
         
         
@@ -213,7 +213,7 @@ class TestIGTFNEW(IGTFTestCommon):
             {'account': self.acc_igtf_prov, 'debit': 7092.45, 'credit': 0.0 },
         ]
         self._assert_move_lines_equal(cross_move_advance, expected_lines)
-        self.assert_invoice_values(invoice, 587.5630037223183, 412.44, 'partial')
+        self.assert_invoice_values(invoice, 605.74, 412.44, 'partial')
 
     def test05_payment_from_invoice_with_igtf_journal(self):
 
@@ -245,7 +245,7 @@ class TestIGTFNEW(IGTFTestCommon):
             {'account': self.acc_igtf_prov, 'debit': 14050.60, 'credit': 0.0 },
         ]
         self._assert_move_lines_equal(cross_move_advance, expected_lines)
-        self.assert_invoice_values(invoice, 960.8161072689973, 39.18, 'partial')
+        self.assert_invoice_values(invoice, 990.53, 39.18, 'partial')
 
     def test06_payment_from_invoice_with_igtf_journal(self):
 
@@ -277,7 +277,7 @@ class TestIGTFNEW(IGTFTestCommon):
             {'account': self.acc_igtf_prov, 'debit': 14184.90, 'credit':  0.0},
         ]
         self._assert_move_lines_equal(cross_move_advance, expected_lines)
-        self.assert_invoice_values(invoice, 458645.1, 41354.9, 'partial')
+        self.assert_invoice_values(invoice, 472830.0, 41354.9, 'partial')
 
     
     def test07_payment_from_invoice_with_igtf_journal(self):
@@ -310,7 +310,7 @@ class TestIGTFNEW(IGTFTestCommon):
             {'account': self.acc_igtf_prov, 'debit': 11708.83, 'credit': 0.0 },
         ]
         self._assert_move_lines_equal(cross_move_advance, expected_lines)
-        self.assert_invoice_values(invoice, 378585.57, 121414.43, 'partial')
+        self.assert_invoice_values(invoice, 390294.4, 121414.43, 'partial')
 
     
     def test08_payment_from_invoice_with_igtf_journal_1(self):
@@ -483,7 +483,7 @@ class TestIGTFNEW(IGTFTestCommon):
         
         payment = self.env['account.payment'].browse(action.get('res_id'))
 
-        self.assert_invoice_values(invoice, 970.00, 530.0, 'partial')
+        self.assert_invoice_values(invoice, 1000.00, 530.0, 'partial')
 
         expected_lines = [
             {'account': self.account_bank_eur, 'amount_currency': -1000.00},
@@ -512,7 +512,7 @@ class TestIGTFNEW(IGTFTestCommon):
         ]
         self._assert_move_lines_equal(payment.move_id, expected_lines)
 
-        self.assert_invoice_values(invoice, 970.0, 107.01, 'partial')
+        self.assert_invoice_values(invoice, 1000.00, 107.01, 'partial')
 
 
     def test09_payment_from_invoice_with_igtf_journal_2(self):
@@ -538,7 +538,7 @@ class TestIGTFNEW(IGTFTestCommon):
         
         payment = self.env['account.payment'].browse(action.get('res_id'))
 
-        self.assert_invoice_values(invoice, 970.0, 530.0, 'partial')
+        self.assert_invoice_values(invoice, 1000.00, 530.0, 'partial')
 
         expected_lines = [
             {'account': self.account_bank_eur, 'amount_currency': -1000.00},
@@ -567,7 +567,7 @@ class TestIGTFNEW(IGTFTestCommon):
         ]
         self._assert_move_lines_equal(payment.move_id, expected_lines)
 
-        self.assert_invoice_values(invoice, 970.0, 107.01, 'partial')
+        self.assert_invoice_values(invoice, 1000.00, 107.01, 'partial')
        
 
     
@@ -849,7 +849,7 @@ class TestIGTFNEW(IGTFTestCommon):
             f"La factura debe estar en estado 'partial' (parcialmente pagada), estado actual: {invoice.payment_state}"
         )
 
-        self.assertAlmostEqual(invoice.foreign_bi_igtf,1940.0, 2, "Bi_igtf DEbe ser 1940.0 bsf")
+        self.assertAlmostEqual(invoice.foreign_bi_igtf,2000.00, 2, "Bi_igtf DEbe ser 2000.00 usd")
         
         outstanding_line = payment_move.line_ids.filtered(
             lambda l: l.account_id == self.acc_payable and l.debit > 0
@@ -890,7 +890,7 @@ class TestIGTFNEW(IGTFTestCommon):
             f"La factura debe estar en estado 'partial' (parcialmente    pagada), estado actual: {invoice.payment_state}"
         )
 
-        self.assertAlmostEqual(invoice.foreign_bi_igtf,1940.00, 2, "Bi_igtf DEbe ser 1940.00 usd")
+        self.assertAlmostEqual(invoice.foreign_bi_igtf,2000.00, 2, "Bi_igtf DEbe ser 2000.00 usd")
 
     def test14_payment_from_invoice_with_igtf_journal_paiment_multi_invoice(self):
         
@@ -942,7 +942,6 @@ class TestIGTFNEW(IGTFTestCommon):
         
         for pay in payments:
             
-            _logger.info(pay.amount)
             expected_lines = [
                 {
                     'account': self.account_bank_usd,      

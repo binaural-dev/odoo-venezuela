@@ -2,3 +2,7 @@ from . import test_accountant
 from . import test_account_payment_rate
 from . import test_foreign_balance
 from . import test_multi_currency_rounding
+from . import test_real_portion
+from . import test_account_move_core
+from . import test_account_tax_foreign
+from . import test_coverage_gaps

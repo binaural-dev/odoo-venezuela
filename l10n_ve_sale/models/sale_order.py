@@ -643,8 +643,8 @@ class SaleOrder(models.Model):
         for sale in self:
             picking = sale.picking_ids
             if product_limit > 0:
-                picking_moves = picking.move_ids_without_package
-                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id'])
+                picking_moves = picking.move_ids
+                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
                 picking_vals = {
                     key: (value[0] if isinstance(value, tuple) else value)
                     for key, value in picking_vals[0].items()
@@ -652,13 +652,12 @@ class SaleOrder(models.Model):
                 picking_vals['origin'] = picking.origin
                 picking_vals['partner_id'] = picking.partner_id.id
                 picking_vals['user_id'] = picking.user_id.id
-
-                list_pickings_moves = [picking_moves[i:i + product_limit] for i in
-                                       range(0, len(picking_moves), product_limit)]
-                picking.move_ids_without_package = list_pickings_moves[0]
-
+                
+                list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
+                picking.move_ids = list_pickings_moves[0]
+                
                 for list_moves in list_pickings_moves[1:]:
-                    picking_vals["move_ids_without_package"] = list_moves
+                    picking_vals["move_ids"] = list_moves
                     new_picking = self.env['stock.picking'].create(picking_vals)
 
         return res
@@ -704,28 +703,29 @@ class SaleOrder(models.Model):
         selection_add=[('partially_billed', 'Partially billed')],
     )
 
-    @api.depends(
-        'state',
-        'order_line.invoice_status',
-        'order_line.qty_invoiced',
-        'order_line.product_uom_qty',
-        'order_line.qty_delivered',
-        'order_line.product_id.invoice_policy',
-        'order_line.display_type',
-    )
+    @api.depends('state', 'order_line.invoice_status', 'order_line.qty_invoiced', 'order_line.product_uom_qty')
     def _compute_invoice_status(self):
-        for order in self:
-            if order.state in ('sale', 'done'):
-                invoiceable_lines = order.order_line.filtered(lambda line: not line.display_type)
-                total_invoiced = sum(invoiceable_lines.mapped('qty_invoiced'))
-                total_invoiceable = sum(
-                    line.product_uom_qty
-                    if line.product_id.invoice_policy == 'order'
-                    else line.qty_delivered
-                    for line in invoiceable_lines
-                )
+        sale_done_orders = self.filtered(lambda order: order.state in ('sale', 'done'))
+        other_orders = self - sale_done_orders
 
-                if total_invoiced > 0 and total_invoiced < total_invoiceable:
-                    order.invoice_status = 'partially_billed'
-                    continue
-            super(SaleOrder, order)._compute_invoice_status()
+        if sale_done_orders:
+            super(SaleOrder, sale_done_orders)._compute_invoice_status()
+
+        if other_orders:
+            super(SaleOrder, other_orders)._compute_invoice_status()
+
+        for order in sale_done_orders:
+            invoiceable_lines = order.order_line.filtered(lambda line: not line.display_type)
+            total_invoiced = sum(invoiceable_lines.mapped('qty_invoiced'))
+            total_invoiceable = sum(
+                line.product_uom_qty
+                if line.product_id.invoice_policy == 'order'
+                else line.qty_delivered
+                for line in invoiceable_lines
+            )
+
+            if total_invoiced > 0 and total_invoiced < total_invoiceable:
+                order.invoice_status = 'partially_billed'
+
+        for order in other_orders:
+            order.invoice_status = order.invoice_status

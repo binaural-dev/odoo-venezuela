@@ -143,7 +143,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "extend_aliquot": 0.31,
             "general_aliquot": 0.16,
             "total_purchases": amount_taxed,
-            "total_purchases_iva": amount_taxed - (tax_base_exempt_aliquot ,0) ,    
+            "total_purchases_iva": (amount_taxed or 0) - (tax_base_exempt_aliquot or 0),    
             "total_purchases_not_iva": tax_base_exempt_aliquot ,
             "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot",0) ,    
             "amount_general_aliquot": taxes.get("amount_general_aliquot",0) ,    
@@ -602,7 +602,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
         
-        """ International Purchase Fields """
         
         if not self.company_id.not_show_general_aliquot_purchase_international:
             fields_info = [
@@ -640,7 +639,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
 
-        """ Fin international purchase fields """
         
         if self.company_id.config_deductible_tax:
             purchase_fields = self.not_deductible_purchase_book_fields(purchase_fields)
@@ -749,7 +747,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         is_sale = self.report == "sale"
 
         if is_sale:
+            sale_lines = self.parse_sale_book_data()
+            if not sale_lines:
+                raise UserError(_('No sale records found for the selected period.'))
+
             return self.download_sales_book()
+        else:
+            purchase_lines = self.parse_purchase_book_data()
+            if not purchase_lines:
+                raise UserError(_('No purchase records found for the selected period.'))
 
         return self.download_purchases_book()
 

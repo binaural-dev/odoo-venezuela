@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from odoo import api, fields, models, _
-from odoo.tools import float_compare
+from odoo.tools import float_compare ,float_round, float_is_zero
 from odoo.exceptions import UserError, ValidationError
 import logging
 
@@ -284,15 +284,6 @@ class AccountMoveLine(models.Model):
                 abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
             )
 
-    @api.depends("foreign_rate", "balance")
-    def _compute_amount_currency(self):
-        res = super()._compute_amount_currency()
-        for line in self:
-            if line.amount_currency is False:
-                line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
-            if line.currency_id == line.company_id.currency_id:
-                line.amount_currency = line.balance
-        return res
 
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
@@ -326,119 +317,6 @@ class AccountMoveLine(models.Model):
 
         res["foreign_amount"] = foreign_amount
         return res
-
-    @api.model
-    def _prepare_move_line_residual_amounts(
-        self,
-        aml_values,
-        counterpart_currency,
-        shadowed_aml_values=None,
-        other_aml_values=None,
-    ):
-        """Prepare the available residual amounts for each currency.
-        :param aml_values: The values of account.move.line to consider.
-        :param counterpart_currency: The currency of the opposite line this line will be reconciled with.
-        :param shadowed_aml_values: A mapping aml -> dictionary to replace some original aml values to something else.
-                                    This is usefull if you want to preview the reconciliation before doing some changes
-                                    on amls like changing a date or an account.
-        :param other_aml_values:    The other aml values to be reconciled with the current one.
-        :return: A mapping currency -> dictionary containing:
-            * residual: The residual amount left for this currency.
-            * rate:     The rate applied regarding the company's currency.
-        """
-
-        def is_payment(aml):
-            return aml.move_id.origin_payment_id or aml.move_id.statement_line_id
-
-        def get_odoo_rate(aml, other_aml, currency):
-            if forced_rate := self._context.get("forced_rate_from_register_payment"):
-                return forced_rate
-            if other_aml and not is_payment(aml) and is_payment(other_aml):
-                # >>>> Integra
-                if aml.move_id.origin_payment_id:
-                    return aml.move_id.origin_payment_id.foreign_inverse_rate
-                # <<<< Integra
-                return get_accounting_rate(other_aml, currency)
-            if aml.move_id.is_invoice(include_receipts=True):
-                exchange_rate_date = aml.move_id.invoice_date
-            else:
-                exchange_rate_date = aml._get_reconciliation_aml_field_value(
-                    "date", shadowed_aml_values
-                )
-            return currency._get_conversion_rate(
-                aml.company_currency_id, currency, aml.company_id, exchange_rate_date
-            )
-
-        def get_accounting_rate(aml, currency):
-            if forced_rate := self._context.get("forced_rate_from_register_payment"):
-                return forced_rate
-            balance = aml._get_reconciliation_aml_field_value(
-                "balance", shadowed_aml_values
-            )
-            amount_currency = aml._get_reconciliation_aml_field_value(
-                "amount_currency", shadowed_aml_values
-            )
-            if not aml.company_currency_id.is_zero(balance) and not currency.is_zero(
-                amount_currency
-            ):
-                return abs(amount_currency / balance)
-
-        aml = aml_values["aml"]
-        other_aml = (other_aml_values or {}).get("aml")
-        remaining_amount_curr = aml_values["amount_residual_currency"]
-        remaining_amount = aml_values["amount_residual"]
-        company_currency = aml.company_currency_id
-        currency = aml._get_reconciliation_aml_field_value(
-            "currency_id", shadowed_aml_values
-        )
-        account = aml._get_reconciliation_aml_field_value(
-            "account_id", shadowed_aml_values
-        )
-        has_zero_residual = company_currency.is_zero(remaining_amount)
-        has_zero_residual_currency = currency.is_zero(remaining_amount_curr)
-        is_rec_pay_account = account.account_type in (
-            "asset_receivable",
-            "liability_payable",
-        )
-
-        available_residual_per_currency = {}
-
-        if not has_zero_residual:
-            available_residual_per_currency[company_currency] = {
-                "residual": remaining_amount,
-                "rate": 1,
-            }
-        if currency != company_currency and not has_zero_residual_currency:
-            available_residual_per_currency[currency] = {
-                "residual": remaining_amount_curr,
-                "rate": get_accounting_rate(aml, currency),
-            }
-
-        if (
-            currency == company_currency
-            and is_rec_pay_account
-            and not has_zero_residual
-            and counterpart_currency != company_currency
-        ):
-            rate = get_odoo_rate(aml, other_aml, counterpart_currency)
-            residual_in_foreign_curr = counterpart_currency.round(
-                remaining_amount * rate
-            )
-            if not counterpart_currency.is_zero(residual_in_foreign_curr):
-                available_residual_per_currency[counterpart_currency] = {
-                    "residual": residual_in_foreign_curr,
-                    "rate": rate,
-                }
-        elif (
-            currency == counterpart_currency
-            and currency != company_currency
-            and not has_zero_residual_currency
-        ):
-            available_residual_per_currency[counterpart_currency] = {
-                "residual": remaining_amount_curr,
-                "rate": get_accounting_rate(aml, currency),
-            }
-        return available_residual_per_currency
 
     @api.model
     def abs_amount_lines_ids_adjust(self):
@@ -475,8 +353,66 @@ class AccountMoveLine(models.Model):
 
         self._apply_product_real_portion(container['records'])
 
+    @api.onchange('amount_currency', 'currency_id')
+    def _inverse_amount_currency(self):
+        """
+        Updates the 'balance' (company currency amount) whenever the 'amount_currency' 
+        or 'currency_id' changes, ensuring a symmetric rounding.
+
+        This method addresses the common floating-point discrepancy where a balance 
+        converted to foreign currency and then back to company currency results in 
+        a small difference (e.g., 0.01). 
+
+        The logic performs a "Symmetry Test":
+        1. It calculates the initial balance using the current exchange rate.
+        2. It simulates a back-conversion to the foreign currency.
+        3. If the back-conversion doesn't match the original 'amount_currency' due to 
+        rounding noise, it applies a micro-adjustment to the 'balance' in the 
+        company currency (VES) to force a perfect match.
+
+        :return: None
+        """
+        for line in self:
+            if line.currency_id == line.company_id.currency_id and line.balance != line.amount_currency:
+                line.balance = line.amount_currency
+                
+            elif (
+                line.currency_id != line.company_id.currency_id
+                and not line.move_id.is_invoice(True)
+                and not self.env.is_protected(self._fields['balance'], line)
+            ):
+                rate = line.currency_rate
+                if not rate:
+                    continue
+                    
+                raw_balance = line.amount_currency / rate
+                
+                rounded_balance = line.company_id.currency_id.round(raw_balance)
+                
+                back_to_foreign = rounded_balance * rate
+                diff_foreign = line.amount_currency - back_to_foreign
+                
+                if not float_is_zero(diff_foreign, precision_rounding=line.currency_id.rounding):
+                    adjustment = float_round(diff_foreign / rate, precision_rounding=line.company_id.currency_id.rounding)
+                    line.balance = rounded_balance + adjustment
+                else:
+                    line.balance = rounded_balance
+
     @api.model
     def _apply_product_real_portion(self, lines):
+        """Correct cross-currency rounding on product lines.
+
+        When an invoice is in a foreign currency, each product line's balance
+        (company currency) is independently rounded to the company currency's
+        precision. The sum of these rounded balances can differ by the currency
+        rounding unit from the rounded conversion of the total line amount at
+        the raw exchange rate. This method distributes that difference across
+        product lines proportionally so the entry remains balanced.
+
+        The expected total is computed via ``_convert`` (the raw rate from
+        ``res.currency.rate``), not from ``line.currency_rate`` (which is
+        derived from an already-rounded balance and amplifies the error).
+        """
         for move in lines.move_id:
             if not move.is_invoice(include_receipts=True):
                 continue
@@ -496,12 +432,11 @@ class AccountMoveLine(models.Model):
             if not product_lines:
                 continue
 
-            rate = product_lines[0].currency_rate
-            if not rate:
-                continue
-
             total_currency = sum(product_lines.mapped('amount_currency'))
-            expected = cc.round(total_currency / rate)
+            rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+            expected = cc.round(move.currency_id._convert(
+                total_currency, cc, move.company_id, rate_date
+            ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
 

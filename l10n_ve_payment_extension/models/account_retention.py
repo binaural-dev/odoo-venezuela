@@ -785,7 +785,6 @@ class AccountRetention(models.Model):
             else:
                 line_data["retention_amount"] = retention_amount
                 line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (withholding_amount / 100)
-                     #Acá siempre que la tercera posición decimal sea 5 o mayor se redondea hacia arriba. ATT DANIELA
             lines_data.append(line_data)
         return lines_data
 

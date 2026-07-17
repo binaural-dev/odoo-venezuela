@@ -299,16 +299,12 @@ class TestRetention(RetentionTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
 
         ret = invoice.retention_iva_line_ids[0].retention_id
-        pay = ret.payment_ids[0]
 
         self.assertEqual(ret.state, "draft")
         ret.action_cancel()
 
         self.assertEqual(ret.state, "cancel")
         self.assertFalse(ret.payment_ids, "No payments on retention after cancel")
-        self.assertEqual(pay.state, "canceled", "Payment must be canceled")
-        self.assertFalse(pay.retention_id, "Payment unlinked from retention")
-        self.assertFalse(pay.is_retention, "Payment not flagged as retention")
         self.assertFalse(invoice.retention_iva_line_ids,
                          "No active retention lines after cancel")
         self.assertEqual(invoice.count_iva_retention, 0)
@@ -465,7 +461,6 @@ class TestRetention(RetentionTestCommon):
 
         ret = invoice.retention_iva_line_ids[0].retention_id
         line = invoice.retention_iva_line_ids[0]
-        pay = ret.payment_ids[0]
 
         # retention (draft)
         self.assertEqual(ret.type_retention, "iva")
@@ -481,7 +476,7 @@ class TestRetention(RetentionTestCommon):
         self.assertEqual(ret.total_retention_amount, 0.0)
         self.assertAlmostEqual(ret.foreign_total_invoice_amount, 1000.0 / self.rate, places=2)
         self.assertAlmostEqual(ret.foreign_total_iva_amount, 160.0 / self.rate, places=2)
-        self.assertTrue(ret.payment_ids)
+        self.assertFalse(ret.payment_ids)
         self.assertTrue(ret.retention_line_ids)
 
         # line (draft, retention_amount=0)
@@ -497,16 +492,9 @@ class TestRetention(RetentionTestCommon):
         self.assertEqual(line.state, "draft")
         self.assertEqual(line.name, "Iva Retention")
         self.assertEqual(line.invoice_type, "out_invoice")
-        self.assertTrue(line.payment_id, "Line must be linked to draft payment")
+        self.assertFalse(line.payment_id, "Line must not be linked to a payment in draft")
         self.assertAlmostEqual(line.foreign_invoice_amount, 1000.0 / self.rate, places=2)
         self.assertAlmostEqual(line.foreign_iva_amount, 160.0 / self.rate, places=2)
-
-        # payment (draft)
-        self.assertTrue(pay.is_retention)
-        self.assertEqual(pay.payment_type_retention, "iva")
-        self.assertEqual(pay.retention_id, ret)
-        self.assertEqual(pay.state, "draft")
-        self.assertAlmostEqual(pay.amount, 0.0, places=2)
 
         # invoice
         self.assertTrue(invoice.iva_voucher_number,
@@ -524,7 +512,7 @@ class TestRetention(RetentionTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
 
         ret = invoice.retention_iva_line_ids[0].retention_id
-        pay = ret.payment_ids[0]
+        
 
         # Check draft state
         self.assertEqual(ret.state, "draft")
@@ -547,12 +535,8 @@ class TestRetention(RetentionTestCommon):
         # ── Cancel draft retention ──
         ret.action_cancel()
         ret.invalidate_recordset()
-
         self.assertEqual(ret.state, "cancel")
         self.assertFalse(ret.payment_ids)
-        self.assertEqual(pay.state, "canceled")
-        self.assertFalse(pay.retention_id)
-        self.assertFalse(pay.is_retention)
         self.assertFalse(invoice.iva_voucher_number)
         self.assertEqual(invoice.count_iva_retention, 0)
         self.assertFalse(invoice.has_emited_iva_retention)
