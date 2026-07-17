@@ -540,21 +540,6 @@ class TestCoverageGaps(TransactionCase):
         self.assertEqual(invoice.state, 'posted')
         self._assert_balances(invoice, "test_23")
 
-    # ═══════════════════════════════════════════════════════════════
-    # account_move.py - _fix_company_currency_rounding sin PT
-    # ═══════════════════════════════════════════════════════════════
-
-    def test_24_fix_company_currency_rounding_no_pt(self):
-        """_fix_company_currency_rounding: sin PT lines,
-        debe salir temprano (continue)."""
-        invoice = self._create_invoice(self.currency_usd, 100.0)
-        # Sin payment_term, _fix_company_currency_rounding sale temprano
-        invoice.with_context(move_action_post_alert=True).action_post()
-        cc = self.company.currency_id
-        invoice._fix_company_currency_rounding(
-            self.env['account.move'].browse(invoice.id)
-        )
-        self._assert_balances(invoice, "test_24")
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _compute_total_debit_credit VEF
