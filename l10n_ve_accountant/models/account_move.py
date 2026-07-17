@@ -991,6 +991,37 @@ class AccountMove(models.Model):
         return super().action_post()
 
 
+    @api.depends(
+    "invoice_line_ids.compute_all_tax",
+    "invoice_line_ids.price_subtotal",
+    "foreign_inverse_rate",
+    "foreign_currency_id",
+    "foreign_rate",
+    )
+    def _compute_needed_terms(self):
+        res = super()._compute_needed_terms()
+
+        for invoice in self:
+            is_draft = invoice.id != invoice._origin.id
+            sign = 1 if invoice.is_inbound(include_receipts=True) else -1
+            if invoice.is_invoice(True) and invoice.invoice_line_ids:
+                invoice._compute_tax_totals()
+                if invoice.invoice_payment_term_id:
+                    if is_draft:
+                        tax_amount_currency = 0.0
+                        untaxed_amount_currency = 0.0
+                        for line in invoice.invoice_line_ids:
+                            untaxed_amount_currency += line.foreign_subtotal
+                            tax_amount_currency += (
+                                line.foreign_price_total - line.foreign_subtotal
+                            )
+                        untaxed_amount = untaxed_amount_currency
+                        tax_amount = tax_amount_currency
+                    else:
+                        pass
+                else:
+                    pass
+        return res
 
     def button_draft(self):
         for rec in self:
