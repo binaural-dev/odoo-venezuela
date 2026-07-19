@@ -1,6 +1,7 @@
 ## 1. Modelo
 
-- [x] 1.1 `order_model.js`: nuevo `get_total_with_igtf()` = `get_total_without_igtf() + igtf_amount`, redondeado con `_igtfRoundLocal`, sin tocar `get_total_with_tax()`/`get_foreign_total_with_tax()`
+- [x] 1.1 `order_model.js`: nuevo `get_total_with_igtf()` = `get_total_without_igtf() + compute_igtf_amount(get_total_without_igtf())` (3% de la factura completa, fijo), redondeado con `_igtfRoundLocal`, sin tocar `get_total_with_tax()`/`get_foreign_total_with_tax()`
+- [x] 1.2 Corregido 19-jul: la primera versión sumaba `igtf_amount` (parcial, dependiente de lo tecleado en cada línea de pago); Jesús pidió que el renglón sea fijo, siempre 3% de la factura completa
 
 ## 2. Panel de estado de pago
 
