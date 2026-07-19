@@ -212,10 +212,18 @@ class PosSession(models.Model):
 
         The move is always created in ``state="draft"`` — it is not posted
         automatically; accounting reviews and validates it manually.
+
+        ``name`` (the move's sequential "Number") is intentionally left
+        unset so that when accounting posts it, Odoo's native
+        ``_compute_name`` assigns the next sequence from
+        ``cross_account_journal`` — setting it explicitly here would
+        permanently block that assignment (``_compute_name`` only calls
+        ``_set_next_sequence()`` when ``name`` is empty/``'/'``). The
+        descriptive text goes in ``ref`` instead.
         """
         move = self.env["account.move"].create(
             {
-                "name": _("PoS Payment Method Adjustment"),
+                "ref": _("PoS Payment Method Adjustment"),
                 "date": payment.create_date,
                 "journal_id": payment.payment_method_id.cross_account_journal.id,
                 "state": "draft",
@@ -383,10 +391,14 @@ class PosSession(models.Model):
         ``receivable_line`` is the ``account.move.line`` returned by
         ``_create_combine_account_payment`` (the receivable line on the
         ``account.payment``'s own move), not an ``account.move``.
+
+        ``name`` is intentionally left unset — same reasoning as
+        ``_create_cross_move``: it lets Odoo assign the journal's sequence
+        on posting instead of freezing a literal string as the move number.
         """
         move = self.env["account.move"].create(
             {
-                "name": _("PoS Payment Method Adjustment"),
+                "ref": _("PoS Payment Method Adjustment"),
                 "date": receivable_line.move_id.create_date,
                 "journal_id": receivable_line.move_id.origin_payment_id.pos_payment_method_id.cross_account_journal.id,
                 "state": "draft",

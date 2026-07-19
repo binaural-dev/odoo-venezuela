@@ -125,6 +125,59 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertAlmostEqual(transitory_line.foreign_credit, payment.foreign_amount, places=2)
         self.assertTrue(transitory_line.not_foreign_recalculate)
 
+    def test_cross_move_name_takes_journal_sequence_on_post(self):
+        """El asiento toma la secuencia de `cross_account_journal` al postearse.
+
+        Antes del fix, `name` se fijaba con el literal "PoS Payment Method
+        Adjustment" en el ``create()`` del ``account.move`` -- eso bloquea
+        para siempre la asignacion nativa de secuencia
+        (``_compute_name``/``_set_next_sequence`` solo corren cuando
+        ``name`` esta vacio o es '/'). El texto descriptivo ahora va en
+        ``ref``, dejando ``name`` libre para que Odoo lo asigne al postear.
+        """
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/SEQUENCE",
+        )
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertIn(
+            move.name,
+            (False, "/"),
+            "en draft, name debe quedar vacio/'/' -- Odoo aun no asigno secuencia",
+        )
+        self.assertEqual(
+            move.ref,
+            "PoS Payment Method Adjustment",
+            "el texto descriptivo vive en ref, no en name",
+        )
+
+        move.action_post()
+
+        self.assertTrue(
+            move.name and move.name != "/",
+            "al postear, Odoo debe asignar la secuencia del diario cross_account_journal",
+        )
+        self.assertNotEqual(
+            move.name,
+            "PoS Payment Method Adjustment",
+            "name NO debe quedar congelado con el literal viejo",
+        )
+        self.assertEqual(
+            move.ref,
+            "PoS Payment Method Adjustment",
+            "ref se preserva tras postear",
+        )
+
     def test_cross_move_split_outgoing_refund(self):
         """Pago split saliente (reembolso, amount<0) crea el cruce espejo."""
         self._configure_cross(self.split_bank_method)
