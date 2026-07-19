@@ -16,10 +16,16 @@ Bs) — pero sin repetir el bug: sin tocar `get_total_with_tax()` ni
 ## What Changes
 
 - Nuevo getter `get_total_with_igtf()` en `PosOrder` (`order_model.js`):
-  `get_total_without_igtf() + igtf_amount`, redondeado con
-  `_igtfRoundLocal`. No sustituye ni delega en `get_total_with_tax()`/
-  `get_foreign_total_with_tax()`, que permanecen intactos (conversión pura de
-  factura, sin IGTF) para todos sus demás consumidores.
+  `get_total_without_igtf() + compute_igtf_amount(get_total_without_igtf())`,
+  redondeado con `_igtfRoundLocal` — el 3% de la factura COMPLETA, fijo. Corregido
+  el 19-jul (primera versión usaba `+ igtf_amount`, el recargo parcial que
+  `update_igtf()` acumula según lo tecleado en cada línea de pago: al pagar,
+  por ejemplo, 10 de una factura de 100, el renglón mostraba 10,30 en vez de
+  103 — comportamiento dinámico que Jesús no quería; el renglón debe mostrar
+  siempre el mismo total sin importar cuánto se haya pagado). No sustituye ni
+  delega en `get_total_with_tax()`/`get_foreign_total_with_tax()`, que
+  permanecen intactos (conversión pura de factura, sin IGTF) para todos sus
+  demás consumidores.
 - Nuevo getter `totalWithIgtfAmount` en `payment_status.js`, que formatea
   `get_total_with_igtf()` con `formatCurrency()`.
 - `payment_status.xml`: se mantiene el desglose BI IGTF / IGTF / Foreign IGTF
