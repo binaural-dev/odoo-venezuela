@@ -186,6 +186,16 @@ patch(PosOrder.prototype, {
     return this.igtf_amount;
   },
 
+  // Total de factura (sin IGTF, get_total_without_igtf) + recargo IGTF ya
+  // calculado. SOLO para el renglón "TOTAL a Pagar con IGTF" del panel de
+  // estado de pago (payment_status.xml); no reemplaza get_total_with_tax()/
+  // get_foreign_total_with_tax(), que deben seguir siendo la conversión pura
+  // de factura para el resto de consumidores (ver migration-lessons.md,
+  // "Resuelto 2026-07-14").
+  get_total_with_igtf() {
+    return this._igtfRoundLocal(this.get_total_without_igtf() + this.igtf_amount);
+  },
+
   get_foreign_igtf_amount() {
     return this.foreign_igtf_amount;
   },

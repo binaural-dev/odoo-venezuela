@@ -41,6 +41,12 @@ class PosSession(models.Model):
         - The resulting ``account.move`` is always created in ``state="draft"``
           (see ``_create_cross_move``) — accounting reviews and posts it
           manually, it is never posted automatically.
+        - The transitory leg of the cross move uses
+          ``_get_cross_transitory_account`` (see there) instead of reading
+          ``outstanding_account_id`` directly, so cash payment methods (which
+          never expose that field in the native UI) still resolve a valid
+          account via the same fallback native Odoo uses for
+          ``_get_receivable_account``.
         """
         for session in self:
             for order_payment in session.order_ids.payment_ids:
@@ -49,7 +55,11 @@ class PosSession(models.Model):
                     continue
                 if not payment_method.apply_one_cross_move:
                     continue
-                if not (payment_method.cross_account_journal and payment_method.cross_journal):
+                if not (
+                    payment_method.cross_account_journal
+                    and payment_method.cross_journal
+                    and session._get_cross_transitory_account(payment_method)
+                ):
                     continue
 
                 if order_payment.amount < 0:
@@ -59,12 +69,35 @@ class PosSession(models.Model):
 
                 session._create_cross_move(order_payment, line_vals)
 
+    def _get_cross_transitory_account(self, payment_method):
+        """Return the transitory account for the cross move's OTHER leg.
+
+        Mirrors the native Odoo 19 fallback pattern for the analogous
+        ``_get_receivable_account`` (``pos_session.py:1660``):
+        ``payment_method.receivable_account_id or
+        company.account_default_pos_receivable_account_id``.
+
+        ``outstanding_account_id`` is bank-only in the native UI
+        (``invisible="type != 'bank'"`` in
+        ``point_of_sale/views/pos_payment_method_views.xml:24``) — cash
+        payment methods never expose it, because native Odoo routes cash
+        straight to the cash journal's own account, with no separate
+        transitory/outstanding account. When it's empty (always the case for
+        cash), fall back to the company's default PoS receivable account —
+        the same account native Odoo already uses as the session-side
+        transitory account for that payment.
+        """
+        return (
+            payment_method.outstanding_account_id
+            or self.company_id.account_default_pos_receivable_account_id
+        )
+
     def _line_vals_move_cross_incoming(self, payment):
         """Build the cross-move lines for an incoming (amount >= 0) payment.
 
         Debits the ``cross_journal``'s real bank account and credits the
-        payment method's own ``outstanding_account_id`` (the transitory
-        account), clearing it.
+        transitory account resolved by ``_get_cross_transitory_account``,
+        clearing it.
 
         NOTE: the Odoo 17 legacy compared against a hardcoded currency id
         (``== 3``, VEF in the original dev database). Fixed to compare
@@ -72,7 +105,7 @@ class PosSession(models.Model):
         foreign currency), which does not assume a fixed id.
         """
         payment_method = payment.payment_method_id
-        debit_account = payment_method.outstanding_account_id.id
+        debit_account = self._get_cross_transitory_account(payment_method).id
         account_method = payment_method.cross_journal
         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
         line_currency = account_method.currency_id or self.env.company.currency_id
@@ -119,11 +152,12 @@ class PosSession(models.Model):
         """Build the cross-move lines for an outgoing (amount < 0) payment.
 
         Mirror of ``_line_vals_move_cross_incoming`` for change/refunds:
-        debits the transitory account and credits the ``cross_journal``'s
-        real bank account, using absolute magnitudes.
+        debits the transitory account (see ``_get_cross_transitory_account``)
+        and credits the ``cross_journal``'s real bank account, using
+        absolute magnitudes.
         """
         payment_method = payment.payment_method_id
-        debit_account = payment_method.outstanding_account_id.id
+        debit_account = self._get_cross_transitory_account(payment_method).id
         account_method = payment_method.cross_journal
         credit_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
         line_currency = account_method.currency_id or self.env.company.currency_id
@@ -280,7 +314,13 @@ class PosSession(models.Model):
             if line.debit > 0 and amounts.get("foreign_amount", False):
                 line.not_foreign_recalculate = True
                 line.foreign_debit = abs(amounts["foreign_amount"])
-        if account_payment and account_payment.pos_payment_method_id.apply_one_cross_move:
+        cross_method = account_payment.pos_payment_method_id if account_payment else self.env["pos.payment.method"]
+        if (
+            cross_method.apply_one_cross_move
+            and cross_method.cross_account_journal
+            and cross_method.cross_journal
+            and self._get_cross_transitory_account(cross_method)
+        ):
             self._create_cross_move_payment(res)
         return res
 
@@ -374,7 +414,7 @@ class PosSession(models.Model):
         """
         origin_payment = receivable_line.move_id.origin_payment_id
         payment_method = origin_payment.pos_payment_method_id
-        debit_account = payment_method.outstanding_account_id.id
+        debit_account = self._get_cross_transitory_account(payment_method).id
         account_method = payment_method.cross_journal
         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
         line_currency = account_method.currency_id or self.env.company.currency_id
