@@ -734,6 +734,34 @@ $ docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True \
   global) y correr la suite de `l10n_ve_invoice`/`l10n_ve_invoice_loyalty`
   — no ejecutada en esta sesión.
 
+## Post-HC.1/HC.2 hotfix — Tasa BCV con separador decimal incorrecto (⏳ pendiente QA manual — 2026-07-20)
+
+- [ ] **HG.1** — La "Tasa BCV" se mostraba con punto decimal (`700.2249`) en vez
+  de coma (`700,2249`) en `OrderSummary` (venta) y en `TicketScreen`
+  (reembolsos), inconsistente con el resto de montos de la misma pantalla
+  (`Total: 46.400,00 Bs.F`, que sí usa coma). Causa: `getConversionRateForDisplay()`
+  (`order_summary.js`, introducido en HC.1) y `get_display_rate_formatted()`
+  (`pos_order.js`, usado por `ticket_screen.xml` vía HC.2) formateaban la tasa
+  con `Number.prototype.toFixed()`, que SIEMPRE usa `.` como separador sin
+  importar el locale — a diferencia de `formatMonetary`
+  (`contextual_utils_service.js`) que sí respeta `localization.decimalPoint`.
+  Fix: reemplazado `toFixed(precision)` por
+  `formatMonetary(value, { digits: [false, precision], noSymbol: true })`
+  — la MISMA función (`@web/views/fields/formatters`) que ya usa este
+  módulo para formatear los montos (`contextual_utils_service.js` →
+  `formatForeignCurrency`/`formatCurrency`, visible en "Total: 46.400,00
+  Bs.F"), con `noSymbol: true` para no anteponer símbolo de moneda (la
+  tasa no es un monto) y `digits` explícito para conservar la precisión
+  de `decimal.precision` "Tasa" en vez de la precisión propia de la
+  moneda. Se mantiene el paso de redondeo previo
+  (`Number((x + Number.EPSILON).toFixed(precision))`) en `order_summary.js`
+  para evitar el mismo problema de precisión flotante que ya documentaba HC.1,
+  solo se reemplazó el formateo final para display.
+  (`static/src/overrides/screens/product_screen/order_summary/order_summary.js`,
+  `static/src/overrides/models/pos_order.js`.)
+  **Pendiente**: prueba manual en POS real (venta y reembolso) y commit — no
+  ejecutado en esta sesión.
+
 ## Next slice recommended
 
 **Slice C2.3 — `_create_cash_statement_lines_and_cash_move_lines`**. Depends on: nothing further (C2.2 done). Remaining C2 items:
