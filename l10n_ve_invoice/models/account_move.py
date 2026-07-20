@@ -97,14 +97,15 @@ class AccountMove(models.Model):
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
         from_pos = self.env.context.get('from_pos', False)
-        for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
+        invoice_lines = self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids")
+        # _get_discount_lines() is the hook Odoo uses to tag a line as a
+        # recognized discount (sale_discount_product_id, pos_discount's
+        # config.discount_product_id, loyalty rewards, display_type
+        # 'discount', ...). Those are legitimate price <= 0 lines.
+        discount_lines = invoice_lines._get_discount_lines()
+        for line in invoice_lines - discount_lines:
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
                 from_loyalty = self.env.context.get('from_loyalty', False)
-                if (
-                    self.env.company.sale_discount_product_id
-                    and line.product_id == self.env.company.sale_discount_product_id
-                ):
-                    continue
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
