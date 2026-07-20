@@ -4,6 +4,7 @@ import { OrderSummary } from "@point_of_sale/app/screens/product_screen/order_su
 import { patch } from "@web/core/utils/patch";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
+import { formatMonetary } from "@web/views/fields/formatters";
 
 patch(OrderSummary.prototype, {
   getConversionRateForDisplay() {
@@ -21,7 +22,7 @@ patch(OrderSummary.prototype, {
     const configRate = Number(this.pos?.config?.foreign_rate || order?.config?.foreign_rate || 0);
     if (Number.isFinite(configRate) && configRate > 0) {
       const normalizedConfigRate = configRate < 1 ? 1 / configRate : configRate;
-      return normalizedConfigRate.toFixed(ratePrecision);
+      return formatMonetary(normalizedConfigRate, { digits: [false, ratePrecision], noSymbol: true });
     }
 
     const conversionRate = order.get_conversion_rate?.();
@@ -29,9 +30,12 @@ patch(OrderSummary.prototype, {
     const fallbackVisualRate = Number.isFinite(numericRate) && numericRate > 0
       ? (numericRate < 1 ? 1 / numericRate : numericRate)
       : conversionRate;
-    const visualRate = Number.isFinite(fallbackVisualRate)
-      ? Number((fallbackVisualRate + Number.EPSILON).toFixed(ratePrecision)).toFixed(ratePrecision)
+    const roundedVisualRate = Number.isFinite(fallbackVisualRate)
+      ? Number((fallbackVisualRate + Number.EPSILON).toFixed(ratePrecision))
       : fallbackVisualRate;
+    const visualRate = Number.isFinite(roundedVisualRate)
+      ? formatMonetary(roundedVisualRate, { digits: [false, ratePrecision], noSymbol: true })
+      : roundedVisualRate;
     const isMissingRate = conversionRate === "N/D" || conversionRate === _t("N/D");
 
     if (isMissingRate && !order._missingConversionRateAlertShownInUI) {

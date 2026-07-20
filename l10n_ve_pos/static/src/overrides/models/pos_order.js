@@ -5,6 +5,7 @@ import { PosOrderAccounting } from "@point_of_sale/app/models/accounting/pos_ord
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { roundDecimals } from "@web/core/utils/numbers";
+import { formatMonetary } from "@web/views/fields/formatters";
 
 
 // New orders are now associated with the current table, if any.
@@ -63,7 +64,7 @@ patch(PosOrder.prototype, {
     const precision = Number.isFinite(Number(rateDp?.digits))
       ? Number(rateDp.digits)
       : 6;
-    return rate.toFixed(precision);
+    return formatMonetary(rate, { digits: [false, precision], noSymbol: true });
   },
 
 //   _isValidEmptyOrder() {

@@ -691,6 +691,77 @@ $ docker exec -u odoo proj odoo -i l10n_ve_pos --without-demo=True \
   drift (imagine one branch reading `foreign_credit`, the other
   `foreign_debit`). Centralized in `_set_foreign_amount_on_receivable_lines`.
 
+## Post-C2.2 hotfix — l10n_ve_invoice: descuento del POS bloqueado por precio cero (✅ done 2026-07-20)
+
+- [x] **HF.1** — El botón de descuento global del POS (core `pos_discount`,
+  `pos_store.js::applyDiscount`,
+  `/home/binaural19/odoo/addons/pos_discount/static/src/app/services/pos_store.js:59-147`)
+  crea una línea con `product_id = pos.config.discount_product_id` y
+  `price_unit` negativo. Al generar la factura de la orden desde el POS,
+  `l10n_ve_invoice._check_price_in_zero`
+  (`l10n_ve_invoice/models/account_move.py`) rechazaba esa línea con
+  `ValidationError: "An invoice cannot have a line with a price of zero"`
+  porque solo eximía del chequeo el producto configurado en
+  `company.sale_discount_product_id` (campo de `sale`, pensado para el
+  descuento global de ventas) — un producto distinto del que usa
+  `pos_discount` (`pos.config.discount_product_id`), así que el
+  descuento del POS nunca calzaba con la excepción. Tampoco existía una
+  vía de escape por contexto: `from_pos=True` solo se propaga en
+  `l10n_ve_pos/models/pos_session.py` alrededor de
+  `_create_combine_account_payment` (pagos), nunca al postear la
+  factura (`_generate_pos_order_invoice` en el core solo setea
+  `skip_invoice_sync`).
+  Se descartó desinstalar `binaural_pos_discount`
+  (`integra-addons/binaural_pos_discount`) como fix: es un parche fino
+  sobre el botón de descuento (y su import
+  `@pos_discount/overrides/components/discount_button/discount_button`
+  apunta a una ruta que ya no existe en el `pos_discount` de Odoo 19,
+  probablemente resto de la migración v17 — no es la causa del bug). El
+  mecanismo de fondo vive en el core `pos_discount` v19, así que el
+  error persistía igual sin ese módulo.
+  Fix: `_check_price_in_zero` ahora excluye
+  `invoice_line_ids._get_discount_lines()`, el hook nativo de Odoo que
+  ya extienden `sale` (`sale_discount_product_id`), `pos_discount`
+  (`config.discount_product_id`), `pos_loyalty` y `sale_loyalty`, en vez
+  de comparar a mano contra `sale_discount_product_id`. Alcance acotado
+  deliberadamente: se evaluó también propagar `from_pos=True` al postear
+  la factura (como ya hace `pos_session.py` para los pagos) pero se
+  descartó por eximir cualquier línea a precio ≤0 en facturas de POS, no
+  solo descuentos reconocidos. Manifest de `l10n_ve_invoice` subido a
+  `19.0.1.0.3`. (`l10n_ve_invoice/models/account_move.py`, commit
+  `02ca30d85`.)
+  **Pendiente**: prueba manual en POS real (validar orden con descuento
+  global) y correr la suite de `l10n_ve_invoice`/`l10n_ve_invoice_loyalty`
+  — no ejecutada en esta sesión.
+
+## Post-HC.1/HC.2 hotfix — Tasa BCV con separador decimal incorrecto (⏳ pendiente QA manual — 2026-07-20)
+
+- [ ] **HG.1** — La "Tasa BCV" se mostraba con punto decimal (`700.2249`) en vez
+  de coma (`700,2249`) en `OrderSummary` (venta) y en `TicketScreen`
+  (reembolsos), inconsistente con el resto de montos de la misma pantalla
+  (`Total: 46.400,00 Bs.F`, que sí usa coma). Causa: `getConversionRateForDisplay()`
+  (`order_summary.js`, introducido en HC.1) y `get_display_rate_formatted()`
+  (`pos_order.js`, usado por `ticket_screen.xml` vía HC.2) formateaban la tasa
+  con `Number.prototype.toFixed()`, que SIEMPRE usa `.` como separador sin
+  importar el locale — a diferencia de `formatMonetary`
+  (`contextual_utils_service.js`) que sí respeta `localization.decimalPoint`.
+  Fix: reemplazado `toFixed(precision)` por
+  `formatMonetary(value, { digits: [false, precision], noSymbol: true })`
+  — la MISMA función (`@web/views/fields/formatters`) que ya usa este
+  módulo para formatear los montos (`contextual_utils_service.js` →
+  `formatForeignCurrency`/`formatCurrency`, visible en "Total: 46.400,00
+  Bs.F"), con `noSymbol: true` para no anteponer símbolo de moneda (la
+  tasa no es un monto) y `digits` explícito para conservar la precisión
+  de `decimal.precision` "Tasa" en vez de la precisión propia de la
+  moneda. Se mantiene el paso de redondeo previo
+  (`Number((x + Number.EPSILON).toFixed(precision))`) en `order_summary.js`
+  para evitar el mismo problema de precisión flotante que ya documentaba HC.1,
+  solo se reemplazó el formateo final para display.
+  (`static/src/overrides/screens/product_screen/order_summary/order_summary.js`,
+  `static/src/overrides/models/pos_order.js`.)
+  **Pendiente**: prueba manual en POS real (venta y reembolso) y commit — no
+  ejecutado en esta sesión.
+
 ## Next slice recommended
 
 **Slice C2.3 — `_create_cash_statement_lines_and_cash_move_lines`**. Depends on: nothing further (C2.2 done). Remaining C2 items:
