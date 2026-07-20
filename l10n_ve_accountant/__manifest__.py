@@ -4,10 +4,10 @@
        Módulo de Contabilidad Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.0.0.51",
+    "version": "17.0.0.0.52",
     "depends": [
         "base",
         "web",
