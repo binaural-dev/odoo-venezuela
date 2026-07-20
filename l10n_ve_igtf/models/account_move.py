@@ -41,6 +41,30 @@ class AccountMove(models.Model):
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
     origin_payment_advanced_payment_id = fields.Many2one("account.payment",copy=False)
+
+    origin_payment_to_pay_igtf = fields.Many2one('account.move', string="Origin Payment to Pay IGTF",copy=False)
+
+    has_pending_igtf_debit_note = fields.Boolean(
+        compute='_compute_has_pending_igtf_debit_note',
+        store=False # No se guarda en BD para que se calcule en tiempo real al abrir el form
+    )
+
+    @api.depends('debit_note_ids', 'debit_note_ids.state', 'debit_note_ids.payment_state', 'amount_residual')
+    def _compute_has_pending_igtf_debit_note(self):
+        for move in self:
+            move.has_pending_igtf_debit_note = False
+            
+            # Verificamos si la factura tiene notas de débito en su relación 'debit_note_ids'
+            if move.debit_note_ids:
+                # Filtramos las notas de débito asociadas que estén publicadas y no pagadas
+                pending_igtf_notes = move.debit_note_ids.filtered(
+                    lambda dn: dn.state == 'posted' and 
+                               dn.payment_state not in ('paid', 'reversed') and
+                               any(line.product_id.name == 'Igtf Percibido' for line in dn.invoice_line_ids)
+                )
+                
+                if pending_igtf_notes:
+                    move.has_pending_igtf_debit_note = True
  
 
     @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
@@ -447,26 +471,20 @@ class AccountMove(models.Model):
             "origin_payment_advanced_payment_id": payment.id, 
         })
 
-    def prepare_advance_payment_vals(self, payment , amount, advance_values, counter_part_values, date, common_vals):
+    def prepare_advance_payment_vals(self, payment , amount, advance_values, counter_part_values, date, common_vals,residual_amoun=False):
         self.ensure_one()
+        advance_balance = 0.0
         sign = 1 if payment.payment_type == 'inbound' else -1
+        amount_advance = amount * sign
 
-        if payment.currency_id == self.currency_id:
-            amount_advance = amount * sign
-
-        else:
-            
-            amount_advance = self.currency_id._convert(
-                amount * sign,  payment.currency_id, self.company_id, date )  
-            
-        
-        if payment.currency_id == self.company_id.currency_id:
+    
+        if payment.currency_id == self.currency_id and payment.currency_id == self.company_id.currency_id:
             advance_balance = amount_advance
 
         else:
             
             advance_balance = payment.currency_id._convert(
-                amount * sign,  self.company_id.currency_id, self.company_id, date ) 
+                amount_advance,  self.company_id.currency_id, self.company_id, date )  
         
         line_vals = []
 
@@ -531,7 +549,7 @@ class AccountMove(models.Model):
             for l in vals if isinstance(l, (dict, tuple))
         )
 
-        igtf_residual_balance = self.company_currency_id.round(-total_balance_prev)
+        igtf_residual_balance = payment.currency_id.round(total_balance_prev * sign)
 
         vals.append(Command.create({
             'name': 'IGTF',
