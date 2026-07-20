@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20260716\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-17 21:35+0000\n"
-"PO-Revision-Date: 2026-07-17 21:35+0000\n"
+"POT-Creation-Date: 2026-07-20 15:37+0000\n"
+"PO-Revision-Date: 2026-07-20 15:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -34,8 +34,8 @@ msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Configuration Taxes:"
-msgstr "Configuración Impuestos:"
+msgid "Configuration Taxes: IGTF"
+msgstr "Configuración Impuestos: IGTF"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
@@ -45,7 +45,8 @@ msgstr "Configuración Impuestos: No Deducibles"
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
 msgid "Configuration Taxes: Purchase Tax International Rates"
-msgstr "Configuración Impuestos: Tasas de Impuestos de Compras Internacionales"
+msgstr ""
+"Configuración Impuestos: Tasas de Impuestos de Compras Internacionales"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
@@ -74,18 +75,8 @@ msgstr "Opciones de visualización"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Enable Non-Deductible Taxes"
-msgstr "Habilitar impuestos no deducibles"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
 msgid "Enable discount column visibility on invoice lines"
 msgstr "Habilitar visibilidad de la columna de descuento en líneas de factura"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Exempt Aliquot"
-msgstr "Alícuota exenta"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_purchase
@@ -124,16 +115,6 @@ msgid "Extend Aliquot Sale"
 msgstr "Alicuota extendida Ventas"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Extended Aliquot"
-msgstr "Alícuota extendida"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "General Aliquot"
-msgstr "Alícuota general"
-
-#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_purchase
 msgid "General Aliquot Purchase"
@@ -150,31 +131,6 @@ msgstr "Alícuota general compras internacionales"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_sale
 msgid "General Aliquot Sale"
 msgstr "Alicuota general Ventas"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Hide Extended Aliquot"
-msgstr ""
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Hide National Exempt Total"
-msgstr ""
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Hide Reduced Aliquot"
-msgstr ""
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Hide Total Purchases National"
-msgstr ""
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Hide Total Purchases with IVA"
-msgstr ""
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_account_move_line__international_purchase_exempt_product
@@ -330,11 +286,6 @@ msgid "Purchase Tax Rates"
 msgstr "Tasas de Impuestos de Compras"
 
 #. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Reduced Aliquot"
-msgstr "Alícuota Reducida"
-
-#. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__reduced_aliquot_purchase
 msgid "Reduced Aliquot Purchase"
@@ -390,11 +341,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__unique_tax
 msgid "Unique Tax"
 msgstr "Impuesto único"
-
-#. module: l10n_ve_tax
-#: model_terms:ir.ui.view,arch_db:l10n_ve_tax.view_res_config_settings_l10n_ve_taxes
-msgid "Zero Aliquot"
-msgstr ""
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__zero_aliquot_sale_international
