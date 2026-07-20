@@ -1397,7 +1397,7 @@ class AccountMove(models.Model):
                     return item.get('amount_currency', 0)
             return None
 
-        def _foreign_fallback(balance):
+        def _foreign_fallback(balance): 
             rate_date = move.invoice_date if move.is_invoice(include_receipts=True) else move.date
             return move.company_id.currency_id._convert(
                 balance, move.foreign_currency_id, move.company_id,
@@ -1536,7 +1536,7 @@ class AccountMove(models.Model):
             if not pt_lines:
                 continue
             other = lines.filtered(
-                lambda l: l.display_type != "payment_term"
+                lambda l: l.display_type not in ("payment_term", "cogs")
             )
             fc = move.company_id.foreign_currency_id
             if not fc:
@@ -1640,7 +1640,7 @@ class AccountMove(models.Model):
                 tax_line.balance = correct_balance
 
         non_pt = move.line_ids.filtered(
-            lambda l: l.display_type != 'payment_term'
+            lambda l: l.display_type not in ('payment_term', 'cogs')
         )
         if not non_pt:
             return
