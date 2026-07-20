@@ -1,0 +1,12 @@
+<odoo>
+    <record id="action_generar_retencion_islr" model="ir.actions.server">
+        <field name="name">Generate ISLR Retention</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = records.action_create_islr_from_invoice()
+        </field>
+    </record>
+</odoo>

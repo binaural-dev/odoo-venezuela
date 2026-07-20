@@ -1,6 +1,7 @@
 import logging
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -36,30 +37,57 @@ class TestAccountant(TransactionCase):
             }
         )
 
+        # --- Cuenta de banco para default_account_id ---
+        self.manual_in = self.env.ref("account.account_payment_method_manual_in")
+        self.manual_out = self.env.ref("account.account_payment_method_manual_out")
+        self.account_bank = self.env["account.account"].create(
+            {
+                "name": "BANCO PRUEBA USD",
+                "code": "100000",
+                "account_type": "asset_cash",
+                "company_ids": [(6, 0, [self.company.id])],
+                "reconcile": True,
+            }
+        )
+
+        self.pm_line_in = self.env["account.payment.method.line"].create({
+            "name": "Manual Inbound",
+            "payment_method_id": self.manual_in.id,
+            "payment_type": "inbound",
+            "payment_account_id": self.account_bank.id,
+        })
+
+        self.pm_line_out = self.env["account.payment.method.line"].create({
+            "name": "Manual Outbound",
+            "payment_method_id": self.manual_out.id,
+            "payment_type": "outbound",
+            "payment_account_id": self.account_bank.id,
+        })
+
         # --- Journal bancario en USD (o se reutiliza uno existente) ---
-        self.bank_journal_usd = self.env["account.journal"].search(
-            [
-                ("type", "=", "bank"),
-                ("currency_id", "=", self.currency_usd.id),
-                ("company_id", "=", self.company.id),
-            ],
-            limit=1,
-        ) or self.env["account.journal"].create(
+        self.bank_journal_usd = self.env["account.journal"].create(
             {
                 "name": "Banco USD",
                 "code": "BNKUS",
                 "type": "bank",
                 "currency_id": self.currency_usd.id,
                 "company_id": self.company.id,
+                "default_account_id": self.account_bank.id,
+                "inbound_payment_method_line_ids": [(6, 0, self.pm_line_in.ids)],
+                "outbound_payment_method_line_ids": [(6, 0, self.pm_line_out.ids)],
             }
         )
 
-        # --- Payment Method Manual inbound (reusar, no crear) ---
+        # --- Payment Method Manual inbound/outbound (reusar, no crear) ---
         self.payment_method = self.env["account.payment.method"].search(
             [("code", "=", "manual"), ("payment_type", "=", "inbound")], limit=1
         ) or self.env.ref("account.account_payment_method_manual_in")
 
-        # --- Payment Method Line en el journal de BANCO (no en ventas) ---
+        self.payment_method_out = self.env["account.payment.method"].search(
+            [("code", "=", "manual"), ("payment_type", "=", "outbound")], limit=1
+        ) or self.env.ref("account.account_payment_method_manual_out")
+
+        # --- Payment Method Lines en el journal de BANCO ---
         self.pm_line_in_usd = self.env["account.payment.method.line"].search(
             [
                 ("journal_id", "=", self.bank_journal_usd.id),
@@ -70,8 +98,35 @@ class TestAccountant(TransactionCase):
             {
                 "journal_id": self.bank_journal_usd.id,
                 "payment_method_id": self.payment_method.id,
+                "payment_type": "inbound",
+                "payment_account_id": self.account_bank.id,
             }
         )
+
+        self.pm_line_out_usd = self.env["account.payment.method.line"].search(
+            [
+                ("journal_id", "=", self.bank_journal_usd.id),
+                ("payment_method_id", "=", self.payment_method_out.id),
+            ],
+            limit=1,
+        ) or self.env["account.payment.method.line"].create(
+            {
+                "journal_id": self.bank_journal_usd.id,
+                "payment_method_id": self.payment_method_out.id,
+                "payment_type": "outbound",
+                "payment_account_id": self.account_bank.id,
+            }
+        )
+
+        # --- Vincular las líneas de pago al journal si no lo están ---
+        if self.pm_line_in_usd not in self.bank_journal_usd.inbound_payment_method_line_ids:
+            self.bank_journal_usd.write({
+                "inbound_payment_method_line_ids": [(4, self.pm_line_in_usd.id)],
+            })
+        if self.pm_line_out_usd not in self.bank_journal_usd.outbound_payment_method_line_ids:
+            self.bank_journal_usd.write({
+                "outbound_payment_method_line_ids": [(4, self.pm_line_out_usd.id)],
+            })
 
         # --- Grupo de Impuesto ---
         self.tax_group = self.env['account.tax.group'].create({
@@ -297,197 +352,7 @@ class TestAccountant(TransactionCase):
         self.assertEqual(move.state, "draft")
         return move
 
-    # def test_get_journal_income_account_fallback(self):
-        """It should return revenue_account_id, else income_account_id, else default_account_id."""
-        j = self.journal_contado
-
-        # Start clean
-        if "revenue_account_id" in self.Journal._fields:
-            j.revenue_account_id = False
-        if "income_account_id" in self.Journal._fields:
-            j.income_account_id = False
-        j.default_account_id = self.account_contado
-
-        acc = self.Move._get_journal_income_account(j)
-        self.assertEqual(
-            acc, self.account_contado, "Fallback to default_account_id failed"
-        )
-
-        if "income_account_id" in self.Journal._fields:
-            j.income_account_id = self.account_credito
-            acc = self.Move._get_journal_income_account(j)
-            self.assertEqual(
-                acc,
-                self.account_credito,
-                "Should prefer income_account_id over default_account_id",
-            )
-
-        if "revenue_account_id" in self.Journal._fields:
-            j.revenue_account_id = self.account_product
-            acc = self.Move._get_journal_income_account(j)
-            self.assertEqual(
-                acc,
-                self.account_product,
-                "Should prefer revenue_account_id over others",
-            )
-
-    # def test_update_only_lines_using_old_journal_account(self):
-    #     """Only invoice lines that use old journal income account should change; others remain."""
-    #     # Create invoice with:
-    #     #  - L1 uses old_journal income account (must change)
-    #     #  - L2 uses product income account (must NOT change)
-    #     #  - taxes present (tax lines must remain intact)
-    #     display_value = "product" if self.display_supports_product else False
-    #     if not self.display_supports_product:
-    #         # If environment doesn't allow 'product' display_type, skip since user's filter relies on it.
-    #         self.skipTest(
-    #             "Environment does not support display_type='product'; user's filter relies on it."
-    #         )
-    #     move = self._create_draft_invoice(
-    #         self.journal_contado,
-    #         [
-    #             {
-    #                 "name": "L1 Old Journal Acc",
-    #                 "account": self.account_contado,
-    #                 "qty": 1,
-    #                 "price": 100.0,
-    #                 "taxes": [self.tax_iva16.id],
-    #                 "display_type": display_value,
-    #                 "product": self.product,
-    #             },
-    #             {
-    #                 "name": "L2 Product Acc",
-    #                 "product": self.product,
-    #                 "qty": 1,
-    #                 "price": 50.0,
-    #                 "taxes": [self.tax_iva16.id],
-    #                 "display_type": display_value,
-    #                 "account": self.account_credito,
-    #                 "product": self.product,
-    #             },
-    #         ],
-    #     )
-    #     # -------- TAXES (BASELINE) --------
-    #     tax_lines_before = move.line_ids.filtered(lambda l: l.tax_line_id)
-    #     self.assertTrue(tax_lines_before, "Expected tax lines present")
-    #     # Totales por impuesto (pueden fusionarse líneas luego)
-    #     tax_totals_before = {}
-    #     for tl in tax_lines_before:
-    #         tax_totals_before[tl.tax_line_id.id] = (
-    #             tax_totals_before.get(tl.tax_line_id.id, 0.0) + tl.balance
-    #         )
-    #     total_tax_before = sum(tax_totals_before.values())
-    #     # Cuentas de impuestos usadas
-    #     tax_accounts_before = set(tax_lines_before.mapped("account_id").ids)
-    #     # Call the method under test on the recordset (self = move)
-    #     move._update_invoice_lines_with_new_journal(
-    #         self.journal_contado.id, self.journal_credito.id
-    #     )
-    #     # Fetch lines post-update
-    #     l1 = move.invoice_line_ids.filtered(lambda l: l.name == "L1 Old Journal Acc")
-    #     l2 = move.invoice_line_ids.filtered(lambda l: l.name == "L2 Product Acc")
-    #     self.assertEqual(len(l1), 1)
-    #     self.assertEqual(len(l2), 1)
-    #     # L1 should now use new journal income account
-    #     self.assertEqual(
-    #         l1.account_id.id,
-    #         self.account_credito.id,
-    #         "Line using old journal income account should be updated to new journal income account",
-    #     )
-    #     # L2 should keep its product/account (acc_income_product)
-    #     self.assertEqual(
-    #         l2.account_id.id,
-    #         self.account_credito.id,
-    #         "Line using product/category account should NOT be updated",
-    #     )
-    #     # -------- TAXES (AFTER) --------
-    #     tax_lines_after = move.line_ids.filtered(lambda l: l.tax_line_id)
-
-    #     # Totales por impuesto (pueden haberse fusionado líneas)
-    #     tax_totals_after = {}
-    #     for tl in tax_lines_after:
-    #         tax_totals_after[tl.tax_line_id.id] = (
-    #             tax_totals_after.get(tl.tax_line_id.id, 0.0) + tl.balance
-    #         )
-    #     total_tax_after = sum(tax_totals_after.values())
-
-    #     # Mismos totales por impuesto y total global
-    #     self.assertEqual(
-    #         tax_totals_after,
-    #         tax_totals_before,
-    #         "Tax totals per tax changed unexpectedly",
-    #     )
-    #     self.assertAlmostEqual(
-    #         total_tax_after,
-    #         total_tax_before,
-    #         places=2,
-    #         msg="Total tax amount changed unexpectedly",
-    #     )
-
-    #     # (Opcional, más estricto) Verificar cuentas según la configuración del impuesto
-    #     # Para un único IVA de venta, las líneas de impuesto deberían usar las cuentas de las
-    #     # invoice_repartition_line_ids con repartition_type='tax' (si están configuradas).
-    #     expected_tax_accounts = set(
-    #         self.tax_iva16.invoice_repartition_line_ids.filtered(
-    #             lambda r: r.repartition_type == "tax"
-    #             and (not r.company_id or r.company_id == self.company)
-    #         )
-    #         .mapped("account_id")
-    #         .ids
-    #     )
-
-    #     if expected_tax_accounts:
-    #         # Las cuentas usadas por las líneas de impuesto deben pertenecer al set esperado
-    #         self.assertTrue(
-    #             set(tax_lines_after.mapped("account_id").ids).issubset(
-    #                 expected_tax_accounts
-    #             ),
-    #             "Tax lines use unexpected accounts per tax repartition configuration",
-    #         )
-    #     # Si no hay cuenta configurada en el impuesto (expected_tax_accounts vacío), no se puede
-    #     # afirmar nada sobre la(s) cuenta(s) usadas y omitimos esta verificación.
-
-    # def test_no_update_when_missing_income_accounts(self):
-    #     """If either old or new journal has no income account, method should be a no-op (no crash)."""
-    #     # Make a journal without any recognized income account fields
-    #     j_no_income = self.Journal.create(
-    #         {
-    #             "name": "VENTAS SIN CTA",
-    #             "type": "sale",
-    #             "code": "VSN",
-    #             # leave default_account_id unset on purpose
-    #         }
-    #     )
-
-    #     display_value = "product" if self.display_supports_product else False
-    #     if not self.display_supports_product:
-    #         self.skipTest(
-    #             "Environment does not support display_type='product'; user's filter relies on it."
-    #         )
-
-    #     move = self._create_draft_invoice(
-    #         self.journal_credito,
-    #         [
-    #             {
-    #                 "product": self.product,
-    #                 "name": "L1 Old Journal Acc",
-    #                 "account": self.account_credito,
-    #                 "qty": 1,
-    #                 "price": 100.0,
-    #                 "taxes": [self.tax_iva16.id],
-    #                 "display_type": display_value,
-    #             }
-    #         ],
-    #     )
-
-    #     # Should simply return without raising
-    #     move._update_invoice_lines_with_new_journal(
-    #         self.journal_credito.id, j_no_income.id
-    #     )
-
-    #     # Line remains unchanged
-    #     l1 = move.invoice_line_ids.filtered(lambda l: l.name == "L1 Old Journal Acc")
-    #     self.assertEqual(l1.account_id.id, self.account_credito.id)
+    
 
     def test_foreign_rate_editable_only_on_in_invoice(self):
         self.assertTrue(
