@@ -41,30 +41,6 @@ class AccountMove(models.Model):
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
     origin_payment_advanced_payment_id = fields.Many2one("account.payment",copy=False)
-
-    origin_payment_to_pay_igtf = fields.Many2one('account.move', string="Origin Payment to Pay IGTF",copy=False)
-
-    has_pending_igtf_debit_note = fields.Boolean(
-        compute='_compute_has_pending_igtf_debit_note',
-        store=False # No se guarda en BD para que se calcule en tiempo real al abrir el form
-    )
-
-    @api.depends('debit_note_ids', 'debit_note_ids.state', 'debit_note_ids.payment_state', 'amount_residual')
-    def _compute_has_pending_igtf_debit_note(self):
-        for move in self:
-            move.has_pending_igtf_debit_note = False
-            
-            # Verificamos si la factura tiene notas de débito en su relación 'debit_note_ids'
-            if move.debit_note_ids:
-                # Filtramos las notas de débito asociadas que estén publicadas y no pagadas
-                pending_igtf_notes = move.debit_note_ids.filtered(
-                    lambda dn: dn.state == 'posted' and 
-                               dn.payment_state not in ('paid', 'reversed') and
-                               any(line.product_id.name == 'Igtf Percibido' for line in dn.invoice_line_ids)
-                )
-                
-                if pending_igtf_notes:
-                    move.has_pending_igtf_debit_note = True
  
 
     @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
