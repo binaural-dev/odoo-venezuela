@@ -153,15 +153,16 @@ class AccountPaymentAndIgtf(models.Model):
         for rec in self:
             vals = super(AccountPaymentAndIgtf, self)._prepare_move_line_default_vals(
                 write_off_line_vals,
-                force_balance
+                force_balance = None
             )
 
             
             if rec.payment_from_wizard:
+                move_ids = rec.invoices_origin_ids
                 if rec.igtf_percentage and rec.igtf_amount > 0.0 :
                     # Check if any of the related invoices belongs to an
                     # international purchase journal — in that case, skip IGTF.
-                    move_ids = rec.invoices_origin_ids
+                    
                     is_international = any(
                         m.journal_id.is_purchase_international for m in move_ids
                     )
@@ -173,8 +174,11 @@ class AccountPaymentAndIgtf(models.Model):
                         
                         rec._fix_writeoff_balance(vals, write_off_line_vals)
                     else:
-                        if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1:
+                        fechas_lista = set(rec.invoices_origin_ids.mapped('invoice_date'))
+                        if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1 and len(fechas_lista) == 1 and  fechas_lista == rec.date:
+
                             # FIX balances when diference is decimal
+                           
                             if rec.partner_type == "customer":
                                 vals[0].update({"balance": total_base_residual})
                                 vals[1].update({"balance": -total_base_residual})
@@ -437,6 +441,8 @@ class AccountPaymentAndIgtf(models.Model):
         for rec in self:
             lines = [line for line in vals]
             if rec.payment_type == "inbound":
+                fechas_lista = set(rec.invoices_origin_ids.mapped('invoice_date'))
+
                 total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
                 top_igtf = abs(sum(rec.invoices_origin_ids.mapped('igtf_top_aply')))
 
@@ -449,7 +455,6 @@ class AccountPaymentAndIgtf(models.Model):
                
                 
                 credit_amount = abs(lines[1]["balance"])
-                
                 amount = credit_amount
                 igtf_base = 0.0
                 total_base_residual_converted = 0.0
@@ -457,7 +462,7 @@ class AccountPaymentAndIgtf(models.Model):
                 if rec.igtf_amount > 0.0: 
                     balance = abs(lines[0]["balance"])
                     # for exedent payment and multipayment
-                    if balance - top_igtf_residual_base >= 1.0 or len(rec.invoices_origin_ids) > 1: 
+                    if balance - top_igtf_residual_base >= 1.0 and len(fechas_lista) == 1 and fechas_lista == rec.date: 
                         igtf_base = top_igtf
                         amount = credit_amount - igtf_base
                     else:
