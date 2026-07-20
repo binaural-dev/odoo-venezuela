@@ -87,7 +87,7 @@ class ResCompany(models.Model):
         ('indexed', 'Indexed (Payment Date Rate)'),
         ('not_indexed', 'Non-Indexed (Invoice Date Rate)'),
         ('to_agreed', 'To be Agreed (Mutual Agreement)'),
-    ], string='Type indexacion', default='index', help='Defines the exchange rate criteria applied at the time of payment wizard.')
+    ], string='Type indexacion', default='indexed', help='Defines the exchange rate criteria applied at the time of payment wizard.')
 
     indexed_default = fields.Boolean('Default indexacion',default=True)
 
