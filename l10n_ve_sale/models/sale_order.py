@@ -658,7 +658,7 @@ class SaleOrder(models.Model):
                 picking.move_ids_without_package = list_pickings_moves[0]
 
                 for list_moves in list_pickings_moves[1:]:
-                    picking_vals["move_ids_without_package"] = list_moves
+                    picking_vals["move_ids"] = list_moves
                     new_picking = self.env['stock.picking'].create(picking_vals)
 
         return res

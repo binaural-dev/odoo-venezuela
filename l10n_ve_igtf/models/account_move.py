@@ -33,19 +33,15 @@ class AccountMove(models.Model):
         store=True,
     )
 
-    igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
-    alter_bi_igtf = fields.Float('IGTF Apply',copy=False)
-    foreign_bi_igtf = fields.Float('Foreigh Base imp Igtf',copy=False)
+    igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False, compute='compute_bi_igtf',store=True)
+    alter_bi_igtf = fields.Float('IGTF Apply',copy=False ,compute='compute_bi_igtf',store=True)
+    foreign_bi_igtf = fields.Float('Foreigh Base imp Igtf',copy=False, compute='compute_bi_igtf',store=True)
 
     invoice_outstanding_credits_debits_widget_advance_payment = fields.Binary(
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
     origin_payment_advanced_payment_id = fields.Many2one("account.payment",copy=False)
-    @api.depends(
-        "bi_igtf",
-    )
-    def _compute_tax_totals(self):
-        return super()._compute_tax_totals()
+ 
 
     @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
     def _compute_invoice_has_outstanding(self):

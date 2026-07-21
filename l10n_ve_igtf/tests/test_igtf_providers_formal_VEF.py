@@ -945,7 +945,6 @@ class TestIGTFNEW(IGTFTestCommon):
         
         for pay in payments:
             
-            _logger.info(pay.amount)
             expected_lines = [
                 {
                     'account': self.account_bank_usd,      

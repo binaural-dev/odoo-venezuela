@@ -3,7 +3,7 @@
     "summary": """
         Módulo de lealtad para facturación Venezolana.
     """,
-    "version": "17.0.0.0.1",
+    "version": "19.0.0.0.1",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",

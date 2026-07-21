@@ -602,7 +602,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
         
-        """ International Purchase Fields """
         
         if not self.company_id.not_show_general_aliquot_purchase_international:
             fields_info = [
@@ -640,7 +639,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
 
-        """ Fin international purchase fields """
         
         if self.company_id.config_deductible_tax:
             purchase_fields = self.not_deductible_purchase_book_fields(purchase_fields)
@@ -749,7 +747,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         is_sale = self.report == "sale"
 
         if is_sale:
+            sale_lines = self.parse_sale_book_data()
+            if not sale_lines:
+                raise UserError(_('No sale records found for the selected period.'))
+
             return self.download_sales_book()
+        else:
+            purchase_lines = self.parse_purchase_book_data()
+            if not purchase_lines:
+                raise UserError(_('No purchase records found for the selected period.'))
 
         return self.download_purchases_book()
 
@@ -829,12 +835,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "values": self._determinate_resume_books(moves, "exempt_aliquot"),
             },
             {
-                "name": "Exportaciones Gravadas por Alícuota General",
-                "format": "number",
-                "values": self._determinate_resume_books(moves),
-            },
-            {
-                "name": "Exportaciones Gravadas por Alícuota General más Adicional",
+                "name": "Ventas de Exportación",
                 "format": "number",
                 "values": self._determinate_resume_books(moves),
             },
@@ -847,6 +848,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "name": "Ventas Internas Gravadas por Alícuota Reducida",
                 "format": "number",
                 "values": self._determinate_resume_books(moves, "reduced_aliquot"),
+            },
+            {
+                "name": "Ventas Internas Gravadas por Alícuota General más Adicional",
+                "format": "number",
+                "values": self._determinate_resume_books(moves, "extend_aliquot"),
             },
             {
                 "name": "Ajustes a los Débitos Fiscales de Periodos Anteriores",

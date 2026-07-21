@@ -106,8 +106,8 @@ class TestRetentionFlows(TransactionCase):
             "partner_id": self.partner.id,
             "move_type": "in_invoice",
             "journal_id": self.journal.id,
-            "currency_id": foreign.id,
-            "invoice_line_ids": [(0, 0, {"product_id": self.product.id, "price_unit": 500.0})],
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [(0, 0, {"product_id": self.product.id, "price_unit": 100.0})],
         })
         for k in ("foreign_rate", "foreign_inverse_rate"):
             if k in invoice._fields:

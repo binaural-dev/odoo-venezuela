@@ -9,7 +9,7 @@
                     class="oe_invoice_outstanding_credits_debits" colspan="2" nolabel="1"
                     widget="payment" />
             </field>
-            <xpath expr="//div[@class='d-flex'][2]" position="after">
+            <xpath expr="//div[hasclass('d-flex')][2]" position="after">
                 <field name="is_advance_move" invisible="1" />
                 <field name="is_advance_move" readonly="1" invisible="not is_advance_move" />
                 <field name="origin_payment_advanced_payment_id" readonly="1" />

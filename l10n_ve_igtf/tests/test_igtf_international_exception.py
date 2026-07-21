@@ -9,7 +9,7 @@ Casos cubiertos:
 from odoo.tests import tagged, TransactionCase
 
 
-@tagged("post_install", "-at_install", "l10n_ve_igtf")
+@tagged("international_igtf","post_install", "-at_install", "l10n_ve_igtf")
 class TestIgtfInternationalException(TransactionCase):
     """Verify that the IGTF international-purchase exception works correctly."""
 
@@ -32,10 +32,34 @@ class TestIgtfInternationalException(TransactionCase):
             "company_ids": [(4, company.id)],
         })
 
+        cls.igtf_account_customer = cls.env["account.account"].create({
+            "name": "IGTF Test Account (Customer)",
+            "code": "TEST.IGTF.236",
+            "account_type": "liability_current",
+            "company_ids": [(4, company.id)],
+        })
+
         # Configura cuentas IGTF en la compañía (necesarias para el cálculo)
         company.write({
             "supplier_account_igtf_id": cls.igtf_account.id,
-            "customer_account_igtf_id": cls.igtf_account.id,
+            "customer_account_igtf_id": cls.igtf_account_customer.id,
+        })
+
+        manual_in = cls.env.ref("account.account_payment_method_manual_in")
+        manual_out = cls.env.ref("account.account_payment_method_manual_out")
+
+        pm_line_in_usd = cls.env["account.payment.method.line"].create({
+            "name": "Manual Inbound USD Test",
+            "payment_method_id": manual_in.id,
+            "payment_type": "inbound",
+            "payment_account_id": account_bank_usd.id,
+        })
+
+        pm_line_out_usd = cls.env["account.payment.method.line"].create({
+            "name": "Manual Outbound USD Test",
+            "payment_method_id": manual_out.id,
+            "payment_type": "outbound",
+            "payment_account_id": account_bank_usd.id,
         })
 
         # ── Diario de pago con IGTF activo  ─────────────────────────────────
@@ -45,7 +69,13 @@ class TestIgtfInternationalException(TransactionCase):
             "code": "BIGTFTEST",
             "is_igtf": True,
             "currency_id": cls.env.ref("base.USD").id,
+            "inbound_payment_method_line_ids": [(6, 0, pm_line_in_usd.ids)],
+            "outbound_payment_method_line_ids": [(6, 0, pm_line_out_usd.ids)],
         })
+
+        # Vinculación inversa obligatoria de las líneas de pago hacia el diario
+        pm_line_in_usd.journal_id = cls.igtf_payment_journal.id
+        pm_line_out_usd.journal_id = cls.igtf_payment_journal.id
 
         # ── Diario de factura INTERNACIONAL (is_purchase_international=True) ─
         cls.international_journal = cls.env["account.journal"].create({
@@ -86,6 +116,8 @@ class TestIgtfInternationalException(TransactionCase):
             "taxpayer_type": "special",
             "property_account_payable_id": cls.payable_account.id,
             "property_account_receivable_id": cls.receivable_account.id,
+            "default_advance_supplier_account_id": cls.igtf_account.id,
+            "default_advance_customer_account_id": cls.igtf_account_customer.id,
         })
 
         # ── Producto de prueba ───────────────────────────────────────────────

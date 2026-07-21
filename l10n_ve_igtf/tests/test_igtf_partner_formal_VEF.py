@@ -10,7 +10,7 @@ _logger = logging.getLogger(__name__)
 # Tasa de conversión: 1$ = 201.47bs
 # docker exec -u odoo -it proj2 odoo --test-tags igtf -i binaural_advance_payment_igtf --without-demo=True --stop-after-init -d testneuvo5
 
-@tagged("igtf_test_1", "igtf_run", "-at_install", "post_install")
+@tagged("igtf_client", "igtf_run", "-at_install", "post_install")
 class TestIGTFNEW(IGTFTestCommon): 
     
     def _assert_move_lines_equal(self, move, expected_lines):
