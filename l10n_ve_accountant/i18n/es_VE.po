@@ -828,8 +828,8 @@ msgstr "Es Compra Internacional"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
-msgid "Invoice Date"
-msgstr "Fecha de factura"
+msgid "Invoice rate"
+msgstr "Fecha de Tasa"
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1770,3 +1770,49 @@ msgstr "Importe adeudado"
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "You cannot delete a journal item that is posted, cancelled, or has been previously posted."
 msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente publicados."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
+#, python-format
+msgid ""
+"- %s: No tax is assigned and the company has no default fiscal "
+"configuration."
+msgstr ""
+"- %s: No tiene impuesto asignado y la compañía no tiene "
+"configuración fiscal predeterminada."
+
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
+#, python-format
+msgid ""
+"- %s: Has %s taxes assigned (exactly one tax is required due to local fiscal"
+" policies)."
+msgstr ""
+"- %s: Tiene %s impuestos asignados (se requiere exactamente uno "
+"debido a políticas fiscales locales)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
+#, python-format
+msgid ""
+"Fiscal inconsistencies were found in product: '%s':\n"
+"\n"
+msgstr ""
+"Se encontraron inconsistencias fiscales en el producto: '%s':\n"
+"\n"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
+msgid ""
+"\n"
+"\n"
+"Please correct these fields before saving your changes."
+msgstr ""
+"\n"
+"\n"
+"Por favor corrija estos campos antes de guardar los cambios."

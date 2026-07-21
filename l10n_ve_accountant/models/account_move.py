@@ -18,7 +18,7 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
     
-    invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.today)
+    invoice_date_display = fields.Date(string="Invoice rate", default=fields.Date.today)
     is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
 
     @api.depends('invoice_date_display')
