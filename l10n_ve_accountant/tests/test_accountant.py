@@ -25,12 +25,21 @@ class TestAccountant(TransactionCase):
         self.Move = self.env['account.move']
 
         # Tipo de cambio de referencia
-        self.env['res.currency.rate'].create({
-            'name': fields.Date.from_string('2025-07-28'),
-            'currency_id': self.currency_usd.id,
-            'inverse_company_rate': 120.439,
-            'company_id': self.company.id,
-        })
+        self._ensure_rate(self.currency_usd.id, '2025-07-28', 120.439)
+
+    def _ensure_rate(self, currency_id, date_str, inverse_rate):
+        existing = self.env['res.currency.rate'].search([
+            ('currency_id', '=', currency_id),
+            ('company_id', '=', self.company.id),
+            ('name', '=', fields.Date.from_string(date_str)),
+        ], limit=1)
+        if not existing:
+            self.env['res.currency.rate'].create({
+                'name': fields.Date.from_string(date_str),
+                'currency_id': currency_id,
+                'inverse_company_rate': inverse_rate,
+                'company_id': self.company.id,
+            })
 
         # --- Journal bancario en USD (o se reutiliza uno existente) ---
         self.bank_journal_usd = (
