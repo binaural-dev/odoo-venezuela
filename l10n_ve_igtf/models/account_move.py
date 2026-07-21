@@ -332,7 +332,8 @@ class AccountMove(models.Model):
         )
         
         advance_amount = matched_content.get('amount', 0.0) if matched_content else 0.0
-        
+        advance_amount_payment_curr = matched_content.get('amount_residual_currency', 0.0) if matched_content else 0.0
+
         conversion_date = matched_content.get('date_to_convert') if matched_content else False
 
         if not advance_amount or advance_amount == 0.0:
@@ -365,6 +366,13 @@ class AccountMove(models.Model):
    
             
         base_amount_applied = min(advance_amount_residual, advance_amount)
+
+        # Escalar el monto en moneda de pago a la porción realmente aplicada
+        applied_payment_curr = advance_amount_payment_curr
+        if advance_amount > 0:
+            applied_payment_curr = payment.currency_id.round(
+                advance_amount_payment_curr * (base_amount_applied / advance_amount))
+
          # --- Configuración de Cuentas ---
         advance_line = lines.filtered_domain([
             '|',
@@ -410,17 +418,36 @@ class AccountMove(models.Model):
         }   
         if is_igtf_journal:
                  
-            igtf_amount = abs(payment.calculate_igtf_for_payment(self, base_amount_applied,  payment.currency_id ,conversion_date))
+            igtf_amount = abs(payment.calculate_igtf_for_payment(self, applied_payment_curr,  payment.currency_id ,conversion_date))
 
         #raise UserError(igtf_amount)
         if is_igtf_journal:
-            if (base_amount_applied + igtf_amount) < advance_amount: ## include igtf in base
-                base_amount_applied = self.currency_id.round(base_amount_applied + igtf_amount)
+            igtf_in_invoice_curr = payment.currency_id._convert(igtf_amount, self.currency_id, self.company_id, conversion_date)
+            if (base_amount_applied + igtf_in_invoice_curr) < advance_amount: ## include igtf in base
+                base_amount_applied = self.currency_id.round(base_amount_applied + igtf_in_invoice_curr)
+                if advance_amount > 0:
+                    applied_payment_curr = payment.currency_id.round(
+                        advance_amount_payment_curr * (base_amount_applied / advance_amount))
                 
+
+        # --- Forzar balance cuando el cruce cubre exactamente el residual ---
+        factura_line = receivable_payable_line
+        if is_igtf_journal:
+            total_in_invoice_curr = base_amount_applied + igtf_in_invoice_curr
+        else:
+            total_in_invoice_curr = base_amount_applied
+
+        force_balance = None
+        if (abs(total_in_invoice_curr - advance_amount_residual) <= self.currency_id.rounding
+                and payment.currency_id == self.currency_id):
+            force_balance = abs(factura_line.amount_residual)
 
         # --- Construcción de las Líneas base ---
         line_vals = self.prepare_advance_payment_vals(
-            payment, base_amount_applied, advance_val, counter_part_val, conversion_date, common_vals)
+            payment, base_amount_applied, advance_val, counter_part_val,
+            conversion_date, common_vals,
+            amount_payment_curr=applied_payment_curr,
+            force_balance=force_balance)
         
         if is_igtf_journal and igtf_amount > 0.0:
 
@@ -442,26 +469,28 @@ class AccountMove(models.Model):
             "origin_payment_advanced_payment_id": payment.id, 
         })
 
-    def prepare_advance_payment_vals(self, payment , amount, advance_values, counter_part_values, date, common_vals):
+    def prepare_advance_payment_vals(self, payment, amount, advance_values, counter_part_values, date, common_vals, amount_payment_curr=None, force_balance=None):
         self.ensure_one()
         sign = 1 if payment.payment_type == 'inbound' else -1
 
         if payment.currency_id == self.currency_id:
             amount_advance = amount * sign
-
+        elif amount_payment_curr:
+            amount_advance = amount_payment_curr * sign
         else:
-            
             amount_advance = self.currency_id._convert(
-                amount * sign,  payment.currency_id, self.company_id, date )  
-            
-        
-        if payment.currency_id == self.company_id.currency_id:
-            advance_balance = amount_advance
+                amount * sign,  payment.currency_id, self.company_id, date )
 
-        else:
-            
+        if force_balance is not None:
+            advance_balance = force_balance * sign
+        elif payment.currency_id == self.company_id.currency_id:
+            advance_balance = amount_advance
+        elif amount_payment_curr:
             advance_balance = payment.currency_id._convert(
-                amount * sign,  self.company_id.currency_id, self.company_id, date ) 
+                amount_payment_curr * sign,  self.company_id.currency_id, self.company_id, date )
+        else:
+            advance_balance = self.currency_id._convert(
+                amount * sign,  self.company_id.currency_id, self.company_id, date )
         
         line_vals = []
 
@@ -489,14 +518,7 @@ class AccountMove(models.Model):
         self.ensure_one()
         is_inbound = payment.payment_type == 'inbound'
 
-        igtf_amount = 0
-        if payment.currency_id == self.currency_id:
-            igtf_amount = igtf_to_pay
-
-        else:
-            
-            igtf_amount = self.currency_id._convert(
-                igtf_to_pay,  payment.currency_id, self.company_id, date ) 
+        igtf_amount = igtf_to_pay
 
         igtf_balance = payment.currency_id._convert(
             igtf_amount, self.company_currency_id, self.company_id, date
