@@ -175,7 +175,7 @@ class AccountPaymentAndIgtf(models.Model):
                         rec._fix_writeoff_balance(vals, write_off_line_vals)
                     else:
                         fechas_lista = set(rec.invoices_origin_ids.mapped('invoice_date'))
-                        if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1 and len(fechas_lista) == 1 and  fechas_lista == rec.date:
+                        if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1 and len(fechas_lista) == 1 and  rec.date in fechas_lista:
 
                             # FIX balances when diference is decimal
                            
@@ -462,7 +462,7 @@ class AccountPaymentAndIgtf(models.Model):
                 if rec.igtf_amount > 0.0: 
                     balance = abs(lines[0]["balance"])
                     # for exedent payment and multipayment
-                    if balance - top_igtf_residual_base >= 1.0 and len(fechas_lista) == 1 and fechas_lista == rec.date: 
+                    if balance - top_igtf_residual_base >= 1.0 and len(fechas_lista) == 1 and rec.date in fechas_lista: 
                         igtf_base = top_igtf
                         amount = credit_amount - igtf_base
                     else:
