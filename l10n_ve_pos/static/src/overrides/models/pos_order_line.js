@@ -37,6 +37,26 @@ patch(PosOrderline.prototype, {
         return this.config.foreign_currency_id;
     },
 
+    // ---- Refund rate consistency ----
+    //
+    // A refund line must convert to foreign currency at the rate the
+    // ORIGINAL sale happened at, not at today's live PdV rate (the BCV
+    // rate drifts daily in VE). `order_id.foreign_currency_rate` on an
+    // already-synced order is the frozen snapshot written once when that
+    // order was synced (see pos_order.py + pos_order.js's
+    // `data["foreign_currency_rate"] = init_conversion_rate`). Live
+    // `order.localToForeign()` always reads the CURRENT pos.config rate
+    // and can't tell an order from today apart from one from last week —
+    // this is the one place we deliberately bypass it.
+    _refundOriginalRate() {
+      const originalOrder = this.refunded_orderline_id?.order_id;
+      if (!originalOrder) {
+        return null;
+      }
+      const rate = Number(originalOrder.foreign_currency_rate);
+      return Number.isFinite(rate) && rate > 0 ? rate : null;
+    },
+
     // ---- Foreign unit price (uses catalog dp, per user directive) ----
 
     _foreignUnitPriceDp() {
@@ -62,6 +82,10 @@ patch(PosOrderline.prototype, {
       }
       if (this._is_order_in_foreign_currency()) {
         return baseUnitPrice;
+      }
+      const frozenRate = this._refundOriginalRate();
+      if (frozenRate != null) {
+        return baseUnitPrice * frozenRate;
       }
       const order = this.order_id;
       if (!order || typeof order.localToForeign !== "function") {
@@ -111,6 +135,10 @@ patch(PosOrderline.prototype, {
       const order = this.order_id;
       if (!order || typeof order.localToForeign !== "function") {
         return 0;
+      }
+      const frozenRate = this._refundOriginalRate();
+      if (frozenRate != null) {
+        return order.roundForeignMoney(localAmount * frozenRate);
       }
       return order.localToForeign(localAmount);
     },
@@ -178,5 +206,14 @@ patch(PosOrderline.prototype, {
 
     get_foreign_tax_details() {
       return this.get_all_foreign_prices().taxDetails;
+    },
+
+    // "(G)" gravado / "(E)" exento badge shown next to the product name.
+    get_aliquot_type() {
+      const productTaxes = this.tax_ids?.length ? this.tax_ids : (this.product_id?.taxes_id || []);
+      if (!productTaxes.length) {
+        return "(E)";
+      }
+      return productTaxes[0].amount === 0 ? "(E)" : "(G)";
     },
 });

@@ -6,5 +6,11 @@
             <attribute name="quantity_products">_selectedSyncedOrder.get_qty_products()</attribute>
             <attribute name="foreign_tax">env.utils.formatForeignCurrency(_selectedSyncedOrder.get_foreign_total_tax())</attribute>
         </xpath>
+        <xpath expr="//div[hasclass('control-buttons')]" position="inside">
+            <button class="control-button btn btn-secondary btn-lg lh-lg flex-grow-1 flex-shrink-1"
+                    t-on-click="() => this.onFullRefund()">
+                <i class="fa fa-check-square-o me-1" aria-hidden="true"/>Reembolso total
+            </button>
+        </xpath>
     </t>
 </templates>
