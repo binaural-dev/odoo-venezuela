@@ -447,20 +447,26 @@ class AccountMove(models.Model):
             "origin_payment_advanced_payment_id": payment.id, 
         })
 
-    def prepare_advance_payment_vals(self, payment , amount, advance_values, counter_part_values, date, common_vals,residual_amoun=False):
+    def prepare_advance_payment_vals(self, payment , amount, advance_values, counter_part_values, date, common_vals):
         self.ensure_one()
-        advance_balance = 0.0
         sign = 1 if payment.payment_type == 'inbound' else -1
-        amount_advance = amount * sign
 
-    
-        if payment.currency_id == self.currency_id and payment.currency_id == self.company_id.currency_id:
+        if payment.currency_id == self.currency_id:
+            amount_advance = amount * sign
+
+        else:
+            
+            amount_advance = self.currency_id._convert(
+                amount * sign,  payment.currency_id, self.company_id, date )  
+            
+        
+        if payment.currency_id == self.company_id.currency_id:
             advance_balance = amount_advance
 
         else:
             
             advance_balance = payment.currency_id._convert(
-                amount_advance,  self.company_id.currency_id, self.company_id, date )  
+                amount * sign,  self.company_id.currency_id, self.company_id, date ) 
         
         line_vals = []
 
@@ -525,7 +531,7 @@ class AccountMove(models.Model):
             for l in vals if isinstance(l, (dict, tuple))
         )
 
-        igtf_residual_balance = payment.currency_id.round(total_balance_prev * sign)
+        igtf_residual_balance = self.company_currency_id.round(-total_balance_prev)
 
         vals.append(Command.create({
             'name': 'IGTF',
@@ -634,7 +640,7 @@ class AccountMove(models.Model):
         is_advance_payment = payment_move.is_advance_move or payment_move.origin_payment_advanced_payment_id or (
             payment_move.origin_payment_id and payment_move.origin_payment_id.is_advance_payment
         )
-        initial_residual = self.amount_residual_signed
+        initial_residual = abs(self.amount_residual)
         if is_advance_payment:
             
             
