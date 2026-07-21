@@ -1864,6 +1864,7 @@ msgstr ""
 "Producto '%s':\n"
 "El precio unitario (%s) no puede ser mayor que el precio original de la factura de origen (%s)."
 
+#. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/product_template.py:0
 #, python-format
