@@ -79,6 +79,7 @@ class PosSession(models.Model):
                             foreign_rate=payment.foreign_rate,
                             partner=payment.partner_id,
                             date=payment.create_date,
+                            ref=session._cross_move_ref(payment),
                         )
                     continue
 
@@ -98,6 +99,7 @@ class PosSession(models.Model):
                     # No partner, matching the native combined account.payment.
                     partner=session.env["res.partner"],
                     date=session.stop_at or fields.Datetime.now(),
+                    ref=session._cross_move_ref(),
                 )
 
     def _is_cross_move_eligible(self, payment_method):
@@ -275,8 +277,59 @@ class PosSession(models.Model):
             ),
         ]
 
+    def _cross_move_ref(self, payment=None):
+        """Human-readable reference identifying what a cross move clears.
+
+        ``name`` cannot carry this text — it is the move's sequential
+        "Number", assigned by the journal on posting (see
+        ``_create_cross_move``) — so ``ref`` is the only field the accountant
+        sees in the journal entries list to tell one draft from another.
+
+        Under split granularity a session produces one draft per payment, all
+        with the same date, amount shape and journal; without a discriminator
+        they are indistinguishable in that list (the move header carries no
+        partner either — the partner lives on the lines). So the reference
+        goes down to the individual payment, not just the order: an order can
+        hold several payments of the same method, in which case the order name
+        alone would still repeat.
+
+        ``pos.payment.name`` is a free "Label" that only payment terminals
+        populate — it is empty for manual payments — and ``display_name``
+        falls back to the formatted amount, which is not unique either. Hence
+        the database id as the last-resort discriminator: it is the only value
+        guaranteed to differ, and it lets the accountant look the payment up
+        directly.
+
+        Under combine granularity a single move covers every payment of the
+        method in the session, so the session name is the right granularity.
+        """
+        base = _("PoS Payment Method Adjustment")
+        if not payment:
+            return f"{base} - {self.name}"
+        return f"{base} - {payment.pos_order_id.name} - {payment.name or f'#{payment.id}'}"
+
+    def _cross_move_header_partner(self, partner):
+        """Partner that is safe to put on the cross move's header.
+
+        ``account.move.partner_id`` is ``check_company=True``
+        (``account/models/account_move.py:425``) while
+        ``account.move.line.partner_id`` is not, and ``pos.order.partner_id``
+        has no company check at all
+        (``point_of_sale/models/pos_order.py:316``) — so Odoo happily accepts
+        an order whose customer belongs to another company. Propagating that
+        partner to the header would raise ``UserError`` and **block the whole
+        session close**, which is far too high a price for what is only a
+        readability nicety in the journal entries list.
+
+        In that case drop it: the lines still carry the partner and ``ref``
+        still identifies the payment (see ``_cross_move_ref``).
+        """
+        if partner.company_id and partner.company_id != self.company_id:
+            return self.env["res.partner"]
+        return partner
+
     def _create_cross_move_for(
-        self, payment_method, amount, foreign_amount, foreign_rate, partner, date
+        self, payment_method, amount, foreign_amount, foreign_rate, partner, date, ref
     ):
         """Create one clearing move for ``payment_method``.
 
@@ -294,9 +347,13 @@ class PosSession(models.Model):
         line_vals = line_builder(
             payment_method, amount, foreign_amount, foreign_rate, partner
         )
-        return self._create_cross_move(payment_method, line_vals, foreign_rate, date)
+        return self._create_cross_move(
+            payment_method, line_vals, foreign_rate, date, ref, partner
+        )
 
-    def _create_cross_move(self, payment_method, line_vals, foreign_rate, date):
+    def _create_cross_move(
+        self, payment_method, line_vals, foreign_rate, date, ref, partner
+    ):
         """Create the move that clears the transitory account to zero.
 
         Args:
@@ -304,6 +361,10 @@ class PosSession(models.Model):
             line_vals (list): ``Command`` list of move lines to create.
             foreign_rate (float): operative rate stamped on the move.
             date (datetime): accounting date of the move.
+            ref (str): reference identifying what is being cleared (see
+                ``_cross_move_ref``).
+            partner (res.partner): partner for the move header; empty under
+                combine granularity, where one move spans several customers.
 
         Returns:
             account.move: PoS payment method adjustment move.
@@ -321,7 +382,8 @@ class PosSession(models.Model):
         """
         move = self.env["account.move"].create(
             {
-                "ref": _("PoS Payment Method Adjustment"),
+                "ref": ref,
+                "partner_id": self._cross_move_header_partner(partner).id,
                 "date": date,
                 "journal_id": payment_method.cross_account_journal.id,
                 "state": "draft",

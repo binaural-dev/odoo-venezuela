@@ -490,9 +490,9 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             (False, "/"),
             "en draft, name debe quedar vacio/'/' -- Odoo aun no asigno secuencia",
         )
-        self.assertEqual(
-            move.ref,
-            "PoS Payment Method Adjustment",
+        original_ref = move.ref
+        self.assertTrue(
+            original_ref.startswith("PoS Payment Method Adjustment"),
             "el texto descriptivo vive en ref, no en name",
         )
 
@@ -502,12 +502,149 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             move.name and move.name != "/",
             "al postear, Odoo debe asignar la secuencia del diario cross_account_journal",
         )
-        self.assertNotEqual(
-            move.name,
+        self.assertNotIn(
             "PoS Payment Method Adjustment",
+            move.name or "",
             "name NO debe quedar congelado con el literal viejo",
         )
-        self.assertEqual(move.ref, "PoS Payment Method Adjustment", "ref se preserva tras postear")
+        self.assertEqual(move.ref, original_ref, "ref se preserva tras postear")
+
+    # ------------------------------------------------------------------
+    # Trazabilidad: distinguir los borradores entre si
+    # ------------------------------------------------------------------
+    def test_split_refs_identify_each_payment_of_the_same_order(self):
+        """Dos pagos del MISMO metodo en la MISMA orden dan refs distintos.
+
+        Con granularidad split cada pago genera su propio borrador, todos con
+        la misma fecha, mismo diario y (si los importes coinciden) mismo
+        importe. Si el ref se quedara en el nombre de la orden, una orden
+        pagada en dos partes con el mismo metodo produciria dos borradores
+        identicos e inauditables -- por eso el ref baja hasta el pago.
+        """
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=50.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/TWO-PAYMENTS",
+        )
+        # Segundo pago del mismo metodo sobre la misma orden, mismo importe:
+        # el peor caso para distinguirlos.
+        order.add_payment(
+            {
+                "name": "",
+                "pos_order_id": order.id,
+                "amount": 50.0,
+                "payment_method_id": self.split_cash_method.id,
+                "payment_date": order.date_order,
+                "foreign_rate": 36.5,
+                "foreign_amount": 50.0 * 36.5,
+            }
+        )
+        self.assertEqual(len(order.payment_ids), 2)
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 2, "un borrador por cada pago")
+        refs = moves.mapped("ref")
+        self.assertEqual(len(set(refs)), 2, f"los refs deben distinguirse: {refs}")
+        for ref in refs:
+            self.assertIn(order.name, ref, "el ref nombra la orden")
+
+    def test_split_move_header_carries_the_partner(self):
+        """El borrador split lleva el socio en la cabecera, no solo en las lineas.
+
+        En la lista de asientos la columna Socio lee `account.move.partner_id`;
+        sin esto sale vacia y el contador no puede saber de que cliente es cada
+        borrador sin abrirlo.
+        """
+        partner = self.env["res.partner"].create(
+            {"name": "C Cross Customer", "company_id": False}
+        )
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/PARTNER",
+            partner_id=partner.id,
+        )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves.partner_id, partner)
+
+    def test_partner_from_another_company_does_not_block_the_cross_move(self):
+        """Un cliente de otra compania no debe tumbar el cierre de sesion.
+
+        `account.move.partner_id` es check_company=True mientras que
+        `account.move.line.partner_id` no lo es, y `pos.order.partner_id` no
+        tiene chequeo de compania -- Odoo acepta una orden cuyo cliente es de
+        otra compania. Propagarlo a la cabecera lanzaria UserError y
+        bloquearia el cierre completo, a cambio de una simple mejora de
+        legibilidad. En ese caso la cabecera va sin socio, pero el asiento se
+        crea igual y las lineas conservan el partner.
+        """
+        other_company = self.env["res.company"].create({"name": "C Other Co"})
+        foreign_partner = self.env["res.partner"].create(
+            {"name": "C Foreign Customer", "company_id": other_company.id}
+        )
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/FOREIGN-PARTNER",
+            partner_id=foreign_partner.id,
+        )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1, "el cruce se crea igual, no revienta")
+        self.assertFalse(
+            moves.partner_id, "la cabecera va sin socio para no violar check_company"
+        )
+        self.assertEqual(
+            moves.line_ids.partner_id,
+            foreign_partner,
+            "las lineas si conservan el partner: no tienen check_company",
+        )
+
+    def test_combine_move_ref_names_the_session_and_has_no_partner(self):
+        """El borrador combine referencia la sesion y no lleva socio.
+
+        Agrupa pagos de varios clientes, asi que fijar uno en la cabecera
+        seria enganoso -- mismo criterio que el account.payment combinado
+        nativo, que tampoco lleva partner.
+        """
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        for i in range(2):
+            self._create_paid_order(
+                session,
+                method=self.combined_bank_method,
+                amount=50.0,
+                tax_amount=8.0,
+                name=f"OL/CROSS/COMBINE-REF-{i}",
+            )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+        self.assertIn(session.name, moves.ref)
+        self.assertFalse(moves.partner_id, "combine agrupa varios clientes: sin socio")
 
     def test_amount_currency_uses_configured_foreign_currency_not_hardcoded_id(self):
         """Regresion del bug `currency == 3`: usa self.foreign_currency_id, no un id fijo.
