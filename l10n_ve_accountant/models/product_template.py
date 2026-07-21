@@ -18,7 +18,8 @@ class ProductTemplate(models.Model):
             return super(ProductTemplate, self).write(vals)
 
         # Enforce tax validation on any write operation to correct legacy records
-        self._enforce_single_tax_vals(vals, records=self)
+        if 'taxes_id' in vals or 'supplier_taxes_id' in vals:
+            self._enforce_single_tax_vals(vals, records=self)
             
         return super(ProductTemplate, self).write(vals)
 
