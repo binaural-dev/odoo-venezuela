@@ -1871,7 +1871,7 @@ class AccountMove(models.Model):
         origin_lines_by_key = {
             (line.sequence, line.product_id.id): line
             for line in self.reversed_entry_id.invoice_line_ids
-            if line.product_id and line.product_type in ('consu', 'service')
+            if line.product_id and line.product_id.type in ('consu', 'service')
         }
 
         for line in self.invoice_line_ids:
