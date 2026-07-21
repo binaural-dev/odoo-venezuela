@@ -170,6 +170,53 @@ class TestAccountMovePhase1(TransactionCase):
         inv.write({'invoice_date': fields.Date.from_string('2025-08-01')})
         self.assertEqual(inv.foreign_rate, orig)
 
+    def test_rate_propagates_to_lines_on_date_change(self):
+        """Regression test for ticket #13775.
+
+        When invoice_date changes on a draft invoice, the parent's
+        foreign_inverse_rate must be written explicitly onto each
+        invoice_line_id so that _compute_foreign_price (which depends
+        on the line-level field) recalculates the foreign price.
+        Without this propagation the related-field mechanism may skip
+        the update for new/unposted records.
+        """
+        inv = self._make_invoice()
+        line = inv.invoice_line_ids.filtered(lambda l: l.display_type == 'product')[:1]
+        if not line:
+            self.skipTest("No product line to check")
+        initial_rate = line.foreign_inverse_rate
+        self.assertTrue(initial_rate > 0, "Initial foreign_inverse_rate should be > 0")
+        initial_price = line.foreign_price
+
+        # Create a rate for the FOREIGN currency (VEF) on a different date
+        # with a very different value so the line-level rate changes.
+        self.env['res.currency.rate'].create({
+            'name': fields.Date.from_string('2025-08-01'),
+            'currency_id': self.currency_vef.id,
+            'inverse_company_rate': 50.0,
+            'company_id': self.company.id,
+        })
+
+        # Change invoice date → triggers _compute_rate → line 763 sets
+        # move.invoice_line_ids.foreign_inverse_rate explicitly
+        inv.write({'invoice_date': fields.Date.from_string('2025-08-01')})
+
+        new_rate = line.foreign_inverse_rate
+        self.assertNotEqual(
+            new_rate, initial_rate,
+            "Line foreign_inverse_rate should have changed after invoice_date update"
+        )
+
+        new_price = line.foreign_price
+        self.assertNotEqual(
+            new_price, initial_price,
+            "foreign_price should have been recomputed after rate change"
+        )
+        self.assertAlmostEqual(
+            new_price, line.price_unit * new_rate, places=4,
+            msg="foreign_price should equal price_unit * foreign_inverse_rate"
+        )
+
     # ---- action_post ----
 
     def test_action_post_returns_alert_wizard(self):

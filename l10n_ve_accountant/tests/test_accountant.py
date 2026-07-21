@@ -307,7 +307,7 @@ class TestAccountant(TransactionCase):
                 {'name': 'L1 Old Journal Acc', 'account': self.account_contado, 'qty': 1, 'price': 100.0,
                  'taxes': [self.tax_iva16.id], 'display_type': display_value, 'product': self.product},
                 {'name': 'L2 Product Acc', 'product': self.product, 'qty': 1, 'price': 50.0,
-                 'taxes': [self.tax_iva16.id], 'display_type': display_value, 'account': self.account_credito, 'product': self.product},
+                 'taxes': [self.tax_iva16.id], 'display_type': display_value, 'account': self.account_credito},
             ]
         )       
         # -------- TAXES (BASELINE) --------
