@@ -750,6 +750,7 @@ class AccountMove(models.Model):
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate")
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
+            move.invoice_line_ids.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
             
 
     @api.depends("tax_totals")

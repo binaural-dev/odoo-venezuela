@@ -365,6 +365,8 @@ class TestAccountant(TransactionCase):
             # leave default_account_id unset on purpose
         })
 
+        j_no_income.default_account_id = False 
+
         display_value = 'product' if self.display_supports_product else False
         if not self.display_supports_product:
             self.skipTest("Environment does not support display_type='product'; user's filter relies on it.")
