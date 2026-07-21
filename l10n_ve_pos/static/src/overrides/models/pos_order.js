@@ -414,10 +414,32 @@ patch(PosOrder.prototype, {
   // amounts summed together match the total (no drift). All rounding uses
   // foreign_currency_id.round() via order.localToForeign.
   //
+  // EXCEPTION — refund orders: a refund line converts at the ORIGINAL
+  // sale's frozen rate (see pos_order_line.js::_refundOriginalRate), which
+  // can differ from THIS order's own live rate. Converting the aggregated
+  // local total with a single live rate would silently discard that and
+  // re-price the whole refund at today's rate. When the order has refund
+  // lines, we sum the (already correctly-rated) per-line foreign amounts
+  // instead — the only way the "no drift" invariant above still holds once
+  // lines can carry different rates.
+  //
   // Local sources (Odoo 19):
   //   this.totalDue         → total including taxes
   //   this.prices.taxDetails.base_amount    → total excluding taxes
   //   this.prices.taxDetails.tax_amount_currency → tax amount
+
+  _hasRefundLines() {
+    return (this.lines || []).some((line) => !!line.refunded_orderline_id);
+  },
+
+  _sumForeignLines(getterName) {
+    return this.roundForeignMoney(
+      (this.lines || []).reduce(
+        (sum, line) => sum + (Number(line[getterName]?.()) || 0),
+        0
+      )
+    );
+  },
 
   _localTotalWithTax() {
     return Number(
@@ -435,15 +457,43 @@ patch(PosOrder.prototype, {
   },
 
   get_foreign_total_with_tax() {
+    if (this._hasRefundLines()) {
+      return this._sumForeignLines("get_foreign_price_with_tax");
+    }
     return this.localToForeign(this._localTotalWithTax());
   },
 
   get_foreign_total_without_tax() {
+    if (this._hasRefundLines()) {
+      return this._sumForeignLines("get_foreign_price_without_tax");
+    }
     return this.localToForeign(this._localTotalWithoutTax());
   },
 
   get_foreign_total_tax() {
+    if (this._hasRefundLines()) {
+      return this._sumForeignLines("get_foreign_total_tax");
+    }
     return this.localToForeign(this._localTotalTax());
+  },
+
+  // Same "use the refund's effective rate, not today's live rate" rule as
+  // get_foreign_total_with_tax, applied to any other order-level local
+  // amount (due, change). We can't sum these from lines (they're
+  // payment-state, not a per-line breakdown), so we derive the ratio the
+  // total actually used and apply it here — keeps due/change proportional
+  // to the total instead of silently reverting to the live rate.
+  _convertOrderAmount(amount) {
+    if (this._hasRefundLines()) {
+      const localTotal = this._localTotalWithTax();
+      if (localTotal) {
+        const ratio = this.get_foreign_total_with_tax() / localTotal;
+        if (Number.isFinite(ratio) && ratio !== 0) {
+          return this.roundForeignMoney(amount * ratio);
+        }
+      }
+    }
+    return this.localToForeign(amount);
   },
 //   get_foreign_total_discount() {
 //     const ignored_product_ids = this._get_ignored_product_ids_total_discount();
@@ -472,7 +522,7 @@ patch(PosOrder.prototype, {
     const localDue = Number(this.remainingDue ?? 0) || 0;
     // remainingDue lleva el signo del total; normalizamos a magnitud.
     const sign = Number(this.totalDue ?? 0) < 0 ? -1 : 1;
-    return this.localToForeign(sign * localDue);
+    return this._convertOrderAmount(sign * localDue);
   },
 
   get_foreign_change() {
@@ -482,7 +532,7 @@ patch(PosOrder.prototype, {
     // por eso la magnitud es -sign * change.
     const localChange = Number(this.change ?? 0) || 0;
     const sign = Number(this.totalDue ?? 0) < 0 ? -1 : 1;
-    return this.localToForeign(-sign * localChange);
+    return this._convertOrderAmount(-sign * localChange);
   },
 //       this.orderlines.reduce((sum, orderLine) => {
 //         if (!ignored_product_ids.includes(orderLine.product.id)) {
