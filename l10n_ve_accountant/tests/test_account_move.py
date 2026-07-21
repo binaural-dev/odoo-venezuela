@@ -432,6 +432,8 @@ class TestAccountMovePhase1(TransactionCase):
     # ---- _account_analytic_by_line_id ----
 
     def test_account_analytic_by_line_id(self):
+        if 'foreign_amount' not in self.env['account.analytic.line']._fields:
+            self.skipTest("binaural_analytic not installed; foreign_amount field unavailable")
         inv = self._make_invoice()
         self._post(inv)
         plan = self.env['account.analytic.plan'].search([], limit=1) or self.env['account.analytic.plan'].create({'name': 'Default Plan'})
