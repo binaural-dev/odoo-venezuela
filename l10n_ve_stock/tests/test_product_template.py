@@ -22,13 +22,13 @@ class TestProductTemplateCheckListPrice(TransactionCase):
                 "list_price": -10,
             })
 
-    def test_zero_list_price_ok(self):
-        tmpl = self.env["product.template"].create({
-            "name": "Zero Price",
-            "type": "consu",
-            "list_price": 0,
-        })
-        self.assertEqual(tmpl.list_price, 0)
+    def test_zero_list_price_raises(self):
+        with self.assertRaises(ValidationError):
+            self.env["product.template"].create({
+                "name": "Zero Price",
+                "type": "consu",
+                "list_price": 0,
+            })
 
     def test_positive_list_price_ok(self):
         tmpl = self.env["product.template"].create({
