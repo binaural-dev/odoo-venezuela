@@ -263,11 +263,6 @@ msgid "Empty Paymentline"
 msgstr "Linea de Pago Vacía"
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_method__apply_one_cross_move
-msgid "Enable Automatic Cross-Account Clearing"
-msgstr "Habilitar cruce automático de cuenta transitoria"
-
-#. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_payment_report__end_date
 msgid "End Date"
 msgstr "Fecha Final"
@@ -943,25 +938,6 @@ msgstr "Ver Pagos del Origen"
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_line/payment_line.xml:0
 msgid "Waiting for card"
 msgstr ""
-
-#. module: l10n_ve_pos
-#: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment_method__apply_one_cross_move
-msgid ""
-"When enabled, closing a PoS session creates a draft journal entry that "
-"clears this payment method's outstanding (transitory) account into the real "
-"bank account set in 'Cross Journal', recorded in the 'Cross Account "
-"Journal'. One entry is created per payment for split payment methods, or one"
-" per session for combined payment methods. The entry is created in draft "
-"state and has no effect on account balances until it is reviewed and posted "
-"manually."
-msgstr ""
-"Si está activo, al cerrar una sesión de POS se crea un asiento contable en "
-"borrador que traslada el saldo de la cuenta pendiente (transitoria) de este "
-"método de pago hacia la cuenta real de banco definida en 'Diario afectado "
-"de banco o efectivo', registrado en el 'Diario de Cruce de Cuentas'. Se "
-"crea un asiento por cada pago si el método tiene 'Identificar cliente' "
-"activo (split), o uno solo por sesión si es combinado. El asiento queda en "
-"borrador y no afecta los saldos hasta que se revise y postee manualmente."
 
 #. module: l10n_ve_pos
 #. odoo-javascript
