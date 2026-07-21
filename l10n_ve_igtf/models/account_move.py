@@ -409,18 +409,13 @@ class AccountMove(models.Model):
             "account_id": account_rp,
         }   
         if is_igtf_journal:
-            if payment.currency_id == self.currency_id:
-                igtf_amount_pay = base_amount_applied
-            else:
-                igtf_amount_pay = payment.currency_id._convert(
-                    base_amount_applied,  self.company_id.currency_id, self.company_id, conversion_date ) 
                  
-            igtf_amount = abs(payment.calculate_igtf_for_payment(self, igtf_amount_pay,  payment.currency_id ,conversion_date))
+            igtf_amount = abs(payment.calculate_igtf_for_payment(self, base_amount_applied,  payment.currency_id ,conversion_date))
 
         #raise UserError(igtf_amount)
         if is_igtf_journal:
             if (base_amount_applied + igtf_amount) < advance_amount: ## include igtf in base
-                base_amount_applied = base_amount_applied + igtf_amount
+                base_amount_applied = self.currency_id.round(base_amount_applied + igtf_amount)
                 
 
         # --- Construcción de las Líneas base ---
@@ -490,15 +485,23 @@ class AccountMove(models.Model):
         
         return line_vals
     
-    def prepare_igtf_payment_vals(self, vals, payment, igtf_amount, igtf_account_id, date, common_vals):
+    def prepare_igtf_payment_vals(self, vals, payment, igtf_to_pay, igtf_account_id, date, common_vals):
         self.ensure_one()
         is_inbound = payment.payment_type == 'inbound'
+
+        igtf_amount = 0
+        if payment.currency_id == self.currency_id:
+            igtf_amount = igtf_to_pay
+
+        else:
+            
+            igtf_amount = self.currency_id._convert(
+                igtf_to_pay,  payment.currency_id, self.company_id, date ) 
 
         igtf_balance = payment.currency_id._convert(
             igtf_amount, self.company_currency_id, self.company_id, date
         )
 
-        sign = -1 if payment.payment_type == 'inbound' else 1
         
         if isinstance(vals[1], tuple) and len(vals[1]) == 3:
             partner_line_dict = vals[1][2]
