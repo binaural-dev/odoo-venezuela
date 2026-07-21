@@ -309,6 +309,69 @@ export class TfhkaDriver {
     }
 
     /**
+     * Envía una secuencia de líneas/comandos crudos al protocolo TFHKA, en el
+     * mismo orden y sin transformarlas — equivalente Web Serial de la acción
+     * "logger_multi" del driver IoT legacy (ver `SerialFiscalDriver.py`,
+     * método `logger_multi`: por cada línea del array llama `SendCmd(line)`
+     * tal cual, sin validar el resultado individualmente).
+     *
+     * Uso: módulos que imprimen vouchers de pago o reportes de cierre con
+     * líneas de formato libre (ej. "800REPORTE DE VENTAS", "810") que no
+     * son una factura/NC/ND fiscal completa (para eso usar printInvoice/
+     * printCreditNote/printDebitNote).
+     *
+     * A diferencia del driver legacy, aquí SÍ se valida cada comando: si
+     * una línea falla se aborta la transacción y se retorna error (evita
+     * dejar la impresora en un estado intermedio silenciosamente, cosa que
+     * el driver IoT legacy no detectaba).
+     *
+     * @param {Array<string>} lines - Líneas de comando en el orden a enviar
+     * @returns {Promise<Object>} - { success: boolean, error: string }
+     */
+    async printRawLines(lines) {
+        if (!this.isConnected) {
+            return { success: false, error: "Impresora no conectada" };
+        }
+
+        if (!Array.isArray(lines) || lines.length === 0) {
+            return { success: false, error: "No hay líneas para imprimir" };
+        }
+
+        const statusBefore = await this.getStatus();
+        if (!statusBefore) {
+            return { success: false, error: "No se puede leer el estado de la impresora" };
+        }
+
+        const sts1Before = statusBefore.raw?.sts1;
+        if (!this._isWaitingState(sts1Before)) {
+            console.warn(
+                "TfhkaDriver:: printRawLines - impresora no está en reposo (STS1=" +
+                    this._formatSts(sts1Before) +
+                    "), intentando abortar..."
+            );
+            const aborted = await this.abortTransaction();
+            if (!aborted) {
+                return {
+                    success: false,
+                    error: `La impresora tiene una transacción previa abierta (STS1=${this._formatSts(sts1Before)}). Reiníciala.`,
+                };
+            }
+        }
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = String(lines[i]);
+            const result = await this.sendCommand(line, null, false, i > 0);
+            if (!result.success) {
+                console.error("TfhkaDriver:: printRawLines - comando falló:", line, result.error);
+                await this.abortTransaction();
+                return { success: false, error: `Error en línea [${line}]: ${result.error}` };
+            }
+        }
+
+        return { success: true, error: "" };
+    }
+
+    /**
      * Consulta el estado de la impresora (comando ENQ)
      * @returns {Promise<Object|null>} - Estado parseado o null si falla
      */
