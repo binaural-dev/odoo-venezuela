@@ -224,6 +224,67 @@ El guard de `pay_later` **no** es redundante: un método pay_later no tiene
 `journal_id`, así que caería en el fallback de la POS receivable y pasaría por
 elegible. Se excluye por tipo, explícitamente.
 
+## Trazabilidad de los borradores
+
+Detectado verificando en producción (BD `pos`, sesión 65, método "Efectivo $"
+con "Identificar cliente"): el usuario reportó que sólo se había generado el
+cruce de una de las dos órdenes. En realidad **se generaron los dos** — pero
+en la lista de asientos salían idénticos:
+
+```
+Número   Fecha        Socio     Referencia                       Importe   Estado
+/        21/07/2026   (vacío)   PoS Payment Method Adjustment    19,29     Borrador
+/        21/07/2026   (vacío)   PoS Payment Method Adjustment    19,29     Borrador
+```
+
+Mismo `/` (la secuencia no se asigna hasta postear, por diseño), misma fecha,
+mismo importe, misma referencia, y la columna "Socio" vacía en ambos porque
+el partner iba sólo en las líneas. Dos filas calcadas que se leen como una.
+
+Con granularidad split una sesión genera N borradores; sin discriminador son
+inauditables. `ref` es el único campo libre disponible: `name` está reservado
+para la secuencia del diario (ver bug #5 del change anterior).
+
+**Por qué el `ref` baja hasta el pago y no se queda en la orden**: una orden
+puede tener varios pagos del mismo método. Ya hay un caso real en la BD `pos`
+(orden 5, dos pagos "Efectivo $" de 11.821,08 y 354,63). Con el nombre de la
+orden como única referencia, ese caso volvería a producir borradores
+idénticos.
+
+**Por qué el id como discriminador**: `pos.payment.name` es un "Label" libre
+que sólo llenan los terminales de pago — está vacío en todos los pagos
+manuales de la BD `pos` — y `display_name` cae al importe formateado, que
+tampoco es único. El id es el único valor garantizado distinto, y además
+permite buscar el pago directamente.
+
+```
+split:    PoS Payment Method Adjustment - Binaural C.A - 000004 - #77
+combine:  PoS Payment Method Adjustment - <nombre de la sesión>
+```
+
+### El partner de la cabecera puede bloquear el cierre
+
+Fijar `partner_id` en la cabecera parecía gratis y no lo es:
+
+| Campo | `check_company` |
+|---|---|
+| `account.move.partner_id` | **Sí** (`account/models/account_move.py:425`) |
+| `account.move.line.partner_id` | No |
+| `pos.order.partner_id` | No (`point_of_sale/models/pos_order.py:316`) |
+
+Odoo acepta sin chistar una orden de PoS cuyo cliente pertenezca a otra
+compañía, porque ese campo no valida nada. Pero al propagarlo a la cabecera
+del asiento, `_check_company` lanza `UserError` y **tumba el cierre completo
+de la sesión** — a cambio de una mejora de legibilidad. Detectado por el test
+`test_split_move_header_carries_the_partner`, que reventó con
+`"Uh-oh! You've got some company inconsistencies here"` antes de añadir el
+guard.
+
+`_cross_move_header_partner` devuelve un recordset vacío en ese caso. El
+asiento se crea igual, las líneas conservan el partner (no tienen
+`check_company`) y el `ref` sigue identificando el pago. Se degrada la
+presentación, nunca la operación.
+
 ## Decisiones
 
 | Decisión | Elegido | Por qué |
@@ -236,6 +297,9 @@ elegible. Se excluye por tipo, explícitamente.
 | ¿Tasa del agregado? | `method_payments[0].foreign_rate` | El `config` es mutable tras abrir la sesión; el pago guarda la tasa aplicada |
 | ¿Cuenta transitoria de `cash`? | `journal_id.default_account_id` | Es donde el nativo deja el efectivo; la POS receivable queda en cero |
 | ¿Postear automáticamente? | No, sigue en `draft` | Sin cambios: contabilidad revisa y valida a mano |
+| ¿Granularidad del `ref`? | Hasta el `pos.payment` | Una orden puede tener varios pagos del mismo método; el nombre de la orden aún repetiría |
+| ¿Discriminador del pago? | `payment.name or #id` | `name` sólo lo llenan los terminales; `display_name` cae al importe, que no es único |
+| ¿Partner en la cabecera? | Sí, con guard de compañía | Sin él la columna "Socio" sale vacía; con él, un cliente de otra compañía tumbaría el cierre |
 
 ## Verificación
 

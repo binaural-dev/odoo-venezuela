@@ -1,5 +1,70 @@
 # Spec delta: pos-cross-account-move
 
+## ADDED Requirements
+
+### Requirement: Trazabilidad del asiento de cruce
+
+El sistema SHALL construir el `ref` del asiento de cruce de forma que
+identifique unívocamente qué está cruzando, porque `name` no puede llevar ese
+texto (es el número de secuencia, asignado por el diario al postear) y es el
+único campo que distingue un borrador de otro en la lista de asientos.
+
+- Con granularidad split, el `ref` SHALL bajar hasta el `pos.payment`
+  individual, no quedarse en la orden: una orden puede tener varios pagos del
+  mismo método, y el nombre de la orden solo volvería a repetirse. Se usa
+  `pos.payment.name` cuando existe (solo lo llenan los terminales de pago) y
+  el id del registro como discriminador de último recurso.
+- Con granularidad combine, el `ref` SHALL nombrar la sesión, que es la
+  granularidad que cubre ese asiento.
+
+El sistema SHALL además fijar `partner_id` en la cabecera del asiento bajo
+granularidad split, para que la columna "Socio" de la lista de asientos no
+salga vacía. Bajo granularidad combine SHALL dejarse vacío, porque un mismo
+asiento agrupa pagos de varios clientes.
+
+#### Scenario: Dos pagos del mismo método en la misma orden
+
+- **GIVEN** una orden con dos pagos del mismo método elegible con
+  `split_transactions=True`, ambos por el mismo importe
+- **WHEN** se cierra la sesión
+- **THEN** se crean dos asientos con `ref` distintos, ambos nombrando la orden,
+  distinguidos por el pago concreto
+
+#### Scenario: Asiento split en la lista de asientos
+
+- **GIVEN** un pago split de un cliente cuya compañía es compatible con la de
+  la sesión
+- **WHEN** se crea el asiento de cruce
+- **THEN** la cabecera del asiento lleva ese `partner_id`
+
+#### Scenario: Asiento combinado
+
+- **GIVEN** un método elegible con `split_transactions=False` y pagos de varios
+  clientes en la sesión
+- **WHEN** se cierra la sesión
+- **THEN** el `ref` del único asiento nombra la sesión y la cabecera queda sin
+  `partner_id`
+
+### Requirement: Un cliente de otra compañía no bloquea el cierre
+
+El sistema SHALL omitir el `partner_id` de la cabecera del asiento de cruce
+cuando el cliente pertenece a una compañía distinta de la de la sesión.
+
+`account.move.partner_id` es `check_company=True` mientras que
+`account.move.line.partner_id` no lo es, y `pos.order.partner_id` no tiene
+chequeo de compañía alguno — Odoo acepta una orden cuyo cliente sea de otra
+compañía. Propagar ese cliente a la cabecera lanzaría `UserError` y
+bloquearía el cierre completo de la sesión, a cambio de una mejora de
+legibilidad.
+
+#### Scenario: Orden con cliente de otra compañía
+
+- **GIVEN** una orden cuyo cliente pertenece a una compañía distinta de la de
+  la sesión, con un método de pago elegible y `split_transactions=True`
+- **WHEN** se cierra la sesión
+- **THEN** el asiento de cruce se crea igual, con la cabecera sin `partner_id`
+  y las líneas conservando el cliente, sin lanzar ninguna excepción
+
 ## MODIFIED Requirements
 
 ### Requirement: Elegibilidad del cruce por `is_foreign_currency`

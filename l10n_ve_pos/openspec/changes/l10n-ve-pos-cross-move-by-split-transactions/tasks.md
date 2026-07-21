@@ -35,7 +35,8 @@
       `(payment_method, amount, foreign_amount, foreign_rate, partner)` en vez
       de un `pos.payment`
 - [x] 4.2 `_create_cross_move` recibe `(payment_method, line_vals,
-      foreign_rate, date)`; el `foreign_currency_id` del asiento pasa a salir
+      foreign_rate, date, ref, partner)` — los dos últimos añadidos en la
+      sección 6; el `foreign_currency_id` del asiento pasa a salir
       de `self.foreign_currency_id` (la del config de la sesión) en vez de la
       del pago
 
@@ -82,35 +83,60 @@
       cruce afectado y es el único que llama `action_post()`; su lógica no
       cambió en este change.
 
-## 6. Verificación manual
+## 6. Trazabilidad de los borradores (detectado verificando en producción)
 
-- [ ] 6.1 Probar en navegador el caso del reporte: método bank combinado con
+Con "Identificar cliente" activo, la sesión 65 de la BD `pos` generó
+correctamente los dos asientos de cruce, pero salían idénticos en la lista
+(`/`, misma fecha, mismo importe, mismo `ref` genérico, columna "Socio" vacía
+porque el partner iba sólo en las líneas) — se leían como uno solo.
+
+- [x] 6.1 Nuevo `_cross_move_ref(payment=None)`: con pago devuelve
+      `"<base> - <orden> - <payment.name o #id>"`; sin pago, `"<base> - <sesión>"`
+- [x] 6.2 `_create_cross_move_for` / `_create_cross_move` reciben `ref` y
+      `partner`; el `account.move` se crea con ambos
+- [x] 6.3 Nuevo `_cross_move_header_partner(partner)`: omite el partner de la
+      cabecera si es de otra compañía. `account.move.partner_id` es
+      `check_company=True`, `account.move.line.partner_id` no, y
+      `pos.order.partner_id` no valida compañía — propagarlo tumbaría el
+      cierre completo con `UserError`
+- [x] 6.4 Tests: `test_split_refs_identify_each_payment_of_the_same_order`
+      (dos pagos del mismo método en la misma orden, mismo importe),
+      `test_split_move_header_carries_the_partner`,
+      `test_combine_move_ref_names_the_session_and_has_no_partner`,
+      `test_partner_from_another_company_does_not_block_the_cross_move`
+- [x] 6.5 Suite re-corrida: `0 failed` de 49 tests, los 4 tests nuevos en
+      verde, sin fallos nuevos más allá de los 3 preexistentes de
+      `binaural_stock_accountant` (ver 5.14)
+
+## 7. Verificación manual
+
+- [ ] 7.1 Probar en navegador el caso del reporte: método bank combinado con
       varios pagos en una sesión → **un** asiento; el mismo método con
       "Identificar cliente" activo → uno por pago
-- [ ] 6.2 Probar un método `cash` en divisa ("Efectivo $") y confirmar que la
+- [ ] 7.2 Probar un método `cash` en divisa ("Efectivo $") y confirmar que la
       pata transitoria cae en la cuenta del diario de caja
-- [ ] 6.3 `-u l10n_ve_pos` para que el registro sincronice la baja del campo
+- [ ] 7.3 `-u l10n_ve_pos` para que el registro sincronice la baja del campo
       `apply_one_cross_move` y la vista actualizada
 
-## 7. Despliegue
+## 8. Despliegue
 
-- [ ] 7.1 Auditar en producción los métodos que pasan a cruzar:
+- [ ] 8.1 Auditar en producción los métodos que pasan a cruzar:
       `search([("is_foreign_currency","=",True),("cross_account_journal","!=",False),("cross_journal","!=",False)])`
-- [ ] 7.2 Revisar con contabilidad los asientos de cruce ya generados sobre
+- [ ] 8.2 Revisar con contabilidad los asientos de cruce ya generados sobre
       métodos `cash` (cruzaron contra la POS receivable en vez de la cuenta del
       diario de caja)
 
-## 8. OpenSpec
+## 9. OpenSpec
 
-- [x] 8.1 `openspec validate --changes`
-- [x] 8.2 Nota en el `design.md` de `l10n-ve-pos-cross-account-move` marcándolo
+- [x] 9.1 `openspec validate --changes`
+- [x] 9.2 Nota en el `design.md` de `l10n-ve-pos-cross-account-move` marcándolo
       superado por este change
-- [x] 8.3 Ambos changes (`l10n-ve-pos-cross-account-move` y este) movidos del
+- [x] 9.3 Ambos changes (`l10n-ve-pos-cross-account-move` y este) movidos del
       `openspec/` de la raíz de `docker-odoov19` — que está **untracked**, no
       versiona nada — al `openspec/` del propio módulo
       (`src/odoo-venezuela/l10n_ve_pos/openspec/changes/`), que es el que sí
       vive en el repo `odoo-venezuela` y la convención vigente (ver commit
       `3d0683f61`)
-- [x] 8.4 Ejemplo contable con números en `design.md`: los dos asientos que el
+- [x] 9.4 Ejemplo contable con números en `design.md`: los dos asientos que el
       nativo genera para un pago en efectivo, el descuadre que producía el
       código viejo, y la query para detectar asientos ya afectados
