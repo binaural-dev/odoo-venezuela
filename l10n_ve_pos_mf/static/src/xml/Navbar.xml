@@ -1,7 +1,16 @@
 <templates id="template" xml:space="preserve">
+    <!-- 
+        DEPRECATED: Este template heredaba el Navbar para agregar botones de MF del IoT Box.
+        Ya no es necesario porque ahora usamos:
+        - Botón de conexión en pos_app.js (barra de estado)
+        - Fiscalizador en el Debug Widget
+        
+        Comentado para evitar errores de "useFiscalMachine is not a function"
+    -->
+    <!--
     <t t-name="Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
         <xpath expr="//CashierName" position="after">
-                <div t-att-class="cssClass" class="btn btn-light border-0 rounded-0" t-if="this.pos.useFiscalMachine()" t-on-click="_on_click_mf_test" name="fiscal_machine">
+                <div t-att-class="cssClass" class="btn btn-light border-0 rounded-0" t-if="pos.useFiscalMachine()" t-on-click="_on_click_mf_test" name="fiscal_machine">
                 <span class="button d-flex align-items-center gap-1">
                     <i class="fa fa-fw fa-print" role="img"/> 
                     <span class="username">Maquina Fiscal</span>
@@ -15,4 +24,5 @@
             </div>
         </xpath>
     </t>
+    -->
 </templates>
