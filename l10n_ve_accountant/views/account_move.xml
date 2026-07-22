@@ -16,6 +16,7 @@
             </xpath>
             <xpath expr="//button[@name='action_reverse']" position="attributes">
                 <attribute name="string">Add Credit Note</attribute>
+                <attribute name="invisible">move_type not in ('out_invoice', 'in_invoice') or state != 'posted' or debit_origin_id</attribute>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="replace">
                 <field name="partner_id" nolabel="1"
