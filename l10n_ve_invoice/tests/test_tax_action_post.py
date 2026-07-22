@@ -7,6 +7,8 @@ class TestInvoiceTaxConstraint(TransactionCase):
     def setUp(self):
         super(TestInvoiceTaxConstraint, self).setUp()
         self.company = self.env.ref("base.main_company")
+        self.currency_foreign = self.env.ref("base.VEF")
+        self.company.foreign_currency_id = self.currency_foreign
         self.partner = self.env["res.partner"].create({"name": "Test customer"})
         self.journal = self.env["account.journal"].create({
             "name": "Sales Journal",
