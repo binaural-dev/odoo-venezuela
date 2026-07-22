@@ -178,8 +178,6 @@ class AccountPaymentRegister(models.TransientModel):
 
     @api.onchange("amount", "payment_date")
     def _onchange_amount(self):
-        if self.currency_id == self.company_currency_id and self.indexed_default:
-            self.indexed_default = False
         super(AccountPaymentRegister,self)._onchange_amount()
 
 
