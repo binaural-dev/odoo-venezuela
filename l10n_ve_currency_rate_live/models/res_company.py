@@ -47,6 +47,14 @@ class ResCompany(models.Model):
 
     can_update_habil_days = fields.Boolean(default=True)
 
+    @api.depends("country_id")
+    def _compute_currency_provider(self):
+        result = super()._compute_currency_provider()
+        for record in self:
+            if record.country_id and record.country_id.code == "VE":
+                record.currency_provider = "bcv"
+        return result
+
     @api.model
     def _get_bcv_currency_rates(self, available_currencies):
         """Scrape BCV website for all requested currencies in a single request.
