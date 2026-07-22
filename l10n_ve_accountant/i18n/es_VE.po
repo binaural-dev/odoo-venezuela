@@ -1770,5 +1770,19 @@ msgstr "Importe adeudado"
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
-msgid "Changing between invoice and credit note is not allowed."
-msgstr "No está permitido cambiar entre factura y nota de crédito."
+msgid "You cannot delete a journal item that is posted, cancelled, or has been previously posted."
+msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente publicados."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+msgid ""
+"Product: %(product)s\n"
+"Discount: %(discount)s\n"
+"Discounts of 100%% or higher are not allowed on invoices.\n"
+"Please adjust the discount percentage before saving."
+msgstr ""
+"Producto: %(product)s\n"
+"Descuento: %(discount)s\n"
+"No se permiten descuentos del 100%% o superiores en facturas.\n"
+"Por favor ajuste el porcentaje de descuento antes de guardar."
