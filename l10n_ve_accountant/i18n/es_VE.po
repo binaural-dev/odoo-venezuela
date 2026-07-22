@@ -1820,7 +1820,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__indexed
 msgid "Indexed (Payment Date Rate)"
-msgstr "'Indexado (Tasa del día de pago)"
+msgstr "Indexado (Tasa del día de pago)"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__not_indexed
