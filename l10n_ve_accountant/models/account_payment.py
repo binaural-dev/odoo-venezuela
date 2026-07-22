@@ -83,7 +83,7 @@ class AccountPayment(models.Model):
         Rate = self.env["res.currency.rate"]
         for payment in self:
             rate_values = Rate.compute_rate(
-                payment.foreign_currency_id.id, payment.date or fields.Date.today()
+                payment.foreign_currency_id.id, payment.date or fields.Date.context_today(self)
             )
             payment.update(rate_values)
 
