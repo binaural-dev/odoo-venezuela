@@ -10,19 +10,12 @@
     </template>
 
     <template id="tax_groups_totals" inherit_id="l10n_ve_invoice.tax_groups_totals">
-        <xpath expr="//t[4]" position="after">
+        <xpath expr="//t[@t-foreach='tax_groups']" position="after">
 
-            <t t-if="o.move_type == 'out_invoice'">
-                <t t-if="tax_totals['igtf_free_form']['show_igtf_suggested_account_move'] and float(tax_totals['igtf_free_form']['igtf_base_amount_free']) > 0 and o.move_type == 'out_invoice'">
-                    <tr>
-                        <td>
-                            BI IGTF(sugerido):
-                        </td>
-                        <td class="text-end o_price_total" >
-                            <span t-out="tax_totals['igtf_free_form']['formatted_igtf_base_amount_free']" />
-                        </td>
-                    </tr>
-                    <tr>
+            <t t-if="o.move_type == 'out_invoice' and o.payment_state == 'not_paid'">
+                <t t-if="tax_totals['igtf_free_form']['show_igtf_suggested_account_move'] and float(tax_totals['igtf_free_form']['igtf_base_amount_free']) > 0.0 ">
+                
+                    <tr style="line-height:0.5;">
                         <td>
                             IGTF 3.0%(sugerido):
                         </td>
@@ -32,28 +25,50 @@
                     </tr>
                 </t>
             </t>
+
+            <t t-if="o.move_type == 'out_invoice' and o.payment_state != 'not_paid'">
+                <t t-if="tax_totals['igtf'] and float(tax_totals['igtf']['formatted_igtf_amount']) > 0.0 ">
+                
+                    <tr style="line-height:0.5;">
+                        <td>
+                            IGTF 3.0%:
+                        </td>
+                        <td class="text-end o_price_total">
+                            <span t-out="tax_totals['igtf']['formatted_igtf_amount']" />
+                        </td>
+                    </tr>
+                </t>
+            </t>
         </xpath>
     </template>
 
     <template id="tax_groups_totals_ve" inherit_id="l10n_ve_invoice.tax_groups_totals_ve">
-        <xpath expr="//t[4]" position="after">
-            <t t-if="o.move_type == 'out_invoice'">
+        <xpath expr="//t[@t-foreach='tax_groups']" position="after">
+            <t t-if="o.move_type == 'out_invoice' and o.payment_state == 'not_paid'">
                 
                 <t t-if="tax_totals['igtf_free_form']['show_igtf_suggested_account_move']  and float(tax_totals['igtf_free_form']['foreign_igtf_base_amount_free']) > 0.0 ">
-                    <tr>
+                   
+                    <tr style="line-height:0.5;">
                         <td>
-                            BI IGTF(sugerido):
-                        </td>
-                        <td class="text-end o_price_total">
-                            <span t-out="tax_totals['igtf_free_form']['formatted_foreign_igtf_base_amount_free']" />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            IGTF 3.0% (sugerido):
+                            IGTF 3.0%(sugerido): :
                         </td>
                         <td class="text-end o_price_total">
                             <span t-out="tax_totals['igtf_free_form']['formatted_foreign_igtf_amount_free']" />
+                        </td>
+                    </tr>
+                </t>
+            </t>
+
+            <t t-if="o.move_type == 'out_invoice' and o.payment_state != 'not_paid'">
+                
+                <t t-if="tax_totals['igtf'] and float(tax_totals['igtf']['formatted_igtf_amount']) > 0.0 ">
+                   
+                    <tr style="line-height:0.5;">
+                        <td>
+                            IGTF 3.0% :
+                        </td>
+                        <td class="text-end o_price_total">
+                            <span t-out="tax_totals['igtf_free_form']['formatted_foreign_igtf_amount']" />
                         </td>
                     </tr>
                 </t>
