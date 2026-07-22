@@ -9,6 +9,7 @@
                     <attribute name="decoration-success">status == True</attribute>
                 </xpath>
                 <xpath expr="//field[@name='name']" position="before">
+                    
                     <field name="available_date" />
                 </xpath>
                 <xpath expr="//field[@name='status']" position="attributes">
