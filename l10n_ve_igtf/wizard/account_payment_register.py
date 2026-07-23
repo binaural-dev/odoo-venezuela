@@ -470,8 +470,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     lambda l: l.account_type in ('asset_receivable', 'liability_payable') and not l.reconciled
                 )
 
-                if debit_note_reconcilable_lines and reconcilable_lines:
-
+                if debit_note_reconcilable_lines and reconcilable_lines and abs(reconcilable_lines.amount_residual) > 0.01:
                     debit_note.js_assign_outstanding_line(reconcilable_lines.id)
 
                    
