@@ -107,3 +107,44 @@ describe("l10n_ve_pos set_foreign_amount", () => {
         expect(payment.foreign_amount).toBe(25);
     });
 });
+
+// _recomputeForeignFromLocal corre en TODO pago (setAmount), sin importar
+// is_foreign_currency: un pago en Bs también necesita su equivalente en USD
+// para la contabilidad dual (openspec/migration-lessons.md, "Pendientes por
+// tratar (2026-07-10)"). Antes se zereaba a propósito para métodos locales.
+describe("l10n_ve_pos _recomputeForeignFromLocal", () => {
+    test("método local (Bs): calcula el equivalente foráneo, no lo zerea", () => {
+        const order = makeOrderStub({ totalDue: TOTAL });
+        const payment = {
+            pos_order_id: order,
+            amount: TOTAL,
+            foreign_amount: 0,
+            payment_method_id: { is_foreign_currency: false },
+        };
+        PosPayment.prototype._recomputeForeignFromLocal.call(payment);
+        expect(payment.foreign_amount).toBe(FOREIGN_DUE);
+    });
+
+    test("método foráneo: sigue calculando igual que antes", () => {
+        const order = makeOrderStub({ totalDue: TOTAL });
+        const payment = {
+            pos_order_id: order,
+            amount: TOTAL,
+            foreign_amount: 0,
+            payment_method_id: { is_foreign_currency: true },
+        };
+        PosPayment.prototype._recomputeForeignFromLocal.call(payment);
+        expect(payment.foreign_amount).toBe(FOREIGN_DUE);
+    });
+
+    test("sin orden o sin localToForeign: cae a 0", () => {
+        const payment = {
+            pos_order_id: null,
+            amount: TOTAL,
+            foreign_amount: 99,
+            payment_method_id: { is_foreign_currency: false },
+        };
+        PosPayment.prototype._recomputeForeignFromLocal.call(payment);
+        expect(payment.foreign_amount).toBe(0);
+    });
+});

@@ -24,17 +24,20 @@ patch(PosPayment.prototype, {
         return data;
     },
 
-    _isForeignMethod() {
-        return Boolean(this.payment_method_id?.is_foreign_currency);
-    },
-
     _recomputeForeignFromLocal() {
         // Called when the local `amount` is the source of truth (core setAmount).
         // Uses the centralized pos_order._convert (mirror of pos.config._convert).
-        if (!this._isForeignMethod()) {
-            this.foreign_amount = 0;
-            return;
-        }
+        //
+        // Runs for EVERY payment method, not just is_foreign_currency ones.
+        // A payment tendered in local currency (Bs) still needs its USD
+        // equivalent for dual-currency accounting — see
+        // openspec/migration-lessons.md, "Pendientes por tratar
+        // (2026-07-10)". Gating this on is_foreign_currency used to zero
+        // foreign_amount for local-method payments, which silently zeroed
+        // foreign_debit/foreign_credit on every downstream accounting line
+        // (pos_session.py session close, pos_payment.py invoice payment
+        // moves) even though the conversion itself has nothing to do with
+        // which currency the cashier typed the amount in.
         const order = this.pos_order_id;
         if (!order || typeof order.localToForeign !== "function") {
             this.foreign_amount = 0;
