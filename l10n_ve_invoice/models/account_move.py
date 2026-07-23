@@ -417,15 +417,15 @@ class AccountMove(models.Model):
 
         # Si no existe, genera el reporte mediante la acción QWeb estándar
         report = self.env.ref("l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice")
-        return report.with_context(allow_main_attachment_from_system=True).report_action(self)
+        return report.report_action(self)
 
 
     def _message_set_main_attachment_id(self, attachments, force=False, filter_xml=True):
         """
         Solo permite establecer el message_main_attachment_id si la llamada 
-        proviene del flujo explícito de impresión o envío mediante contexto.
+        proviene del flujo explícito de impresión o envío mediante free_form_copy_number.
         """
-        if self.env.context.get('allow_main_attachment_from_system'):
+        if self.free_form_copy_number >= 1 and not self.message_main_attachment_id:
             return super()._message_set_main_attachment_id(attachments, force=force, filter_xml=filter_xml)
         
         return
@@ -454,17 +454,8 @@ class AccountMove(models.Model):
         """ Sobrescribimos para pasar la clave de contexto 'allow_main_attachment_from_system'
             al abrir la ventana/wizard de enviar e imprimir factura.
         """
-        self_with_context = self.with_context(allow_main_attachment_from_system=True)
+        self.free_form_copy_number += 1
         
-        res = super(AccountMove, self_with_context).action_invoice_sent()
-        
-        if isinstance(res, dict) and 'context' in res:
-            if isinstance(res['context'], dict):
-                res['context']['allow_main_attachment_from_system'] = True
-            elif isinstance(res['context'], str):
-                # Por si Odoo retorna el contexto como string de python/eval
-                ctx = self.env.context.copy()
-                ctx.update({'allow_main_attachment_from_system': True})
-                res['context'] = ctx
+        res = super(AccountMove, self).action_invoice_sent()
 
         return res
