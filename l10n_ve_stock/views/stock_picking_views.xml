@@ -118,4 +118,14 @@
     <record id="stock.action_scrap" model="ir.actions.server">
         <field name="group_ids" eval="[Command.link(ref('l10n_ve_stock.group_hide_discard_inventory_transfers_button'))]"/>
     </record>
+
+    <record id="stock.action_report_picking" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+    <record id="stock.action_report_delivery" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+    <record id="stock.return_label_report" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
 </odoo>
