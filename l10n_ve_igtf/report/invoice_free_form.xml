@@ -27,7 +27,7 @@
             </t>
 
             <t t-if="o.move_type == 'out_invoice' and o.payment_state != 'not_paid'">
-                <t t-if="tax_totals['igtf'] and float(tax_totals['igtf']['formatted_igtf_amount']) > 0.0 ">
+                <t t-if="tax_totals['igtf'] and tax_totals['igtf']['formatted_igtf_amount'] ">
                 
                     <tr style="line-height:0.5;">
                         <td>
@@ -61,14 +61,14 @@
 
             <t t-if="o.move_type == 'out_invoice' and o.payment_state != 'not_paid'">
                 
-                <t t-if="tax_totals['igtf'] and float(tax_totals['igtf']['formatted_igtf_amount']) > 0.0 ">
+                <t t-if="tax_totals['igtf'] and tax_totals['igtf']['formatted_igtf_amount'] ">
                    
                     <tr style="line-height:0.5;">
                         <td>
                             IGTF 3.0% :
                         </td>
                         <td class="text-end o_price_total">
-                            <span t-out="tax_totals['igtf_free_form']['formatted_foreign_igtf_amount']" />
+                            <span t-out="tax_totals['igtf']['formatted_foreign_igtf_amount']" />
                         </td>
                     </tr>
                 </t>
