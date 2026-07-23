@@ -25,10 +25,6 @@ class PosSession(models.Model):
         """
         return super().load_data(models_to_load)
 
-    def is_user_authorized(self):
-        is_group = self.env.user.has_group("l10_ve_pos.group_authorized_discount_pos")
-        return is_group
-
     def _validate_cross_move(self):
         """Create the moves that clear each foreign-currency payment method's
         transitory account into its real ``cross_journal`` account.
@@ -770,26 +766,43 @@ class PosSession(models.Model):
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
+        """Write ``foreign_debit``/``foreign_credit`` on ``line`` when its
+        debit or credit matches ``amount``, mirroring the write onto the
+        line's non-``asset_receivable`` counterpart in the same move, if any.
+
+        The counterpart lookup used to gate the write to ``line`` itself
+        too: when a payment method's ``combine_cash_receivable_lines`` sits
+        on the session's own closing move — which only ever holds
+        ``asset_receivable`` lines, since the real cash/bank account leg is
+        booked on a separate bank-statement move — ``other_lines`` came back
+        empty and the whole method silently did nothing. ``not_foreign_recalculate``
+        was then never set, so the line fell back to the base compute, which
+        ran once at creation time (before the move's ``foreign_inverse_rate``
+        had been assigned) and got stuck at 0.
+        """
+        rounding = self.currency_id.rounding
+        matched_credit = abs(line.credit) > 0 and float_compare(
+            line.credit, abs(amount), precision_rounding=rounding
+        ) == 0
+        matched_debit = abs(line.debit) > 0 and float_compare(
+            line.debit, abs(amount), precision_rounding=rounding
+        ) == 0
+        if not (matched_credit or matched_debit):
+            return
+
+        line.not_foreign_recalculate = True
+        if matched_credit:
+            line.foreign_credit = abs(foreign_amount)
+        if matched_debit:
+            line.foreign_debit = abs(foreign_amount)
+
         other_lines = line.move_id.line_ids.filtered(
             lambda x: x != line and x.account_id.account_type != "asset_receivable"
         )
-        if other_lines:
-            other_line = other_lines[0]
-            if (
-                abs(line.credit) > 0
-                and float_compare(
-                    line.credit, abs(amount), precision_rounding=self.currency_id.rounding
-                ) == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(foreign_amount)
-                if other_line.foreign_debit != line.foreign_credit:
-                    other_line.foreign_debit = abs(line.foreign_credit)
-            if (
-                abs(line.debit) > 0
-                and float_compare(line.debit, abs(amount), precision_rounding=self.currency_id.rounding) == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(foreign_amount)
-                if other_line.foreign_credit != line.foreign_debit:
-                    other_line.foreign_credit = abs(line.foreign_debit)
+        if not other_lines:
+            return
+        other_line = other_lines[0]
+        if matched_credit and other_line.foreign_debit != line.foreign_credit:
+            other_line.foreign_debit = abs(line.foreign_credit)
+        if matched_debit and other_line.foreign_credit != line.foreign_debit:
+            other_line.foreign_credit = abs(line.foreign_debit)
