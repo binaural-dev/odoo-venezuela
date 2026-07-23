@@ -354,6 +354,12 @@ class SaleOrder(models.Model):
         Compute the vat of the partner and add the prefix to it if it exists in the partner record
         """
         for rec in self:
+            vat = ""
+
+            if not rec.partner_id:
+                rec.vat = vat
+                continue
+
             if rec.partner_id.prefix_vat and rec.partner_id.vat:
                 vat = str(rec.partner_id.prefix_vat) + str(rec.partner_id.vat)
             else:
