@@ -32,7 +32,13 @@
                     </group>
                 </xpath>
 
-                
+                <xpath expr="//field[@name='missing_account_partners']" position="after">
+                    <field name="is_igtf" readonly="1" invisible="1" />
+                    <div role="alert" class="alert alert-warning" invisible="not is_igtf">
+                        <span class="fw-bold">Este pago generara una Nota de Debito Automatica por el monto de IGTF percibido en la transaccion</span>
+                    </div>
+                </xpath>
+
 
                 <xpath expr="//label[@for='amount']" position="attributes">
                     <attribute name="invisible"/> 

@@ -41,6 +41,30 @@ class AccountMove(models.Model):
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
     )
     origin_payment_advanced_payment_id = fields.Many2one("account.payment",copy=False)
+
+    origin_payment_to_pay_igtf = fields.Many2one('account.move', string="Origin Payment to Pay IGTF",copy=False)
+
+    has_pending_igtf_debit_note = fields.Boolean(
+        compute='_compute_has_pending_igtf_debit_note',
+        store=False # No se guarda en BD para que se calcule en tiempo real al abrir el form
+    )
+
+    @api.depends('debit_note_ids', 'debit_note_ids.state', 'debit_note_ids.payment_state', 'amount_residual')
+    def _compute_has_pending_igtf_debit_note(self):
+        for move in self:
+            move.has_pending_igtf_debit_note = False
+            
+            # Verificamos si la factura tiene notas de débito en su relación 'debit_note_ids'
+            if move.debit_note_ids:
+                # Filtramos las notas de débito asociadas que estén publicadas y no pagadas
+                pending_igtf_notes = move.debit_note_ids.filtered(
+                    lambda dn: dn.state == 'posted' and 
+                               dn.payment_state not in ('paid', 'reversed') and
+                               any(line.product_id.name == 'Igtf Percibido' for line in dn.invoice_line_ids)
+                )
+                
+                if pending_igtf_notes:
+                    move.has_pending_igtf_debit_note = True
  
 
     @api.depends('invoice_outstanding_credits_debits_widget', 'invoice_outstanding_credits_debits_widget_advance_payment')
@@ -421,21 +445,21 @@ class AccountMove(models.Model):
             igtf_amount = abs(payment.calculate_igtf_for_payment(self, applied_payment_curr,  payment.currency_id ,conversion_date))
 
         #raise UserError(igtf_amount)
-        if is_igtf_journal:
-            igtf_in_invoice_curr = payment.currency_id._convert(igtf_amount, self.currency_id, self.company_id, conversion_date)
-            if (base_amount_applied + igtf_in_invoice_curr) < advance_amount: ## include igtf in base
-                base_amount_applied = self.currency_id.round(base_amount_applied + igtf_in_invoice_curr)
-                if advance_amount > 0:
-                    applied_payment_curr = payment.currency_id.round(
-                        advance_amount_payment_curr * (base_amount_applied / advance_amount))
+        #if is_igtf_journal:
+        #igtf_in_invoice_curr = payment.currency_id._convert(igtf_amount, self.currency_id, self.company_id, conversion_date)
+        #if (base_amount_applied + igtf_in_invoice_curr) < advance_amount: ## include igtf in base
+        #    base_amount_applied = self.currency_id.round(base_amount_applied + igtf_in_invoice_curr)
+        #    if advance_amount > 0:
+        #        applied_payment_curr = payment.currency_id.round(
+        #            advance_amount_payment_curr * (base_amount_applied / advance_amount))
                 
 
         # --- Forzar balance cuando el cruce cubre exactamente el residual ---
         factura_line = receivable_payable_line
-        if is_igtf_journal:
-            total_in_invoice_curr = base_amount_applied + igtf_in_invoice_curr
-        else:
-            total_in_invoice_curr = base_amount_applied
+        #if is_igtf_journal:
+        #    total_in_invoice_curr = base_amount_applied + igtf_in_invoice_curr
+        #else:
+        total_in_invoice_curr = base_amount_applied
 
         force_balance = None
         if (abs(total_in_invoice_curr - advance_amount_residual) <= self.currency_id.rounding
@@ -451,9 +475,10 @@ class AccountMove(models.Model):
         
         if is_igtf_journal and igtf_amount > 0.0:
 
-            line_vals = self.prepare_igtf_payment_vals(
-                line_vals, payment, igtf_amount, igtf_account, conversion_date, common_vals
-            )
+            #line_vals = self.prepare_igtf_payment_vals(
+            #    line_vals, payment, igtf_amount, igtf_account, conversion_date, common_vals
+            #)
+            self.prepare_igtf_payment_debit_note(self, igtf_amount, self, payment)
                
         # --- Entry Creation ---
         advance_journal = self.env.company.advance_payment_igtf_journal_id
@@ -895,7 +920,8 @@ class AccountMove(models.Model):
             return 
         
 
-    
+        self.create_note_credit_igtf(partial_id)
+
         try:
             payment_move.button_draft()
             
@@ -999,3 +1025,177 @@ class AccountMove(models.Model):
         self.line_ids.analytic_line_ids.with_context(skip_analytic_sync=True).unlink()
         self.mapped('line_ids').remove_move_reconcile()
         return super().button_draft()
+
+    def prepare_igtf_payment_debit_note(self, igtf_amount, invoice, payment):
+        """
+        Crea una nota de débito por el monto de IGTF utilizando el asistente account.debit.note.Expand commentComment on lines R1008 to R1010
+        Se asegura de que solo se añade la línea de IGTF y se postea.
+        """
+        self.ensure_one()
+
+        is_customer = invoice.move_type in ["out_invoice", "in_refund"]
+        debit_journal = False
+        if is_customer:
+        
+            debit_journal= self.env['account.journal'].search([('is_debit', '=', True),('type','=','sale')], limit=1)
+        else:
+            debit_journal= self.env['account.journal'].search([('is_debit', '=', True),('type','=','purchase')], limit=1)
+
+        product = invoice.company_id.igtf_product_id
+
+        if not product:
+            raise UserError(_('No se encontró un producto con Igtf Percivido.'))
+
+        account = product.property_account_income_id
+        if not account:
+            raise UserError(_('No se encontró cuenta de ingreso para el producto IGTF.'))
+        
+        
+        if is_customer:
+            partner_account = invoice.partner_id.property_account_receivable_id
+            if not partner_account:
+                raise UserError(_('El cliente no tiene una cuenta por cobrar configurada.'))
+        
+        else:
+
+            partner_account = invoice.partner_id.property_account_payable_id
+            if not partner_account:
+                raise UserError(_('El cliente no tiene una cuenta por pagar configurada.'))
+            
+
+        debit_note_wizard_vals = {
+            'date': fields.Date.context_today(self),
+            'reason': 'IGTF Percibido por concepto de Pago en Divisas',
+            'journal_id': debit_journal.id,
+            'move_ids': [(4, invoice.id)],
+        }
+        
+        move_debit_note_wiz = self.env['account.debit.note'].with_context(active_model = 'account.move',active_ids = invoice.ids).create(debit_note_wizard_vals)
+        
+        res = move_debit_note_wiz.create_debit() 
+        
+        debit_note_id = res.get('res_id')
+        if not debit_note_id:
+            raise UserError(_('El asistente de nota de débito no devolvió un ID válido.'))
+            
+        debit_note = self.env['account.move'].browse(debit_note_id)
+        
+        igtf_line_vals = {
+            'product_id': product.id,
+            'quantity': 1.0,
+            'price_unit': igtf_amount,
+            'date_maturity':fields.Date.today(self),
+        }
+
+        write_vals = {
+            'origin_payment_to_pay_igtf': payment.id, 
+            'invoice_line_ids': [(0, 0, igtf_line_vals)]
+        }
+
+        if is_customer:
+            # Agrega la clave al diccionario existente
+            write_vals['pricelist_id'] = 1
+        else:
+            # Agrega la clave al diccionario existente
+            write_vals['currency_id'] = invoice.company_id.currency_id.id
+
+
+        debit_note.write(write_vals)
+        
+        return debit_note
+
+    def _unreconcile_and_cancel_advance(self, line):
+        """
+        Desconcilia las líneas del asiento y cancela el anticipo asociado si existe.
+        """
+        partials = line.matched_debit_ids + line.matched_credit_ids
+        for partial in partials:
+            # Determinamos cuál es el movimiento contraparte de la línea
+            counterpart_move = (
+                partial.credit_move_id.move_id 
+                if partial.debit_move_id == line 
+                else partial.debit_move_id.move_id
+            )
+            
+            # Desconciliamos las líneas
+            line.remove_move_reconcile()
+            
+            # Si proviene de un anticipo registrado
+            if counterpart_move.origin_payment_advanced_payment_id:
+                advance_payment = counterpart_move.origin_payment_advanced_payment_id
+                counterpart_move.button_draft()
+                counterpart_move.write({'origin_payment_advanced_payment_id': False})
+                counterpart_move.with_context(
+                    move_action_cancel_advance_payment=True
+                ).button_cancel()
+                advance_payment.write({'advanced_move_ids': [(3, counterpart_move.id)]})
+            
+            return True
+        return False
+
+    def create_note_credit_igtf(self, partial_id):
+        """
+        Crea y publica la Nota de Crédito correspondiente para reversar el IGTF 
+        cuando el pago asociado se desconcilia o cancela.
+        """
+        partial_reconcile = self.env["account.partial.reconcile"].browse(partial_id)
+        credit_move = partial_reconcile.credit_move_id.move_id
+        debit_move = partial_reconcile.debit_move_id.move_id
+
+        invoice_move = None
+        payment_move = None
+
+        # 1. Identificar la Factura Origen y el Pago asociado
+        if credit_move.move_type == 'out_invoice':
+            invoice_move = credit_move
+            payment_move = debit_move
+        elif debit_move.move_type == 'out_invoice':
+            invoice_move = debit_move
+            payment_move = credit_move
+
+        # Validaciones de entrada
+        if not (invoice_move and invoice_move.debit_note_ids and invoice_move.check_payment_term_conditions()):
+            return
+
+        target_debit_note = None
+
+        # 2. Iterar sobre las notas de débito buscando la coincidencia con el IGTF
+        for debit_note in invoice_move.debit_note_ids:
+            igtf_payment = debit_note.origin_payment_to_pay_igtf
+            
+            # Validar que la nota de débito de IGTF esté activa y publicada
+            if not (igtf_payment and debit_note.state == 'posted' and debit_note.payment_state != 'reversed'):
+                continue
+
+            # Condición unificada: El pago coincide O el pago origen fue cancelado
+            if payment_move.id == igtf_payment.id or igtf_payment.state == 'cancel':
+                reconciled_lines = debit_note.line_ids.filtered(
+                    lambda l: l.account_type in ('asset_receivable', 'liability_payable')
+                )
+
+                # Desconciliar las líneas asociadas
+                for line in reconciled_lines:
+                    if self._unreconcile_and_cancel_advance(line):
+                        break
+
+                target_debit_note = debit_note
+                break  # Encontrada la nota correspondida, salimos del bucle principal
+
+        # 3. Generar y publicar la Nota de Crédito sobre la Nota de Débito
+        if target_debit_note and target_debit_note.state == 'posted':
+            target_debit_note.origin_payment_to_pay_igtf = False
+
+            move_reversal = self.env['account.move.reversal'].with_context(
+                active_model="account.move",
+                active_ids=target_debit_note.ids
+            ).create({
+                'date': fields.Date.context_today(self),
+                'journal_id': target_debit_note.journal_id.id,
+            })
+
+            reversal_action = move_reversal.refund_moves()
+
+            reversal_move = self.env['account.move'].browse(reversal_action['res_id'])
+            # Actualizado para Odoo 19: origin_payment_id en lugar de payment_id
+            reversal_move.origin_payment_id = False
+            reversal_move._post(soft=False)

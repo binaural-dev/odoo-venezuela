@@ -433,51 +433,48 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         
         payments = super(AccountPaymentRegisterIgtf, self.with_context(skip_account_move_reversal=True))._create_payments()
         
-        ignore_gtf = self.env.context.get("ignore_igtf", False)
+        move_id = (
+            self.env.context.get("active_id", False)
+        )
 
-        
-        is_provider =  self.partner_type == 'supplier'
+        invoice = self.env['account.move'].browse(move_id)
 
-        due_currency_id = self.source_currency_id
-        
-        due_amount = due_currency_id._convert(self.source_amount_currency,self.currency_id,company=self.company_id,date=self.payment_date)
-       
         for payment in payments:
-            
-            if payment.igtf_amount:
+            company_currency = payment.company_id.currency_id
+            payment_currency = payment.currency_id
+            reconcilable_lines = payment.move_id.line_ids.filtered(
+                lambda l: l.account_type in ('asset_receivable', 'liability_payable')
+            )
+            payment_total_base = payment.move_id.amount_total_signed
+            payment_residual_base = reconcilable_lines.amount_residual
 
-                amount = payment.amount
-            
-                if not ignore_gtf:
-                    
-                    due_amount += payment.igtf_amount 
 
 
-                self.group_payment = False
+            if payment.igtf_amount > 0 and invoice:
                 
-                if (
-                    float_compare(amount, due_amount, precision_rounding=self.currency_id.rounding) == 1
-                    and payment.igtf_amount 
-                    and self.payment_difference_handling != 'reconcile' 
-                    and not self.group_payment
-                ):
-                    difference = amount - due_amount
+                igtf_base = payment.currency_id._convert(
+                    payment.igtf_amount, company_currency, payment.company_id, payment.date,
+                )
+
+                if  abs(payment_residual_base) > 0: #hay residual en el pago
+                    supposted_fact_amount = payment_currency.round((abs(payment_total_base) - abs(igtf_base))) #supuesta base de la factura sin igtf
+                    #detectamos si lo q queda es el equivalente al igtf o es un apgo mayor
                     
-                    move_to_reconcile_with_payment_difference = (
-                        self._create_move_to_reconcile_with_payment_difference(payment,difference,due_currency_id)
-                    )
-                    if move_to_reconcile_with_payment_difference:
-                        move_to_reconcile_with_payment_difference.action_post()
-                    
-                        if is_provider:
-                            self._reconcile_payment_provider_and_move_lines(
-                                payment, move_to_reconcile_with_payment_difference
-                            )
-                        else:
-                            self._reconcile_payment_and_move_lines(
-                                payment, move_to_reconcile_with_payment_difference
-                            )
-                        payment.write({"advanced_move_ids": [(4, move_to_reconcile_with_payment_difference.id)]})
+                    if abs(supposted_fact_amount) - abs(invoice.amount_total_signed) <= 0.1: #comparacion si existe una diferencia de decimales por conversion
+                        igtf_base = abs(payment_residual_base)
+                                                
+                debit_note= invoice.prepare_igtf_payment_debit_note(igtf_base, invoice, payment)
+                debit_note.with_context(move_action_post_alert=True).action_post()
+
+                debit_note_reconcilable_lines = debit_note.line_ids.filtered(
+                    lambda l: l.account_type in ('asset_receivable', 'liability_payable') and not l.reconciled
+                )
+
+                if debit_note_reconcilable_lines and reconcilable_lines:
+
+                    debit_note.js_assign_outstanding_line(reconcilable_lines.id)
+
+                   
         return payments
 
     def _create_move_to_reconcile_with_payment_difference(self, payment, diff,due_currency_id):

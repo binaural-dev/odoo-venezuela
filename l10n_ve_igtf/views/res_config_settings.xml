@@ -41,6 +41,13 @@
                         <setting string="Supplier IGTF Account">
                             <field name="supplier_account_igtf_id" />
                         </setting>
+
+                        <setting string="IGTF Product">
+                            <field name="igtf_product_domain" invisible="1"/>
+
+                            <field name="igtf_product_id" domain="igtf_product_domain" invisible="not customer_account_igtf_id or not supplier_account_igtf_id"/>
+                        </setting>
+
                     
                 </block>
 

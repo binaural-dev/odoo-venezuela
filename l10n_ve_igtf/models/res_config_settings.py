@@ -52,3 +52,12 @@ class ResConfigSettings(models.TransientModel):
     not_show_igtf_purchase_order = fields.Boolean(
         related="company_id.not_show_igtf_purchase_order", readonly=False
     )
+
+    igtf_product_domain = fields.Char(
+        related="company_id.igtf_product_domain"
+    )
+
+    igtf_product_id = fields.Many2one(
+        related="company_id.igtf_product_id",
+        readonly=False
+    )
