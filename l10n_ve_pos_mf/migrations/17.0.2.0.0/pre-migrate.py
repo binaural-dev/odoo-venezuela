@@ -83,26 +83,37 @@ def migrate(cr, version):
 
         if existing_columns:
             _logger.info(f"  Columnas encontradas en iot.device: {existing_columns}")
-            
-            # Por ahora solo logueamos los datos existentes
-            # Los campos ya deberían existir en pos.config si se instaló l10n_ve_pos_mf antes
+
+            # Los campos ya deberían existir en pos.config si se instaló l10n_ve_pos_mf
+            # antes, pero en saltos de versión grandes (varias versiones de golpe)
+            # este pre-migrate puede correr ANTES de que pos.config tenga esas
+            # columnas todavía (se crean recién al sincronizar el modelo). Verificar
+            # primero para no romper la migración completa por un simple log.
             cr.execute("""
-                SELECT pc.id, pc.name, pc.serial_machine, pc.flag_21, 
-                       pc.traditional_line, pc.has_cashbox
-                FROM pos_config pc
-                WHERE pc.serial_machine IS NOT NULL OR pc.flag_21 IS NOT NULL
-                   OR pc.traditional_line IS NOT NULL OR pc.has_cashbox IS NOT NULL
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'pos_config'
+                AND column_name IN ('serial_machine', 'flag_21', 'traditional_line', 'has_cashbox')
             """)
-            configs = cr.fetchall()
-            
-            if configs:
-                _logger.info(f"  ✓ Encontrados {len(configs)} pos.config con datos de máquina fiscal")
-                for config in configs:
-                    _logger.info(f"    - POS Config ID {config[0]} ({config[1]}): "
-                               f"serial={config[2]}, flag_21={config[3]}, "
-                               f"traditional_line={config[4]}, has_cashbox={config[5]}")
+            pos_config_columns = [row[0] for row in cr.fetchall()]
+
+            if pos_config_columns:
+                select_cols = ", ".join(f"pc.{col}" for col in pos_config_columns)
+                where_cols = " OR ".join(f"pc.{col} IS NOT NULL" for col in pos_config_columns)
+                cr.execute(f"""
+                    SELECT pc.id, pc.name, {select_cols}
+                    FROM pos_config pc
+                    WHERE {where_cols}
+                """)
+                configs = cr.fetchall()
+
+                if configs:
+                    _logger.info(f"  ✓ Encontrados {len(configs)} pos.config con datos de máquina fiscal")
+                    for config in configs:
+                        _logger.info(f"    - POS Config ID {config[0]} ({config[1]}): {dict(zip(pos_config_columns, config[2:]))}")
+                else:
+                    _logger.info("  ⚠ No se encontraron pos.config con datos de máquina fiscal")
             else:
-                _logger.info("  ⚠ No se encontraron pos.config con datos de máquina fiscal")
+                _logger.info("  ℹ Columnas de MF en pos.config no existen aún (se crearán al sincronizar el modelo)")
         else:
             _logger.info("  ⚠ No se encontraron columnas de MF en iot.device")
     else:
