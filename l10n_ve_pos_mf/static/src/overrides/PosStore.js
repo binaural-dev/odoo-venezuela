@@ -752,7 +752,10 @@ patch(PosStore.prototype, {
     }
     
     // 2. Imprimir en máquina fiscal (offline - no requiere internet)
-    if (this.useFiscalMachine() && !order.mf_invoice_number) {
+    // Solo si el pedido se marcó como "Factura" (order.is_to_invoice()) en la
+    // pantalla de validación. Si se seleccionó "Recibo", el pedido se imprime
+    // por la tickera comun (browser/kiosk-printing), nunca por la maquina fiscal.
+    if (this.useFiscalMachine() && order.is_to_invoice() && !order.mf_invoice_number) {
       const response = await this.pushToMF(order);
 
       if (response.printer_connection === false || !("printer_connection" in response)) {
