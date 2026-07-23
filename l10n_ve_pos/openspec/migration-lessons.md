@@ -95,30 +95,56 @@ reducía el "restante alterno". `remainingDue`/`change` (core) descuentan
 TODOS los pagos vía `amountPaid`, y si otro módulo (l10n_ve_pos_igtf) los
 parchea, el panel foráneo lo refleja sin que este módulo lo conozca.
 
-## Pendientes por tratar (2026-07-10)
+## Pendientes por tratar (2026-07-10) — RESUELTO 2026-07-21
 
 ### foreign_amount = 0 en líneas de métodos locales — NO debería pasar
 
 `_recomputeForeignFromLocal` (static/src/overrides/models/payment_model.js)
-fija `foreign_amount = 0` cuando el método no es `is_foreign_currency`.
+fijaba `foreign_amount = 0` cuando el método no era `is_foreign_currency`.
 Jesús: eso no debería pasar; la línea en Bs debería llevar su equivalente
 foráneo (`localToForeign(amount)`).
 
-NO es meramente visual — consumidores de `pos.payment.foreign_amount` con 0:
+NO era meramente visual — consumidores de `pos.payment.foreign_amount` con 0:
 
 1. `models/pos_payment.py::_create_payment_moves` (y el de l10n_ve_pos_igtf):
-   `foreign_debit`/`foreign_credit` de los apuntes quedan en 0 para pagos en
-   Bs → la contabilidad dual foránea no registra esos pagos.
-2. `report/report_saledetails.py`: `sum(foreign_amount)` por método de pago
-   en SQL → f_total = 0 para métodos locales en el reporte.
-3. Frontend: `get_foreign_total_paid()` no ve pagos locales (ya desacoplado
-   de due/change el 2026-07-09, pero sigue exportándose en
-   `get_foreign_details`).
+   `foreign_debit`/`foreign_credit` de los apuntes quedaban en 0 para pagos
+   en Bs → la contabilidad dual foránea no registraba esos pagos.
+2. `report/report_saledetails.py` y `report/payment_report_pos.py`:
+   `sum(foreign_amount)` por método de pago en SQL/Python → f_total = 0
+   para métodos locales en los reportes.
+3. Frontend: `get_foreign_total_paid()` no veía pagos locales (ya
+   desacoplado de due/change el 2026-07-09), ni `get_foreign_amount()`
+   (usado en `payment_line.xml` para el monto foráneo junto a cada línea).
+4. **`models/pos_session.py` — el mayor consumidor, no listado en la nota
+   original.** Todo el cierre de sesión (`_accumulate_amounts`,
+   `_create_bank_payment_moves`, `_create_split_account_payment`,
+   `_create_combine_account_payment`, `_create_invoice_receivable_lines`,
+   `_create_cash_statement_lines_and_cash_move_lines`) lee
+   `payment.foreign_amount` sin gate por `is_foreign_currency` — con el
+   valor en 0, TODAS las líneas de recibo de cierre de sesión para
+   métodos locales quedaban en `foreign_debit`/`foreign_credit = 0`. Este
+   es el mecanismo real detrás de los casos encontrados en las sesiones
+   Binaural C.A/00043 y /00044 (ver openspec/changes/
+   `l10n-ve-pos-session-close-cash-foreign-amount-fix`, que arregló un
+   bug de escritura DISTINTO — el de ahí ya no se saltaba la escritura,
+   pero escribía el valor de origen equivocado por esto).
 
-Al cambiarlo, auditar TODOS esos consumidores: si `foreign_amount` pasa a
-venir siempre poblado, el split de `_create_payment_moves` y los reportes
-podrían double-contar o cambiar de significado. Decidir también el redondeo
-(una conversión, regla del módulo).
+**Fix aplicado**: `_recomputeForeignFromLocal` ya no filtra por
+`is_foreign_currency` — siempre calcula `order.localToForeign(amount)`.
+Se eliminó `_isForeignMethod()` (quedó sin uso). Auditoría de los 4
+consumidores de arriba + `l10n_ve_pos_igtf/pos_payment.py::_create_payment_moves`
+(agente Explore, 2026-07-21): ninguno hace resta/división que asuma 0 —
+todo es asignación directa sobre líneas ya identificadas por importe, sin
+riesgo de doble conteo. Se encontró además un bug latente que este cambio
+arregla de paso: en `l10n_ve_pos_igtf`, un método local con
+`apply_igtf=True` calculaba mal `amount_without_igtf` porque
+`foreign_amount` era 0 pero `foreign_igtf_amount` (independiente) sí
+estaba poblado. Ningún test (Python ni JS) dependía de la invariante
+vieja — se agregó cobertura nueva en `payment_model.test.js`
+(`_recomputeForeignFromLocal` para método local vs. foráneo).
+
+**Pendiente aparte, no cubierto por este fix**: data-fix de los asientos
+YA generados con el valor viejo (0) en las sesiones 00043 y 00044.
 
 ## Pendientes por tratar (2026-07-21)
 
