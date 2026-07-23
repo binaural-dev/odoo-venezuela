@@ -36,10 +36,8 @@
 
 ## 4. Verificación manual (confirmada en navegador, 2026-07-20)
 
-- [ ] 4.1 Confirmar que el badge "(G)"/"(E)" aparece junto al nombre del
-      producto en el PdV, para productos gravados y exentos (no
-      re-confirmado explícitamente por el usuario en esta sesión — el foco
-      de la prueba fue la tasa)
+- [x] 4.1 Badge "(G)"/"(E)" junto al nombre del producto — confirmado por
+      el usuario ("confirmo que ya todo visualmente", 2026-07-21)
 - [x] 4.2 Vendida orden 37 (INV/2026/0028) con tasa 0,001428112596396;
       tasa viva al momento de probar el reembolso: 0,001356424930
 - [x] 4.3 Reembolso de la orden 37: pantalla de pago mostró $20,31,
@@ -59,13 +57,13 @@
       mercancía/inventario ($0,01) ajena a la deuda del cliente. Las
       líneas relevantes al cliente (venta + IVA) suman $20,31, igual que
       el reembolso — no hay discrepancia real
-- [ ] 4.4 Confirmar que una venta normal (no reembolso) sigue mostrando
-      el monto en USD con la tasa viva de `pos.config` (sin regresión) —
-      no probado explícitamente, pero la rama de código no cambia para
-      órdenes sin `refunded_orderline_id`
-- [ ] 4.5 Probar un reembolso de una orden vieja sin
-      `foreign_currency_rate` poblado (dato legado): confirmar que cae al
-      comportamiento anterior (tasa viva) sin romperse
+- [ ] 4.4 Caso borde: venta normal (no reembolso) sigue mostrando el
+      monto en USD con la tasa viva de `pos.config` — no confirmado
+      explícitamente (la rama de código no cambia para órdenes sin
+      `refunded_orderline_id`, pero no se verificó en vivo)
+- [ ] 4.5 Caso borde: reembolso de una orden vieja sin
+      `foreign_currency_rate` poblado (dato legado) — no confirmado
+      explícitamente
 
 ## 5. OpenSpec
 
