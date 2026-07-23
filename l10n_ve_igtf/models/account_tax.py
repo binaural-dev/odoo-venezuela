@@ -47,6 +47,22 @@ class AccountTax(models.Model):
             if base_line["record"]._name == "sale.order.line":
                 order = base_line["record"].order_id
 
+        if invoice.move_type in ('out_refund', 'in_refund'):
+            res["igtf"] = {
+                "apply_igtf": False,
+                "igtf_show": False,
+                "name": "",
+                "igtf_base_amount": 0,
+                "igtf_amount": 0,
+                "foreign_igtf_base_amount": 0,
+                "foreign_igtf_amount": 0,
+                "formatted_igtf_base_amount": "",
+                "formatted_igtf_amount": "",
+                "formatted_foreign_igtf_base_amount": "",
+                "formatted_foreign_igtf_amount": "",
+            }
+            return res
+
 
         apply_igtf = False
         igtf_show = False
@@ -78,7 +94,8 @@ class AccountTax(models.Model):
             else:
                 base_igtf = abs(invoice.amount_total_signed)
                 foreign_base_igtf = invoice.amount_total
-                igtf_show = True
+                if invoice.move_type == "out_invoice":
+                    igtf_show = True
 
         base_igtf_free = 0.0
         foreign_base_igtf_free = 0.0
@@ -104,6 +121,13 @@ class AccountTax(models.Model):
         igtf_amount_free = igtf_base_amount_free * igtf_percentage 
         foreign_igtf_base_amount_free = igtf_foreign_base_amount_free * igtf_percentage 
         
+
+        if invoice.move_type in ('out_refund', 'in_refund'):
+            apply_igtf = False
+            igtf_show = False
+
+        if invoice.bi_igtf <= 0.0 and invoice.payment_state not in ('not_paid',):
+            igtf_show = False
 
         res["igtf"] = {}
         res["igtf"]["apply_igtf"] = apply_igtf

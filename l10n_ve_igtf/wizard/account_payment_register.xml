@@ -60,6 +60,10 @@
                     <attribute name="invisible">0</attribute>
                     <attribute name="force_save">1</attribute>
                 </xpath>
+
+                <xpath expr="//button[@name='action_create_payments']" position="attributes">
+                    <attribute name="confirm">¿Está seguro que desea realizar el pago con los montos registrados?</attribute>
+                </xpath>
             </field>
         </record>
     </data>
