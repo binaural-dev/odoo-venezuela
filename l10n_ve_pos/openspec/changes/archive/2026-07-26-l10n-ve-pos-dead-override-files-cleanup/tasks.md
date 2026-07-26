@@ -43,11 +43,12 @@
 
 ## 3. Validación
 
-- [ ] 3.1 `-u l10n_ve_pos` en el contenedor `proj` para reconstruir el
-      bundle del PdV — pendiente, no ejecutado en este pase
-- [ ] 3.2 Verificación en navegador (usuario): el PdV arranca sin errores
-      en consola (un `import` colgante rompería el bundle completo)
-- [ ] 3.3 Verificación en navegador (usuario): la pantalla de productos
+- [x] 3.1 `-u l10n_ve_pos` en el contenedor `proj` para reconstruir el
+      bundle del PdV — ejecutado por el usuario (2026-07-26)
+- [x] 3.2 Verificación en navegador (usuario): el PdV arranca sin errores
+      en consola (un `import` colgante rompería el bundle completo) — el
+      PdV abre sin problemas
+- [x] 3.3 Verificación en navegador (usuario): la pantalla de productos
       sigue filtrando por stock con
       `pos_show_just_products_with_available_qty` activo, y la lista de
       clientes sigue mostrando su columna de documento
