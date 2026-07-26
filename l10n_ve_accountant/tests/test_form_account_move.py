@@ -24,10 +24,21 @@ class TestFormAccountMove(TransactionCase):
                 "currency_foreign_id": self.currency_vef.id,
             }
         )
-        self.invoice_model.create({
-            'move_type': 'in_invoice',
-            'foreign_rate': 1.23,
-            'partner_id': self.partner_a.id
+        self.sale_journal = self.env['account.journal'].search([
+            ('type', '=', 'sale'), ('company_id', '=', self.company.id)
+        ], limit=1) or self.env['account.journal'].create({
+            'name': 'Sales Test',
+            'code': 'STST',
+            'type': 'sale',
+            'company_id': self.company.id,
+        })
+        self.purchase_journal = self.env['account.journal'].search([
+            ('type', '=', 'purchase'), ('company_id', '=', self.company.id)
+        ], limit=1) or self.env['account.journal'].create({
+            'name': 'Purchases Test',
+            'code': 'PTST',
+            'type': 'purchase',
+            'company_id': self.company.id,
         })
         self.date = fields.Date.today()
 
