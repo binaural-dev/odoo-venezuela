@@ -336,3 +336,55 @@ vía `BroadcastChannel`/`localStorage` antes de mandar el `sendBeacon`).
 Alternativa más simple del lado servidor: que `delete_opening_control_session`
 verifique que no haya otra actividad reciente sobre esa sesión (heartbeat)
 antes de borrarla.
+
+## PartnerDetailsEdit desapareció: el PdV edita res.partner con la vista form real del backoffice (2026-07-25)
+
+En Odoo 17, `l10n_ve_pos` reescribía a mano el editor de clientes del PdV
+(`static/src/overrides/screens/partner_editor/{partner_editor.js,partner_editor.xml}`,
+eliminado en la migración por los commits `cc8e92216` y `a4131fe8b`). La
+tentación al portar esa personalización a Odoo 19 es buscar el componente
+OWL equivalente y parchearlo — pero **`PartnerDetailsEdit` ya no existe**.
+
+En Odoo 19, `PosStore.editPartner()`
+(`addons/point_of_sale/static/src/app/services/pos_store.js:2307-2318`)
+abre la acción `point_of_sale.res_partner_action_edit_pos`
+(`target="new"`) envuelta en `makeActionAwaitable`, y esa acción apunta
+`view_id` a `base.view_partner_form` — la vista form **real** del
+backoffice, renderizada dentro de un diálogo. No hay editor OWL propio
+que parchear: el formulario del PdV es un espejo literal del de
+Contactos. El mismo patrón se repite para productos
+(`product_template_action_edit_pos`, `pos_store.js:2326`) y es
+previsible que aplique también a otras entidades editables desde el PdV
+en versiones futuras (ej. órdenes).
+
+**Corolario práctico**: para personalizar SOLO el formulario del PdV
+(sin tocar el backoffice) no se patchea OWL ni se reimplementa un editor
+— se crea una vista derivada `mode="primary"` (no herencia en modo
+extensión, que sí modificaría el arch compartido) sobre la vista base
+correspondiente, y se sobreescribe el `view_id` de la acción
+`*_action_edit_pos` para que apunte a esa vista reducida. `view_id` es
+`ondelete='set null'`
+(`odoo/addons/base/models/ir_actions.py:308`), así que desinstalar el
+módulo deja la acción funcionando con la vista por defecto, sin romper
+nada.
+
+Para inyectar contexto (p. ej. valores por defecto) hacia esa vista, hay
+dos puntos de extensión:
+
+- El campo `context` de la propia acción `*_action_edit_pos`
+  (declarativo, sirve para flags simples).
+- `PosStore.editPartnerContext(partner)`
+  (`pos_store.js:2301`, devuelve `{}` por defecto) — pero ojo:
+  `editPartner()` lo invoca **sin pasarle el argumento `partner`**
+  (`pos_store.js:2313`: `this.editPartnerContext()`, no
+  `this.editPartnerContext(partner)`), así que dentro del hook siempre
+  llega `undefined` y no sirve para distinguir "editar existente" de
+  "crear nuevo" sin leer otro estado del store.
+
+Usado en `openspec/changes/l10n-ve-pos-partner-quick-form-company-defaults/`:
+vista `l10n_ve_pos.view_partner_form_pos` (`mode="primary"`,
+`priority=100`) + `context = {'l10n_ve_pos_partner_defaults': True}` en
+la acción + `default_get` server-side que lee ese flag — ver `design.md`
+de ese change para el detalle de por qué se eligió `context` de la
+acción sobre `editPartnerContext()` y `default_get` sobre `default_*`
+en el contexto.
