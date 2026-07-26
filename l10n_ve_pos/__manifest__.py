@@ -27,6 +27,7 @@
         "views/pos_order.xml",
         "views/res_config_settings.xml",
         "views/pos_payment_views.xml",
+        "views/res_partner_views.xml",
         # "views/report_saledetails.xml",
         "security/res_group.xml",
         "wizard/payment_report.xml",
