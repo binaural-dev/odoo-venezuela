@@ -315,9 +315,7 @@ msgid "Desde:"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__detailed_amounts
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__detailed_amounts
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__detailed_amounts
 msgid "Detailed Amounts"
 msgstr "Montos detallados"
 
@@ -370,9 +368,7 @@ msgid "Fecha"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__financial_document
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__financial_document
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__financial_document
 msgid "Financial Document"
 msgstr "Documento financiero"
 
@@ -394,18 +390,14 @@ msgid "Foreign Amount total"
 msgstr "Total alterno"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_balance
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_balance
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_balance
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_balance
 msgid "Foreign Balance"
 msgstr "Saldo alterno"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_credit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_credit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_credit
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_credit
 msgid "Foreign Credit"
 msgstr "Crédito alterno"
 
@@ -433,10 +425,8 @@ msgid "Foreign Currency "
 msgstr "Moneda alterna"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_debit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_debit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_debit
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_debit
 msgid "Foreign Debit"
 msgstr "Débito alterno"
 
@@ -500,31 +490,23 @@ msgid "Foreign Subtotal of the line"
 msgstr "Subtotal alterno de la linea"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_taxable_income
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_taxable_income
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_taxable_income
 msgid "Foreign Taxable Income"
 msgstr "Base imponible alterna"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__foreign_taxable_income
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__foreign_taxable_income
-#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__foreign_taxable_income
 msgid "Foreign Taxable Income of the invoice"
 msgstr "Base imponible alterna de la factura"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_total_billed
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_total_billed
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_total_billed
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_invoice_report_search_l10n_ve_invoice
 msgid "Foreign Total Billed"
 msgstr "Total alterno facturado"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__foreign_total_billed
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__foreign_total_billed
-#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__foreign_total_billed
 msgid "Foreign Total Billed of the invoice"
 msgstr "Total alterno facturado de la factura"
 
@@ -624,12 +606,8 @@ msgstr "Facturas Detalladas"
 msgid "Invoices Statistics"
 msgstr "Estadísticas de facturas"
 
-
-
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_reset_to_draft_for_price_change
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_reset_to_draft_for_price_change
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__is_reset_to_draft_for_price_change
 msgid "Is Reset To Draft For Price Change"
 msgstr ""
 
@@ -654,9 +632,7 @@ msgid "La cantidad de"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__last_foreign_rate
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__last_foreign_rate
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__last_foreign_rate
 msgid "Last Foreign Rate"
 msgstr "Ultima tasa"
 
@@ -682,9 +658,7 @@ msgid "Logo"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__manually_set_rate
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__manually_set_rate
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__manually_set_rate
 msgid "Manually Set Rate"
 msgstr "Actualizar Tasa Manualmente"
 
@@ -1082,16 +1056,12 @@ msgid "Total Foreign Debit"
 msgstr "Total Débito Alterno"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__total_taxed
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__total_taxed
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__total_taxed
 msgid "Total Taxed"
 msgstr "Total gravado"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__total_taxed
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__total_taxed
-#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__total_taxed
 msgid "Total Taxed of the invoice"
 msgstr "Total gravado de la factura"
 
@@ -1111,16 +1081,12 @@ msgid "Usuario"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__vat
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__vat
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__vat
 msgid "VAT"
 msgstr "Identificación"
 
 #. module: l10n_ve_accountant
-#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__vat
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__vat
-#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__vat
 msgid "VAT of the partner"
 msgstr "Identificación"
 
@@ -1323,5 +1289,6 @@ msgstr "<b>La linea contable ha sido actualizada:</b>"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_amount_residual
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_amount_residual
 msgid "Foreign Amount Residual"
 msgstr "Cantidad por pagar"
