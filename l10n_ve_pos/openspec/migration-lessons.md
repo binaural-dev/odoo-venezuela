@@ -432,3 +432,46 @@ Regla práctica: cuando se retire un override comentado, dejar la anotación
 de qué hacía y en qué estado queda (migrada / superada / no migrada) en el
 change que lo retira. Borrar el fichero está bien; borrar la memoria de la
 característica, no.
+
+## Pendientes por tratar (2026-07-26)
+
+Consolidado de lo que quedó abierto tras el formulario de contacto del PdV y
+la limpieza de overrides muertos. Los dos changes están archivados, así que
+sus `tasks.md` ya no salen en `openspec list`: esta lista es el índice.
+
+1. **Validación de existencias al enviar la orden — NO MIGRADA.** Los
+   controladores `/validate_products_order` (`controllers/controller.py:13`) y
+   `/validate_products_in_warehouse` (`controllers/controller.py:39`) siguen
+   definidos sin ningún llamador en `src/`; su único consumidor era el
+   `update_products()` del `pos_model.js` comentado (API V17
+   `pos.session.get_pos_ui_product_product_by_params`). Decidir: portar a la
+   API de datos de V19 o eliminar los controladores. Riesgo de negocio:
+   vender sin stock. Detalle en
+   `changes/archive/2026-07-26-l10n-ve-pos-dead-override-files-cleanup/removed-features.md`.
+2. **`compute_all` custom — delta no documentado.** Copia del motor de
+   impuestos de Odoo 17 sin referencias a moneda foránea/IGTF. Si aparece un
+   descuadre de impuestos en el PdV, diffear
+   `git show 8768f65d7^:l10n_ve_pos/static/src/overrides/models/pos_model.js`
+   contra el `compute_all` nativo de V17 antes de portar nada.
+3. **RIF junto al nombre del cliente en el actionpad — NO MIGRADA.** Lo hacía
+   `actionpad_widget.xml` (`(prefix_vat + vat)` tras el nombre). `prefix_vat`
+   ya viaja al frontend (`models/res_partner.py`), solo falta la plantilla
+   contra el componente V19 equivalente. Es el pendiente más barato.
+4. **Atajo de Enter en el buscador de clientes — NO MIGRADA.** Lo hacía
+   `partner_list.js`: Enter sin resultados abría la creación de cliente con
+   el texto buscado como RIF.
+5. **Validaciones del contacto del PdV no reimplantadas.** El editor V17
+   exigía RIF, teléfono `/^0[24]\d{9}$/`, calle y país. Hoy solo hay los
+   `required` de vista de `l10n_ve_contact` / `l10n_ve_location`. Ligado a
+   ello, `pos.config.validate_phone_in_pos` (`models/pos_config.py:37`) es un
+   campo huérfano: sin consumidor ni vista. Implementar la validación o
+   eliminar el campo.
+6. **`res.company.pos_show_free_qty_on_warehouse` huérfano.**
+   `models/res_company.py:12`, con related en `pos.config` y bloque en los
+   ajustes (`views/res_config_settings.xml:146-154`), pero ningún lector en
+   Python ni en JS.
+7. **Globs redundantes de assets** en `__manifest__.py:38-41`
+   (`static/src/**/**`, `static/src/**/**/**/*` y la ruta explícita de
+   `payment_model.js` describen el mismo conjunto).
+8. **Sin cobertura de tests** del formulario reducido del PdV ni de su
+   `default_get` (no se escribieron por indicación expresa del usuario).
