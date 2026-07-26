@@ -57,6 +57,28 @@ No hay cambio de comportamiento: se elimina código que ya no se
 ejecutaba. La historia de cada personalización queda en git (ver
 `git log --diff-filter=D` y la rama `19.0`).
 
+Además, y como parte de este change, se documenta en
+`removed-features.md` **qué característica tenía cada fichero y en qué
+estado está hoy** (MIGRADA / SUPERADA / NO MIGRADA), con el comando
+`git show` para recuperarlo. En esta migración ha ocurrido varias veces
+que algo comentado terminó haciendo falta, así que borrar el fichero no
+debe borrar la memoria de la característica.
+
+Ese inventario destapó dos cosas que no son solo documentación:
+
+- **La validación de existencias al enviar la orden no está operativa en
+  V19.** `pos_model.js` tenía `update_products()` +
+  `push_orders`/`push_single_order`, que refrescaban el stock antes de
+  enviar la orden con la API V17
+  `pos.session.get_pos_ui_product_product_by_params`. Consecuencia: los
+  controladores `/validate_products_order` (`controllers/controller.py:13`)
+  y `/validate_products_in_warehouse` (`controllers/controller.py:39`)
+  siguen definidos en Python **sin ningún llamador en todo `src/`**.
+- **El `compute_all` custom (~200 líneas) era una copia del motor de
+  impuestos nativo de V17 con un delta no documentado** (sin ninguna
+  referencia a moneda foránea, IGTF ni tasa en su cuerpo). Queda anotado
+  cómo aislarlo si algún día aparece un descuadre de impuestos.
+
 ## Impact
 
 - **Capability**: `pos-odoo19-frontend` (añade requirement).

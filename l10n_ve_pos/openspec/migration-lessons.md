@@ -388,3 +388,47 @@ la acción + `default_get` server-side que lee ese flag — ver `design.md`
 de ese change para el detalle de por qué se eligió `context` de la
 acción sobre `editPartnerContext()` y `default_get` sobre `default_*`
 en el contexto.
+
+## Lo comentado no se borra sin inventariar qué hacía (2026-07-26)
+
+Al limpiar los 7 ficheros de override del PdV que estaban 100% comentados
+o vacíos (change `l10n-ve-pos-dead-override-files-cleanup`), se documentó
+antes qué característica tenía cada uno y en qué estado está hoy, porque en
+esta migración ha ocurrido varias veces que algo comentado terminó
+haciendo falta.
+
+**El inventario completo está en**
+`openspec/changes/archive/*-l10n-ve-pos-dead-override-files-cleanup/removed-features.md`,
+con el comando `git show` para recuperar cada fichero y el estado de cada
+característica (MIGRADA / SUPERADA / NO MIGRADA).
+
+Dos hallazgos de ese inventario que **no** son sólo documentación:
+
+1. **La validación de existencias al enviar la orden no está operativa en
+   V19.** El `pos_model.js` comentado tenía `update_products()` +
+   `push_orders`/`push_single_order`, que refrescaban el stock de los
+   productos de la orden antes de enviarla (con la API V17
+   `pos.session.get_pos_ui_product_product_by_params`, inexistente en
+   V19). Consecuencia: los controladores `/validate_products_order`
+   (`controllers/controller.py:13`) y `/validate_products_in_warehouse`
+   (`controllers/controller.py:39`) siguen definidos en Python pero **no
+   tienen ningún llamador en todo `src/`**. Lo que sí quedó vivo es algo
+   más simple: ocultar del catálogo los productos sin stock
+   (`product_screen.js:77`) y mostrar la cantidad libre en la ficha
+   (`product_card.js:48-52`). Si el negocio necesita el bloqueo al
+   pagar/enviar, hay que portar esa parte.
+
+2. **Había un `compute_all` custom (~200 líneas) y su delta contra el core
+   se ha perdido de vista.** Era una copia del motor de cálculo de
+   impuestos nativo de V17 (los comentarios numerados son literales del
+   core) sin ninguna referencia a moneda foránea, IGTF ni tasa, así que la
+   modificación local no está documentada en ninguna parte. Si aparece un
+   descuadre de impuestos en el PdV, el primer paso es diffear ese cuerpo
+   (`git show 8768f65d7^:l10n_ve_pos/static/src/overrides/models/pos_model.js`)
+   contra el `compute_all` de Odoo 17 para aislar el delta antes de portar
+   nada.
+
+Regla práctica: cuando se retire un override comentado, dejar la anotación
+de qué hacía y en qué estado queda (migrada / superada / no migrada) en el
+change que lo retira. Borrar el fichero está bien; borrar la memoria de la
+característica, no.

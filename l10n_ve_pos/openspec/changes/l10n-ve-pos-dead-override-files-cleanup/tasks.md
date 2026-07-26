@@ -34,6 +34,12 @@
 - [x] 2.5 Comprobar que los ficheros vivos adyacentes siguen en su sitio:
       `screens/payment_line/partner_line.xml` (columna VAT en la lista de
       clientes) y `screens/payment_screen/payment_screen_top.xml`
+- [x] 2.6 Escribir `removed-features.md`: inventario de qué característica
+      tenía cada fichero eliminado, su estado hoy (MIGRADA / SUPERADA / NO
+      MIGRADA) y el `git show` para recuperarlo
+- [x] 2.7 Registrar en `openspec/migration-lessons.md` la regla ("lo
+      comentado no se borra sin inventariar qué hacía") y los dos
+      hallazgos del inventario
 
 ## 3. Validación
 
@@ -62,6 +68,23 @@
       (`models/res_company.py:12`): tiene campo, related en `pos.config` y
       bloque en los ajustes (`views/res_config_settings.xml:146-154`),
       pero ningún lector en Python ni en JS
-- [ ] 5.3 Simplificar los globs de assets del manifest
+- [ ] 5.3 **Validación de existencias al enviar la orden**: decidir si se
+      porta a V19 (`update_products` usaba API V17 inexistente) o si se
+      eliminan los controladores huérfanos `/validate_products_order` y
+      `/validate_products_in_warehouse` (`controllers/controller.py:13,39`)
+      — ver `removed-features.md`
+- [ ] 5.4 **`compute_all` custom**: si aparece un descuadre de impuestos
+      en el PdV, diffear
+      `git show 8768f65d7^:l10n_ve_pos/static/src/overrides/models/pos_model.js`
+      contra el `compute_all` de Odoo 17 para aislar el delta no
+      documentado antes de portar nada
+- [ ] 5.5 **RIF junto al nombre del cliente** en el actionpad de la
+      pantalla de productos (lo hacía `actionpad_widget.xml`): `prefix_vat`
+      ya viaja al frontend, solo falta la plantilla contra el componente
+      V19 equivalente
+- [ ] 5.6 **Atajo de Enter en el buscador de clientes** (lo hacía
+      `partner_list.js`): crear el cliente con el texto buscado como RIF
+      cuando la búsqueda no da resultados
+- [ ] 5.7 Simplificar los globs de assets del manifest
       (`static/src/**/**`, `static/src/**/**/**/*` y la ruta explícita de
       `payment_model.js` describen el mismo conjunto)
