@@ -104,7 +104,7 @@ class AccountPayment(models.Model):
         custom_rate = self.foreign_inverse_rate
         if self.currency_id.id == self.foreign_currency_id.id:
             custom_rate = self.foreign_rate
-        sign = 1 if self.amount > 0 else -1
+        sign = 1 if self.payment_type == 'inbound' else -1
         liquidity_balance = sign * abs(self.currency_id._convert(
             abs(self.amount),
             self.company_id.currency_id,
