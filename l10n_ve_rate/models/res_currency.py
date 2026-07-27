@@ -1,6 +1,8 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class ResCurrency(models.Model):
     _inherit = "res.currency"
@@ -14,10 +16,15 @@ class ResCurrency(models.Model):
 
         if from_amount:
             if custom_rate > 0:
-                to_amount = from_amount * custom_rate
+               
+                if company.currency_id == self.env.ref("base.USD") and to_currency != self:
+                    to_amount = from_amount / custom_rate
+                else:
+                    to_amount = from_amount * custom_rate
+               
             else:
                 to_amount = from_amount * self._get_conversion_rate(self, to_currency, company, date)
         else:
             return 0.0
 
-        return to_currency.round(to_amount) if round else to_amount
+        return to_currency.round(to_amount) 
