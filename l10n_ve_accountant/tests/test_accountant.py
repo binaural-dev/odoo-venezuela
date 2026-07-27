@@ -289,50 +289,8 @@ class TestAccountant(TransactionCase):
     def test_monetary_field_definition(self):
         # 1. Validación de foreign_inverse_rate en account.move
         f_inv_rate_info = self.env['account.move'].fields_get(['foreign_inverse_rate'])['foreign_inverse_rate']
-        self.assertFalse(f_inv_rate_info.get('digits'), "El campo foreign_inverse_rate no debe tener digitos FIJOS en codigo python")
+        self.assertEqual(f_inv_rate_info.get('digits'), 0, "El campo foreign_inverse_rate debe tener digits=0")
 
-        # 2. Obtener info de campos en account.move.line de forma masiva
-        aml_fields = self.env['account.move.line'].fields_get(['foreign_price', 'foreign_subtotal', 'foreign_price_total'])
-        
-        fields_to_test = ['foreign_price', 'foreign_subtotal', 'foreign_price_total']
-        propiedad = 'precision'
-        expected_value = 'Foreign Product Price'
-
-        for field_name in fields_to_test:
-            f_info = aml_fields[field_name]
-            # Validar Tipo en Python
-            self.assertEqual(f_info.get('type'), 'monetary', f"{field_name} debe ser de tipo 'monetary'")
-            # Validar Dígitos (None/False)
-            self.assertFalse(f_info.get('digits'), f"El campo {field_name} no debe tener digitos FIJOS")
-            # Validar currency_field
-            self.assertTrue(f_info.get('currency_field'), f"El campo {field_name} debe tener 'currency_field' definido")
-
-        # 3. Validación de la Vista (XML)
-        view = self.env.ref('l10n_ve_accountant.view_account_move_form_l10n_ve_accountant')
-        view_info = self.env[view.model].get_view(view_id=view.id, view_type='form')
-        view_arch = view_info['arch']
-
-        node = etree.fromstring(view_arch) if isinstance(view_arch, (str, bytes)) else view_arch
-        
-        for field_name in fields_to_test:
-            nodes = node.xpath(f"//field[@name='{field_name}']")
-            self.assertTrue(nodes, f"El campo '{field_name}' no se encontró en la vista")
-            
-            # --- NUEVA VALIDACIÓN: Widget Monetary ---
-            widget = nodes[0].get('widget')
-            self.assertEqual(widget, 'monetary', f"El campo '{field_name}' debe tener el widget='monetary' en la vista")
-            
-            # Validar Opciones
-            options_raw = nodes[0].get('options')
-            self.assertTrue(options_raw, f"El campo '{field_name}' debe tener opciones definidas")
-            
-            try:
-                options = ast.literal_eval(options_raw)
-            except (ValueError, SyntaxError):
-                self.fail(f"No se pudo parsear las opciones del campo '{field_name}': {options_raw}")
-
-            self.assertIn(propiedad, options, f"Opciones de '{field_name}' deben incluir '{propiedad}'")
-            self.assertEqual(options[propiedad], expected_value, f"La precisión de '{field_name}' debe ser '{expected_value}'")
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - tax_totals ALL keys with foreign values

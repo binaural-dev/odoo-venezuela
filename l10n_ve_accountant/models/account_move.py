@@ -123,7 +123,7 @@ class AccountMove(models.Model):
         store=True,
         index=True,
         readonly=False,
-        digits=0
+        digits=0,
     )
 
     manually_set_rate = fields.Boolean(default=False)
