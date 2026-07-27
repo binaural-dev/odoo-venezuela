@@ -1,4 +1,5 @@
 import logging
+from psycopg2 import sql
 
 _logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ def migrate(cr, version):
 
     for table, columns in orphan_columns.items():
         _logger.info("  Processing table: %s", table)
+        tbl = sql.Identifier(table)
         for col in columns:
             cr.execute(
                 "SELECT column_name FROM information_schema.columns "
@@ -27,7 +29,7 @@ def migrate(cr, version):
                 (table, col),
             )
             if cr.fetchone():
-                # Drop FK constraint if present (e.g., payment_igtf_id references account_payment)
+                col_id = sql.Identifier(col)
                 cr.execute(
                     "SELECT constraint_name FROM information_schema.table_constraints "
                     "WHERE table_name = %s AND constraint_type = 'FOREIGN KEY'",
@@ -41,10 +43,11 @@ def migrate(cr, version):
                         (fk_name, col),
                     )
                     if cr.fetchone():
-                        cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (table, fk_name))
+                        fk_id = sql.Identifier(fk_name)
+                        cr.execute(sql.SQL("ALTER TABLE {} DROP CONSTRAINT {}").format(tbl, fk_id))
                         _logger.info("    Dropped FK %s on %s.%s", fk_name, table, col)
 
-                cr.execute('ALTER TABLE "%s" DROP COLUMN "%s"' % (table, col))
+                cr.execute(sql.SQL("ALTER TABLE {} DROP COLUMN {}").format(tbl, col_id))
                 _logger.info("    Dropped column %s.%s", table, col)
             else:
                 _logger.info("    Column %s.%s does not exist, skipping", table, col)
