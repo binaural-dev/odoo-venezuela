@@ -104,15 +104,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     @api.depends('can_edit_wizard', 'amount', 'payment_date', 'is_igtf','amount_without_difference')
     def _compute_payment_difference(self):
         igtf_wizards = self.filtered(lambda w: w.is_igtf)
-
         other_wizards = self - igtf_wizards
 
-        if other_wizards:
-            super(AccountPaymentRegisterIgtf, other_wizards)._compute_payment_difference()
-
-
-        for wizard in self:
-            if not wizard.can_edit_wizard or not wizard.payment_date or not wizard.is_igtf:
+        for wizard in igtf_wizards:
+            if not wizard.can_edit_wizard or not wizard.payment_date:
                 continue
             currency = wizard.currency_id
             batch_result = wizard._get_batches()[0]
@@ -125,6 +120,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 wizard.payment_difference = 0.0
             else:
                 wizard.payment_difference = raw_difference
+
+        if other_wizards:
+            return super(AccountPaymentRegisterIgtf, other_wizards)._compute_payment_difference()
 
     @api.depends("journal_id", "currency_id")
     def _compute_check_igtf(self):
