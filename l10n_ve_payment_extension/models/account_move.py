@@ -412,7 +412,7 @@ class AccountMoveRetention(models.Model):
     def _prepare_retention_vals(self, type_retention, payment=False):
         retention_vals = {
             "date_accounting": self.date,
-            "date": self.date if self.move_type in ["in_invoice", "out_invoice"] else False,
+            "date": self.date,
             "type_retention": type_retention,
             "type": self.move_type, 
             "partner_id": self.partner_id.id,
@@ -531,9 +531,9 @@ class AccountMoveRetention(models.Model):
             
             payment_concepts = self._get_payment_concepts_from_invoice()
                         
-            if record.move_type == 'in_invoice':
+            if record.move_type in ['in_invoice', 'in_refund']:
                 xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_supplier'
-            elif record.move_type == 'out_invoice':
+            elif record.move_type in ['out_invoice', 'out_refund']:
                 xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_client'
             else:
                 raise UserError(_("This action is only valid for customer or vendor invoices."))

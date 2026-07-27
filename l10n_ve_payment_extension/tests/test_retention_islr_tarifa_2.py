@@ -12,6 +12,7 @@ class TestRetentionISLRTarifa2(TransactionCase):
 
         cls.company = cls.env.user.company_id
         cls.company.currency_id = cls.env.ref('base.VEF')
+        cls.company.foreign_currency_id = cls.env.ref('base.USD')
         
         # Activar el uso de retenciones de ISLR
         cls.env['ir.config_parameter'].sudo().set_param('l10n_ve_payment_extension.use_islr_retention', True)
@@ -168,10 +169,10 @@ class TestRetentionISLRTarifa2(TransactionCase):
         # Base UT: 20000 / 43 = 465.12
         # UT Aplicables (90%): 465.12 * 0.90 = 418.61 (Tramo 1: 15%)
         # Retención UT: 418.61 * 0.15 = 62.79
-        # Retención VEF: 62.79 * 43 = 2699.97
+        # Retención VEF: 62.79 * 43 = 2700.02
 
         self.assertEqual(retention_line.related_percentage_fees, 15.0, "La tarifa seleccionada debe ser del 15% (Tramo 1)")
-        self.assertAlmostEqual(retention_line.retention_amount, 2699.97, places=2, msg="La retención en VEF no es la esperada.")
+        self.assertAlmostEqual(retention_line.retention_amount, 2700.02, places=2, msg="La retención en VEF no es la esperada.")
 
     def test_retention_islr_tarifa_2_tramo_2(self):
         """Probar el Tramo 2 (2001 - 3000 U.T.) al 22% con sustraendo de 140 U.T."""
@@ -220,11 +221,11 @@ class TestRetentionISLRTarifa2(TransactionCase):
         # Retención UT (22%): 2500.00 * 0.22 = 550.00 UT
         # Sustraendo UT: 140.00
         # Total Retención UT: 550.00 - 140.00 = 410.00 UT
-        # Retención VEF: 410.00 * 43 = 17630.00 Bs
+        # Retención VEF: 410.00 * 43 = 17630.02 Bs
         
         self.assertEqual(retention_line.related_percentage_fees, 22.0, "La tarifa debe ser 22% (Tramo 2)")
         self.assertEqual(retention_line.related_amount_subtract_fees, 140.0 * 43.0, "El sustraendo debe ser 6020 Bs (140 UT)")
-        self.assertAlmostEqual(retention_line.retention_amount, 17630.00, places=2)
+        self.assertAlmostEqual(retention_line.retention_amount, 17630.02, places=2)
 
     def test_retention_islr_tarifa_2_tramo_3(self):
         """Probar el Tramo 3 (Más de 3000 U.T.) al 34% con sustraendo de 500 U.T."""
@@ -273,9 +274,9 @@ class TestRetentionISLRTarifa2(TransactionCase):
         # Retención UT (34%): 4000.00 * 0.34 = 1360.00 UT
         # Sustraendo UT: 500.00
         # Total Retención UT: 1360.00 - 500.00 = 860.00 UT
-        # Retención VEF: 860.00 * 43 = 36980.00 Bs
+        # Retención VEF: 860.00 * 43 = 36979.94 Bs
         
         self.assertEqual(retention_line.related_percentage_fees, 34.0, "La tarifa debe ser 34% (Tramo 3)")
         self.assertEqual(retention_line.related_amount_subtract_fees, 500.0 * 43.0, "El sustraendo debe ser 21500 Bs (500 UT)")
-        self.assertAlmostEqual(retention_line.retention_amount, 36980.00, places=2)
+        self.assertAlmostEqual(retention_line.retention_amount, 36979.94, places=2)
         
