@@ -49,6 +49,11 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
+    invoice_date_display_datetime = fields.Datetime(
+        string="Invoice Date",
+        readonly=True,
+        copy=False,
+    )
 
     @api.constrains('invoice_date_display', 'date')
     def _check_invoice_date_display_purchases(self):
@@ -121,7 +126,24 @@ class AccountMove(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        now = fields.Datetime.now()
+        for vals in vals_list:
+            if vals.get('invoice_date_display'):
+                date_part = fields.Date.to_date(vals['invoice_date_display'])
+                vals['invoice_date_display_datetime'] = now.replace(
+                    year=date_part.year, month=date_part.month, day=date_part.day
+                )
+            elif 'invoice_date_display' in vals and not vals.get('invoice_date_display'):
+                vals['invoice_date_display_datetime'] = False
         moves = super().create(vals_list)
+
+        for move in moves:
+            if move.invoice_date_display and not move.invoice_date_display_datetime:
+                date_part = move.invoice_date_display
+                move.invoice_date_display_datetime = now.replace(
+                    year=date_part.year, month=date_part.month, day=date_part.day
+                )
+
         for move in moves:
             if move.is_purchase_international and move.declaration_unique_of_customs and not move.correlative:
                 move.correlative = move.declaration_unique_of_customs
@@ -331,6 +353,14 @@ class AccountMove(models.Model):
         return action
 
     def write(self, vals):
+        if vals.get('invoice_date_display'):
+            date_part = fields.Date.to_date(vals['invoice_date_display'])
+            now = fields.Datetime.now()
+            vals['invoice_date_display_datetime'] = now.replace(
+                year=date_part.year, month=date_part.month, day=date_part.day
+            )
+        elif 'invoice_date_display' in vals and not vals.get('invoice_date_display'):
+            vals['invoice_date_display_datetime'] = False
         res = super().write(vals)
         for move in self:
             if move.is_purchase_international and move.declaration_unique_of_customs:

@@ -1770,27 +1770,60 @@ msgid "You cannot delete a journal item that is posted, cancelled, or has been p
 msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente publicados."
 
 #. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
-msgid "The unit price cannot be negative."
-msgstr "El precio unitario no puede ser negativo."
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__index_payment_in_wizard
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_config_settings__index_payment_in_wizard
+msgid "Apply Indexacion to payment from wizard of invoice"
+msgstr "Aplicar indexación al pago desde el asistente de la factura"
 
 #. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
-msgid ""
-"You are not allowed to add new products ('%s') that were not present in the "
-"original invoice."
-msgstr ""
-"No está permitido agregar productos nuevos ('%s') que no "
-"estuvieran presentes en la factura de origen."
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__index_payment_in_wizard
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__index_payment_in_wizard
+msgid "index_payment_in_wizard"
+msgstr "Pagos indexados desde wizard"
 
 #. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__indexed_default
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__indexed_default
+msgid "Default indexacion"
+msgstr "Indexar automaticamente"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__indexed_default
+msgid "Payment indexed"
+msgstr "Pago indexado"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__indexaxion_payment_mode
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__indexaxion_payment_mode
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_config_settings__indexaxion_payment_mode
 msgid ""
-"Product '%s':\n"
-"The unit price (%s) cannot be greater than the original unit price in the source invoice (%s)."
+"Defines the exchange rate criteria applied at the time of payment wizard."
 msgstr ""
-"Producto '%s':\n"
-"El precio unitario (%s) no puede ser mayor que el precio original de la factura de origen (%s)."
+"Define el criterio de tasa de cambio aplicado en el asistente de pago."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__indexed
+msgid "Indexed (Payment Date Rate)"
+msgstr "'Indexado (Tasa del día de pago)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__not_indexed
+msgid "Non-Indexed (Invoice Date Rate)"
+msgstr "No Indexado (Tasa fija de factura)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__to_agreed
+msgid "To be Agreed (Mutual Agreement)"
+msgstr "A convenir (A elección)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__indexaxion_payment_mode
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__indexaxion_payment_mode
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__indexaxion_payment_mode
+msgid "Type indexacion"
+msgstr "Tipo de Indexación"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
+msgid "Enable this to indexation payment in wizard of payment not grouping"
+msgstr "Active esto para indexar los pagos individuales en el asistente de pago sin agrupar"
