@@ -336,3 +336,142 @@ vía `BroadcastChannel`/`localStorage` antes de mandar el `sendBeacon`).
 Alternativa más simple del lado servidor: que `delete_opening_control_session`
 verifique que no haya otra actividad reciente sobre esa sesión (heartbeat)
 antes de borrarla.
+
+## PartnerDetailsEdit desapareció: el PdV edita res.partner con la vista form real del backoffice (2026-07-25)
+
+En Odoo 17, `l10n_ve_pos` reescribía a mano el editor de clientes del PdV
+(`static/src/overrides/screens/partner_editor/{partner_editor.js,partner_editor.xml}`,
+eliminado en la migración por los commits `cc8e92216` y `a4131fe8b`). La
+tentación al portar esa personalización a Odoo 19 es buscar el componente
+OWL equivalente y parchearlo — pero **`PartnerDetailsEdit` ya no existe**.
+
+En Odoo 19, `PosStore.editPartner()`
+(`addons/point_of_sale/static/src/app/services/pos_store.js:2307-2318`)
+abre la acción `point_of_sale.res_partner_action_edit_pos`
+(`target="new"`) envuelta en `makeActionAwaitable`, y esa acción apunta
+`view_id` a `base.view_partner_form` — la vista form **real** del
+backoffice, renderizada dentro de un diálogo. No hay editor OWL propio
+que parchear: el formulario del PdV es un espejo literal del de
+Contactos. El mismo patrón se repite para productos
+(`product_template_action_edit_pos`, `pos_store.js:2326`) y es
+previsible que aplique también a otras entidades editables desde el PdV
+en versiones futuras (ej. órdenes).
+
+**Corolario práctico**: para personalizar SOLO el formulario del PdV
+(sin tocar el backoffice) no se patchea OWL ni se reimplementa un editor
+— se crea una vista derivada `mode="primary"` (no herencia en modo
+extensión, que sí modificaría el arch compartido) sobre la vista base
+correspondiente, y se sobreescribe el `view_id` de la acción
+`*_action_edit_pos` para que apunte a esa vista reducida. `view_id` es
+`ondelete='set null'`
+(`odoo/addons/base/models/ir_actions.py:308`), así que desinstalar el
+módulo deja la acción funcionando con la vista por defecto, sin romper
+nada.
+
+Para inyectar contexto (p. ej. valores por defecto) hacia esa vista, hay
+dos puntos de extensión:
+
+- El campo `context` de la propia acción `*_action_edit_pos`
+  (declarativo, sirve para flags simples).
+- `PosStore.editPartnerContext(partner)`
+  (`pos_store.js:2301`, devuelve `{}` por defecto) — pero ojo:
+  `editPartner()` lo invoca **sin pasarle el argumento `partner`**
+  (`pos_store.js:2313`: `this.editPartnerContext()`, no
+  `this.editPartnerContext(partner)`), así que dentro del hook siempre
+  llega `undefined` y no sirve para distinguir "editar existente" de
+  "crear nuevo" sin leer otro estado del store.
+
+Usado en `openspec/changes/l10n-ve-pos-partner-quick-form-company-defaults/`:
+vista `l10n_ve_pos.view_partner_form_pos` (`mode="primary"`,
+`priority=100`) + `context = {'l10n_ve_pos_partner_defaults': True}` en
+la acción + `default_get` server-side que lee ese flag — ver `design.md`
+de ese change para el detalle de por qué se eligió `context` de la
+acción sobre `editPartnerContext()` y `default_get` sobre `default_*`
+en el contexto.
+
+## Lo comentado no se borra sin inventariar qué hacía (2026-07-26)
+
+Al limpiar los 7 ficheros de override del PdV que estaban 100% comentados
+o vacíos (change `l10n-ve-pos-dead-override-files-cleanup`), se documentó
+antes qué característica tenía cada uno y en qué estado está hoy, porque en
+esta migración ha ocurrido varias veces que algo comentado terminó
+haciendo falta.
+
+**El inventario completo está en**
+`openspec/changes/archive/*-l10n-ve-pos-dead-override-files-cleanup/removed-features.md`,
+con el comando `git show` para recuperar cada fichero y el estado de cada
+característica (MIGRADA / SUPERADA / NO MIGRADA).
+
+Dos hallazgos de ese inventario que **no** son sólo documentación:
+
+1. **La validación de existencias al enviar la orden no está operativa en
+   V19.** El `pos_model.js` comentado tenía `update_products()` +
+   `push_orders`/`push_single_order`, que refrescaban el stock de los
+   productos de la orden antes de enviarla (con la API V17
+   `pos.session.get_pos_ui_product_product_by_params`, inexistente en
+   V19). Consecuencia: los controladores `/validate_products_order`
+   (`controllers/controller.py:13`) y `/validate_products_in_warehouse`
+   (`controllers/controller.py:39`) siguen definidos en Python pero **no
+   tienen ningún llamador en todo `src/`**. Lo que sí quedó vivo es algo
+   más simple: ocultar del catálogo los productos sin stock
+   (`product_screen.js:77`) y mostrar la cantidad libre en la ficha
+   (`product_card.js:48-52`). Si el negocio necesita el bloqueo al
+   pagar/enviar, hay que portar esa parte.
+
+2. **Había un `compute_all` custom (~200 líneas) y su delta contra el core
+   se ha perdido de vista.** Era una copia del motor de cálculo de
+   impuestos nativo de V17 (los comentarios numerados son literales del
+   core) sin ninguna referencia a moneda foránea, IGTF ni tasa, así que la
+   modificación local no está documentada en ninguna parte. Si aparece un
+   descuadre de impuestos en el PdV, el primer paso es diffear ese cuerpo
+   (`git show 8768f65d7^:l10n_ve_pos/static/src/overrides/models/pos_model.js`)
+   contra el `compute_all` de Odoo 17 para aislar el delta antes de portar
+   nada.
+
+Regla práctica: cuando se retire un override comentado, dejar la anotación
+de qué hacía y en qué estado queda (migrada / superada / no migrada) en el
+change que lo retira. Borrar el fichero está bien; borrar la memoria de la
+característica, no.
+
+## Pendientes por tratar (2026-07-26)
+
+Consolidado de lo que quedó abierto tras el formulario de contacto del PdV y
+la limpieza de overrides muertos. Los dos changes están archivados, así que
+sus `tasks.md` ya no salen en `openspec list`: esta lista es el índice.
+
+1. **Validación de existencias al enviar la orden — NO MIGRADA.** Los
+   controladores `/validate_products_order` (`controllers/controller.py:13`) y
+   `/validate_products_in_warehouse` (`controllers/controller.py:39`) siguen
+   definidos sin ningún llamador en `src/`; su único consumidor era el
+   `update_products()` del `pos_model.js` comentado (API V17
+   `pos.session.get_pos_ui_product_product_by_params`). Decidir: portar a la
+   API de datos de V19 o eliminar los controladores. Riesgo de negocio:
+   vender sin stock. Detalle en
+   `changes/archive/2026-07-26-l10n-ve-pos-dead-override-files-cleanup/removed-features.md`.
+2. **`compute_all` custom — delta no documentado.** Copia del motor de
+   impuestos de Odoo 17 sin referencias a moneda foránea/IGTF. Si aparece un
+   descuadre de impuestos en el PdV, diffear
+   `git show 8768f65d7^:l10n_ve_pos/static/src/overrides/models/pos_model.js`
+   contra el `compute_all` nativo de V17 antes de portar nada.
+3. **RIF junto al nombre del cliente en el actionpad — NO MIGRADA.** Lo hacía
+   `actionpad_widget.xml` (`(prefix_vat + vat)` tras el nombre). `prefix_vat`
+   ya viaja al frontend (`models/res_partner.py`), solo falta la plantilla
+   contra el componente V19 equivalente. Es el pendiente más barato.
+4. **Atajo de Enter en el buscador de clientes — NO MIGRADA.** Lo hacía
+   `partner_list.js`: Enter sin resultados abría la creación de cliente con
+   el texto buscado como RIF.
+5. **Validaciones del contacto del PdV no reimplantadas.** El editor V17
+   exigía RIF, teléfono `/^0[24]\d{9}$/`, calle y país. Hoy solo hay los
+   `required` de vista de `l10n_ve_contact` / `l10n_ve_location`. Ligado a
+   ello, `pos.config.validate_phone_in_pos` (`models/pos_config.py:37`) es un
+   campo huérfano: sin consumidor ni vista. Implementar la validación o
+   eliminar el campo.
+6. **`res.company.pos_show_free_qty_on_warehouse` huérfano.**
+   `models/res_company.py:12`, con related en `pos.config` y bloque en los
+   ajustes (`views/res_config_settings.xml:146-154`), pero ningún lector en
+   Python ni en JS.
+7. **Globs redundantes de assets** en `__manifest__.py:38-41`
+   (`static/src/**/**`, `static/src/**/**/**/*` y la ruta explícita de
+   `payment_model.js` describen el mismo conjunto).
+8. **Sin cobertura de tests** del formulario reducido del PdV ni de su
+   `default_get` (no se escribieron por indicación expresa del usuario).
