@@ -73,9 +73,9 @@
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']"
                 position="after">
                 <field name="foreign_currency_id" column_invisible="True" force_save="1"/>
-                <field name="foreign_subtotal" widget="monetary" force_save="1" options="{'precision': 'Foreign Product Price'}"
+                <field name="foreign_subtotal" widget="monetary" force_save="1" options="{}"
                 />
-                <field name="foreign_price_total" widget="monetary" options="{'precision': 'Foreign Product Price'}" force_save="1"
+                <field name="foreign_price_total" widget="monetary" options="{}" force_save="1"
                     column_invisible="parent.tax_calculation_rounding_method == 'round_globally'" />
                 <field name="foreign_rate" optional="hide" force_save="1"/>
                 <field
@@ -100,7 +100,7 @@
                     readonly="1"
                     force_save="1"
                     widget="monetary"
-                    options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"
+                    options="{'currency_field': 'foreign_currency_id'}"
                 />
                 <field
                     name="foreign_credit"
@@ -109,11 +109,11 @@
                     readonly="1"
                     force_save="1"
                     widget="monetary"
-                    options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"
+                    options="{'currency_field': 'foreign_currency_id'}"
                 />
                 <field name="foreign_debit_adjustment" optional="hide" force_save="1"/>
                 <field name="foreign_credit_adjustment" optional="hide" force_save="1"/>
-                <field name="foreign_balance" optional="hide" groups="base.group_no_one" force_save="1" widget="monetary" options="{'currency_field': 'foreign_currency_id', 'precision': 'Foreign Product Price'}"/>
+                <field name="foreign_balance" optional="hide" groups="base.group_no_one" force_save="1" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
                 <field name="foreign_rate" optional="hide" groups="base.group_no_one" force_save="1"/>
                 <field
                     name="foreign_inverse_rate"

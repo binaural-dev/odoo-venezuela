@@ -8,7 +8,7 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", copy=False, compute='compute_bi_igtf',store=True)
+    bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", copy=False, compute='_compute_bi_igtf',store=True)
     amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", copy=False)
 
     igtf_top_aply = fields.Float('Max Igtf amount to be apply', copy=False)
@@ -19,7 +19,7 @@ class AccountMove(models.Model):
     foreign_bi_igtf = fields.Float(string="foreign BI IGTF", help="foreign subtotal with igtf ", copy=False)
 
     @api.depends('amount_residual')
-    def compute_bi_igtf(self):
+    def _compute_bi_igtf(self):
         for rec in self:
             rec.igtf_top_aply = 0.0
             rec.alter_bi_igtf = 0.0

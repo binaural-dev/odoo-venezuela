@@ -1,5 +1,6 @@
 from odoo import api, fields, models
 from odoo.tools import float_is_zero, float_compare
+from odoo.exceptions import UserError
 
 
 class IGTFUtils(models.AbstractModel):
@@ -9,12 +10,12 @@ class IGTFUtils(models.AbstractModel):
     @api.model
     def calculate_igtf_for_payment(
         self, invoice, amount_payment, payment_currency,
-        payment_date, company=None, base=False
+        payment_date, company=None, base=False, indexed_default=True
     ):
         company = company or self.env.company
         currency = invoice.currency_id
         precision = currency.rounding
-        date_conver = invoice.invoice_date if payment_date <= invoice.invoice_date else payment_date
+        date_conver = payment_date if indexed_default else invoice.invoice_date
 
         due_amount = self._convert_to_company_currency(
             invoice.currency_id, invoice.amount_residual, date_conver, company
@@ -67,7 +68,8 @@ class IGTFUtils(models.AbstractModel):
 
     @api.model
     def get_moves_from_context(self):
-        ids = self.env.context.get("active_id") or self.env.context.get("active_ids")
+
+        ids=self.env.context.get("active_id") or self.env.context.get("active_ids")
         if isinstance(ids, int):
             return self.env["account.move"].browse([ids])
         else:

@@ -77,7 +77,7 @@ class AccountPaymentRegister(models.TransientModel):
     @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency',
                   'source_currency_id', 'company_id', 'currency_id', 'payment_date','foreign_inverse_rate')
     def _compute_amount(self):
-        super()._compute_amount()
+        return super()._compute_amount()
 
     def _get_total_amount_in_wizard_currency_to_full_reconcile(
         self, batch_result, early_payment_discount=True
