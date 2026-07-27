@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from odoo import api, fields, models, Command, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import frozendict, formatLang, format_date, float_compare, Query, float_round
+from odoo.tools import frozendict, formatLang, format_date, Query, float_round
 
 from datetime import date, timedelta
 import traceback
@@ -477,8 +477,10 @@ class AccountMoveLine(models.Model):
     
 
     @api.depends(
-        'foreign_debit', 'foreign_credit',
+        'foreign_debit', 'foreign_credit','amount_residual',
         'foreign_balance', 'account_id',
+        'matched_debit_ids',
+        'matched_credit_ids',
         'matched_debit_ids.debit_foreign_amount_currency',
         'matched_credit_ids.credit_foreign_amount_currency',
     )
@@ -487,7 +489,7 @@ class AccountMoveLine(models.Model):
             if line.account_id.reconcile or line.account_id.account_type in ('asset_cash', 'liability_credit_card'):
                 debit_foreign = sum(line.matched_debit_ids.mapped('debit_foreign_amount_currency'))
                 credit_foreign = sum(line.matched_credit_ids.mapped('credit_foreign_amount_currency'))
-                line.foreign_amount_residual = line.foreign_balance - debit_foreign + credit_foreign
+                line.foreign_amount_residual = line.foreign_balance - credit_foreign + debit_foreign
                 line.foreign_amount_residual_currency = line.foreign_amount_residual
             else:
                 line.foreign_amount_residual = 0.0

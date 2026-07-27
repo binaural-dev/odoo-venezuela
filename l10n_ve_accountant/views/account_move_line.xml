@@ -9,11 +9,11 @@
                     <field name="foreign_rate" readonly="1" force_save="1" widget="monetary" options="{'precision': 'Tasa'}"/>
                     <field name="foreign_inverse_rate" invisible="1"/>
                     <field name="foreign_inverse_rate" readonly="1" force_save="1" groups="base.group_no_one"/>
-                    <field name="foreign_debit" readonly="1" force_save="1" widget="monetary"  />
-                    <field name="foreign_debit_adjustment" force_save="1" widget="monetary"  />
-                    <field name="foreign_credit_adjustment" force_save="1" widget="monetary"  />
-                    <field name="foreign_credit" readonly="1" force_save="1" widget="monetary"  />
-                    <field name="foreign_balance" readonly="1" force_save="1" widget="monetary"  />
+                    <field name="foreign_debit" readonly="1" force_save="1"/>
+                    <field name="foreign_debit_adjustment" force_save="1"/>
+                    <field name="foreign_credit_adjustment" force_save="1"/>
+                    <field name="foreign_credit" readonly="1" force_save="1"/>
+                    <field name="foreign_balance" readonly="1" force_save="1"/>
                 </group>
 	    </xpath>
 	</field>
@@ -26,11 +26,11 @@
 	<field name="arch" type="xml">
 	    <xpath expr="//field[@name='balance']" position="after">
 		<field name="foreign_currency_id" column_invisible="True"/>
-		<field name="foreign_debit" readonly="1" optional="show" sum="Total Foreign Debit" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
-		<field name="foreign_debit_adjustment" optional="hide" widget="monetary"  />
-		<field name="foreign_credit" readonly="1" optional="show" sum="Total Foreign Credit" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
-		<field name="foreign_credit_adjustment" optional="hide" widget="monetary"  />
-		<field name="foreign_balance" readonly="1" optional="hide" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+		<field name="foreign_debit" readonly="1" optional="show" sum="Total Foreign Debit" widget="monetary" options="{'currency_field': 'foreign_currency_id', }"/>
+		<field name="foreign_debit_adjustment" optional="hide"/>
+		<field name="foreign_credit" readonly="1" optional="show" sum="Total Foreign Credit" widget="monetary" options="{'currency_field': 'foreign_currency_id', }"/>
+		<field name="foreign_credit_adjustment" optional="hide"/>
+		<field name="foreign_balance" readonly="1" optional="hide" widget="monetary" options="{'currency_field': 'foreign_currency_id', }"/>
                     
 
 	    </xpath>

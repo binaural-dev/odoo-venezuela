@@ -7,6 +7,7 @@ _logger = logging.getLogger(__name__)
 @tagged('post_install', '-at_install', 'l10n_ve_accountant')
 class TestFormAccountMove(TransactionCase):
     def setUp(self):
+        super().setUp()
         partner_model = self.env['res.partner']
         self.invoice_model = self.env['account.move']
 
