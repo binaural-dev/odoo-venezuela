@@ -193,24 +193,53 @@ class SaleOrder(models.Model):
                 move.foreign_taxable_income = move.tax_totals["base_amount_foreign_currency"]
 
     @api.depends("tax_totals")
+    @api.depends("tax_totals", "currency_id", "date_order", "amount_total")
     def _compute_foreign_total_billed(self):
         """
         Compute the foreign total billed of the order
         """
-        for move in self:
-            move.foreign_total_billed = False
-            if move.order_line:
-                move.foreign_total_billed = move.tax_totals.get("total_amount_foreign_currency",0)
+        for order in self:
+            order.foreign_total_billed = False
+            if not order.order_line or not order.tax_totals:
+                continue
+            fc = order.company_id.foreign_currency_id
+            if (
+                order.currency_id
+                and order.currency_id != order.company_id.currency_id
+                and order.currency_id != fc
+            ):
+                order.foreign_total_billed = order.currency_id._convert(
+                    order.amount_total,
+                    fc,
+                    order.company_id,
+                    order.date_order or fields.Date.today(),
+                )
+            else:
+                order.foreign_total_billed = order.tax_totals.get("total_amount_foreign_currency", 0)
 
-    @api.depends("tax_totals")
+    @api.depends("tax_totals", "currency_id", "date_order", "amount_untaxed")
     def _compute_foreign_untaxed_total(self):
         """
         Compute the foreign untaxed total of the order
         """
-        for move in self:
-            move.foreign_untaxed_total = False
-            if move.order_line:
-                move.foreign_untaxed_total = move.tax_totals.get("base_amount_foreign_currency",0)
+        for order in self:
+            order.foreign_untaxed_total = False
+            if not order.order_line or not order.tax_totals:
+                continue
+            fc = order.company_id.foreign_currency_id
+            if (
+                order.currency_id
+                and order.currency_id != order.company_id.currency_id
+                and order.currency_id != fc
+            ):
+                order.foreign_untaxed_total = order.currency_id._convert(
+                    order.amount_untaxed,
+                    fc,
+                    order.company_id,
+                    order.date_order or fields.Date.today(),
+                )
+            else:
+                order.foreign_untaxed_total = order.tax_totals.get("base_amount_foreign_currency", 0)
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -609,29 +638,31 @@ class SaleOrder(models.Model):
 
 
         res = super().action_confirm()
-        product_limit = self.env.company.limit_product_qty_out
         for sale in self:
             picking = sale.picking_ids
-            if product_limit > 0:
-                picking_moves = picking.move_ids_without_package
-                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
-                picking_vals = {
-                    key: (value[0] if isinstance(value, tuple) else value)
-                    for key, value in picking_vals[0].items()
-                }
-                picking_vals['origin'] = picking.origin
-                picking_vals['partner_id'] = picking.partner_id.id
-                picking_vals['user_id'] = picking.user_id.id
-                
-                list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
-                picking.move_ids_without_package = list_pickings_moves[0]
-                
-                for list_moves in list_pickings_moves[1:]:
-                    picking_vals["move_ids_without_package"] = list_moves
-                    new_picking = self.env['stock.picking'].create(picking_vals)
-                
-
-                
+            if not picking:
+                continue
+            product_limit = sale.company_id.limit_product_qty_out
+            if product_limit <= 0:
+                continue
+            picking_moves = picking.move_ids
+            if not picking_moves:
+                continue
+            picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id'])
+            if not picking_vals:
+                continue
+            picking_vals = {
+                key: (value[0] if isinstance(value, tuple) else value)
+                for key, value in picking_vals[0].items()
+            }
+            picking_vals['origin'] = picking.origin
+            picking_vals['partner_id'] = picking.partner_id.id
+            picking_vals['user_id'] = picking.user_id.id
+            list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
+            picking.move_ids = list_pickings_moves[0]
+            for list_moves in list_pickings_moves[1:]:
+                picking_vals["move_ids"] = list_moves
+                self.env['stock.picking'].create(picking_vals)
         return res
 
     def cancel_order_after_date(self):

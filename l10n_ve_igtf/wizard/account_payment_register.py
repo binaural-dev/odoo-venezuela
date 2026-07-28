@@ -98,17 +98,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             wizard.last_computed_amount = final_amount   
 
     def get_moves(self):
-        """ Return the moves to pay from the context.
-        Overridden to ensure that we always get the moves from the context,
-        even if we are in edit mode.
-        """
-        ids=self.env.context.get("active_id") or self.env.context.get("active_ids")
-
-        if isinstance(ids, int):
-            return self.env["account.move"].browse([ids])
-        else:
-            move_lines = self.env["account.move.line"].browse(ids)
-            return set(move_lines.mapped("move_id"))
+        return self.env["l10n_ve_igtf.utils"].get_moves_from_context()
+    
 
     @api.onchange('payment_difference')
     def _onchange_diference(self):
@@ -149,7 +140,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     wizard.show_payment_difference = True
 
 
-    @api.onchange("igtf_to_show")
+    @api.onchange("igtf_to_show","is_igtf")
     def _compute_amount_without_difference(self):
         for rec in self:
             
@@ -224,7 +215,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 if payment.is_igtf:
                     invoice = rec
                    
-                    amount = amount + payment.calculate_igtf_for_payment(invoice, payment.amount,payment.currency_id)
+                    amount = amount + self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
+                        invoice, payment.amount, payment.currency_id, payment.payment_date,
+                    )
             if payment.is_igtf:
                 payment.igtf_to_show = abs(amount)
                 payment.igtf_amount = abs(amount)
@@ -236,86 +229,22 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             
             payment.last_computed_amount = payment.amount
 
-    def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, base = False):
-        
-        currency = invoice.currency_id
-        precision = currency.rounding
-        
-        due_currency_id = invoice.currency_id
-        due_amount = self.convert_to_company_currency(due_currency_id, invoice.amount_residual,self.payment_date) #deuda en moneda de la compañia
-
-        
-        payment_amount = self.convert_to_company_currency(payment_currency, amount_payment,self.payment_date) 
-        principal_debt = due_amount
-
-        principal_amount = min(payment_amount, principal_debt)
-        
-        igtf_unrounded = principal_amount * (self.env.company.igtf_percentage / 100)
-
-        igtf_top =  invoice.igtf_top_aply
-
-        alter_bi_igtf = invoice.alter_bi_igtf
-
-        igtf= igtf_unrounded
-
-        invoice_residual = due_amount
-        
-        if not float_is_zero(igtf, precision_rounding=precision) and igtf_top == invoice_residual:
-            
-            return 0.0
-        
-        residual_igtf = igtf_top - alter_bi_igtf
-
-        if float_compare(residual_igtf, 0.0, precision_rounding=precision) == 0.0:
-            return 0.0
-        
-        if igtf > residual_igtf and  not float_is_zero(residual_igtf, precision_rounding=precision):
-            
-            igtf = residual_igtf
-
-        if float_compare(igtf_top, 0.0, precision_rounding=precision) >= 0.0 and float_compare(igtf, igtf_top, precision_rounding=precision) > 0.0:
-            return 0.0 
-                
-        if not base:
-            return self.convert_to_external_currency(payment_currency, igtf, self.payment_date)
-        else:
-            return igtf
-    
-    def convert_to_company_currency(self, from_currency,amount,date):
-        """
-        Convierte un monto desde una moneda específica a la moneda base de la compañía.
-        """
-        self.ensure_one()
-        company_currency = self.company_id.currency_id
-        
-        if from_currency == company_currency:
-            return amount
-
-        converted_amount = from_currency._convert(
-            amount, 
-            company_currency, 
-            self.company_id, 
-            date,
-
+    def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, base=False):
+        return self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
+            invoice, amount_payment, payment_currency, self.payment_date, base=base,
         )
-        
-        return converted_amount
-    
-    def convert_to_external_currency(self, from_currency,amount,date):
-        """
-        Convierte un monto desde una moneda específica a la moneda base de la compañía.
-        """
+
+    def convert_to_company_currency(self, from_currency, amount, date):
         self.ensure_one()
-        company_currency = self.company_id.currency_id
-   
-        converted_amount = company_currency._convert(
-            amount, 
-            from_currency, 
-            self.company_id, 
-            date,
+        return self.env["l10n_ve_igtf.utils"]._convert_to_company_currency(
+            from_currency, amount, date, self.company_id,
         )
-        
-        return converted_amount
+
+    def convert_to_external_currency(self, from_currency, amount, date):
+        self.ensure_one()
+        return self.env["l10n_ve_igtf.utils"]._convert_to_external_currency(
+            from_currency, amount, date, self.company_id,
+        )
         
     @api.onchange('journal_id')
     def _compute_is_igtf_journal(self):
@@ -399,29 +328,35 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             
             if currency != self.env.ref("base.VEF").id:
                
-                igtf_for_invoice = self.calculate_igtf_for_payment(
+                igtf_for_invoice = self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
                     invoice_ids, 
                     invoice_ids.amount_residual,
-                    self.currency_id 
+                    self.currency_id,
+                    self.payment_date,
                 )
                 total_igtf_amount += igtf_for_invoice
                 base_abs = abs(source_amount)
                 final_amount_with_igtf = base_abs + total_igtf_amount
-                igtf = self.convert_to_company_currency(invoice_ids.currency_id, total_igtf_amount, self.payment_date)
+                igtf = self.env["l10n_ve_igtf.utils"]._convert_to_company_currency(
+                    invoice_ids.currency_id, total_igtf_amount, self.payment_date, self.company_id,
+                )
             else:
 
                 
                 currency = self.env['res.currency'].browse(currency)
                 source = currency._convert(source_amount, self.currency_id, self.company_id, self.payment_date)
-                igtf_for_invoice = self.calculate_igtf_for_payment(
+                igtf_for_invoice = self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
                     invoice_ids, 
                     source,
-                    self.currency_id 
+                    self.currency_id,
+                    self.payment_date,
                 )
                 total_igtf_amount += igtf_for_invoice
                 base_abs = abs(source_amount)
                 final_amount_with_igtf = base_abs + total_igtf_amount
-                igtf = self.convert_to_company_currency(invoice_ids.currency_id, total_igtf_amount, self.payment_date)
+                igtf = self.env["l10n_ve_igtf.utils"]._convert_to_company_currency(
+                    invoice_ids.currency_id, total_igtf_amount, self.payment_date, self.company_id,
+                )
 
             wizard_values['source_amount'] = source  + igtf 
             wizard_values['source_amount_currency'] =  final_amount_with_igtf 
@@ -534,7 +469,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             list: account.payment
         """
         
-        payments = super()._create_payments()
+        payments = super(AccountPaymentRegisterIgtf, self.with_context(skip_account_move_reversal=True))._create_payments()
         
         ignore_gtf = self.env.context.get("ignore_igtf", False)
 
@@ -593,6 +528,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         Returns:
             account.move: Move object
         """
+        
         advance_account_id = (
             payment.partner_id.default_advance_customer_account_id.id
             if payment.partner_type == "customer"
@@ -605,7 +541,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             else payment.partner_id.property_account_payable_id.id
         )
 
-        amount_currency = diff
+        reconcile = payment.move_id.line_ids.filtered(lambda line: line.account_id.id == partner_account_id)
+     
+        amount_currency = abs(reconcile.amount_residual_currency)
+        amount_bs = abs(reconcile.amount_residual)
         currency = payment.currency_id
        
 
@@ -617,7 +556,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         "account_id": advance_account_id,
                         "amount_currency": -amount_currency,
                         "payment_id_advance": payment.id,
-                        "currency_id":currency.id
+                        "currency_id":currency.id,
+                        "debit": amount_bs if amount_bs < 0 else 0.0,
+                        "credit": abs(amount_bs) if amount_bs > 0 else 0.0,
                     },
                 ),
                 Command.create(
@@ -625,7 +566,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         "account_id": partner_account_id,
                         "amount_currency": amount_currency,
                         "payment_id_advance": payment.id,
-                        "currency_id":currency.id
+                        "currency_id":currency.id,
+                        "debit": amount_bs if amount_bs > 0 else 0.0,
+                        "credit": abs(amount_bs) if amount_bs < 0 else 0.0,
                     },
                 ),
             ]

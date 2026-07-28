@@ -1,0 +1,57 @@
+<odoo>
+    <menuitem
+        id="menu_auditoria_root"
+        name="Auditoría"
+        sequence="10"
+        groups="auditlog.group_auditlog_user"
+        web_icon="l10n_ve_auditlog_base,static/description/icon.png"
+    />
+
+    <menuitem
+        id="menu_auditoria_logs"
+        name="Logs"
+        parent="menu_auditoria_root"
+        action="auditlog.action_auditlog_log_tree"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_auditoria_log_lines"
+        name="Log Lines"
+        parent="menu_auditoria_root"
+        action="auditlog.action_auditlog_line"
+        sequence="20"
+    />
+
+    <menuitem
+        id="menu_auditoria_http_requests"
+        name="HTTP Requests"
+        parent="menu_auditoria_root"
+        action="auditlog.action_auditlog_http_request_tree"
+        sequence="30"
+    />
+
+    <menuitem
+        id="menu_auditoria_http_sessions"
+        name="User Sessions"
+        parent="menu_auditoria_root"
+        action="auditlog.action_auditlog_http_session_tree"
+        sequence="40"
+    />
+
+    <menuitem
+        id="menu_auditoria_rules"
+        name="Rules"
+        parent="menu_auditoria_root"
+        action="auditlog.action_auditlog_rule_tree"
+        sequence="50"
+    />
+
+    <!-- Restore original parent for the old audit menu -->
+    <menuitem
+        id="auditlog.menu_audit"
+        name="Audit"
+        parent="base.menu_custom"
+        sequence="50"
+    />
+</odoo>

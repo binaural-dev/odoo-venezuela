@@ -67,9 +67,12 @@
                                             column_invisible="not parent.code_visible" />
                                         <field name="company_id" optional="hide"
                                             groups="base.group_multi_company" />
+                                        <field name="allowed_payment_concept_ids" column_invisible="True"/>
                                         <field name="payment_concept_id" 
                                             column_invisible="parent.type_retention != 'islr'"
-                                            force_save="1" />
+                                            domain="[('id', 'in', allowed_payment_concept_ids)]"
+                                            force_save="1" 
+                                            readonly="not move_id"/>
                                         <field name="is_retention_client" column_invisible="True" />
                                         <field
                                             name="invoice_total"
@@ -177,16 +180,58 @@
                                 </group>
                             </page>
                             <page name="Payments" string="payments">
-                                <field name="payment_ids" nolabel="1"
-                                    invisible="not partner_id"
-                                    readonly="state in ['emitted', 'cancel']">
-                                    <list string="Payments" editable="bottom">
-                                        <field name="date" />
-                                        <field name="name" readonly="1" force_save="1" />
-                                        <field name="currency_id" column_invisible="True" />
-                                        <field name="amount" widget="monetary"
-                                            options="{'currency_field': 'currency_id'}" />
-                                    </list>
+                                <field name="payment_ids" nolabel="1" readonly="1" force_save="1">
+                                    <kanban class="o_kanban_mobile" sample="1" quick_create="false" can_open="False">
+                                        <field name="id"/>
+                                        <field name="name"/>
+                                        <field name="date"/>
+                                        <field name="amount"/>
+                                        <field name="state"/>
+                                        <field name="payment_type_retention"/>
+                                        <field name="currency_id"/>
+                                        
+                                        <templates>
+                                            <t t-name="card" class="flex-row align-items-center p-3 gap-3 border-bottom">
+                                                <div class="oe_kanban_card flex-grow-1 d-flex align-items-center justify-content-between">
+                                                    <div class="d-flex flex-column align-items-start gap-1" style="min-width: 0; flex: 1;">
+                                                        <div class="d-flex flex-wrap align-items-center gap-2 w-100">
+                                                          
+                                                            <span class="fw-bold text-dark" style="max-width: 180px;" t-att-title="record.name.value">
+                                                                <t t-out="record.name.value"/>
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <small class="text-muted d-flex align-items-center mt-1">
+                                                            <i class="fa fa-calendar me-1" title="Date"/>
+                                                            <t t-out="record.date.value"/>
+                                                        </small>
+
+                                                         <small class="badge bg-secondary-subtle text-secondary border border-secondary-subtle text-uppercase fw-bold px-2" style="font-size: 0.75rem;">
+                                                                <t t-out="record.payment_type_retention.value"/>
+                                                        </small>
+                                                        
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-4">
+                                                        <div class="text-end">
+                                                            <div class="fw-bold text-dark fs-5">
+                                                                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                                            </div>
+                                                            <span t-attf-class="badge rounded-pill #{record.state.raw_value == 'posted' ? 'text-bg-success' : 'text-bg-info'}">
+                                                                <field name="state"/>
+                                                            </span>
+                                                        </div>
+
+                                                        <button name="action_open_business_doc" 
+                                                                type="object" 
+                                                                class="btn btn-outline-primary d-flex align-items-center gap-1">
+                                                            <span>Show</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                        </templates>
+                                    </kanban>
                                 </field>
                             </page>
                         </notebook>
@@ -204,7 +249,7 @@
             <!--field
             name="search_view_id" ref="view_search_retention_iva"/-->
             <field name="context">{"default_type":'out_invoice', "default_type_retention":'islr'}</field>
-            <field name="domain">[('type_retention', '=', 'islr'), ('type', '=', 'out_invoice')]</field>
+            <field name="domain">[('type_retention', '=', 'islr'), ('type', 'in', ['out_invoice', 'out_refund', 'out_debit'] )]</field>
         </record>
 
         <!--Configuracion
@@ -217,7 +262,7 @@
             <!--field
             name="search_view_id" ref="view_search_retention_iva"/-->
             <field name="context">{"default_type":'in_invoice', "default_type_retention":'islr'}</field>
-            <field name="domain">[('type_retention', '=', 'islr'), ('type', '=', 'in_invoice')]</field>
+            <field name="domain">[('type_retention', '=', 'islr'), ('type', 'in', ['in_invoice', 'in_refund', 'in_debit'])]</field>
         </record>
 
 
