@@ -18,7 +18,7 @@ class AccountMove(models.Model):
 
     invoice_date = fields.Date(
         string="Invoice Date",
-        default=fields.Date.today,
+        default=fields.Date.context_today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
     
@@ -114,6 +114,10 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
+    @api.onchange("move_type")
+    def _onchange_move_type(self):
+        if self.move_type == "out_invoice":
+            self.invoice_date = fields.Date.context_today(self)
 
     def action_post(self):
         
@@ -172,13 +176,13 @@ class AccountMove(models.Model):
                     )
 
             if (
-                move.correlative
-                and move.state == "posted"
+                move.correlative and not move.is_contingency
                 and move.move_type in ("out_invoice", "out_refund")
             ):
                 repeated_moves = AccountMove.search(
                     [
                         ("id", "!=", move.id),
+                        ("company_id", "=", move.company_id.id),
                         ("correlative", "=", move.correlative),
                         ("state", "=", "posted"),
                         ("move_type", "in", ("out_invoice", "out_refund")),

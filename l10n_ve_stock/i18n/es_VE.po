@@ -799,11 +799,6 @@ msgid "Stock Move"
 msgstr "Movimiento de stock"
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__limit_product_qty_out
-msgid "Stock Picking"
-msgstr "Guía de despacho"
-
-#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quantity_history
 msgid "Stock Quantity History"
 msgstr "Historial de cantidad de existencias "
