@@ -12,4 +12,9 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.validate_user_creation_general',
         readonly=False
     )
+
+    validate_partner_name_immutable = fields.Boolean(
+        related="company_id.validate_partner_name_immutable",
+        readonly=False,
+    )
     
