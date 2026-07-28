@@ -262,3 +262,28 @@ msgstr "Condiciones de pago del proveedor"
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__zip
 msgid "Zip"
 msgstr "C.P."
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid ""
+"You cannot modify the name of a contact with associated transactions."
+msgstr ""
+"No puedes modificar el nombre de un contacto con transacciones asociadas."
+
+#. module: l10n_ve_contact
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_company__validate_partner_name_immutable
+#: model:ir.model.fields,field_description:l10n_ve_contact.field_res_config_settings__validate_partner_name_immutable
+#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
+msgid "Prevent renaming contacts with transactions"
+msgstr "Evitar el cambio de nombre de los contactos con transacciones"
+
+#. module: l10n_ve_contact
+#: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
+msgid ""
+"<span class=\"o_text-muted\">When enabled, partner name changes are blocked "
+"if related sales, purchases, invoices, or journal items exist.</span>"
+msgstr ""
+"<span class=\"o_text-muted\">Cuando está habilitado, se bloquean los cambios de nombre de los contactos "
+"si existen ventas, compras, facturas o asientos contables relacionados.</span>"

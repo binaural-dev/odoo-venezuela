@@ -80,3 +80,15 @@ class ResCompany(models.Model):
     not_show_exempt_total_purchases = fields.Boolean()
 
     not_show_total_purchases_international = fields.Boolean()
+
+    index_payment_in_wizard = fields.Boolean('index_payment_in_wizard',default=True,help='Apply Indexacion to payment from wizard of invoice')
+
+    indexaxion_payment_mode = fields.Selection([
+        ('indexed', 'Indexed (Payment Date Rate)'),
+        ('not_indexed', 'Non-Indexed (Invoice Date Rate)'),
+        ('to_agreed', 'To be Agreed (Mutual Agreement)'),
+    ], string='Type indexacion', default='indexed', help='Defines the exchange rate criteria applied at the time of payment wizard.')
+
+    indexed_default = fields.Boolean('Default indexacion',default=True)
+
+    
