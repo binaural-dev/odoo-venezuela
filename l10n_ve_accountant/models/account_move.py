@@ -1746,31 +1746,27 @@ class AccountMove(models.Model):
     @api.onchange('invoice_line_ids')
     def _onchange_invoice_line_ids_refund_validation(self):
         """
-        Validate and synchronize invoice lines in credit notes (refunds) against 
+        Validate invoice lines in credit/debit notes (refunds) against 
         their corresponding original invoice lines from the source document.
 
-        This method triggers in real-time when changes are made to the invoice lines.
-        It performs the following:
-        1. Verifies the document is a credit note with an active source invoice link.
-        2. Disallows the addition of new products not present in the original invoice.
-        3. Maps source invoice lines using a composite key (sequence, product_id)
-           to handle duplicate products accurately.
-        4. Restricts validation to consumable ('consu') and service ('service') products.
-        5. Automatically reverts any modified quantities back to the original values.
-        6. Validates that the unit price is non-negative and does not exceed 
-           the original invoice unit price.
+        Ensures that:
+        1. Only products present in the original invoice are allowed.
+        2. Quantity does not exceed the original quantity and is not zero.
+        3. Unit price is non-negative and does not exceed the original.
         """
-        
+
         if not self.reversed_entry_id or self.move_type not in ['out_refund', 'in_refund']:
             return
 
         origin_lines_by_key = {
             (line.sequence, line.product_id.id): line
             for line in self.reversed_entry_id.invoice_line_ids
-            if line.product_id and line.product_id.type in ('consu', 'service')
+            if line.product_id
         }
 
         for line in self.invoice_line_ids:
+            if not line.product_id:
+                continue
 
             line_key = (line.sequence, line.product_id.id)
 
@@ -1782,10 +1778,15 @@ class AccountMove(models.Model):
 
             origin_line = origin_lines_by_key[line_key]
 
-            if float_compare(line.quantity, origin_line.quantity, precision_digits=2) != 0:
-                line.update({
-                    'quantity': origin_line.quantity
-                })
+            if float_compare(line.quantity, 0, precision_digits=2) == 0:
+                raise ValidationError(_("The quantity cannot be zero."))
+
+            if float_compare(line.quantity, origin_line.quantity, precision_digits=2) > 0:
+                raise ValidationError(_(
+                    "Product '%s':\n"
+                    "The quantity (%s) cannot be greater than the original "
+                    "quantity in the source invoice (%s)."
+                ) % (line.product_id.name, line.quantity, origin_line.quantity))
 
             if line.price_unit < 0.0:
                 raise ValidationError(_("The unit price cannot be negative."))

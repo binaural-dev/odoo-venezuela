@@ -1,5 +1,5 @@
 import logging
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
 from odoo.exceptions import UserError, ValidationError
 
@@ -65,6 +65,14 @@ class TestAccountMoveCore(TransactionCase):
             "name": "Sales Core Test", "code": "SCORE",
             "type": "sale", "company_id": self.company.id,
             "default_account_id": self.acc_inc.id,
+        })
+
+        self.purchase_journal = self.env["account.journal"].search(
+            [("type", "=", "purchase"), ("company_id", "=", self.company.id)], limit=1
+        ) or self.env["account.journal"].sudo().create({
+            "name": "Purchase Core Test", "code": "PCORE",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
         })
 
         self.general_journal = self.env["account.journal"].search(
@@ -585,3 +593,382 @@ class TestAccountMoveCore(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         # tax_totals debe contener las claves del override
         self.assertIn('formatted_base_amount_currency_ves', invoice.tax_totals or {})
+
+
+    # ═══════════════════════════════════════════════════════════════
+    # Helpers for refund validation tests
+    # ═══════════════════════════════════════════════════════════════
+
+    def _create_invoice(self, move_type='out_invoice', currency=None, price=100.0, lines=None):
+        """Create an invoice with the given type, currency and lines.
+        If lines is None, creates a single product line with the given price."""
+        currency = currency or self.currency_vef
+        journal = self.sale_journal if move_type.startswith('out') else self.purchase_journal
+
+        if lines is None:
+            lines = [{
+                'product_id': self.product.id,
+                'quantity': 1.0,
+                'price_unit': price,
+            }]
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": move_type,
+            "partner_id": self.partner.id,
+            "journal_id": journal.id,
+            "currency_id": currency.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    **line,
+                    "account_id": self.acc_inc.id if move_type.startswith('out') else self.acc_exp.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                })
+                for line in lines
+            ],
+        })
+        return invoice
+
+    def _create_refund(self, invoice, line_mods=None):
+        """Create a credit/debit note via the reversal wizard, then apply modifications
+        via Form() to trigger the onchange naturally.
+        line_mods is a dict mapping line index to dict of field overrides."""
+        line_mods = line_mods or {}
+        move_reversal = self.env['account.move.reversal'].with_context(
+            active_model="account.move",
+            active_ids=invoice.ids,
+        ).create({
+            'date': fields.Date.today(),
+            'journal_id': invoice.journal_id.id,
+        })
+        reversal = move_reversal.reverse_moves()
+        refund = self.env['account.move'].browse(reversal['res_id'])
+
+        with Form(refund) as refund_form:
+            for _ in range(len(refund.invoice_line_ids)):
+                refund_form.invoice_line_ids.remove(index=0)
+            for i, inv_line in enumerate(invoice.invoice_line_ids):
+                with refund_form.invoice_line_ids.new() as line:
+                    if not inv_line.product_id:
+                        line.display_type = inv_line.display_type
+                        line.name = inv_line.name
+                    else:
+                        line.product_id = inv_line.product_id
+                        line.quantity = inv_line.quantity
+                        line.price_unit = inv_line.price_unit
+                    if i in line_mods:
+                        for field, value in line_mods[i].items():
+                            setattr(line, field, value)
+        return refund
+
+    def _assert_refund_error(self, invoice, line_mods):
+        """Assert that creating a refund with given line_mods raises ValidationError."""
+        with self.assertRaises(ValidationError):
+            self._create_refund(invoice, line_mods=line_mods)
+
+    # ═══════════════════════════════════════════════════════════════
+    # out_refund validation tests (customer credit notes)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_26_refund_validation_quantity_equal(self):
+        """out_refund: Cantidad igual a la original -> OK."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].quantity, 1.0)
+
+    def test_27_refund_validation_quantity_partial(self):
+        """out_refund: Cantidad menor a la original (NC parcial) -> OK."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice, line_mods={0: {"quantity": 0.5}})
+        self.assertEqual(refund.invoice_line_ids[0].quantity, 0.5)
+
+    def test_28_refund_validation_quantity_greater(self):
+        """out_refund: Cantidad mayor a la original -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"quantity": 5.0}})
+
+    def test_29_refund_validation_quantity_zero(self):
+        """out_refund: Cantidad cero -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"quantity": 0.0}})
+
+    def test_30_refund_validation_product_not_in_origin(self):
+        """out_refund: Producto nuevo no presente en origen -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        other_product = self.env["product.product"].create({
+            "name": "Other Product", "type": "service",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        self._assert_refund_error(invoice, line_mods={0: {"product_id": other_product}})
+
+    def test_31_refund_validation_product_consu_type(self):
+        """out_refund: Producto tipo 'consu' desde origen -> OK."""
+        consu_product = self.env["product.product"].create({
+            "name": "Consu Product", "type": "consu",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        invoice = self._create_invoice(lines=[{
+            "product_id": consu_product.id,
+            "quantity": 2.0,
+            "price_unit": 50.0,
+        }])
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].product_id.id, consu_product.id)
+
+    def test_32_refund_validation_product_storable_type(self):
+        """out_refund: Producto tipo 'consu' desde origen -> OK."""
+        consu_product = self.env["product.product"].create({
+            "name": "Consu Test", "type": "consu",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        invoice = self._create_invoice(lines=[{
+            "product_id": consu_product.id,
+            "quantity": 3.0,
+            "price_unit": 30.0,
+        }])
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].product_id.id, consu_product.id)
+
+    def test_33_refund_validation_price_unit_negative(self):
+        """out_refund: Precio negativo -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"price_unit": -10.0}})
+
+    def test_34_refund_validation_price_unit_greater(self):
+        """out_refund: Precio mayor al original -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"price_unit": 150.0}})
+
+    def test_35_refund_validation_price_unit_equal(self):
+        """out_refund: Precio igual al original -> OK."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].price_unit, 100.0)
+
+    def test_36_refund_validation_section_line(self):
+        """out_refund: Línea de sección/nota agregada en NC -> ignorada sin error."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        with Form(refund) as refund_form:
+            with refund_form.invoice_line_ids.new() as line:
+                line.display_type = 'line_section'
+                line.name = 'Test Section'
+        self.assertEqual(len(refund.invoice_line_ids), 2)
+
+    # ═══════════════════════════════════════════════════════════════
+    # in_refund validation tests (supplier credit notes)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_37_in_refund_validation_quantity_equal(self):
+        """in_refund: Cantidad igual a la original -> OK."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].quantity, 1.0)
+
+    def test_38_in_refund_validation_quantity_partial(self):
+        """in_refund: Cantidad menor a la original (NC parcial) -> OK."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice, line_mods={0: {"quantity": 0.5}})
+        self.assertEqual(refund.invoice_line_ids[0].quantity, 0.5)
+
+    def test_39_in_refund_validation_quantity_greater(self):
+        """in_refund: Cantidad mayor a la original -> ValidationError."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"quantity": 5.0}})
+
+    def test_40_in_refund_validation_quantity_zero(self):
+        """in_refund: Cantidad cero -> ValidationError."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"quantity": 0.0}})
+
+    def test_41_in_refund_validation_product_not_in_origin(self):
+        """in_refund: Producto nuevo no presente en origen -> ValidationError."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        other_product = self.env["product.product"].create({
+            "name": "Other Product", "type": "service",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        self._assert_refund_error(invoice, line_mods={0: {"product_id": other_product}})
+
+    def test_42_in_refund_validation_product_consu_type(self):
+        """in_refund: Producto tipo 'consu' desde origen -> OK."""
+        consu_product = self.env["product.product"].create({
+            "name": "Consu Product", "type": "consu",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        invoice = self._create_invoice(move_type='in_invoice', lines=[{
+            "product_id": consu_product.id,
+            "quantity": 2.0,
+            "price_unit": 50.0,
+        }])
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].product_id.id, consu_product.id)
+
+    def test_43_in_refund_validation_product_type_b(self):
+        """in_refund: Producto tipo 'consu' (alterno) desde origen -> OK."""
+        consu_product = self.env["product.product"].create({
+            "name": "Consu Test", "type": "consu",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        invoice = self._create_invoice(lines=[{
+            "product_id": consu_product.id,
+            "quantity": 3.0,
+            "price_unit": 30.0,
+        }])
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].product_id.id, consu_product.id)
+
+    def test_44_in_refund_validation_price_unit_negative(self):
+        """in_refund: Precio negativo -> ValidationError."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"price_unit": -10.0}})
+
+    def test_45_in_refund_validation_price_unit_greater(self):
+        """in_refund: Precio mayor al original -> ValidationError."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"price_unit": 150.0}})
+
+    def test_46_in_refund_validation_price_unit_equal(self):
+        """in_refund: Precio igual al original -> OK."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].price_unit, 100.0)
+
+    def test_47_in_refund_validation_section_line(self):
+        """in_refund: Línea de sección/nota agregada en NC -> ignorada sin error."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        with Form(refund) as refund_form:
+            with refund_form.invoice_line_ids.new() as line:
+                line.display_type = 'line_section'
+                line.name = 'Test Section'
+        self.assertEqual(len(refund.invoice_line_ids), 2)
+
+    # ═══════════════════════════════════════════════════════════════
+    # Multi-line invoice tests
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_48_refund_validation_multi_line_partial(self):
+        """Múltiples líneas: NC parcial en una línea, la otra igual -> OK."""
+        product_b = self.env["product.product"].create({
+            "name": "Product B", "type": "service",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        invoice = self._create_invoice(lines=[
+            {"product_id": self.product.id, "quantity": 2.0, "price_unit": 100.0},
+            {"product_id": product_b.id, "quantity": 3.0, "price_unit": 50.0},
+        ])
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice, line_mods={0: {"quantity": 1.0}})
+        self.assertEqual(refund.invoice_line_ids[0].quantity, 1.0)
+        self.assertEqual(refund.invoice_line_ids[1].quantity, 3.0)
+
+    def test_49_refund_validation_multi_line_one_invalid(self):
+        """Múltiples líneas: una línea inválida -> ValidationError."""
+        product_b = self.env["product.product"].create({
+            "name": "Product B", "type": "service",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        invoice = self._create_invoice(lines=[
+            {"product_id": self.product.id, "quantity": 2.0, "price_unit": 100.0},
+            {"product_id": product_b.id, "quantity": 3.0, "price_unit": 50.0},
+        ])
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"quantity": 10.0}})
+
+    # ═══════════════════════════════════════════════════════════════
+    # Section/note lines in origin invoice
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_50_refund_validation_origin_with_section(self):
+        """Sección en factura origen: NC copia sección + producto, sección ignorada -> OK."""
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "display_type": "line_section",
+                    "name": "Test Section",
+                }),
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 100.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(len(refund.invoice_line_ids), 2)
+        self.assertFalse(refund.invoice_line_ids[0].product_id)
+        self.assertEqual(refund.invoice_line_ids[1].product_id.id, self.product.id)
+
+    def test_51_refund_validation_origin_with_section_partial(self):
+        """Sección en origen + NC parcial en producto -> OK."""
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "display_type": "line_section",
+                    "name": "Test Section",
+                }),
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 100.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice, line_mods={1: {"quantity": 0.5}})
+        self.assertEqual(refund.invoice_line_ids[1].quantity, 0.5)
