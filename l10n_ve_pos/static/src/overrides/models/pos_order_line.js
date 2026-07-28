@@ -3,6 +3,13 @@
 import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
 import { patch } from "@web/core/utils/patch";
 import { roundDecimals as round_di } from "@web/core/utils/numbers";
+import { _t } from "@web/core/l10n/translation";
+// OJO: se importa con alias. El resto de este fichero usa el `parseFloat`
+// GLOBAL sobre cadenas producidas por `toFixed()` (siempre con punto
+// decimal). El `parseFloat` de `@web/views/fields/parsers` es sensible al
+// locale (en es_VE el separador decimal es la coma) y rompería esas
+// llamadas si sombreara al global.
+import { parseFloat as parseFloatLocale } from "@web/views/fields/parsers";
 
 // -----------------------------------------------------------------------------
 // Foreign amounts on POS orderlines (Venezuela).
@@ -215,5 +222,67 @@ patch(PosOrderline.prototype, {
         return "(E)";
       }
       return productTaxes[0].amount === 0 ? "(E)" : "(G)";
+    },
+
+    // -------------------------------------------------------------------------
+    // Cantidades negativas: solo en líneas de reembolso (Venezuela)
+    //
+    // Odoo 19 permite poner en negativo CUALQUIER línea desde el numpad
+    // (tecla "+/-" → `SWITCHSIGN` en numpad.js, o tecleando "-3"), lo que
+    // genera una orden de VENTA con una línea negativa. En VE eso emite una
+    // factura fiscal con cantidad negativa en vez de la nota de crédito que
+    // corresponde. Solo puede ser negativa:
+    //   * una línea de reembolso real, es decir vinculada a la línea que
+    //     reembolsa (`refunded_orderline_id`, que fija
+    //     `TicketScreen.onDoRefund` al crear la orden destino), o
+    //   * cualquier línea de una orden con preset de devolución
+    //     (`preset_id.is_return`), donde el propio core fuerza
+    //     `-Math.abs(qty)` en `setQuantity` y en `addLineToOrder`; bloquearla
+    //     dejaría ese modo nativo roto en silencio.
+    //
+    // Se intercepta en `setQuantity` porque es el único punto por el que pasan
+    // TODOS los caminos de edición de cantidad (numpad, `QuantityButtons`,
+    // código de barras con peso, propagación a líneas de combo). Las líneas de
+    // reembolso NO se crean por aquí: `onDoRefund` las crea directamente con
+    // `models["pos.order.line"].create({qty: -refundDetail.qty, ...})`, así
+    // que este guard no las afecta.
+    //
+    // Contrato de `setQuantity` en Odoo 19: devuelve `true` si tuvo éxito, o
+    // un objeto `{title, body}` que `OrderSummary._setValue` muestra como
+    // `AlertDialog` y seguido resetea el `number_buffer`.
+    _isRefundLine() {
+      return Boolean(this.refunded_orderline_id) || Boolean(this.order_id?.preset_id?.is_return);
+    },
+
+    _quantityAsNumber(quantity) {
+      // Mismo parseo que el core (pos_order_line.js `setQuantity`), pero sin
+      // dejar escapar una excepción del parser sensible al locale: si no se
+      // puede interpretar, se devuelve NaN y el guard delega en el core para
+      // que falle exactamente igual que en Odoo estándar.
+      if (typeof quantity === "number") {
+        return quantity;
+      }
+      try {
+        return parseFloatLocale("" + (quantity ? quantity : 0));
+      } catch {
+        return NaN;
+      }
+    },
+
+    setQuantity(quantity, keep_price) {
+      if (!this._isRefundLine()) {
+        const quant = this._quantityAsNumber(quantity);
+        // `-0 < 0` es false, así que poner una línea en cero sigue permitido
+        // (es como el cajero borra una línea desde el numpad).
+        if (Number.isFinite(quant) && quant < 0) {
+          return {
+            title: _t("Negative quantity not allowed"),
+            body: _t(
+              "Only refund lines can have a negative quantity. To return products, use the refund flow: Orders → select the original order → Refund."
+            ),
+          };
+        }
+      }
+      return super.setQuantity(...arguments);
     },
 });

@@ -484,6 +484,25 @@ msgid "NOTAS"
 msgstr ""
 
 #. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_order_line.py:0
+msgid ""
+"Negative quantity is only allowed on refund lines. Product \"%(product)s\" "
+"has a quantity of %(qty)s in order %(order)s. To return products, use the "
+"refund flow from the orders screen instead of a negative quantity."
+msgstr ""
+"La cantidad negativa solo se permite en líneas de reembolso. El producto "
+"\"%(product)s\" tiene una cantidad de %(qty)s en la orden %(order)s. Para "
+"devolver productos, use el flujo de reembolso desde la pantalla de órdenes "
+"en lugar de una cantidad negativa."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/models/pos_order_line.js:0
+msgid "Negative quantity not allowed"
+msgstr "Cantidad negativa no permitida"
+
+#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid ""
 "No Point of\n"
@@ -516,6 +535,17 @@ msgid ""
 "No se puede calcular la tasa porque faltan valores. Configura una tasa de "
 "conversión en la configuración de la empresa para poder calcularla."
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/models/pos_order_line.js:0
+msgid ""
+"Only refund lines can have a negative quantity. To return products, use the "
+"refund flow: Orders → select the original order → Refund."
+msgstr ""
+"Solo las líneas de reembolso pueden tener cantidad negativa. Para devolver "
+"productos, use el flujo de reembolso: Órdenes → seleccione la orden original "
+"→ Reembolso."
 
 #. module: l10n_ve_pos
 #. odoo-javascript
