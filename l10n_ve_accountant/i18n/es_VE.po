@@ -1816,3 +1816,60 @@ msgstr ""
 "\n"
 "\n"
 "Por favor corrija estos campos antes de guardar los cambios."
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__index_payment_in_wizard
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_config_settings__index_payment_in_wizard
+msgid "Apply Indexacion to payment from wizard of invoice"
+msgstr "Aplicar indexación al pago desde el asistente de la factura"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__index_payment_in_wizard
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__index_payment_in_wizard
+msgid "index_payment_in_wizard"
+msgstr "Pagos indexados desde wizard"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__indexed_default
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__indexed_default
+msgid "Default indexacion"
+msgstr "Indexar automaticamente"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__indexed_default
+msgid "Payment indexed"
+msgstr "Pago indexado"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__indexaxion_payment_mode
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__indexaxion_payment_mode
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_config_settings__indexaxion_payment_mode
+msgid ""
+"Defines the exchange rate criteria applied at the time of payment wizard."
+msgstr ""
+"Define el criterio de tasa de cambio aplicado en el asistente de pago."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__indexed
+msgid "Indexed (Payment Date Rate)"
+msgstr "Indexado (Tasa del día de pago)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__not_indexed
+msgid "Non-Indexed (Invoice Date Rate)"
+msgstr "No Indexado (Tasa fija de factura)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__to_agreed
+msgid "To be Agreed (Mutual Agreement)"
+msgstr "A convenir (A elección)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__indexaxion_payment_mode
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__indexaxion_payment_mode
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__indexaxion_payment_mode
+msgid "Type indexacion"
+msgstr "Tipo de Indexación"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
+msgid "Enable this to indexation payment in wizard of payment not grouping"
+msgstr "Active esto para indexar los pagos individuales en el asistente de pago sin agrupar"

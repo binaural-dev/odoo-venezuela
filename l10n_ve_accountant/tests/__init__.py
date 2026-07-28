@@ -7,3 +7,4 @@ from . import test_account_move_core
 from . import test_account_tax_foreign
 from . import test_coverage_gaps
 from . import test_product_template
+from . import test_action_cancel
