@@ -19,10 +19,12 @@ patch(PosStore.prototype, {
    */
   async open_cashbox() {
     const fiscalPrinter = this.getFiscalPrinter();
-    
-    if (fiscalPrinter && fiscalPrinter.isConnected && this.config.has_cashbox) {
+
+    if (fiscalPrinter && fiscalPrinter.isPaired && this.config.has_cashbox) {
       try {
-        const result = await fiscalPrinter.openDrawer();
+        // withConnection abre el puerto bajo demanda solo por este comando
+        // y lo libera al terminar.
+        const result = await fiscalPrinter.withConnection(() => fiscalPrinter.openDrawer());
         if (!result.success) {
           console.error("FiscalPrinter:: Error abriendo gaveta", result.error);
         }
@@ -45,12 +47,17 @@ patch(PosStore.prototype, {
   },
 
   /**
-   * Verifica si se debe usar la máquina fiscal (reemplaza useFiscalMachine del IoT)
+   * Verifica si hay máquina fiscal disponible para usar (reemplaza
+   * useFiscalMachine del IoT). Bajo el modelo de conexión bajo demanda, el
+   * puerto casi nunca está literalmente abierto (`isConnected`) fuera de
+   * una impresión en curso — lo relevante aquí es si el dispositivo está
+   * autorizado/pareado (`isPaired`), no si el puerto está abierto en este
+   * instante.
    * @returns {boolean}
    */
   useFiscalMachine() {
     const fiscalPrinter = this.getFiscalPrinter();
-    return fiscalPrinter && fiscalPrinter.isConnected;
+    return !!(fiscalPrinter && fiscalPrinter.isPaired);
   },
 
   get currentOrder() {
@@ -353,12 +360,12 @@ patch(PosStore.prototype, {
   async pushToMF(order) {
     try {
       const fiscalPrinter = this.getFiscalPrinter();
-      
-      if (!fiscalPrinter || !fiscalPrinter.isConnected) {
-        throw { 
-          valid: false, 
-          message: "Máquina fiscal no conectada. Haz clic en el botón de impresora para conectar.",
-          printer_connection: false 
+
+      if (!fiscalPrinter) {
+        throw {
+          valid: false,
+          message: "Máquina fiscal no configurada.",
+          printer_connection: false
         };
       }
 
@@ -371,16 +378,27 @@ patch(PosStore.prototype, {
       // Convertir formato de Odoo a formato del driver
       const driverOrder = this._convertOrderForDriver(order, data);
 
-      // Enviar a imprimir según tipo de documento
+      // Enviar a imprimir según tipo de documento. withConnection() abre el
+      // puerto serial bajo demanda solo por la duración de esta impresión y
+      // lo libera al terminar (evita disputar el puerto con Megasoft).
       let response;
-      if (data.type === 'out_invoice') {
-        response = await fiscalPrinter.printInvoice(driverOrder);
-      } else if (data.type === 'out_refund') {
-        response = await fiscalPrinter.printCreditNote(driverOrder);
-      } else if (data.type === 'out_debit') {
-        response = await fiscalPrinter.printDebitNote(driverOrder);
-      } else {
-        response = { success: false, error: `Tipo de documento no soportado: ${data.type}` };
+      try {
+        response = await fiscalPrinter.withConnection(async () => {
+          if (data.type === 'out_invoice') {
+            return await fiscalPrinter.printInvoice(driverOrder);
+          } else if (data.type === 'out_refund') {
+            return await fiscalPrinter.printCreditNote(driverOrder);
+          } else if (data.type === 'out_debit') {
+            return await fiscalPrinter.printDebitNote(driverOrder);
+          }
+          return { success: false, error: `Tipo de documento no soportado: ${data.type}` };
+        });
+      } catch (connError) {
+        throw {
+          valid: false,
+          message: connError.message || "No se pudo conectar con la máquina fiscal.",
+          printer_connection: false,
+        };
       }
 
       if (!response.success) {

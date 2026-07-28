@@ -65,24 +65,41 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
     }
 
     /**
-     * Inicializa el debugger
+     * Inicializa el debugger. A diferencia del resto del código (que abre y
+     * cierra el puerto por cada operación vía `withConnection`), este
+     * popup es una sesión interactiva — mantiene el puerto abierto mientras
+     * esté abierto (vía `acquireConnection`/`releaseConnection`, que
+     * comparten el mismo contador de referencias), para no reconectar en
+     * cada click de la consola de comandos.
      */
     async _initDebugger() {
-        if (!this.fiscalPrinter || !this.fiscalPrinter.isConnected) {
+        if (!this.fiscalPrinter) {
             this.state.commandLog.push({
                 timestamp: new Date().toISOString(),
                 type: "error",
-                message: "⚠️ Impresora no conectada. Conéctala desde el botón principal del POS."
+                message: "⚠️ No hay máquina fiscal configurada en esta caja."
+            });
+            return;
+        }
+
+        try {
+            await this.fiscalPrinter.acquireConnection();
+            this._connectionAcquired = true;
+        } catch (error) {
+            this.state.commandLog.push({
+                timestamp: new Date().toISOString(),
+                type: "error",
+                message: `⚠️ No se pudo conectar con la máquina fiscal: ${error.message}`
             });
             return;
         }
 
         // Leer status inicial
         await this.refreshStatus();
-        
+
         // Interceptar el método sendCommand del driver para capturar tramas
         this._patchDriverForLogging();
-        
+
         this.state.commandLog.push({
             timestamp: new Date().toISOString(),
             type: "info",
@@ -96,6 +113,10 @@ export class FiscalDebuggerPopup extends AbstractAwaitablePopup {
     _cleanup() {
         if (this.state.statusRefreshInterval) {
             clearInterval(this.state.statusRefreshInterval);
+        }
+        if (this._connectionAcquired && this.fiscalPrinter) {
+            this._connectionAcquired = false;
+            this.fiscalPrinter.releaseConnection();
         }
     }
 

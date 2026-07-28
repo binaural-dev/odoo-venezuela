@@ -34,8 +34,20 @@ import { FiscalProtocol } from "../core/FiscalProtocol";
  *    - ENQ (0x05): Consulta estado (responde con 5 bytes: STX|STS1|STS2|ETX|LRC)
  */
 
+/**
+ * Error de conexión bajo demanda: el puerto serial de la máquina fiscal no
+ * pudo abrirse tras varios intentos (típicamente porque otro proceso, ej.
+ * Megasoft VposUniversal, lo tiene abierto en ese instante).
+ */
+export class FiscalPrinterBusyError extends Error {
+    constructor(message = "La máquina fiscal está en uso, intente de nuevo en unos segundos.") {
+        super(message);
+        this.name = "FiscalPrinterBusyError";
+    }
+}
+
 export class TfhkaDriver {
-    
+
     // Máximo de caracteres por línea que imprime la TFHKA
     static MAX_LINE_LEN = 40;
 
@@ -45,6 +57,20 @@ export class TfhkaDriver {
         this.lastStatus = null;
         this.retryAttempts = 3;
         this.retryDelay = 500; // ms
+        // Contador de referencias para withConnection(): permite que llamadas
+        // anidadas (ej. imprimir un voucher y, en la misma operación de
+        // negocio, disparar la impresión de la factura) reutilicen una sola
+        // apertura de puerto en vez de abrir/cerrar dos veces.
+        this._connectionRefCount = 0;
+        // Distinto de `isConnected` (que solo es true mientras el puerto
+        // está físicamente abierto, ventanas breves bajo demanda):
+        // `isPaired` indica si el dispositivo ya fue autorizado por el
+        // usuario en este navegador (navigator.serial.getPorts() no vacío),
+        // sin necesidad de tener el puerto abierto en este instante. Es lo
+        // que debe usarse para decidir "¿hay máquina fiscal disponible?" en
+        // el resto del código (useFiscalMachine, etc.) — `isConnected` ya no
+        // sirve para eso bajo el modelo de conexión bajo demanda.
+        this.isPaired = false;
     }
 
     _isWaitingState(sts1) {
@@ -108,6 +134,9 @@ export class TfhkaDriver {
             }
             
             if (connected) {
+                // Un connect() exitoso (autoConnect o requestPort) implica
+                // que el dispositivo está autorizado en este navegador.
+                this.isPaired = true;
                 // Verificar que la impresora responda
                 const status = await this.getStatus();
                 this.isConnected = status !== null;
@@ -128,6 +157,104 @@ export class TfhkaDriver {
     async disconnect() {
         await this.connection.disconnect();
         this.isConnected = false;
+    }
+
+    /**
+     * Ejecuta `fn` garantizando que el puerto esté abierto durante toda su
+     * duración, y lo libera apenas termina — conexión "bajo demanda" en vez
+     * de mantenerla abierta indefinidamente (evita disputar el puerto COM
+     * con otros procesos que también hablan con la máquina fiscal, ej.
+     * Megasoft VposUniversal).
+     *
+     * Reentrante: si ya hay una llamada a `withConnection` en curso (ej.
+     * porque el caller externo también abrió su propio ciclo), esta
+     * invocación solo incrementa el contador y reutiliza esa conexión —
+     * no vuelve a abrir ni cierra hasta que la llamada más externa termine.
+     * Nunca empaquetar manualmente dos operaciones distintas (ej. voucher +
+     * factura) en un único `withConnection`: cada operación de impresión
+     * completa debe pedir su propio ciclo: la reentrancia solo cubre el caso
+     * de llamadas genuinamente anidadas, no una orquestación forzada desde
+     * fuera.
+     *
+     * @param {() => Promise<any>} fn - Operación a ejecutar con el puerto abierto
+     * @returns {Promise<any>} - Lo que retorne `fn`
+     * @throws {FiscalPrinterBusyError} - Si no se pudo abrir el puerto tras los reintentos
+     */
+    async withConnection(fn) {
+        const isOuter = this._connectionRefCount === 0;
+        this._connectionRefCount++;
+        try {
+            if (isOuter) {
+                await this._connectWithRetry();
+            }
+            return await fn();
+        } finally {
+            this._connectionRefCount--;
+            if (this._connectionRefCount === 0) {
+                await this.disconnect();
+            }
+        }
+    }
+
+    /**
+     * Intenta conectar con reintentos cortos, absorbiendo el caso en que
+     * otro proceso tiene el puerto abierto en ese instante puntual.
+     * @param {number} maxAttempts
+     * @param {number} delayMs
+     * @throws {FiscalPrinterBusyError}
+     */
+    async _connectWithRetry(maxAttempts = 3, delayMs = 400) {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            if (await this.connect()) {
+                return;
+            }
+            if (attempt < maxAttempts) {
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+        }
+        throw new FiscalPrinterBusyError();
+    }
+
+    /**
+     * Adquiere una referencia manual a la conexión, para sesiones
+     * interactivas (ej. el Fiscalizador de debug) que necesitan mantener el
+     * puerto abierto mientras el usuario hace varias operaciones sueltas,
+     * en vez de abrir y cerrar por cada comando como hace withConnection().
+     *
+     * Comparte el mismo contador que withConnection(): si una impresión
+     * real (ej. una factura) ocurre mientras hay una sesión de debug
+     * abierta, simplemente reutiliza esta misma conexión.
+     *
+     * SIEMPRE debe cerrarse con `releaseConnection()` (típicamente en
+     * `onWillUnmount`/`finally`), o el puerto quedará abierto indefinidamente
+     * otra vez, igual que con el modelo anterior.
+     * @throws {FiscalPrinterBusyError}
+     */
+    async acquireConnection() {
+        const isOuter = this._connectionRefCount === 0;
+        this._connectionRefCount++;
+        if (isOuter) {
+            try {
+                await this._connectWithRetry();
+            } catch (error) {
+                this._connectionRefCount--;
+                throw error;
+            }
+        }
+    }
+
+    /**
+     * Libera una referencia adquirida con `acquireConnection()`. Debe
+     * llamarse exactamente una vez por cada `acquireConnection()` exitoso.
+     */
+    async releaseConnection() {
+        if (this._connectionRefCount === 0) {
+            return;
+        }
+        this._connectionRefCount--;
+        if (this._connectionRefCount === 0) {
+            await this.disconnect();
+        }
     }
 
     /**
@@ -472,166 +599,7 @@ export class TfhkaDriver {
         return { success: true, data: "Documento reimpreso correctamente", error: "" };
     }
 
-    /**
-     * Imprime una factura completa
-     * @param {Object} order - Objeto con los datos de la orden de Odoo POS
-     * @returns {Promise<Object>} - { success: boolean, invoiceNumber: string, error: string }
-     */
-    async printInvoice(order) {
-        try {
-            // 1. Datos del cliente (RIF/CI)
-            if (order.partner && order.partner.vat) {
-                const rifCommand = `@${order.partner.vat}`;
-                const result = await this.sendCommand(rifCommand);
-                if (!result.success) {
-                    return { success: false, invoiceNumber: "", error: `Error enviando RIF: ${result.error}` };
-                }
-            }
-
-            // 2. Razón social del cliente
-            if (order.partner && order.partner.name) {
-                const nameCommand = `A${order.partner.name}`;
-                const result = await this.sendCommand(nameCommand);
-                if (!result.success) {
-                    return { success: false, invoiceNumber: "", error: `Error enviando nombre: ${result.error}` };
-                }
-            }
-
-            // 3. Registrar productos (líneas de la orden)
-            for (const line of order.lines) {
-                // Formato del comando de producto:
-                // ! [Código] [Descripción] * [Cantidad] [Precio Unitario] [# Dpto]
-                const quantity = this._formatQuantity(line.qty);
-                const price = this._formatAmount(line.price_unit);
-                const description = line.product_id.display_name.substring(0, 30); // Max 30 chars
-                const deptCode = "01"; // Departamento por defecto (ajustar según configuración)
-
-                const productCommand = `!${description}*${quantity}${price}${deptCode}`;
-                const result = await this.sendCommand(productCommand);
-                
-                if (!result.success) {
-                    // Si falla, cancelar la factura
-                    await this.sendCommand("z"); // Comando de cancelar factura
-                    return { success: false, invoiceNumber: "", error: `Error registrando producto: ${result.error}` };
-                }
-            }
-
-            // 4. Descuentos globales (si aplica)
-            if (order.total_discount > 0) {
-                const discountAmount = this._formatAmount(order.total_discount);
-                const discountCommand = `m-${discountAmount}`;
-                await this.sendCommand(discountCommand);
-            }
-
-            // 5. Totalización (cerrar factura con pago)
-            // Comando 1: Pago directo (asigna todo el monto al medio de pago)
-            const paymentMethod = this._getPaymentMethodCode(order.payment_ids);
-            const totalizeCommand = `1${paymentMethod}`;
-            const totalizeResult = await this.sendCommand(totalizeCommand);
-
-            if (!totalizeResult.success) {
-                return { success: false, invoiceNumber: "", error: `Error totalizando: ${totalizeResult.error}` };
-            }
-
-            // 6. Leer el estado para obtener el número de factura
-            const status = await this.getStatus();
-            const invoiceNumber = status ? this._extractInvoiceNumber(status) : "";
-
-            return { 
-                success: true, 
-                invoiceNumber: invoiceNumber, 
-                error: "" 
-            };
-
-        } catch (error) {
-            console.error("TfhkaDriver:: Error imprimiendo factura", error);
-            // Intentar cancelar la factura en caso de error
-            await this.sendCommand("z");
-            return { success: false, invoiceNumber: "", error: error.message };
-        }
-    }
-
-    /**
-     * Imprime una Nota de Crédito (devolución)
-     * @param {Object} order - Objeto con los datos de la orden
-     * @returns {Promise<Object>}
-     */
-    async printCreditNote(order) {
-        try {
-            // Comando para abrir nota de crédito: I02
-            const openResult = await this.sendCommand("I02");
-            if (!openResult.success) {
-                return { success: false, error: `Error abriendo nota de crédito: ${openResult.error}` };
-            }
-
-            // Similar a printInvoice pero con comando I02
-            // TODO: Implementar lógica completa de nota de crédito
-            // Requiere: número de factura afectada, serial, fecha, etc.
-
-            return { success: true, error: "" };
-        } catch (error) {
-            console.error("TfhkaDriver:: Error imprimiendo nota de crédito", error);
-            return { success: false, error: error.message };
-        }
-    }
-
     // ========== UTILIDADES PRIVADAS ==========
-
-    /**
-     * Formatea cantidad para el protocolo TFHKA
-     * @param {number} qty
-     * @returns {string} - Formato: 6 dígitos (4 enteros + 2 decimales)
-     */
-    _formatQuantity(qty) {
-        const formatted = Math.round(qty * 100);
-        return formatted.toString().padStart(6, '0');
-    }
-
-    /**
-     * Formatea monto para el protocolo TFHKA
-     * @param {number} amount
-     * @returns {string} - Formato: 12 dígitos (10 enteros + 2 decimales)
-     */
-    _formatAmount(amount) {
-        const formatted = Math.round(amount * 100);
-        return formatted.toString().padStart(12, '0');
-    }
-
-    /**
-     * Obtiene el código de medio de pago (01-24 según configuración)
-     * @param {Array} payments
-     * @returns {string} - Código de 2 dígitos
-     */
-    _getPaymentMethodCode(payments) {
-        // TODO: Mapear desde configuración de Odoo
-        // Por ahora, retornamos "01" (Efectivo) por defecto
-        if (!payments || payments.length === 0) {
-            return "01";
-        }
-        
-        // Extraer el primer medio de pago
-        const firstPayment = payments[0];
-        // Mapeo básico (ajustar según configuración real)
-        const paymentMap = {
-            "cash": "01",
-            "card": "02",
-            "bank": "03",
-        };
-        
-        return paymentMap[firstPayment.payment_method_id.type] || "01";
-    }
-
-    /**
-     * Extrae el número de factura del status de la impresora
-     * @param {Object} status
-     * @returns {string}
-     */
-    _extractInvoiceNumber(status) {
-        // TODO: Parsear el número de factura desde el status
-        // La impresora TFHKA retorna el número en el status después de cerrar
-        // Por ahora retornamos un placeholder
-        return status.raw || "N/A";
-    }
 
     _toCounter(value) {
         const cleaned = String(value || "").replace(/[^0-9]/g, "");

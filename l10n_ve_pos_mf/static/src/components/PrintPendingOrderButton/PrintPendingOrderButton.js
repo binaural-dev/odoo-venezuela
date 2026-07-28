@@ -55,10 +55,10 @@ export class PrintPendingOrderButton extends Component {
         }
 
         const driver = this.getFiscalPrinter();
-        if (!driver || !driver.isConnected) {
+        if (!driver) {
             await this.popup.add(ErrorPopup, {
-                title: _t("Maquina Fiscal no conectada"),
-                body: _t("Conecta la maquina fiscal antes de imprimir el pedido pendiente."),
+                title: _t("Maquina Fiscal no configurada"),
+                body: _t("No hay una maquina fiscal configurada para esta caja."),
             });
             return;
         }
@@ -76,15 +76,26 @@ export class PrintPendingOrderButton extends Component {
 
             const driverOrder = this.pos._convertOrderForDriver(order, data);
 
+            // withConnection abre el puerto bajo demanda solo por esta
+            // impresión y lo libera al terminar.
             let response;
-            if (data.type === "out_invoice") {
-                response = await driver.printInvoice(driverOrder);
-            } else if (data.type === "out_refund") {
-                response = await driver.printCreditNote(driverOrder);
-            } else if (data.type === "out_debit") {
-                response = await driver.printDebitNote(driverOrder);
-            } else {
-                response = { success: false, error: _t("Tipo de documento no soportado: %s", data.type) };
+            try {
+                response = await driver.withConnection(async () => {
+                    if (data.type === "out_invoice") {
+                        return await driver.printInvoice(driverOrder);
+                    } else if (data.type === "out_refund") {
+                        return await driver.printCreditNote(driverOrder);
+                    } else if (data.type === "out_debit") {
+                        return await driver.printDebitNote(driverOrder);
+                    }
+                    return { success: false, error: _t("Tipo de documento no soportado: %s", data.type) };
+                });
+            } catch (connError) {
+                await this.popup.add(ErrorPopup, {
+                    title: _t("Error al imprimir"),
+                    body: connError.message || _t("No se pudo conectar con la maquina fiscal."),
+                });
+                return;
             }
 
             if (!response.success) {
