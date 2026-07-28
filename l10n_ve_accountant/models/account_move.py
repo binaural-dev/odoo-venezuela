@@ -1541,8 +1541,30 @@ class AccountMove(models.Model):
                 total_debit = aggregate
                 total_credit = aggregate
             else:
-                total_debit = sum(other.mapped("foreign_debit"))
-                total_credit = sum(other.mapped("foreign_credit"))
+                gross_debit = sum(other.mapped("foreign_debit"))
+                gross_credit = sum(other.mapped("foreign_credit"))
+                # Neto, no bruto. Los pares autobalanceados —las líneas COGS
+                # que stock_account agrega dentro de _post(), con el asiento
+                # todavía en draft— aportan el mismo importe como débito y
+                # como crédito. Sumar un solo lado los cuenta una vez y
+                # descuadra el asiento exactamente por ese importe.
+                # Sin líneas de ese tipo, gross_debit es 0 y el neto coincide
+                # con el bruto: mismo comportamiento que antes.
+                total_debit = gross_debit - gross_credit
+                total_credit = gross_credit - gross_debit
+
+                # Un asiento con importes alternos ya invertidos de origen
+                # puede dar neto negativo: en pos2, INV/2026/0137 tiene una
+                # línea de impuesto al débito con el importe alterno en el
+                # haber, y arrastra 71,28 de descuadre antes de llegar aquí.
+                # Ahí el neto no significa nada, y escribir un importe
+                # negativo sería peor que el valor equivocado de antes, así
+                # que se vuelve al bruto. Estos documentos necesitan data-fix,
+                # no una fórmula distinta.
+                if total_debit < 0:
+                    total_debit = gross_debit
+                if total_credit < 0:
+                    total_credit = gross_credit
 
             sorted_pt = pt_lines.sorted("id")
             n = len(sorted_pt)
