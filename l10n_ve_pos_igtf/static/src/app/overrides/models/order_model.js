@@ -205,6 +205,41 @@ patch(PosOrder.prototype, {
     return this.foreign_igtf_amount;
   },
 
+  // Total REALMENTE cobrado: total de factura + el IGTF que efectivamente se
+  // generó (this.igtf_amount, el recargo que update_igtf() acumula sobre la
+  // base cubierta por las líneas con apply_igtf). Espejo exacto del backend
+  // pos.order::_get_total_with_igtf() (amount_total + igtf_amount), que es el
+  // criterio con el que action_pos_order_paid da la orden por pagada.
+  //
+  // NO CONFUNDIR con get_total_with_igtf(): aquel es un valor de referencia
+  // FIJO (3% de la factura completa) para el renglón "TOTAL a Pagar con IGTF"
+  // del panel de estado de pago, y no depende de lo que se haya pagado. Este
+  // es para pantallas post-validación (recibo), donde ya se sabe cuánto IGTF
+  // se cobró: pagar 7.372,30 con apply_igtf de una factura de 12.806,40
+  // genera 221,17 de IGTF → 13.027,57, no 12.806,40 + 3%.
+  get_total_paid_with_igtf() {
+    return this._igtfRoundLocal(
+      this.get_total_without_igtf() + (this.igtf_amount || 0)
+    );
+  },
+
+  // Lado foráneo del anterior. Suma los dos valores foráneos YA derivados
+  // (cada uno con una sola conversión de su contraparte local) en vez de
+  // convertir la suma local: así el total mostrado es exactamente la suma de
+  // las partes que el cajero ve en pantalla ($17,37 + $0,30 = $17,67), y se
+  // conserva el manejo de tasa histórica de get_foreign_total_with_tax() en
+  // reembolsos.
+  get_foreign_total_paid_with_igtf() {
+    const foreignTotal =
+      typeof this.get_foreign_total_with_tax === "function"
+        ? Number(this.get_foreign_total_with_tax()) || 0
+        : 0;
+    const total = foreignTotal + (this.foreign_igtf_amount || 0);
+    return typeof this.roundForeignMoney === "function"
+      ? this.roundForeignMoney(total)
+      : total;
+  },
+
   // --- O19: remainingDue must include IGTF surcharge ---
   //
   // Core O19's remainingDue = totalDue - amountPaid, CLAMPADO a 0 en cuanto
