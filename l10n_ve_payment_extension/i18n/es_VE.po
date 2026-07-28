@@ -1902,8 +1902,6 @@ msgstr "Tipo de Pago de Retención"
 #. module: l10n_ve_payment_extension
 #: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_payment_concept_l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_concept_id
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_product__payment_concept
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_template__payment_concept
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_form_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_search_l10n_ve_payment_extension
 msgid "Payment concept"

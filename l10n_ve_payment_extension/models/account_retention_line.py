@@ -69,9 +69,8 @@ class AccountRetentionLine(models.Model):
     )
     
     code = fields.Char(
-        string='Code',
         compute='_compute_concep_code',
-        store=True, 
+        store=True,
         readonly=False
     )
 
