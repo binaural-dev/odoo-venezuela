@@ -1816,6 +1816,8 @@ msgstr ""
 "\n"
 "\n"
 "Por favor corrija estos campos antes de guardar los cambios."
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__index_payment_in_wizard
 #: model:ir.model.fields,help:l10n_ve_accountant.field_res_config_settings__index_payment_in_wizard
 msgid "Apply Indexacion to payment from wizard of invoice"
