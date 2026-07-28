@@ -1,14 +1,10 @@
 {
     "name": "Venezuela - IoT / Maquina Fiscal",
     "summary": "Implementación de DLLs de The Factory HKA (VE) y desarrollos PnP para Internet of Things (IoT) y compatibilidad con Odoo.",
-    "description": """
-        Implementación de DLLs de The Factory HKA (VE) y desarrollos PnP para Internet of Things (IoT) y
-        compatibilidad con Odoo.
-    """,
     "license": "LGPL-3",
     "category": "Accounting",
-    "version": "17.0.0.1.4",
-    "author": "binaural-dev",
+    "version": "17.0.0.2.2",
+    "author": "Binaural",
     "website": "https://binauraldev.com",
     "depends": [
         "iot",

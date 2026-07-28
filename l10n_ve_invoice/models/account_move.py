@@ -4,7 +4,6 @@ import logging
 import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
-from odoo.tools import format_date
 from odoo.tools import format_date, float_is_zero, float_compare
 
 _logger = logging.getLogger(__name__)
@@ -12,11 +11,10 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _name = "account.move"
-    _inherit = "account.move"
+    _inherit = ["account.move", "filter.partner.mixin"]
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
-    is_purchase_international = fields.Boolean(related='journal_id.is_purchase_international', string='Is International Purchase')
     invoice_reception_date = fields.Date(
         "Reception Date",
         help="Indicates when the invoice was received by the client/company",
@@ -40,6 +38,10 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
+    tax_base_for_international_purchase = fields.Float(string='Tax Base for International Purchase', help='Tax base for international purchase to show in purchase book')
+    
+    tax_amount_for_international_purchase = fields.Float(string='Tax Amount for International Purchase', help='Tax amount for international purchase to show in purchase book')
+
     @api.depends("invoice_date", "state")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether a debit or credit note is within the current fiscal period."""
@@ -50,11 +52,10 @@ class AccountMove(models.Model):
         for move in self:
             move.entry_in_period = False
 
-            if move.state == "cancel":
+            if move.state in ["cancel", "draft"]:
                 continue
 
-
-            if move.move_type == "out_refund" or (move.move_type == "out_invoice" and move.debit_origin_id):
+            if move.move_type == "out_refund" or move.move_type == "out_invoice":
                 if (move.invoice_date.year, move.invoice_date.month) == (period_limit.year, period_limit.month) and move.invoice_date <= period_limit:
                     if taxpayer_type == "special" and move.invoice_date.day < 15 < period_limit.day:
                         move.entry_in_period = False
@@ -103,9 +104,13 @@ class AccountMove(models.Model):
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])
 
             if invoices and record.move_type in ["out_invoice","out_refund"]:
-                raise ValidationError(_("An invoice already exists with the Control Number: %s" % correlative))
+                raise ValidationError(_("An invoice already exists with the Control Number: %s", correlative))
             if record.invoice_date and record.date and record.date < record.invoice_date:
                 raise UserError(_("The accounting date cannot be earlier than the invoice date."))
+            if record.invoice_date:
+                today = fields.Date.context_today(record)
+                if record.invoice_date > today:
+                    raise ValidationError(_("It is not possible to confirm with a date posterior to the current one. Please verify the document date before proceeding."))
         return super().action_post()
 
     @api.model_create_multi
@@ -202,7 +207,7 @@ class AccountMove(models.Model):
             max_product_invoice = self.company_id.max_product_invoice
             if len(self.invoice_line_ids) > max_product_invoice:
                 raise ValidationError(
-                    _("You can not add more than %s products to the invoice." % max_product_invoice)
+                    _("You can not add more than %s products to the invoice.", max_product_invoice)
                 )
 
     @api.depends("payment_term_details")
@@ -348,13 +353,11 @@ class AccountMove(models.Model):
 
             if changes:
                 move.message_post(
-                    body=_(
-                        """
+                    body="""
                         <div>
                             <ul>%s</ul>
                         </div>
-                        """
-                    ) % "".join(changes),
+                        """ % "".join(changes),
                     message_type='notification',
                     body_is_html=True
                 )

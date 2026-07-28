@@ -132,6 +132,17 @@ class TestAccountMove(TransactionCase):
             }
         )
 
+        self.debit_journal = self.env["account.journal"].create(
+            {
+                "name": "Diario de Débito",
+                "code": "DEB",
+                "type": "sale",
+                "is_debit": True,
+                "sequence_id": sequence.id,
+                "company_id": self.env.company.id,
+            }
+        )
+
         self.other_sales_journal = self.env["account.journal"].create(
             {
                 "name": "Diario de Ventas Otra Compañía",
@@ -264,8 +275,9 @@ class TestAccountMove(TransactionCase):
             ],
             move_type="out_refund",
             invoice_date=invoice_date,
-            journal=self.purchase_journal,
+            journal=self.sales_journal,
         )
+        move.state = 'posted'
 
         class FakeDate(real_date):
             @classmethod
@@ -393,3 +405,47 @@ class TestAccountMove(TransactionCase):
 
         with self.assertRaises(ValidationError):
             invoice.action_post()
+
+    def test_08_action_post_future_invoice_date_validation(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_invoice",
+            invoice_date=fields.Date.today() + timedelta(days=1),
+            date=fields.Date.today() + timedelta(days=1),
+            journal=self.sales_journal,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            invoice.action_post()
+        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))
+
+        original_invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_invoice",
+            invoice_date=fields.Date.today(),
+            date=fields.Date.today(),
+            journal=self.sales_journal,
+        )
+        original_invoice.action_post()
+        credit_note = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_refund",
+            reversed_entry_id=original_invoice,
+            invoice_date=fields.Date.today() + timedelta(days=1),
+            date=fields.Date.today() + timedelta(days=1),
+            journal=self.sales_journal,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            credit_note.action_post()
+        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))
+
+        debit_note = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100}],
+            move_type="out_invoice",
+            debit_origin_id=original_invoice,
+            invoice_date=fields.Date.today() + timedelta(days=1),
+            date=fields.Date.today() + timedelta(days=1),
+            journal=self.debit_journal,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            debit_note.action_post()
+        self.assertIn("It is not possible to confirm with a date posterior to the current one", str(cm.exception))

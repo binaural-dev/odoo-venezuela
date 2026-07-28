@@ -63,7 +63,6 @@ class StockPicking(models.Model):
     )
 
     has_document = fields.Boolean(
-        string="Has Document",
         compute="_compute_has_document",
         help="Technical field to check if the related sale order has a document.",
     )
@@ -89,7 +88,6 @@ class StockPicking(models.Model):
     is_donation = fields.Boolean(related="sale_id.is_donation")
 
     is_dispatch_guide = fields.Boolean(
-        string="Is Dispatch Guide",
         tracking=True,
         store=True,
         readonly=False,
@@ -180,7 +178,6 @@ class StockPicking(models.Model):
             ("posted", "Posted"),
             ("cancel", "Canceled"),
         ],
-        string="Invoice State",
         compute="_compute_invoice_state",
     )
 
@@ -190,6 +187,8 @@ class StockPicking(models.Model):
 
     def _set_guide_number(self):
         for picking in self:
+            if picking.is_return:
+                continue
             if picking.dispatch_guide_controls:
                 picking.guide_number = picking.get_sequence_guide_num()
 
@@ -546,8 +545,9 @@ class StockPicking(models.Model):
                 if not price_unit:
                     raise UserError(_(
                         "The product '%s' does not have a sales price defined in its product profile.\n\n"
-                        "Please set a sales price for this product to proceed with the operation."
-                    ) % name)
+                        "Please set a sales price for this product to proceed with the operation.",
+                        name,
+                    ))
             
                 vals_dict = {
                     "name": name,
@@ -604,7 +604,6 @@ class StockPicking(models.Model):
     def _action_done(self):
         res = super()._action_done()
         self._set_guide_number()
-        # TODO Add picking type logic either here or in the set_guide_number method
         return res
 
     # === METHODS ===#
@@ -995,6 +994,7 @@ class StockPicking(models.Model):
         "sale_id",
         "write_uid",
         "picking_type_code",
+        "is_return",
     )
     def _compute_dispatch_guide_controls(self):
         for picking in self:
@@ -1003,11 +1003,11 @@ class StockPicking(models.Model):
             if picking.state != "done":
                 continue
 
-            if picking.picking_type_code == "incoming":
+            if picking.is_return:
                 continue
 
-            # if not picking.sale_id and not picking.operation_code == "internal":
-            #     continue
+            if picking.picking_type_code == "incoming":
+                continue
 
             if picking.document == "invoice":
                 continue
@@ -1039,7 +1039,7 @@ class StockPicking(models.Model):
             else:
                 picking.is_consignment = False
 
-    @api.depends("transfer_reason_id", "optional_internal_movement_guidance")
+    @api.depends("transfer_reason_id", "optional_internal_movement_guidance", "is_return")
     def _compute_is_dispatch_guide(self):
         consignment_reason = self.env.ref(
             "l10n_ve_stock_account.transfer_reason_consignment",
@@ -1070,6 +1070,10 @@ class StockPicking(models.Model):
             )
 
             if picking.document == "invoice":
+                picking.is_dispatch_guide = False
+                continue
+
+            if picking.is_return:
                 picking.is_dispatch_guide = False
                 continue
 
@@ -1254,7 +1258,7 @@ class StockPicking(models.Model):
             self._create_invoices_from_pickings()
 
     def _is_execution_day(self, config_type):
-        today = fields.Date.today()
+        today = fields.Date.context_today(self)
         last_day = (today.replace(day=1) + timedelta(days=32)).replace(
             day=1
         ) - timedelta(days=1)
@@ -1376,7 +1380,7 @@ class StockPicking(models.Model):
         """
         for picking in self:
             if (
-                self.operation_code == "internal"
+                picking.operation_code == "internal"
                 and picking.transfer_reason_id.id
                 == self.env.ref(
                     "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses"

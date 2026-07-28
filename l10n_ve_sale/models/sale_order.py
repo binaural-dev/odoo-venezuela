@@ -49,7 +49,6 @@ class SaleOrder(models.Model):
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
-        digits=(16, 15),
         store=True,
         readonly=False,
     )
@@ -255,11 +254,19 @@ class SaleOrder(models.Model):
 
     
 
+    @api.model
+    def _has_significant_invoiceable_quantity(self, line):
+        if line.display_type:
+            return True
+        return abs(line.qty_to_invoice) >= line.product_uom.rounding
+
     def _get_invoiceable_lines(self, final=False):
         if self._context.get("ignore_limit", False):
             return super()._get_invoiceable_lines(final)
 
         res = super()._get_invoiceable_lines(final)
+        res = res.filtered(self._has_significant_invoiceable_quantity)
+
         limit = self.company_id.max_product_invoice
         if len(res) > limit:
             res = res[:limit]
@@ -269,11 +276,13 @@ class SaleOrder(models.Model):
         return res
 
     def _create_invoices(self, grouped=False, final=False, date=None):
-       
         invoices = self.env["account.move"]
         for order in self:
+            if order._context.get("ignore_while", False):
+                invoices |= super()._create_invoices(grouped, final, date)
+                continue
             invoiceable_lines = order._get_invoiceable_lines(final)
-            while len(invoiceable_lines) != 0:
+            while invoiceable_lines:
                 invoices |= super()._create_invoices(grouped, final, date)
                 invoiceable_lines = order._get_invoiceable_lines(final)
 
@@ -314,8 +323,11 @@ class SaleOrder(models.Model):
             self.message_post(
                 body=_(
                     "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    {
+                        "last_rate": self.last_foreign_rate,
+                        "rate": self.foreign_rate,
+                    },
                 )
-                % ({"rate": self.foreign_rate, "last_rate": self.last_foreign_rate})
             )
         return res
 
@@ -347,7 +359,7 @@ class SaleOrder(models.Model):
             self.company_id.block_order_invoice_total_amount_overdue
         )
 
-        today_date = fields.Date.today()
+        today_date = fields.Date.context_today(self)
 
         invoice_ids = self.env["account.move"].search(
             [
@@ -388,10 +400,12 @@ class SaleOrder(models.Model):
             }
 
             raise UserError(
-                _("The budget cannot be confirmed. You have %s Invoices (%s).")
-                % (
-                    invoice_count_payment_state,
-                    payment_state_labels[block_order_invoice_payment_state],
+                _(
+                    "The budget cannot be confirmed. You have %(invoice_count)s Invoices (%(state)s).",
+                    {
+                        "invoice_count": invoice_count_payment_state,
+                        "state": payment_state_labels[block_order_invoice_payment_state],
+                    },
                 )
             )
 
@@ -399,12 +413,12 @@ class SaleOrder(models.Model):
             if amount_total_not_pay > block_order_invoice_total_amount_overdue:
                 raise UserError(
                     _(
-                        "The budget cannot be confirmed. Has an overdue amount of (%.2f) that cannot be greater than %.2f %s."
-                    )
-                    % (
-                        amount_total_not_pay,
-                        block_order_invoice_total_amount_overdue,
-                        invoice_id.currency_id.name,
+                        "The budget cannot be confirmed. Has an overdue amount of (%(overdue).2f) that cannot be greater than %(limit).2f %(currency)s.",
+                        {
+                            "overdue": amount_total_not_pay,
+                            "limit": block_order_invoice_total_amount_overdue,
+                            "currency": invoice_id.currency_id.name,
+                        },
                     )
                 )
 
@@ -425,13 +439,17 @@ class SaleOrder(models.Model):
                         line.product_id.detailed_type == "product"
                         and line.product_id.qty_available < line.product_uom_qty
                     ):
-                        msg = _("Does not have enough units available for the product ")
-                        msg += _("{}. Only has {} units of the {} demanded.").format(
-                            line.product_id.name,
-                            line.product_id.qty_available,
-                            line.product_uom_qty,
+                        raise ValidationError(
+                            _(
+                                "Does not have enough units available for the product %(product)s. "
+                                "Only has %(available)s units of the %(requested)s demanded.",
+                                {
+                                    "product": line.product_id.display_name,
+                                    "available": line.product_id.qty_available,
+                                    "requested": line.product_uom_qty,
+                                },
+                            )
                         )
-                        raise ValidationError(msg)
 
             if (
                 order.company_id.account_use_credit_limit
@@ -442,11 +460,13 @@ class SaleOrder(models.Model):
                     decimal_places = order.currency_id.decimal_places
                     raise ValidationError(
                         _(
-                            "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
-                            round(order.partner_id.credit, decimal_places),
-                            round(order.amount_total, decimal_places),
-                            round(total_pay, decimal_places),
-                            round(order.partner_id.credit_limit, decimal_places),
+                            "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta por cobrar del cliente es de %(credit)s más %(amount_total)s en presupuesto da un total de %(total_pay)s superando el límite de ventas de %(credit_limit)s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                            {
+                                "credit": round(order.partner_id.credit, decimal_places),
+                                "amount_total": round(order.amount_total, decimal_places),
+                                "total_pay": round(total_pay, decimal_places),
+                                "credit_limit": round(order.partner_id.credit_limit, decimal_places),
+                            }
                         )
                     )
 
@@ -456,24 +476,35 @@ class SaleOrder(models.Model):
         res = super().action_confirm()
         product_limit = self.env.company.limit_product_qty_out
         for sale in self:
-            picking = sale.picking_ids
             if product_limit > 0:
-                picking_moves = picking.move_ids_without_package
-                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
-                picking_vals = {
-                    key: (value[0] if isinstance(value, tuple) else value)
-                    for key, value in picking_vals[0].items()
-                }
-                picking_vals['origin'] = picking.origin
-                picking_vals['partner_id'] = picking.partner_id.id
-                picking_vals['user_id'] = picking.user_id.id
-                
-                list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
-                picking.move_ids_without_package = list_pickings_moves[0]
-                
-                for list_moves in list_pickings_moves[1:]:
-                    picking_vals["move_ids_without_package"] = list_moves
-                    new_picking = self.env['stock.picking'].create(picking_vals)
+                for picking in sale.picking_ids:
+                    picking_moves = picking.move_ids_without_package
+                    if not picking_moves:
+                        continue
+
+                    list_pickings_moves = [
+                        picking_moves[i : i + product_limit]
+                        for i in range(0, len(picking_moves), product_limit)
+                    ]
+                    if len(list_pickings_moves) <= 1:
+                        continue
+
+                    picking_vals = picking.read(
+                        ["location_dest_id", "location_id", "move_type", "picking_type_id"]
+                    )
+                    picking_vals = {
+                        key: (value[0] if isinstance(value, tuple) else value)
+                        for key, value in picking_vals[0].items()
+                    }
+                    picking_vals["origin"] = picking.origin
+                    picking_vals["partner_id"] = picking.partner_id.id
+                    picking_vals["user_id"] = picking.user_id.id
+
+                    picking.move_ids_without_package = list_pickings_moves[0]
+
+                    for list_moves in list_pickings_moves[1:]:
+                        picking_vals["move_ids_without_package"] = list_moves
+                        self.env["stock.picking"].create(picking_vals)
                 
 
                 
@@ -482,7 +513,7 @@ class SaleOrder(models.Model):
     def cancel_order_after_date(self):
         orders = self.search(
             [
-                ("create_date", "<", fields.Date.today() - datetime.timedelta(days=1)),
+                ("create_date", "<", fields.Date.context_today(self) - datetime.timedelta(days=1)),
                 ("state", "not in", ["sale", "done", "cancel"]),
             ]
         )
