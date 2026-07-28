@@ -111,3 +111,33 @@ class TestTaxUnit(TransactionCase):
         # Intentar editar el valor de la inactiva debe lanzar UserError
         with self.assertRaises(UserError):
             self.ut_2025.write({'value': 500.0})
+
+    def test_06_apply_subtracting_false_updates_tax_unit_ids(self):
+        """
+        apply_subtracting=False: al cambiar la UT activa, tax_unit_ids
+        debe actualizarse (bug #13821 - faltaba este escenario)
+        """
+        retention_no_sub = self.env['fees.retention'].create({
+            'name': 'Retención sin sustraendo',
+            'percentage': 5.0,
+            'apply_subtracting': False,
+            'status': True,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+
+        self.assertEqual(retention_no_sub.tax_unit_ids.id, self.ut_2025.id)
+        self.assertEqual(retention_no_sub.amount_subtract, 0.0)
+
+        with Form(self.env['tax.unit']) as f:
+            f.name = "UT 2026"
+            f.value = 200.0
+            f.available_date = fields.Date.from_string('2026-01-01')
+            ut_2026 = f.save()
+
+        retention_no_sub.invalidate_recordset()
+        self.assertEqual(
+            retention_no_sub.tax_unit_ids.id,
+            ut_2026.id,
+            "tax_unit_ids debe actualizarse aunque apply_subtracting=False"
+        )
+        self.assertEqual(retention_no_sub.amount_subtract, 0.0)
