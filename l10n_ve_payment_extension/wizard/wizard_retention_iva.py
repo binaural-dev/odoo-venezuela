@@ -1,5 +1,5 @@
 from dateutil.relativedelta import relativedelta
-from odoo import fields, models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from datetime import date
 
@@ -11,22 +11,25 @@ class TxtWizard(models.TransientModel):
     date_start = fields.Date(default=date.today().replace(day=1))
     date_end = fields.Date(default=date.today().replace(day=1) + relativedelta(months=1, days=-1))
 
+    @api.model
+    def _get_iva_retention_domain(self, date_start, date_end, company_id):
+        return [
+            ("date_accounting", ">=", date_start),
+            ("date_accounting", "<=", date_end),
+            ("state", "=", "emitted"),
+            ("type_retention", "=", "iva"),
+            ("type", "=", "in_invoice"),
+            ("company_id", "=", company_id),
+        ]
+
     def generate_txt(self):
         company_id = self.env.company.id
         if not (self.date_start and self.date_end):
             raise UserError(_("You must enter a start and end date"))
         if not self.env.company.vat:
-            raise UserError(_("No VAT number for company %s" % self.env.company.name))
-        retention_count = self.env["account.retention"].search_count(
-            [
-                ("date", ">=", self.date_start),
-                ("date", "<=", self.date_end),
-                ("state", "=", "emitted"),
-                ("type_retention", "=", "iva"),
-                ("type", "=", "in_invoice"),
-                ("company_id", "=", company_id),
-            ]
-        )
+            raise UserError(_("No VAT number for company %s", self.env.company.name))
+        domain = self._get_iva_retention_domain(self.date_start, self.date_end, company_id)
+        retention_count = self.env["account.retention"].search_count(domain)
         if retention_count == 0:
             raise UserError(_("No retentions found for the selected period"))
 
@@ -48,7 +51,8 @@ class TxtWizard(models.TransientModel):
         for line in retentions.mapped("retention_line_ids"):
             line_data = {}
             line_data["RIF del agente de retención"] = line.retention_id.company_id.partner_id.vat
-            line_data["Período impositivo"] = line.retention_id.date.strftime("%Y%m")
+            period_date = line.retention_id.date_accounting or line.retention_id.date
+            line_data["Período impositivo"] = period_date.strftime("%Y%m")
             line_data["Fecha de factura"] = line.move_id.invoice_date.strftime("%Y-%m-%d")
             line_data["Tipo de operación"] = "C"
             
