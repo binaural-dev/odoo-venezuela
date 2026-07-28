@@ -235,8 +235,21 @@ class AccountPayment(models.Model):
         return res
             
 
-    # @api.model
-    # def _get_trigger_fields_to_synchronize(self):
-    #     original_fields = super()._get_trigger_fields_to_synchronize()
-    #     additional_fields = ("foreign_rate", "foreign_inverse_rate")
-    #     return original_fields + additional_fields
+    def action_cancel(self):
+        """Cancel payments preserving fiscal traceability.
+
+        Odoo's native behavior physically deletes ('unlink') draft moves
+        associated with the payment. This override protects previously
+        posted moves (posted_before=True) by cancelling them instead of
+        letting them be deleted, while handling the rest of the standard
+        flow (posted moves reversal, draft moves cleanup) explicitly.
+        """
+        for payment in self:
+            move = payment.move_id
+            if not move:
+                continue
+            if move.state == 'draft' and not move.posted_before:
+                move.unlink()
+            elif move.state != 'cancel':
+                move.button_cancel()
+        self.state = 'canceled'
