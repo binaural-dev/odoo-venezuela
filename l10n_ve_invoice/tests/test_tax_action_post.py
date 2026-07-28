@@ -9,11 +9,15 @@ class TestInvoiceTaxConstraint(TransactionCase):
         super(TestInvoiceTaxConstraint, self).setUp()
         self.company = self.env.ref("base.main_company")
 
-        self.currency = self.env.ref("base.VEF")
-        self.foreign_currency = self.env.ref("base.USD")
-        self.company.currency_id = self.currency
-        self.company.foreign_currency_id = self.foreign_currency
-        
+        self.currency_usd = self.env.ref("base.USD")
+        self.currency_vef = self.env.ref("base.VEF")
+        self.company.write(
+            {
+                "currency_id": self.currency_usd.id,
+                "foreign_currency_id": self.currency_vef.id,
+            }
+        )
+
         self.partner = self.env["res.partner"].create({"name": "Test customer"})
         
         self.account = self.env["account.account"].create({
