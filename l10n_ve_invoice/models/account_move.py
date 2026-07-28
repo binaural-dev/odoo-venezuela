@@ -18,7 +18,7 @@ class AccountMove(models.Model):
 
     invoice_date = fields.Date(
         string="Invoice Date",
-        default=fields.Date.today,
+        default=fields.Date.context_today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
     
@@ -112,7 +112,7 @@ class AccountMove(models.Model):
     @api.onchange("move_type")
     def _onchange_move_type(self):
         if self.move_type == "out_invoice":
-            self.invoice_date = fields.Date.today()
+            self.invoice_date = fields.Date.context_today(self)
 
     def action_post(self):
         

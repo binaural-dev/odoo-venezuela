@@ -18,7 +18,7 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
     
-    invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.today)
+    invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.context_today)
     is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
 
     @api.depends('invoice_date_display')
@@ -144,8 +144,8 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
-        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
-        self.invoice_date_display = False if self.move_type == "entry" else fields.Date.today()
+        self.invoice_date = False if self.move_type == "entry" else fields.Date.context_today(self)
+        self.invoice_date_display = False if self.move_type == "entry" else fields.Date.context_today(self)
 
     @api.onchange("journal_id")
     def _onchange_journal_id_reset_international_exempt(self):
