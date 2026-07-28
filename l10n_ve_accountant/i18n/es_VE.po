@@ -1135,6 +1135,18 @@ msgid "Proveedor"
 msgstr ""
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"Product '%s':\n"
+"The quantity (%s) cannot be greater than the original "
+"quantity in the source invoice (%s)."
+msgstr ""
+"Producto '%s':\n"
+"La cantidad (%s) no puede ser mayor a la cantidad "
+"original en la factura de origen (%s)."
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Purchase Book"
 msgstr "Libro de Compras"
@@ -1424,6 +1436,12 @@ msgstr "El precio ingresado no puede ser negativo."
 #: code:addons/l10n_ve_accountant/models/account_move_line.py:0
 msgid "The quantity entered cannot be negative"
 msgstr "La cantidad ingresada no puede ser negativa."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "The quantity cannot be zero."
+msgstr "La cantidad no puede ser cero."
 
 #. module: l10n_ve_accountant
 #. odoo-python
