@@ -23,6 +23,13 @@ class PosPayment(models.Model):
     # por el `serializeForORM` del modelo JS de pos.payment.
 
     def _create_payment_moves(self, is_reverse=False):
+        # Reimplementa el metodo completo de l10n_ve_pos en vez de llamar a
+        # super(): el split IGTF necesita una linea de credito extra (hacia
+        # customer_account_igtf_id) con montos calculados aparte, que no
+        # encaja en como l10n_ve_pos/el core arman sus lineas sin una
+        # reescritura mayor. Ver openspec/changes/
+        # l10n-ve-pos-igtf-payment-moves-foreign-rate-fix/proposal.md para el
+        # analisis completo (incluye el bug que esto causo con foreign_rate).
         result = self.env["account.move"]
         for payment in self:
             order = payment.pos_order_id
