@@ -59,6 +59,7 @@ class TestProductTemplateCheckTaxesId(TransactionCase):
         tmpl = self.env["product.template"].create({
             "name": "No Tax Product",
             "type": "consu",
+            "company_id": self.env.company.id,
             "taxes_id": [(5, 0, 0)],
         })
         self.assertEqual(len(tmpl.taxes_id), 0)
@@ -90,6 +91,7 @@ class TestProductTemplateComputePricesWithTax(TransactionCase):
         tmpl = self.env["product.template"].create({
             "name": "No Tax Price",
             "type": "consu",
+            "company_id": self.env.company.id,
             "list_price": 100,
             "taxes_id": [(5, 0, 0)],
         })
