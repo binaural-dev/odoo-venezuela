@@ -71,6 +71,21 @@ export class TfhkaDriver {
         // el resto del código (useFiscalMachine, etc.) — `isConnected` ya no
         // sirve para eso bajo el modelo de conexión bajo demanda.
         this.isPaired = false;
+        // Actividad real de la conexión bajo demanda, para que el UI (botón
+        // de pos_app.js) muestre algo mas util que "conectado" fijo:
+        // "idle" (puerto libre, listo), "printing" (puerto abierto, en
+        // medio de una operacion) o "waiting" (reintentando porque el
+        // puerto esta ocupado por otro proceso, ej. Megasoft). Se notifica
+        // via onActivityChange, que pos_app.js asigna al crear el driver.
+        this.activity = "idle";
+        this.onActivityChange = null;
+    }
+
+    _setActivity(activity) {
+        this.activity = activity;
+        if (typeof this.onActivityChange === "function") {
+            this.onActivityChange(activity);
+        }
     }
 
     _isWaitingState(sts1) {
@@ -187,11 +202,13 @@ export class TfhkaDriver {
             if (isOuter) {
                 await this._connectWithRetry();
             }
+            this._setActivity("printing");
             return await fn();
         } finally {
             this._connectionRefCount--;
             if (this._connectionRefCount === 0) {
                 await this.disconnect();
+                this._setActivity("idle");
             }
         }
     }
@@ -209,6 +226,9 @@ export class TfhkaDriver {
                 return;
             }
             if (attempt < maxAttempts) {
+                // El primer intento falló: el puerto está ocupado por otro
+                // proceso (ej. Megasoft) en este instante puntual.
+                this._setActivity("waiting");
                 await new Promise((resolve) => setTimeout(resolve, delayMs));
             }
         }
@@ -241,6 +261,7 @@ export class TfhkaDriver {
                 throw error;
             }
         }
+        this._setActivity("printing");
     }
 
     /**
@@ -254,6 +275,7 @@ export class TfhkaDriver {
         this._connectionRefCount--;
         if (this._connectionRefCount === 0) {
             await this.disconnect();
+            this._setActivity("idle");
         }
     }
 

@@ -71,14 +71,28 @@ patch(Chrome.prototype, {
     },
 
     _createFiscalPrinterButton() {
-        this.fiscalPrinterBtn = $("<button class='fiscal-printer-action fa fa-print' title='Máquina Fiscal'/>");
+        // El icono va en su propio <i>, NO como clase del <button>: la clase
+        // "fa" fija font-family: FontAwesome en el elemento, y esa
+        // font-family se hereda a los hijos - si el <span> de la etiqueta
+        // quedara dentro de un <button class="... fa fa-print">, el texto
+        // ("Disponible", etc.) se renderizaría con la fuente de iconos
+        // (glifos en blanco, invisible) en vez de una fuente normal.
+        this.fiscalPrinterBtn = $(
+            "<button class='fiscal-printer-action' title='Máquina Fiscal'>" +
+                "<i class='fa fa-print'></i>" +
+                "<span class='fiscal-printer-label'></span>" +
+            "</button>"
+        );
         $(".status-buttons").prepend(this.fiscalPrinterBtn);
         this.fiscalPrinterBtn.on('click', this._handleFiscalPrinterClick.bind(this));
         this._updateFiscalPrinterButtonStatus("disconnected");
     },
 
     /**
-     * Actualiza el estilo del botón según el estado de conexión
+     * Actualiza el estilo/texto del botón según el estado de pareo.
+     * Nota: "connected" aquí significa "dispositivo pareado/listo" (ver
+     * isPaired en TfhkaDriver), no que el puerto esté literalmente abierto
+     * en este instante — eso lo refleja por separado _onFiscalPrinterActivity.
      * @param {string} status - disconnected, connecting, connected, error
      * @private
      */
@@ -86,14 +100,41 @@ patch(Chrome.prototype, {
         this.fiscalPrinterStatus = status;
         this.fiscalPrinterBtn.removeClass("fiscal-printer-disconnected fiscal-printer-connecting fiscal-printer-connected fiscal-printer-error");
         this.fiscalPrinterBtn.addClass(`fiscal-printer-${status}`);
-        
-        const statusText = {
-            disconnected: "Máquina Fiscal: Desconectada",
-            connecting: "Máquina Fiscal: Conectando...",
-            connected: "Máquina Fiscal: Conectada",
-            error: "Máquina Fiscal: Error"
+
+        const labelText = {
+            disconnected: "Desconectada",
+            connecting: "Conectando...",
+            connected: "Disponible",
+            error: "Error",
         };
-        this.fiscalPrinterBtn.attr('title', statusText[status]);
+        const label = labelText[status] || "";
+        this.fiscalPrinterBtn.find(".fiscal-printer-label").text(label);
+        this.fiscalPrinterBtn.attr('title', `Máquina Fiscal: ${label}`);
+    },
+
+    /**
+     * Refleja la actividad real de la conexión bajo demanda (ver
+     * TfhkaDriver._setActivity): el color se mantiene igual (sigue
+     * "conectado"/verde mientras el dispositivo esté pareado), solo cambia
+     * la palabra junto al ícono para que el cajero distinga "libre" de
+     * "imprimiendo ahora" o "esperando porque el puerto está ocupado".
+     * Si el botón está en un estado que no es "connected" (desconectado,
+     * conectando, error), ese estado tiene prioridad y no se pisa.
+     * @param {string} activity - idle, printing, waiting
+     * @private
+     */
+    _onFiscalPrinterActivity(activity) {
+        if (this.fiscalPrinterStatus !== "connected") {
+            return;
+        }
+        const labelText = {
+            idle: "Disponible",
+            printing: "Imprimiendo",
+            waiting: "En espera",
+        };
+        const label = labelText[activity] || "Disponible";
+        this.fiscalPrinterBtn.find(".fiscal-printer-label").text(label);
+        this.fiscalPrinterBtn.attr('title', `Máquina Fiscal: ${label}`);
     },
 
     /**
@@ -122,6 +163,7 @@ patch(Chrome.prototype, {
     async _initFiscalPrinter() {
         try {
             this.fiscalPrinter = new TfhkaDriver();
+            this.fiscalPrinter.onActivityChange = (activity) => this._onFiscalPrinterActivity(activity);
             window.fiscalPrinter = this.fiscalPrinter; // Exponer globalmente siempre: withConnection() abre el puerto bajo demanda cuando haga falta
 
             const paired = await this._isFiscalPrinterPaired();
@@ -160,6 +202,7 @@ patch(Chrome.prototype, {
         try {
             if (!this.fiscalPrinter) {
                 this.fiscalPrinter = new TfhkaDriver();
+                this.fiscalPrinter.onActivityChange = (activity) => this._onFiscalPrinterActivity(activity);
                 window.fiscalPrinter = this.fiscalPrinter;
             }
 

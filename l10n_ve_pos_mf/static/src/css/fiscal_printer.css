@@ -44,6 +44,25 @@
     background-color: #c82333;
 }
 
+/* Palabra junto al icono que refleja la actividad real (Disponible /
+   Imprimiendo / En espera) - no solo el color, para que el cajero note la
+   diferencia entre "el puerto esta libre" y "esta en uso ahora mismo". */
+.fiscal-printer-label {
+    margin-left: 6px;
+    font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+.fiscal-printer-label:empty {
+    margin-left: 0;
+}
+
+.fiscal-printer-action i.fa {
+    margin-right: 2px;
+}
+
 /* Animación de pulso para estado "connecting" */
 @keyframes pulse {
     0%, 100% {
