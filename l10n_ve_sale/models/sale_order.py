@@ -506,10 +506,13 @@ class SaleOrder(models.Model):
     def _onchange_pricelist_id(self):
         """
         Recalculate the prices of the products in the purchase order when the rate changes.
+        Also recompute the foreign rate so that foreign_rate, foreign_inverse_rate are fresh
+        when the pricelist currency changes.
         """
         try:
             record = self if isinstance(self.id, int) else self._origin
             record._recompute_prices()
+            record._compute_rate()
             if self.pricelist_id:
                 record.message_post(
                     body=_(
@@ -519,6 +522,7 @@ class SaleOrder(models.Model):
                 )
         except Exception:
             self._recompute_prices()
+            self._compute_rate()
 
     def _block_valid_confirm(self):
         self.ensure_one()
