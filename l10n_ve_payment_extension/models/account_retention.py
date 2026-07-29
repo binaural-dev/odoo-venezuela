@@ -207,7 +207,7 @@ class AccountRetention(models.Model):
                         ('company_id', '=', record.company_id.id),
                         ('state', '=', 'posted'),
                         ('move_type', 'in', move_types),
-                        ('amount_residual', '!=', 0),
+                        ('amount_residual', '>', 0),
                     ]
                 )
                 invoices = invoices.filtered(
