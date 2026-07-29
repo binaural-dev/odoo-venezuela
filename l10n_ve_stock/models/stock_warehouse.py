@@ -4,6 +4,11 @@ from odoo.exceptions import UserError
 class Warehouse(models.Model):
     _inherit = "stock.warehouse"
 
+    physical_address = fields.Text(
+        string="Physical Address",
+        help="Detailed warehouse address (Street, Avenue, Industrial Zone, State, City, etc.)"
+    )
+
     def _get_picking_type_create_values(self, max_sequence):
         """ When a warehouse is created this method return the values needed in
         order to create the new picking types for this warehouse. Every picking
