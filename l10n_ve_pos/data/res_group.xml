@@ -3,8 +3,6 @@
     <data>
         <record model="res.groups" id="group_authorized_discount_pos">
             <field name="name">Authorized discount pos</field>
-            <field name="privilege_id" ref="base.module_category_hidden"/>
-
         </record>
     </data>
 </odoo>
