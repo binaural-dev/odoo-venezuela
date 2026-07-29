@@ -72,8 +72,11 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         self.assertIsNone(published_date)
         self.assertEqual(mock_get.call_count, currency_res_company.SOURCE_MAX_ATTEMPTS)
 
-    def test_parse_bcv_data_skips_weekend_when_habil_days_enabled(self):
+    def test_parse_bcv_data_accepts_future_rate_on_weekend_when_habil_days_enabled(
+        self,
+    ):
         saturday = date(2026, 6, 20)
+        monday = date(2026, 6, 22)
         self.company.can_update_habil_days = True
 
         with patch.object(
@@ -81,11 +84,62 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         ), patch.object(
             type(self.company),
             "_get_bcv_rate",
+            return_value=(36.12, monday),
         ) as mock_get_rate:
             result = self.company._parse_bcv_data([])
 
-        self.assertEqual(result, {"USD": (1.0, saturday)})
-        mock_get_rate.assert_not_called()
+        self.assertEqual(result, {"USD": (1.0, saturday), "VEF": (36.12, saturday)})
+        mock_get_rate.assert_called_once_with(expected_date=saturday)
+
+    def test_parse_bcv_data_accepts_last_available_rate_on_weekend_when_habil_days_disabled(
+        self,
+    ):
+        saturday = date(2026, 6, 20)
+        friday = date(2026, 6, 19)
+        self.company.can_update_habil_days = False
+
+        with patch.object(
+            currency_res_company.fields.Date, "context_today", return_value=saturday
+        ), patch.object(
+            type(self.company),
+            "_get_bcv_rate",
+            return_value=(36.12, friday),
+        ) as mock_get_rate:
+            result = self.company._parse_bcv_data([])
+
+        self.assertEqual(result, {"USD": (1.0, saturday), "VEF": (36.12, saturday)})
+        mock_get_rate.assert_called_once_with(expected_date=saturday)
+
+    def test_bcv_update_window_includes_seven_oclock(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 7, 0, 0)
+
+        self.assertTrue(self.company._is_bcv_update_window(current_time))
+
+    def test_bcv_update_window_excludes_after_seven_oclock(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 7, 1, 0)
+
+        self.assertFalse(self.company._is_bcv_update_window(current_time))
+
+    def test_get_next_bcv_retry_time_returns_next_half_hour_slot(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 5, 5, 0)
+
+        retry_at = self.company._get_next_bcv_retry_time(current_time)
+
+        self.assertEqual(retry_at, currency_res_company.datetime(2026, 6, 23, 5, 30, 0))
+
+    def test_get_next_bcv_retry_time_aligns_to_next_slot_boundary(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 5, 31, 0)
+
+        retry_at = self.company._get_next_bcv_retry_time(current_time)
+
+        self.assertEqual(retry_at, currency_res_company.datetime(2026, 6, 23, 6, 0, 0))
+
+    def test_get_next_bcv_retry_time_stops_after_window_end(self):
+        current_time = currency_res_company.datetime(2026, 6, 23, 7, 0, 0)
+
+        retry_at = self.company._get_next_bcv_retry_time(current_time)
+
+        self.assertIsNone(retry_at)
 
     def test_parse_bcv_data_skips_future_published_date(self):
         current_date = date(2026, 6, 23)
@@ -228,6 +282,162 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         self.assertEqual(published_date, current_date)
         mock_api.assert_called_once_with(expected_date=current_date)
         mock_scrape.assert_called_once()
+
+    def test_get_bcv_rate_from_api_accepts_future_date_when_habil_days_enabled(self):
+        current_date = date(2026, 6, 20)
+        future_date = date(2026, 6, 22)
+        self.company.can_update_habil_days = True
+
+        with patch.object(
+            currency_res_company.requests,
+            "get",
+            side_effect=[
+                MockResponse(json_data={"estado": "disponible"}),
+                MockResponse(
+                    json_data={
+                        "promedio": 36.12,
+                        "fechaActualizacion": "2026-06-22T00:00:00-04:00",
+                    }
+                ),
+            ],
+        ) as mock_get:
+            rate, published_date = self.company._get_bcv_rate_from_api(
+                expected_date=current_date
+            )
+
+        self.assertEqual(rate, 36.12)
+        self.assertEqual(published_date, future_date)
+        self.assertEqual(mock_get.call_count, 2)
+
+    def test_get_bcv_rate_from_api_rejects_future_date_when_habil_days_disabled(self):
+        current_date = date(2026, 6, 20)
+        self.company.can_update_habil_days = False
+
+        with patch.object(
+            currency_res_company.requests,
+            "get",
+            side_effect=[
+                MockResponse(json_data={"estado": "disponible"}),
+                MockResponse(
+                    json_data={
+                        "promedio": 36.12,
+                        "fechaActualizacion": "2026-06-22T00:00:00-04:00",
+                    }
+                ),
+            ],
+        ) as mock_get:
+            rate, published_date = self.company._get_bcv_rate_from_api(
+                expected_date=current_date
+            )
+
+        self.assertIsNone(rate)
+        self.assertIsNone(published_date)
+        self.assertEqual(mock_get.call_count, 2)
+
+    def test_run_update_bcv_currency_does_not_raise_on_company_error(self):
+        other_company = self.env["res.company"].create(
+            {
+                "name": "Other Company",
+                "currency_id": self.company.currency_id.id,
+            }
+        )
+        companies = self.company | other_company
+
+        def update_side_effect(recordset):
+            if recordset.id == self.company.id:
+                raise RuntimeError("boom")
+
+        with patch.object(
+            type(self.company),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            type(self.company),
+            "search",
+            return_value=companies,
+        ), patch.object(
+            type(self.env["res.currency"]),
+            "search",
+            return_value=self.company.currency_id,
+        ), patch.object(
+            type(self.env["res.currency.rate"]),
+            "search_count",
+            side_effect=[0, 0, 1],
+        ), patch.object(
+            type(self.company),
+            "update_currency_rates",
+            side_effect=update_side_effect,
+        ):
+            self.company.run_update_bcv_currency()
+
+    def test_run_update_bcv_currency_swallows_unexpected_errors(self):
+        with patch.object(
+            type(self.company),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            type(self.company),
+            "search",
+            side_effect=RuntimeError("search failed"),
+        ):
+            self.company.run_update_bcv_currency()
+
+    def test_run_update_bcv_currency_schedules_retry_when_rate_is_still_missing(self):
+        retry_at = currency_res_company.datetime(2026, 6, 23, 5, 30, 0)
+
+        with patch.object(
+            type(self.company),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            type(self.company),
+            "search",
+            return_value=self.company,
+        ), patch.object(
+            type(self.env["res.currency"]),
+            "search",
+            return_value=self.company.currency_id,
+        ), patch.object(
+            type(self.env["res.currency.rate"]),
+            "search_count",
+            side_effect=[0, 0],
+        ), patch.object(
+            type(self.company),
+            "_get_next_bcv_retry_time",
+            return_value=retry_at,
+        ), patch.object(
+            type(self.company),
+            "_schedule_bcv_retry",
+            return_value=True,
+        ) as mock_schedule:
+            self.company.run_update_bcv_currency()
+
+        mock_schedule.assert_called_once_with(retry_at)
+
+    def test_run_update_bcv_currency_does_not_schedule_retry_when_rate_is_created(self):
+        with patch.object(
+            type(self.company),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            type(self.company),
+            "search",
+            return_value=self.company,
+        ), patch.object(
+            type(self.env["res.currency"]),
+            "search",
+            return_value=self.company.currency_id,
+        ), patch.object(
+            type(self.env["res.currency.rate"]),
+            "search_count",
+            side_effect=[0, 1],
+        ), patch.object(
+            type(self.company),
+            "_schedule_bcv_retry",
+        ) as mock_schedule:
+            self.company.run_update_bcv_currency()
+
+        mock_schedule.assert_not_called()
 
     def test_compute_currency_provider_sets_bcv_for_venezuela(self):
         self.company.country_id = self.country_ve
