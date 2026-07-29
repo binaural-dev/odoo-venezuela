@@ -60,7 +60,7 @@ class TestProductTemplateCheckTaxesId(TransactionCase):
             "name": "No Tax Product",
             "type": "consu",
             "company_id": self.env.company.id,
-            "taxes_id": [(5, 0, 0)],
+            "taxes_id": [(6, 0, [])],
         })
         self.assertEqual(len(tmpl.taxes_id), 0)
 
@@ -93,7 +93,7 @@ class TestProductTemplateComputePricesWithTax(TransactionCase):
             "type": "consu",
             "company_id": self.env.company.id,
             "list_price": 100,
-            "taxes_id": [(5, 0, 0)],
+            "taxes_id": [(6, 0, [])],
         })
         self.assertEqual(tmpl.price_with_tax, 100)
         self.assertEqual(tmpl.price_without_tax, 100)
