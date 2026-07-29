@@ -104,6 +104,7 @@ class PosOrderInherit(models.Model):
         :return: dict con "success" y "account_move_updated" (bool)
         """
         self.ensure_one()
+        self._check_company()
         vals = {
             "mf_invoice_number": mf_invoice_number,
             "fiscal_machine": fiscal_machine,

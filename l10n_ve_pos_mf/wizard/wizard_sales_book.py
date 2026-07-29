@@ -43,7 +43,8 @@ class SalesBookPOS(models.TransientModel):
             ]
         )
 
-        vef_base = self.company_id.currency_id.id == self.env.ref("base.VEF").id
+        vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
+        vef_base = self.company_id.currency_id.id == vef.id
 
         agrouped_by_report_z = {}
 

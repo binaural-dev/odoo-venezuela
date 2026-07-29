@@ -164,4 +164,16 @@ class PosPayment(models.Model):
                 [credit_line_vals, debit_line_vals]
             )
             payment_move._post()
+
+            # Sin esto, manually_set_rate queda en False y el create() de
+            # l10n_ve_accountant (account_move.py) dispara _compute_rate(),
+            # que sobreescribe foreign_rate/foreign_inverse_rate con la tasa
+            # del dia en vez de la tasa realmente pactada en el pago. Mismo
+            # write que hace l10n_ve_pos/models/pos_payment.py, que aqui no
+            # se hereda porque este metodo no llama a super().
+            payment_move.write({
+                "foreign_rate": payment.foreign_rate,
+                "foreign_inverse_rate": payment.foreign_rate,
+                "manually_set_rate": True,
+            })
         return result

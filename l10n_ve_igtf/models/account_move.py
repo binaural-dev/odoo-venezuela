@@ -881,7 +881,8 @@ class AccountMove(models.Model):
         
         if not payment_move:
             return False
-        if payment_move.currency_id == self.env.ref("base.VEF") and not payment_move.origin_payment_advanced_payment_id:
+        vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
+        if payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id:
             return 
         
 

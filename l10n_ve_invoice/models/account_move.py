@@ -1,4 +1,4 @@
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 import json
 import logging
 import calendar
@@ -59,10 +59,10 @@ class AccountMove(models.Model):
                     raise ValidationError(_("The invoice date cannot be greater than the accounting date."))
     import_file_number_purchase_international = fields.Char(string="Import File Number Purchase International")
 
-    @api.depends("invoice_date", "state")
+    @api.depends("invoice_date", "state", "move_type")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether an account move (invoice, debit/credit note or receipt) is within the current fiscal period."""
-        today = date.today()
+        today = fields.Date.context_today(self)
         taxpayer_type = self.env.company.taxpayer_type
         period_limit = self._get_period_limit(today, taxpayer_type)
 
@@ -246,19 +246,26 @@ class AccountMove(models.Model):
                     _("You can not add more than %s products to the invoice." % max_product_invoice)
                 )
 
-    @api.depends("payment_term_details")
+    @api.depends("line_ids.date_maturity", "line_ids.display_type", "invoice_date_due")
     def _compute_next_installment_date(self):
-        lang = self.env["res.lang"].search([("code", "=", self.env.user.lang)])
-        date_format = lang.date_format if lang else "%Y-%m-%d"
+        # No usar payment_term_details: viene ya formateado con format_date()
+        # segun el locale (ej. "29/07/2026"), no en ISO, asi que re-parsearlo
+        # con datetime.strptime()/res.lang.date_format es fragil (rompe si el
+        # lang del contexto no coincide con el lang guardado del usuario).
+        # Leemos date_maturity directo de las lineas, con el mismo filtro que
+        # usa el core para construir payment_term_details.
         for invoice in self:
             invoice.next_installment_date = False
-            if not invoice.payment_term_details:
+            term_lines = invoice.line_ids.filtered(
+                lambda l: l.display_type == "payment_term"
+            ).sorted("date_maturity")
+            if not term_lines:
                 invoice.next_installment_date = invoice.invoice_date_due
                 continue
-            for term in invoice.payment_term_details:
-                term_date = datetime.strptime(term.get("date", ""), date_format).date()
-                if term_date and term_date >= fields.Date.today():
-                    invoice.next_installment_date = term_date
+            today = fields.Date.context_today(invoice)
+            for line in term_lines:
+                if line.date_maturity and line.date_maturity >= today:
+                    invoice.next_installment_date = line.date_maturity
                     break
     
     @api.depends("invoice_date", "state")
