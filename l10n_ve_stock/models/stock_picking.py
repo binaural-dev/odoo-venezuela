@@ -12,6 +12,18 @@ class StockPicking(models.Model):
 
     package_qty = fields.Integer(default=0)
     reception_date = fields.Date(tracking=True)
+    source_physical_address = fields.Text(
+        string="Source Address",
+        compute="_compute_physical_addresses",
+        store=True,
+        readonly=True,
+    )
+    destination_physical_address = fields.Text(
+        string="Destination Address",
+        compute="_compute_physical_addresses",
+        store=True,
+        readonly=True,
+    )
 
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
@@ -147,6 +159,14 @@ class StockPicking(models.Model):
     def _compute_type_delivery_step(self):
         for record in self:
             record.type_delivery_step = record.picking_type_id._get_type_steps()
+
+    @api.depends("location_id", "location_dest_id")
+    def _compute_physical_addresses(self):
+        for record in self:
+            source_wh = record.location_id.warehouse_id
+            dest_wh = record.location_dest_id.warehouse_id
+            record.source_physical_address = source_wh.physical_address if source_wh else False
+            record.destination_physical_address = dest_wh.physical_address if dest_wh else False
 
     change_weight = fields.Boolean(
         related="company_id.change_weight",
