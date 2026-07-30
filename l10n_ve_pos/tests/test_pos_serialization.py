@@ -651,3 +651,53 @@ class TestPosSerialization(TransactionCase):
             "pos.payment._export_for_ui was removed in Odoo 19; the l10n_ve_pos "
             "override must be deleted, not left as dead code.",
         )
+
+    # ------------------------------------------------------------------
+    # Regression — write_date MUST survive in every dynamicModel's field
+    #       contract, or the POS frontend crashes on open.
+    # ------------------------------------------------------------------
+    def test_dynamic_models_expose_write_date(self):
+        """Odoo 19's ``DevicesSynchronisation.constructOrdersDomain``
+        (``point_of_sale/static/src/app/utils/devices_synchronisation.js``)
+        calls ``record.write_date.plus(...)`` on every record of every
+        "dynamic model" (``pos.order``, ``pos.order.line``, ``pos.payment``,
+        ``pos.pack.operation.lot``, ``product.attribute.custom.value``)
+        every time the POS opens or syncs. If any of these models'
+        ``_load_pos_data_fields`` returns an explicit list that forgets
+        ``write_date``, the frontend crashes with
+        ``TypeError: Cannot read properties of undefined (reading 'plus')``
+        — it does NOT fail server-side, so nothing short of a test like
+        this one catches it before a cashier hits it in production.
+
+        Convention: an EMPTY list means "load every stored field" (see
+        ``pos.load.mixin._load_pos_data_read``, which calls
+        ``records.read(fields, load=False)`` and Odoo's ORM treats an
+        empty field list as "all fields") — that case is safe too, since
+        ``write_date`` is always present. Only a NON-empty list that
+        omits ``write_date`` is the bug.
+
+        Real incident: ``pos.payment._load_pos_data_fields`` replaced the
+        core empty-list contract with an explicit
+        ``_POS_PAYMENT_CORE_FIELDS`` tuple that did not include
+        ``write_date`` (db ``2doce``, 2026-07-29). ``l10n_ve_pos_mf`` has
+        a defensive JS patch for the symptom, but it is not installed on
+        every database, so this Python-level test is the only guard that
+        applies everywhere ``l10n_ve_pos`` is installed.
+        """
+        dynamic_models = (
+            "pos.order",
+            "pos.order.line",
+            "pos.payment",
+            "pos.pack.operation.lot",
+            "product.attribute.custom.value",
+        )
+        for model_name in dynamic_models:
+            model_fields = self.env[model_name]._load_pos_data_fields(self.config)
+            self.assertTrue(
+                not model_fields or "write_date" in model_fields,
+                f"{model_name}._load_pos_data_fields must either return an "
+                "empty list (= load all fields) or explicitly include "
+                "'write_date', otherwise constructOrdersDomain crashes the "
+                "POS frontend with \"Cannot read properties of undefined "
+                "(reading 'plus')\" on open.",
+            )
