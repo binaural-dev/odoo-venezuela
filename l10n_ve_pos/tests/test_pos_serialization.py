@@ -390,16 +390,19 @@ class TestPosSerialization(TransactionCase):
     # ------------------------------------------------------------------
     def test_pos_payment_load_pos_data_fields_includes_foreign_amount_and_rate(self):
         """B.2 / B.4 / Spec: payment read-back payload MUST include
-        ``foreign_amount`` and ``foreign_rate``."""
+        ``foreign_amount`` and ``foreign_rate`` — either explicitly, or
+        implicitly via the empty-list "load all fields" convention (see
+        ``test_dynamic_models_expose_write_date``: pos.payment's core
+        contract is ``[]``, and turning it into an explicit whitelist here
+        would silently drop any field OTHER modules add to pos.payment,
+        e.g. an analytic account from a subsidiary module)."""
         fields = self.env["pos.payment"]._load_pos_data_fields(self.config)
-        self.assertIn(
-            "foreign_amount",
-            fields,
+        self.assertTrue(
+            not fields or "foreign_amount" in fields,
             "pos.payment._load_pos_data_fields must expose foreign_amount",
         )
-        self.assertIn(
-            "foreign_rate",
-            fields,
+        self.assertTrue(
+            not fields or "foreign_rate" in fields,
             "pos.payment._load_pos_data_fields must expose foreign_rate",
         )
 
