@@ -20,7 +20,7 @@ class ResConfigSettings(models.TransientModel):
             self.dispatch_guide_digital_tfhka = False
 
     def set_values(self):
-        super().set_values()
+        res = super().set_values()
         module_name = 'l10n_ve_dispatch_guide_digital'
 
         # Buscar el módulo en ir.module.module
@@ -30,3 +30,5 @@ class ResConfigSettings(models.TransientModel):
             # Instalar el módulo si no está instalado
             if module and module.state != 'installed':
                 module.button_immediate_install()
+
+        return res
