@@ -1,7 +1,7 @@
 {
     "name": "Venezuela - Facturación Digital",
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
     "version": "17.0.0.0.19",
