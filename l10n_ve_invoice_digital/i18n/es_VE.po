@@ -549,16 +549,16 @@ msgstr ""
 #: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #, python-format
-msgid "The credit note %s has not been digitized"
-msgstr "La nota de crédito %s no ha sido digitalizada"
+msgid "The credit note %(name)s has not been digitized"
+msgstr "La Nota de Crédito %(name)s no ha sido digitalizada"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #, python-format
-msgid "The debit note %s has not been digitized"
-msgstr "La nota de débito %s no ha sido digitalizada"
+msgid "The debit note %(name)s has not been digitized"
+msgstr "La Nota de Débito %(name)s no ha sido digitalizada"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -574,12 +574,22 @@ msgstr "El documento ya ha sido digitalizado."
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid ""
-"The document sequence in Odoo (%(odoo_number)s) does not match the sequence "
-"in The Factory (%(factory_number)s). Do you want to continue anyway?"
+"The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The "
+"Factory (%(factory_seq)s). Do you want to continue anyway?"
 msgstr ""
-"La secuencia del documento en Odoo (%(odoo_number)s) no coincide con la "
-"secuencia en The Factory (%(factory_number)s). ¿Desea continuar de todos "
-"modos?"
+"La secuencia de documentos en Odoo (%(odoo_seq)s) no coincide con la secuencia en The "
+"Factory (%(factory_seq)s). ¿Desea continuar de todas formas?"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The "
+"Factory (%(factory_seq)s).Please check your numbering settings."
+msgstr ""
+"La secuencia de documentos en Odoo (%(odoo_seq)s) no coincide con la secuencia en The "
+"Factory (%(factory_seq)s). Verifique su configuración de numeración."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -595,8 +605,8 @@ msgstr ""
 #: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #, python-format
-msgid "The invoice %s has not been digitized"
-msgstr "La factura %s no ha sido digitalizada"
+msgid "The invoice %(name)s has not been digitized"
+msgstr "La factura %(name)s no ha sido digitalizada"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
