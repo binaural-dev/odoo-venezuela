@@ -987,16 +987,26 @@ class AccountMove(models.Model):
                         group_key = tax['tax_repartition_line_id']
                         foreign_key_to_amount[group_key] = foreign_key_to_amount.get(group_key, 0.0) + tax['amount']
 
+                tax_lines_by_rep = {}
                 for tl in tax_amls:
                     rep_line = tl.tax_repartition_line_id.id
-                    fb = foreign_key_to_amount.get(rep_line)
-                    if fb is not None:
-                        fb = fee(fb)
+                    tax_lines_by_rep.setdefault(rep_line, []).append(tl)
+
+                for rep_line, lines in tax_lines_by_rep.items():
+                    total_fb = foreign_key_to_amount.get(rep_line)
+                    if total_fb is None:
+                        continue
+                    total_ac = sum(abs(l.amount_currency) for l in lines if l.amount_currency)
+                    if fc.is_zero(total_ac):
+                        continue
+                    for tl in lines:
+                        proportion = abs(tl.amount_currency) / total_ac
+                        fb = fee(total_fb * proportion)
                         if not fc.is_zero(tl.foreign_balance - fb):
                             if fb >= 0:
-                                tl.write({'foreign_debit_adjustment': fb, 'foreign_credit_adjustment': 0.0})
+                                tl.write({'foreign_debit': fb, 'foreign_credit': 0.0})
                             else:
-                                tl.write({'foreign_debit_adjustment': 0.0, 'foreign_credit_adjustment': -fb})
+                                tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
 
                 expected = fee(abs(move.amount_total) * move.foreign_inverse_rate)
                 product_total = sum(abs(l.foreign_subtotal) for l in move.line_ids if l.display_type == 'product')
@@ -1009,9 +1019,9 @@ class AccountMove(models.Model):
                         orig_sign = 1 if target.foreign_balance >= 0 else -1
                         fb = new_abs * orig_sign
                         if fb >= 0:
-                            target.write({'foreign_debit_adjustment': fb, 'foreign_credit_adjustment': 0.0})
+                            target.write({'foreign_debit': fb, 'foreign_credit': 0.0})
                         else:
-                            target.write({'foreign_debit_adjustment': 0.0, 'foreign_credit_adjustment': -fb})
+                            target.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
             finally:
                 guarded.discard(move.id)
 
@@ -1135,7 +1145,7 @@ class AccountMove(models.Model):
 
         tax_lines = move.line_ids.filtered('tax_repartition_line_id')
         for tax_line in tax_lines:
-            correct_balance = cc.round(tax_line.amount_currency / rate)
+            correct_balance = cc.round(tax_line.amount_currency * rate)
             if not cc.is_zero(correct_balance - tax_line.balance):
                 tax_line.balance = correct_balance
 
