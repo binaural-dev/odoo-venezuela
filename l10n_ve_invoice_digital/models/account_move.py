@@ -215,17 +215,17 @@ class AccountMove(models.Model):
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
                     return 0
                 else:
-                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s", message=data.get('mensaje'), validation=data.get('validaciones')))
+                    _logger.error("Error in the API response: %s \n%s", data.get('mensaje'), data.get('validaciones'))
                     raise UserError(_("Error in the API response: %(message)s \n%(validation)s", message=data.get('mensaje'), validation=data.get('validaciones')))
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()
                 return self.call_tfhka_api(endpoint_key, payload)
             else:
-                _logger.error(_("HTTP error %(status_code)s: %(text)s", status_code=response.status_code, text=response.text))
+                _logger.error("HTTP error %s: %s", response.status_code, response.text)
                 raise UserError(_("HTTP error %(status_code)s: %(text)s", status_code=response.status_code, text=response.text))
         except requests.exceptions.RequestException as e:
-            _logger.error(_("Error connecting to the API: %(error)s", error=e))
+            _logger.error("Error connecting to the API: %s", e)
             raise UserError(_("Error connecting to the API: %(error)s", error=e))
 
     def generate_document_data(self, document_number, document_type, series):
@@ -259,7 +259,7 @@ class AccountMove(models.Model):
             self.is_digitalized = True
             emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             self.message_post(
-                body=_("Document successfully digitized on %(date)s", date=emission_date),
+                body=_("Document successfully digitized on %(date)s", date=emission_date),  
                 message_type='comment',
             )
             num_control_tfhka = response.get("resultado").get("numeroControl")
