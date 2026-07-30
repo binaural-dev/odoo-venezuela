@@ -348,7 +348,7 @@ class SaleOrder(models.Model):
     def _compute_tax_totals_base(self):
         return super()._compute_tax_totals()
 
-    @api.depends("partner_id")
+    @api.depends("partner_id", "partner_id.vat", "partner_id.prefix_vat")
     def _compute_vat(self):
         """
         Compute the vat of the partner and add the prefix to it if it exists in the partner record
@@ -361,9 +361,9 @@ class SaleOrder(models.Model):
                 continue
 
             if rec.partner_id.prefix_vat and rec.partner_id.vat:
-                vat = str(rec.partner_id.prefix_vat) + str(rec.partner_id.vat)
+                vat = (rec.partner_id.prefix_vat or "") + (rec.partner_id.vat or "")
             else:
-                vat = str(rec.partner_id.vat)
+                vat = rec.partner_id.vat or ""
             rec.vat = vat.upper()
 
     @api.onchange("name")
