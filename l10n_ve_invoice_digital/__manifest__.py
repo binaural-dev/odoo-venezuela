@@ -11,6 +11,7 @@
         "account_debit_note",
         "l10n_ve_invoice",
         "l10n_ve_payment_extension",
+        "l10n_ve_contact",
     ],
 
     "images": ["static/description/icon.png"],
