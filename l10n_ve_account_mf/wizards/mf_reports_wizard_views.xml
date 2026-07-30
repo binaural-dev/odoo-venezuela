@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_l10n_ve_mf_reports_wizard_form" model="ir.ui.view">
+        <field name="name">l10n.ve.mf.reports.wizard.form</field>
+        <field name="model">l10n_ve.mf.reports.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reportes Maquina Fiscal">
+                <group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                </group>
+
+                <group string="Opciones de impresion">
+                    <group>
+                        <widget name="mf-reports-webserial-button" action="report_x"/>
+                        <widget name="mf-reports-webserial-button" action="report_z"/>
+                    </group>
+                    <group>
+                        <widget name="mf-reports-webserial-button" action="print_resume_date"/>
+                        <widget name="mf-reports-webserial-button" action="reprint_invoices_date"/>
+                    </group>
+                </group>
+
+                <footer>
+                    <button string="Cerrar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_mf_reports_wizard" model="ir.actions.act_window">
+        <field name="name">Reportes Maquina Fiscal</field>
+        <field name="res_model">l10n_ve.mf.reports.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_l10n_ve_mf_reports_wizard_form"/>
+    </record>
+
+    <menuitem
+        id="menu_l10n_ve_mf_reports"
+        name="Reportes Maquina Fiscal"
+        parent="l10n_ve_accountant.account_report_detail_sale_menu"
+        action="action_l10n_ve_mf_reports_wizard"
+        sequence="20"
+    />
+</odoo>

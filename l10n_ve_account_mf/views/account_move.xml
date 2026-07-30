@@ -1,0 +1,47 @@
+<odoo>
+    <record id="account_move_form" model="ir.ui.view">
+        <field name="name">account.move.form.mf</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <field name="print_type" invisible="1"/>
+                <field name="mf_invoice_number" invisible="1"/>
+                <widget name="mf-webserial-button" action="print_out_invoice" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != False or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="reprint_document" invisible="mf_invoice_number == False or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="print_out_refund" invisible="state != 'posted' or move_type != 'out_refund' or mf_invoice_number or print_type != 'fiscal' or correlative != False"/>
+                <widget name="mf-webserial-button" action="print_debit_note" invisible="state != 'posted' or move_type != 'out_invoice' or mf_invoice_number != False or is_debit_journal != True or print_type != 'fiscal' or correlative != False"/>
+            </xpath>
+            <xpath expr="//group[@name='accounting_info_group']" position="after">
+                <group string="Fiscal Machine">
+                    <field name="mf_invoice_number" readonly="1"/>
+                    <field name="mf_serial" readonly="1"/>
+                    <field name="mf_reportz" readonly="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_invoice_list_mf" model="ir.ui.view">
+        <field name="name">account.move.list.mf</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="mf_invoice_number" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_move_search_mf" model="ir.ui.view">
+        <field name="name">view.account.move.search.mf</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="mf_invoice_number"/>
+                <field name="mf_serial"/>
+            </field>
+        </field>
+    </record>
+</odoo>

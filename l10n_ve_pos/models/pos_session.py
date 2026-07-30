@@ -3,7 +3,6 @@ from odoo.tools import float_is_zero, float_compare
 from odoo.osv.expression import AND, OR
 from odoo.exceptions import ValidationError
 import logging
-import math
 
 _logger = logging.getLogger(__name__)
 
@@ -17,358 +16,388 @@ class PosSession(models.Model):
         string="Foreign Currency",
     )
 
-    def load_pos_data(self):
-        res = super().load_pos_data()
-        res["prefix_vats"] = self.env["res.partner"]._fields["prefix_vat"].selection
-        return res
+    def load_data(self, models_to_load):
+        """Odoo 19 replacement for ``load_pos_data``.
 
-    def _loader_params_pos_payment(self):
-        res = super()._loader_params_pos_payment(self)
-        res["search_params"]["fields"].append("foreign_rate")
-        return res
-
-    def _loader_params_pos_payment_method(self):
-        res = super()._loader_params_pos_payment_method()
-        res["search_params"]["fields"].append("is_foreign_currency")
-        return res
-
-    def _loader_params_account_tax(self):
-        res = super()._loader_params_account_tax()
-        res["search_params"]["fields"].append("type_tax_use")
-        return res
-
-    def _loader_params_res_partner(self):
-        res = super()._loader_params_res_partner()
-        res["search_params"]["fields"].append("prefix_vat")
-        res["search_params"]["fields"].append("city_id")
-        return res
-
-    def _loader_params_res_currency(self):
+        IMPORTANT: Odoo 19 load_data response must contain only model keys.
+        Adding ad-hoc top-level keys (e.g. ``prefix_vats``) breaks RecordStore
+        parsing with "Index 'id' not defined for model ..." in POS bootstrap.
         """
-        This method is used to get the params for the search_read of res.currency
+        return super().load_data(models_to_load)
+
+    def _validate_cross_move(self):
+        """Create the moves that clear each foreign-currency payment method's
+        transitory account into its real ``cross_journal`` account.
+
+        Granularity follows the method's native ``split_transactions``
+        ("Identify Customer") flag, mirroring how native Odoo groups its own
+        receivable lines in ``_accumulate_amounts``
+        (``point_of_sale/models/pos_session.py:892``, keyed by ``pos.payment``
+        when split and by payment method when not):
+
+        - ``split_transactions=True``  → one move per ``pos.payment``.
+        - ``split_transactions=False`` → one move per payment method and
+          session, netting every payment of that method. A zero net creates
+          nothing.
+
+        This is the single entry point for both granularities. It replaces a
+        two-trigger design where the combine path fired from inside
+        ``_create_combine_account_payment`` while this method fired for
+        *every* payment regardless of ``split_transactions``: combined bank
+        methods ended up with one aggregated move **plus** one move per
+        payment, and combined cash methods — which never reach
+        ``_create_combine_account_payment`` at all, since
+        ``_create_bank_payment_moves`` only walks bank methods (native line
+        1057) — got one move per payment and nothing aggregated. Either way
+        the "Identify Customer" flag had no visible effect.
+
+        Reading ``pos.payment`` directly, rather than the ``account.payment``
+        the native bank pipeline produces, is what lets cash and bank methods
+        share this code path.
+
+        Every move is created in ``state="draft"`` (see ``_create_cross_move``)
+        — accounting reviews and posts it manually.
         """
-        res = super()._loader_params_res_currency()
-        res["search_params"]["domain"] = [
-            ("id", "in", [self.config_id.currency_id.id, self.config_id.foreign_currency_id.id])
-        ]
-        res["search_params"]["fields"].append("inverse_rate")
-        return res
-
-    def _loader_params_product_product(self):
-        params = super()._loader_params_product_product()
-        params["search_params"]["fields"].append("free_qty")
-        params["search_params"]["fields"].append("qty_available")
-        params["context"] = {
-            **params["context"],
-            "warehouse": self.config_id.picking_type_id.warehouse_id.id,
-        }
-        return params
-    
-    def _loader_params_res_company(self):
-        return {
-            'search_params': {
-                'domain': [('id', '=', self.company_id.id)],
-                'fields': [
-                    'currency_id', 'email', 'street', 'website', 'company_registry', 'vat', 'name', 'phone', 'partner_id',
-                    'country_id', 'state_id', 'tax_calculation_rounding_method', 'nomenclature_id', 'point_of_sale_use_ticket_qr_code',
-                    'point_of_sale_ticket_unique_code', 'account_fiscal_country_id',
-                ],
-            }
-        }
-
-    # def _get_pos_ui_product_product(self, params):
-    #     self = self.with_context(**params["context"])
-    #     products = []
-    #     if not self.config_id.limited_products_loading:
-    #         products = self.env["product.product"].search_read(**params["search_params"])
-    #     else:
-    #         products = self.config_id.get_limited_products_loading(
-    #             params["search_params"]["fields"]
-    #         )
-
-    #     products = self._sort_available_products(products)
-    #     self._process_pos_ui_product_product(products)
-    #     return products
-
-    # def _loader_params_res_country_city(self):
-    #     return {"search_params": {"domain": [], "fields": ["name", "id"]}}
-
-    # def _get_pos_ui_res_country_city(self, params):
-    #     return self.env["res.country.city"].search_read(**params["search_params"])
-
-    # def _pos_ui_models_to_load(self):
-    #     result = super()._pos_ui_models_to_load()
-    #     if "res.country.city" not in result:
-    #         result.append("res.country.city")
-    #     return result
-
-    # def get_pos_ui_product_product_by_params(self, custom_search_params):
-    #     """
-    #     :param custom_search_params: a dictionary containing params of a search_read()
-    #     """
-    #     params = self._loader_params_product_product()
-    #     self = self.with_context(**params['context'])
-    #     # custom_search_params will take priority
-    #     params["search_params"] = {**params["search_params"], **custom_search_params}
-    #     products = (
-    #         self.env["product.product"]
-    #         .with_context(active_test=False)
-    #         .search_read(**params["search_params"])
-    #     )
-    #     products = self._sort_available_products(products)
-    #     if len(products) > 0:
-    #         self._process_pos_ui_product_product(products)
-    #     return products
-
-    def _sort_available_products(self, products):
-        if not self.env.company.pos_show_just_products_with_available_qty:
-            return products
-
-        return sorted(products, key=lambda x: x["qty_available"], reverse=True)
-
-    def _get_pos_ui_res_currency(self, params):
-        """
-        This method is used to get the res.currency for the pos
-        is override to change the order of the currencies
-        ------
-        Return:
-        Array:
-            0: company currency
-            1: foreign currency
-        """
-        res = self.env["res.currency"].search_read(**params["search_params"])
-        if res[0]["id"] != self.config_id.currency_id.id:
-            return [res[1], res[0]]
-        return res
-
-    def is_user_authorized(self):
-        is_group = self.env.user.has_group("l10_ve_pos.group_authorized_discount_pos")
-        return is_group
-
-    # def _validate_cross_move(self):
-    #     """This function validate cross move, the proposal of this function is the transitory account be zero"""
-    #     for session in self:
-    #         for order_payment in session.order_ids.payment_ids:
-    #             _logger.info(f"Cross Journal: {order_payment.payment_method_id.apply_one_cross_move}")
-    #             if not order_payment.payment_method_id.apply_one_cross_move:
-    #                 _logger.info("The payment method does not apply one cross move")
-    #                 _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_account_journal}")
-    #                 _logger.info(f"IF PAYMENT METHOD {order_payment.payment_method_id.cross_journal}")
-    #                 if (
-    #                     order_payment.payment_method_id.cross_account_journal
-    #                     and order_payment.payment_method_id.cross_journal
-    #                 ):
-                        
-    #                     if order_payment.amount < 0:
-    #                         line_vals = session._line_vals_move_cross_outgoing(order_payment)
-    #                     else:
-    #                         line_vals = session._line_vals_move_cross_incoming(order_payment)
-
-    #                     session._create_cross_move(order_payment, line_vals)
-
-    # def _line_vals_move_cross_incoming(self, payment):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is incoming.
-
-    #     Args:
-    #         payment (account.payment): payment generate from PoS
-
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
-    #     for account in payment.payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
-
-    #     for account_method in payment.payment_method_id.cross_journal:
-    #         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
-
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": payment.foreign_amount
-    #                         if currency == 3
-    #                         else payment.amount,
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": payment.amount,
-    #                         "foreign_debit": payment.foreign_amount,
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": -payment.foreign_amount
-    #                         if self.env.company.currency_id.id == 3
-    #                         else -payment.amount,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": payment.amount,
-    #                         "foreign_credit": payment.foreign_amount,
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
-
-    #         return move_lines
-
-    # def _line_vals_move_cross_outgoing(self, payment):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is outgoing (is change).
-
-    #     Args:
-    #         payment (pos.payment): payment generate from PoS
-
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
-
-    #     for account in payment.payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
-
-    #     for account_method in payment.payment_method_id.cross_journal:
-    #         credit_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": abs(payment.foreign_amount)
-    #                         if self.env.company.currency_id.id == 3
-    #                         else abs(payment.amount),
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": abs(payment.amount),
-    #                         "foreign_debit": abs(payment.foreign_amount),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "partner_id": payment.partner_id.id,
-    #                         "amount_currency": payment.foreign_amount
-    #                         if currency == 3
-    #                         else payment.amount,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": abs(payment.amount),
-    #                         "foreign_credit": abs(payment.foreign_amount),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": payment.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
-
-    #         return move_lines
-
-    def _get_pos_ui_product_category(self, params):
-        categories = self.env['product.category'].search_read(**params['search_params'])
-        category_by_id = {category['id']: category for category in categories}
-        
-        for category in categories:
-            try:
-                category['parent'] = category_by_id[category['parent_id'][0]] if category['parent_id'] else None
-            except KeyError as e:
-                raise ValueError(_(f"The category %s does not belong to this company.") % category['parent_id'][1]) from e
-                
-        return categories
-    
-    def _process_pos_ui_product_product(self, products):
-        """
-        Modify the list of products to add the categories as well as adapt the lst_price
-        :param products: a list of products
-        """
-        if self.config_id.currency_id != self.company_id.currency_id:
-            for product in products:
-                product['lst_price'] = self.company_id.currency_id._convert(
-                    product['lst_price'], 
-                    self.config_id.currency_id,
-                    self.company_id, 
-                    fields.Date.today()
+        for session in self:
+            payments = session.order_ids.payment_ids.filtered(
+                lambda p: session._is_cross_move_eligible(p.payment_method_id)
+            )
+            for payment_method in payments.payment_method_id:
+                method_payments = payments.filtered(
+                    lambda p: p.payment_method_id == payment_method
                 )
-        
-        categories = self._get_pos_ui_product_category(self._loader_params_product_category())
-        product_category_by_id = {category['id']: category for category in categories}
+                if payment_method.split_transactions:
+                    for payment in method_payments:
+                        session._create_cross_move_for(
+                            payment_method,
+                            amount=payment.amount,
+                            foreign_amount=payment.foreign_amount,
+                            foreign_rate=payment.foreign_rate,
+                            partner=payment.partner_id,
+                            date=payment.create_date,
+                            ref=session._cross_move_ref(payment),
+                        )
+                    continue
 
-        for product in products:
-            categ_id = product['categ_id'][0]
-            if categ_id in product_category_by_id:
-                product['categ'] = product_category_by_id[categ_id]
-            else:
-                raise ValueError(_(f"The category %s does not belong to this company.") % product['categ_id'][1])
+                amount = sum(method_payments.mapped("amount"))
+                if float_is_zero(amount, precision_rounding=session.currency_id.rounding):
+                    continue
+                session._create_cross_move_for(
+                    payment_method,
+                    amount=amount,
+                    foreign_amount=sum(method_payments.mapped("foreign_amount")),
+                    # The operative rate is a session-level setting, so every
+                    # payment being netted here already shares it. Read it off
+                    # a payment rather than off ``config_id.foreign_rate``:
+                    # the config value can be edited after the session opened,
+                    # while the payments carry the rate actually applied.
+                    foreign_rate=method_payments[0].foreign_rate,
+                    # No partner, matching the native combined account.payment.
+                    partner=session.env["res.partner"],
+                    date=session.stop_at or fields.Datetime.now(),
+                    ref=session._cross_move_ref(),
+                )
 
-            product['image_128'] = bool(product['image_128'])
+    def _is_cross_move_eligible(self, payment_method):
+        """Whether ``payment_method`` takes part in the automatic cross move.
 
-    def _create_cross_move(self, payment, line_vals):
+        ``is_foreign_currency`` is the business marker that drives the whole
+        flow: every foreign-currency method clears its transitory account,
+        with no second opt-in. (A redundant ``apply_one_cross_move`` boolean
+        used to gate this on top of ``is_foreign_currency``; it was removed,
+        since it only served to leave the flow silently inactive on methods
+        that plainly needed it.)
+
+        A method missing either cross journal is skipped in silence — that
+        configuration is incomplete, not wrong.
         """
-         This method create the move for the transitory account sets zero.
+        return bool(
+            payment_method.is_foreign_currency
+            and payment_method.type != "pay_later"
+            and payment_method.cross_account_journal
+            and payment_method.cross_journal
+            and self._get_cross_transitory_account(payment_method)
+        )
 
-    #     Args:
-    #         payment (pos.payment): payment from PoS
-    #         line_vals (account.move.line): move line to move cross
+    def _get_cross_transitory_account(self, payment_method):
+        """Return the account the cross move drains — the one where native
+        Odoo parked the money once the session closed.
 
-    #     Returns:
-    #         account.move: Pos payment method adjustment move.
-    #     """
+        Which account that is depends on the payment method type, because the
+        native pipelines differ:
 
-    #     move = self.env["account.move"].create(
-    #         {
-    #             "name": _("PoS Payment Method Adjustment"),
-    #             "date": payment.create_date,
-    #             "journal_id": payment.payment_method_id.cross_account_journal.id,
-    #             "state": "draft",
-    #             "line_ids": line_vals,
-    #             "foreign_currency_id": payment.foreign_currency_id.id,
-    #             "foreign_rate": payment.foreign_rate,
-    #             "company_id": self.company_id.id,
-    #         }
-    #     )
-    #     return move
+        - ``bank``: ``_create_combine_account_payment`` posts an
+          ``account.payment`` with ``force_outstanding_account_id =
+          payment_method.outstanding_account_id`` (native
+          ``pos_session.py:1104``), so the balance sits in the outstanding
+          account.
+        - ``cash``: there is no outstanding account at all —
+          ``outstanding_account_id`` is ``invisible="type != 'bank'"`` in the
+          native view (``point_of_sale/views/pos_payment_method_views.xml:24``),
+          because Odoo routes cash straight to the journal. The statement line
+          debits the journal's own default account and credits the POS
+          receivable (``_get_combine_statement_line_vals``, native line 1452),
+          which leaves the POS receivable squared at zero and the balance in
+          ``journal_id.default_account_id``.
+
+        Draining the POS receivable for a cash method would therefore unbalance
+        an account already at zero while never touching the cash it was meant
+        to move.
+
+        The company's default POS receivable account stays on as a last-resort
+        fallback so that an incomplete journal setup degrades into a skipped
+        cross move (see ``_is_cross_move_eligible``) rather than an
+        ``account_move_line_check_accountable_required_fields`` violation from
+        a NULL ``account_id``.
+        """
+        if payment_method.type == "cash":
+            account = payment_method.journal_id.default_account_id
+        else:
+            account = (
+                payment_method.outstanding_account_id
+                or payment_method.journal_id.default_account_id
+            )
+        return account or self.company_id.account_default_pos_receivable_account_id
+
+    def _line_vals_move_cross_incoming(
+        self, payment_method, amount, foreign_amount, foreign_rate, partner
+    ):
+        """Build the cross-move lines for an incoming (amount >= 0) movement.
+
+        Debits the ``cross_journal``'s real bank account and credits the
+        transitory account resolved by ``_get_cross_transitory_account``,
+        clearing it.
+
+        Takes plain amounts instead of a ``pos.payment`` so the same lines
+        serve both granularities of ``_validate_cross_move``: one payment
+        (split) or the net of every payment of the method (combine).
+
+        NOTE: the Odoo 17 legacy compared against a hardcoded currency id
+        (``== 3``, VEF in the original dev database). Fixed to compare
+        against ``self.foreign_currency_id`` (the session's configured
+        foreign currency), which does not assume a fixed id.
+        """
+        transitory_account = self._get_cross_transitory_account(payment_method).id
+        account_method = payment_method.cross_journal
+        real_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
+        line_currency = account_method.currency_id or self.env.company.currency_id
+        is_foreign_line_currency = line_currency == self.foreign_currency_id
+
+        return [
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": real_account,
+                    "partner_id": partner.id,
+                    "amount_currency": foreign_amount
+                    if is_foreign_line_currency
+                    else amount,
+                    "credit": 0.0,
+                    "foreign_credit": 0.0,
+                    "debit": amount,
+                    "foreign_debit": foreign_amount,
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": foreign_rate,
+                    "currency_id": line_currency.id,
+                }
+            ),
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": transitory_account,
+                    "partner_id": partner.id,
+                    "amount_currency": -foreign_amount
+                    if self.env.company.currency_id == self.foreign_currency_id
+                    else -amount,
+                    "debit": 0.0,
+                    "foreign_debit": 0.0,
+                    "credit": amount,
+                    "foreign_credit": foreign_amount,
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": foreign_rate,
+                    "currency_id": self.env.company.currency_id.id,
+                }
+            ),
+        ]
+
+    def _line_vals_move_cross_outgoing(
+        self, payment_method, amount, foreign_amount, foreign_rate, partner
+    ):
+        """Build the cross-move lines for an outgoing (amount < 0) movement.
+
+        Mirror of ``_line_vals_move_cross_incoming`` for change/refunds:
+        debits the transitory account (see ``_get_cross_transitory_account``)
+        and credits the ``cross_journal``'s real bank account, using
+        absolute magnitudes.
+        """
+        transitory_account = self._get_cross_transitory_account(payment_method).id
+        account_method = payment_method.cross_journal
+        real_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
+        line_currency = account_method.currency_id or self.env.company.currency_id
+        is_foreign_line_currency = line_currency == self.foreign_currency_id
+
+        return [
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": transitory_account,
+                    "partner_id": partner.id,
+                    "amount_currency": abs(foreign_amount)
+                    if self.env.company.currency_id == self.foreign_currency_id
+                    else abs(amount),
+                    "credit": 0.0,
+                    "foreign_credit": 0.0,
+                    "debit": abs(amount),
+                    "foreign_debit": abs(foreign_amount),
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": foreign_rate,
+                    "currency_id": self.env.company.currency_id.id,
+                }
+            ),
+            Command.create(
+                {
+                    "name": _("PoS Payment Method Adjustment"),
+                    "account_id": real_account,
+                    "partner_id": partner.id,
+                    "amount_currency": foreign_amount
+                    if is_foreign_line_currency
+                    else amount,
+                    "debit": 0.0,
+                    "foreign_debit": 0.0,
+                    "credit": abs(amount),
+                    "foreign_credit": abs(foreign_amount),
+                    "not_foreign_recalculate": True,
+                    "foreign_rate": foreign_rate,
+                    "currency_id": line_currency.id,
+                }
+            ),
+        ]
+
+    def _cross_move_ref(self, payment=None):
+        """Human-readable reference identifying what a cross move clears.
+
+        ``name`` cannot carry this text — it is the move's sequential
+        "Number", assigned by the journal on posting (see
+        ``_create_cross_move``) — so ``ref`` is the only field the accountant
+        sees in the journal entries list to tell one draft from another.
+
+        Under split granularity a session produces one draft per payment, all
+        with the same date, amount shape and journal; without a discriminator
+        they are indistinguishable in that list (the move header carries no
+        partner either — the partner lives on the lines). So the reference
+        goes down to the individual payment, not just the order: an order can
+        hold several payments of the same method, in which case the order name
+        alone would still repeat.
+
+        ``pos.payment.name`` is a free "Label" that only payment terminals
+        populate — it is empty for manual payments — and ``display_name``
+        falls back to the formatted amount, which is not unique either. Hence
+        the database id as the last-resort discriminator: it is the only value
+        guaranteed to differ, and it lets the accountant look the payment up
+        directly.
+
+        Under combine granularity a single move covers every payment of the
+        method in the session, so the session name is the right granularity.
+        """
+        base = _("PoS Payment Method Adjustment")
+        if not payment:
+            return f"{base} - {self.name}"
+        return f"{base} - {payment.pos_order_id.name} - {payment.name or f'#{payment.id}'}"
+
+    def _cross_move_header_partner(self, partner):
+        """Partner that is safe to put on the cross move's header.
+
+        ``account.move.partner_id`` is ``check_company=True``
+        (``account/models/account_move.py:425``) while
+        ``account.move.line.partner_id`` is not, and ``pos.order.partner_id``
+        has no company check at all
+        (``point_of_sale/models/pos_order.py:316``) — so Odoo happily accepts
+        an order whose customer belongs to another company. Propagating that
+        partner to the header would raise ``UserError`` and **block the whole
+        session close**, which is far too high a price for what is only a
+        readability nicety in the journal entries list.
+
+        In that case drop it: the lines still carry the partner and ``ref``
+        still identifies the payment (see ``_cross_move_ref``).
+        """
+        if partner.company_id and partner.company_id != self.company_id:
+            return self.env["res.partner"]
+        return partner
+
+    def _create_cross_move_for(
+        self, payment_method, amount, foreign_amount, foreign_rate, partner, date, ref
+    ):
+        """Create one clearing move for ``payment_method``.
+
+        The sign of ``amount`` picks the direction: incoming for sales,
+        outgoing for change/refunds. Under combine granularity ``amount`` is
+        already the net of the method's payments, so a session whose refunds
+        outweigh its sales yields a single outgoing move — the branch the
+        legacy combine path never had.
+        """
+        line_builder = (
+            self._line_vals_move_cross_outgoing
+            if amount < 0
+            else self._line_vals_move_cross_incoming
+        )
+        line_vals = line_builder(
+            payment_method, amount, foreign_amount, foreign_rate, partner
+        )
+        return self._create_cross_move(
+            payment_method, line_vals, foreign_rate, date, ref, partner
+        )
+
+    def _create_cross_move(
+        self, payment_method, line_vals, foreign_rate, date, ref, partner
+    ):
+        """Create the move that clears the transitory account to zero.
+
+        Args:
+            payment_method (pos.payment.method): method being cleared.
+            line_vals (list): ``Command`` list of move lines to create.
+            foreign_rate (float): operative rate stamped on the move.
+            date (datetime): accounting date of the move.
+            ref (str): reference identifying what is being cleared (see
+                ``_cross_move_ref``).
+            partner (res.partner): partner for the move header; empty under
+                combine granularity, where one move spans several customers.
+
+        Returns:
+            account.move: PoS payment method adjustment move.
+
+        The move is always created in ``state="draft"`` — it is not posted
+        automatically; accounting reviews and validates it manually.
+
+        ``name`` (the move's sequential "Number") is intentionally left
+        unset so that when accounting posts it, Odoo's native
+        ``_compute_name`` assigns the next sequence from
+        ``cross_account_journal`` — setting it explicitly here would
+        permanently block that assignment (``_compute_name`` only calls
+        ``_set_next_sequence()`` when ``name`` is empty/``'/'``). The
+        descriptive text goes in ``ref`` instead.
+        """
+        move = self.env["account.move"].create(
+            {
+                "ref": ref,
+                "partner_id": self._cross_move_header_partner(partner).id,
+                "date": date,
+                "journal_id": payment_method.cross_account_journal.id,
+                "state": "draft",
+                "line_ids": line_vals,
+                "foreign_currency_id": self.foreign_currency_id.id,
+                "foreign_rate": foreign_rate,
+                "company_id": self.company_id.id,
+            }
+        )
+        return move
 
     def action_pos_session_close(self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None):
         """
         When the session is closed, the cross move is created, and the rounding issue is corrected.
         """
         res = super().action_pos_session_close(balancing_account, amount_to_balance, bank_payment_method_diffs)
+
+        self._validate_cross_move()
 
         # Obtener todas las órdenes de esta sesión de POS
         orders = self.env['pos.order'].search([('session_id', '=', self.id)])
@@ -416,135 +445,93 @@ class PosSession(models.Model):
     #                     break
 
 
-    # def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
-    #     res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
-    #         payment_method, amounts, diff_amount
-    #     )
-    #     account_payment = res.move_id.payment_id
-    #     account_payment.write(
-    #         {
-    #             "foreign_rate": self.config_id.foreign_rate,
-    #             "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-    #         }
-    #     )
+    def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
+        """Odoo 19-compatible override for combine (non-split) bank payments.
 
-    #     for line in account_payment.move_id.line_ids:
-    #         if line.credit > 0 and amounts.get("foreign_amount", False):
-    #             line.not_foreign_recalculate = True
-    #             line.foreign_credit = abs(amounts["foreign_amount"])
+        Migration contract (spec ``pos-cross-account-move/spec.md``): the
+        pre-C2 override accessed ``res.move_id.payment_id``, which raised
+        ``AttributeError`` in Odoo 19 (renamed to ``origin_payment_id`` —
+        see the same fix already applied in ``_create_split_account_payment``).
 
-    #         if line.debit > 0 and amounts.get("foreign_amount", False):
-    #             line.not_foreign_recalculate = True
-    #             line.foreign_debit = abs(amounts["foreign_amount"])
-    #     if account_payment.pos_payment_method_id.apply_one_cross_move:
-    #         self._create_cross_move_payment(res)
-    #     return res
-
-    def _create_split_account_payment(self, payment, amounts):
-        res = super(PosSession, self.with_context(from_pos=True))._create_split_account_payment(
-            payment, amounts
+        Native Odoo 19 ``_create_combine_account_payment`` returns the
+        receivable ``account.move.line`` on the ``account.payment``'s own
+        move (see ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1094``),
+        the same contract as ``_create_split_account_payment``.
+        """
+        res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
+            payment_method, amounts, diff_amount
         )
-        account_payment = res.move_id.payment_id
+        account_payment = res.move_id.origin_payment_id
+        if account_payment:
+            account_payment.write(
+                {
+                    "foreign_rate": self.config_id.foreign_rate,
+                    "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                }
+            )
 
-        account_payment.write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-            }
-        )
-
-        for line in account_payment.move_id.line_ids:
-            if line.credit > 0:
+        for line in res.move_id.line_ids:
+            if line.credit > 0 and amounts.get("foreign_amount", False):
                 line.not_foreign_recalculate = True
-                line.foreign_credit = abs(payment.foreign_amount)
+                line.foreign_credit = abs(amounts["foreign_amount"])
 
-            if line.debit > 0:
+            if line.debit > 0 and amounts.get("foreign_amount", False):
                 line.not_foreign_recalculate = True
-                line.foreign_debit = abs(payment.foreign_amount)
-
-        # if account_payment.pos_payment_method_id.apply_one_cross_move:
-        #     self._create_cross_move_payment(res)
+                line.foreign_debit = abs(amounts["foreign_amount"])
         return res
 
-    # def _create_cross_move_payment(self, move):
-    #     move = self.env["account.move"].create(
-    #         {
-    #             "name": _("PoS Payment Method Adjustment"),
-    #             "date": move.move_id.create_date,
-    #             "journal_id": move.move_id.payment_id.pos_payment_method_id.cross_account_journal.id,
-    #             "state": "draft",
-    #             "line_ids": self._line_vals_move_cross_payment_incoming(move),
-    #             "foreign_currency_id": move.move_id.foreign_currency_id.id,
-    #             "foreign_rate": move.move_id.foreign_rate,
-    #             "company_id": self.company_id.id,
-    #         }
-    #     )
-    #     return move
+    def _create_split_account_payment(self, payment, amounts):
+        """Odoo 19-compatible override.
 
-    # def _line_vals_move_cross_payment_incoming(self, move):
-    #     """
-    #     This method creates the move_lines for the move_cross when the payment is incoming.
+        Migration contract (Slice C2.1, spec
+        ``pos-odoo19-session-accounting/spec.md``):
 
-    #     Args:
-    #         payment (account.payment): payment generate from PoS
+        - Odoo 19 super returns an ``account.move.line`` recordset (the
+          receivable line on the ``account.payment.move_id``), NOT an
+          ``account.payment`` — see
+          ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1170``.
+        - When the payment method has no journal, super short-circuits
+          and returns ``self.env['account.move.line']`` (empty recordset)
+          — see native line 1147-1148. We MUST handle the empty case
+          without touching non-existent records.
+        - The pre-C2 override accessed ``res.move_id.payment_id`` which
+          raised ``AttributeError`` in Odoo 19 (the field on
+          ``account.move`` was renamed to ``origin_payment_id`` —
+          ``/home/binaural19/odoo/addons/account/models/account_move.py:206``).
 
-    #     Returns:
-    #         account.move.line: move line to move cross
-    #     """
-    #     credit_account = 0
-    #     debit_account = 0
-    #     move_lines = []
-    #     for account in move.move_id.payment_id.pos_payment_method_id:
-    #         debit_account = account.outstanding_account_id.id
+        The Venezuelan write contract is preserved: the originating
+        ``account.payment`` receives ``foreign_rate`` and
+        ``foreign_inverse_rate``, and every line of its move receives
+        the matching ``foreign_debit`` / ``foreign_credit``.
+        """
+        receivable_lines = super(
+            PosSession, self.with_context(from_pos=True)
+        )._create_split_account_payment(payment, amounts)
 
-    #     for account_method in move.move_id.payment_id.pos_payment_method_id.cross_journal:
-    #         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
-    #         currency = (
-    #             account_method.currency_id.id
-    #             if account_method.currency_id
-    #             else self.env.company.currency_id.id
-    #         )
+        if not receivable_lines:
+            # Odoo 19 early-return: payment method without journal.
+            return receivable_lines
 
-    #         move_lines.extend(
-    #             [
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": credit_account,
-    #                         "amount_currency": abs(move.foreign_credit)
-    #                         if currency == 3
-    #                         else abs(move.credit),
-    #                         "credit": 0.0,
-    #                         "foreign_credit": 0.0,
-    #                         "debit": abs(move.credit),
-    #                         "foreign_debit": abs(move.foreign_credit),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
-    #                         "currency_id": account_method.currency_id.id
-    #                         if account_method.currency_id
-    #                         else self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #                 Command.create(
-    #                     {
-    #                         "name": _("PoS Payment Method Adjustment"),
-    #                         "account_id": debit_account,
-    #                         "amount_currency": -move.foreign_credit
-    #                         if self.env.company.currency_id.id == 3
-    #                         else -move.credit,
-    #                         "debit": 0.0,
-    #                         "foreign_debit": 0.0,
-    #                         "credit": abs(move.credit),
-    #                         "foreign_credit": abs(move.foreign_credit),
-    #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
-    #                         "currency_id": self.env.company.currency_id.id,
-    #                     }
-    #                 ),
-    #             ]
-    #         )
+        payment_move = receivable_lines.move_id
+        account_payment = payment_move.origin_payment_id
+        if account_payment:
+            account_payment.write(
+                {
+                    "foreign_rate": self.config_id.foreign_rate,
+                    "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                }
+            )
 
-    #         return move_lines
+        foreign_amount = abs(payment.foreign_amount)
+        for line in payment_move.line_ids:
+            if line.credit > 0:
+                line.not_foreign_recalculate = True
+                line.foreign_credit = foreign_amount
+            if line.debit > 0:
+                line.not_foreign_recalculate = True
+                line.foreign_debit = foreign_amount
+
+        return receivable_lines
 
     def _create_account_move(
         self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None
@@ -569,16 +556,38 @@ class PosSession(models.Model):
         return res
 
     def _accumulate_amounts(self, data):
+        """Odoo 19 l10n_ve_pos extension of ``_accumulate_amounts``.
+
+        Migration contract (Slice C1, spec
+        ``pos-odoo19-session-accounting/spec.md``):
+
+        - Call ``super()`` first to materialize the Odoo 19 dict shape
+          (every entry has ``amount`` + ``amount_converted``).
+        - Iterate the SAME source the Odoo 19 super uses
+          (``self._get_closed_orders()``) — NEVER ``self.order_ids`` —
+          so a ``draft`` / ``cancel`` order with a payment cannot
+          create a ghost entry in the Odoo 19 defaultdict (C2 would
+          then try to post a zero-amount move).
+        - For each non-pay-later payment of a closed order, find the
+          same bucket the super populated and add the Venezuelan
+          ``foreign_amount`` via ``_update_amounts``. We pass
+          ``{"amount": 0, "foreign_amount": foreign_amount}`` so the
+          additive contract holds: ``amount`` / ``amount_converted``
+          are preserved from super; ``foreign_amount`` is accumulated.
+        - For invoiced orders, mirror the same additive update into
+          ``split_invoice_receivables`` / ``combine_invoice_receivables``
+          (keyed the same way as super does).
+        """
         data = super()._accumulate_amounts(data)
-        split_receivables_bank = data.get("split_receivables_bank")
-        split_receivables_cash = data.get("split_receivables_cash")
-        combine_receivables_bank = data.get("combine_receivables_bank")
-        combine_receivables_cash = data.get("combine_receivables_cash")
-        combine_invoice_receivables = data.get("combine_invoice_receivables")
-        split_invoice_receivables = data.get("split_invoice_receivables")
+        split_receivables_bank = data["split_receivables_bank"]
+        split_receivables_cash = data["split_receivables_cash"]
+        combine_receivables_bank = data["combine_receivables_bank"]
+        combine_receivables_cash = data["combine_receivables_cash"]
+        combine_invoice_receivables = data["combine_invoice_receivables"]
+        split_invoice_receivables = data["split_invoice_receivables"]
 
         currency_rounding = self.currency_id.rounding
-        for order in self.order_ids:
+        for order in self._get_closed_orders():
             order_is_invoiced = order.is_invoiced
             for payment in order.payment_ids:
                 amount = payment.amount
@@ -587,66 +596,53 @@ class PosSession(models.Model):
                     continue
                 date = payment.payment_date
                 payment_method = payment.payment_method_id
-                is_split_payment = payment.payment_method_id.split_transactions
+                is_split_payment = payment_method.split_transactions
                 payment_type = payment_method.type
 
-                if payment_type != "pay_later":
-                    if is_split_payment and payment_type == "cash":
-                        split_receivables_cash[payment] = self._update_amounts(
-                            split_receivables_cash[payment],
+                if payment_type == "pay_later":
+                    continue
+
+                if is_split_payment and payment_type == "cash":
+                    split_receivables_cash[payment] = self._update_amounts(
+                        split_receivables_cash[payment],
+                        {"amount": 0, "foreign_amount": foreign_amount},
+                        date,
+                    )
+                elif not is_split_payment and payment_type == "cash":
+                    combine_receivables_cash[payment_method] = self._update_amounts(
+                        combine_receivables_cash[payment_method],
+                        {"amount": 0, "foreign_amount": foreign_amount},
+                        date,
+                    )
+                elif is_split_payment and payment_type == "bank":
+                    split_receivables_bank[payment] = self._update_amounts(
+                        split_receivables_bank[payment],
+                        {"amount": 0, "foreign_amount": foreign_amount},
+                        date,
+                    )
+                elif not is_split_payment and payment_type == "bank":
+                    combine_receivables_bank[payment_method] = self._update_amounts(
+                        combine_receivables_bank[payment_method],
+                        {"amount": 0, "foreign_amount": foreign_amount},
+                        date,
+                    )
+
+                # Create the vals to create the pos receivables that will
+                # balance the pos receivables from invoice payment moves.
+                if order_is_invoiced:
+                    if is_split_payment:
+                        split_invoice_receivables[payment] = self._update_amounts(
+                            split_invoice_receivables[payment],
                             {"amount": 0, "foreign_amount": foreign_amount},
-                            date,
+                            order.date_order,
                         )
-                    elif not is_split_payment and payment_type == "cash":
-                        combine_receivables_cash[payment_method] = self._update_amounts(
-                            combine_receivables_cash[payment_method],
+                    else:
+                        combine_invoice_receivables[payment_method] = self._update_amounts(
+                            combine_invoice_receivables[payment_method],
                             {"amount": 0, "foreign_amount": foreign_amount},
-                            date,
-                        )
-                    elif is_split_payment and payment_type == "bank":
-                        split_receivables_bank[payment] = self._update_amounts(
-                            split_receivables_bank[payment],
-                            {"amount": 0, "foreign_amount": foreign_amount},
-                            date,
-                        )
-                    elif not is_split_payment and payment_type == "bank":
-                        combine_receivables_bank[payment_method] = self._update_amounts(
-                            combine_receivables_bank[payment_method],
-                            {"amount": 0, "foreign_amount": foreign_amount},
-                            date,
+                            order.date_order,
                         )
 
-                    # Create the vals to create the pos receivables that will balance the pos receivables from invoice payment moves.
-                    if order_is_invoiced:
-                        if is_split_payment:
-                            split_invoice_receivables[payment] = self._update_amounts(
-                                split_invoice_receivables[payment],
-                                {
-                                    "amount": 0,
-                                    "foreign_amount": payment.foreign_amount,
-                                },
-                                order.date_order,
-                            )
-                        else:
-                            combine_invoice_receivables[payment_method] = self._update_amounts(
-                                combine_invoice_receivables[payment_method],
-                                {
-                                    "amount": 0,
-                                    "foreign_amount": payment.foreign_amount,
-                                },
-                                order.date_order,
-                            )
-
-        data.update(
-            {
-                "split_receivables_cash": split_receivables_cash,
-                "combine_receivables_cash": combine_receivables_cash,
-                "split_receivables_bank": split_receivables_bank,
-                "combine_receivables_bank": combine_receivables_bank,
-                "combine_invoice_receivables": combine_invoice_receivables,
-                "split_invoice_receivables": split_invoice_receivables,
-            }
-        )
         return data
 
     def _update_amounts(
@@ -688,31 +684,66 @@ class PosSession(models.Model):
         return res
 
     def _create_bank_payment_moves(self, data):
-        res = super()._create_bank_payment_moves(data)
-        payment_to_receivable_lines = res.get("payment_to_receivable_lines")
-        payment_method_to_receivable_lines = res.get("payment_method_to_receivable_lines")
-        combine_receivables_bank = data.get("combine_receivables_bank")
+        """Odoo 19 l10n_ve_pos extension of ``_create_bank_payment_moves``.
+
+        Migration contract (Slice C2.2, spec
+        ``pos-odoo19-session-accounting/spec.md``):
+
+        - Odoo 19 super MUTATES ``data`` in-place and returns the same
+          dict — see
+          ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1050-1072``.
+        - ``payment_method_to_receivable_lines`` is keyed by
+          ``pos.payment.method`` (combined bank bucket).
+        - ``payment_to_receivable_lines`` is keyed by ``pos.payment``
+          records (split bank bucket).
+        - Each value is a UNION of two ``account.move.line`` records:
+          the session-side receivable line (created here) plus the
+          receivable line on the ``account.payment.move_id`` (created
+          by ``_create_combine_account_payment`` /
+          ``_create_split_account_payment``).
+
+        For every receivable line in both buckets we set the matching
+        Venezuelan ``foreign_debit`` / ``foreign_credit`` and mark it
+        ``not_foreign_recalculate=True`` so the base compute in
+        ``l10n_ve_accountant`` does not overwrite it.
+        """
+        data = super()._create_bank_payment_moves(data)
+        combine_receivables_bank = data["combine_receivables_bank"]
+        payment_method_to_receivable_lines = data["payment_method_to_receivable_lines"]
+        payment_to_receivable_lines = data["payment_to_receivable_lines"]
 
         for payment_method, amounts in combine_receivables_bank.items():
-            lines = payment_method_to_receivable_lines[payment_method]
-            for line in lines:
-                if line.credit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_credit = abs(amounts["foreign_amount"])
-                if line.debit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_debit = abs(amounts["foreign_amount"])
+            self._set_foreign_amount_on_receivable_lines(
+                payment_method_to_receivable_lines[payment_method],
+                amounts["foreign_amount"],
+            )
 
-        for payment in payment_to_receivable_lines.keys():
-            lines = payment_to_receivable_lines[payment]
-            for line in lines:
-                if line.credit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_credit = abs(payment["foreign_amount"])
-                if line.debit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_debit = abs(payment["foreign_amount"])
-        return res
+        for payment, lines in payment_to_receivable_lines.items():
+            # Split bucket keys are ``pos.payment`` records; read the
+            # foreign amount directly from the payment to keep the
+            # Venezuelan write aligned with the accumulator source.
+            self._set_foreign_amount_on_receivable_lines(
+                lines, payment.foreign_amount
+            )
+        return data
+
+    def _set_foreign_amount_on_receivable_lines(self, lines, foreign_amount):
+        """Write the Venezuelan ``foreign_debit`` / ``foreign_credit`` on
+        every receivable ``account.move.line`` in ``lines``.
+
+        This helper is the single place where the Venezuelan write
+        contract for bank payment moves is materialized. It centralizes
+        the two loops that used to duplicate the credit/debit branching
+        for the combine and split buckets.
+        """
+        abs_foreign = abs(foreign_amount)
+        for line in lines:
+            if line.credit > 0:
+                line.not_foreign_recalculate = True
+                line.foreign_credit = abs_foreign
+            if line.debit > 0:
+                line.not_foreign_recalculate = True
+                line.foreign_debit = abs_foreign
 
     def _create_cash_statement_lines_and_cash_move_lines(self, data):
         res = super()._create_cash_statement_lines_and_cash_move_lines(data)
@@ -735,26 +766,43 @@ class PosSession(models.Model):
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
+        """Write ``foreign_debit``/``foreign_credit`` on ``line`` when its
+        debit or credit matches ``amount``, mirroring the write onto the
+        line's non-``asset_receivable`` counterpart in the same move, if any.
+
+        The counterpart lookup used to gate the write to ``line`` itself
+        too: when a payment method's ``combine_cash_receivable_lines`` sits
+        on the session's own closing move — which only ever holds
+        ``asset_receivable`` lines, since the real cash/bank account leg is
+        booked on a separate bank-statement move — ``other_lines`` came back
+        empty and the whole method silently did nothing. ``not_foreign_recalculate``
+        was then never set, so the line fell back to the base compute, which
+        ran once at creation time (before the move's ``foreign_inverse_rate``
+        had been assigned) and got stuck at 0.
+        """
+        rounding = self.currency_id.rounding
+        matched_credit = abs(line.credit) > 0 and float_compare(
+            line.credit, abs(amount), precision_rounding=rounding
+        ) == 0
+        matched_debit = abs(line.debit) > 0 and float_compare(
+            line.debit, abs(amount), precision_rounding=rounding
+        ) == 0
+        if not (matched_credit or matched_debit):
+            return
+
+        line.not_foreign_recalculate = True
+        if matched_credit:
+            line.foreign_credit = abs(foreign_amount)
+        if matched_debit:
+            line.foreign_debit = abs(foreign_amount)
+
         other_lines = line.move_id.line_ids.filtered(
             lambda x: x != line and x.account_id.account_type != "asset_receivable"
         )
-        if other_lines:
-            other_line = other_lines[0]
-            if (
-                abs(line.credit) > 0
-                and float_compare(
-                    line.credit, abs(amount), precision_rounding=self.currency_id.rounding
-                ) == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(foreign_amount)
-                if other_line.foreign_debit != line.foreign_credit:
-                    other_line.foreign_debit = abs(line.foreign_credit)
-            if (
-                abs(line.debit) > 0
-                and float_compare(line.debit, abs(amount), precision_rounding=self.currency_id.rounding) == 0
-            ):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(foreign_amount)
-                if other_line.foreign_credit != line.foreign_debit:
-                    other_line.foreign_credit = abs(line.foreign_debit)
+        if not other_lines:
+            return
+        other_line = other_lines[0]
+        if matched_credit and other_line.foreign_debit != line.foreign_credit:
+            other_line.foreign_debit = abs(line.foreign_credit)
+        if matched_debit and other_line.foreign_credit != line.foreign_debit:
+            other_line.foreign_credit = abs(line.foreign_debit)
