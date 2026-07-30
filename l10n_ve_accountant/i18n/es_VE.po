@@ -828,8 +828,8 @@ msgstr "Es Compra Internacional"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
-msgid "Invoice rate"
-msgstr "Fecha de Tasa"
+msgid "Invoice Date"
+msgstr "Fecha de factura"
 
 #. module: l10n_ve_accountant
 #. odoo-python
