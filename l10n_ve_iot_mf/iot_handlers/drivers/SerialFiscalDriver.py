@@ -1308,7 +1308,6 @@ class SerialFiscalDriver(SerialDriver):
                     payment_commands.append(payment_command)
 
             cmd2 = [
-                    'PH01Encabezado 1',
                     cmd_number_invoice_affected,
                     cmd_fecha, 
                     cmd_serial,
