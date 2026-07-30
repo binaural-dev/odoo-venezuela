@@ -694,7 +694,10 @@ class AccountMove(models.Model):
         item_details = []
         line_number = 1
         for record in self:
-            for line in record.invoice_line_ids:
+            product_lines = record.invoice_line_ids.filtered(
+                lambda l: l.display_type == 'product'
+            )
+            for line in product_lines:
                 tax_mapping = {
                     0.0: "E",
                     8.0: "R",
@@ -734,7 +737,7 @@ class AccountMove(models.Model):
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                    "descripcion": line.product_id.name,
+                    "descripcion": line.product_id.name or "",
                     "cantidad": str(line.quantity),
                     "precioUnitario": str(unit_price),
                     "precioUnitarioDescuento": str(unit_price_discount),
