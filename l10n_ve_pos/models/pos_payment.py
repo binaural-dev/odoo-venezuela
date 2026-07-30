@@ -19,6 +19,9 @@ class PosPayment(models.Model):
         "is_change",
         "pos_order_id",
         "currency_id",
+        # Required by core's DevicesSynchronisation.constructOrdersDomain,
+        # which calls record.write_date.plus(...) on every dynamic model.
+        "write_date",
     )
 
     foreign_rate = fields.Float(
