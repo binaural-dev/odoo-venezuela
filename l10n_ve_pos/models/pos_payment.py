@@ -42,10 +42,22 @@ class PosPayment(models.Model):
         """Keep Odoo 19 core payment contract and extend it with Venezuelan
         foreign-currency fields.
 
-        Important: returning only custom fields breaks frontend invariants
-        (`pos_order_id` is needed by PosPayment.setAmount).
+        Important: `pos.load.mixin._load_pos_data_fields` returns `[]` for
+        pos.payment in core, which is a special value meaning "load every
+        field" (see `_load_pos_data_read`: `records.read(fields, ...)` with
+        an empty list reads all fields). Turning that `[]` into an explicit
+        whitelist — even one padded with our own required fields — silently
+        breaks every OTHER module's pos.payment field (e.g. an analytic
+        account added by a subsidiary/cost-center module): anything not in
+        this hardcoded list stops reaching the frontend, and the client's
+        `related_models` engine rejects it with "field does not exist" the
+        moment something tries to set it. Only build the whitelist if some
+        ancestor already narrowed it; otherwise, keep passing "all fields"
+        through untouched.
         """
-        res = super()._load_pos_data_fields(config) or []
+        res = super()._load_pos_data_fields(config)
+        if not res:
+            return res
         required = list(self._POS_PAYMENT_CORE_FIELDS) + [
             "foreign_rate",
             "foreign_amount",
