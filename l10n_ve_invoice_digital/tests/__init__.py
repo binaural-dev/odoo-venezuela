@@ -6,3 +6,4 @@ from . import test_payment_method_tfhka
 from . import test_wizard_account_retention_alert
 from . import test_wizard_move_action_post_alert
 from . import test_res_config_settings
+from . import test_res_partner
