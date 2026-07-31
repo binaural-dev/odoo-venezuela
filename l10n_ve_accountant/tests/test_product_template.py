@@ -241,3 +241,26 @@ class TestProductTemplate(TransactionCase):
         self.company.write({"account_sale_tax_id": False})
         with self.assertRaises(UserError):
             product.write({"taxes_id": False})
+
+    def test_16_write_governed_by_record_company_not_active_company(self):
+        """El unique_tax que aplica en un write es el de la compania del
+        producto (records.company_id), no el de la compania activa del
+        usuario que ejecuta la operacion.
+        """
+        company_b = self.env["res.company"].create({
+            "name": "Company B",
+            "unique_tax": False,
+        })
+        product = self.env["product.product"].with_company(self.company).create({
+            "name": "Test Multi-Company Governance",
+            "type": "service",
+            "company_id": self.company.id,
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        # Acting under Company B (unique_tax=False) should not bypass the
+        # unique_tax=True rule of the product's own company (Company A).
+        with self.assertRaises(UserError):
+            product.with_company(company_b).write({
+                "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+            })

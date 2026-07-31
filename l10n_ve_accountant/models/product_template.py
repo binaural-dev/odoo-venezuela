@@ -29,7 +29,11 @@ class ProductTemplate(models.Model):
         the net final state of the Odoo M2M commands.
         """
         errors = []
-        company = self.env['res.company'].browse(vals.get('company_id')) if vals.get('company_id') else (records.company_id if records else self.env.company)
+        company = self.env.company
+        if vals.get('company_id'):
+            company = self.env['res.company'].browse(vals['company_id'])
+        elif records and len(records.company_id) == 1:
+            company = records.company_id
 
         for field_name, comp_field in [
             ('taxes_id', 'account_sale_tax_id'),
