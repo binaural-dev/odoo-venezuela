@@ -322,11 +322,8 @@ class AccountMove(models.Model):
                 if record.debit_origin_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
-                # El monto de la factura afectada siempre se envía en VES
-                # (moneda local de la compañía), independientemente de si la
-                # NC/ND actual está en modo USD multi-moneda.
                 if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    affected_invoice_amount = str(record.debit_origin_id.amount_total)
+                    affected_invoice_amount = str(round(record.debit_origin_id.amount_total, 2))
                 else:
                     tax_totals = record.debit_origin_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
@@ -342,9 +339,8 @@ class AccountMove(models.Model):
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
-                # Misma lógica: monto afectado en VES para compañías VEF/VES.
                 if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    affected_invoice_amount = str(record.reversed_entry_id.amount_total)
+                    affected_invoice_amount = str(round(record.reversed_entry_id.amount_total, 2))
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
