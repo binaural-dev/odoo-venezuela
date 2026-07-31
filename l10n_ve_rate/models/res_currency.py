@@ -17,7 +17,7 @@ class ResCurrency(models.Model):
         if from_amount:
             if custom_rate > 0:
                
-                if company.currency_id == self.env.ref("base.USD") and to_currency != self:
+                if company.currency_id != self and company.currency_id == self.env.ref("base.USD"):
                     to_amount = from_amount / custom_rate
                 else:
                     to_amount = from_amount * custom_rate
