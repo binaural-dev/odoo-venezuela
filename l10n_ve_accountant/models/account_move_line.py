@@ -115,16 +115,13 @@ class AccountMoveLine(models.Model):
                   "move_id.foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
-            if line.foreign_price_manual:
-                continue
-            else:
-                line.foreign_price = line.currency_id._convert(
-                    line.price_unit,
-                    line.foreign_currency_id,
-                    line.company_id,
-                    line.move_id.invoice_date or fields.Date.today(),
-                    custom_rate=line.foreign_inverse_rate
-                )
+            line.foreign_price = line.currency_id._convert(
+                line.price_unit,
+                line.foreign_currency_id,
+                line.company_id,
+                line.move_id.invoice_date or fields.Date.today(),
+                custom_rate=line.foreign_inverse_rate
+            )
 
     def _inverse_foreign_price(self):
         for line in self:
