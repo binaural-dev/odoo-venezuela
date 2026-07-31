@@ -64,7 +64,7 @@ class AccountPaymentIgtf(models.Model):
         currency = invoice.currency_id
         precision = currency.rounding
 
-        due_amount = invoice.amount_residual if invoice.company_currency_id != self.env.ref("base.VEF") else invoice.amount_residual / invoice.foreign_inverse_rate
+        due_amount = invoice.amount_residual if invoice.company_currency_id != self.env.ref("base.VEF") else (invoice.amount_residual / invoice.foreign_inverse_rate if invoice.foreign_inverse_rate else 0.0)
 
 
         principal_debt = due_amount
@@ -209,7 +209,7 @@ class AccountPaymentIgtf(models.Model):
                 credit_amount = -credit_line
                 amount = 0.0
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    igtf_amount = rec.igtf_amount / rec.foreign_inverse_rate
+                    igtf_amount = rec.igtf_amount / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0
                     credit_amount = (lines[1]["credit"])
 
                     amount =  credit_amount -igtf_amount
@@ -223,7 +223,7 @@ class AccountPaymentIgtf(models.Model):
                     balance = actual_value
                     if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     
-                        balance = actual_value / rec.foreign_inverse_rate
+                        balance = actual_value / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0
                     vals[2].update({"amount_currency": actual_value, "balance": balance})
                 rec._create_inbound_move_line_igtf_vals(vals)
 
@@ -241,7 +241,7 @@ class AccountPaymentIgtf(models.Model):
                 debit_amount = debit_line
                 amount = 0.0
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                    igtf_amount = rec.igtf_amount / rec.foreign_inverse_rate
+                    igtf_amount = rec.igtf_amount / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0
                     debit_amount = (lines[1]["debit"])
 
                     amount =  debit_amount - igtf_amount
@@ -255,7 +255,7 @@ class AccountPaymentIgtf(models.Model):
                     balance = actual_value
                     if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     
-                        balance = actual_value / rec.foreign_inverse_rate
+                        balance = actual_value / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0
                     vals[2].update({"amount_currency": actual_value, "balance": balance})
 
                 rec._create_outbound_move_line_igtf_vals(vals)
