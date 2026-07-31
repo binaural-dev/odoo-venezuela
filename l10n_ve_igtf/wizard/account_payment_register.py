@@ -142,7 +142,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             move_ids=self.get_moves()
             for move_id in move_ids:
                 
-                residual = move_id.amount_residual if move_id.company_currency_id != self.env.ref("base.VEF") else move_id.amount_residual / rec.foreign_inverse_rate
+                residual = move_id.amount_residual if move_id.company_currency_id != self.env.ref("base.VEF") else (move_id.amount_residual / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0)
 
                 if rec.amount <= residual + residual * (rec.igtf_percentage / 100):
                     amount_without_difference = amount_without_difference + (rec.amount - rec.igtf_to_show)
@@ -208,7 +208,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         currency = self.currency_id
         precision = currency.rounding
 
-        due_amount = float(self.source_amount) if invoice.company_currency_id != self.env.ref("base.VEF") else float(self.source_amount) / self.foreign_inverse_rate
+        due_amount = float(self.source_amount) if invoice.company_currency_id != self.env.ref("base.VEF") else (float(self.source_amount) / self.foreign_inverse_rate if self.foreign_inverse_rate else 0.0)
 
         principal_debt = due_amount
 

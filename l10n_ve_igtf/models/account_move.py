@@ -107,7 +107,7 @@ class AccountMove(models.Model):
             rec.igtf_top_aply = amount * (self.company_id.igtf_percentage / 100)
 
             if rec.company_currency_id == self.env.ref("base.VEF"):
-                rec.alter_igtf_top_aply = rec.igtf_top_aply / rec.foreign_inverse_rate
+                rec.alter_igtf_top_aply = rec.igtf_top_aply / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0
             else:
                 rec.alter_igtf_top_aply = rec.igtf_top_aply * rec.foreign_inverse_rate
 
@@ -220,7 +220,7 @@ class AccountMove(models.Model):
             apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
             alter_apply = 0.0
             if rec.company_currency_id == self.env.ref("base.VEF"):
-                alter_apply = apply / rec.foreign_inverse_rate
+                alter_apply = apply / rec.foreign_inverse_rate if rec.foreign_inverse_rate else 0.0
             else:
                 alter_apply = apply * rec.foreign_inverse_rate
             
