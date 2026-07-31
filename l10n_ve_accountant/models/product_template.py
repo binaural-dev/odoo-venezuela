@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import ValidationError
 
 
 class ProductTemplate(models.Model):
@@ -39,11 +39,15 @@ class ProductTemplate(models.Model):
             # 1. Determine the baseline tax IDs of the record (if updating)
             current_ids = set(records[field_name].ids) if records else set()
 
-            if field_name in vals and vals[field_name]:
+            if field_name in vals:
                 raw_value = vals[field_name]
-                
+
+                if not raw_value:
+                    # False/None/0/[] means the ORM clears the relation entirely
+                    current_ids = set()
+
                 # Case A: Direct integer list [ID, ID]
-                if isinstance(raw_value, list) and all(isinstance(x, int) for x in raw_value):
+                elif isinstance(raw_value, list) and all(isinstance(x, int) for x in raw_value):
                     current_ids = set(raw_value)
                 
                 # Case B: Odoo M2M standard command structure
@@ -69,7 +73,7 @@ class ProductTemplate(models.Model):
                     vals[field_name] = [fields.Command.set([default_tax.id])]
                 else:
                     errors.append(_("- %s: No tax is assigned and the company has no default fiscal configuration.") % label)
-            elif len(tax_ids) > 1:
+            elif len(tax_ids) > 1 and company.unique_tax:
                 errors.append(_("- %s: Has %s taxes assigned (exactly one tax is required due to local fiscal policies).") % (label, len(tax_ids)))
 
         if errors:
@@ -81,4 +85,4 @@ class ProductTemplate(models.Model):
                 + "\n".join(errors)
                 + _("\n\nPlease correct these fields before saving your changes.")
             )
-            raise UserError(error_msg)
+            raise ValidationError(error_msg)
