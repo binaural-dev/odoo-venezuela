@@ -1,4 +1,5 @@
 from odoo.tests import TransactionCase, tagged
+from odoo.tests.common import Form
 from odoo import fields, Command
 from odoo.exceptions import ValidationError
 
@@ -578,6 +579,392 @@ class TestCoverageGaps(TransactionCase):
             self.assertTrue(line.foreign_price_manual)
             self.assertAlmostEqual(line.foreign_price, old + 10.0, places=2)
 
+    def test_repro_manual_alterno_add_product(self):
+        def mk_line(price, tax=True):
+            tax_ids = [(6, 0, [self.tax_16.id])] if tax else [(5, 0, 0)]
+            return Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": price,
+                "account_id": self.acc_inc.id,
+                "tax_ids": tax_ids,
+            })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [mk_line(100.0, tax=False), mk_line(100.0, tax=True)],
+        })
+        exempt = inv.invoice_line_ids.filtered(lambda l: not l.tax_ids)[:1]
+        edited = exempt.foreign_price + 0.01
+        exempt.foreign_price = edited
+        self.assertTrue(exempt.foreign_price_manual)
+
+        inv.write({"invoice_line_ids": [mk_line(100.0, tax=True)]})
+        self.env.flush_all()
+
+        self.env.invalidate_all()
+        rec = inv.line_ids.filtered(
+            lambda l: l.account_id.account_type == 'asset_receivable'
+        )[:1]
+        product_total = sum(abs(l.foreign_subtotal) for l in inv.line_ids if l.display_type == 'product')
+        tax_total = sum(abs(l.foreign_balance) for l in inv.line_ids if l.display_type == 'tax')
+        new_exempt = inv.invoice_line_ids.filtered(lambda l: not l.tax_ids)[:1]
+        self.assertAlmostEqual(inv.amount_total, 332.0, places=2)
+        self.assertTrue(rec)
+        self.assertAlmostEqual(rec.foreign_balance, rec.foreign_debit, places=2)
+        self.assertAlmostEqual(product_total + tax_total, rec.foreign_balance, places=2)
+        self.assertAlmostEqual(
+            sum(inv.line_ids.mapped('foreign_debit')),
+            sum(inv.line_ids.mapped('foreign_credit')),
+            places=2,
+        )
+        self.assertAlmostEqual(new_exempt.foreign_price, edited, places=2)
+        self.assertTrue(new_exempt.foreign_price_manual)
+
+    def test_repro_manual_alterno_in_invoice_add_product(self):
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases Repro", "code": "PRCH",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        tax_16_p = self.env["account.tax"].with_company(self.company).create({
+            "name": "16% DE COMPRAS", "amount": 16.0, "amount_type": "percent",
+            "type_tax_use": "purchase", "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+            "invoice_repartition_line_ids": [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0,
+                        'account_id': self.acc_tax.id}),
+            ],
+            "refund_repartition_line_ids": [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0,
+                        'account_id': self.acc_tax.id}),
+            ],
+        })
+        def mk_line(price):
+            return Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": price,
+                "account_id": self.acc_exp.id,
+                "tax_ids": [(6, 0, [tax_16_p.id])],
+            })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [mk_line(723.0), mk_line(1447.998)],
+        })
+        line2 = inv.invoice_line_ids.sorted(key=lambda l: l.id)[-1]
+        line2_id = line2.id
+        computed = line2.foreign_price
+        edited = computed + 0.01
+        inv.write({"invoice_line_ids": [
+            (1, line2_id, {"foreign_price": edited}),
+        ]})
+        self.env.flush_all()
+        self.assertTrue(line2.foreign_price_manual)
+
+        tax_line = inv.line_ids.filtered(
+            lambda l: l.tax_repartition_line_id and l.tax_repartition_line_id.repartition_type == 'tax'
+        )[:1]
+        self.assertTrue(tax_line)
+        tax_fd_before = tax_line.foreign_debit
+        other_base = sum(
+            abs(l.foreign_subtotal) for l in inv.invoice_line_ids if l.id != line2_id
+        )
+        expected_tax = round((edited + other_base) * tax_16_p.amount / 100.0, 2)
+        self.assertAlmostEqual(tax_fd_before, expected_tax, places=2)
+
+        inv.write({"invoice_line_ids": [mk_line(723.999)]})
+        self.env.flush_all()
+
+        self.env.invalidate_all()
+        new_line2 = inv.invoice_line_ids.filtered(lambda l: l.id == line2_id)[:1]
+        self.assertEqual(len(inv.invoice_line_ids), 3)
+        self.assertTrue(new_line2)
+        self.assertAlmostEqual(new_line2.foreign_price, edited, places=2)
+        self.assertTrue(new_line2.foreign_price_manual)
+
+        new_tax_line = inv.line_ids.filtered(
+            lambda l: l.tax_repartition_line_id and l.tax_repartition_line_id.repartition_type == 'tax'
+        )
+        tax_fd_after = sum(abs(l.foreign_debit) for l in new_tax_line if l.foreign_debit)
+        added_subtotal = abs(
+            inv.invoice_line_ids.filtered(lambda l: l.id != line2_id).sorted(
+                key=lambda l: l.id
+            )[-1].foreign_subtotal
+        )
+        expected_tax_after = round((edited + other_base + added_subtotal) * tax_16_p.amount / 100.0, 2)
+        self.assertAlmostEqual(tax_fd_after, expected_tax_after, places=2)
+
+    def test_tax_line_foreign_split_with_manual_alterno(self):
+        usd_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ], limit=1)
+        usd_rate.inverse_company_rate = 723.999
+        acc_exp2 = self._get_or_create('550100', 'Expense 2', 'expense')
+        tax_16_p = self.env["account.tax"].with_company(self.company).create({
+            "name": "16% DE COMPRAS", "amount": 16.0, "amount_type": "percent",
+            "type_tax_use": "purchase", "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+            "invoice_repartition_line_ids": [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0}),
+            ],
+            "refund_repartition_line_ids": [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0}),
+            ],
+        })
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases Split", "code": "PSPL",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        def mk_line(price, account):
+            return Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": price,
+                "account_id": account.id,
+                "tax_ids": [(6, 0, [tax_16_p.id])],
+            })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                mk_line(723.999, self.acc_exp),
+                mk_line(723.0, acc_exp2),
+            ],
+        })
+        line2 = inv.invoice_line_ids.sorted(key=lambda l: l.id)[-1]
+        line2_id = line2.id
+        inv.write({"invoice_line_ids": [(1, line2_id, {"foreign_price": 2.0})]})
+        self.env.flush_all()
+        self.assertTrue(line2.foreign_price_manual)
+        self.assertAlmostEqual(line2.foreign_price, 2.0, places=2)
+
+        tax_lines = inv.line_ids.filtered(
+            lambda l: l.tax_repartition_line_id
+            and l.tax_repartition_line_id.repartition_type == 'tax'
+        )
+        self.assertEqual(len(tax_lines), 2)
+        sorted_tax = tax_lines.sorted(key=lambda l: abs(l.amount_currency))
+        self.assertAlmostEqual(abs(sorted_tax[0].foreign_debit), 0.32, places=2)
+        self.assertAlmostEqual(abs(sorted_tax[1].foreign_debit), 0.16, places=2)
+
+        product_fd = sum(abs(l.foreign_debit) for l in inv.line_ids if l.display_type == 'product')
+        tax_fd = sum(abs(l.foreign_debit) for l in tax_lines)
+        pt = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')[:1]
+        self.assertTrue(pt)
+        self.assertAlmostEqual(pt.foreign_credit, product_fd + tax_fd, places=2)
+        self.assertAlmostEqual(
+            sum(inv.line_ids.mapped('foreign_debit')),
+            sum(inv.line_ids.mapped('foreign_credit')),
+            places=2,
+        )
+
+    def test_tax_line_foreign_split_after_adding_product(self):
+        usd_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ], limit=1)
+        usd_rate.inverse_company_rate = 723.999
+        self.currency_usd.write({"rounding": 0.0001, "decimal_places": 4})
+        self.currency_vef.write({"rounding": 0.0001, "decimal_places": 4})
+        acc_exp2 = self._get_or_create('550100', 'Expense 2', 'expense')
+        tax_16_p = self.env["account.tax"].with_company(self.company).create({
+            "name": "16% DE COMPRAS", "amount": 16.0, "amount_type": "percent",
+            "type_tax_use": "purchase", "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+            "invoice_repartition_line_ids": [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0}),
+            ],
+            "refund_repartition_line_ids": [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0}),
+            ],
+        })
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases Add", "code": "PADD",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        def mk_line(price, account):
+            return Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": price,
+                "account_id": account.id,
+                "tax_ids": [(6, 0, [tax_16_p.id])],
+            })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                mk_line(723.999, self.acc_exp),
+                mk_line(723.0, acc_exp2),
+            ],
+        })
+        line2 = inv.invoice_line_ids.sorted(key=lambda l: l.id)[-1]
+        line2_id = line2.id
+        inv.write({"invoice_line_ids": [(1, line2_id, {"foreign_price": 1.0})]})
+        self.env.flush_all()
+        self.assertTrue(line2.foreign_price_manual)
+
+        inv.write({"invoice_line_ids": [mk_line(723.999, acc_exp2)]})
+        self.env.flush_all()
+
+        self.env.invalidate_all()
+        new_line2 = inv.invoice_line_ids.filtered(lambda l: l.id == line2_id)[:1]
+        self.assertAlmostEqual(new_line2.foreign_price, 1.0, places=4)
+        self.assertTrue(new_line2.foreign_price_manual)
+
+        tax_lines = inv.line_ids.filtered(
+            lambda l: l.tax_repartition_line_id
+            and l.tax_repartition_line_id.repartition_type == 'tax'
+        )
+        self.assertEqual(len(tax_lines), 2)
+        by_native = {abs(l.amount_currency): l for l in tax_lines}
+        merged_tax = by_native[round(723.0 * tax_16_p.amount / 100.0
+                                     + 723.999 * tax_16_p.amount / 100.0, 2)]
+        other_tax = by_native[round(723.999 * tax_16_p.amount / 100.0, 2)]
+        self.assertAlmostEqual(abs(merged_tax.foreign_debit), 0.32, places=4)
+        self.assertAlmostEqual(abs(other_tax.foreign_debit), 0.16, places=4)
+
+        product_fd = sum(abs(l.foreign_debit) for l in inv.line_ids if l.display_type == 'product')
+        tax_fd = sum(abs(l.foreign_debit) for l in tax_lines)
+        pt = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')[:1]
+        self.assertTrue(pt)
+        self.assertAlmostEqual(pt.foreign_credit, product_fd + tax_fd, places=4)
+        self.assertAlmostEqual(
+            sum(inv.line_ids.mapped('foreign_debit')),
+            sum(inv.line_ids.mapped('foreign_credit')),
+            places=4,
+        )
+
+    def test_form_manual_alterno_preserved_when_adding_product(self):
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases Repro2", "code": "PRC2",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        def mk_line(price):
+            return Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": price,
+                "account_id": self.acc_exp.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [mk_line(723.0), mk_line(1447.998)],
+        })
+
+        line_ids_before = inv.invoice_line_ids.ids
+        form = Form(inv, view="account.view_move_form")
+        computed = None
+        edited = None
+        with form.invoice_line_ids.edit(1) as line2_form:
+            computed = line2_form.foreign_price
+            edited = computed + 0.01
+            line2_form.foreign_price = edited
+        inv = form.save()
+        saved_line2 = inv.invoice_line_ids.browse(line_ids_before[1])
+        self.assertTrue(saved_line2.foreign_price_manual)
+
+        form = Form(inv, view="account.view_move_form")
+        with form.invoice_line_ids.new() as new_line:
+            new_line.product_id = self.product
+            new_line.quantity = 1.0
+            new_line.price_unit = 723.999
+        inv = form.save()
+
+        self.env.invalidate_all()
+        new_line2 = inv.invoice_line_ids.browse(line_ids_before[1])
+        self.assertTrue(new_line2)
+        self.assertAlmostEqual(new_line2.foreign_price, edited, places=2)
+        self.assertTrue(new_line2.foreign_price_manual)
+
+    def test_web_onchange_manual_alterno_add_product(self):
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases Repro3", "code": "PRC3",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        def mk_line(price):
+            return Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": price,
+                "account_id": self.acc_exp.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [mk_line(723.0), mk_line(1447.998)],
+        })
+        line2 = inv.invoice_line_ids.sorted(key=lambda l: l.id)[-1]
+        computed = line2.foreign_price
+        edited = computed + 0.01
+        line2.foreign_price = edited
+        self.assertTrue(line2.foreign_price_manual)
+
+        probe = Form(inv, view="account.view_move_form")
+        fields_spec = probe._view['fields_spec']
+        sub_fields = fields_spec['invoice_line_ids']['fields']
+        self.assertIn("foreign_price_manual", sub_fields)
+        tax_line = inv.line_ids.filtered('tax_repartition_line_id')[:1]
+        tax_fd_before = tax_line.foreign_debit
+        line2_view_vals = {f: line2[f] for f in sub_fields if f in line2._fields}
+        line2_view_vals.pop('id', None)
+        values = {
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "currency_id": self.currency_vef.id,
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                (1, line2.id, line2_view_vals),
+                (0, 0, {"product_id": self.product.id, "quantity": 1.0,
+                        "price_unit": 723.999, "account_id": self.acc_exp.id,
+                        "tax_ids": [(6, 0, [self.tax_16.id])]}),
+            ],
+        }
+        res = inv.onchange(values, ["invoice_line_ids"], fields_spec)
+        o2m_commands = (res.get("value") or {}).get("invoice_line_ids") or []
+        line2_cmd = [c for c in o2m_commands
+                     if c[0] in (Command.UPDATE, Command.LINK, Command.DELETE)
+                     and c[1] == line2.id]
+        line2_values = line2_cmd[0][2] if line2_cmd and line2_cmd[0][0] == Command.UPDATE else {}
+        line_ids_cmds = (res.get("value") or {}).get("line_ids") or []
+        tax_cmd = [c for c in line_ids_cmds
+                   if c[0] in (Command.UPDATE, Command.CREATE, Command.LINK)
+                   and (c[1] == tax_line.id)]
+        tax_vals = tax_cmd[0][2] if tax_cmd and tax_cmd[0][0] == Command.UPDATE else {}
+        self.assertNotIn("foreign_price", line2_values)
+        self.assertNotIn("foreign_debit", tax_vals)
+        self.assertNotIn("foreign_credit", tax_vals)
+        self.assertTrue(line2.foreign_price_manual)
+        self.assertAlmostEqual(tax_fd_before, tax_line.foreign_debit, places=2)
+
     # ═══════════════════════════════════════════════════════════════
     # account_move_line.py - _compute_foreign_amount_residual
     # ═══════════════════════════════════════════════════════════════
@@ -609,6 +996,37 @@ class TestCoverageGaps(TransactionCase):
         if line:
             line.price_unit = 200.0
             line._onchange_price_unit()
+
+    def test_native_price_change_reinits_manual_alterno(self):
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases Reinit", "code": "PRNT",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": 723.999,
+                "account_id": self.acc_exp.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            })],
+        })
+        line = inv.invoice_line_ids[:1]
+        rate = inv.foreign_inverse_rate
+        self.assertAlmostEqual(line.foreign_price, 723.999 * rate, places=4)
+
+        line.foreign_price = line.foreign_price + 0.01
+        self.assertTrue(line.foreign_price_manual)
+
+        line.price_unit = 1000.0
+        self.env.flush_all()
+        self.env.invalidate_all()
+        self.assertAlmostEqual(line.foreign_price, 1000.0 * rate, places=4)
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - tax_totals ALL keys with foreign values
