@@ -117,23 +117,29 @@ class AccountMoveLine(models.Model):
         for line in self:
             if line.foreign_price_manual:
                 continue
-            company_currency = line.company_id.currency_id
-            foreign_currency = line.company_id.currency_foreign_id
-            if line.currency_id.id == company_currency.id:
-                line.foreign_price = line.price_unit * line.foreign_inverse_rate
-            elif foreign_currency and line.currency_id.id == foreign_currency.id:
-                line.foreign_price = line.price_unit
             else:
                 line.foreign_price = line.currency_id._convert(
                     line.price_unit,
-                    foreign_currency,
+                    line.foreign_currency_id,
                     line.company_id,
                     line.move_id.invoice_date or fields.Date.today(),
+                    custom_rate=line.foreign_inverse_rate
                 )
 
     def _inverse_foreign_price(self):
         for line in self:
-            line.foreign_price_manual = True
+            if not (line.currency_id and line.foreign_currency_id and line.company_id):
+                line.foreign_price_manual = True
+                continue
+            expected = line.currency_id._convert(
+                line.price_unit,
+                line.foreign_currency_id,
+                line.company_id,
+                line.move_id.invoice_date or fields.Date.today(),
+                custom_rate=line.foreign_inverse_rate,
+            )
+            if line.foreign_currency_id.compare_amounts(line.foreign_price, expected) != 0:
+                line.foreign_price_manual = True
 
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
@@ -573,7 +579,8 @@ class AccountMoveLine(models.Model):
             total_currency = sum(product_lines.mapped('amount_currency'))
             rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
             expected = cc.round(move.currency_id._convert(
-                total_currency, cc, move.company_id, rate_date
+                total_currency, cc, move.company_id, rate_date,
+                custom_rate=move.foreign_inverse_rate or 0.0,
             ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
