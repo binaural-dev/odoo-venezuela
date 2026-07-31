@@ -962,7 +962,7 @@ class AccountMove(models.Model):
                 continue
             guarded.add(move.id)
             try:
-                foreign_key_to_amount = {}
+                foreign_per_key = {}
                 sign = move.direction_sign if move.is_invoice(include_receipts=True) else 1
                 for bl in base_lines:
                     if bl.display_type != 'product':
@@ -984,24 +984,35 @@ class AccountMove(models.Model):
                     for tax in foreign_res['taxes']:
                         if not tax['amount']:
                             continue
-                        group_key = tax['tax_repartition_line_id']
-                        foreign_key_to_amount[group_key] = foreign_key_to_amount.get(group_key, 0.0) + tax['amount']
+                        key = (tax['tax_repartition_line_id'], bl.account_id.id)
+                        foreign_per_key.setdefault(key, []).append(tax['amount'])
 
-                tax_lines_by_rep = {}
+                tax_lines_by_key = {}
                 for tl in tax_amls:
-                    rep_line = tl.tax_repartition_line_id.id
-                    tax_lines_by_rep.setdefault(rep_line, []).append(tl)
+                    key = (tl.tax_repartition_line_id.id, tl.account_id.id)
+                    tax_lines_by_key.setdefault(key, []).append(tl)
 
-                for rep_line, lines in tax_lines_by_rep.items():
-                    total_fb = foreign_key_to_amount.get(rep_line)
-                    if total_fb is None:
+                for (rep_line, acct), lines in tax_lines_by_key.items():
+                    amounts = foreign_per_key.get((rep_line, acct))
+                    if not amounts:
+                        for (r2, a2), amts in foreign_per_key.items():
+                            if r2 == rep_line:
+                                amounts = (amounts or []) + amts
+                    if not amounts:
                         continue
-                    total_ac = sum(abs(l.amount_currency) for l in lines if l.amount_currency)
-                    if fc.is_zero(total_ac):
-                        continue
-                    for tl in lines:
-                        proportion = abs(tl.amount_currency) / total_ac
-                        fb = fee(total_fb * proportion)
+                    if len(lines) == len(amounts):
+                        pairs = zip(lines, amounts)
+                    else:
+                        total_ac = sum(abs(l.amount_currency) for l in lines if l.amount_currency)
+                        if fc.is_zero(total_ac):
+                            continue
+                        total_fb = sum(amounts)
+                        pairs = [
+                            (tl, fee(total_fb * abs(tl.amount_currency) / total_ac))
+                            for tl in lines
+                        ]
+                    for tl, amount in pairs:
+                        fb = fee(amount)
                         if not fc.is_zero(tl.foreign_balance - fb):
                             if fb >= 0:
                                 tl.write({'foreign_debit': fb, 'foreign_credit': 0.0})
@@ -1036,7 +1047,9 @@ class AccountMove(models.Model):
                                 "to counterpart (manual alterno present)",
                                 move.id, diff,
                             )
+                        signed = new_abs if side == 'foreign_debit' else -new_abs
                         target.write({
+                            'foreign_balance': signed,
                             'foreign_debit': new_abs if side == 'foreign_debit' else 0.0,
                             'foreign_credit': new_abs if side == 'foreign_credit' else 0.0,
                             'not_foreign_recalculate': True,
@@ -1111,6 +1124,7 @@ class AccountMove(models.Model):
                 new_fc = my_foreign if is_credit_side else 0.0
                 if not fc.is_zero(pt.foreign_debit - new_fd) or not fc.is_zero(pt.foreign_credit - new_fc):
                     pt.write({
+                        'foreign_balance': new_fd - new_fc,
                         'foreign_debit': new_fd,
                         'foreign_credit': new_fc,
                         'not_foreign_recalculate': True,
@@ -1126,8 +1140,10 @@ class AccountMove(models.Model):
                     target_key = "foreign_credit" if move.is_inbound() else "foreign_debit"
                     target = other.filtered(lambda l: l[target_key] > 0).sorted(key=lambda l: -l[target_key])[:1]
                     if target:
+                        cur_val = target[0][target_key]
                         target.write({
-                            target_key: target[0][target_key] + diff,
+                            target_key: cur_val + diff,
+                            'foreign_balance': (cur_val + diff) if target_key == 'foreign_debit' else -(cur_val + diff),
                             'not_foreign_recalculate': True,
                         })
 
