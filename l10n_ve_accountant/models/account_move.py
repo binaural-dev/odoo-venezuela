@@ -1019,20 +1019,39 @@ class AccountMove(models.Model):
                             else:
                                 tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
 
-                expected = fee(abs(move.amount_total) * move.foreign_inverse_rate)
+                rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+                if move.currency_id == fc:
+                    expected = fee(abs(move.amount_total))
+                else:
+                    expected = fee(move.currency_id._convert(
+                        abs(move.amount_total), fc, move.company_id, rate_date,
+                        custom_rate=move.foreign_inverse_rate or 0.0,
+                    ))
                 product_total = sum(abs(l.foreign_subtotal) for l in move.line_ids if l.display_type == 'product')
                 tax_total = sum(abs(l.foreign_balance) for l in move.line_ids if l.display_type == 'tax')
                 diff = fee(expected - fee(product_total + tax_total))
                 if not fc.is_zero(diff):
-                    target = tax_amls[-1:]
-                    if target:
-                        new_abs = fee(abs(target.foreign_balance) + diff)
-                        orig_sign = 1 if target.foreign_balance >= 0 else -1
-                        fb = new_abs * orig_sign
-                        if fb >= 0:
-                            target.write({'foreign_debit': fb, 'foreign_credit': 0.0})
-                        else:
-                            target.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
+                    manual_alterno = any(move.invoice_line_ids.filtered('foreign_price_manual'))
+                    counterpart = move.line_ids.filtered(
+                        lambda l: not l.tax_repartition_line_id
+                        and l.account_id.account_type in ('asset_receivable', 'liability_payable')
+                        and not l.display_type
+                    )
+                    if counterpart:
+                        target = counterpart[0]
+                        side = 'foreign_debit' if target.foreign_debit > 0 else 'foreign_credit'
+                        new_abs = fee(product_total + tax_total)
+                        if manual_alterno:
+                            _logger.info(
+                                "Foreign tax reconciliation: move %s residual %s redirected "
+                                "to counterpart (manual alterno present)",
+                                move.id, diff,
+                            )
+                        target.write({
+                            'foreign_debit': new_abs if side == 'foreign_debit' else 0.0,
+                            'foreign_credit': new_abs if side == 'foreign_credit' else 0.0,
+                            'not_foreign_recalculate': True,
+                        })
             finally:
                 guarded.discard(move.id)
 
@@ -1150,16 +1169,6 @@ class AccountMove(models.Model):
 
 
     def _distribute_invoice_real_portion(self, move, cc):
-        rate = move.invoice_currency_rate
-        if not rate:
-            return
-
-        tax_lines = move.line_ids.filtered('tax_repartition_line_id')
-        for tax_line in tax_lines:
-            correct_balance = cc.round(tax_line.amount_currency * rate)
-            if not cc.is_zero(correct_balance - tax_line.balance):
-                tax_line.balance = correct_balance
-
         non_pt = move.line_ids.filtered(
             lambda l: l.display_type not in ('payment_term', 'cogs')
         )
@@ -1172,9 +1181,10 @@ class AccountMove(models.Model):
 
         # Calculate expected total from direct document conversion
         total_currency = abs(move.amount_total)
-        rate_date = move._get_invoice_currency_rate_date() or fields.Date.context_today(move)
+        rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
         expected_total = cc.round(move.currency_id._convert(
-            total_currency, cc, move.company_id, rate_date
+            total_currency, cc, move.company_id, rate_date,
+            custom_rate=move.foreign_inverse_rate or 0.0,
         ))
         # non-PT lines are credit for sale docs (negative), debit for purchase docs (positive)
         sign = -1 if move.amount_total_signed > 0 else 1
