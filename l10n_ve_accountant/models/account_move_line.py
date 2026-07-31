@@ -123,10 +123,23 @@ class AccountMoveLine(models.Model):
                 custom_rate=line.foreign_inverse_rate
             )
 
-    def _inverse_foreign_price(self):
+    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "foreign_currency_id")
+    def _compute_foreign_subtotal(self):
+        """Compute the line amounts in the alternate currency.
+
+        The taxes are recomputed over the alternate base, the same way
+        account.tax._prepare_tax_totals (through get_foreign_base_tax_lines) and _compute_all_tax
+        do it, so the line amounts add up to the alternate totals of the move.
+
+        Deriving the line total from the base currency ratio price_total / price_subtotal does not
+        work: those amounts are already rounded to the base currency precision, and the exchange
+        rate amplifies that rounding (e.g. an IVA of 0.0672 USD rounded to 0.07 becomes a 2.03 Bs
+        difference at a rate of 725.747).
+        """
         for line in self:
-            if not (line.currency_id and line.foreign_currency_id and line.company_id):
-                line.foreign_price_manual = True
+            if line.display_type in ("line_section", "line_note", "tax", "payment_term"):
+                line.foreign_subtotal = 0.0
+                line.foreign_price_total = 0.0
                 continue
             expected = line.currency_id._convert(
                 line.price_unit,
@@ -138,98 +151,27 @@ class AccountMoveLine(models.Model):
             if line.foreign_currency_id.compare_amounts(line.foreign_price, expected) != 0:
                 line.foreign_price_manual = True
 
-    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
-    def _compute_foreign_subtotal(self):
-        for line in self:
-            line_discount_price_unit = line.foreign_price * (
-                1 - (line.discount / 100.0)
+            currency = line.foreign_currency_id
+            price_after_discount = line.foreign_price * (1 - (line.discount / 100.0))
+
+            if not line.tax_ids:
+                subtotal = price_after_discount * line.quantity
+                if currency:
+                    subtotal = currency.round(subtotal)
+                line.foreign_subtotal = subtotal
+                line.foreign_price_total = subtotal
+                continue
+
+            taxes_res = line.tax_ids.compute_all(
+                price_after_discount,
+                currency=currency,
+                quantity=line.quantity,
+                product=line.product_id,
+                partner=line.move_id.partner_id or line.partner_id,
+                is_refund=line.is_refund,
             )
-            foreign_subtotal = line_discount_price_unit * line.quantity
-
-            if line.tax_ids:
-                taxes_res = line.tax_ids.compute_all(
-                    line_discount_price_unit,
-                    quantity=line.quantity,
-                    currency=line.foreign_currency_id,
-                    product=line.product_id,
-                    partner=line.partner_id,
-                    is_refund=line.is_refund,
-                )
-                line.foreign_subtotal = taxes_res["total_excluded"]
-                line.foreign_price_total = taxes_res["total_included"]
-            else:
-                line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
-
-    def _set_foreign(self, value):
-        self.foreign_debit = abs(value) if value > 0 else 0.0
-        self.foreign_credit = abs(value) if value < 0 else 0.0
-
-    def _get_non_invoice_foreign_value(self):
-        foreign_lines = self.move_id.line_ids.filtered(
-            lambda l: l.currency_id == l.company_id.currency_foreign_id
-        )
-        currency_lines = self.move_id.line_ids.filtered(
-            lambda l: l.currency_id == l.company_id.currency_id
-        )
-        balance = sum(foreign_lines.mapped("amount_currency"))
-        if balance and len(currency_lines) == 1:
-            return -balance
-
-        cur = self.currency_id
-        if cur and cur != self.company_id.currency_foreign_id and cur != self.company_id.currency_id:
-            return self.company_id.currency_id._convert(
-                self.debit - self.credit,
-                self.company_id.currency_foreign_id,
-                self.company_id,
-                self.date or fields.Date.context_today(self),
-            )
-
-        return (self.debit - self.credit) * self.foreign_inverse_rate
-
-    def _get_foreign_value(self):
-        self.ensure_one()
-
-        if self.display_type in ("payment_term", "tax"):
-            if self.foreign_debit_adjustment:
-                return abs(self.foreign_debit_adjustment)
-            if self.foreign_credit_adjustment:
-                return -abs(self.foreign_credit_adjustment)
-            return self.foreign_balance
-
-        if self.display_type in ("line_section", "line_note"):
-            return 0.0
-
-        if self.foreign_debit_adjustment:
-            return abs(self.foreign_debit_adjustment)
-
-        if self.foreign_credit_adjustment:
-            return -abs(self.foreign_credit_adjustment)
-
-        if self.currency_id == self.company_id.currency_foreign_id and self.amount_currency:
-            return self.amount_currency
-
-        if self.move_id.payment_id \
-                and "retention_foreign_amount" in self.env["account.payment"]._fields \
-                and self.move_id.payment_id.is_retention:
-            retention_amount = self.move_id.payment_id.retention_foreign_amount
-            if self.credit:
-                return retention_amount
-            return -retention_amount
-
-        if not self.move_id.is_invoice(include_receipts=True):
-            return self._get_non_invoice_foreign_value()
-
-        if self.display_type in ("product", "cogs"):
-            sign = self.move_id.direction_sign * -1
-            return -(self.foreign_subtotal * sign)
-
-        return (self.debit - self.credit) * self.foreign_inverse_rate
-
-    def _skip_foreign_compute(self):
-        return (
-            self.move_id.journal_id == self.company_id.currency_exchange_journal_id
-            or self.not_foreign_recalculate
-        )
+            line.foreign_subtotal = taxes_res["total_excluded"]
+            line.foreign_price_total = taxes_res["total_included"]
 
     @api.depends(
         "debit",
