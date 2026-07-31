@@ -114,41 +114,46 @@ class AccountMoveLine(models.Model):
             else:
                 line.foreign_price = 0.0
 
-    @api.depends('foreign_price', 'quantity', 'discount', 'price_subtotal', 'price_total')
+    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "foreign_currency_id")
     def _compute_foreign_subtotal(self):
-        for move in self.mapped('move_id'):
-            lines = self.filtered(lambda l: l.move_id == move and l.display_type not in ('line_section', 'line_note'))
-            if not lines:
+        """Compute the line amounts in the alternate currency.
+
+        The taxes are recomputed over the alternate base, the same way
+        account.tax._prepare_tax_totals (through get_foreign_base_tax_lines) and _compute_all_tax
+        do it, so the line amounts add up to the alternate totals of the move.
+
+        Deriving the line total from the base currency ratio price_total / price_subtotal does not
+        work: those amounts are already rounded to the base currency precision, and the exchange
+        rate amplifies that rounding (e.g. an IVA of 0.0672 USD rounded to 0.07 becomes a 2.03 Bs
+        difference at a rate of 725.747).
+        """
+        for line in self:
+            if line.display_type in ("line_section", "line_note", "tax", "payment_term"):
+                line.foreign_subtotal = 0.0
+                line.foreign_price_total = 0.0
                 continue
 
-            total_foreign_subtotal_target = sum(l.foreign_price * l.quantity * (1 - l.discount / 100.0) for l in lines)
-            
-            accumulated_subtotal = 0.0
-            accumulated_total = 0.0
-            last_line = lines[-1]
+            currency = line.foreign_currency_id
+            price_after_discount = line.foreign_price * (1 - (line.discount / 100.0))
 
-            for line in lines:
-                disc_factor = 1 - (line.discount / 100.0)
-                
-                if line != last_line:
-                    line.foreign_subtotal = line.foreign_price * disc_factor * line.quantity
-                    
-                    ratio_iva = line.price_total / line.price_subtotal if line.price_subtotal else 1.0
-                    line.foreign_price_total = line.foreign_subtotal * ratio_iva
-                    
-                    accumulated_subtotal += line.foreign_subtotal
-                    accumulated_total += line.foreign_price_total
-                else:
-                   
-                    line.foreign_subtotal = total_foreign_subtotal_target - accumulated_subtotal
-                    
-                    total_base_move = sum(l.price_total for l in lines)
-                    subtotal_base_move = sum(l.price_subtotal for l in lines)
-                    
-                    global_ratio = total_base_move / subtotal_base_move if subtotal_base_move else 1.0
-                    total_foreign_target = total_foreign_subtotal_target * global_ratio
-                    
-                    line.foreign_price_total = total_foreign_target - accumulated_total
+            if not line.tax_ids:
+                subtotal = price_after_discount * line.quantity
+                if currency:
+                    subtotal = currency.round(subtotal)
+                line.foreign_subtotal = subtotal
+                line.foreign_price_total = subtotal
+                continue
+
+            taxes_res = line.tax_ids.compute_all(
+                price_after_discount,
+                currency=currency,
+                quantity=line.quantity,
+                product=line.product_id,
+                partner=line.move_id.partner_id or line.partner_id,
+                is_refund=line.is_refund,
+            )
+            line.foreign_subtotal = taxes_res["total_excluded"]
+            line.foreign_price_total = taxes_res["total_included"]
 
     @api.depends(
         "debit",
