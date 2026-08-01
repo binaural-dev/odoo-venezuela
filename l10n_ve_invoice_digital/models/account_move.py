@@ -307,9 +307,54 @@ class AccountMove(models.Model):
                 amounts["totalIVA"] = round(sum(group.get('tax_group_amount', 0) for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])), 2)
                 amounts["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
-                
-                taxes_subtotal = self.get_tax_subtotals(currency)
-                currency = record.company_id.currency_id.code_tfhka
+
+                taxes_subtotal, _dummy = self.get_tax_subtotals(currency)
+                currency_tfhka_code = record.company_id.currency_id.code_tfhka
+
+                # TotalesOtraMoneda activo: factura VEF/VES con tipo de cambio.
+                # Se genera cuando multi_currency_invoice=True + line_currency='USD'
+                # (multi_currency), o cuando hay un foreign_rate (ej. desde POS).
+                # Enviamos Totales en VES (amounts) y TotalesOtraMoneda en USD
+                # (amounts_foreign = amounts / tasa de cambio).
+                has_foreign_rate = bool(record.foreign_rate)
+                if multi_currency or has_foreign_rate:
+                    rate = record.foreign_rate or 1.0
+                    amounts_foreign["montoGravadoTotal"] = str(
+                        round(float(amounts["montoGravadoTotal"]) / rate, 2)
+                    )
+                    amounts_foreign["montoExentoTotal"] = str(
+                        round(float(amounts["montoExentoTotal"]) / rate, 2)
+                    )
+                    amounts_foreign["subtotal"] = str(
+                        round(float(amounts["subtotal"]) / rate, 2)
+                    )
+                    amounts_foreign["subtotalAntesDescuento"] = str(
+                        round(float(amounts["subtotalAntesDescuento"]) / rate, 2)
+                    )
+                    amounts_foreign["totalAPagar"] = str(
+                        round(float(amounts["totalAPagar"]) / rate, 2)
+                    )
+                    amounts_foreign["totalIVA"] = round(
+                        float(amounts["totalIVA"]) / rate, 2
+                    )
+                    amounts_foreign["montoTotalConIVA"] = str(
+                        round(float(amounts["montoTotalConIVA"]) / rate, 2)
+                    )
+                    amounts_foreign["totalDescuento"] = str(
+                        abs(round(float(amounts["totalDescuento"]) / rate, 2))
+                    )
+                    # Impuestos desglosados en ambas monedas para ImpuestosSubtotal.
+                    taxes_subtotal, taxes_subtotal_foreign = self.get_tax_subtotals(
+                        currency, multi_currency=True
+                    )
+                    # Código de moneda extranjera (ej. "USD") para TotalesOtraMoneda.
+                    foreign_currency_code = (
+                        record.company_id.currency_foreign_id.code_tfhka
+                    )
+                else:
+                    foreign_currency_code = None
+
+                currency = currency_tfhka_code
 
             else:
                 amounts_foreign["montoGravadoTotal"] = str(
@@ -425,7 +470,7 @@ class AccountMove(models.Model):
             "3.0 %": "3.0"
         }
         for record in self:
-            if currency == "VEF":
+            if currency in ("VEF", "VES") and not multi_currency:
                 for tax_totals in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
                     tax_subtotals.append({
                         "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
@@ -433,7 +478,52 @@ class AccountMove(models.Model):
                         "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
                         "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
                     })
-                return tax_subtotals
+                if record.tax_totals.get('igtf', {}).get('apply_igtf'):
+                    igtf = record.tax_totals.get('igtf', {})
+                    tax_subtotals.append({
+                        "codigoTotalImp": "IGTF",
+                        "alicuotaImp": tax_rate.get(igtf.get('name'), "3.0"),
+                        "baseImponibleImp": str(round(igtf.get('igtf_base_amount'), 2)),
+                        "valorTotalImp": str(round(igtf.get('igtf_amount'), 2)),
+                    })
+                return tax_subtotals, tax_subtotals_foreign
+            # Rama multi-moneda: factura en VES con flag multi_currency activo.
+            # Se construyen dos listas de impuestos:
+            #   - tax_subtotals: montos en VES (base imponible original).
+            #   - tax_subtotals_foreign: montos convertidos a USD ÷ tasa de cambio.
+            elif multi_currency:
+                rate = record.foreign_rate or 1.0
+                for tax_line in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
+                    tax_subtotals.append({
+                        "codigoTotalImp": tax_code[tax_line.get('tax_group_name')],
+                        "alicuotaImp": tax_rate[tax_line.get('tax_group_name')],
+                        "baseImponibleImp": str(round(tax_line.get('tax_group_base_amount'), 2)),
+                        "valorTotalImp": str(round(tax_line.get('tax_group_amount'), 2)),
+                    })
+                if record.tax_totals.get('igtf', {}).get('apply_igtf'):
+                    igtf = record.tax_totals.get('igtf', {})
+                    tax_subtotals.append({
+                        "codigoTotalImp": "IGTF",
+                        "alicuotaImp": tax_rate.get(igtf.get('name'), "3.0"),
+                        "baseImponibleImp": str(round(igtf.get('igtf_base_amount'), 2)),
+                        "valorTotalImp": str(round(igtf.get('igtf_amount'), 2)),
+                    })
+                for tax_line in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
+                    tax_subtotals_foreign.append({
+                        "codigoTotalImp": tax_code[tax_line.get('tax_group_name')],
+                        "alicuotaImp": tax_rate[tax_line.get('tax_group_name')],
+                        "baseImponibleImp": str(round(tax_line.get('tax_group_base_amount') / rate, 2)),
+                        "valorTotalImp": str(round(tax_line.get('tax_group_amount') / rate, 2)),
+                    })
+                if record.tax_totals.get('igtf', {}).get('apply_igtf'):
+                    igtf = record.tax_totals.get('igtf', {})
+                    tax_subtotals_foreign.append({
+                        "codigoTotalImp": "IGTF",
+                        "alicuotaImp": tax_rate.get(igtf.get('name'), "3.0"),
+                        "baseImponibleImp": str(round(igtf.get('igtf_base_amount') / rate, 2)),
+                        "valorTotalImp": str(round(igtf.get('igtf_amount') / rate, 2)),
+                    })
+                return tax_subtotals, tax_subtotals_foreign
             else:
                 for tax_totals in record.tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', []):
                     tax_subtotals.append({
@@ -453,13 +543,13 @@ class AccountMove(models.Model):
                     igtf = record.tax_totals.get('igtf', {})
                     tax_subtotals_foreign.append({
                         "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax_rate[igtf.get('name')],
+                        "alicuotaImp": tax_rate.get(igtf.get('name'), "3.0"),
                         "baseImponibleImp": str(round(igtf.get('igtf_base_amount'), 2)),
                         "valorTotalImp": str(round(igtf.get('igtf_amount'), 2)),
                     })
                     tax_subtotals.append({
                         "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax_rate[igtf.get('name')],
+                        "alicuotaImp": tax_rate.get(igtf.get('name'), "3.0"),
                         "baseImponibleImp": str(round(igtf.get('foreign_igtf_base_amount'), 2)),
                         "valorTotalImp": str(round(igtf.get('foreign_igtf_amount'), 2)),
                     })
