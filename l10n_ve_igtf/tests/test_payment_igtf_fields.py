@@ -49,9 +49,10 @@ class TestIGTFPurchasePaymentFields(IGTFTestCommonPurchaseBook):
         self.assertEqual(invoice.payment_state, 'paid')
         self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
         self.assertAlmostEqual(invoice.bi_igtf, 1000.0, 2)
-        self.assertAlmostEqual(invoice.foreign_bi_igtf, 1000.0, 2)
+        self.assertAlmostEqual(invoice.foreign_bi_igtf, 1000.0 * self.rate, 2)
         self.assertAlmostEqual(invoice.igtf_top_aply, igtf_top_aply, 2)
         self.assertAlmostEqual(invoice.alter_bi_igtf, 30.0, 2)
+        self.assertAlmostEqual(invoice.foreign_alter_bi_igtf, 30.0 * self.rate, 2)
 
     # ─────────────────────────────────────────────────────────
     # Single invoice partial payment (outbound)
@@ -202,9 +203,19 @@ class TestIGTFSalePaymentFields(IGTFTestCommonSaleBook):
         self.assertEqual(invoice.payment_state, 'paid')
         self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
         self.assertAlmostEqual(invoice.bi_igtf, 1000.0, 2)
-        self.assertAlmostEqual(invoice.foreign_bi_igtf, 1000.0, 2)
+        self.assertAlmostEqual(invoice.foreign_bi_igtf, 1000.0 * self.rate, 2)
         self.assertAlmostEqual(invoice.igtf_top_aply, igtf_top_aply, 2)
         self.assertGreater(invoice.alter_bi_igtf, 0)
+
+        tt = invoice.tax_totals
+        igtf = tt.get('igtf', {})
+        self.assertTrue(igtf.get('apply_igtf'))
+        self.assertAlmostEqual(igtf.get('igtf_base_amount'), invoice.bi_igtf, 2)
+        self.assertAlmostEqual(igtf.get('foreign_igtf_base_amount'), invoice.foreign_bi_igtf, 2)
+        self.assertAlmostEqual(igtf.get('igtf_amount'), round(1000.0 * 0.03, 2), 2)
+        self.assertAlmostEqual(igtf.get('foreign_igtf_amount'), round(invoice.foreign_bi_igtf * 0.03, 2), 2)
+        self.assertAlmostEqual(tt.get('amount_total_igtf'), tt.get('amount_total') + igtf.get('igtf_amount'), 2)
+        self.assertAlmostEqual(tt.get('foreign_amount_total_igtf'), tt.get('foreign_amount_total') + igtf.get('foreign_igtf_amount'), 2)
 
     # ─────────────────────────────────────────────────────────
     # Single invoice partial payment (inbound)
@@ -271,3 +282,59 @@ class TestIGTFSalePaymentFields(IGTFTestCommonSaleBook):
             self.assertAlmostEqual(td, tc, 2)
             self.assertEqual(inv.payment_state, 'paid')
             self.assertAlmostEqual(inv.amount_residual, 0.0, 2)
+
+    # ─────────────────────────────────────────────────────────
+    # Anticipo: pago anticipado con IGTF reconciliado luego contra la factura
+    # ─────────────────────────────────────────────────────────
+    def test_advance_payment_reconciled_igtf_fields(self):
+        invoice = self._create_invoice_usd(1000.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        adv = self.env['account.payment'].create({
+            'payment_type': 'inbound',
+            'partner_type': 'customer',
+            'partner_id': self.partner.id,
+            'amount': 1030.0,
+            'currency_id': self.currency_usd.id,
+            'journal_id': self.bank_journal_usd.id,
+            'payment_method_line_id': self.pm_line_in_usd.id,
+            'date': fields.Date.today(),
+            'payment_from_wizard': True,
+            'igtf_amount': 30.0,
+            'igtf_percentage': 3.0,
+            'is_igtf_on_foreign_exchange': True,
+            'invoices_origin_ids': [Command.set(invoice.ids)],
+        })
+        adv.action_post()
+
+        self.assertAlmostEqual(adv.igtf_amount, 30.0, 2)
+        self.assertEqual(invoice.payment_state, 'not_paid')
+        td = sum(adv.move_id.line_ids.mapped('debit'))
+        tc = sum(adv.move_id.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, 2)
+
+        inv_line = invoice.line_ids.filtered(
+            lambda l: l.account_id.id == self.acc_receivable.id)
+        pay_line = adv.move_id.line_ids.filtered(
+            lambda l: l.account_id.id == self.acc_receivable.id)
+        self.assertTrue(inv_line)
+        self.assertTrue(pay_line)
+        (inv_line + pay_line).reconcile()
+
+        self.assertEqual(invoice.payment_state, 'paid')
+        self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
+        self.assertAlmostEqual(invoice.bi_igtf, 1000.0, 2)
+        self.assertAlmostEqual(invoice.foreign_bi_igtf, 1000.0 * self.rate, 2)
+        self.assertAlmostEqual(invoice.alter_bi_igtf, 30.0, 2)
+        self.assertAlmostEqual(invoice.foreign_alter_bi_igtf, 30.0 * self.rate, 2)
+
+        self.env.invalidate_all()
+        tt = invoice.tax_totals
+        igtf = tt.get('igtf', {})
+        self.assertTrue(igtf.get('apply_igtf'))
+        self.assertAlmostEqual(igtf.get('igtf_base_amount'), invoice.bi_igtf, 2)
+        self.assertAlmostEqual(igtf.get('foreign_igtf_base_amount'), invoice.foreign_bi_igtf, 2)
+        self.assertAlmostEqual(igtf.get('igtf_amount'), round(1000.0 * 0.03, 2), 2)
+        self.assertAlmostEqual(igtf.get('foreign_igtf_amount'), round(invoice.foreign_bi_igtf * 0.03, 2), 2)
+        self.assertAlmostEqual(tt.get('amount_total_igtf'), tt.get('amount_total') + igtf.get('igtf_amount'), 2)
+        self.assertAlmostEqual(tt.get('foreign_amount_total_igtf'), tt.get('foreign_amount_total') + igtf.get('foreign_igtf_amount'), 2)
