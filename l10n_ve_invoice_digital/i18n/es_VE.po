@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20251016\n"
+"Project-Id-Version: Odoo Server 17.0+e-20260707\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-04 22:56+0000\n"
-"PO-Revision-Date: 2025-11-04 22:56+0000\n"
+"POT-Creation-Date: 2026-07-10 14:16+0000\n"
+"PO-Revision-Date: 2026-07-10 14:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,8 +26,24 @@ msgid "Account Retention Post Alert"
 msgstr "Alerta posterior a retención de cuenta"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__mix_invoicing_tfhka
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__mix_invoicing_tfhka
+msgid "Allow Mixed Invoicing"
+msgstr "Permitir facturación mixta"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid ""
+"Allows marking individual invoices as multi-currency (mixed VES/USD) for "
+"digitalization."
+msgstr ""
+"Permite marcar facturas individuales como multi-moneda (mixto VES/USD) para "
+"la digitalización."
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "Authentication error: %(message)s"
 msgstr "Error de autenticación: %(message)s"
@@ -36,6 +52,17 @@ msgstr "Error de autenticación: %(message)s"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.account_retention_alert_wizard
 msgid "Cancel"
 msgstr "Cancelar"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_journal.py:0
+#, python-format
+msgid ""
+"Cannot disable digital billing on a journal with existing digital invoices."
+msgstr ""
+"No se puede desactivar la facturación digital en un diario con facturas "
+"digitales existentes."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__code
@@ -61,6 +88,8 @@ msgstr "Ajustes de configuración"
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "Configuration error: The authentication token is empty."
 msgstr "Error de configuración: El token de autenticación está vacío."
@@ -95,9 +124,19 @@ msgid "Description"
 msgstr "Descripción"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_journal__digital_invoice
+msgid "Digital Invoice"
+msgstr "Factura digital"
+
+#. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Digital invoice (TFHKA)"
 msgstr "Factura digital (TFHKA)"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_journal__digital_invoice_lock
+msgid "Digital invoice lock"
+msgstr "Bloqueo de factura digital"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__digitalization_with_payment_tfhka
@@ -140,6 +179,8 @@ msgstr "Nombre para mostrar"
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "Document successfully digitized on %(date)s"
 msgstr "Documento digitalizado exitosamente el %(date)s"
@@ -148,6 +189,8 @@ msgstr "Documento digitalizado exitosamente el %(date)s"
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "Endpoint '%(endpoint_key)s' is not defined."
 msgstr "El endpoint '%(endpoint_key)s' no está definido."
@@ -156,9 +199,11 @@ msgstr "El endpoint '%(endpoint_key)s' no está definido."
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "Error 401: Invalid or expired token."
-msgstr "Error 401: Token no válido o caducado."
+msgstr "Error 401: Token inválido o expirado."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -166,6 +211,10 @@ msgstr "Error 401: Token no válido o caducado."
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "Error connecting to the API: %(error)s"
 msgstr "Error al conectar con la API: %(error)s"
@@ -173,6 +222,7 @@ msgstr "Error al conectar con la API: %(error)s"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "Error connecting to the TFHKA API: %s"
 msgstr "Error al conectar con la API de TFHKA: %s"
@@ -183,6 +233,10 @@ msgstr "Error al conectar con la API de TFHKA: %s"
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid ""
 "Error in the API response: %(message)s \n"
@@ -194,6 +248,7 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "Error in the TFHKA API: %(status_code)s"
 msgstr "Error en la API de TFHKA: %(status_code)s"
@@ -201,9 +256,20 @@ msgstr "Error en la API de TFHKA: %(status_code)s"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "Error processing TFHKA API response."
-msgstr "Error procesando la respuesta de la API de TFHKA."
+msgstr "Error al procesar la respuesta de la API de TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__mix_invoicing_type_tfhka__fiscal_machine
+msgid "Fiscal Machine"
+msgstr "Máquina Fiscal"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__mix_invoicing_type_tfhka__free_form
+msgid "Free form"
+msgstr "Forma Libre"
 
 #. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
@@ -242,6 +308,10 @@ msgstr "Generar Token para TFHKA."
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "HTTP error %(status_code)s: %(text)s"
 msgstr "Error HTTP %(status_code)s: %(text)s"
@@ -250,7 +320,7 @@ msgstr "Error HTTP %(status_code)s: %(text)s"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__id
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__invoice_digital_tfhka
@@ -285,9 +355,22 @@ msgid "Last Updated on"
 msgstr "Última actualización el"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__line_currency
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__line_currency
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__line_currency
+msgid "Line Currency"
+msgstr "Moneda para Línea del producto"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__message
 msgid "Message"
 msgstr "Mensaje"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__mix_invoicing_type_tfhka
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__mix_invoicing_type_tfhka
+msgid "Mix Invoicing Type Tfhka"
+msgstr "Tipo de facturación mixta"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__move_id
@@ -298,6 +381,26 @@ msgstr "Movimiento"
 #: model:ir.model,name:l10n_ve_invoice_digital.model_move_action_post_alert_wizard
 msgid "Move Action Post Alert"
 msgstr "Alerta al Postear Movimiento"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__multi_currency_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__multi_currency_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__multi_currency_invoice
+msgid "Multi-Currency Invoice"
+msgstr "Factura Multi-Moneda"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__multi_currency_invoice_tfhka
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__multi_currency_invoice_tfhka
+msgid "Multi-currency digital invoicing"
+msgstr "Facturación digital multi-moneda"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__multi_currency_enabled
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__multi_currency_enabled
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__multi_currency_enabled
+msgid "Multi-currency enabled"
+msgstr "Multi-moneda habilitado"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__password_tfhka
@@ -360,6 +463,7 @@ msgstr "Mostrar Retención Digital"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "TFHKA API response does not contain 'token'."
 msgstr "La respuesta de la API de TFHKA no contiene 'token'."
@@ -373,6 +477,8 @@ msgstr "Formas de pago de TFHKA"
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid ""
 "The 'Country' field of the Customer cannot be empty for digitalization."
@@ -383,16 +489,20 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "The 'Email' field of the Customer cannot be empty for digitalization."
 msgstr ""
-"El campo 'Correo Electrónico' del Cliente no puede estar vacío para la "
+"El campo 'Correo electrónico' del Cliente no puede estar vacío para la "
 "digitalización."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "The 'Mobile' field of the Customer cannot be empty for digitalization."
 msgstr ""
@@ -402,22 +512,42 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "The 'NIF' field of the Customer cannot be empty for digitalization."
-msgstr ""
-"El campo ‘NIF’ del Cliente no puede estar vacío para la digitalización."
+msgstr "El campo 'RIF' del Cliente no puede estar vacío para la digitalización."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "The URL is not configured in the company settings."
-msgstr "La URL no está configurada en los ajustes de la empresa."
+msgstr "La URL no está configurada en los ajustes de la compañía."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"The company is configured for strict digital invoicing (mixed invoicing is "
+"disabled). Only journals with digital invoicing enabled are allowed for this"
+" operation. Please check the company configuration or select a valid digital"
+" journal."
+msgstr ""
+"La empresa está configurada para facturación digital estricta (la "
+"facturación mixta está desactivada). Solo se permiten diarios con "
+"facturación digital habilitada para esta operación. Por favor, verifique la "
+"configuración de la empresa o seleccione un diario digital válido."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #, python-format
 msgid "The credit note %(name)s has not been digitized"
 msgstr "La Nota de Crédito %(name)s no ha sido digitalizada"
@@ -425,6 +555,7 @@ msgstr "La Nota de Crédito %(name)s no ha sido digitalizada"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #, python-format
 msgid "The debit note %(name)s has not been digitized"
 msgstr "La Nota de Débito %(name)s no ha sido digitalizada"
@@ -432,6 +563,7 @@ msgstr "La Nota de Débito %(name)s no ha sido digitalizada"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "The document has already been digitalized."
 msgstr "El documento ya ha sido digitalizado."
@@ -439,6 +571,7 @@ msgstr "El documento ya ha sido digitalizado."
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid ""
 "The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The "
@@ -461,14 +594,16 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid "The expiration date cannot be less than the digitization date."
 msgstr ""
-"La fecha de vencimiento no puede ser menor a la fecha de digitalización."
+"La fecha de vencimiento no puede ser menor que la fecha de digitalización."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/wizard/move_action_post_alert_views.py:0
 #, python-format
 msgid "The invoice %(name)s has not been digitized"
 msgstr "La factura %(name)s no ha sido digitalizada"
@@ -476,25 +611,29 @@ msgstr "La factura %(name)s no ha sido digitalizada"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid "The invoice date is not defined."
-msgstr "La fecha de factura no está definida."
+msgstr "La fecha de la factura no está definida."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid ""
 "The maximum number of payment methods is 5. Please check your payment "
 "methods."
 msgstr ""
-"El número máximo de métodos de pago es 5. Por favor revise sus métodos de "
+"El número máximo de formas de pago es 5. Por favor, revise sus formas de "
 "pago."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid "The numbering range is exhausted. Please contact the administrator."
 msgstr ""
@@ -503,20 +642,25 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/payment_method_tfhka.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/payment_method_tfhka.py:0
 #, python-format
 msgid "The payment method code already exists"
-msgstr "El código de la forma de pago ya existe"
+msgstr "El código de forma de pago ya existe"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid "The payment method code is not configured in the journal."
-msgstr "El código de la forma de pago no está configurado en el diario."
+msgstr "El código de forma de pago no está configurado en el diario."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid "The selected series is not configured"
 msgstr "La serie seleccionada no está configurada"
@@ -525,13 +669,15 @@ msgstr "La serie seleccionada no está configurada"
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid ""
 "The series '%(series)s' is not configured in The Factory HKA. Please contact"
 " the administrator."
 msgstr ""
-"La serie '%(series)s' no está configurada en The Factory HKA. Por favor, contacte "
-"al administrador."
+"La serie '%(series)s' no está configurada en The Factory HKA. Por favor, "
+"contacte al administrador."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_journal__payment_method_code
@@ -563,7 +709,12 @@ msgstr "Token de Autenticación Tfhka"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__url_tfhka
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "URL"
-msgstr ""
+msgstr "URL"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__line_currency__usd
+msgid "USD"
+msgstr "USD"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__url_tfhka
@@ -582,6 +733,22 @@ msgid "Username Tfhka"
 msgstr "Nombre de Usuario Tfhka"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__line_currency__ves
+msgid "VES"
+msgstr "VES"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_bank_statement_line__line_currency
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__line_currency
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_payment__line_currency
+msgid ""
+"VES: precios de líneas en Bolívares, totales solo en VES.\n"
+"USD: precios de líneas en dólares, totales en ambas monedas."
+msgstr ""
+"VES: precios de líneas en Bolívares, totales solo en VES.\n"
+"USD: precios de líneas en dólares, totales en ambas monedas."
+
+#. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.account_retention_alert_wizard
 msgid "Validation"
 msgstr "Validación"
@@ -594,6 +761,7 @@ msgstr "Validación de secuencias entre Odoo y The Factory"
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_retention.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_retention.py:0
 #, python-format
 msgid ""
 "Warning accepted: The difference in sequence between Odoo and The Factory is"
@@ -603,8 +771,36 @@ msgstr ""
 "Odoo y The Factory."
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__multi_currency_invoice_tfhka
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_config_settings__multi_currency_invoice_tfhka
+msgid ""
+"When enabled, invoices can be digitalized with multi-currency support (VES "
+"or USD line prices + dual totals if USD selected). An additional checkbox + "
+"currency selector will appear on each invoice."
+msgstr ""
+"Al activarse, las facturas se pueden digitalizar con soporte multi-moneda "
+"(precios de línea en VES o USD + totales duales si se selecciona USD). "
+"Aparecerá una casilla adicional y un selector de moneda en cada factura."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_bank_statement_line__multi_currency_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__multi_currency_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_payment__multi_currency_invoice
+msgid ""
+"When enabled, the 'Line Currency' selector appears, allowing you to choose "
+"VES (prices in Bolivars, totals in VES) or USD (prices in USD, totals in "
+"both currencies). Requires 'Multi-currency digital invoicing' in company "
+"settings."
+msgstr ""
+"Al activarse, aparece el selector 'Moneda de Línea', que permite elegir "
+"VES (precios en Bolívares, totales en VES) o USD (precios en USD, totales "
+"en ambas monedas). Requiere 'Facturación digital multi-moneda' en los "
+"ajustes de la compañía."
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "You must register the Password for TFHKA."
 msgstr "Debe registrar la Contraseña para TFHKA."
@@ -612,6 +808,7 @@ msgstr "Debe registrar la Contraseña para TFHKA."
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "You must register the URL for TFHKA."
 msgstr "Debe registrar la URL para TFHKA."
@@ -619,6 +816,7 @@ msgstr "Debe registrar la URL para TFHKA."
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_company.py:0
 #, python-format
 msgid "You must register the Username for TFHKA."
 msgstr "Debe registrar el Nombre de Usuario para TFHKA."

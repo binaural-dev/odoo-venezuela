@@ -52,17 +52,17 @@ class AccountRetention(models.Model):
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
                     return 0
                 else:
-                    _logger.error("Error in the API response: %s \n%s", data.get('mensaje'), data.get('validaciones'))
+                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s", message=data.get('mensaje'), validation=data.get('validaciones')))
                     raise UserError(_("Error in the API response: %(message)s \n%(validation)s", message=data.get('mensaje'), validation=data.get('validaciones')))
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()
                 return self.call_tfhka_api(endpoint_key, payload)
             else:
-                _logger.error("HTTP error %s: %s", response.status_code, response.text)
+                _logger.error(_("HTTP error %(status_code)s: %(text)s", status_code=response.status_code, text=response.text))
                 raise UserError(_("HTTP error %(status_code)s: %(text)s", status_code=response.status_code, text=response.text))
         except requests.exceptions.RequestException as e:
-            _logger.error("Error connecting to the API: %s", e)
+            _logger.error(_("Error connecting to the API: %(error)s", error=e))
             raise UserError(_("Error connecting to the API: %(error)s", error=e))
 
     def generate_document_digital(self):
