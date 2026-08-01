@@ -702,30 +702,24 @@ class AccountMove(models.Model):
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
-                # Rama USD multi-moneda: convierte precios VES → USD vía foreign_rate.
-                if record.is_invoice_multi_currency_enabled():
-                    rate = record.foreign_rate or 1.0
-                    unit_price = round(line.price_unit / rate, 2)
-                    unit_price_discount = round((line.price_unit / rate) * (line.discount / 10), 2)
-                    discount_amount = round(((line.price_unit / rate) * (line.discount / 100)) * line.quantity, 2)
-                    item_price = round(line.price_subtotal / rate, 2)
-                    price_before_discount = round((line.price_unit / rate) * line.quantity, 2)
-
-                elif record.company_id.currency_id.name == "VEF":
-                    unit_price = round(line.price_unit, 2)
-                    unit_price_discount = round(line.price_unit * (line.discount / 10), 2)
-                    discount_amount = round((line.price_unit * (line.discount / 100)) * line.quantity, 2)
-                    item_price = round(line.price_subtotal, 2)
-                    price_before_discount = round(line.price_unit * line.quantity, 2)
-
+                # Determinar valores base según moneda/configuración
+                if not record.is_invoice_multi_currency_enabled() and record.company_id.currency_id.name in ("VEF", "VES"):
+                    base_price = line.price_unit
+                    base_subtotal = line.price_subtotal
                 else:
-                        unit_price = round(line.foreign_price, 2)
-                        unit_price_discount = round(line.foreign_price * (line.discount / 10), 2)
-                        discount_amount = round((line.foreign_price * (line.discount / 100)) * line.quantity, 2)
-                        item_price = round(line.foreign_subtotal, 2)
-                        price_before_discount = round(line.foreign_price * line.quantity, 2)
+                    base_price = line.foreign_price
+                    base_subtotal = line.foreign_subtotal
 
-                vat = round(item_price * line.tax_ids.amount / 100, 2)
+                discount_factor = (line.discount or 0.0) / 100.0
+
+                unit_price = round(base_price, 2)
+                discount_unit = round(base_price * discount_factor, 2)
+                unit_price_discount = round(base_price - discount_unit, 2)
+                discount_amount = round(base_price * discount_factor * line.quantity, 2)
+                item_price = round(base_subtotal, 2)
+                price_before_discount = round(base_price * line.quantity, 2)
+
+                vat = round(item_price * tax_rate / 100.0, 2)
                 total_item_value = round(item_price + vat, 2)
 
                 item_details.append({
