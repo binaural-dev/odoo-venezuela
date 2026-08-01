@@ -27,6 +27,8 @@ class AccountMove(models.Model):
             rec.foreign_alter_bi_igtf = 0.0
             rec.bi_igtf = 0.0
 
+            to_currency = rec.company_id.currency_foreign_id or rec.currency_id
+
             if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid', 'in_payment']:
                 rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
@@ -49,6 +51,8 @@ class AccountMove(models.Model):
                         target_account = partner_context.property_account_receivable_id
                     else:
                         target_account = partner_context.property_account_payable_id
+
+                    conversion_date = rec.invoice_date if rec.invoice_date and payment_move.date <= rec.invoice_date else payment_move.date
 
                     igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in account)
                     partner_line = payment_move.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
@@ -108,19 +112,22 @@ class AccountMove(models.Model):
 
                         if igtf_line and partial:
                             alter_bi_igtf += igtf_amount
-                            foreign_alter_bi_igtf += igtf_amount_currency
-
-                    conversion_date = rec.invoice_date if rec.invoice_date and payment_move.date <= rec.invoice_date else payment_move.date
+                            foreign_alter_bi_igtf += rec.company_id.currency_id._convert(
+                                igtf_amount, to_currency, rec.company_id, conversion_date,
+                            )
 
                     total_bi_igtf += amount_base_payment
                     if total_bi_igtf > abs(rec.amount_total_signed):
                         total_bi_igtf = abs(rec.amount_total_signed)
 
                     foreign_bi_igtf += rec.company_id.currency_id._convert(
-                        amount_base_payment, rec.currency_id, rec.company_id, conversion_date,
+                        amount_base_payment, to_currency, rec.company_id, conversion_date,
                     )
-                    if foreign_bi_igtf > abs(rec.amount_total):
-                        foreign_bi_igtf = abs(rec.amount_total)
+                    foreign_total_cap = rec.company_id.currency_id._convert(
+                        abs(rec.amount_total_signed), to_currency, rec.company_id, conversion_date,
+                    )
+                    if foreign_bi_igtf > foreign_total_cap:
+                        foreign_bi_igtf = foreign_total_cap
 
                 apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
                 rec.igtf_top_aply = apply
