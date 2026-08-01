@@ -24,7 +24,7 @@ class TestCoverageGaps(TransactionCase):
             "foreign_currency_id": self.currency_usd.id,
             "account_fiscal_country_id": self.country_ve.id,
             "country_id": self.country_ve.id,
-            "unique_tax": False,
+            "unique_tax": True,
         })
 
         today = fields.Date.today()
@@ -520,7 +520,7 @@ class TestCoverageGaps(TransactionCase):
                     "quantity": 2.0, "price_unit": 1000.0,
                     "discount": 10.0,
                     "account_id": self.acc_inc.id,
-                    "tax_ids": [(5, 0, 0)],
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
                 }),
             ],
         })

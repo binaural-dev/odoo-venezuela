@@ -24,7 +24,7 @@ class TestMultiCurrencyRounding(TransactionCase):
             "foreign_currency_id": self.currency_usd.id,
             "account_fiscal_country_id": self.country_ve.id,
             "country_id": self.country_ve.id,
-            "unique_tax": False,
+            "unique_tax": True,
         })
 
         # Rates: 1 USD = 40 VEF, 1 EUR = 45 VEF
@@ -227,7 +227,7 @@ class TestMultiCurrencyRounding(TransactionCase):
     def test_01_eur_three_taxes(self):
         """Factura EUR con 3 líneas e impuestos 16%, 31%, 8%"""
         inv = self._create_invoice(self.currency_eur, None, [
-            (2, 250000.00, [self.tax_16, self.tax_31]),
+            (2, 250000.00, [self.tax_31]),
             (1, 150000.00, [self.tax_8]),
             (3, 50000.00, [self.tax_16]),
         ])
@@ -255,7 +255,7 @@ class TestMultiCurrencyRounding(TransactionCase):
     def test_02_usd_three_taxes(self):
         """Factura USD con 3 líneas e impuestos 16%, 31%, 8%"""
         inv = self._create_invoice(self.currency_usd, None, [
-            (1, 10000.00, [self.tax_16, self.tax_31]),
+            (1, 10000.00, [self.tax_16]),
             (2, 5000.00, [self.tax_8]),
             (3, 2000.00, [self.tax_31]),
         ])
@@ -285,7 +285,7 @@ class TestMultiCurrencyRounding(TransactionCase):
     def test_04_eur_payment(self):
         """Pago en EUR: el asiento del pago debe coincidir con la PT line de la factura"""
         inv = self._create_invoice(self.currency_eur, None, [
-            (2, 250000.00, [self.tax_16, self.tax_31]),
+            (2, 250000.00, [self.tax_31]),
             (1, 150000.00, [self.tax_8]),
             (3, 50000.00, [self.tax_16]),
         ])
@@ -314,7 +314,7 @@ class TestMultiCurrencyRounding(TransactionCase):
     def test_05_usd_payment(self):
         """Pago en USD"""
         inv = self._create_invoice(self.currency_usd, None, [
-            (1, 10000.00, [self.tax_16, self.tax_31]),
+            (1, 10000.00, [self.tax_16]),
             (2, 5000.00, [self.tax_8]),
             (3, 2000.00, [self.tax_31]),
         ])
@@ -461,7 +461,8 @@ class TestMultiCurrencyRounding(TransactionCase):
     def test_14_usd_payment_foreign_check(self):
         """Pago USD: verifica foreign_debit/foreign_credit en el asiento del pago"""
         inv = self._create_invoice(self.currency_usd, None, [
-            (1, 10000.00, [self.tax_16, self.tax_31]),
+            (1, 10000.00, [self.tax_16]),
+            (1, 10000.00, [self.tax_31]),
             (2, 5000.00, [self.tax_8]),
         ])
         pt = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
