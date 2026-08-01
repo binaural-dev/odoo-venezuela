@@ -26,9 +26,40 @@ class AccountMove(models.Model):
     def action_post(self):
         for invoice in self:
             invoice._tfhka_validate_mixed_invoicing()
+            invoice._tfhka_validate_invoice_date()
 
         res = super(AccountMove, self).action_post()
         return res
+
+    def _tfhka_validate_invoice_date(self):
+        """Validates that the emission date of the current invoice is not earlier than the date of the last digitalized invoice."""
+        self.ensure_one()
+        if not self._is_eligible_for_tfhka():
+            return
+
+        domain = [
+            ("state", "=", "posted"),
+            ("journal_id.digital_invoice", "=", True),
+            ("journal_id", "=", self.journal_id.id),
+            ("move_type", "=", self.move_type),
+            ("is_digitalized", "=", True),
+        ]
+
+        last_invoice = self.env["account.move"].search(
+            domain, order="invoice_date desc, name desc", limit=1
+        )
+
+        current_invoice_date = self.invoice_date or fields.Date.today()
+
+        if last_invoice and last_invoice.invoice_date:
+            if current_invoice_date < last_invoice.invoice_date:
+                raise ValidationError(
+                    _(
+                        "The emission date of the current invoice is earlier than the date of the last digitalized invoice (%(invoice_date)s). "
+                        "This could cause sequence inconsistencies.",
+                        invoice_date=last_invoice.invoice_date,
+                    )
+                )
 
     def _is_eligible_for_tfhka(self):
         """Check if the invoice should process TFHKA logic."""
