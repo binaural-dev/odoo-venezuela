@@ -108,7 +108,7 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
-        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
+        self.invoice_date = False if self.move_type == "entry" else fields.Date.context_today(self)
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
@@ -170,16 +170,28 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
-    foreign_amount_residual = fields.Monetary(
-        'Foreign Amount Residual',
-        copy=False,
-        compute='_compute_foreign_amount_residual',
-        currency_field='foreign_currency_id',
-        readonly=False,
-    )
+    foreign_amount_residual = fields.Monetary(copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
 
-    @api.depends('line_ids.foreign_amount_residual')
-    def _compute_foreign_amount_residual(self):
+    @api.depends(
+        'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.payment_id.is_matched',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual_currency',
+        'line_ids.balance',
+        'line_ids.currency_id',
+        'line_ids.amount_currency',
+        'line_ids.amount_residual',
+        'line_ids.amount_residual_currency',
+        'line_ids.payment_id.state',
+        'line_ids.full_reconcile_id',
+        'state',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.foreign_amount_residual',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.foreign_amount_residual',
+    )
+    def _compute_amount(self):
+        res = super()._compute_amount()
         for move in self:
             total_residual_currency = 0.0
             for line in move.line_ids:
@@ -190,6 +202,8 @@ class AccountMove(models.Model):
                 move.foreign_amount_residual = -sign * total_residual_currency
             else:
                 move.foreign_amount_residual = abs(total_residual_currency)
+        return res
+         
 
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
     def _compute_inverse_rate_vef(self):
@@ -327,18 +341,31 @@ class AccountMove(models.Model):
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
+                move.foreign_currency_id.id, move.invoice_date or fields.Date.context_today(self)
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
                 move.message_post(
-                    body=_(
-                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    body=_("The rate has been updated from {last_rate} to {rate} ").format(
+                        rate=move.foreign_rate, last_rate=last_foreign_rate
                     )
-                    % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
                 )
 
+            if move.move_type in ('out_refund', 'in_refund') and move.reversed_entry_id:
+                original_journal = move.reversed_entry_id.journal_id
+                if original_journal != move.journal_id:
+                    move._update_invoice_lines_with_new_journal(
+                        original_journal.id, move.journal_id.id
+                    )
+
         return moves
+
+    @api.onchange("partner_id")
+    def onchange_date(self):
+        for rec in self:
+            if rec.partner_id:
+                rec.invoice_date = fields.Date.context_today(self)
+                rec.foreign_currency_id = rec.default_alternate_currency()
 
     def write(self, vals):
         if vals.get("foreign_rate", False):
@@ -352,10 +379,9 @@ class AccountMove(models.Model):
                 and move.foreign_rate != move.last_foreign_rate
             ):
                 move.message_post(
-                    body=_(
-                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    body=_("The rate has been updated from {last_rate} to {rate} ").format(
+                        rate=move.foreign_rate, last_rate=move.last_foreign_rate
                     )
-                    % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
         return res
 
@@ -655,7 +681,7 @@ class AccountMove(models.Model):
             if move.manually_set_rate:
                 continue
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
-            rate_date = getattr(move, date_field) or fields.Date.today()
+            rate_date = getattr(move, date_field) or fields.Date.context_today(self)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.write({
                 'foreign_rate': rate_values.get("foreign_rate", 0),
@@ -889,12 +915,11 @@ class AccountMove(models.Model):
                 if total_pay > invoice.partner_id.credit_limit:
                     decimal_places = invoice.currency_id.decimal_places
                     raise ValidationError(
-                        _(
-                            "No se ha confirmado la factura. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele la factura o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
-                            round(invoice.partner_id.credit, decimal_places),
-                            round(invoice.amount_residual, decimal_places),
-                            round(total_pay, decimal_places),
-                            round(invoice.partner_id.credit_limit, decimal_places),
+                        _("No se ha confirmado la factura. Límite de crédito excedido. La cuenta por cobrar del cliente es de {credit} más {amount_residual} en factura da un total de {total_pay} superando el límite de ventas de {credit_limit}. Por favor cancele la factura o comuníquese con el administrador para aumentar el límite de crédito del cliente.").format(
+                            credit=round(invoice.partner_id.credit, decimal_places),
+                            amount_residual=round(invoice.amount_residual, decimal_places),
+                            total_pay=round(total_pay, decimal_places),
+                            credit_limit=round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
         

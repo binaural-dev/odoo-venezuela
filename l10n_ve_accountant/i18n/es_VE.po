@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250522\n"
+"Project-Id-Version: Odoo Server 17.0+e-20260707\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-28 03:36+0000\n"
-"PO-Revision-Date: 2026-01-28 03:36+0000\n"
+"POT-Creation-Date: 2026-07-08 15:48+0000\n"
+"PO-Revision-Date: 2026-07-08 15:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -610,6 +610,14 @@ msgstr "Estadísticas de facturas"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_reset_to_draft_for_price_change
 msgid "Is Reset To Draft For Price Change"
 msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_currency.py:0
+#: code:addons/odoo-venezuela/l10n_ve_accountant/models/res_currency.py:0
+#, python-format
+msgid "It is not possible to delete currency records."
+msgstr "No es posible eliminar los registros de monedas."
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__journal_id

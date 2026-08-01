@@ -4,7 +4,7 @@
        Módulo de Contabilidad Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
     "version": "17.0.0.0.56",
@@ -16,6 +16,7 @@
         "l10n_ve_tax",
         "l10n_ve_contact",
         "l10n_ve_rate",
+        "account_debit_note"
     ],
     "data": [
         "security/res_groups.xml",

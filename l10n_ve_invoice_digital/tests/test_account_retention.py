@@ -174,6 +174,7 @@ class TestAccumulatedRate(TransactionCase):
                         "price_subtotal": 200,
                         "price_total": 232,
                         "foreign_rate": 2.0,
+                        "foreign_inverse_rate": 2.0,
                         "foreign_price": 200,
                         "foreign_subtotal": 400,
                         "foreign_price_total": 464,
@@ -187,7 +188,7 @@ class TestAccumulatedRate(TransactionCase):
     def _create_retention(self, type_retention, invoice):
         today = fields.Date.today()
 
-        with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":type_retention})) as retention_form:
+        with Form(self.env["account.retention"].with_context(default_type='in_invoice', default_type_retention=type_retention)) as retention_form:
             retention_form.partner_id = self.partner_a
             retention_form.date_accounting = today
 
@@ -485,9 +486,186 @@ class TestAccumulatedRate(TransactionCase):
         }
         with self.assertRaises(UserError) as e:
             retention.call_tfhka_api(endpoint_key, payload)
-            _logger.error(e.exception)
+        _logger.error(e.exception)
 
         _logger.info("Test passed: code 200 error, UserError raised as expected.")
+
+    def test_12_generate_document_digital_already_digitized(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.is_digitalized = True
+        with self.assertRaises(UserError):
+            retention.generate_document_digital()
+
+    def test_13_get_total_retention_base_vef(self):
+        vef_company = self.env["res.company"].create({
+            "name": "Compañía VEF Test",
+            "currency_id": self.env.ref("base.VEF").id,
+        })
+        vef_company.currency_id = self.env.ref("base.VEF")
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.base_currency_is_vef = True
+        total = retention.get_total_retention("05")
+        self.assertIn("totalBaseImponible", total)
+
+    def test_14_get_retention_details_islr(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("islr", account_move)
+        retention.action_post()
+        details = retention.get_retention_details("06")
+        self.assertTrue(len(details) > 0)
+        self.assertIn("CodigoConcepto", details[0])
+
+    def test_15_call_tfhka_api_undefined_endpoint(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        with self.assertRaises(UserError):
+            retention.call_tfhka_api("no_existe", {})
+
+    @patch('requests.post')
+    def test_16_call_tfhka_api_401_refresh(self, mock_post):
+        self.company.write({
+            "username_tfhka": "u",
+            "password_tfhka": "p",
+            "url_tfhka": "https://api.tfhka.com",
+            "token_auth_tfhka": "old",
+            "invoice_digital_tfhka": True,
+            "sequence_validation_tfhka": True,
+        })
+        def side_effect(url, *args, **kwargs):
+            resp = MagicMock()
+            if "/Autenticacion" in url:
+                resp.status_code = 200
+                resp.json.return_value = {
+                    "codigo": 200,
+                    "mensaje": "OK",
+                    "token": "refreshed_token",
+                    "expiracion": "2025-12-31T23:59:59",
+                }
+            else:
+                if not hasattr(side_effect, 'emision_calls'):
+                    side_effect.emision_calls = 0
+                side_effect.emision_calls += 1
+                if side_effect.emision_calls == 1:
+                    resp.status_code = 401
+                    resp.text = "Unauthorized"
+                else:
+                    resp.status_code = 200
+                    resp.json.return_value = {"codigo": "200", "mensaje": "OK", "resultado": {"numeroControl": "00-00000001"}}
+            return resp
+        mock_post.side_effect = side_effect
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        result = retention.call_tfhka_api("emision", {})
+        self.assertEqual(result["codigo"], "200")
+
+    def test_17_get_subject_retention_missing_vat(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.partner_id.vat = False
+        with self.assertRaises(UserError):
+            retention.get_subject_retention()
+
+    def test_18_get_subject_retention_missing_country(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.partner_id.country_id = False
+        with self.assertRaises(UserError):
+            retention.get_subject_retention()
+
+    def test_19_get_subject_retention_missing_phone(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.partner_id.mobile = False
+        retention.partner_id.phone = False
+        with self.assertRaises(UserError):
+            retention.get_subject_retention()
+
+    def test_20_get_subject_retention_missing_email(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.partner_id.email = False
+        with self.assertRaises(UserError):
+            retention.get_subject_retention()
+
+    def test_21_compute_visibility_button(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention._compute_visibility_button()
+        self.assertFalse(retention.show_digital_retention_iva)
+        self.assertFalse(retention.show_digital_retention_islr)
+
+    def test_23_generate_document_data_with_validation_sequence(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        # Simular generación con validation_sequence=True
+        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api') as mock_call:
+            mock_call.return_value = {
+                "resultado": {"numeroControl": "00-00000001"},
+                "codigo": "200",
+                "mensaje": "OK",
+            }
+            retention.generate_document_data("R00001", "05", True)
+            self.assertTrue(retention.is_digitalized)
+            messages = retention.message_ids.mapped('body')
+            self.assertTrue(any("Warning accepted" in str(m) for m in messages))
+
+    def test_24_get_last_document_number_zero(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api') as mock_call:
+            mock_call.return_value = 0
+            result = retention.get_last_document_number("05")
+            self.assertEqual(result, 0)
+
+    def test_25_query_numbering_no_series(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api') as mock_call:
+            mock_call.return_value = {
+                "numeraciones": [],
+                "codigo": "200",
+                "mensaje": "OK",
+            }
+            with self.assertRaises(UserError):
+                retention.query_numbering()
+
+    def test_26_get_retention_details_islr_without_code(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("islr", account_move)
+        retention.action_post()
+        for line in retention.retention_line_ids:
+            line.code = False
+        details = retention.get_retention_details("06")
+        self.assertTrue(len(details) > 0)
+        self.assertNotIn("CodigoConcepto", details[0])
 
     # # Retencion con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
@@ -504,14 +682,45 @@ class TestAccumulatedRate(TransactionCase):
 
     # # Error de referencia de Retencion con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
-    # def test_13_generate_document_digital_subsidiary_error(self, mock_call):
-    #     self.company.write({"subsidiary": True})
-    #     subsidiary = self._create_subsidiary()
-    #     subsidiary.code = ""
-    #     account_move = self._create_invoice()
-    #     retention = self._create_retention("iva", account_move, "20230800000003", subsidiary)
+    def test_27_generate_document_digital_company_disabled(self):
+        self.company.write({"invoice_digital_tfhka": False})
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        res = retention.generate_document_digital()
+        self.assertIsNone(res)
 
-    #     with self.assertRaises(UserError) as e:
-    #         retention.generate_document_digital()
-    #         _logger.error(e.exception)
-    #     _logger.info("Test passed: The reference is empty, a user error was generated as expected.")
+    @patch('requests.post')
+    def test_28_call_tfhka_api_request_exception(self, mock_post):
+        import requests
+        mock_post.side_effect = requests.exceptions.RequestException("Connection failed")
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        with self.assertRaises(UserError):
+            retention.call_tfhka_api("emision", {})
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api')
+    def test_31_generate_document_digital_short_number(self, mock_call):
+        def side_effect(endpoint_key, payload):
+            if endpoint_key == "consulta_numeraciones":
+                return {
+                    "numeraciones": [{"serie": "NO APLICA", "hasta": "100000", "correlativo": "01"}],
+                    "codigo": "200",
+                }
+            elif endpoint_key == "ultimo_documento":
+                return {"numeroDocumento": 1, "codigo": "200"}
+            elif endpoint_key == "emision":
+                return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
+            return {}
+        mock_call.side_effect = side_effect
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.number = "00000001"
+        retention.with_context(account_retention_alert=True).generate_document_digital()
+        self.assertTrue(retention.is_digitalized)
+

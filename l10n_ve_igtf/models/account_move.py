@@ -21,11 +21,35 @@ class AccountMove(models.Model):
     @api.depends('amount_residual')
     def _compute_bi_igtf(self):
         for rec in self:
-            rec.igtf_top_aply = 0.0
-            rec.alter_bi_igtf = 0.0
-            rec.foreign_bi_igtf = 0.0
-            rec.foreign_alter_bi_igtf = 0.0
-            rec.bi_igtf = 0.0
+            # IGTF base only applies to invoice/refund documents.
+            # Payment/accounting entries (move_type=entry) must not go through
+            # this computation path, otherwise posting can crash when
+            # foreign_inverse_rate is not relevant for that entry.
+            if rec.move_type not in ["out_invoice", "out_refund", "in_invoice", "in_refund"]:
+                rec.write({
+                    'igtf_top_aply': 0.0,
+                    'alter_igtf_top_aply': 0.0,
+                    'alter_bi_igtf': 0.0,
+                    'foreign_alter_bi_igtf': 0.0,
+                    'foreign_bi_igtf': 0.0,
+                    'bi_igtf': 0.0
+                })
+                continue
+
+            if rec.journal_id.is_purchase_international:
+                
+                rec.igtf_top_aply = 0.0
+                rec.alter_igtf_top_aply = 0.0
+                rec.alter_bi_igtf = 0.0
+                rec.foreign_alter_bi_igtf = 0.0
+                rec.foreign_bi_igtf = 0.0
+                rec.bi_igtf = 0.0
+                continue
+            
+            amount = rec.amount_total 
+            if rec.company_currency_id == self.env.ref("base.VEF"):
+                amount = rec.foreign_total_billed
+            rec.igtf_top_aply = amount * (self.company_id.igtf_percentage / 100)
 
             if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid', 'in_payment']:
                 rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
@@ -116,15 +140,18 @@ class AccountMove(models.Model):
                     if total_bi_igtf > abs(rec.amount_total_signed):
                         total_bi_igtf = abs(rec.amount_total_signed)
 
-                    foreign_bi_igtf += rec.company_id.currency_id._convert(
-                        amount_base_payment, rec.currency_id, rec.company_id, conversion_date,
-                    )
-                    if foreign_bi_igtf > abs(rec.amount_total):
-                        foreign_bi_igtf = abs(rec.amount_total)
-
-                apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
-                rec.igtf_top_aply = apply
-                rec.alter_bi_igtf = alter_bi_igtf
-                rec.foreign_bi_igtf = foreign_bi_igtf
-                rec.foreign_alter_bi_igtf = foreign_alter_bi_igtf
-                rec.bi_igtf = total_bi_igtf
+                total_bi_igtf += amount_base_payment
+                total_foreign_bi_igtf += foreign_amount_base_payment
+            apply = rec.igtf_top_aply - (igtf_top * (rec.company_id.igtf_percentage / 100))
+            alter_apply = 0.0
+            if rec.company_currency_id == self.env.ref("base.VEF"):
+                alter_apply = apply / rec.foreign_inverse_rate
+            else:
+                alter_apply = apply * rec.foreign_inverse_rate
+            
+            rec.igtf_top_aply = apply
+            rec.alter_igtf_top_aply = alter_apply
+            rec.alter_bi_igtf = alter_bi_igtf
+            rec.foreign_alter_bi_igtf = foreign_alter_bi_igtf
+            rec.foreign_bi_igtf = total_foreign_bi_igtf
+            rec.bi_igtf = total_bi_igtf

@@ -31,8 +31,6 @@ from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
 
 from odoo.http import Response
 
-import json
-
 FLAG_21 = {
     "30": {
         "max_amount_int": 14,
@@ -146,14 +144,14 @@ def install_package(package_name):
     try:
         # Intenta importar el paquete para verificar si ya está instalado
         __import__(package_name)
-        print("'%s' ya está instalado.", package_name)
+        _logger.info("'%s' ya está instalado.", package_name)
     except ImportError:
-        print("'%s' no está instalado. Instalando...", package_name)
+        _logger.info("'%s' no está instalado. Instalando...", package_name)
         # Instala el paquete usando pip
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", package_name, "--user"])
         except subprocess.CalledProcessError as e:
-            print("Error al instalar el paquete: %s", e)
+            _logger.error("Error al instalar el paquete: %s", e)
 
 try:
     import clr
@@ -587,6 +585,36 @@ class SerialFiscalDriver(SerialDriver):
                 change_lines.append({"payment_method": method, "amount": abs(amount)})
         return payment_lines, change_lines
 
+    def get_closing_method(self, payment_lines=None, fallback_lines=None, default="01"):
+        """Determina el método de cierre usando el mayor monto absoluto.
+
+        Si no hay pagos positivos (caso típico en reembolsos), usa `fallback_lines`
+        para respetar el método fiscal configurado en la línea de pago.
+        """
+        candidates = []
+
+        def collect(lines):
+            for line in lines or []:
+                method_raw = line.get("payment_method")
+                if not method_raw:
+                    continue
+                amount = abs(line.get("amount", 0) or 0)
+                if amount > 0:
+                    candidates.append(
+                        {
+                            "payment_method": str(method_raw).strip().zfill(2),
+                            "amount": amount,
+                        }
+                    )
+
+        collect(payment_lines)
+        collect(fallback_lines)
+
+        if not candidates:
+            return default
+
+        return max(candidates, key=lambda item: item["amount"])["payment_method"]
+
     def prepare_invoice_data(self, invoice):
         """
         Prepara los datos de la factura.
@@ -607,17 +635,23 @@ class SerialFiscalDriver(SerialDriver):
             max_payment_amount_int, max_payment_amount_decimal =  flag_21_config["max_payment_amount_int"], flag_21_config["max_payment_amount_decimal"]
             disc_int, disc_decimal =  flag_21_config["disc_int"], flag_21_config["disc_decimal"]
 
+            max_rs = invoice_data.get("max_razon_social", 40) or 40
+            partner_name = invoice_data["partner_id"]["name"]
             cmd.append(f"iR*{invoice_data['partner_id']['vat']}")
-            cmd.append(f"iS*{invoice_data['partner_id']['name']}")
-            
+            cmd.append(f"iS*{partner_name[:max_rs]}")
+
             next_index = 0
+            if len(partner_name) > max_rs:
+                chunks = [partner_name[i:i+max_rs] for i in range(max_rs, len(partner_name), max_rs)]
+                for chunk in chunks:
+                    cmd.append(f"i{next_index:02d}{chunk}")
+                    next_index += 1
+
             if invoice_data["partner_id"]["address"]:
                 address = invoice_data["partner_id"]["address"]
-
                 first_line = address[:30]
                 cmd.append(f"i{next_index:02d}Direccion:{first_line}")
                 next_index += 1
-
                 remaining = address[30:70]
                 if remaining:
                     cmd.append(f"i{next_index:02d}{remaining}")
@@ -651,10 +685,10 @@ class SerialFiscalDriver(SerialDriver):
             
             cmd.append("3")
             
-            closing_method = "01"
-            if payment_lines:
-                closing_payment = max(payment_lines, key=lambda x: x["amount"])
-                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
+            closing_method = self.get_closing_method(
+                payment_lines=payment_lines,
+                fallback_lines=change_lines,
+            )
  
             for item in payment_lines:
                 method_raw = item.get("payment_method")
@@ -662,8 +696,8 @@ class SerialFiscalDriver(SerialDriver):
                     return {"valid": False, "message": "Método de pago fiscal no configurado en una línea de pago."}
 
                 method_code = str(method_raw).strip().zfill(2)
-                # Enviar TODOS los montos positivos recibidos (incluido el método de cierre)
-                # para que la MF pueda calcular e imprimir CAMBIO cuando corresponda.
+                # El método de cierre se envía con comando 1XX, no con 2XX.
+                # Enviar en 2XX solo métodos distintos al de cierre.
                 if item["amount"] > 0:
                     amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
                     amount_i_filled = amount_i.zfill(max_payment_amount_int)
@@ -771,7 +805,8 @@ class SerialFiscalDriver(SerialDriver):
             return status
         except Exception as e:
             _logger.error("Error al obtener estado de la impresora: %s", e)
-            raise UserError("Error al obtener estado de la impresora: %s", e)
+            msg = _("Error al obtener estado de la impresora: %s")
+            raise UserError(msg % e)
     
     def print_out_refund(self, invoice):        
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
@@ -796,15 +831,16 @@ class SerialFiscalDriver(SerialDriver):
         machine_number = estado_s1.RegisteredMachineNumber
         
         if invoice["data"]["invoice_affected"]["serial_machine"] != machine_number:
-            raise UserError(_(
+            msg = _(
                 "¡Error de impresora fiscal! "
                 "La impresora fiscal actual no coincide con la usada en la factura original. "
-                "Serial de la factura: %s. "
-                "Serial de la impresora conectada: %s."
-            ) % (
-                invoice['data']['invoice_affected']['serial_machine'],
-                machine_number,
-            ))
+                "Serial de la factura: %(serial_factura)s. "
+                "Serial de la impresora conectada: %(serial_impresora)s."
+            )
+            raise UserError(msg % {
+                'serial_factura': invoice['data']['invoice_affected']['serial_machine'],
+                'serial_impresora': machine_number,
+            })
         
         self.data["value"] = {"valid": False, "message": "No se ha completado"}
         _invoice = invoice.get("data", False)
@@ -846,20 +882,26 @@ class SerialFiscalDriver(SerialDriver):
                 raise Exception(status["data"]["status"]["msg"])
 
             _logger.warning("print_out_refound %s", invoice)
+            next_index = 0
+            max_rs = invoice.get("max_razon_social", 40) or 40
+            partner_name = invoice["partner_id"]["name"]
             cmd.append(str("iR*" + invoice["partner_id"]["vat"]))
-            cmd.append(str("iS*" + invoice["partner_id"]["name"]))
+            cmd.append(str("iS*" + partner_name[:max_rs]))
             cmd.append(str("iF*" + invoice["invoice_affected"]["number"]))
             cmd.append(str("iI*" + invoice["invoice_affected"]["serial_machine"]))
             cmd.append(str("iD*" + invoice["invoice_affected"]["date"]))
-            
-            next_index = 0
+
+            if len(partner_name) > max_rs:
+                chunks = [partner_name[i:i+max_rs] for i in range(max_rs, len(partner_name), max_rs)]
+                for chunk in chunks:
+                    cmd.append(f"i{next_index:02d}{chunk}")
+                    next_index += 1
+
             if invoice["partner_id"]["address"]:
                 address = invoice["partner_id"]["address"]
-
                 first_line = address[:30]
                 cmd.append(f"i{next_index:02d}Direccion:{first_line}")
                 next_index += 1
-
                 remaining = address[30:70]
                 if remaining:
                     cmd.append(f"i{next_index:02d}{remaining}")
@@ -867,10 +909,11 @@ class SerialFiscalDriver(SerialDriver):
 
             if invoice["partner_id"]["phone"]:
                 cmd.append(f"i{next_index:02d}Telefono:{invoice['partner_id']['phone']}")
+                next_index += 1
 
-            if len(invoice.get("info", [])) > 0:
-                for index, info in enumerate(invoice.get("info")):
-                    cmd.append(f"i{str(index+2).zfill(2)}{info}")
+            for info in invoice.get("info", []):
+                cmd.append(f"i{next_index:02d}{info}")
+                next_index += 1
 
             discount_amount = 0
 
@@ -958,10 +1001,7 @@ class SerialFiscalDriver(SerialDriver):
             for item in new_payment_lines:
                 item["amount"] = abs(item["amount"])
 
-            closing_method = "01"
-            if new_payment_lines:
-                closing_payment = max(new_payment_lines, key=lambda x: x["amount"])
-                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
+            closing_method = self.get_closing_method(payment_lines=new_payment_lines)
 
             for item in new_payment_lines:
                 method_code = str(item["payment_method"]).strip().zfill(2)
@@ -1068,8 +1108,8 @@ class SerialFiscalDriver(SerialDriver):
                 number_invoice_formateado = number_invoice.zfill(8)
                 cmd_number_invoice_affected = f"iF*{number_invoice_formateado}"
             else:
-                _logger.error("Fecha de factura afectada no encontrada en la nota de crédito.")
-                return {"valid": False, "message": "No se encontró la fecha de la factura afectada."}
+                _logger.error("Numero de factura afectada no encontrada en la nota de crédito.")
+                return {"valid": False, "message": "No se encontró el numero de la factura afectada."}
                         
             fecha_afectada = invoice.get('invoice_affected', {}).get('date', '')
             
@@ -1097,22 +1137,38 @@ class SerialFiscalDriver(SerialDriver):
             
             name_partnet = invoice.get('partner_id', {}).get('name', '')
 
-            if name_partnet:
-                cmd_name = f"iS*{name_partnet}"
-            else:
-                return {"valid": False, "message": "No se encontró el serial de la máquina fiscal de la factura afectada."}
-            
+            if not name_partnet:
+                return {"valid": False, "message": "No se encontró la razón social del cliente en la factura afectada."}
+
             aditional_lines = []
-                        
+            next_index = 0
+            max_rs = invoice.get("max_razon_social", 40) or 40
+            cmd_name = f"iS*{name_partnet[:max_rs]}"
+
+            if len(name_partnet) > max_rs:
+                chunks = [name_partnet[i:i+max_rs] for i in range(max_rs, len(name_partnet), max_rs)]
+                for chunk in chunks:
+                    aditional_lines.append(f"i{next_index:02d}{chunk}")
+                    next_index += 1
+
             address_partner = invoice.get('partner_id', {}).get('address', '')
-            
             if address_partner:
                 first_line = address_partner[:30]
-                aditional_lines.append(f"i01Direccion:{first_line}")
-
+                aditional_lines.append(f"i{next_index:02d}Direccion:{first_line}")
+                next_index += 1
                 remaining = address_partner[30:70]
                 if remaining:
-                    aditional_lines.append(f"i02{remaining}")
+                    aditional_lines.append(f"i{next_index:02d}{remaining}")
+                    next_index += 1
+
+            phone_partner = invoice.get('partner_id', {}).get('phone', '')
+            if phone_partner:
+                aditional_lines.append(f"i{next_index:02d}Telefono:{phone_partner}")
+                next_index += 1
+
+            for info in invoice.get("info", []):
+                aditional_lines.append(f"i{next_index:02d}{info}")
+                next_index += 1
 
             invoice_lines = invoice.get('invoice_lines', [])
             product_lines = []
@@ -1127,20 +1183,24 @@ class SerialFiscalDriver(SerialDriver):
                 if formatted_line:
                     product_lines.append(formatted_line)          
 
-            payment_lines, _change_lines = self.group_payments(invoice.get("payment_lines", []))
+            payment_lines, change_lines = self.group_payments(invoice.get("payment_lines", []))
             payment_commands = []
             
-            closing_method = "01"
-            if payment_lines:
-                closing_payment = max(payment_lines, key=lambda x: x["amount"])
-                closing_method = str(closing_payment["payment_method"]).strip().zfill(2)
+            closing_method = self.get_closing_method(
+                payment_lines=payment_lines,
+                fallback_lines=change_lines,
+            )
 
-            for item in payment_lines:
+            # En NC, si no hay pagos positivos (caso común), usar change_lines
+            # para conservar métodos mixtos en comandos fiscales.
+            payment_lines_to_send = payment_lines or change_lines
+
+            for item in payment_lines_to_send:
                 _logger.info("ITEM : %s", item)
                 method_code = str(item["payment_method"]).strip().zfill(2)
                 if item["amount"] > 0 and method_code != closing_method:
-                    amount_i, amount_d = self.split_amount(item["amount"], dec=2)  
-                    amount_i_filled = amount_i.zfill(10)  
+                    amount_i, amount_d = self.split_amount(item["amount"], dec=max_payment_amount_decimal)
+                    amount_i_filled = amount_i.zfill(max_payment_amount_int)
                     payment_command = f"2{method_code}{amount_i_filled}{amount_d}"
                     payment_commands.append(payment_command)
 
@@ -1536,7 +1596,8 @@ class SerialFiscalDriver(SerialDriver):
             return result
         
         except Exception as e:
-            raise UserError("Error al validar factura: %s", e)
+            msg = _("Error al validar factura: %s")
+            raise UserError(msg % e)
     
     def programacion(self, data):
         try:
@@ -1665,7 +1726,6 @@ class SerialFiscalDriver(SerialDriver):
                     return msj
                 else:
                     return msj
-                    break
             else:
                 break
         return None
