@@ -27,7 +27,7 @@ class ResCompany(models.Model):
         default=lambda self: self.env["res.country"].search([("code", "=", "VE")], limit=1),
     )
 
-    unique_tax = fields.Boolean()
+    unique_tax = fields.Boolean(default=True)
     show_discount_on_moves = fields.Boolean()
 
     exent_aliquot_sale = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "sale")])

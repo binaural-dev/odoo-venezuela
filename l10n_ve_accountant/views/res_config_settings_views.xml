@@ -10,7 +10,7 @@
                         <separator string="Core Settings"/>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_config_igtf_unique_tax">
                             <div class="col-lg-6 o_setting_left_pane">
-                                <field name="unique_tax"/>
+                                <field name="unique_tax" readonly="1"/>
                             </div>
                             <div class="o_setting_right_pane">
                                 <label for="unique_tax"/>
