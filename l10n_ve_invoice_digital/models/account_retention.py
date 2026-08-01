@@ -43,8 +43,8 @@ class AccountRetention(models.Model):
         headers = {"Authorization": f"Bearer {self.get_token()}"}
 
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+        
             if response.status_code == 200:
                 data = response.json()
                 if data.get("codigo") == "200":
@@ -84,11 +84,7 @@ class AccountRetention(models.Model):
         validation_sequence = self.env.context.get('account_retention_alert', False)
 
         if document_number != current_number and not validation_sequence and self.company_id.sequence_validation_tfhka:
-            message = _(
-                "The document sequence in Odoo (%(odoo_number)s) does not match the sequence in The Factory (%(factory_number)s). Do you want to continue anyway?",
-                odoo_number=current_number,
-                factory_number=document_number,
-            )
+            message = _("The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The Factory (%(factory_seq)s). Do you want to continue anyway?", odoo_seq=current_number, factory_seq=document_number)
             return {
             'type': 'ir.actions.act_window',
             'res_model': 'account.retention.alert.wizard',
@@ -133,7 +129,7 @@ class AccountRetention(models.Model):
                     message_type='comment',
                 )
             self.message_post(
-                body=_("Document successfully digitized on %(date)s", date=emission_date),
+                body=_("Document successfully digitized on %(date)s", date=emission_date),  
                 message_type='comment',
             )
 

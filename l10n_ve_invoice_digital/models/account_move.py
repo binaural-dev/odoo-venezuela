@@ -18,7 +18,7 @@ class EndPoints():
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
-    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
+    is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
     show_digital_invoice = fields.Boolean(compute="_compute_invisible_check", copy=False)
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
@@ -137,14 +137,19 @@ class AccountMove(models.Model):
                 raise UserError(_("The selected series is not configured"))
             
         self.query_numbering(series)
+        current_number = self.sequence_number
         document_number = self.get_last_document_number(document_type, series)
-        
+
         try:
             document_number_int = int(document_number)
         except (ValueError, TypeError):
             document_number_int = 0
-            
+        
         document_number = document_number_int + 1
+
+        if document_number != current_number and self.company_id.sequence_validation_tfhka:
+            raise UserError(_("The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The Factory (%(factory_seq)s).Please check your numbering settings.", odoo_seq=current_number, factory_seq=document_number))
+
         document_number = str(document_number)
 
         self.generate_document_data(document_number, document_type, series)
@@ -170,8 +175,8 @@ class AccountMove(models.Model):
         headers = {"Authorization": f"Bearer {self.get_token()}"}
 
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+        
             if response.status_code == 200:
                 data = response.json()
                 if data.get("codigo") == "200":
@@ -323,11 +328,8 @@ class AccountMove(models.Model):
                 if record.debit_origin_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
-                # El monto de la factura afectada siempre se envía en VES
-                # (moneda local de la compañía), independientemente de si la
-                # NC/ND actual está en modo USD multi-moneda.
                 if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    affected_invoice_amount = str(record.debit_origin_id.amount_total)
+                    affected_invoice_amount = str(round(record.debit_origin_id.amount_total, 2))
                 else:
                     tax_totals = record.debit_origin_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
@@ -343,9 +345,8 @@ class AccountMove(models.Model):
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
-                # Misma lógica: monto afectado en VES para compañías VEF/VES.
                 if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    affected_invoice_amount = str(record.reversed_entry_id.amount_total)
+                    affected_invoice_amount = str(round(record.reversed_entry_id.amount_total, 2))
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
@@ -694,7 +695,10 @@ class AccountMove(models.Model):
         item_details = []
         line_number = 1
         for record in self:
-            for line in record.invoice_line_ids:
+            product_lines = record.invoice_line_ids.filtered(
+                lambda l: l.display_type == 'product'
+            )
+            for line in product_lines:
                 tax_mapping = {
                     0.0: "E",
                     8.0: "R",
@@ -734,7 +738,7 @@ class AccountMove(models.Model):
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                    "descripcion": line.product_id.name,
+                    "descripcion": line.product_id.name or "",
                     "cantidad": str(line.quantity),
                     "precioUnitario": str(unit_price),
                     "precioUnitarioDescuento": str(unit_price_discount),
@@ -831,7 +835,7 @@ class AccountMove(models.Model):
                     return payment_data
             return False
         except Exception as e:
-            _logger.error(f"Error processing payment methods: {e}")
+            _logger.error("Error processing payment methods: %s", e)
             return False
 
     def get_currency(self, currency_id):
