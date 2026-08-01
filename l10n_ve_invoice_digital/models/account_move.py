@@ -137,9 +137,15 @@ class AccountMove(models.Model):
                 raise UserError(_("The selected series is not configured"))
             
         self.query_numbering(series)
-        document_number = self.get_last_document_number(document_type, series)
-        document_number = document_number + 1
         current_number = self.sequence_number
+        document_number = self.get_last_document_number(document_type, series)
+
+        try:
+            document_number_int = int(document_number)
+        except (ValueError, TypeError):
+            document_number_int = 0
+        
+        document_number = document_number_int + 1
 
         if document_number != current_number and self.company_id.sequence_validation_tfhka:
             raise UserError(_("The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The Factory (%(factory_seq)s).Please check your numbering settings.", odoo_seq=current_number, factory_seq=document_number))
