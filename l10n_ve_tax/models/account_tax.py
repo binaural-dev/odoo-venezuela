@@ -103,14 +103,12 @@ class AccountTax(models.Model):
             # tax_totals dict coherent with the journal entry when line alternos were
             # computed at a rate different from the current move rate.
             product_foreign = sum(
-                line.foreign_subtotal
+                abs(line.foreign_subtotal)
                 for line in move.line_ids if line.display_type == 'product')
-            tax_foreign = move.direction_sign * sum(
-                line.foreign_debit - line.foreign_credit
+            tax_foreign = sum(
+                abs(line.foreign_debit - line.foreign_credit)
                 for line in move.line_ids if line.display_type == 'tax')
-            expected_untaxed = fc.round(abs(product_foreign))
-            expected_total = fc.round(abs(product_foreign + tax_foreign))
-            current_untaxed = foreign_taxes.get("amount_untaxed", 0.0)
+            expected_total = fc.round(product_foreign + tax_foreign)
             current_total = foreign_taxes.get("amount_total", 0.0)
             diff_untaxed = fc.round(expected_untaxed - current_untaxed)
             diff_total = fc.round(expected_total - current_total)

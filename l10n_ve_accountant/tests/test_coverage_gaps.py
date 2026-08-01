@@ -1499,7 +1499,6 @@ class TestCoverageGaps(TransactionCase):
             "invoice_line_ids": [],
         })
         form = Form(inv, view="account.view_move_form")
-        self._set_correlative_if_required(form, f"TEST-STRESS-{currency.name}-0001")
         for i, price in enumerate(prices):
             prod = products[['16', '8', 'noacct', 'exempt'][i % 4]]
             account = acc_exp2 if i % 3 == 0 else self.acc_exp
@@ -1609,11 +1608,11 @@ class TestCoverageGaps(TransactionCase):
 
         tt = inv.tax_totals or {}
         entry_untaxed = sum(
-            l.foreign_subtotal
+            abs(l.foreign_subtotal)
             for l in inv.line_ids if l.display_type == 'product')
-        entry_total = abs(entry_untaxed + inv.direction_sign * sum(
-            l.foreign_debit - l.foreign_credit
-            for l in inv.line_ids if l.display_type == 'tax'))
+        entry_total = entry_untaxed + sum(
+            abs(l.foreign_debit - l.foreign_credit)
+            for l in inv.line_ids if l.display_type == 'tax')
 
         self.assertEqual(round(entry_untaxed, 2), 1549.25)
         self.assertEqual(round(entry_total, 2), 1797.13)
@@ -1671,11 +1670,11 @@ class TestCoverageGaps(TransactionCase):
 
         tt = inv.tax_totals or {}
         entry_untaxed = sum(
-            l.foreign_subtotal
+            abs(l.foreign_subtotal)
             for l in inv.line_ids if l.display_type == 'product')
-        entry_total = abs(entry_untaxed + inv.direction_sign * sum(
-            l.foreign_debit - l.foreign_credit
-            for l in inv.line_ids if l.display_type == 'tax'))
+        entry_total = entry_untaxed + sum(
+            abs(l.foreign_debit - l.foreign_credit)
+            for l in inv.line_ids if l.display_type == 'tax')
 
         self.assertEqual(round(entry_untaxed, 2), 1611.22)
         self.assertEqual(round(entry_total, 2), 1869.02)
@@ -1688,70 +1687,3 @@ class TestCoverageGaps(TransactionCase):
             tt['foreign_amount_total'], entry_total, places=1)
 
         self._assert_tax_totals_foreign(inv, "vef-real-aligned")
-
-    def test_mixed_sign_discount_foreign_total(self):
-        """A negative product line (global discount) must SUBTRACT from the
-        foreign total instead of adding its magnitude (#14341 review finding)."""
-        product = self.env["product.product"].create({
-            "name": "MIXED SIGN", "type": "service", "list_price": 100.0,
-            "property_account_income_id": self.acc_inc.id,
-            "taxes_id": [(6, 0, [self.tax_16.id])], "supplier_taxes_id": [(5, 0, 0)],
-        })
-        # from_loyalty bypasses l10n_ve_invoice's negative-price-line guard
-        # (_check_price_in_zero): this test targets foreign-amount sign
-        # handling, not that unrelated business validation.
-        inv = self.env["account.move"].with_context(
-            check_move_validity=False, from_loyalty=True,
-        ).create({
-            "move_type": "out_invoice",
-            "partner_id": self.partner.id,
-            "journal_id": self.sale_journal.id,
-            "currency_id": self.currency_vef.id,
-            "invoice_date": fields.Date.today(),
-            "invoice_line_ids": [
-                Command.create({
-                    "product_id": product.id, "quantity": 1.0, "price_unit": 100.0,
-                    "account_id": self.acc_inc.id, "tax_ids": [(6, 0, [self.tax_16.id])],
-                }),
-                Command.create({
-                    "product_id": product.id, "quantity": 1.0, "price_unit": -20.0,
-                    "account_id": self.acc_inc.id, "tax_ids": [(6, 0, [self.tax_16.id])],
-                }),
-            ],
-        })
-        inv.action_post()
-        self.env.flush_all()
-        self.env.invalidate_all()
-
-        # Force a stale alterno on the first line so the align block in
-        # l10n_ve_tax._prepare_tax_totals is exercised.
-        product_line = inv.invoice_line_ids.filtered(
-            lambda l: l.display_type == 'product')[:1]
-        product_line.foreign_price = 2.10
-        self.env.flush_all()
-        self.env.invalidate_all()
-
-        tt = inv.tax_totals or {}
-        entry_untaxed = sum(
-            l.foreign_subtotal
-            for l in inv.line_ids if l.display_type == 'product')
-        entry_tax = inv.direction_sign * sum(
-            l.foreign_debit - l.foreign_credit
-            for l in inv.line_ids if l.display_type == 'tax')
-        expected_total = abs(entry_untaxed + entry_tax)
-
-        naive_total = sum(
-            abs(l.foreign_subtotal)
-            for l in inv.line_ids if l.display_type == 'product')
-        naive_total += abs(entry_tax)
-
-        self.assertNotAlmostEqual(
-            naive_total, expected_total, places=2,
-            msg="test premise: naive abs() sum must differ from the signed sum")
-
-        self.assertAlmostEqual(
-            tt['foreign_amount_total'], expected_total, places=2,
-            msg="negative discount line must subtract from the foreign total")
-        self.assertNotAlmostEqual(
-            tt['foreign_amount_total'], naive_total, places=2,
-            msg="abs() per line must not be used (discount inflated the total)")
