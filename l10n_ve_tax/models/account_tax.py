@@ -96,8 +96,19 @@ class AccountTax(models.Model):
         )
 
         fc = move.company_id.currency_foreign_id if move else self.env.company.currency_foreign_id
-        if move and move.is_invoice(include_receipts=True):
-            expected_total = fc.round(abs(move.amount_total) * move.foreign_inverse_rate)
+        if move and move.is_invoice(include_receipts=True) and move.line_ids:
+            # Align the foreign total with the actual foreign amounts of the entry lines
+            # (sum of product foreign subtotals + tax line foreign amounts) instead of
+            # forcing a conversion of the native total at the move rate. This keeps the
+            # tax_totals dict coherent with the journal entry when line alternos were
+            # computed at a rate different from the current move rate.
+            product_foreign = sum(
+                abs(line.foreign_subtotal)
+                for line in move.line_ids if line.display_type == 'product')
+            tax_foreign = sum(
+                abs(line.foreign_debit - line.foreign_credit)
+                for line in move.line_ids if line.display_type == 'tax')
+            expected_total = fc.round(product_foreign + tax_foreign)
             current_total = foreign_taxes.get("amount_total", 0.0)
             diff = fc.round(expected_total - current_total)
             if not fc.is_zero(diff):
