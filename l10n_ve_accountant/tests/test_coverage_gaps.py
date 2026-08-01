@@ -24,6 +24,7 @@ class TestCoverageGaps(TransactionCase):
             "foreign_currency_id": self.currency_usd.id,
             "account_fiscal_country_id": self.country_ve.id,
             "country_id": self.country_ve.id,
+            "unique_tax": False,
         })
 
         today = fields.Date.today()

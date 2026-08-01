@@ -24,6 +24,7 @@ class TestMultiCurrencyRounding(TransactionCase):
             "foreign_currency_id": self.currency_usd.id,
             "account_fiscal_country_id": self.country_ve.id,
             "country_id": self.country_ve.id,
+            "unique_tax": False,
         })
 
         # Rates: 1 USD = 40 VEF, 1 EUR = 45 VEF
