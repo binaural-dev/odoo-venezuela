@@ -184,9 +184,9 @@ class AccountMoveLine(models.Model):
         if balance and len(currency_lines) == 1:
             return -balance
 
-        # Third currency (neither base nor alternate)
+        # others currency (neither base nor alternate)
         cur = self.currency_id
-        if cur and cur != self.company_id.foreign_currency_id and cur != self.company_id.currency_id:
+        if cur and cur != self.company_id.foreign_currency_id :
             return self.company_id.currency_id._convert(
                 self.debit - self.credit,
 
@@ -196,7 +196,8 @@ class AccountMoveLine(models.Model):
             )
 
         # Standard rate
-        return (self.debit - self.credit) * self.foreign_inverse_rate if cur != self.company_id.currency_id else (self.debit - self.credit) / self.foreign_inverse_rate 
+        
+        return (self.debit - self.credit) * self.foreign_inverse_rate 
 
     def _get_foreign_value(self):
         """Return the foreign value (signed) for this line, or None."""
