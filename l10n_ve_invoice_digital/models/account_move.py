@@ -399,18 +399,10 @@ class AccountMove(models.Model):
             # line_currency='USD' + multi_currency_invoice → Moneda = USD.
             if record.is_invoice_multi_currency_enabled():
                 currency_tfhka = 'USD'
-                _logger.info("Moneda resuelta: USD (multi_currency activo) — invoice=%s", record.id)
             else:
                 currency_tfhka = record.company_id.currency_foreign_id.code_tfhka
                 if record.company_id.currency_id.name in ('VEF', 'VES'):
                     currency_tfhka = record.company_id.currency_id.code_tfhka
-                _logger.info(
-                    "Moneda resuelta: %s (compañía=%s, foreign=%s) — invoice=%s",
-                    currency_tfhka,
-                    record.company_id.currency_id.name,
-                    record.company_id.currency_foreign_id.code_tfhka,
-                    record.id
-                )
 
             return {
                 "tipoDocumento": document_type,
@@ -448,7 +440,7 @@ class AccountMove(models.Model):
             amounts_foreign = {}
             # Resuelve si esta factura opera en modo multi-moneda.
             # Verifica primero el flag por factura, luego el de compañía.
-            multi_currency = record.is_invoice_multi_currency_enabled()
+            multi_currency = record.multi_currency_invoice
 
             if currency == "VEF" or currency == "VES":
                 amounts["montoGravadoTotal"] = str(
