@@ -25,6 +25,89 @@ class PosSession(models.Model):
         """
         return super().load_data(models_to_load)
 
+    def get_pos_ui_product_pricelist_item_by_product(
+        self, product_tmpl_ids, product_ids, config_id
+    ):
+        """Agrega los items de las listas BASE de la cadena.
+
+        El core restringe el dominio a ``config._get_available_pricelists()``
+        (ver ``point_of_sale/models/pos_session.py``). Las listas base de la
+        cadena no están entre las disponibles — no pueden estarlo, porque
+        ``pos.config`` exige que toda lista disponible tenga la moneda del PdV
+        (constraint en ``pos_config.py``) y las listas base están justamente en
+        otra moneda. Resultado: los productos que entran por búsqueda
+        on-demand llegan sin los items donde viven los precios fijos, y
+        ``getPrice()`` cae a ``list_price``.
+
+        Se llama al core y se le suman los items faltantes, en vez de
+        reimplementar el método, para no heredar su mantenimiento.
+
+        KEEP IN SYNC WITH:
+          ``models/product_pricelist.py`` :: ``_load_pos_data_domain``
+          (la carga inicial debe cubrir las mismas listas que esta).
+        """
+        res = super().get_pos_ui_product_pricelist_item_by_product(
+            product_tmpl_ids, product_ids, config_id
+        )
+
+        pos_config = self.env["pos.config"].browse(config_id)
+        available_ids = set(pos_config._get_available_pricelists().ids)
+        chain_ids = self.env["product.pricelist"]._pos_expand_base_pricelists(
+            available_ids
+        )
+        missing_ids = chain_ids - available_ids
+        if not missing_ids:
+            return res
+
+        item_model = self.env["product.pricelist.item"]
+        today = fields.Date.today()
+        # Espejo del dominio del core, cambiando solo el conjunto de listas.
+        item_domain = [
+            "&",
+            ("pricelist_id", "in", list(missing_ids)),
+            *item_model._check_company_domain(self.company_id),
+            "|",
+            "&",
+            ("product_id", "=", False),
+            ("product_tmpl_id", "in", product_tmpl_ids),
+            ("product_id", "in", product_ids),
+            "|",
+            ("date_start", "=", False),
+            ("date_start", "<=", today),
+            "|",
+            ("date_end", "=", False),
+            ("date_end", ">=", today),
+        ]
+        extra_items = item_model.search(item_domain)
+        if not extra_items:
+            return res
+
+        # Dedup por id: si el core alguna vez amplía su propio conjunto de
+        # listas, no queremos entregar el mismo item dos veces.
+        known_item_ids = {item["id"] for item in res.get("product.pricelist.item", [])}
+        extra_items = extra_items.filtered(lambda item: item.id not in known_item_ids)
+        if not extra_items:
+            return res
+
+        item_fields = item_model._load_pos_data_fields(pos_config)
+        res["product.pricelist.item"] += extra_items.read(item_fields, load=False)
+
+        # Las listas base también tienen que viajar: sin el registro de la
+        # lista, el many2one ``base_pricelist_id`` del item no resuelve en el
+        # navegador y volvemos al mismo fallback silencioso.
+        pricelist_model = self.env["product.pricelist"]
+        known_pricelist_ids = {p["id"] for p in res.get("product.pricelist", [])}
+        extra_pricelists = extra_items.pricelist_id.filtered(
+            lambda pricelist: pricelist.id not in known_pricelist_ids
+        )
+        if extra_pricelists:
+            pricelist_fields = pricelist_model._load_pos_data_fields(pos_config)
+            res["product.pricelist"] += extra_pricelists.read(
+                pricelist_fields, load=False
+            )
+
+        return res
+
     def _validate_cross_move(self):
         """Create the moves that clear each foreign-currency payment method's
         transitory account into its real ``cross_journal`` account.
