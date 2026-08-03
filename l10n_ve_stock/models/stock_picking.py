@@ -15,14 +15,10 @@ class StockPicking(models.Model):
     source_physical_address = fields.Text(
         string="Source Address",
         compute="_compute_physical_addresses",
-        store=True,
-        readonly=True,
     )
     destination_physical_address = fields.Text(
         string="Destination Address",
         compute="_compute_physical_addresses",
-        store=True,
-        readonly=True,
     )
 
     def _get_action_picking_delivery_type(self, picking_type):
