@@ -122,6 +122,27 @@ class TestProfitabilityCosts(L10nVeProjectTestCommon):
         self.assertAlmostEqual(section["foreign_billed"], 5.0, places=2)
         self.assertAlmostEqual(section["foreign_to_bill"], -10.0, places=2)
 
+    def test_purchase_order_section_qty_fully_invoiced_amount_mismatch(self):
+        """A PO line fully invoiced in quantity may still have a monetary gap.
+
+        Two posted bills cover the full ordered quantity (4/4, so
+        ``qty_to_invoice`` is 0) but at a different price than the order, so
+        the invoiced amount (440) does not match the order subtotal (400).
+        The old quantity-based forecast dropped ``foreign_to_bill`` to 0 in
+        this case; the monetary logic must keep reflecting the real gap.
+        """
+        po, pol = self._create_purchase_order(quantity=4.0, price_unit=100.0)
+        bill_1 = self._create_bill(quantity=2.0, price_unit=100.0, purchase_line=pol)
+        self._post(bill_1)
+        bill_2 = self._create_bill(quantity=2.0, price_unit=120.0, purchase_line=pol)
+        self._post(bill_2)
+        self.assertEqual(pol.qty_invoiced, pol.product_qty)
+        self.assertEqual(pol.qty_to_invoice, 0.0)
+        items = self.project._get_profitability_items(False)
+        section = self._section(items, "costs", "purchase_order")
+        self.assertAlmostEqual(section["foreign_billed"], -22.0, places=2)
+        self.assertAlmostEqual(section["foreign_to_bill"], 2.0, places=2)
+
     def test_costs_with_actions(self):
         bill = self._create_bill(quantity=1.0, price_unit=200.0)
         self._post(bill)
