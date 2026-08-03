@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="l10n_ve_project.ProjectProfitabilitySection"
+       t-inherit="sale_project.ProjectProfitabilitySection"
+       t-inherit-mode="extension">
+
+        <!-- First cell: Expected (revenue.invoiced + revenue.to_invoice) -->
+        <xpath expr="//tr[hasclass('opacity-trigger-hover')]/td[2]" position="replace">
+            <td t-attf-class="text-end {{ revenue.invoiced + revenue.to_invoice === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(revenue.invoiced + revenue.to_invoice)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign((revenue.foreign_invoiced || 0) + (revenue.foreign_to_invoice || 0))"/>
+                </span>
+            </td>
+        </xpath>
+
+        <!-- Second cell: To Invoice -->
+        <xpath expr="//tr[hasclass('opacity-trigger-hover')]/td[3]" position="replace">
+            <td t-attf-class="text-end {{ revenue.to_invoice === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(revenue.to_invoice)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(revenue.foreign_to_invoice)"/>
+                </span>
+            </td>
+        </xpath>
+
+        <!-- Third cell: Invoiced -->
+        <xpath expr="//tr[hasclass('opacity-trigger-hover')]/td[4]" position="replace">
+            <td t-attf-class="text-end {{ revenue.invoiced === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(revenue.invoiced)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(revenue.foreign_invoiced)"/>
+                </span>
+            </td>
+        </xpath>
+
+    </t>
+
+</templates>
