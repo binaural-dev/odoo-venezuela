@@ -29,5 +29,18 @@
                 <t t-else="">Reporte X</t>
             </button>
         </xpath>
+        <!-- Boton adicional (solo con el grupo group_pos_close_native):
+             cierre 100% nativo de Odoo, sin Reporte Z ni validacion de
+             pedidos sin facturar. -->
+        <xpath expr="//button[@t-on-click='closeSessionAndPrintZ']" position="after">
+            <button
+                t-if="canCloseNative"
+                class="button btn btn-secondary btn-lg"
+                t-att-disabled="!canConfirm()"
+                t-on-click="confirm"
+                title="Cierra la sesion de POS sin imprimir Reporte Z ni validar pedidos sin facturar (cierre nativo)">
+                Cerrar sesión
+            </button>
+        </xpath>
     </t>
 </templates>

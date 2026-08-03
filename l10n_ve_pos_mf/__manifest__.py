@@ -14,6 +14,7 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "security/res_group.xml",
         "views/pos_config.xml",
         "views/pos_order.xml",
         "views/pos_session.xml",
