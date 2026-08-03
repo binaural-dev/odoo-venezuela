@@ -30,6 +30,18 @@ class TestProductTemplate(TransactionCase):
             "type_tax_use": "purchase", "company_id": self.company.id,
             "tax_group_id": self.tax_group.id,
         })
+        # Combo choice fixture: every product.template with type='combo' requires
+        # at least 1 combo_ids -> combo_item_ids (core constraint, unrelated to taxes).
+        self.combo_component = self.env["product.product"].create({
+            "name": "Combo Component",
+            "type": "consu",
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        self.combo = self.env["product.combo"].create({
+            "name": "Test Combo Choice",
+            "combo_item_ids": [(0, 0, {"product_id": self.combo_component.id})],
+        })
 
     # ═══════════════════════════════════════════════════════════════
     # Positive tests — product creation / write should succeed
@@ -202,3 +214,96 @@ class TestProductTemplate(TransactionCase):
         })
         with self.assertRaises(UserError):
             product.write({"taxes_id": [(3, self.tax_sale_1.id)]})
+
+    # ═══════════════════════════════════════════════════════════════
+    # Combo products — exempt from single-tax validation
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_14_create_combo_without_taxes_no_default(self):
+        """Crear producto combo sin taxes y sin defaults de compañía -> OK"""
+        self.company.write({
+            "account_sale_tax_id": False,
+            "account_purchase_tax_id": False,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo No Taxes",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        self.assertFalse(product.taxes_id)
+        self.assertFalse(product.supplier_taxes_id)
+
+    def test_15_create_combo_with_two_sale_taxes(self):
+        """Crear producto combo con 2 sale taxes -> OK, la regla no aplica a combo"""
+        product = self.env["product.template"].create({
+            "name": "Test Combo Two Taxes",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+        })
+        self.assertEqual(len(product.taxes_id), 2)
+
+    def test_16_write_existing_combo_without_resending_type(self):
+        """Write sobre combo existente sin reenviar 'type', taxes invalidos -> OK"""
+        self.company.write({
+            "account_sale_tax_id": False,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo Write",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        # create() leaves skip_tax_validation_on_write=True on the returned
+        # recordset's context; reset it so this write() is validated for real.
+        product = product.with_context(skip_tax_validation_on_write=False)
+        product.write({"taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])]})
+        self.assertEqual(len(product.taxes_id), 2)
+
+    def test_17_write_change_type_consu_to_combo(self):
+        """Write que cambia type de consu a combo junto con taxes invalidos -> OK"""
+        product = self.env["product.template"].create({
+            "name": "Test Consu To Combo",
+            "type": "consu",
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        product = product.with_context(skip_tax_validation_on_write=False)
+        product.write({
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+        })
+        self.assertEqual(product.type, "combo")
+        self.assertEqual(len(product.taxes_id), 2)
+
+    def test_18_write_change_type_combo_to_consu(self):
+        """Write que cambia type de combo a consu junto con taxes invalidos -> UserError"""
+        product = self.env["product.template"].create({
+            "name": "Test Combo To Consu",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+        })
+        product = product.with_context(skip_tax_validation_on_write=False)
+        with self.assertRaises(UserError):
+            product.write({
+                "type": "consu",
+                "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+            })
+
+    def test_19_write_mixed_recordset_combo_and_non_combo(self):
+        """Write sobre recordset mixto (combo + no-combo) -> valida solo el no-combo"""
+        combo_product = self.env["product.template"].create({
+            "name": "Test Mixed Combo",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        regular_product = self.env["product.template"].create({
+            "name": "Test Mixed Regular",
+            "type": "service",
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        mixed = (combo_product + regular_product).with_context(skip_tax_validation_on_write=False)
+        with self.assertRaises(UserError):
+            mixed.write({"taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])]})

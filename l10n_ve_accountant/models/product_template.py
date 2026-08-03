@@ -10,7 +10,10 @@ class ProductTemplate(models.Model):
         # Context to silence internal/automated cascade writes during creation
         ctx = dict(self.env.context, skip_tax_validation_on_write=True)
         for vals in vals_list:
-            self.with_context(ctx)._enforce_single_tax_vals(vals)
+            # Combo products carry no taxes of their own; taxes are derived
+            # from their component products at sale time.
+            if vals.get('type') != 'combo':
+                self.with_context(ctx)._enforce_single_tax_vals(vals)
         return super(ProductTemplate, self.with_context(ctx)).create(vals_list)
 
     def write(self, vals):
@@ -19,8 +22,13 @@ class ProductTemplate(models.Model):
 
         # Enforce tax validation on any write operation to correct legacy records
         if 'taxes_id' in vals or 'supplier_taxes_id' in vals:
-            self._enforce_single_tax_vals(vals, records=self)
-            
+            # Effective type per record: the incoming vals['type'] wins for the
+            # whole recordset if sent, otherwise fall back to each record's
+            # current type. Combo products are exempt from the validation.
+            records_to_validate = self.filtered(lambda r: vals.get('type', r.type) != 'combo')
+            if records_to_validate:
+                self._enforce_single_tax_vals(vals, records=records_to_validate)
+
         return super(ProductTemplate, self).write(vals)
 
     def _enforce_single_tax_vals(self, vals, records=None):
