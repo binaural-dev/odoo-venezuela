@@ -172,16 +172,18 @@ class L10nVeProjectTestCommon(TransactionCase):
             "company_ids": [(6, 0, [cls.company.id])],
         })
 
-    def _create_sale_order(self, quantity=2.0, price_unit=100.0, analytic=True, product=None):
+    def _create_sale_order(self, quantity=2.0, price_unit=100.0, analytic=True, product=None, date_order=None):
         """Create and confirm a sale order with a single service line.
 
         :return: (sale_order, sale_order_line)
         """
         product = product or self.product
+        date_order = date_order or fields.Date.today()
         so = self.env["sale.order"].with_context(tracking_disable=True).create({
             "partner_id": self.partner.id,
             "company_id": self.company.id,
             "pricelist_id": self.pricelist.id,
+            "date_order": date_order,
         })
         line_vals = {
             "product_id": product.id,
@@ -195,9 +197,13 @@ class L10nVeProjectTestCommon(TransactionCase):
             **line_vals,
         })
         so.action_confirm()
+        # action_confirm() stamps date_order with the current timestamp,
+        # which would override the requested order date; force it back so
+        # the rate stays anchored on the requested date.
+        so.date_order = date_order
         return so, sol
 
-    def _create_purchase_order(self, quantity=2.0, price_unit=100.0, analytic=True):
+    def _create_purchase_order(self, quantity=2.0, price_unit=100.0, analytic=True, date_order=None):
         """Create and confirm a purchase order with a single service line.
 
         :return: (purchase_order, purchase_order_line)
@@ -209,17 +215,22 @@ class L10nVeProjectTestCommon(TransactionCase):
         }
         if analytic:
             line_vals["analytic_distribution"] = {str(self.analytic_account.id): 100}
+        date_order = date_order or fields.Date.today()
         po = self.env["purchase.order"].create({
             "partner_id": self.partner.id,
             "company_id": self.company.id,
             "journal_invoice_id": self.journal_purchase.id,
-            "date_order": fields.Date.today(),
+            "date_order": date_order,
             "order_line": [(0, 0, line_vals)],
         })
         po.button_confirm()
+        # button_confirm() stamps date_approve with today's date, which takes
+        # precedence over date_order for the rate computation; force it back
+        # so the rate is anchored on the requested order date.
+        po.date_approve = date_order
         return po, po.order_line
 
-    def _create_bill(self, quantity=1.0, price_unit=100.0, purchase_line=None, invoice_origin=False, move_type="in_invoice"):
+    def _create_bill(self, quantity=1.0, price_unit=100.0, purchase_line=None, invoice_origin=False, move_type="in_invoice", invoice_date=None):
         """Create (draft) a vendor bill. If ``purchase_line`` is given the bill
         line is linked to the purchase order line (which bypasses the tax check
         of the purchase journal since ``invoice_origin`` is not provided).
@@ -235,18 +246,22 @@ class L10nVeProjectTestCommon(TransactionCase):
         }
         if purchase_line:
             line_vals["purchase_line_id"] = purchase_line.id
+        invoice_date = invoice_date or fields.Date.today()
         vals = {
             "move_type": move_type,
             "partner_id": self.partner.id,
             "journal_id": self.journal_purchase.id,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": invoice_date,
+            # in_invoice/in_refund anchor the rate on invoice_date_display
+            # (via move.date), not on invoice_date directly.
+            "invoice_date_display": invoice_date,
             "invoice_line_ids": [(0, 0, line_vals)],
         }
         if invoice_origin:
             vals["invoice_origin"] = invoice_origin
         return self.env["account.move"].create(vals)
 
-    def _create_customer_invoice(self, quantity=1.0, price_unit=100.0, sale_lines=None, analytic=True):
+    def _create_customer_invoice(self, quantity=1.0, price_unit=100.0, sale_lines=None, analytic=True, invoice_date=None):
         """Create (draft) a customer invoice. If ``sale_lines`` is given the
         invoice line is linked to those sale order lines.
 
@@ -266,7 +281,7 @@ class L10nVeProjectTestCommon(TransactionCase):
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
             "journal_id": self.journal_sale.id,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": invoice_date or fields.Date.today(),
             "invoice_line_ids": [(0, 0, line_vals)],
         })
 

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from datetime import timedelta
+
 from odoo import fields
 from odoo.tests import tagged
 
@@ -141,6 +143,35 @@ class TestProfitabilityCosts(L10nVeProjectTestCommon):
         items = self.project._get_profitability_items(False)
         section = self._section(items, "costs", "purchase_order")
         self.assertAlmostEqual(section["foreign_billed"], -22.0, places=2)
+        self.assertAlmostEqual(section["foreign_to_bill"], 2.0, places=2)
+
+    def test_purchase_order_section_diverging_rates(self):
+        """foreign_billed/foreign_to_bill must reflect the invoice's own
+        rate, not the purchase order's rate, when they differ.
+
+        The order is dated 5 days ago at 1 USD = 25 VEF (rate 0.04), so its
+        committed foreign subtotal is 8.0 USD. The bill is posted today at
+        the common setup rate 1 USD = 20 VEF (rate 0.05), so the amount
+        actually invoiced is 10.0 USD. The gap between the two must show up
+        in foreign_to_bill instead of being silently dropped.
+        """
+        past_date = fields.Date.today() - timedelta(days=5)
+        self.env["res.currency.rate"].create({
+            "currency_id": self.usd.id,
+            "rate": 0.04,
+            "name": past_date,
+            "company_id": self.company.id,
+        })
+        po, pol = self._create_purchase_order(quantity=2.0, price_unit=100.0, date_order=past_date)
+        self.assertAlmostEqual(pol.foreign_subtotal, 8.0, places=2)
+
+        bill = self._create_bill(quantity=2.0, price_unit=100.0, purchase_line=pol)
+        self._post(bill)
+
+        items = self.project._get_profitability_items(False)
+        section = self._section(items, "costs", "purchase_order")
+        self.assertAlmostEqual(section["billed"], -200.0, places=2)
+        self.assertAlmostEqual(section["foreign_billed"], -10.0, places=2)
         self.assertAlmostEqual(section["foreign_to_bill"], 2.0, places=2)
 
     def test_costs_with_actions(self):
