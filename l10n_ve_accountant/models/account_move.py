@@ -953,7 +953,8 @@ class AccountMove(models.Model):
         
         for move in self:
             move._compute_inverse_rate_vef()
-            total_foreign_paid += move.tax_totals['foreign_total_amount_paid'] - move.tax_totals['foreign_amount_total']
+            tax_totals = move.tax_totals or {}
+            total_foreign_paid += tax_totals.get('foreign_total_amount_paid', 0) - tax_totals.get('foreign_amount_total', 0)
 
         if len(set(self.mapped("foreign_rate"))) > 1:
             raise UserError(
