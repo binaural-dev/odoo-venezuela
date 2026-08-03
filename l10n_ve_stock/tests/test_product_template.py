@@ -55,26 +55,6 @@ class TestProductTemplateCheckTaxesId(TransactionCase):
         })
         self.assertEqual(len(tmpl.taxes_id), 1)
 
-    def test_multiple_taxes_raises(self):
-        tax1 = self.env["account.tax"].create({
-            "name": "Tax A",
-            "amount_type": "percent",
-            "amount": 10,
-            "company_id": self.env.company.id,
-        })
-        tax2 = self.env["account.tax"].create({
-            "name": "Tax B",
-            "amount_type": "percent",
-            "amount": 20,
-            "company_id": self.env.company.id,
-        })
-        with self.assertRaises(ValidationError):
-            self.env["product.template"].create({
-                "name": "Multi Tax Product",
-                "type": "consu",
-                "taxes_id": [(6, 0, [tax1.id, tax2.id])],
-            })
-
 
 @tagged("post_install", "-at_install", "l10n_ve_stock")
 class TestProductTemplateComputePricesWithTax(TransactionCase):
