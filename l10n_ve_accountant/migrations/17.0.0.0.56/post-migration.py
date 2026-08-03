@@ -42,7 +42,7 @@ def _reconciled_move_ids(cr, company, state_filter=('posted',)):
     return [row[0] for row in cr.fetchall()]
 
 
-def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=()):
+def _do_sql_rounding(cr, company, fc_id, precision, state_filter, excluded_move_ids=()):
     """Round foreign monetary fields via SQL, scoped to one company.
 
     - ``company_id`` filter keeps every company's lines from being rounded with
@@ -55,6 +55,7 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
     params = {
         'prec': precision,
         'prec_fc': precision,
+        'fc_id': fc_id,
         'company_id': company.id,
         'states': state_filter,
         'excluded': list(excluded_move_ids),
@@ -140,50 +141,35 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
     _logger.info("    SQL partial_reconcile: %s rows updated", cr.rowcount)
 
 
-def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_ids=(), tolerance=None):
+def _check_and_fix_balance(cr, company, state_filter, excluded_move_ids=(), tolerance=0.01):
     """Detect foreign debit/credit drift introduced by independent rounding and
-    repair it by adjusting the line with the largest debit (or credit).
-
-    Locked/closed periods are never touched, matching every other pass in
-    this file. ``precision`` drives both the rounding and the drift
-    tolerance instead of hardcoding 2 decimals (correct for USD/VEF, wrong
-    for any future 4-decimal foreign currency).
-    """
-    if tolerance is None:
-        tolerance = 10 ** -precision
-    params = {
-        'company_id': company.id,
-        'states': state_filter,
-        'excluded': list(excluded_move_ids),
-        'tolerance': tolerance,
-        'prec': precision,
-        'tax_lock': company.tax_lock_date or '1900-01-01',
-        'fy_lock': company.fiscalyear_lock_date or '1900-01-01',
-    }
-    lock_filter = _lock_expr('m')
+    repair it by adjusting the line with the largest debit (or credit)."""
     cr.execute("""
         SELECT m.id, m.name,
-               ROUND(SUM(l.foreign_debit) - SUM(l.foreign_credit), %(prec)s) AS delta
+               ROUND(SUM(l.foreign_debit) - SUM(l.foreign_credit), 2) AS delta
         FROM account_move_line l
         JOIN account_move m ON l.move_id = m.id
         WHERE m.state IN %(states)s
           AND m.company_id = %(company_id)s
           AND NOT (m.id = ANY(%(excluded)s::bigint[]))
-          AND """ + lock_filter + """
         GROUP BY m.id, m.name
         HAVING ABS(SUM(l.foreign_debit) - SUM(l.foreign_credit)) > %(tolerance)s
-    """, params)
+    """, {
+        'company_id': company.id,
+        'states': state_filter,
+        'excluded': list(excluded_move_ids),
+        'tolerance': tolerance,
+    })
     rows = cr.fetchall()
     for move_id, name, delta in rows:
         _logger.warning(
             "    Move %s (id=%s) drifted %.2f after rounding; repairing",
             name, move_id, delta,
         )
-        row_params = {'move_id': move_id, 'delta': delta, 'prec': precision}
         if delta > 0:
             cr.execute("""
                 UPDATE account_move_line l
-                SET foreign_debit = ROUND(l.foreign_debit - %(delta)s, %(prec)s)
+                SET foreign_debit = ROUND(l.foreign_debit - %(delta)s, 2)
                 WHERE l.id = (
                     SELECT ll.id FROM account_move_line ll
                     WHERE ll.move_id = %(move_id)s
@@ -191,11 +177,11 @@ def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_i
                     ORDER BY ll.foreign_debit DESC NULLS LAST, ll.id
                     LIMIT 1
                 )
-            """, row_params)
+            """, {'move_id': move_id, 'delta': delta})
         else:
             cr.execute("""
                 UPDATE account_move_line l
-                SET foreign_credit = ROUND(l.foreign_credit + %(delta)s, %(prec)s)
+                SET foreign_credit = ROUND(l.foreign_credit + %(delta)s, 2)
                 WHERE l.id = (
                     SELECT ll.id FROM account_move_line ll
                     WHERE ll.move_id = %(move_id)s
@@ -203,13 +189,13 @@ def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_i
                     ORDER BY ll.foreign_credit DESC NULLS LAST, ll.id
                     LIMIT 1
                 )
-            """, row_params)
+            """, {'move_id': move_id, 'delta': delta})
         # keep foreign_balance consistent with the adjusted debit/credit
         cr.execute("""
             UPDATE account_move_line l
-            SET foreign_balance = ROUND(l.foreign_debit - l.foreign_credit, %(prec)s)
+            SET foreign_balance = ROUND(l.foreign_debit - l.foreign_credit, 2)
             WHERE l.move_id = %(move_id)s
-        """, row_params)
+        """, {'move_id': move_id})
         _logger.info("    Repaired move %s (delta=%.2f)", name, delta)
 
 
@@ -651,8 +637,8 @@ def migrate(cr, version):
 
         # ---- SQL rounding for draft (reliable) ----
         _logger.info("    Draft SQL rounding...")
-        _do_sql_rounding(cr, company, fc_precision, ('draft',))
-        _check_and_fix_balance(cr, company, fc_precision, ('draft',))
+        _do_sql_rounding(cr, company, fc.id, fc_precision, ('draft',))
+        _check_and_fix_balance(cr, company, ('draft',))
 
         # ---- POSTED SQL rounding (only VEF base) ----
         reconciled_ids = _reconciled_move_ids(cr, company, ('posted',))
@@ -667,22 +653,19 @@ def migrate(cr, version):
                 len(reconciled_ids),
             )
             _do_sql_rounding(
-                cr, company, fc_precision, ('posted',),
+                cr, company, fc.id, fc_precision, ('posted',),
                 excluded_move_ids=reconciled_ids,
             )
             _check_and_fix_balance(
-                cr, company, fc_precision, ('posted',), excluded_move_ids=reconciled_ids,
+                cr, company, ('posted',), excluded_move_ids=reconciled_ids,
             )
 
-            # ---- Reconciled lines + settlements (respecting lock dates) ----
-            # Gated behind process_posted: these touch posted reconciled
-            # lines/partials/residuals, so a base=USD company ("draft only")
-            # must not have its posted data rounded/rebuilt here either.
-            _logger.info("    Reconciled rounding pass (%s reconciled moves)...",
-                         len(reconciled_ids))
-            _round_reconciled_lines(cr, company, fc_precision, reconciled_ids)
-            _rebuild_reconciled_partials(cr, company, fc_precision)
-            _recompute_residuals(cr, company)
+        # ---- Reconciled lines + settlements (respecting lock dates) ----
+        _logger.info("    Reconciled rounding pass (%s reconciled moves)...",
+                     len(reconciled_ids))
+        _round_reconciled_lines(cr, company, fc_precision, reconciled_ids)
+        _rebuild_reconciled_partials(cr, company, fc_precision)
+        _recompute_residuals(cr, company)
 
     if all_errors:
         raise RuntimeError(

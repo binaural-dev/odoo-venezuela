@@ -49,10 +49,6 @@ class TestMigrationRounding(TransactionCase):
         self.partner = self.env["res.partner"].create({
             "name": "Mig Partner", "property_account_receivable_id": self.acc_rec.id,
         })
-        self.product = self.env["product.product"].create({
-            "name": "Mig Product", "type": "service",
-            "property_account_income_id": self.acc_inc.id,
-        })
 
     def _acc(self, code, name, atype, reconcile=False):
         acc = self.env["account.account"].search([
@@ -73,12 +69,11 @@ class TestMigrationRounding(TransactionCase):
             "currency_id": self.currency_vef.id,
             "invoice_date": fields.Date.today(),
             "invoice_line_ids": [Command.create({
-                "product_id": self.product.id, "name": "Mig Line",
-                "quantity": 1.0, "price_unit": 100.0,
+                "name": "Mig Line", "quantity": 1.0, "price_unit": 100.0,
                 "account_id": self.acc_inc.id,
             })],
         })
-        inv.with_context(move_action_post_alert=True).action_post()
+        inv.action_post()
         self.env.flush_all()
         return inv
 
@@ -103,7 +98,7 @@ class TestMigrationRounding(TransactionCase):
 
         self.company.tax_lock_date = fields.Date.today()
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, 2, ("posted",),
+            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
         )
         self.assertEqual(
             self._line_value(inv.id, self.acc_inc), (1.23456, 0.0),
@@ -112,7 +107,7 @@ class TestMigrationRounding(TransactionCase):
 
         self.company.tax_lock_date = False
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, 2, ("posted",),
+            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
         )
         self.assertEqual(
             self._line_value(inv.id, self.acc_inc), (1.23, 0.0),
@@ -124,7 +119,7 @@ class TestMigrationRounding(TransactionCase):
         self._dirty(inv.id)
 
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, 2, ("posted",),
+            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
             excluded_move_ids=[inv.id],
         )
         self.assertEqual(
@@ -133,7 +128,7 @@ class TestMigrationRounding(TransactionCase):
         )
 
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, 2, ("posted",),
+            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
         )
         self.assertEqual(
             self._line_value(inv.id, self.acc_inc), (1.23, 0.0),
@@ -152,21 +147,17 @@ class TestMigrationRounding(TransactionCase):
             lambda l: l.account_id == self.acc_rec)[:1]
         self.assertTrue(rec_line)
 
-        settle_vef = rec_line.amount_currency
         other = self.env["account.move"].with_context(check_move_validity=False).create({
             "move_type": "entry",
             "journal_id": self.general_journal.id,
             "date": fields.Date.today(),
-            "currency_id": self.currency_vef.id,
             "line_ids": [
-                Command.create({"account_id": self.acc_rec.id, "credit": settle_vef,
+                Command.create({"account_id": self.acc_rec.id, "credit": 100.0,
                                 "debit": 0.0, "name": "pay"}),
-                Command.create({"account_id": self.acc_inc.id, "debit": settle_vef,
+                Command.create({"account_id": self.acc_inc.id, "debit": 100.0,
                                 "credit": 0.0, "name": "x"}),
             ],
         })
-        other.action_post()
-        self.env.flush_all()
         pay_line = other.line_ids.filtered(
             lambda l: l.account_id == self.acc_rec)[:1]
         (rec_line + pay_line).reconcile()
@@ -191,10 +182,10 @@ class TestMigrationRounding(TransactionCase):
         )
 
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, 2, ("posted",),
+            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
         )
         self.mod._check_and_fix_balance(
-            self.env.cr, self.company, 2, ("posted",),
+            self.env.cr, self.company, ("posted",),
         )
 
         self.env.cr.execute(
