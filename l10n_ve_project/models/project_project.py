@@ -17,11 +17,17 @@ class ProjectProject(models.Model):
         """Return the symbol of the company foreign currency."""
         currency = self.company_id.foreign_currency_id
         return currency.symbol if currency else ''
-
     # -------------------------------------------------------------------------
     # Revenues from Sale Order Lines (override sale_project)
     # -------------------------------------------------------------------------
     def _get_revenues_items_from_sol(self, domain=None, with_action=True):
+        """Build the revenues items from the project sale order lines.
+
+        Reads the stored foreign split fields of the sale order lines
+        (``foreign_amount_invoiced`` / ``foreign_amount_to_invoice``) together
+        with the core untaxed amounts, so the foreign amounts keep the same
+        "real invoiced / forecast to invoice" criterion of the sale order line.
+        """
         sale_line_read_group = self.env['sale.order.line'].sudo()._read_group(
             self._get_profitability_sale_order_items_domain(domain),
             ['currency_id', 'product_id', 'is_downpayment'],
@@ -81,8 +87,8 @@ class ProjectProject(models.Model):
                     'foreign_to_invoice': -downpayment_foreign_invoiced,
                 }
                 if with_action and (
-                    self.env.user.has_group('sales_team.group_sale_salesman_all_leads,')
-                    or self.env.user.has_group('account.group_account_invoice,')
+                    self.env.user.has_group('sales_team.group_sale_salesman_all_leads')
+                    or self.env.user.has_group('account.group_account_invoice')
                     or self.env.user.has_group('account.group_account_readonly')
                 ):
                     invoices = self.env['account.move'].search([
@@ -175,6 +181,11 @@ class ProjectProject(models.Model):
     # Costs from Purchase Bills (override project_account)
     # -------------------------------------------------------------------------
     def _get_costs_items_from_purchase(self, domain, profitability_items, with_action=True):
+        """Build the "other purchase costs" costs item from vendor bills.
+
+        The foreign amounts are read from the real ``foreign_balance`` of each
+        account.move.line, prorated with its own analytic distribution.
+        """
         account_move_lines = self.env['account.move.line'].sudo().search_fetch(
             domain + [('analytic_distribution', 'in', self.account_id.ids)],
             ['balance', 'foreign_balance', 'parent_state', 'company_currency_id', 'analytic_distribution', 'move_id', 'date'],
@@ -225,6 +236,11 @@ class ProjectProject(models.Model):
     # Revenues/Costs from Invoices (override sale_project)
     # -------------------------------------------------------------------------
     def _get_items_from_invoices(self, excluded_move_line_ids=None, with_action=True):
+        """Build the revenues/costs items from invoices not linked to sale lines.
+
+        The foreign amounts are read from the real ``foreign_balance`` of each
+        account.move.line, prorated with its own analytic distribution.
+        """
         if excluded_move_line_ids is None:
             excluded_move_line_ids = []
         aml_fetch_fields = [
@@ -312,6 +328,7 @@ class ProjectProject(models.Model):
     # Add Invoice Items (override sale_project to accumulate foreign totals)
     # -------------------------------------------------------------------------
     def _add_invoice_items(self, domain, profitability_items, with_action=True):
+        """Merge the invoice items (excluding sale-line invoices) into the items."""
         sale_lines = self.env['sale.order.line'].sudo()._read_group(
             self._get_profitability_sale_order_items_domain(domain),
             [],
@@ -341,6 +358,11 @@ class ProjectProject(models.Model):
     # AAL Items (override project_account)
     # -------------------------------------------------------------------------
     def _get_items_from_aal(self, with_action=True):
+        """Build the revenues/costs items from analytic lines without a move line.
+
+        The foreign amounts are read from the ``foreign_amount`` of each
+        analytic line.
+        """
         domain = Domain.AND([
             self._get_domain_aal_with_no_move_line(),
             Domain('category', 'not in', ['manufacturing_order', 'picking_entry']),
@@ -407,11 +429,70 @@ class ProjectProject(models.Model):
         }
 
     # -------------------------------------------------------------------------
+    # Purchase order foreign amounts
+    # -------------------------------------------------------------------------
+    def _get_purchase_order_foreign_amounts(self, purchase_lines):
+        """Compute the foreign billed / to-bill amounts for purchase order lines.
+
+        Mirrors the core monetary logic used for the local-currency amounts
+        (``purchase_line_amount_to_invoice - total_invoiced``, considering
+        posted and non-posted/non-cancel invoice lines) instead of prorating
+        by ``qty_to_invoice``, so a quantity fully "invoiced" that still has a
+        monetary gap (price/rate mismatches, credit notes) keeps showing the
+        real pending amount instead of dropping to 0.
+
+        :return: tuple (foreign_billed, foreign_to_bill) for the given lines,
+            both negative as they represent costs.
+        """
+        foreign_billed = foreign_to_bill = 0.0
+        for purchase_line in purchase_lines:
+            contribution = sum(
+                percentage for ids, percentage in purchase_line.analytic_distribution.items()
+                if str(self.account_id.id) in ids.split(',')
+            ) / 100.
+            committed = (purchase_line.foreign_subtotal or 0.0) * contribution
+
+            invoice_lines = purchase_line.invoice_lines.filtered(
+                lambda l: l.parent_state != 'cancel'
+                and l.analytic_distribution
+                and any(str(self.account_id.id) in key.split(',') for key in l.analytic_distribution)
+            )
+
+            if not invoice_lines:
+                foreign_to_bill -= committed
+                continue
+
+            total_invoiced = 0.0
+            for line in invoice_lines:
+                line_contribution = sum(
+                    percentage for ids, percentage in line.analytic_distribution.items()
+                    if str(self.account_id.id) in ids.split(',')
+                ) / 100.
+                cost = line.foreign_balance * line_contribution
+                if line.move_id.move_type not in ('in_refund', 'out_refund'):
+                    total_invoiced += cost
+                if line.parent_state == 'posted':
+                    foreign_billed -= cost
+                else:
+                    foreign_to_bill -= cost
+            foreign_to_bill -= committed - total_invoiced
+
+        return foreign_billed, foreign_to_bill
+
+    # -------------------------------------------------------------------------
     # Main profitability items override
     # -------------------------------------------------------------------------
     def _get_profitability_items(self, with_action=True):
+        """Compute the profitability items injecting the foreign currency amounts.
+
+        The local currency values come from the core modules. The foreign
+        amounts follow the same real-invoiced-amount criterion as the local
+        currency for both the invoiced and to-invoice/to-bill columns (read
+        from ``foreign_balance`` of the invoices), instead of prorating by
+        quantity.
+        """
         profitability_items = super()._get_profitability_items(with_action)
-        
+
         # Ensure all totals have foreign keys initialized
         profitability_items['revenues']['total'].setdefault('foreign_to_invoice', 0.0)
         profitability_items['revenues']['total'].setdefault('foreign_invoiced', 0.0)
@@ -432,51 +513,15 @@ class ProjectProject(models.Model):
             if item['id'] == 'purchase_order':
                 purchase_order_section = item
                 break
-        
+
         if purchase_order_section:
             purchase_lines = self.env['purchase.order.line'].sudo().search([
                 ('analytic_distribution', 'in', self.account_id.ids),
                 ('state', 'in', 'purchase')
             ])
-            section_foreign_billed = section_foreign_to_bill = 0.0
-            for purchase_line in purchase_lines:
-                analytic_contribution = sum(
-                    percentage for ids, percentage in purchase_line.analytic_distribution.items()
-                    if str(self.account_id.id) in ids.split(',')
-                ) / 100.
-                foreign_purchase_total = (purchase_line.foreign_subtotal or 0.0) * analytic_contribution
-
-                invoice_lines = purchase_line.invoice_lines.filtered(
-                    lambda l: l.parent_state != 'cancel'
-                    and l.analytic_distribution
-                    and any(
-                        str(self.account_id.id) in key.split(',')
-                        for key in l.analytic_distribution
-                    )
-                )
-
-                foreign_billed = foreign_to_bill = 0.0
-                foreign_total_invoiced = 0.0
-                if invoice_lines:
-                    for line in invoice_lines:
-                        # abs(foreign_balance) acts as the foreign price_subtotal equivalent
-                        line_foreign_price = abs(line.foreign_balance or 0.0) * analytic_contribution
-                        cost = line_foreign_price * (-1 if line.is_refund else 1)
-                        if not line.is_refund:
-                            foreign_total_invoiced += cost
-                        if line.parent_state == 'posted':
-                            foreign_billed -= cost
-                        else:  # draft
-                            foreign_to_bill -= cost
-                    foreign_to_bill -= (foreign_purchase_total - foreign_total_invoiced)
-                else:
-                    foreign_to_bill -= foreign_purchase_total
-
-                section_foreign_billed += foreign_billed
-                section_foreign_to_bill += foreign_to_bill
-
-            purchase_order_section['foreign_billed'] = section_foreign_billed
-            purchase_order_section['foreign_to_bill'] = section_foreign_to_bill
+            purchase_order_section['foreign_billed'], purchase_order_section['foreign_to_bill'] = (
+                self._get_purchase_order_foreign_amounts(purchase_lines)
+            )
 
         # Recalculate foreign totals by summing sections
         profitability_items['revenues']['total']['foreign_to_invoice'] = sum(
@@ -498,6 +543,7 @@ class ProjectProject(models.Model):
     # get_panel_data: final injection point
     # -------------------------------------------------------------------------
     def get_panel_data(self):
+        """Inject the foreign currency data into the profitability panel payload."""
         panel_data = super().get_panel_data()
         panel_data['foreign_currency_symbol'] = self._get_foreign_currency_symbol()
         panel_data['foreign_currency_id'] = self.company_id.foreign_currency_id.id

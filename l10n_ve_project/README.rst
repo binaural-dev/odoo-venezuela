@@ -31,4 +31,8 @@ Notas
 -----
 
 - Los montos foreign **no se recalculan** con ninguna tasa de cambio; se leen directamente de los campos ``foreign_subtotal``, ``foreign_balance`` y ``foreign_amount`` que ya existen en la base de datos.
+- Criterio de la columna en divisa:
+  - **Facturado / Billed** = lo realmente facturado, leído del ``foreign_balance`` de las líneas de factura vinculadas (las notas de crédito lo netean).
+  - **Por facturar / To invoice / To bill** = pronóstico, prorrateado por cantidad desde el subtotal en divisa de la orden (``qty_to_invoice``), espejo de ``untaxed_amount_to_invoice`` / ``untaxed_amount_to_bill`` del core.
+- Las líneas de factura se prorratean con su **propia distribución analítica**, no con la de la orden de compra.
 - El redondeo y los separadores dependen 100% de la configuración de ``res.currency`` y del idioma del usuario; no hay lógica custom de formateo.
