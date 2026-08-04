@@ -29,15 +29,17 @@ patch(DebugWidget.prototype, {
      */
     async programacion() {
         const fiscalPrinter = window.fiscalPrinter;
-        
-        if (!fiscalPrinter || !fiscalPrinter.isConnected) {
-            alert("Error: Máquina fiscal no conectada");
+
+        if (!fiscalPrinter) {
+            alert("Error: Máquina fiscal no configurada");
             return;
         }
 
         try {
-            const result = await fiscalPrinter.sendCommand("PJ");
-            
+            // withConnection abre el puerto bajo demanda solo por este
+            // comando y lo libera al terminar.
+            const result = await fiscalPrinter.withConnection(() => fiscalPrinter.sendCommand("PJ"));
+
             if (result.success) {
                 console.log("Programación impresa:", result);
             } else {
@@ -53,15 +55,17 @@ patch(DebugWidget.prototype, {
      */
     async report_x() {
         const fiscalPrinter = window.fiscalPrinter;
-        
-        if (!fiscalPrinter || !fiscalPrinter.isConnected) {
-            alert("Error: Máquina fiscal no conectada");
+
+        if (!fiscalPrinter) {
+            alert("Error: Máquina fiscal no configurada");
             return;
         }
 
         try {
-            const result = await fiscalPrinter.sendCommand("I0X");
-            
+            // withConnection abre el puerto bajo demanda solo por este
+            // comando y lo libera al terminar.
+            const result = await fiscalPrinter.withConnection(() => fiscalPrinter.sendCommand("I0X"));
+
             if (result.success) {
                 console.log("Reporte X impreso:", result);
             } else {

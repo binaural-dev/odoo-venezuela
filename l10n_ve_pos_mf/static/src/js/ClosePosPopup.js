@@ -24,17 +24,19 @@ patch(ClosePosPopup.prototype, {
     }
 
     const fiscalPrinter = this.getFiscalPrinter();
-    if (!fiscalPrinter || !fiscalPrinter.isConnected) {
+    if (!fiscalPrinter) {
       await this.popup.add(ErrorPopup, {
-        title: _t("Maquina Fiscal no conectada"),
-        body: _t("Por favor, conecta la maquina fiscal antes de imprimir el reporte X."),
+        title: _t("Maquina Fiscal no configurada"),
+        body: _t("No hay una maquina fiscal configurada para esta caja."),
       });
       return;
     }
 
     this.state.isPrintingReport = true;
     try {
-      const result = await fiscalPrinter.printReportX();
+      // withConnection abre el puerto bajo demanda solo por esta impresión
+      // y lo libera al terminar (evita disputar el puerto con Megasoft).
+      const result = await fiscalPrinter.withConnection(() => fiscalPrinter.printReportX());
       if (!result.success) {
         await this.popup.add(ErrorPopup, {
           title: _t("Error al imprimir Reporte X"),
@@ -58,10 +60,10 @@ patch(ClosePosPopup.prototype, {
    */
   async _printFiscalReportZ() {
     const fiscalPrinter = this.getFiscalPrinter();
-    if (!fiscalPrinter || !fiscalPrinter.isConnected) {
+    if (!fiscalPrinter) {
       await this.popup.add(ErrorPopup, {
-        title: _t("Maquina Fiscal no conectada"),
-        body: _t("Por favor, conecta la maquina fiscal antes de imprimir el reporte Z."),
+        title: _t("Maquina Fiscal no configurada"),
+        body: _t("No hay una maquina fiscal configurada para esta caja."),
       });
       return false;
     }
@@ -76,7 +78,18 @@ patch(ClosePosPopup.prototype, {
 
     this.state.isPrintingReport = true;
     try {
-      const zResult = await fiscalPrinter.printReportZ();
+      // Una sola apertura de puerto cubre imprimir el Z y leer S1 justo
+      // después para confirmar el cierre — son dos pasos de una misma
+      // operación fiscal, no dos operaciones independientes.
+      const { zResult, s1Result } = await fiscalPrinter.withConnection(async () => {
+        const zResult = await fiscalPrinter.printReportZ();
+        if (!zResult.success) {
+          return { zResult, s1Result: null };
+        }
+        const s1Result = await fiscalPrinter._readS1Data();
+        return { zResult, s1Result };
+      });
+
       if (!zResult.success) {
         await this.popup.add(ErrorPopup, {
           title: _t("Error al imprimir Reporte Z"),
@@ -85,7 +98,6 @@ patch(ClosePosPopup.prototype, {
         return false;
       }
 
-      const s1Result = await fiscalPrinter._readS1Data();
       const dailyClosureCounter = s1Result.data?.dailyClosureCounter;
       if (!s1Result.success || !s1Result.data?.registeredMachineNumber || !Number.isInteger(dailyClosureCounter)) {
         await this.popup.add(ErrorPopup, {

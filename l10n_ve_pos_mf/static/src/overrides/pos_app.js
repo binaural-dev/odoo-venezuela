@@ -71,14 +71,28 @@ patch(Chrome.prototype, {
     },
 
     _createFiscalPrinterButton() {
-        this.fiscalPrinterBtn = $("<button class='fiscal-printer-action fa fa-print' title='Máquina Fiscal'/>");
+        // El icono va en su propio <i>, NO como clase del <button>: la clase
+        // "fa" fija font-family: FontAwesome en el elemento, y esa
+        // font-family se hereda a los hijos - si el <span> de la etiqueta
+        // quedara dentro de un <button class="... fa fa-print">, el texto
+        // ("Disponible", etc.) se renderizaría con la fuente de iconos
+        // (glifos en blanco, invisible) en vez de una fuente normal.
+        this.fiscalPrinterBtn = $(
+            "<button class='fiscal-printer-action' title='Máquina Fiscal'>" +
+                "<i class='fa fa-print'></i>" +
+                "<span class='fiscal-printer-label'></span>" +
+            "</button>"
+        );
         $(".status-buttons").prepend(this.fiscalPrinterBtn);
         this.fiscalPrinterBtn.on('click', this._handleFiscalPrinterClick.bind(this));
         this._updateFiscalPrinterButtonStatus("disconnected");
     },
 
     /**
-     * Actualiza el estilo del botón según el estado de conexión
+     * Actualiza el estilo/texto del botón según el estado de pareo.
+     * Nota: "connected" aquí significa "dispositivo pareado/listo" (ver
+     * isPaired en TfhkaDriver), no que el puerto esté literalmente abierto
+     * en este instante — eso lo refleja por separado _onFiscalPrinterActivity.
      * @param {string} status - disconnected, connecting, connected, error
      * @private
      */
@@ -86,14 +100,41 @@ patch(Chrome.prototype, {
         this.fiscalPrinterStatus = status;
         this.fiscalPrinterBtn.removeClass("fiscal-printer-disconnected fiscal-printer-connecting fiscal-printer-connected fiscal-printer-error");
         this.fiscalPrinterBtn.addClass(`fiscal-printer-${status}`);
-        
-        const statusText = {
-            disconnected: "Máquina Fiscal: Desconectada",
-            connecting: "Máquina Fiscal: Conectando...",
-            connected: "Máquina Fiscal: Conectada",
-            error: "Máquina Fiscal: Error"
+
+        const labelText = {
+            disconnected: "Desconectada",
+            connecting: "Conectando...",
+            connected: "Disponible",
+            error: "Error",
         };
-        this.fiscalPrinterBtn.attr('title', statusText[status]);
+        const label = labelText[status] || "";
+        this.fiscalPrinterBtn.find(".fiscal-printer-label").text(label);
+        this.fiscalPrinterBtn.attr('title', `Máquina Fiscal: ${label}`);
+    },
+
+    /**
+     * Refleja la actividad real de la conexión bajo demanda (ver
+     * TfhkaDriver._setActivity): el color se mantiene igual (sigue
+     * "conectado"/verde mientras el dispositivo esté pareado), solo cambia
+     * la palabra junto al ícono para que el cajero distinga "libre" de
+     * "imprimiendo ahora" o "esperando porque el puerto está ocupado".
+     * Si el botón está en un estado que no es "connected" (desconectado,
+     * conectando, error), ese estado tiene prioridad y no se pisa.
+     * @param {string} activity - idle, printing, waiting
+     * @private
+     */
+    _onFiscalPrinterActivity(activity) {
+        if (this.fiscalPrinterStatus !== "connected") {
+            return;
+        }
+        const labelText = {
+            idle: "Disponible",
+            printing: "Imprimiendo",
+            waiting: "En espera",
+        };
+        const label = labelText[activity] || "Disponible";
+        this.fiscalPrinterBtn.find(".fiscal-printer-label").text(label);
+        this.fiscalPrinterBtn.attr('title', `Máquina Fiscal: ${label}`);
     },
 
     /**
@@ -111,23 +152,23 @@ patch(Chrome.prototype, {
     },
 
     /**
-     * Inicializa el driver de la máquina fiscal
+     * Inicializa el driver de la máquina fiscal. Bajo el modelo de conexión
+     * "bajo demanda" (ver TfhkaDriver.withConnection), el puerto ya NO se
+     * abre ni se mantiene abierto al montar el POS — cada impresión abre y
+     * cierra su propio ciclo. Aquí solo se verifica si el dispositivo ya
+     * está autorizado/pareado (sin abrir el puerto), para mostrar un
+     * indicador de "listo" al cajero.
      * @private
      */
     async _initFiscalPrinter() {
         try {
             this.fiscalPrinter = new TfhkaDriver();
-            
-            // Intentar reconexión automática
-            this._updateFiscalPrinterButtonStatus("connecting");
-            const connected = await this.fiscalPrinter.connect();
-            
-            if (connected) {
-                this._updateFiscalPrinterButtonStatus("connected");
-                window.fiscalPrinter = this.fiscalPrinter; // Exponer globalmente
-            } else {
-                this._updateFiscalPrinterButtonStatus("disconnected");
-            }
+            this.fiscalPrinter.onActivityChange = (activity) => this._onFiscalPrinterActivity(activity);
+            window.fiscalPrinter = this.fiscalPrinter; // Exponer globalmente siempre: withConnection() abre el puerto bajo demanda cuando haga falta
+
+            const paired = await this._isFiscalPrinterPaired();
+            this.fiscalPrinter.isPaired = paired;
+            this._updateFiscalPrinterButtonStatus(paired ? "connected" : "disconnected");
         } catch (error) {
             console.error("FiscalPrinter:: Error en inicialización", error);
             this._updateFiscalPrinterButtonStatus("error");
@@ -135,27 +176,51 @@ patch(Chrome.prototype, {
     },
 
     /**
-     * Conecta manualmente con la máquina fiscal
+     * Indica si ya hay un dispositivo serial autorizado por el usuario en
+     * este navegador, SIN abrir el puerto (`getPorts()` solo lista pareos
+     * ya concedidos). Esto es lo que alimenta el indicador de "listo".
+     * @private
+     * @returns {Promise<boolean>}
+     */
+    async _isFiscalPrinterPaired() {
+        try {
+            const ports = await navigator.serial.getPorts();
+            return ports.length > 0;
+        } catch (error) {
+            console.error("FiscalPrinter:: Error verificando pareo", error);
+            return false;
+        }
+    },
+
+    /**
+     * Autoriza el dispositivo (requiere gesto del usuario la primera vez) y
+     * hace una verificación puntual de que responde — luego libera el
+     * puerto de inmediato, no se queda conectado.
      * @private
      */
     async _connectFiscalPrinter() {
         try {
             if (!this.fiscalPrinter) {
                 this.fiscalPrinter = new TfhkaDriver();
+                this.fiscalPrinter.onActivityChange = (activity) => this._onFiscalPrinterActivity(activity);
+                window.fiscalPrinter = this.fiscalPrinter;
             }
 
             this._updateFiscalPrinterButtonStatus("connecting");
-            
+
             // Esto solicitará permiso al usuario para seleccionar el puerto
+            // (solo la primera vez; pareos previos se detectan sin gesto)
             const connected = await this.fiscalPrinter.connect({ requestPermission: true });
-            
+
             if (connected) {
-                // Verificar que la impresora responda
+                // Verificar que la impresora responda, y liberar el puerto
+                // de inmediato: la conexión bajo demanda no se queda abierta
+                // fuera de una impresión real.
                 const status = await this.fiscalPrinter.getStatus();
+                await this.fiscalPrinter.disconnect();
+
                 if (status) {
-                    this.fiscalPrinter.isConnected = true;
                     this._updateFiscalPrinterButtonStatus("connected");
-                    window.fiscalPrinter = this.fiscalPrinter;
                 } else {
                     this._updateFiscalPrinterButtonStatus("error");
                     console.error("FiscalPrinter:: La impresora no responde");
@@ -170,14 +235,18 @@ patch(Chrome.prototype, {
     },
 
     /**
-     * Desconecta la máquina fiscal
+     * Web Serial no permite revocar un pareo desde JS (solo el usuario puede
+     * hacerlo desde la configuración del navegador) — esto solo limpia el
+     * indicador visual de "listo" en esta sesión del POS, no revoca el
+     * permiso real. El puerto ya no se mantiene abierto de todas formas
+     * (conexión bajo demanda), así que no hay nada que "desconectar" a
+     * nivel de hardware en este punto.
      * @private
      */
     async _disconnectFiscalPrinter() {
         try {
             if (this.fiscalPrinter) {
                 await this.fiscalPrinter.disconnect();
-                window.fiscalPrinter = null;
             }
             this._updateFiscalPrinterButtonStatus("disconnected");
         } catch (error) {

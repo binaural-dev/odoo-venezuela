@@ -70,7 +70,7 @@
                 <button
                     name="action_debit_note_button" string="Debit note"
                     type="object" class="o_btn_validate"
-                    invisible="is_debit_journal"
+                    invisible="move_type not in ('out_invoice', 'in_invoice') or state != 'posted' or debit_origin_id"
                 />
             </xpath>
 

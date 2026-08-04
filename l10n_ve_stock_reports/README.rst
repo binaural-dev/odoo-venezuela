@@ -1,6 +1,6 @@
-========================
-Venezuela - Contabilidad
-========================
+===============================
+Venezuela - Libro de Inventario
+===============================
 
 .. 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,9 +14,9 @@ Venezuela - Contabilidad
 
 |badge1|
 
-# Venezuela - Contabilidad
+# Venezuela - Libro de Inventario
 
-Este módulo permite adaptar la contabilidad del sistema a los requerimientos y normativas de Venezuela, gestionando movimientos y tasas de cambio para múltiples monedas.
+Este módulo permite la generación del reporte del libro de inventario detallado de entradas y salidas de mercancías ajustado a los requerimientos de Venezuela.
 
 **Tabla de Contenidos**
 

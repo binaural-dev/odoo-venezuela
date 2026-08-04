@@ -31,8 +31,8 @@ msgstr "'Etiqueta de Cajas- %s' % (object.name)"
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_product.py:0
 #, python-format
-msgid "- Barcode \"%s\" already assigned to product(s): %s"
-msgstr "- Còdigo de barras \"%s\" ya ha sido asignado al producto(s): %s"
+msgid "- Barcode \"%(barcode)s\" already assigned to product(s): %(names)s"
+msgstr "- Código de barras \"%(barcode)s\" ya ha sido asignado al producto(s): %(names)s"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_form_view_procurement_button
@@ -664,8 +664,8 @@ msgstr "Precio sin impuestos"
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_template.py:0
 #, python-format
-msgid "Price cannot be negative."
-msgstr "El precio no puede ser negativo."
+msgid "Price cannot be negative or zero."
+msgstr "El precio no puede ser negativo o cero."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__priority_location

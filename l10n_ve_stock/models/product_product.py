@@ -17,13 +17,26 @@ class ProductProduct(models.Model):
         # Variante del maldito Raiver e.e
         return True
 
+    def write(self, vals):
+        res = super().write(vals)
+        if "list_price" in vals:
+            self._validate_list_price()
+        return res
+
+    def _validate_list_price(self):
+        if self.env.context.get("install_mode"):
+            return
+        self.mapped("product_tmpl_id")._check_list_price()
+
     @api.model_create_multi
     def create(self, vals_list):
         if self.env.user.has_group(
             "l10n_ve_stock.group_block_type_inventory_transfers_expeditions"
         ):
             raise UserError(_("You can't create products"))
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        records._validate_list_price()
+        return records
 
     @api.constrains("barcode")
     def _check_barcode_uniqueness(self):
@@ -44,9 +57,9 @@ class ProductProduct(models.Model):
 
             duplicates_as_str = "\n".join(
                 _(
-                    '- Barcode "%s" already assigned to product(s): %s',
-                    barcode,
-                    ", ".join(p.display_name for p in products),
+                    '- Barcode "%(barcode)s" already assigned to product(s): %(names)s',
+                    barcode=barcode,
+                    names=", ".join(p.display_name for p in products),
                 )
                 for barcode, products in products_by_barcode.items()
                 if len(products) > 1

@@ -49,10 +49,10 @@ export class ReprintInvoiceButton extends Component {
         }
 
         const driver = this.getFiscalPrinter();
-        if (!driver || !driver.isConnected) {
+        if (!driver) {
             await this.popup.add(ErrorPopup, {
-                title: _t("Máquina Fiscal no conectada"),
-                body: _t("Conecta la máquina fiscal antes de reimprimir el documento."),
+                title: _t("Máquina Fiscal no configurada"),
+                body: _t("No hay una máquina fiscal configurada para esta caja."),
             });
             return;
         }
@@ -60,10 +60,12 @@ export class ReprintInvoiceButton extends Component {
         const type = order.get_total_with_tax() >= 0 ? "out_invoice" : "out_refund";
 
         try {
-            const result = await driver.reprintDocument({
+            // withConnection abre el puerto bajo demanda solo por esta
+            // reimpresión y lo libera al terminar.
+            const result = await driver.withConnection(() => driver.reprintDocument({
                 type,
                 number: order.mf_invoice_number,
-            });
+            }));
 
             if (result.success) {
                 await this.popup.add(InfoPopup, {

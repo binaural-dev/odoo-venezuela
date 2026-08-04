@@ -25,7 +25,12 @@ class PosOrder(models.Model):
 
     def _get_total_with_igtf(self):
         self.ensure_one()
-        return self.currency_id.round(self.amount_total + self.igtf_amount)
+        # amount_total ya incluye el IGTF: order_model.js sobreescribe
+        # get_total_with_tax() para sumarlo del lado del frontend antes de
+        # exportar la orden. Sumarlo de nuevo aquí lo contaba dos veces y
+        # dejaba el pedido en borrador (isPaid=False) por la diferencia
+        # exacta del IGTF.
+        return self.currency_id.round(self.amount_total)
 
     def action_pos_order_paid(self):
         self.ensure_one()
