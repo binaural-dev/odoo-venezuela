@@ -1747,16 +1747,11 @@ msgstr "Total sin impuestos BS"
 msgid "Bill Date"
 msgstr "Fecha de tasa"
 
-#. module: l10n_ve_accountant
+#. module: account
+#: model:ir.model.fields,field_description:account.field_account_invoice_report__invoice_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
-msgctxt "l10n_ve_accountant"
-msgid "Invoice Date"
-msgstr "Fecha de Factura"
-
-#. module: account
-#: model:ir.model.fields,field_description:account.field_account_invoice_report__invoice_date
 #: model_terms:ir.ui.view,arch_db:account.portal_my_invoices
 #: model_terms:ir.ui.view,arch_db:account.view_account_invoice_filter
 #: model_terms:ir.ui.view,arch_db:account.view_account_move_filter
