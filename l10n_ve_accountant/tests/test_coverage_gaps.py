@@ -1697,7 +1697,12 @@ class TestCoverageGaps(TransactionCase):
             "property_account_income_id": self.acc_inc.id,
             "taxes_id": [(6, 0, [self.tax_16.id])], "supplier_taxes_id": [(5, 0, 0)],
         })
-        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+        # from_loyalty bypasses l10n_ve_invoice's negative-price-line guard
+        # (_check_price_in_zero): this test targets foreign-amount sign
+        # handling, not that unrelated business validation.
+        inv = self.env["account.move"].with_context(
+            check_move_validity=False, from_loyalty=True,
+        ).create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
             "journal_id": self.sale_journal.id,
