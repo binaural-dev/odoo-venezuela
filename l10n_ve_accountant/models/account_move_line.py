@@ -184,9 +184,9 @@ class AccountMoveLine(models.Model):
         if balance and len(currency_lines) == 1:
             return -balance
 
-        # Third currency (neither base nor alternate)
+        # others currency (neither base nor alternate)
         cur = self.currency_id
-        if cur and cur != self.company_id.foreign_currency_id and cur != self.company_id.currency_id:
+        if cur and cur != self.company_id.foreign_currency_id :
             return self.company_id.currency_id._convert(
                 self.debit - self.credit,
 
@@ -196,7 +196,8 @@ class AccountMoveLine(models.Model):
             )
 
         # Standard rate
-        return (self.debit - self.credit) * self.foreign_inverse_rate
+        
+        return (self.debit - self.credit) * self.foreign_inverse_rate 
 
     def _get_foreign_value(self):
         """Return the foreign value (signed) for this line, or None."""
@@ -474,3 +475,26 @@ class AccountMoveLine(models.Model):
         move.real_portion_count += 1
 
     
+    @api.constrains("discount")
+    def _check_max_discount(self):
+        """Validates that discount value on invoice lines does not reach or exceed 100%."""
+        for line in self:
+            if not line.product_id:
+                continue
+
+            if line.discount >= 100.0:
+                product_name = line.product_id.display_name
+                discount_val = f"{line.discount}%"
+
+                raise UserError(
+                    _(
+                        "Product: %(product)s\n"
+                        "Discount: %(discount)s\n"
+                        "Discounts of 100%% or higher are not allowed on invoices.\n"
+                        "Please adjust the discount percentage before saving."
+                    )
+                    % {
+                        "product": product_name,
+                        "discount": discount_val,
+                    }
+                )
