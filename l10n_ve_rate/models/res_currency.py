@@ -1,50 +1,30 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class ResCurrency(models.Model):
     _inherit = "res.currency"
 
-    def _convert(self, from_amount, to_currency, company=None, date=None, round=False, custom_rate=0.0):
-        """Returns the converted amount of ``from_amount``` from the currency
-           ``self`` to the currency ``to_currency`` for the given ``date`` and
-           company.
-
-           :param company: The company from which we retrieve the convertion rate
-           :param date: The nearest date from which we retriev the conversion rate.
-           :param round: Round the result or not
-        """
-        if date is None:
-            date = fields.Date.today()
-        if company is None:
-            company = self.rate_ids.company_id
+    def _convert(self, from_amount, to_currency, company=None, date=None, round=True, custom_rate=0.0):
         self, to_currency = self or to_currency, to_currency or self
         assert self, "convert amount from unknown currency"
         assert to_currency, "convert amount to unknown currency"
         assert company, "convert amount from unknown company"
         assert date, "convert amount from unknown date"
-        # apply conversion rate
+
         if from_amount:
             if custom_rate > 0:
-                to_amount = from_amount * custom_rate 
+               
+                if company.currency_id != self and company.currency_id == self.env.ref("base.USD"):
+                    to_amount = from_amount / custom_rate
+                else:
+                    to_amount = from_amount * custom_rate
+               
             else:
                 to_amount = from_amount * self._get_conversion_rate(self, to_currency, company, date)
         else:
             return 0.0
 
-        return to_amount
-    #override
-    def round(self, amount):
-        """"""
-        self.ensure_one()
-        amount_float = float(amount)
-
-        try:
-            amount_float = float(amount)
-        except (ValueError, TypeError):
-            return super(ResCurrency, self).round(amount)
-
-        if abs(amount_float - round(amount_float, 6)) > 1e-9:
-            return amount_float
-
-        return super(ResCurrency, self).round(amount_float)
+        return to_currency.round(to_amount) 

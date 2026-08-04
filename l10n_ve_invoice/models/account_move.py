@@ -86,12 +86,11 @@ class AccountMove(models.Model):
             if float_compare(line.price_unit, 0, precision_digits=precision) == -1:
                 from_loyalty = self.env.context.get('from_loyalty', False)
                 
-                is_official_discount = (
-                    self.env.company.sale_discount_product_id
-                    and line.product_id == self.env.company.sale_discount_product_id
-                )
+                discount_product = getattr(self.env.company, "sale_discount_product_id", False)
+                is_official_discount = bool(discount_product) and line.product_id == discount_product
                 
-                is_reward = any(l.reward_id or l.coupon_id for l in line.sale_line_ids)
+                sale_lines = getattr(line, "sale_line_ids", None)
+                is_reward = bool(sale_lines) and any(l.reward_id or l.coupon_id for l in sale_lines)
                 
                 if not from_pos and not from_loyalty and not is_official_discount and not is_reward:
                     raise ValidationError(_("An invoice cannot have a line with a negative price unless it is a registered discount or reward"))

@@ -653,7 +653,9 @@ class TestAccountingReports(TransactionCase):
         ]
         with patch.object(type(self.wizard), "_get_sale_book_field_groups", return_value=groups):
             fields = self.wizard.sale_book_fields()
-        self.assertEqual([field["field"] for field in fields], ["one", "two", "three"])
+        # Prefix check, not exact equality: other installed modules (e.g.
+        # l10n_ve_igtf) extend sale_book_fields() and append their own columns.
+        self.assertEqual([field["field"] for field in fields][:3], ["one", "two", "three"])
 
     def test_purchase_book_fields_flattens_groups(self):
         groups = [
@@ -662,7 +664,9 @@ class TestAccountingReports(TransactionCase):
         ]
         with patch.object(type(self.wizard), "_get_purchase_book_field_groups", return_value=groups):
             fields = self.wizard.purchase_book_fields()
-        self.assertEqual([field["field"] for field in fields], ["one", "two", "three"])
+        # Prefix check, not exact equality: other installed modules (e.g.
+        # l10n_ve_igtf) extend purchase_book_fields() and append their own columns.
+        self.assertEqual([field["field"] for field in fields][:3], ["one", "two", "three"])
 
     def test_resume_book_headers_for_purchase_and_sale(self):
         self.wizard.write({"report": "purchase"})
