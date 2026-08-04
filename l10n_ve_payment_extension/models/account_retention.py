@@ -224,27 +224,32 @@ class AccountRetention(models.Model):
             retention.foreign_total_retention_amount = 0
 
             for line in retention.retention_line_ids:
-                retention.total_invoice_amount += float_round(
+                sign = (
+                    -1
+                    if line.move_id.move_type in ("in_refund", "out_refund")
+                    else 1
+                )
+                retention.total_invoice_amount += sign * float_round(
                     line.invoice_amount,
                     precision_digits=retention.company_currency_id.decimal_places,
                 )
-                retention.total_iva_amount += float_round(
+                retention.total_iva_amount += sign * float_round(
                     line.iva_amount,
                     precision_digits=retention.company_currency_id.decimal_places,
                 )
-                retention.total_retention_amount += float_round(
+                retention.total_retention_amount += sign * float_round(
                     line.retention_amount,
                     precision_digits=retention.company_currency_id.decimal_places,
                 )
-                retention.foreign_total_invoice_amount += float_round(
+                retention.foreign_total_invoice_amount += sign * float_round(
                     line.foreign_invoice_amount,
                     precision_digits=retention.foreign_currency_id.decimal_places,
                 )
-                retention.foreign_total_iva_amount += float_round(
+                retention.foreign_total_iva_amount += sign * float_round(
                     line.foreign_iva_amount,
                     precision_digits=retention.foreign_currency_id.decimal_places,
                 )
-                retention.foreign_total_retention_amount += float_round(
+                retention.foreign_total_retention_amount += sign * float_round(
                     line.foreign_retention_amount,
                     precision_digits=retention.foreign_currency_id.decimal_places,
                 )
