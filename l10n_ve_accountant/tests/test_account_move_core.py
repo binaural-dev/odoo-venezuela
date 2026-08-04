@@ -972,3 +972,261 @@ class TestAccountMoveCore(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         refund = self._create_refund(invoice, line_mods={1: {"quantity": 0.5}})
         self.assertEqual(refund.invoice_line_ids[1].quantity, 0.5)
+
+    # ═══════════════════════════════════════════════════════════════
+    # Repeated product in origin invoice (matching must not collapse by
+    # `sequence`, since every product line gets sequence=100 regardless
+    # of position).
+    # ═══════════════════════════════════════════════════════════════
+
+    def _create_invoice_with_repeated_product(self):
+        """Origin invoice with the same product on two separate lines with
+        different quantities/prices, to exercise product-repetition matching."""
+        return self._create_invoice(lines=[
+            {"product_id": self.product.id, "quantity": 2.0, "price_unit": 100.0},
+            {"product_id": self.product.id, "quantity": 5.0, "price_unit": 50.0},
+        ])
+
+    def test_52_refund_validation_repeated_product_both_lines_valid(self):
+        """Producto repetido en origen (cantidades 2.0 y 5.0, total 7.0): una
+        NC que refleja ambas líneas sin exceder el total disponible por
+        producto es válida. Antes del fix, ambas líneas origen colisionaban
+        bajo la misma clave (sequence=100, product) y solo la última
+        sobrevivía en el dict."""
+        invoice = self._create_invoice_with_repeated_product()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].quantity, 2.0)
+        self.assertEqual(refund.invoice_line_ids[1].quantity, 5.0)
+
+    def test_53_refund_validation_repeated_product_total_exceeds_origin(self):
+        """Producto repetido: la suma de cantidades de la NC para ese
+        producto no puede exceder el total disponible en origen (7.0 = 2.0 +
+        5.0). Antes del fix, con sequence=100 como clave, la validación no
+        detectaba correctamente los excesos en productos repetidos."""
+        invoice = self._create_invoice_with_repeated_product()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"quantity": 3.0}})
+
+    def test_54_refund_validation_repeated_product_third_line_rejected(self):
+        """Producto repetido: si la NC agrega una tercera línea con el mismo
+        producto que hace exceder el total disponible por producto, debe
+        rechazarse."""
+        invoice = self._create_invoice_with_repeated_product()
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        move_reversal = self.env['account.move.reversal'].with_context(
+            active_model="account.move",
+            active_ids=invoice.ids,
+        ).create({
+            'date': fields.Date.today(),
+            'journal_id': invoice.journal_id.id,
+        })
+        reversal = move_reversal.reverse_moves()
+        refund = self.env['account.move'].browse(reversal['res_id'])
+
+        with self.assertRaises(ValidationError):
+            with Form(refund) as refund_form:
+                for _ in range(len(refund.invoice_line_ids)):
+                    refund_form.invoice_line_ids.remove(index=0)
+                for inv_line in invoice.invoice_line_ids:
+                    with refund_form.invoice_line_ids.new() as line:
+                        line.product_id = inv_line.product_id
+                        line.quantity = inv_line.quantity
+                        line.price_unit = inv_line.price_unit
+                with refund_form.invoice_line_ids.new() as line:
+                    line.product_id = self.product
+                    line.quantity = 1.0
+                    line.price_unit = 10.0
+
+    # ═══════════════════════════════════════════════════════════════
+    # Enforcement outside the UI (create/write), not just @api.onchange
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_55_refund_validation_enforced_on_write_bypassing_onchange(self):
+        """La validación debe aplicar también quitando el formulario de por
+        medio (create/write directo, ej. RPC), no solo vía onchange."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        move_reversal = self.env['account.move.reversal'].with_context(
+            active_model="account.move",
+            active_ids=invoice.ids,
+        ).create({
+            'date': fields.Date.today(),
+            'journal_id': invoice.journal_id.id,
+        })
+        reversal = move_reversal.reverse_moves()
+        refund = self.env['account.move'].browse(reversal['res_id'])
+
+        with self.assertRaises(ValidationError):
+            refund.invoice_line_ids[0].write({"quantity": 999.0})
+
+    def test_56_refund_validation_enforced_on_create_bypassing_onchange(self):
+        """Crear una NC directamente con Command.create (sin pasar por el
+        Form/onchange) también debe respetar la restricción de productos."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with self.assertRaises(ValidationError):
+            self.env["account.move"].with_context(check_move_validity=False).create({
+                "move_type": "out_refund",
+                "partner_id": self.partner.id,
+                "journal_id": self.sale_journal.id,
+                "currency_id": self.currency_vef.id,
+                "reversed_entry_id": invoice.id,
+                "date": fields.Date.today(),
+                "invoice_date": fields.Date.today(),
+                "invoice_line_ids": [
+                    Command.create({
+                        "product_id": self.product.id,
+                        "quantity": 999.0,
+                        "price_unit": 100.0,
+                        "account_id": self.acc_inc.id,
+                        "tax_ids": [(6, 0, [self.tax_16.id])],
+                    }),
+                ],
+            })
+
+    def test_57_refund_validation_enforced_on_line_write_directly(self):
+        """Escribir directamente sobre la línea (account.move.line.write),
+        sin pasar por move.write(invoice_line_ids=...), tampoco debe poder
+        saltarse la validación (constrains en account.move.line)."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+
+        with self.assertRaises(ValidationError):
+            refund.invoice_line_ids[0].write({"quantity": 999.0})
+
+    def test_58_in_refund_validation_enforced_on_create_bypassing_onchange(self):
+        """Igual que test_56 pero para in_refund (nota de débito de proveedor)."""
+        invoice = self._create_invoice(move_type="in_invoice")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with self.assertRaises(ValidationError):
+            self.env["account.move"].with_context(check_move_validity=False).create({
+                "move_type": "in_refund",
+                "partner_id": self.partner.id,
+                "journal_id": self.purchase_journal.id,
+                "currency_id": self.currency_vef.id,
+                "reversed_entry_id": invoice.id,
+                "date": fields.Date.today(),
+                "invoice_date": fields.Date.today(),
+                "invoice_line_ids": [
+                    Command.create({
+                        "product_id": self.product.id,
+                        "quantity": 999.0,
+                        "price_unit": 100.0,
+                        "account_id": self.acc_exp.id,
+                        "tax_ids": [(6, 0, [self.tax_16.id])],
+                    }),
+                ],
+            })
+
+    def test_59_in_refund_validation_enforced_on_line_write_directly(self):
+        """in_refund: escritura directa sobre la línea también debe validar."""
+        invoice = self._create_invoice(move_type="in_invoice")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+
+        with self.assertRaises(ValidationError):
+            refund.invoice_line_ids[0].write({"quantity": 999.0})
+
+    def test_60_refund_validation_does_not_affect_regular_invoice_write(self):
+        """La validación es exclusiva de out_refund/in_refund con
+        reversed_entry_id: escribir libremente sobre una factura normal (sin
+        reverso) no debe activarla ni levantar ValidationError."""
+        invoice = self._create_invoice()
+        invoice.invoice_line_ids.write({"quantity": 50.0, "price_unit": 999.0})
+        self.assertEqual(invoice.invoice_line_ids[0].quantity, 50.0)
+        self.assertEqual(invoice.invoice_line_ids[0].price_unit, 999.0)
+
+    def test_61_refund_validation_does_not_affect_reversed_invoice_itself(self):
+        """Escribir sobre la FACTURA ORIGEN (que ahora tiene reversed_entry_id
+        apuntando... en realidad es el refund quien lo tiene) no debe
+        activar la validación sobre la factura original ya posteada."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._create_refund(invoice)
+        # The origin invoice itself has no reversed_entry_id (it's not a
+        # refund), so unrelated changes to its own lines are not restricted
+        # by this validation. (quantity changes on a posted invoice are
+        # blocked by other Odoo core rules, not this one, so we only assert
+        # this constrain in particular does not fire for it.)
+        self.assertFalse(invoice.reversed_entry_id)
+
+    # ═══════════════════════════════════════════════════════════════
+    # Origin invoice with fully duplicated lines (same product, same
+    # quantity, same price on both origin lines).
+    # ═══════════════════════════════════════════════════════════════
+
+    def _create_invoice_with_duplicated_lines(self):
+        """Origin invoice with two identical lines: same product, same
+        quantity (2.0) and same price (10.0). Total available for the
+        product: quantity=4.0, max_price=10.0."""
+        return self._create_invoice(lines=[
+            {"product_id": self.product.id, "quantity": 2.0, "price_unit": 10.0},
+            {"product_id": self.product.id, "quantity": 2.0, "price_unit": 10.0},
+        ])
+
+    def test_62_refund_validation_duplicated_origin_lines_mirrored_is_valid(self):
+        """NC que refleja exactamente las dos líneas duplicadas de origen
+        (2.0 + 2.0, mismo precio) es válida: la suma (4.0) no excede el
+        total disponible (4.0)."""
+        invoice = self._create_invoice_with_duplicated_lines()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].quantity, 2.0)
+        self.assertEqual(refund.invoice_line_ids[1].quantity, 2.0)
+
+    def test_63_refund_validation_duplicated_origin_lines_consolidated_is_valid(self):
+        """NC con una sola línea que consolida el total exacto disponible
+        (4.0 = 2.0 + 2.0) es válida (límite exacto, no lo excede)."""
+        invoice = self._create_invoice_with_duplicated_lines()
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        move_reversal = self.env['account.move.reversal'].with_context(
+            active_model="account.move",
+            active_ids=invoice.ids,
+        ).create({
+            'date': fields.Date.today(),
+            'journal_id': invoice.journal_id.id,
+        })
+        reversal = move_reversal.reverse_moves()
+        refund = self.env['account.move'].browse(reversal['res_id'])
+
+        with Form(refund) as refund_form:
+            for _ in range(len(refund.invoice_line_ids)):
+                refund_form.invoice_line_ids.remove(index=0)
+            with refund_form.invoice_line_ids.new() as line:
+                line.product_id = self.product
+                line.quantity = 4.0
+                line.price_unit = 10.0
+
+        self.assertEqual(refund.invoice_line_ids[0].quantity, 4.0)
+
+    def test_64_refund_validation_duplicated_origin_lines_total_exceeded(self):
+        """NC que excede el total disponible entre las dos líneas duplicadas
+        (2.5 + 2.0 = 4.5 > 4.0 disponible) debe rechazarse, aunque cada línea
+        individual (2.5) no exceda una sola línea origen (2.0) por sí sola en
+        términos absolutos de "cuál línea es cuál" -- lo que importa es el
+        total agregado por producto."""
+        invoice = self._create_invoice_with_duplicated_lines()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"quantity": 2.5}})
+
+    def test_65_refund_validation_duplicated_origin_lines_price_equal_is_valid(self):
+        """NC con precio exactamente igual al precio máximo disponible
+        (10.0) es válida (la comparación es estrictamente '>', no '>=')."""
+        invoice = self._create_invoice_with_duplicated_lines()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice, line_mods={0: {"price_unit": 10.0}})
+        self.assertEqual(refund.invoice_line_ids[0].price_unit, 10.0)
+
+    def test_66_refund_validation_duplicated_origin_lines_price_exceeded(self):
+        """NC con precio mayor al precio máximo disponible entre las líneas
+        duplicadas (10.0) debe rechazarse."""
+        invoice = self._create_invoice_with_duplicated_lines()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"price_unit": 15.0}})
