@@ -97,7 +97,7 @@ class WizardAccountingReports(models.TransientModel):
         is_check_currency_system = self.currency_system
         fields = super()._fields_sale_book_line(move, taxes)
         multiplier = -1 if move.move_type == "out_refund" else 1
-        is_igtf = bool(move.alter_bi_igtf > 0 or move.foreign_alter_bi_igtf > 0)
+        is_igtf = bool(getattr(move, "alter_bi_igtf", 0) > 0 or getattr(move, "foreign_alter_bi_igtf", 0) > 0)
         igtf = (move.tax_totals["igtf"]["igtf_amount"] if is_check_currency_system else move.tax_totals["igtf"]["foreign_igtf_amount"]) if is_igtf else 0
         fields |= {"igtf": igtf * multiplier,}
         return fields
@@ -126,7 +126,7 @@ class WizardAccountingReports(models.TransientModel):
         is_check_currency_system = self.currency_system
         fields = super()._fields_purchase_book_line(move, taxes)
         multiplier = -1 if move.move_type == "in_refund" else 1
-        is_igtf = bool(move.alter_bi_igtf > 0 or move.foreign_alter_bi_igtf > 0)
+        is_igtf = bool(getattr(move, "alter_bi_igtf", 0) > 0 or getattr(move, "foreign_alter_bi_igtf", 0) > 0)
         igtf =  (move.tax_totals["igtf"]["igtf_amount"] if is_check_currency_system else move.tax_totals["igtf"]["foreign_igtf_amount"]) if is_igtf else 0
         fields |= {"igtf": igtf * multiplier,}
         return fields
