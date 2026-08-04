@@ -86,11 +86,19 @@ class AccountMove(models.Model):
             if float_compare(line.price_unit, 0, precision_digits=precision) == -1:
                 from_loyalty = self.env.context.get('from_loyalty', False)
                 
-                discount_product = getattr(self.env.company, "sale_discount_product_id", False)
-                is_official_discount = bool(discount_product) and line.product_id == discount_product
-                
-                sale_lines = getattr(line, "sale_line_ids", None)
-                is_reward = bool(sale_lines) and any(l.reward_id or l.coupon_id for l in sale_lines)
+                # sale_discount_product_id/sale_line_ids only exist when
+                # l10n_ve_invoice_loyalty/sale are installed alongside this
+                # module - checked explicitly instead of getattr() so a real
+                # AttributeError from any other cause is never swallowed.
+                is_official_discount = (
+                    "sale_discount_product_id" in self.env.company._fields
+                    and self.env.company.sale_discount_product_id
+                    and line.product_id == self.env.company.sale_discount_product_id
+                )
+
+                is_reward = "sale_line_ids" in line._fields and any(
+                    l.reward_id or l.coupon_id for l in line.sale_line_ids
+                )
                 
                 if not from_pos and not from_loyalty and not is_official_discount and not is_reward:
                     raise ValidationError(_("An invoice cannot have a line with a negative price unless it is a registered discount or reward"))
