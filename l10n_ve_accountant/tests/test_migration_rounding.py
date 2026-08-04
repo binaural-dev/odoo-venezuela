@@ -49,6 +49,10 @@ class TestMigrationRounding(TransactionCase):
         self.partner = self.env["res.partner"].create({
             "name": "Mig Partner", "property_account_receivable_id": self.acc_rec.id,
         })
+        self.product = self.env["product.product"].create({
+            "name": "Mig Product", "type": "service",
+            "property_account_income_id": self.acc_inc.id,
+        })
 
     def _acc(self, code, name, atype, reconcile=False):
         acc = self.env["account.account"].search([
@@ -69,11 +73,12 @@ class TestMigrationRounding(TransactionCase):
             "currency_id": self.currency_vef.id,
             "invoice_date": fields.Date.today(),
             "invoice_line_ids": [Command.create({
-                "name": "Mig Line", "quantity": 1.0, "price_unit": 100.0,
+                "product_id": self.product.id, "name": "Mig Line",
+                "quantity": 1.0, "price_unit": 100.0,
                 "account_id": self.acc_inc.id,
             })],
         })
-        inv.action_post()
+        inv.with_context(move_action_post_alert=True).action_post()
         self.env.flush_all()
         return inv
 
@@ -147,17 +152,21 @@ class TestMigrationRounding(TransactionCase):
             lambda l: l.account_id == self.acc_rec)[:1]
         self.assertTrue(rec_line)
 
+        settle_vef = rec_line.amount_currency
         other = self.env["account.move"].with_context(check_move_validity=False).create({
             "move_type": "entry",
             "journal_id": self.general_journal.id,
             "date": fields.Date.today(),
+            "currency_id": self.currency_vef.id,
             "line_ids": [
-                Command.create({"account_id": self.acc_rec.id, "credit": 100.0,
+                Command.create({"account_id": self.acc_rec.id, "credit": settle_vef,
                                 "debit": 0.0, "name": "pay"}),
-                Command.create({"account_id": self.acc_inc.id, "debit": 100.0,
+                Command.create({"account_id": self.acc_inc.id, "debit": settle_vef,
                                 "credit": 0.0, "name": "x"}),
             ],
         })
+        other.action_post()
+        self.env.flush_all()
         pay_line = other.line_ids.filtered(
             lambda l: l.account_id == self.acc_rec)[:1]
         (rec_line + pay_line).reconcile()
