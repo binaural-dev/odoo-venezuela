@@ -498,3 +498,16 @@ class AccountMoveLine(models.Model):
                         "discount": discount_val,
                     }
                 )
+
+    @api.constrains("quantity", "price_unit", "product_id")
+    def _check_refund_line_against_origin(self):
+        # Writing directly on a line (line.write(...)) does not change the
+        # parent's `invoice_line_ids` field value itself, so it does not
+        # trigger account.move's `@api.constrains('invoice_line_ids')`. This
+        # closes that gap so a line-level write on a credit/debit note is
+        # still validated against its source invoice.
+        moves = self.mapped("move_id").filtered(
+            lambda m: m.move_type in ("out_refund", "in_refund") and m.reversed_entry_id
+        )
+        for move in moves:
+            move._validate_refund_lines_against_origin()

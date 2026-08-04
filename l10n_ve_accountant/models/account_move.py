@@ -5,7 +5,7 @@ from lxml import etree
 from contextlib import ExitStack, contextmanager
 from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare, index_exists
+from odoo.tools import float_compare, float_is_zero, index_exists
 from odoo.tools.sql import drop_index
 from odoo.tools.float_utils import float_round
 from odoo.tools.misc import formatLang
@@ -1743,10 +1743,9 @@ class AccountMove(models.Model):
                 raise UserError(_("You cannot delete a journal item that is posted, cancelled, or has been previously posted."))
             
 
-    @api.onchange('invoice_line_ids')
-    def _onchange_invoice_line_ids_refund_validation(self):
+    def _validate_refund_lines_against_origin(self):
         """
-        Validate invoice lines in credit/debit notes (refunds) against 
+        Validate invoice lines in credit/debit notes (refunds) against
         their corresponding original invoice lines from the source document.
 
         Ensures that:
@@ -1754,46 +1753,78 @@ class AccountMove(models.Model):
         2. Quantity does not exceed the original quantity and is not zero.
         3. Unit price is non-negative and does not exceed the original.
         """
+        self.ensure_one()
 
         if not self.reversed_entry_id or self.move_type not in ['out_refund', 'in_refund']:
             return
 
-        origin_lines_by_key = {
-            (line.sequence, line.product_id.id): line
-            for line in self.reversed_entry_id.invoice_line_ids
-            if line.product_id
-        }
+        # Lines are grouped by product (not matched by `sequence`: Odoo computes
+        # `sequence` from `display_type` only, so every regular product line gets
+        # the same value (100) regardless of position, and keying on it collapses
+        # repeated products in the source invoice to a single line). The check is
+        # kept stateless and aggregated per product (total available quantity,
+        # highest unit price) instead of pairing 1:1 with a specific origin line:
+        # this same validation re-runs against intermediate Form states while
+        # lines are being added/removed/reordered in the UI, and a stateful
+        # pairing (e.g. consuming a queue) would misattribute a refund line to
+        # the wrong origin line mid-edit.
+        origin_totals_by_product = defaultdict(lambda: {"quantity": 0.0, "max_price_unit": 0.0})
+        for line in self.reversed_entry_id.invoice_line_ids:
+            if not line.product_id:
+                continue
+            totals = origin_totals_by_product[line.product_id.id]
+            totals["quantity"] += line.quantity
+            totals["max_price_unit"] = max(totals["max_price_unit"], line.price_unit)
+
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        refund_quantity_by_product = defaultdict(float)
 
         for line in self.invoice_line_ids:
             if not line.product_id:
                 continue
 
-            line_key = (line.sequence, line.product_id.id)
+            totals = origin_totals_by_product.get(line.product_id.id)
 
-            if line_key not in origin_lines_by_key:
+            if not totals:
                 raise ValidationError(_(
                     "You are not allowed to add new products ('%s') "
                     "that were not present in the original invoice."
                 ) % line.product_id.name)
 
-            origin_line = origin_lines_by_key[line_key]
-
-            if float_compare(line.quantity, 0, precision_digits=2) == 0:
+            if float_is_zero(line.quantity, precision_digits=precision):
                 raise ValidationError(_("The quantity cannot be zero."))
 
-            if float_compare(line.quantity, origin_line.quantity, precision_digits=2) > 0:
+            refund_quantity_by_product[line.product_id.id] += line.quantity
+
+            if float_compare(
+                refund_quantity_by_product[line.product_id.id],
+                totals["quantity"],
+                precision_digits=precision,
+            ) > 0:
                 raise ValidationError(_(
                     "Product '%s':\n"
                     "The quantity (%s) cannot be greater than the original "
                     "quantity in the source invoice (%s)."
-                ) % (line.product_id.name, line.quantity, origin_line.quantity))
+                ) % (line.product_id.name, line.quantity, totals["quantity"]))
 
             if line.price_unit < 0.0:
                 raise ValidationError(_("The unit price cannot be negative."))
 
-            if line.price_unit > origin_line.price_unit:
+            if line.price_unit > totals["max_price_unit"]:
                 raise ValidationError(_(
                     "Product '%s':\n"
                     "The unit price (%s) cannot be greater than the original "
                     "unit price in the source invoice (%s)."
-                ) % (line.product_id.name, line.price_unit, origin_line.price_unit))
+                ) % (line.product_id.name, line.price_unit, totals["max_price_unit"]))
+
+    @api.onchange('invoice_line_ids')
+    def _onchange_invoice_line_ids_refund_validation(self):
+        self._validate_refund_lines_against_origin()
+
+    @api.constrains('invoice_line_ids')
+    def _check_invoice_line_ids_refund_validation(self):
+        # Reinforces `_onchange_invoice_line_ids_refund_validation`: the onchange
+        # only fires from the UI (Form), so create/write/RPC/imports would
+        # otherwise bypass the restriction entirely.
+        for move in self:
+            move._validate_refund_lines_against_origin()
