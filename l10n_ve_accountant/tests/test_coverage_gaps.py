@@ -1090,7 +1090,6 @@ class TestCoverageGaps(TransactionCase):
             "partner_id": self.partner.id,
             "journal_id": purchase_journal.id,
             "currency_id": self.currency_vef.id,
-            "correlative": "12345698741001",
             "date": fields.Date.today(),
             "invoice_line_ids": [mk_line(723.0), mk_line(1447.998)],
         })
@@ -1496,7 +1495,6 @@ class TestCoverageGaps(TransactionCase):
             "partner_id": self.partner.id,
             "journal_id": purchase_journal.id,
             "currency_id": currency.id,
-            "correlative": "12345698741002",
             "date": fields.Date.today(),
             "invoice_line_ids": [],
         })
@@ -1612,7 +1610,7 @@ class TestCoverageGaps(TransactionCase):
         entry_untaxed = sum(
             l.foreign_subtotal
             for l in inv.line_ids if l.display_type == 'product')
-        entry_total = abs(entry_untaxed + sum(
+        entry_total = abs(entry_untaxed + inv.direction_sign * sum(
             l.foreign_debit - l.foreign_credit
             for l in inv.line_ids if l.display_type == 'tax'))
 
@@ -1674,7 +1672,7 @@ class TestCoverageGaps(TransactionCase):
         entry_untaxed = sum(
             l.foreign_subtotal
             for l in inv.line_ids if l.display_type == 'product')
-        entry_total = abs(entry_untaxed + sum(
+        entry_total = abs(entry_untaxed + inv.direction_sign * sum(
             l.foreign_debit - l.foreign_credit
             for l in inv.line_ids if l.display_type == 'tax'))
 
@@ -1731,7 +1729,7 @@ class TestCoverageGaps(TransactionCase):
         entry_untaxed = sum(
             l.foreign_subtotal
             for l in inv.line_ids if l.display_type == 'product')
-        entry_tax = sum(
+        entry_tax = inv.direction_sign * sum(
             l.foreign_debit - l.foreign_credit
             for l in inv.line_ids if l.display_type == 'tax')
         expected_total = abs(entry_untaxed + entry_tax)
