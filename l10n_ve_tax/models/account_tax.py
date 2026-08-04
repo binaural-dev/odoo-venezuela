@@ -105,25 +105,28 @@ class AccountTax(models.Model):
             product_foreign = sum(
                 line.foreign_subtotal
                 for line in move.line_ids if line.display_type == 'product')
-            tax_foreign = sum(
+            tax_foreign = move.direction_sign * sum(
                 line.foreign_debit - line.foreign_credit
                 for line in move.line_ids if line.display_type == 'tax')
+            expected_untaxed = fc.round(abs(product_foreign))
             expected_total = fc.round(abs(product_foreign + tax_foreign))
+            current_untaxed = foreign_taxes.get("amount_untaxed", 0.0)
             current_total = foreign_taxes.get("amount_total", 0.0)
-            diff = fc.round(expected_total - current_total)
-            if not fc.is_zero(diff):
+            diff_untaxed = fc.round(expected_untaxed - current_untaxed)
+            diff_total = fc.round(expected_total - current_total)
+            if not fc.is_zero(diff_untaxed) or not fc.is_zero(diff_total):
                 foreign_taxes["amount_total"] = expected_total
-                foreign_taxes["amount_untaxed"] = fc.round(foreign_taxes["amount_untaxed"] + diff)
+                foreign_taxes["amount_untaxed"] = expected_untaxed
                 subtotals = foreign_taxes.get("subtotals", [])
                 if subtotals:
                     total_sub = sum(s.get("amount", 0.0) for s in subtotals)
                     if not fc.is_zero(total_sub):
-                        remaining = diff
+                        remaining = diff_total
                         n = len(subtotals)
                         for i, sub in enumerate(subtotals):
                             if i < n - 1:
                                 ratio = sub.get("amount", 0.0) / total_sub
-                                share = fc.round(ratio * diff)
+                                share = fc.round(ratio * diff_total)
                                 sub["amount"] = fc.round(sub["amount"] + share)
                                 remaining -= share
                             else:
