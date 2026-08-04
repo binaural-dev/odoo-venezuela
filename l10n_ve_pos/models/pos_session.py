@@ -407,7 +407,14 @@ class PosSession(models.Model):
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
         other_lines = line.move_id.line_ids.filtered(
-            lambda x: x != line and x.account_id.account_type != "asset_receivable"
+            lambda x: x != line
+            and not x.not_foreign_recalculate
+            and float_compare(
+                x.debit or x.credit,
+                abs(amount),
+                precision_rounding=self.currency_id.rounding,
+            )
+            == 0
         )
         if other_lines:
             other_line = other_lines[0]
