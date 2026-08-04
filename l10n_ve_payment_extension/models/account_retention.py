@@ -194,13 +194,13 @@ class AccountRetention(models.Model):
         for retention in self:
             retention.actual_invoice_ids = retention.retention_line_ids.mapped('move_id').ids
 
-    @api.depends("type", "partner_id")
+    @api.depends("type", "type_retention", "partner_id")
     def _compute_allowed_lines_move_ids(self):
         for retention in self:
             allowed_types = (
-                ("in_invoice", "in_refund")
-                if retention.type == ["in_invoice", "in_refund", "in_debit"]
-                else ("out_invoice", "out_refund")
+                ("in_invoice", "in_refund", "in_debit")
+                if retention.type in ("in_invoice", "in_refund", "in_debit", "in_contingence")
+                else ("out_invoice", "out_refund", "out_debit")
             )
 
             domain = [
@@ -209,6 +209,9 @@ class AccountRetention(models.Model):
                 ("partner_id", "=", retention.partner_id.id),
                 ("move_type", "in", allowed_types),
             ]
+
+            if retention.type_retention == "islr":
+                domain.append(("apply_islr_retention", "=", True))
 
             retention.allowed_lines_move_ids = self.env["account.move"].search(domain)
 
