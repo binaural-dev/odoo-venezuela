@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="l10n_ve_project.ProjectProfitability"
+       t-inherit="project.ProjectProfitability"
+       t-inherit-mode="extension">
+
+        <!-- Revenues tfoot -->
+        <xpath expr="//table[.//th[text()='Revenues']]//tfoot//tr[hasclass('fw-bolder')]/td[2]" position="replace">
+            <td t-attf-class="text-end {{ revenues.total.invoiced + revenues.total.to_invoice === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(revenues.total.invoiced + revenues.total.to_invoice)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign((revenues.total.foreign_invoiced || 0) + (revenues.total.foreign_to_invoice || 0))"/>
+                </span>
+            </td>
+        </xpath>
+        <xpath expr="//table[.//th[text()='Revenues']]//tfoot//tr[hasclass('fw-bolder')]/td[3]" position="replace">
+            <td t-attf-class="text-end {{ revenues.total.to_invoice === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(revenues.total.to_invoice)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(revenues.total.foreign_to_invoice)"/>
+                </span>
+            </td>
+        </xpath>
+        <xpath expr="//table[.//th[text()='Revenues']]//tfoot//tr[hasclass('fw-bolder')]/td[4]" position="replace">
+            <td t-attf-class="text-end {{ revenues.total.invoiced === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(revenues.total.invoiced)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(revenues.total.foreign_invoiced)"/>
+                </span>
+            </td>
+        </xpath>
+
+        <!-- Costs tbody -->
+        <xpath expr="//table[.//th[text()='Costs']]//tbody//tr/td[2]" position="replace">
+            <td t-attf-class="text-end {{ cost.billed + cost.to_bill === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(cost.billed + cost.to_bill)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign((cost.foreign_billed || 0) + (cost.foreign_to_bill || 0))"/>
+                </span>
+            </td>
+        </xpath>
+        <xpath expr="//table[.//th[text()='Costs']]//tbody//tr/td[3]" position="replace">
+            <td t-attf-class="text-end {{ cost.to_bill === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(cost.to_bill)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(cost.foreign_to_bill)"/>
+                </span>
+            </td>
+        </xpath>
+        <xpath expr="//table[.//th[text()='Costs']]//tbody//tr/td[4]" position="replace">
+            <td t-attf-class="text-end {{ cost.billed === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(cost.billed)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(cost.foreign_billed)"/>
+                </span>
+            </td>
+        </xpath>
+
+        <!-- Costs tfoot -->
+        <xpath expr="//table[.//th[text()='Costs']]//tfoot//tr[hasclass('fw-bolder')]/td[2]" position="replace">
+            <td t-attf-class="text-end {{ costs.total.billed + costs.total.to_bill === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(costs.total.billed + costs.total.to_bill)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign((costs.total.foreign_billed || 0) + (costs.total.foreign_to_bill || 0))"/>
+                </span>
+            </td>
+        </xpath>
+        <xpath expr="//table[.//th[text()='Costs']]//tfoot//tr[hasclass('fw-bolder')]/td[3]" position="replace">
+            <td t-attf-class="text-end {{ costs.total.to_bill === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(costs.total.to_bill)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(costs.total.foreign_to_bill)"/>
+                </span>
+            </td>
+        </xpath>
+        <xpath expr="//table[.//th[text()='Costs']]//tfoot//tr[hasclass('fw-bolder')]/td[4]" position="replace">
+            <td t-attf-class="text-end {{ costs.total.billed === 0 ? 'text-500' : ''}}">
+                <span><t t-out="this.formatLocal(costs.total.billed)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(costs.total.foreign_billed)"/>
+                </span>
+            </td>
+        </xpath>
+
+        <!-- Total thead -->
+        <xpath expr="//table[.//th[text()='Total']]//thead//tr[hasclass('align-top')]/th[2]" position="replace">
+            <th class="text-end" t-att-class="margin.total &lt; 0 ? 'text-danger' : 'text-success'">
+                <t t-set="total_revenue" t-value="revenues.total.to_invoice + revenues.total.invoiced"/>
+                <t t-set="foreign_total_revenue" t-value="revenues.total.foreign_to_invoice + revenues.total.foreign_invoiced + costs.total.foreign_to_bill + costs.total.foreign_billed"/>
+                <span><t t-out="this.formatLocal(margin.total)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(foreign_total_revenue)"/>
+                </span>
+                <small class="d-block" t-if="total_revenue != 0">
+                    <t t-out="margin.total > 0 ? '+' : ''"/><t t-out="(margin.total / total_revenue * 100).toFixed()"/>%
+                </small>
+            </th>
+        </xpath>
+        <xpath expr="//table[.//th[text()='Total']]//thead//tr[hasclass('align-top')]/th[3]" position="replace">
+            <th class="text-end" t-att-class="margin.to_invoice_to_bill &lt; 0 ? 'text-danger' : 'text-success'">
+                <t t-set="foreign_margin_to_invoice" t-value="revenues.total.foreign_to_invoice + costs.total.foreign_to_bill"/>
+                <span><t t-out="this.formatLocal(margin.to_invoice_to_bill)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(foreign_margin_to_invoice)"/>
+                </span>
+                <small class="d-block" t-if="revenues.total.to_invoice != 0">
+                    <t t-out="margin.to_invoice_to_bill > 0 ? '+' : ''"/><t t-out="(margin.to_invoice_to_bill / revenues.total.to_invoice * 100).toFixed()"/>%
+                </small>
+            </th>
+        </xpath>
+        <xpath expr="//table[.//th[text()='Total']]//thead//tr[hasclass('align-top')]/th[4]" position="replace">
+            <th class="text-end" t-att-class="margin.invoiced_billed &lt; 0 ? 'text-danger' : 'text-success'">
+                <t t-set="foreign_margin_invoiced" t-value="revenues.total.foreign_invoiced + costs.total.foreign_billed"/>
+                <span><t t-out="this.formatLocal(margin.invoiced_billed)"/></span>
+                <span class="text-muted fst-italic d-block">
+                    <t t-out="this.formatForeign(foreign_margin_invoiced)"/>
+                </span>
+                <small class="d-block" t-if="revenues.total.invoiced != 0">
+                    <t t-out="margin.invoiced_billed > 0 ? '+' : ''"/><t t-out="(margin.invoiced_billed / revenues.total.invoiced * 100).toFixed()"/>%
+                </small>
+            </th>
+        </xpath>
+
+        <!-- Pass currencyId and foreignCurrencyId to ProjectProfitabilitySection -->
+        <xpath expr="//ProjectProfitabilitySection" position="attributes">
+            <attribute name="currencyId">this.props.currencyId</attribute>
+            <attribute name="foreignCurrencyId">this.props.foreignCurrencyId</attribute>
+        </xpath>
+
+    </t>
+
+</templates>
