@@ -9,6 +9,5 @@ from . import account_bank_statement_line
 from . import account_payment_term
 from . import tax_unit
 from . import res_currency
-from . import fields
 from . import bank_rec_widget
 # from . import account_journal # ESTA HERENCIA NO SE IMPORTARÁ PORQUE ESTÁ GENERANDO ERROR, AL SOLUCIONAR, VOLVER A AGREGAR EN EN IMPORT

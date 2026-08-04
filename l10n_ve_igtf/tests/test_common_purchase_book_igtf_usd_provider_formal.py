@@ -193,17 +193,21 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
 
    
     def _create_invoice_usd(self, amount, date=None): 
-        purchase_journal = self.Journal.search([("type", "=", "purchase")], limit=1)
+        purchase_journal = self.Journal.search([
+            ("type", "=", "purchase"),
+            ("is_purchase_international", "!=", True),
+        ], limit=1)
         if not purchase_journal:
              purchase_journal = self.Journal.create({
                  'name': 'Diario Compra', 'type': 'purchase', 'code': 'PURC',
                  'company_id': self.company.id, 'currency_id': self.currency_usd.id,
+                 'is_purchase_international': False,
              })
 
         with Form(self.env["account.move"].with_context(default_move_type='in_invoice')) as inv_form:
-            inv_form.correlative = "12345698741256"
             inv_form.partner_id = self.partner
             inv_form.journal_id = purchase_journal
+            inv_form.correlative = "12345698741256"
             inv_form.invoice_date = date or fields.Date.today()
         
         inv = inv_form.save() 

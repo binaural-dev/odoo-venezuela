@@ -2,11 +2,10 @@
     "name": "Venezuela - IGTF",
     "summary": "Módulo para campos del impuesto IGTF (Impuesto a las grandes transacciones financieras)",
     "license": "LGPL-3",
-    "description": "Módulo para campos del impuesto IGTF (Impuesto a las grandes transacciones financieras)",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.1.0.1",
+    "version": "17.0.1.0.2",
         "depends": [
         "base",
         "l10n_ve_accountant",
