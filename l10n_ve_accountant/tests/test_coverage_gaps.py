@@ -1,8 +1,19 @@
+<<<<<<< HEAD
+=======
+import logging
+import random
+
+>>>>>>> 63d30a988 ([TEST] l10n_ve_accountant: cubrir bloqueo de tasa en rectificativas vinculadas)
 from odoo.tests import TransactionCase, tagged
 from odoo.tests.common import Form
 from odoo import fields, Command
 from odoo.exceptions import ValidationError
 
+<<<<<<< HEAD
+=======
+_logger = logging.getLogger(__name__)
+
+>>>>>>> 63d30a988 ([TEST] l10n_ve_accountant: cubrir bloqueo de tasa en rectificativas vinculadas)
 
 @tagged("post_install", "-at_install", "l10n_ve_accountant_coverage")
 class TestCoverageGaps(TransactionCase):
@@ -130,6 +141,214 @@ class TestCoverageGaps(TransactionCase):
         self.assertAlmostEqual(td, tc, places=2, msg=f"{label}: {td} != {tc}")
         return td, tc
 
+<<<<<<< HEAD
+=======
+    def _create_tax_ext(self, name, amount, account_id=None, type_tax_use="sale"):
+        def rep_line(rep_type):
+            vals = {'repartition_type': rep_type, 'factor_percent': 100.0}
+            if rep_type == 'tax' and account_id:
+                vals['account_id'] = account_id
+            return (0, 0, vals)
+        return self.env["account.tax"].with_company(self.company).create({
+            "name": name, "amount": amount, "amount_type": "percent",
+            "type_tax_use": type_tax_use, "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+            "invoice_repartition_line_ids": [rep_line('base'), rep_line('tax')],
+            "refund_repartition_line_ids": [rep_line('base'), rep_line('tax')],
+        })
+
+    def _foreign_tax_expected(self, move):
+        """Replicates _compute_foreign_tax_balance foreign amounts per
+        (tax_repartition_line, base account) using the current alterno prices."""
+        fc = move.foreign_currency_id
+        sign = move.direction_sign if move.is_invoice(include_receipts=True) else 1
+        per_key = {}
+        for bl in move.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
+            quantity = bl.quantity if move.is_invoice(include_receipts=True) else 1.0
+            discount = bl.discount if move.is_invoice(include_receipts=True) else 0.0
+            base = sign * bl.foreign_price * (1 - discount / 100)
+            res = bl.tax_ids.compute_all(
+                base, currency=fc, quantity=quantity,
+                product=bl.product_id, partner=move.partner_id,
+                is_refund=move.move_type in ('out_refund', 'in_refund'),
+                handle_price_include=True,
+                include_caba_tags=move.always_tax_exigible,
+                fixed_multiplicator=sign,
+            )
+            for tax in res['taxes']:
+                if not tax['amount']:
+                    continue
+                rep = self.env['account.tax.repartition.line'].browse(
+                    tax['tax_repartition_line_id'])
+                if rep.repartition_type != 'tax':
+                    continue
+                key = (rep.id, bl.account_id.id)
+                per_key.setdefault(key, []).append(tax['amount'])
+        return per_key
+
+    def _log_cmp(self, label, name, actual, expected, places=1, extra=""):
+        diff = actual - expected
+        ok = round(abs(diff), places) == 0
+        _logger.info(
+            "[%s] %-42s actual=%-14.2f expected=%-14.2f diff=%-.4f  %s %s",
+            label, name, actual, expected, diff, "OK" if ok else "FAIL", extra,
+        )
+        return ok
+
+    def _assert_tax_totals_foreign(self, move, label=""):
+        tt = move.tax_totals or {}
+        for key in ('foreign_amount_untaxed', 'foreign_amount_total',
+                    'groups_by_foreign_subtotal', 'foreign_subtotals',
+                    'foreign_subtotal', 'foreign_discount_amount'):
+            _logger.info("[%s] tax_totals key present: %s", label, key)
+            self.assertIn(key, tt, f"{label}: tax_totals missing {key}")
+
+        entry_untaxed = sum(
+            abs(l.foreign_subtotal)
+            for l in move.line_ids if l.display_type == 'product')
+        entry_tax = sum(
+            abs(l.foreign_debit - l.foreign_credit)
+            for l in move.line_ids if l.display_type == 'tax')
+        entry_total = entry_untaxed + entry_tax
+
+        actual = tt['foreign_amount_untaxed']
+        self._log_cmp(label, "tax_totals.foreign_amount_untaxed == entry foreign_subtotal",
+                      actual, entry_untaxed,
+                      extra=f"entry_untaxed={entry_untaxed}")
+        self.assertAlmostEqual(actual, entry_untaxed, places=1,
+                               msg=f"{label}: tax_totals untaxed vs entry foreign_subtotal")
+
+        actual = tt['foreign_amount_total']
+        self._log_cmp(label, "tax_totals.foreign_amount_total == entry (products + taxes)",
+                      actual, entry_total,
+                      extra=f"entry_total={entry_total}")
+        self.assertAlmostEqual(actual, entry_total, places=1,
+                               msg=f"{label}: tax_totals total vs entry alternos")
+
+        actual = tt['foreign_amount_untaxed']
+        expected = sum(s['amount'] for s in tt['foreign_subtotals'])
+        self._log_cmp(label, "tax_totals.foreign_amount_untaxed == subtotals",
+                      actual, expected)
+        self.assertAlmostEqual(actual, expected, places=1,
+                               msg=f"{label}: tax_totals foreign_subtotals sum")
+
+        group_tax_total = sum(
+            g['tax_group_amount']
+            for subtotals in tt['groups_by_foreign_subtotal'].values()
+            for g in subtotals)
+        tax_lines_fd = sum(abs(l.foreign_debit - l.foreign_credit)
+                           for l in move.line_ids if l.display_type == 'tax')
+        self._log_cmp(label, "tax_totals group taxes == entry tax lines",
+                      tax_lines_fd, group_tax_total,
+                      extra=f"tax_lines={tax_lines_fd} groups={group_tax_total}")
+        self.assertAlmostEqual(tax_lines_fd, group_tax_total, places=1,
+                               msg=f"{label}: tax_totals taxes vs entry tax lines")
+
+        actual = tt['foreign_amount_total']
+        expected = tt['foreign_amount_untaxed'] + group_tax_total
+        self._log_cmp(label, "tax_totals total == untaxed + taxes",
+                      actual, expected,
+                      extra=f"untaxed={tt['foreign_amount_untaxed']} taxes={group_tax_total}")
+        self.assertAlmostEqual(actual, expected, places=1,
+                               msg=f"{label}: tax_totals total = untaxed + taxes")
+
+    def _assert_foreign_consistency(self, move, label=""):
+        self.env.flush_all()
+        self.env.invalidate_all()
+        fc = move.foreign_currency_id
+        rate = move.foreign_inverse_rate or 0.0
+
+        _logger.info("[%s] === lines: %s | rate=%.6f ===",
+                     label, len(move.invoice_line_ids), rate)
+        for bl in move.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
+            if not bl.foreign_price_manual:
+                actual = bl.foreign_price
+                expected = bl.price_unit * rate
+                self._log_cmp(label, f"foreign_price line {bl.id}",
+                              actual, expected,
+                              extra=f"native={bl.price_unit} manual={bl.foreign_price_manual}")
+                self.assertAlmostEqual(
+                    actual, expected, places=1,
+                    msg=f"{label}: alterno price line {bl.id}")
+            else:
+                _logger.info(
+                    "[%s] foreign_price line %s MANUAL (rate check skipped) "
+                    "price=%.2f native=%s manual=%s",
+                    label, bl.id, bl.foreign_price, bl.price_unit,
+                    bl.foreign_price_manual)
+            exp_sub = bl.foreign_price * bl.quantity * (1 - bl.discount / 100)
+            actual = bl.foreign_subtotal
+            self._log_cmp(label, f"foreign_subtotal line {bl.id}",
+                          actual, exp_sub,
+                          extra=f"price={bl.foreign_price} qty={bl.quantity}")
+            self.assertAlmostEqual(
+                actual, exp_sub, places=1,
+                msg=f"{label}: alterno subtotal line {bl.id}")
+
+        per_key = self._foreign_tax_expected(move)
+        tax_amls = move.line_ids.filtered(
+            lambda l: l.tax_repartition_line_id
+            and l.tax_repartition_line_id.repartition_type == 'tax')
+        by_key = {}
+        for tl in tax_amls:
+            key = (tl.tax_repartition_line_id.id, tl.account_id.id)
+            by_key.setdefault(key, []).append(tl)
+        for (rep_line, acct), lines in by_key.items():
+            amounts = per_key.get((rep_line, acct))
+            if not amounts:
+                for (r2, a2), amts in per_key.items():
+                    if r2 == rep_line:
+                        amounts = (amounts or []) + amts
+            if not amounts:
+                _logger.info("[%s] tax key rep=%s acct=%s: no foreign amounts (skip)",
+                             label, rep_line, acct)
+                continue
+            if len(lines) == len(amounts):
+                expected = sum(fc.round(abs(a)) for a in amounts)
+            else:
+                total_ac = sum(abs(l.amount_currency) for l in lines if l.amount_currency)
+                if fc.is_zero(total_ac):
+                    expected = sum(fc.round(abs(a)) for a in amounts)
+                else:
+                    total_fb = sum(amounts)
+                    expected = sum(
+                        fc.round(abs(total_fb) * abs(l.amount_currency) / total_ac)
+                        for l in lines)
+            actual = sum(abs(l.foreign_debit - l.foreign_credit) for l in lines)
+            self._log_cmp(label, f"tax rep={rep_line} acct={acct}",
+                          actual, expected,
+                          extra=f"lines={len(lines)} amounts={len(amounts)}")
+            self.assertAlmostEqual(
+                actual, expected, places=1,
+                msg=f"{label}: tax foreign rep={rep_line} acct={acct}")
+
+        rec = move.line_ids.filtered(
+            lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+            and l.display_type == 'payment_term')[:1]
+        if rec:
+            product_fd = sum(abs(l.foreign_subtotal)
+                             for l in move.line_ids if l.display_type == 'product')
+            tax_fd = sum(abs(l.foreign_debit - l.foreign_credit)
+                         for l in move.line_ids if l.display_type == 'tax')
+            actual = abs(rec.foreign_balance)
+            expected = product_fd + tax_fd
+            self._log_cmp(label, "counterpart foreign == products + taxes",
+                          actual, expected,
+                          extra=f"products={product_fd} taxes={tax_fd}")
+            self.assertAlmostEqual(
+                actual, expected, places=1,
+                msg=f"{label}: counterpart foreign {rec.foreign_balance}")
+
+        actual = sum(move.line_ids.mapped('foreign_debit'))
+        expected = sum(move.line_ids.mapped('foreign_credit'))
+        self._log_cmp(label, "global alterno balance (debit == credit)",
+                      actual, expected)
+        self.assertAlmostEqual(actual, expected, places=1,
+                               msg=f"{label}: global alterno balance")
+        self._assert_balances(move, label)
+        self._assert_tax_totals_foreign(move, label)
+
+>>>>>>> 63d30a988 ([TEST] l10n_ve_accountant: cubrir bloqueo de tasa en rectificativas vinculadas)
     # ═══════════════════════════════════════════════════════════════
     # account_payment.py - _synchronize_to_moves
     # ═══════════════════════════════════════════════════════════════
@@ -369,6 +588,130 @@ class TestCoverageGaps(TransactionCase):
         invoice = self._create_invoice(self.currency_usd, 100.0)
         self.assertGreater(invoice.foreign_rate, 0)
 
+<<<<<<< HEAD
+=======
+    def _rectification_purchase_journal(self):
+        return self.env["account.journal"].sudo().create({
+            "name": "Purchases Rectification", "code": "PRCT",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+
+    def _create_in_invoice(self, journal, date):
+        return self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": journal.id,
+            "invoice_date": date,
+            "date": date,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_exp.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+    def test_rectification_keeps_origin_rate_after_date_change(self):
+        """Nota de crédito vinculada: la tasa debe quedar fija en la de la
+        factura origen, sin importar cambios posteriores de fecha."""
+        journal = self._rectification_purchase_journal()
+        date_a, date_b, date_c = (
+            fields.Date.from_string("2026-07-01"),
+            fields.Date.from_string("2026-07-10"),
+            fields.Date.from_string("2026-07-13"),
+        )
+        rate_model = self.env["res.currency.rate"]
+        rate_model.create({
+            "name": date_a, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 40.0, "company_id": self.company.id,
+        })
+        rate_model.create({
+            "name": date_b, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0, "company_id": self.company.id,
+        })
+        rate_model.create({
+            "name": date_c, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 48.0, "company_id": self.company.id,
+        })
+
+        invoice = self._create_in_invoice(journal, date_a)
+        rate_a = invoice.foreign_rate
+        self.assertAlmostEqual(rate_a, 40.0, places=2)
+
+        refund = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "in_refund",
+            "partner_id": self.partner.id,
+            "journal_id": journal.id,
+            "reversed_entry_id": invoice.id,
+            "invoice_date": date_b,
+            "date": date_b,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_exp.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        self.assertAlmostEqual(refund.foreign_rate, rate_a, places=2)
+
+        refund.write({"date": date_c, "invoice_date": date_c})
+        self.env.flush_all()
+        self.assertAlmostEqual(
+            refund.foreign_rate, rate_a, places=2,
+            msg="La tasa de la rectificativa no debe cambiar al editar la fecha",
+        )
+
+        refund.write({"foreign_rate": 999.0})
+        self.env.flush_all()
+        self.assertAlmostEqual(
+            refund.foreign_rate, rate_a, places=2,
+            msg="Un write directo del campo no debe romper la paridad histórica",
+        )
+
+    def test_rectification_via_reversal_wizard_keeps_origin_rate(self):
+        """El flujo real de usuario (wizard de reversión) debe heredar la
+        tasa de la factura origen, no la vigente en la fecha del wizard."""
+        journal = self._rectification_purchase_journal()
+        date_a, date_b = (
+            fields.Date.from_string("2026-07-01"),
+            fields.Date.from_string("2026-07-10"),
+        )
+        rate_model = self.env["res.currency.rate"]
+        rate_model.create({
+            "name": date_a, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 40.0, "company_id": self.company.id,
+        })
+        rate_model.create({
+            "name": date_b, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0, "company_id": self.company.id,
+        })
+
+        invoice = self._create_in_invoice(journal, date_a)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        rate_a = invoice.foreign_rate
+
+        reversal = self.env["account.move.reversal"].with_context(
+            active_model="account.move", active_ids=invoice.ids,
+        ).create({
+            "date": date_b,
+            "reason": "Test rectificación",
+            "journal_id": journal.id,
+        })
+        result = reversal.reverse_moves()
+        refund = self.env["account.move"].browse(result["res_id"])
+        self.assertTrue(refund.reversed_entry_id)
+        self.assertAlmostEqual(refund.foreign_rate, rate_a, places=2)
+
+>>>>>>> 63d30a988 ([TEST] l10n_ve_accountant: cubrir bloqueo de tasa en rectificativas vinculadas)
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - get_view
     # ═══════════════════════════════════════════════════════════════
@@ -872,6 +1215,10 @@ class TestCoverageGaps(TransactionCase):
             "partner_id": self.partner.id,
             "journal_id": purchase_journal.id,
             "currency_id": self.currency_vef.id,
+<<<<<<< HEAD
+=======
+            "correlative": "12345698741001",
+>>>>>>> 63d30a988 ([TEST] l10n_ve_accountant: cubrir bloqueo de tasa en rectificativas vinculadas)
             "date": fields.Date.today(),
             "invoice_line_ids": [mk_line(723.0), mk_line(1447.998)],
         })
@@ -1219,3 +1566,256 @@ class TestCoverageGaps(TransactionCase):
         )
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['id'], invoice.id)
+<<<<<<< HEAD
+=======
+
+    # ═══════════════════════════════════════════════════════════════
+    # Stress: 10+ product lines added via Form, high prices, taxes with
+    # and without account on repartition. Validate alterno prices, tax
+    # foreign amounts, counterpart and global alterno balance after every
+    # add, alterno edit and line delete.
+    # ═══════════════════════════════════════════════════════════════
+
+    def _setup_stress(self):
+        acc_pay = self._get_or_create('210000', 'Accounts Payable',
+                                      'liability_payable', reconcile=True)
+        acc_exp2 = self._get_or_create('550100', 'Expense 2', 'expense')
+        acc_tax2 = self._get_or_create('200100', 'Tax Payable 8%',
+                                       'liability_current', reconcile=True)
+        self.partner.property_account_payable_id = acc_pay.id
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases Stress", "code": "PSTR",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        taxes = {
+            '16': self._create_tax_ext('IVA 16%', 16.0, account_id=self.acc_tax.id,
+                                       type_tax_use='purchase'),
+            '8': self._create_tax_ext('IVA 8%', 8.0, account_id=acc_tax2.id,
+                                      type_tax_use='purchase'),
+            'noacct': self._create_tax_ext('IVA 10% sin cuenta', 10.0,
+                                           account_id=None, type_tax_use='purchase'),
+        }
+        products = {}
+        for key, tax in taxes.items():
+            products[key] = self.env["product.product"].create({
+                "name": f"Stress Serv {key}", "type": "service",
+                "list_price": 100.0,
+                "property_account_income_id": self.acc_inc.id,
+                "property_account_expense_id": self.acc_exp.id,
+                "taxes_id": [(5, 0, 0)],
+                "supplier_taxes_id": [(6, 0, tax.ids)],
+            })
+        products['exempt'] = self.env["product.product"].create({
+            "name": "Stress Serv Exempt", "type": "service",
+            "list_price": 100.0,
+            "property_account_income_id": self.acc_inc.id,
+            "property_account_expense_id": self.acc_exp.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        return purchase_journal, products, acc_exp2
+
+    def _stress_invoice(self, currency):
+        purchase_journal, products, acc_exp2 = self._setup_stress()
+        prices = [1_250_000.0, 2_345_678.90, 3_456_789.75, 4_567_890.25,
+                  5_678_901.50, 6_789_012.34, 7_890_123.45, 8_901_234.56,
+                  9_123_456.78, 9_999_999.99]
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": currency.id,
+            "correlative": "12345698741002",
+            "date": fields.Date.today(),
+            "invoice_line_ids": [],
+        })
+        form = Form(inv, view="account.view_move_form")
+        for i, price in enumerate(prices):
+            prod = products[['16', '8', 'noacct', 'exempt'][i % 4]]
+            account = acc_exp2 if i % 3 == 0 else self.acc_exp
+            with form.invoice_line_ids.new() as nl:
+                nl.product_id = prod
+                nl.quantity = 1.0
+                nl.price_unit = price
+                nl.account_id = account
+            inv = form.save()
+            self._assert_foreign_consistency(inv, f"add{i}")
+        return inv
+
+    def test_form_vef_base_stress_10_products(self):
+        random.seed(42)
+        inv = self._stress_invoice(self.currency_vef)
+        self.assertEqual(len(inv.invoice_line_ids), 10)
+        self.assertGreater(inv.foreign_inverse_rate, 0)
+
+        for step in range(3):
+            form = Form(inv, view="account.view_move_form")
+            idx = random.randrange(len(form.invoice_line_ids))
+            with form.invoice_line_ids.edit(idx) as lf:
+                lf.foreign_price = lf.foreign_price * random.choice([1.05, 0.95, 1.12])
+            inv = form.save()
+            self._assert_foreign_consistency(inv, f"edit{step}")
+
+        for step in range(3):
+            form = Form(inv, view="account.view_move_form")
+            idx = random.randrange(len(form.invoice_line_ids))
+            form.invoice_line_ids.remove(idx)
+            inv = form.save()
+            self._assert_foreign_consistency(inv, f"del{step}")
+
+    def test_form_usd_base_stress_10_products(self):
+        random.seed(7)
+        usd_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id)], limit=1)
+        vef_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_vef.id),
+            ("company_id", "=", self.company.id)], limit=1)
+        if usd_rate:
+            usd_rate.inverse_company_rate = 1.0
+        if vef_rate:
+            vef_rate.inverse_company_rate = 0.02
+        self.company.write({
+            "currency_id": self.currency_usd.id,
+            "currency_foreign_id": self.currency_vef.id,
+        })
+        self.env.flush_all()
+
+        inv = self._stress_invoice(self.currency_usd)
+        self.assertEqual(len(inv.invoice_line_ids), 10)
+        self.assertGreater(inv.foreign_inverse_rate, 0)
+
+        for step in range(3):
+            form = Form(inv, view="account.view_move_form")
+            idx = random.randrange(len(form.invoice_line_ids))
+            with form.invoice_line_ids.edit(idx) as lf:
+                lf.foreign_price = lf.foreign_price * random.choice([1.05, 0.95, 1.12])
+            inv = form.save()
+            self._assert_foreign_consistency(inv, f"edit{step}")
+
+        for step in range(3):
+            form = Form(inv, view="account.view_move_form")
+            idx = random.randrange(len(form.invoice_line_ids))
+            form.invoice_line_ids.remove(idx)
+            inv = form.save()
+            self._assert_foreign_consistency(inv, f"del{step}")
+
+    def test_real_case_stale_alterno_tax_totals_matches_entry(self):
+        usd_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ], order="name desc", limit=1)
+        usd_rate.write({"inverse_company_rate": 746.63})
+        self.env.flush_all()
+
+        product = self.env["product.product"].create({
+            "name": "REAL CASE", "type": "service", "list_price": 100.0,
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(6, 0, [self.tax_16.id])], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [Command.create({
+                "product_id": product.id,
+                "quantity": 1.0, "price_unit": 1156979.90,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            })],
+        })
+        inv.action_post()
+        self.env.flush_all()
+        self.env.invalidate_all()
+        self._assert_tax_totals_foreign(inv, "real-coherent")
+
+        product_line = inv.invoice_line_ids.filtered(
+            lambda l: l.display_type == 'product')[:1]
+        product_line.foreign_price = 1549.25
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        tt = inv.tax_totals or {}
+        entry_untaxed = sum(
+            abs(l.foreign_subtotal)
+            for l in inv.line_ids if l.display_type == 'product')
+        entry_total = entry_untaxed + sum(
+            abs(l.foreign_debit - l.foreign_credit)
+            for l in inv.line_ids if l.display_type == 'tax')
+
+        self.assertEqual(round(entry_untaxed, 2), 1549.25)
+        self.assertEqual(round(entry_total, 2), 1797.13)
+        self.assertEqual(round(tt['foreign_amount_untaxed'], 2), 1549.25)
+        self.assertEqual(round(tt['foreign_amount_total'], 2), 1797.13)
+
+        self.assertAlmostEqual(
+            tt['foreign_amount_untaxed'], entry_untaxed, places=1)
+        self.assertAlmostEqual(
+            tt['foreign_amount_total'], entry_total, places=1)
+
+        group_base = sum(
+            g['tax_group_base_amount']
+            for subtotals in tt['groups_by_foreign_subtotal'].values()
+            for g in subtotals)
+        self.assertAlmostEqual(group_base, tt['foreign_amount_untaxed'], places=1)
+
+        self._assert_tax_totals_foreign(inv, "real-stale-aligned")
+
+    def test_real_case_vef_base_alterno_matches_entry(self):
+        usd_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ], order="name desc", limit=1)
+        usd_rate.write({"inverse_company_rate": 742.81})
+        self.env.flush_all()
+
+        product = self.env["product.product"].create({
+            "name": "REAL VEF CASE", "type": "service", "list_price": 100.0,
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(6, 0, [self.tax_16.id])], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [Command.create({
+                "product_id": product.id,
+                "quantity": 1.0, "price_unit": 1177430.0,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            })],
+        })
+        self.env.flush_all()
+        self.env.invalidate_all()
+        self._assert_tax_totals_foreign(inv, "vef-real-coherent")
+
+        product_line = inv.invoice_line_ids.filtered(
+            lambda l: l.display_type == 'product')[:1]
+        product_line.foreign_price = 1611.22
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        tt = inv.tax_totals or {}
+        entry_untaxed = sum(
+            abs(l.foreign_subtotal)
+            for l in inv.line_ids if l.display_type == 'product')
+        entry_total = entry_untaxed + sum(
+            abs(l.foreign_debit - l.foreign_credit)
+            for l in inv.line_ids if l.display_type == 'tax')
+
+        self.assertEqual(round(entry_untaxed, 2), 1611.22)
+        self.assertEqual(round(entry_total, 2), 1869.02)
+        self.assertEqual(round(tt['foreign_amount_untaxed'], 2), 1611.22)
+        self.assertEqual(round(tt['foreign_amount_total'], 2), 1869.02)
+
+        self.assertAlmostEqual(
+            tt['foreign_amount_untaxed'], entry_untaxed, places=1)
+        self.assertAlmostEqual(
+            tt['foreign_amount_total'], entry_total, places=1)
+
+        self._assert_tax_totals_foreign(inv, "vef-real-aligned")
+>>>>>>> 63d30a988 ([TEST] l10n_ve_accountant: cubrir bloqueo de tasa en rectificativas vinculadas)
