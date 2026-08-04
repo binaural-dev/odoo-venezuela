@@ -1788,6 +1788,52 @@ msgid "You cannot delete a journal item that is posted, cancelled, or has been p
 msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente publicados."
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
+#, python-format
+msgid ""
+"- %s: No tax is assigned and the company has no default fiscal "
+"configuration."
+msgstr ""
+"- %s: No tiene impuesto asignado y la compañía no tiene "
+"configuración fiscal predeterminada."
+
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
+#, python-format
+msgid ""
+"- %s: Has %s taxes assigned (exactly one tax is required due to local fiscal"
+" policies)."
+msgstr ""
+"- %s: Tiene %s impuestos asignados (se requiere exactamente uno "
+"debido a políticas fiscales locales)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
+#, python-format
+msgid ""
+"Fiscal inconsistencies were found in product: '%s':\n"
+"\n"
+msgstr ""
+"Se encontraron inconsistencias fiscales en el producto: '%s':\n"
+"\n"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
+msgid ""
+"\n"
+"\n"
+"Please correct these fields before saving your changes."
+msgstr ""
+"\n"
+"\n"
+"Por favor corrija estos campos antes de guardar los cambios."
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__index_payment_in_wizard
 #: model:ir.model.fields,help:l10n_ve_accountant.field_res_config_settings__index_payment_in_wizard
 msgid "Apply Indexacion to payment from wizard of invoice"
@@ -1822,7 +1868,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__indexed
 msgid "Indexed (Payment Date Rate)"
-msgstr "'Indexado (Tasa del día de pago)"
+msgstr "Indexado (Tasa del día de pago)"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__indexaxion_payment_mode__not_indexed
