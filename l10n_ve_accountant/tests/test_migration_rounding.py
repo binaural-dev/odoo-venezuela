@@ -103,7 +103,7 @@ class TestMigrationRounding(TransactionCase):
 
         self.company.tax_lock_date = fields.Date.today()
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
+            self.env.cr, self.company, 2, ("posted",),
         )
         self.assertEqual(
             self._line_value(inv.id, self.acc_inc), (1.23456, 0.0),
@@ -112,7 +112,7 @@ class TestMigrationRounding(TransactionCase):
 
         self.company.tax_lock_date = False
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
+            self.env.cr, self.company, 2, ("posted",),
         )
         self.assertEqual(
             self._line_value(inv.id, self.acc_inc), (1.23, 0.0),
@@ -124,7 +124,7 @@ class TestMigrationRounding(TransactionCase):
         self._dirty(inv.id)
 
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
+            self.env.cr, self.company, 2, ("posted",),
             excluded_move_ids=[inv.id],
         )
         self.assertEqual(
@@ -133,7 +133,7 @@ class TestMigrationRounding(TransactionCase):
         )
 
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
+            self.env.cr, self.company, 2, ("posted",),
         )
         self.assertEqual(
             self._line_value(inv.id, self.acc_inc), (1.23, 0.0),
@@ -191,10 +191,10 @@ class TestMigrationRounding(TransactionCase):
         )
 
         self.mod._do_sql_rounding(
-            self.env.cr, self.company, self.currency_usd.id, 2, ("posted",),
+            self.env.cr, self.company, 2, ("posted",),
         )
         self.mod._check_and_fix_balance(
-            self.env.cr, self.company, ("posted",),
+            self.env.cr, self.company, 2, ("posted",),
         )
 
         self.env.cr.execute(
