@@ -8,7 +8,7 @@
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "1.2",
+    "version": "1.9",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -27,7 +27,8 @@
         "views/pos_order.xml",
         "views/res_config_settings.xml",
         "views/pos_payment_views.xml",
-        # "views/report_saledetails.xml",
+        "views/res_partner_views.xml",
+        "views/report_saledetails.xml",
         "security/res_group.xml",
         "wizard/payment_report.xml",
         "report/payment_report.xml",
@@ -39,6 +40,10 @@
         "point_of_sale._assets_pos": [
             "l10n_ve_pos/static/src/**/**",
             "l10n_ve_pos/static/src/**/**/**/*",
+            "l10n_ve_pos/static/src/overrides/models/payment_model.js",
+        ],
+        "web.assets_unit_tests": [
+            "l10n_ve_pos/static/tests/unit/**/*",
         ],
     },
 }
