@@ -13,6 +13,15 @@ class TestAllowedLinesMoveIds(RetentionTestCommon):
     compared a Selection (a plain string) against a list, which is always
     False. As a result `allowed_types` always fell back to
     ("out_invoice", "out_refund"), regardless of the retention's actual type.
+
+    The ISLR-availability filter uses `is_isrl_retention_available`
+    (computed on account.move from whether any invoice line has a service
+    product with a payment_concept), not `apply_islr_retention` — that other
+    boolean exists on the model but is never exposed on any view, so it can
+    never be True in practice and would make the domain permanently empty.
+    `_create_invoice_islr` (product_islr_one, a service with a
+    payment_concept) yields an ISLR-available invoice; `_create_invoice_reten_iva`
+    (product_iva, a plain taxed product) does not.
     """
 
     def _post(self, invoice):
@@ -26,7 +35,6 @@ class TestAllowedLinesMoveIds(RetentionTestCommon):
         in_inv = self._post(self._create_invoice_islr(
             100, self.partner_pnr_75, out_invoice="in_invoice", journal=self.purchase_journal.id
         ))
-        in_inv.apply_islr_retention = True
 
         retention = self.env["account.retention"].create({
             "type_retention": "iva",
@@ -46,7 +54,6 @@ class TestAllowedLinesMoveIds(RetentionTestCommon):
         in_inv = self._post(self._create_invoice_islr(
             100, self.partner_pnr_75, out_invoice="in_invoice", journal=self.purchase_journal.id
         ))
-        in_inv.apply_islr_retention = True
 
         retention = self.env["account.retention"].create({
             "type_retention": "iva",
@@ -61,12 +68,12 @@ class TestAllowedLinesMoveIds(RetentionTestCommon):
         valid_inv = self._post(self._create_invoice_islr(
             100, self.partner_pnr_75, out_invoice="in_invoice", journal=self.purchase_journal.id
         ))
-        valid_inv.apply_islr_retention = True
+        self.assertTrue(valid_inv.is_isrl_retention_available)
 
-        not_valid_inv = self._post(self._create_invoice_islr(
+        not_valid_inv = self._post(self._create_invoice_reten_iva(
             100, self.partner_pnr_75, out_invoice="in_invoice", journal=self.purchase_journal.id
         ))
-        not_valid_inv.apply_islr_retention = False
+        self.assertFalse(not_valid_inv.is_isrl_retention_available)
 
         retention = self.env["account.retention"].create({
             "type_retention": "islr",
@@ -77,12 +84,12 @@ class TestAllowedLinesMoveIds(RetentionTestCommon):
         self.assertIn(valid_inv, retention.allowed_lines_move_ids)
         self.assertNotIn(not_valid_inv, retention.allowed_lines_move_ids)
 
-    def test_iva_retention_ignores_islr_flag(self):
-        # For non-ISLR retentions, apply_islr_retention must not restrict the domain.
-        inv = self._post(self._create_invoice_islr(
+    def test_iva_retention_ignores_islr_availability(self):
+        # For non-ISLR retentions, is_isrl_retention_available must not restrict the domain.
+        inv = self._post(self._create_invoice_reten_iva(
             100, self.partner_pnr_75, out_invoice="in_invoice", journal=self.purchase_journal.id
         ))
-        inv.apply_islr_retention = False
+        self.assertFalse(inv.is_isrl_retention_available)
 
         retention = self.env["account.retention"].create({
             "type_retention": "iva",

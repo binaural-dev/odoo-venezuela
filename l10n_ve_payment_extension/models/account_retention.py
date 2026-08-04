@@ -211,7 +211,7 @@ class AccountRetention(models.Model):
             ]
 
             if retention.type_retention == "islr":
-                domain.append(("apply_islr_retention", "=", True))
+                domain.append(("is_isrl_retention_available", "=", True))
 
             retention.allowed_lines_move_ids = self.env["account.move"].search(domain)
 
