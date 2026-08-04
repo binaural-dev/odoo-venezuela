@@ -46,7 +46,9 @@
                         <t groups="base.group_no_one">
                             <field name="foreign_inverse_rate" invisible="1" />
                         </t>
-                        <field name="foreign_rate" readonly="move_type not in ['in_invoice'] or move_type in ['in_invoice'] and state == 'posted'" force_save="1"  options="{'precision': 'Tasa'}"/>
+                        <field name="foreign_rate"
+                            readonly="(move_type not in ['in_invoice']) or (move_type in ['in_invoice'] and state == 'posted') or (move_type in ('out_refund', 'in_refund') and (reversed_entry_id or debit_origin_id))"
+                            force_save="1" options="{'precision': 'Tasa'}"/>
                     </group>
                     <group colspan="4">
                         <group class="oe_subtotal_footer oe_right"
