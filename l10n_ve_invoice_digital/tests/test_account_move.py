@@ -1390,6 +1390,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(series, "")
 
     def test_67_generate_document_digital_non_numeric_last_number(self):
+        self.journal.sequence_id.number_next_actual = 1
         with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.get_last_document_number', return_value="abc"):
             with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.query_numbering', return_value=None):
                 with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api') as mock_call:
