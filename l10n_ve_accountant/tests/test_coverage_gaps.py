@@ -12,6 +12,14 @@ _logger = logging.getLogger(__name__)
 @tagged("post_install", "-at_install", "l10n_ve_accountant_coverage")
 class TestCoverageGaps(TransactionCase):
 
+    def _set_correlative_if_required(self, form, value):
+        # correlative only exists/is required when l10n_ve_invoice is installed
+        # alongside this module (e.g. pulled in transitively by l10n_ve_igtf).
+        # Form raises AssertionError (not AttributeError) for fields absent from
+        # the view, so hasattr() can't be used here - check the view spec instead.
+        if "correlative" in form._view["fields"] and not form.correlative:
+            form.correlative = value
+
     def setUp(self):
         super().setUp()
 
@@ -1088,6 +1096,7 @@ class TestCoverageGaps(TransactionCase):
 
         line_ids_before = inv.invoice_line_ids.ids
         form = Form(inv, view="account.view_move_form")
+        self._set_correlative_if_required(form, "TEST-REPRO2-0001")
         computed = None
         edited = None
         with form.invoice_line_ids.edit(1) as line2_form:
@@ -1490,6 +1499,7 @@ class TestCoverageGaps(TransactionCase):
             "invoice_line_ids": [],
         })
         form = Form(inv, view="account.view_move_form")
+        self._set_correlative_if_required(form, f"TEST-STRESS-{currency.name}-0001")
         for i, price in enumerate(prices):
             prod = products[['16', '8', 'noacct', 'exempt'][i % 4]]
             account = acc_exp2 if i % 3 == 0 else self.acc_exp

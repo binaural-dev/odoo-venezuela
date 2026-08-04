@@ -86,10 +86,8 @@ class AccountMove(models.Model):
             if float_compare(line.price_unit, 0, precision_digits=precision) == -1:
                 from_loyalty = self.env.context.get('from_loyalty', False)
                 
-                is_official_discount = (
-                    self.env.company.sale_discount_product_id
-                    and line.product_id == self.env.company.sale_discount_product_id
-                )
+                discount_product = getattr(self.env.company, "sale_discount_product_id", False)
+                is_official_discount = bool(discount_product) and line.product_id == discount_product
                 
                 is_reward = any(l.reward_id or l.coupon_id for l in line.sale_line_ids)
                 
