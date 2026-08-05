@@ -4,10 +4,10 @@
         Módulo de Retenciones Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "17.0.0.0.33",
+    "version": "17.0.0.0.35",
     "depends": [
         "base",
         "account",
