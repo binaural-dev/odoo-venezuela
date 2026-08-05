@@ -429,4 +429,113 @@ class TestAccountant(TransactionCase):
 
             self.assertIn(propiedad, options, f"Opciones de '{field_name}' deben incluir '{propiedad}'")
             self.assertEqual(options[propiedad], expected_value, f"La precisión de '{field_name}' debe ser '{expected_value}'")
-        
+
+    def test_foreign_residual_matches_invoice_total(self):
+        """Ticket 13694: foreign_amount_residual debe coincidir con foreign_total_billed - pagos."""
+        self.env['res.currency.rate'].create({
+            'name': fields.Date.today(),
+            'currency_id': self.currency_vef.id,
+            'inverse_company_rate': 120.439,
+            'company_id': self.company.id,
+        })
+        invoice = self.Move.create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner.id,
+            'journal_id': self.sale_journal.id,
+            'invoice_date': fields.Date.today(),
+            'foreign_currency_id': self.currency_vef.id,
+            'invoice_line_ids': [Command.create({
+                'product_id': self.product.id,
+                'quantity': 1.0,
+                'price_unit': 1000.0,
+            })],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        # Sin pagos: residual == total facturado
+        self.assertTrue(invoice.foreign_total_billed > 0, "La factura debe tener foreign_total_billed > 0")
+        self.assertAlmostEqual(
+            invoice.foreign_amount_residual, invoice.foreign_total_billed, places=2,
+            msg="Sin pagos, foreign_amount_residual debe igualar foreign_total_billed"
+        )
+
+        # Pago parcial 50%, usando el wizard estándar de registro de pago
+        # (garantiza que se concilie contra la misma cuenta por cobrar de la factura)
+        total = invoice.amount_total
+        payment_register = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=invoice.ids
+        ).create({
+            'amount': total / 2,
+            'journal_id': self.bank_journal_usd.id,
+            'payment_method_line_id': self.pm_line_in_usd.id,
+        })
+        payment_register.action_create_payments()
+
+        # Verificar residual después de pago parcial
+        pay_term_line = invoice.line_ids.filtered(
+            lambda l: l.account_id.reconcile
+            and not l.tax_line_id
+            and not l.tax_group_id
+        )
+        partials = pay_term_line.matched_debit_ids | pay_term_line.matched_credit_ids
+        total_paid_foreign = sum(p.foreign_amount for p in partials)
+        expected_residual = invoice.foreign_total_billed - total_paid_foreign
+        self.assertAlmostEqual(
+            invoice.foreign_amount_residual, expected_residual, places=2,
+            msg="foreign_amount_residual debe ser foreign_total_billed - sum(partials.foreign_amount)"
+        )
+        self.assertTrue(invoice.foreign_amount_residual > 0, "Residual debe ser > 0 tras pago parcial")
+
+    def test_foreign_residual_zero_when_fully_paid(self):
+        """Ticket 13694: foreign_amount_residual debe ser 0 cuando la factura está totalmente pagada."""
+        self.env['res.currency.rate'].create({
+            'name': fields.Date.today(),
+            'currency_id': self.currency_vef.id,
+            'inverse_company_rate': 120.439,
+            'company_id': self.company.id,
+        })
+        invoice = self.Move.create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner.id,
+            'journal_id': self.sale_journal.id,
+            'invoice_date': fields.Date.today(),
+            'foreign_currency_id': self.currency_vef.id,
+            'invoice_line_ids': [Command.create({
+                'product_id': self.product.id,
+                'quantity': 1.0,
+                'price_unit': 500.0,
+            })],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        # Pago total, usando el wizard estándar de registro de pago
+        payment_register = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=invoice.ids
+        ).create({
+            'journal_id': self.bank_journal_usd.id,
+            'payment_method_line_id': self.pm_line_in_usd.id,
+        })
+        payment_register.action_create_payments()
+
+        self.assertAlmostEqual(
+            invoice.foreign_amount_residual, 0.0, places=2,
+            msg="foreign_amount_residual debe ser 0 cuando la factura está totalmente pagada"
+        )
+
+    def test_foreign_residual_non_invoice(self):
+        """Ticket 13694: Para entries no-factura, foreign_amount_residual = amount_residual * foreign_inverse_rate."""
+        move = self.Move.create({
+            'move_type': 'entry',
+            'date': fields.Date.today(),
+            'journal_id': self.sale_journal.id,
+            'line_ids': [
+                Command.create({'name': 'Debit', 'debit': 100.0, 'credit': 0.0, 'account_id': self.account_product.id}),
+                Command.create({'name': 'Credit', 'debit': 0.0, 'credit': 100.0, 'account_id': self.account_contado.id}),
+            ],
+        })
+        move.action_post()
+        expected = move.amount_residual * move.foreign_inverse_rate
+        self.assertAlmostEqual(
+            move.foreign_amount_residual, expected, places=2,
+            msg="Para no-facturas, foreign_amount_residual = amount_residual * foreign_inverse_rate"
+        )

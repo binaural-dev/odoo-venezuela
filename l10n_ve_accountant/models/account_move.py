@@ -168,22 +168,6 @@ class AccountMove(models.Model):
 
     foreign_amount_residual = fields.Monetary(copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
 
-    @api.depends('amount_residual', 'company_currency_id', 'foreign_inverse_rate', 'foreign_total_billed')
-    def _compute_foreign_amount_residual(self):
-        for rec in self:
-            if not rec.is_invoice(include_receipts=True):
-                rec.foreign_amount_residual = rec.amount_residual * rec.foreign_inverse_rate
-                continue
-            pay_term_line = rec.line_ids.filtered(
-                lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
-            )
-            if not pay_term_line:
-                rec.foreign_amount_residual = 0.0
-                continue
-            partials = pay_term_line.matched_debit_ids | pay_term_line.matched_credit_ids
-            total_paid_foreign = sum(p.foreign_amount for p in partials)
-            rec.foreign_amount_residual = rec.foreign_total_billed - total_paid_foreign
-
     @api.depends(
         'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',
         'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
@@ -201,19 +185,27 @@ class AccountMove(models.Model):
         'state',
         'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.foreign_amount_residual',
         'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.foreign_amount_residual',
+        'foreign_total_billed',
+        'line_ids.matched_debit_ids.foreign_amount',
+        'line_ids.matched_credit_ids.foreign_amount',
     )
     def _compute_amount(self):
         res = super()._compute_amount()
         for move in self:
-            total_residual_currency = 0.0
-            for line in move.line_ids:
-                if line.display_type == 'payment_term':
-                    total_residual_currency += line.foreign_amount_residual
-            sign = move.direction_sign
-            if move.is_invoice(include_receipts=True):
-                move.foreign_amount_residual = -sign * total_residual_currency
-            else:
-                move.foreign_amount_residual = abs(total_residual_currency)
+            if not move.is_invoice(include_receipts=True):
+                move.foreign_amount_residual = move.amount_residual * move.foreign_inverse_rate
+                continue
+            pay_term_line = move.line_ids.filtered(
+                lambda l: l.account_id.reconcile
+                and not l.tax_line_id
+                and not l.tax_group_id
+            )
+            if not pay_term_line:
+                move.foreign_amount_residual = 0.0
+                continue
+            partials = pay_term_line.matched_debit_ids | pay_term_line.matched_credit_ids
+            total_paid_foreign = sum(p.foreign_amount for p in partials)
+            move.foreign_amount_residual = move.foreign_total_billed - total_paid_foreign
         return res
          
 
