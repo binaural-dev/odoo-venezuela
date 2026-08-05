@@ -12,7 +12,6 @@ class IotDeviceInherit(models.Model):
 
     manufacturer_type = fields.Selection(
         selection=[("HKA", "The Factory HKA"), ("PnP", "PnP Desarrollos")],
-        string="Manufacturer Type",
         compute="_compute_manufacturer_type",
     )
     serial_machine = fields.Char(string="Serial of fiscal machine", default=False)

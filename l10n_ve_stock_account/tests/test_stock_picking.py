@@ -338,7 +338,7 @@ class TestStockPickingInvoice(TransactionCase):
         _logger.info("test_04_transfer_reason_subcontracting_config --- successfully.")
 
     def test_05_compute_document_logic(self):
-        """Verificar que el documento se fuerce a 'invoice' si el usuario tiene el grupo restringido."""
+        """Verificar que el documento se fuerce a 'invoice' solo en draft para usuarios con grupo restringido."""
         order_1 = self.create_sale_order(self.user_standard)
 
         order_1.write({
@@ -356,10 +356,15 @@ class TestStockPickingInvoice(TransactionCase):
         order_2.with_user(self.user_restricted).write({
             'document': 'dispatch_guide',
         })
+
+        # En draft, el usuario restringido debe ser forzado a 'invoice'
+        order_2.with_user(self.user_restricted)._compute_document()
+        self.assertEqual(order_2.document, 'invoice', "El usuario con grupo especial debe ser forzado a 'invoice' en draft")
+
+        # Al confirmar, _compute_document ya no debe cambiar el documento (state != draft)
         order_2.with_user(self.user_restricted).action_confirm()
         order_2.with_user(self.user_restricted)._compute_document()
-
-        self.assertEqual(order_2.document, 'invoice', "El usuario con el grupo especial debe ser forzado a tener 'invoice'")
+        self.assertEqual(order_2.document, 'invoice', "El documento debe mantenerse como 'invoice' incluso después de confirmar")
 
     def test_06_compute_show_document_visibility(self):
         """Probar la visibilidad del campo según el estado de la orden y el grupo del usuario."""
@@ -398,3 +403,15 @@ class TestStockPickingInvoice(TransactionCase):
         self.assertEqual(picking_1.state_guide_dispatch, "emited")
         self.assertEqual(picking_2.state_guide_dispatch, "emited")
         _logger.info("test_07_batch_validate_pickings --- successfully.")
+
+    def test_08_return_picking_no_guide_number(self):
+        """Verificar que un picking de devolución (is_return=True) no genere correlativo de guía."""
+        picking = self.create_picking()
+        picking.is_return = True
+
+        for move in picking.move_ids_without_package:
+            move.quantity = move.product_uom_qty
+        picking.button_validate()
+
+        self.assertFalse(picking.guide_number, "Un picking de devolución no debería generar número de guía.")
+        _logger.info("test_08_return_picking_no_guide_number --- successfully.")
