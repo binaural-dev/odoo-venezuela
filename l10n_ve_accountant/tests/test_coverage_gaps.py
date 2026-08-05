@@ -587,6 +587,130 @@ class TestCoverageGaps(TransactionCase):
         invoice = self._create_invoice(self.currency_usd, 100.0)
         self.assertGreater(invoice.foreign_rate, 0)
 
+<<<<<<< HEAD
+=======
+    def _rectification_purchase_journal(self):
+        return self.env["account.journal"].sudo().create({
+            "name": "Purchases Rectification", "code": "PRCT",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+
+    def _create_in_invoice(self, journal, date):
+        return self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": journal.id,
+            "invoice_date": date,
+            "date": date,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_exp.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+    def test_rectification_keeps_origin_rate_after_date_change(self):
+        """Nota de crédito vinculada: la tasa debe quedar fija en la de la
+        factura origen, sin importar cambios posteriores de fecha."""
+        journal = self._rectification_purchase_journal()
+        date_a, date_b, date_c = (
+            fields.Date.from_string("2026-07-01"),
+            fields.Date.from_string("2026-07-10"),
+            fields.Date.from_string("2026-07-13"),
+        )
+        rate_model = self.env["res.currency.rate"]
+        rate_model.create({
+            "name": date_a, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 40.0, "company_id": self.company.id,
+        })
+        rate_model.create({
+            "name": date_b, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0, "company_id": self.company.id,
+        })
+        rate_model.create({
+            "name": date_c, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 48.0, "company_id": self.company.id,
+        })
+
+        invoice = self._create_in_invoice(journal, date_a)
+        rate_a = invoice.foreign_rate
+        self.assertAlmostEqual(rate_a, 40.0, places=2)
+
+        refund = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "in_refund",
+            "partner_id": self.partner.id,
+            "journal_id": journal.id,
+            "reversed_entry_id": invoice.id,
+            "invoice_date": date_b,
+            "date": date_b,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_exp.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        self.assertAlmostEqual(refund.foreign_rate, rate_a, places=2)
+
+        refund.write({"date": date_c, "invoice_date": date_c})
+        self.env.flush_all()
+        self.assertAlmostEqual(
+            refund.foreign_rate, rate_a, places=2,
+            msg="La tasa de la rectificativa no debe cambiar al editar la fecha",
+        )
+
+        refund.write({"foreign_rate": 999.0})
+        self.env.flush_all()
+        self.assertAlmostEqual(
+            refund.foreign_rate, rate_a, places=2,
+            msg="Un write directo del campo no debe romper la paridad histórica",
+        )
+
+    def test_rectification_via_reversal_wizard_keeps_origin_rate(self):
+        """El flujo real de usuario (wizard de reversión) debe heredar la
+        tasa de la factura origen, no la vigente en la fecha del wizard."""
+        journal = self._rectification_purchase_journal()
+        date_a, date_b = (
+            fields.Date.from_string("2026-07-01"),
+            fields.Date.from_string("2026-07-10"),
+        )
+        rate_model = self.env["res.currency.rate"]
+        rate_model.create({
+            "name": date_a, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 40.0, "company_id": self.company.id,
+        })
+        rate_model.create({
+            "name": date_b, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0, "company_id": self.company.id,
+        })
+
+        invoice = self._create_in_invoice(journal, date_a)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        rate_a = invoice.foreign_rate
+
+        reversal = self.env["account.move.reversal"].with_context(
+            active_model="account.move", active_ids=invoice.ids,
+        ).create({
+            "date": date_b,
+            "reason": "Test rectificación",
+            "journal_id": journal.id,
+        })
+        result = reversal.reverse_moves()
+        refund = self.env["account.move"].browse(result["res_id"])
+        self.assertTrue(refund.reversed_entry_id)
+        self.assertAlmostEqual(refund.foreign_rate, rate_a, places=2)
+
+>>>>>>> maint-17.0_ti_14138_tasa_notas_de_credito
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - get_view
     # ═══════════════════════════════════════════════════════════════
@@ -1090,13 +1214,20 @@ class TestCoverageGaps(TransactionCase):
             "partner_id": self.partner.id,
             "journal_id": purchase_journal.id,
             "currency_id": self.currency_vef.id,
+<<<<<<< HEAD
+=======
+            "correlative": "12345698741001",
+>>>>>>> maint-17.0_ti_14138_tasa_notas_de_credito
             "date": fields.Date.today(),
             "invoice_line_ids": [mk_line(723.0), mk_line(1447.998)],
         })
 
         line_ids_before = inv.invoice_line_ids.ids
         form = Form(inv, view="account.view_move_form")
+<<<<<<< HEAD
         self._set_correlative_if_required(form, "TEST-REPRO2-0001")
+=======
+>>>>>>> maint-17.0_ti_14138_tasa_notas_de_credito
         computed = None
         edited = None
         with form.invoice_line_ids.edit(1) as line2_form:
@@ -1495,11 +1626,18 @@ class TestCoverageGaps(TransactionCase):
             "partner_id": self.partner.id,
             "journal_id": purchase_journal.id,
             "currency_id": currency.id,
+<<<<<<< HEAD
+=======
+            "correlative": "12345698741002",
+>>>>>>> maint-17.0_ti_14138_tasa_notas_de_credito
             "date": fields.Date.today(),
             "invoice_line_ids": [],
         })
         form = Form(inv, view="account.view_move_form")
+<<<<<<< HEAD
         self._set_correlative_if_required(form, f"TEST-STRESS-{currency.name}-0001")
+=======
+>>>>>>> maint-17.0_ti_14138_tasa_notas_de_credito
         for i, price in enumerate(prices):
             prod = products[['16', '8', 'noacct', 'exempt'][i % 4]]
             account = acc_exp2 if i % 3 == 0 else self.acc_exp
@@ -1609,11 +1747,19 @@ class TestCoverageGaps(TransactionCase):
 
         tt = inv.tax_totals or {}
         entry_untaxed = sum(
+<<<<<<< HEAD
             l.foreign_subtotal
             for l in inv.line_ids if l.display_type == 'product')
         entry_total = abs(entry_untaxed + inv.direction_sign * sum(
             l.foreign_debit - l.foreign_credit
             for l in inv.line_ids if l.display_type == 'tax'))
+=======
+            abs(l.foreign_subtotal)
+            for l in inv.line_ids if l.display_type == 'product')
+        entry_total = entry_untaxed + sum(
+            abs(l.foreign_debit - l.foreign_credit)
+            for l in inv.line_ids if l.display_type == 'tax')
+>>>>>>> maint-17.0_ti_14138_tasa_notas_de_credito
 
         self.assertEqual(round(entry_untaxed, 2), 1549.25)
         self.assertEqual(round(entry_total, 2), 1797.13)
@@ -1671,11 +1817,19 @@ class TestCoverageGaps(TransactionCase):
 
         tt = inv.tax_totals or {}
         entry_untaxed = sum(
+<<<<<<< HEAD
             l.foreign_subtotal
             for l in inv.line_ids if l.display_type == 'product')
         entry_total = abs(entry_untaxed + inv.direction_sign * sum(
             l.foreign_debit - l.foreign_credit
             for l in inv.line_ids if l.display_type == 'tax'))
+=======
+            abs(l.foreign_subtotal)
+            for l in inv.line_ids if l.display_type == 'product')
+        entry_total = entry_untaxed + sum(
+            abs(l.foreign_debit - l.foreign_credit)
+            for l in inv.line_ids if l.display_type == 'tax')
+>>>>>>> maint-17.0_ti_14138_tasa_notas_de_credito
 
         self.assertEqual(round(entry_untaxed, 2), 1611.22)
         self.assertEqual(round(entry_total, 2), 1869.02)
@@ -1688,6 +1842,7 @@ class TestCoverageGaps(TransactionCase):
             tt['foreign_amount_total'], entry_total, places=1)
 
         self._assert_tax_totals_foreign(inv, "vef-real-aligned")
+<<<<<<< HEAD
 
     def test_mixed_sign_discount_foreign_total(self):
         """A negative product line (global discount) must SUBTRACT from the
@@ -1755,3 +1910,5 @@ class TestCoverageGaps(TransactionCase):
         self.assertNotAlmostEqual(
             tt['foreign_amount_total'], naive_total, places=2,
             msg="abs() per line must not be used (discount inflated the total)")
+=======
+>>>>>>> maint-17.0_ti_14138_tasa_notas_de_credito

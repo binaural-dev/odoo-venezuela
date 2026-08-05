@@ -322,9 +322,12 @@ class AccountMove(models.Model):
         for move in moves:
             if move.move_type != "in_invoice":
                 move._compute_rate()
-            if move.move_type in ("out_refund", "in_refund") and move.reversed_entry_id:
-                move.foreign_rate = move.reversed_entry_id.foreign_rate
-                move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+            if move.move_type in ("out_refund", "in_refund") and (
+                move.reversed_entry_id or move.debit_origin_id
+            ):
+                origin = move.reversed_entry_id or move.debit_origin_id
+                move.foreign_rate = origin.foreign_rate
+                move.foreign_inverse_rate = origin.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.context_today(self)
@@ -340,6 +343,23 @@ class AccountMove(models.Model):
         return moves
 
     def write(self, vals):
+        """
+        computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
+        the move is edited.
+
+        if vals has 'journal_id' inside, then call _update_invoice_lines_with_new_journal to update the line_ids to update the account_id.
+        """
+        if vals.keys() & {"foreign_rate", "foreign_inverse_rate"}:
+            for move in self:
+                if move.move_type in ("out_refund", "in_refund") and (
+                    move.reversed_entry_id or move.debit_origin_id
+                ):
+                    vals = {
+                        k: v
+                        for k, v in vals.items()
+                        if k not in ("foreign_rate", "foreign_inverse_rate")
+                    }
+                    break
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
@@ -634,7 +654,7 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat) if move.partner_id.vat else ''
             move.vat = vat.upper()
 
-    @api.depends("invoice_date","foreign_currency_id","date")
+    @api.depends("invoice_date", "foreign_currency_id", "date", "reversed_entry_id", "debit_origin_id")
     def _compute_rate(self):
         self._compute_rate_for_documents(
             self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
@@ -651,6 +671,15 @@ class AccountMove(models.Model):
 
         for move in documents:
             if move.manually_set_rate:
+                continue
+            if move.move_type in ("out_refund", "in_refund") and (
+                move.reversed_entry_id or move.debit_origin_id
+            ):
+                origin = move.reversed_entry_id or move.debit_origin_id
+                move.write({
+                    'foreign_rate': origin.foreign_rate,
+                    'foreign_inverse_rate': origin.foreign_inverse_rate,
+                })
                 continue
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.context_today(self)
