@@ -348,16 +348,22 @@ class SaleOrder(models.Model):
     def _compute_tax_totals_base(self):
         return super()._compute_tax_totals()
 
-    @api.depends("partner_id")
+    @api.depends("partner_id", "partner_id.vat", "partner_id.prefix_vat")
     def _compute_vat(self):
         """
         Compute the vat of the partner and add the prefix to it if it exists in the partner record
         """
         for rec in self:
+            vat = ""
+
+            if not rec.partner_id:
+                rec.vat = vat
+                continue
+
             if rec.partner_id.prefix_vat and rec.partner_id.vat:
-                vat = str(rec.partner_id.prefix_vat) + str(rec.partner_id.vat)
+                vat = (rec.partner_id.prefix_vat or "") + (rec.partner_id.vat or "")
             else:
-                vat = str(rec.partner_id.vat)
+                vat = rec.partner_id.vat or ""
             rec.vat = vat.upper()
 
     @api.onchange("name")
@@ -642,7 +648,7 @@ class SaleOrder(models.Model):
         for sale in self:
             picking = sale.picking_ids
             if product_limit > 0:
-                picking_moves = picking.move_ids_without_package
+                picking_moves = picking.move_ids
                 picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
                 picking_vals = {
                     key: (value[0] if isinstance(value, tuple) else value)
@@ -653,10 +659,10 @@ class SaleOrder(models.Model):
                 picking_vals['user_id'] = picking.user_id.id
                 
                 list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
-                picking.move_ids_without_package = list_pickings_moves[0]
+                picking.move_ids = list_pickings_moves[0]
                 
                 for list_moves in list_pickings_moves[1:]:
-                    picking_vals["move_ids_without_package"] = list_moves
+                    picking_vals["move_ids"] = list_moves
                     new_picking = self.env['stock.picking'].create(picking_vals)
                 
 
