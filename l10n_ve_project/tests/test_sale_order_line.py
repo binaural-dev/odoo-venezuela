@@ -47,6 +47,16 @@ class TestSaleOrderLine(L10nVeProjectTestCommon):
         self.assertAlmostEqual(sol.foreign_amount_invoiced, 10.0, places=2)
         self.assertAlmostEqual(sol.foreign_amount_to_invoice, 0.0, places=2)
 
+    def test_sol_foreign_amount_split_after_refund(self):
+        """foreign_amount_invoiced must net out credit notes (out_refund),
+        as documented in the README."""
+        so, sol = self._create_sale_order(quantity=2.0, price_unit=100.0)
+        refund = self._create_customer_invoice(
+            quantity=1.0, price_unit=100.0, sale_lines=sol, move_type="out_refund"
+        )
+        self._post(refund)
+        self.assertAlmostEqual(sol.foreign_amount_invoiced, -5.0, places=2)
+
     def test_sol_foreign_amount_split_diverging_rates(self):
         """foreign_amount_invoiced must reflect the invoice's own rate, not
         the sale order's rate, when they differ.

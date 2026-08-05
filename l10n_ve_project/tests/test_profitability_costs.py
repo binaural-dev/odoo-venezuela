@@ -174,6 +174,25 @@ class TestProfitabilityCosts(L10nVeProjectTestCommon):
         self.assertAlmostEqual(section["foreign_billed"], -10.0, places=2)
         self.assertAlmostEqual(section["foreign_to_bill"], 2.0, places=2)
 
+    def test_purchase_order_section_diverging_analytic_distribution(self):
+        """foreign_billed must use the invoice line's own analytic
+        distribution, not the purchase order line's, when they differ."""
+        other_account = self.env["account.analytic.account"].create({
+            "name": "Other Project",
+            "plan_id": self.analytic_plan.id,
+            "company_id": self.company.id,
+        })
+        po, pol = self._create_purchase_order(quantity=2.0, price_unit=100.0)  # 100% al proyecto bajo test
+        bill = self._create_bill(
+            quantity=2.0, price_unit=100.0, purchase_line=pol,
+            analytic_distribution={str(self.analytic_account.id): 50, str(other_account.id): 50},
+        )
+        self._post(bill)
+
+        items = self.project._get_profitability_items(False)
+        section = self._section(items, "costs", "purchase_order")
+        self.assertAlmostEqual(section["foreign_billed"], -5.0, places=2)  # 50% de 10.0, no el 100% de la orden
+
     def test_costs_with_actions(self):
         bill = self._create_bill(quantity=1.0, price_unit=200.0)
         self._post(bill)

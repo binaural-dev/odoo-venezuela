@@ -41,3 +41,17 @@ class TestPurchaseOrderLine(L10nVeProjectTestCommon):
         po, pol = self._create_purchase_order(quantity=0.0, price_unit=100.0)
         self.assertAlmostEqual(pol.foreign_amount_billed, 0.0, places=2)
         self.assertAlmostEqual(pol.foreign_amount_to_bill, 0.0, places=2)
+
+    def test_pol_foreign_amount_split_qty_fully_invoiced_amount_mismatch(self):
+        """foreign_amount_to_bill must reflect the real monetary gap, not 0,
+        when the quantity is fully invoiced but the invoiced amount doesn't
+        match the order's subtotal (two posted bills at a different price
+        than the order)."""
+        po, pol = self._create_purchase_order(quantity=4.0, price_unit=100.0)
+        bill_1 = self._create_bill(quantity=2.0, price_unit=100.0, purchase_line=pol)
+        self._post(bill_1)
+        bill_2 = self._create_bill(quantity=2.0, price_unit=120.0, purchase_line=pol)
+        self._post(bill_2)
+        self.assertEqual(pol.qty_invoiced, pol.product_qty)
+        self.assertAlmostEqual(pol.foreign_amount_billed, 22.0, places=2)
+        self.assertAlmostEqual(pol.foreign_amount_to_bill, -2.0, places=2)

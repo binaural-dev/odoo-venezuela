@@ -230,7 +230,7 @@ class L10nVeProjectTestCommon(TransactionCase):
         po.date_approve = date_order
         return po, po.order_line
 
-    def _create_bill(self, quantity=1.0, price_unit=100.0, purchase_line=None, invoice_origin=False, move_type="in_invoice", invoice_date=None):
+    def _create_bill(self, quantity=1.0, price_unit=100.0, purchase_line=None, invoice_origin=False, move_type="in_invoice", invoice_date=None, analytic_distribution=None):
         """Create (draft) a vendor bill. If ``purchase_line`` is given the bill
         line is linked to the purchase order line (which bypasses the tax check
         of the purchase journal since ``invoice_origin`` is not provided).
@@ -242,7 +242,7 @@ class L10nVeProjectTestCommon(TransactionCase):
             "quantity": quantity,
             "price_unit": price_unit,
             "account_id": self.account_expense.id,
-            "analytic_distribution": {str(self.analytic_account.id): 100},
+            "analytic_distribution": analytic_distribution or {str(self.analytic_account.id): 100},
         }
         if purchase_line:
             line_vals["purchase_line_id"] = purchase_line.id
@@ -261,7 +261,7 @@ class L10nVeProjectTestCommon(TransactionCase):
             vals["invoice_origin"] = invoice_origin
         return self.env["account.move"].create(vals)
 
-    def _create_customer_invoice(self, quantity=1.0, price_unit=100.0, sale_lines=None, analytic=True, invoice_date=None):
+    def _create_customer_invoice(self, quantity=1.0, price_unit=100.0, sale_lines=None, analytic=True, invoice_date=None, move_type="out_invoice"):
         """Create (draft) a customer invoice. If ``sale_lines`` is given the
         invoice line is linked to those sale order lines.
 
@@ -278,7 +278,7 @@ class L10nVeProjectTestCommon(TransactionCase):
         if sale_lines:
             line_vals["sale_line_ids"] = [(6, 0, sale_lines.ids)]
         return self.env["account.move"].create({
-            "move_type": "out_invoice",
+            "move_type": move_type,
             "partner_id": self.partner.id,
             "journal_id": self.journal_sale.id,
             "invoice_date": invoice_date or fields.Date.today(),
