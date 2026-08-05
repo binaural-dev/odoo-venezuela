@@ -1211,7 +1211,6 @@ class TestCoverageGaps(TransactionCase):
             "partner_id": self.partner.id,
             "journal_id": purchase_journal.id,
             "currency_id": self.currency_vef.id,
-            "correlative": "12345698741001",
             "date": fields.Date.today(),
             "invoice_line_ids": [mk_line(723.0), mk_line(1447.998)],
         })
@@ -1616,7 +1615,6 @@ class TestCoverageGaps(TransactionCase):
             "partner_id": self.partner.id,
             "journal_id": purchase_journal.id,
             "currency_id": currency.id,
-            "correlative": "12345698741002",
             "date": fields.Date.today(),
             "invoice_line_ids": [],
         })
