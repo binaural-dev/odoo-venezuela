@@ -233,18 +233,8 @@ class TestProductTemplate(TransactionCase):
         self.assertFalse(product.taxes_id)
         self.assertFalse(product.supplier_taxes_id)
 
-    def test_15_create_combo_with_two_sale_taxes(self):
-        """Crear producto combo con 2 sale taxes -> OK, la regla no aplica a combo"""
-        product = self.env["product.template"].create({
-            "name": "Test Combo Two Taxes",
-            "type": "combo",
-            "combo_ids": [(6, 0, [self.combo.id])],
-            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
-        })
-        self.assertEqual(len(product.taxes_id), 2)
-
-    def test_16_write_existing_combo_without_resending_type(self):
-        """Write sobre combo existente sin reenviar 'type', taxes invalidos -> OK"""
+    def test_15_write_existing_combo_taxes_exempt(self):
+        """Combo existente recibe 2 taxes por write -> OK, la regla no aplica a combo"""
         self.company.write({
             "account_sale_tax_id": False,
         })
@@ -253,13 +243,12 @@ class TestProductTemplate(TransactionCase):
             "type": "combo",
             "combo_ids": [(6, 0, [self.combo.id])],
         })
-        # create() leaves skip_tax_validation_on_write=True on the returned
-        # recordset's context; reset it so this write() is validated for real.
-        product = product.with_context(skip_tax_validation_on_write=False)
+        # FIX-062: No need to reset context — create() no longer sets
+        # skip_tax_validation_on_write. Combo is exempt regardless.
         product.write({"taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])]})
         self.assertEqual(len(product.taxes_id), 2)
 
-    def test_17_write_change_type_consu_to_combo(self):
+    def test_16_write_change_type_consu_to_combo(self):
         """Write que cambia type de consu a combo junto con taxes invalidos -> OK"""
         product = self.env["product.template"].create({
             "name": "Test Consu To Combo",
@@ -267,7 +256,8 @@ class TestProductTemplate(TransactionCase):
             "taxes_id": [(6, 0, [self.tax_sale_1.id])],
             "supplier_taxes_id": [(6, 0, [])],
         })
-        product = product.with_context(skip_tax_validation_on_write=False)
+        # FIX-062: No need to reset context — create() no longer sets
+        # skip_tax_validation_on_write.
         product.write({
             "type": "combo",
             "combo_ids": [(6, 0, [self.combo.id])],
@@ -276,7 +266,7 @@ class TestProductTemplate(TransactionCase):
         self.assertEqual(product.type, "combo")
         self.assertEqual(len(product.taxes_id), 2)
 
-    def test_18_write_change_type_combo_to_consu(self):
+    def test_17_write_change_type_combo_to_consu(self):
         """Write que cambia type de combo a consu junto con taxes invalidos -> UserError"""
         product = self.env["product.template"].create({
             "name": "Test Combo To Consu",
@@ -284,14 +274,14 @@ class TestProductTemplate(TransactionCase):
             "combo_ids": [(6, 0, [self.combo.id])],
             "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
         })
-        product = product.with_context(skip_tax_validation_on_write=False)
+        # FIX-062: No need to reset context.
         with self.assertRaises(UserError):
             product.write({
                 "type": "consu",
                 "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
             })
 
-    def test_19_write_mixed_recordset_combo_and_non_combo(self):
+    def test_18_write_mixed_recordset_combo_and_non_combo(self):
         """Write sobre recordset mixto (combo + no-combo) -> valida solo el no-combo"""
         combo_product = self.env["product.template"].create({
             "name": "Test Mixed Combo",
@@ -304,6 +294,100 @@ class TestProductTemplate(TransactionCase):
             "taxes_id": [(6, 0, [self.tax_sale_1.id])],
             "supplier_taxes_id": [(6, 0, [])],
         })
-        mixed = (combo_product + regular_product).with_context(skip_tax_validation_on_write=False)
+        # FIX-062: No need to reset context.
+        mixed = combo_product + regular_product
         with self.assertRaises(UserError):
             mixed.write({"taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])]})
+
+    # ═══════════════════════════════════════════════════════════════
+    # FIX-060: vals mutation isolation
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_19_default_injection_does_not_leak_to_combo(self):
+        """FIX-060: When a non-combo product triggers default injection, the
+        default tax must NOT be applied to excluded combo products in the
+        same recordset."""
+        self.company.write({
+            "account_sale_tax_id": self.tax_sale_1.id,
+        })
+        combo_product = self.env["product.template"].create({
+            "name": "Test Leak Combo",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        regular_product = self.env["product.template"].create({
+            "name": "Test Leak Regular",
+            "type": "service",
+            "taxes_id": [(5, 0, 0)],  # empty → will trigger default injection
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        mixed = combo_product + regular_product
+        # Writing taxes_id empty on both: non-combo gets default, combo stays empty.
+        mixed.write({"taxes_id": [(5, 0, 0)]})
+        # The combo product must NOT have received the default tax.
+        self.assertFalse(combo_product.taxes_id,
+                         "Combo product must not receive default tax from non-combo validation")
+        # The regular product gets the company default.
+        self.assertEqual(regular_product.taxes_id.id, self.tax_sale_1.id)
+
+    # ═══════════════════════════════════════════════════════════════
+    # FIX-061: trigger completeness — type change without taxes
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_20_write_combo_to_consu_without_taxes_no_default(self):
+        """FIX-061: Changing type from combo to consu WITHOUT touching taxes
+        must trigger validation. Combo had 2 taxes → error on consu."""
+        self.company.write({
+            "account_sale_tax_id": False,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo To Consu No Tax",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+        })
+        with self.assertRaises(UserError):
+            product.write({"type": "consu"})  # no taxes in vals
+
+    def test_21_write_combo_to_consu_without_taxes_with_default(self):
+        """FIX-061: Changing combo→consu without taxes: if combo had 1 tax,
+        it's valid for consu too → OK."""
+        product = self.env["product.template"].create({
+            "name": "Test Combo To Consu Valid",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+        })
+        product.write({"type": "consu"})
+        self.assertEqual(product.type, "consu")
+        self.assertEqual(product.taxes_id.id, self.tax_sale_1.id)
+
+    def test_22_write_combo_to_consu_empty_taxes_with_default(self):
+        """FIX-061: Changing combo→consu when combo had no taxes:
+        company default is injected → OK."""
+        self.company.write({
+            "account_sale_tax_id": self.tax_sale_1.id,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo Empty To Consu",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        product.write({"type": "consu"})
+        self.assertEqual(product.type, "consu")
+        self.assertEqual(product.taxes_id.id, self.tax_sale_1.id)
+
+    def test_23_write_combo_to_consu_empty_taxes_no_default(self):
+        """FIX-061: Changing combo→consu when combo had no taxes and
+        no company default → UserError."""
+        self.company.write({
+            "account_sale_tax_id": False,
+            "account_purchase_tax_id": False,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo Empty No Default",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        with self.assertRaises(UserError):
+            product.write({"type": "consu"})
