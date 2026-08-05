@@ -78,21 +78,34 @@ class PurchaseOrderLine(models.Model):
             )
             line.foreign_subtotal = line_discount_price_unit * line.product_qty
 
-    @api.depends("foreign_subtotal", "qty_invoiced", "qty_to_invoice", "product_qty")
+    @api.depends(
+        "foreign_subtotal",
+        "invoice_lines",
+        "invoice_lines.move_id.move_type",
+        "invoice_lines.parent_state",
+        "invoice_lines.foreign_balance",
+    )
     def _compute_foreign_amount_split(self):
         """Split the foreign amount of the purchase order line.
 
-        ``foreign_amount_billed`` and ``foreign_amount_to_bill`` are both
-        prorated from the order foreign subtotal using ``qty_invoiced`` and
-        ``qty_to_invoice`` respectively, mirroring the core
-        ``untaxed_amount_invoiced`` / ``untaxed_amount_to_bill``. Using
-        ``qty_to_invoice`` keeps the same formula as the sale side and respects
-        the invoice policy (``received`` / ``ordered``).
+        Mirrors the monetary criterion used by the project profitability
+        panel (``project.project._get_purchase_order_foreign_amounts``):
+        ``foreign_amount_billed`` is the real amount invoiced (posted invoice
+        lines), and ``foreign_amount_to_bill`` is the committed subtotal minus
+        what has already been reflected in non-refund invoice lines (posted
+        or not). This avoids dropping to 0 when the quantity is fully
+        invoiced but the invoiced amount doesn't match the order subtotal
+        (price/rate mismatches, partial credit notes).
         """
         for line in self:
-            if line.product_qty:
-                line.foreign_amount_billed = line.foreign_subtotal * line.qty_invoiced / line.product_qty
-                line.foreign_amount_to_bill = line.foreign_subtotal * line.qty_to_invoice / line.product_qty
-            else:
-                line.foreign_amount_billed = 0.0
-                line.foreign_amount_to_bill = 0.0
+            invoice_lines = line.invoice_lines.filtered(lambda l: l.parent_state != 'cancel')
+            total_invoiced = 0.0
+            billed = 0.0
+            for inv_line in invoice_lines:
+                cost = inv_line.foreign_balance
+                if inv_line.move_id.move_type not in ('in_refund', 'out_refund'):
+                    total_invoiced += cost
+                if inv_line.parent_state == 'posted':
+                    billed += cost
+            line.foreign_amount_billed = billed
+            line.foreign_amount_to_bill = (line.foreign_subtotal or 0.0) - total_invoiced
